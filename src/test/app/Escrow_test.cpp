@@ -30,7 +30,6 @@
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
-#include <filesystem>
 #include <iterator>
 
 namespace ripple {

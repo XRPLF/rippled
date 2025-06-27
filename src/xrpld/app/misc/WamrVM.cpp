@@ -28,6 +28,8 @@
 // #define DEBUG_OUTPUT_WAMR 1
 #endif
 
+// #define SHOW_CALL_TIME 1
+
 namespace ripple {
 
 namespace {
@@ -738,6 +740,18 @@ WamrEngine::call(FuncInfo const& f, Types&&... args)
     return call<NR>(f, in, std::forward<Types>(args)...);
 }
 
+#ifdef SHOW_CALL_TIME
+static inline uint64_t
+usecs()
+{
+    uint64_t x =
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch())
+            .count();
+    return x;
+}
+#endif
+
 template <int NR, class... Types>
 WamrResult
 WamrEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
@@ -762,7 +776,19 @@ WamrEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
               in.size(),
               sizeof(std::remove_reference_t<decltype(in)>::value_type),
               nullptr};
+
+#ifdef SHOW_CALL_TIME
+    auto const start = usecs();
+#endif
+
     wasm_trap_t* trap = wasm_func_call(f.first, &inv, &ret.r);
+
+#ifdef SHOW_CALL_TIME
+    auto const finish = usecs();
+    auto const delta_ms = (finish - start) / 1000;
+    std::cout << "wasm_func_call: " << delta_ms << "ms" << std::endl;
+#endif
+
     if (trap)
     {
         ret.f = true;

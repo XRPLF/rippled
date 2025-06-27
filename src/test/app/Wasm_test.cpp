@@ -22,6 +22,8 @@
 
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmVM.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/ledger/detail/ApplyViewBase.h>
 
 #include <wasm_c_api.h>
 
@@ -382,6 +384,571 @@ public:
     getJournal() override
     {
         return jlog_;
+    }
+};
+
+struct PerfHostFunctions : public HostFunctions
+{
+    test::jtx::Env& env_;
+
+    Keylet leKey;
+    static int constexpr MAX_CACHE = 256;
+    std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
+    std::shared_ptr<STTx const> tx_;
+
+    void const* rt_ = nullptr;
+
+public:
+    PerfHostFunctions(
+        test::jtx::Env& env,
+        Keylet const& k,
+        std::shared_ptr<STTx const>&& tx)
+        : env_(env), leKey(k), tx_(std::move(tx))
+    {
+    }
+
+    virtual void
+    setRT(void const* rt) override
+    {
+        rt_ = rt;
+    }
+
+    virtual void const*
+    getRT() const override
+    {
+        return rt_;
+    }
+
+    beast::Journal
+    getJournal() override
+    {
+        return env_.journal;
+    }
+
+    int32_t
+    getLedgerSqn() override
+    {
+        return static_cast<int32_t>(env_.current()->seq());
+    }
+
+    int32_t
+    getParentLedgerTime() override
+    {
+        return env_.current()->parentCloseTime().time_since_epoch().count();
+    }
+
+    Hash
+    getParentLedgerHash() override
+    {
+        return env_.current()->info().parentHash;
+    }
+
+    virtual int32_t
+    cacheLedgerObj(Keylet const&, int32_t cacheIdx) override
+    {
+        static int32_t intIdx = 0;
+
+        if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
+            return HF_ERR_SLOT_OUT_RANGE;
+
+        if (!cacheIdx)
+        {
+            for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
+                if (!cache[cacheIdx])
+                    break;
+            if (cacheIdx >= MAX_CACHE)
+                cacheIdx = intIdx++ % MAX_CACHE;
+        }
+        else
+            --cacheIdx;
+
+        if (cacheIdx >= MAX_CACHE)
+            return HF_ERR_SLOTS_FULL;
+
+        cache[cacheIdx] = env_.le(leKey);
+        return cache[cacheIdx] ? cacheIdx + 1 : HF_ERR_LEDGER_OBJ_NOT_FOUND;
+    }
+
+    static Bytes
+    getAnyFieldData(STBase const& obj)
+    {
+        // auto const& fname = obj.getFName();
+        auto const stype = obj.getSType();
+        switch (stype)
+        {
+            case STI_UNKNOWN:
+            case STI_NOTPRESENT:
+                return {};
+                break;
+            case STI_ACCOUNT: {
+                auto const& super(static_cast<STAccount const&>(obj));
+                auto const& data = super.value();
+                return {data.begin(), data.end()};
+            }
+            break;
+            case STI_AMOUNT: {
+                auto const& super(static_cast<STAmount const&>(obj));
+                int64_t const data = super.xrp().drops();
+                auto const* b = reinterpret_cast<uint8_t const*>(&data);
+                auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+                return {b, e};
+            }
+            break;
+            case STI_VL: {
+                auto const& super(static_cast<STBlob const&>(obj));
+                auto const& data = super.value();
+                return {data.begin(), data.end()};
+            }
+            break;
+            case STI_UINT256: {
+                auto const& super(static_cast<STBitString<256> const&>(obj));
+                auto const& data = super.value();
+                return {data.begin(), data.end()};
+            }
+            break;
+            case STI_UINT32: {
+                auto const& super(
+                    static_cast<STInteger<std::uint32_t> const&>(obj));
+                std::uint32_t const data = super.value();
+                auto const* b = reinterpret_cast<uint8_t const*>(&data);
+                auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+                return {b, e};
+            }
+            break;
+            default:
+                break;
+        }
+
+        Serializer msg;
+        obj.add(msg);
+
+        return msg.getData();
+    }
+
+    Expected<Bytes, int32_t>
+    getTxField(SField const& fname) override
+    {
+        auto const* field = tx_->peekAtPField(fname);
+        if (!field)
+            return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+        if ((STI_OBJECT == field->getSType()) ||
+            (STI_ARRAY == field->getSType()))
+            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
+        return getAnyFieldData(*field);
+    }
+
+    Expected<Bytes, int32_t>
+    getCurrentLedgerObjField(SField const& fname) override
+    {
+        auto const sle = env_.le(leKey);
+        if (!sle)
+            return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
+
+        auto const* field = sle->peekAtPField(fname);
+        if (!field)
+            return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+        if ((STI_OBJECT == field->getSType()) ||
+            (STI_ARRAY == field->getSType()))
+            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
+        return getAnyFieldData(*field);
+    }
+
+    Expected<Bytes, int32_t>
+    getLedgerObjField(int32_t cacheIdx, SField const& fname) override
+    {
+        --cacheIdx;
+        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+            return Unexpected(HF_ERR_SLOT_OUT_RANGE);
+
+        if (!cache[cacheIdx])
+        {
+            // return Unexpected(HF_ERR_INVALID_SLOT);
+            cache[cacheIdx] = env_.le(leKey);
+        }
+
+        auto const* field = cache[cacheIdx]->peekAtPField(fname);
+        if (!field)
+            return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+        if ((STI_OBJECT == field->getSType()) ||
+            (STI_ARRAY == field->getSType()))
+            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
+        return getAnyFieldData(*field);
+    }
+
+    static Expected<STBase const*, int32_t>
+    locateField(STObject const& obj, Slice const& loc)
+    {
+        if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
+            return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+
+        int32_t const* l = reinterpret_cast<int32_t const*>(loc.data());
+        int32_t const sz = loc.size() / 4;
+        STBase const* field = nullptr;
+        auto const& m = SField::getKnownCodeToField();
+
+        {
+            int32_t const c = l[0];
+            auto const it = m.find(c);
+            if (it == m.end())
+                return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+            auto const& fname(*it->second);
+
+            field = obj.peekAtPField(fname);
+            if (!field || (STI_NOTPRESENT == field->getSType()))
+                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+        }
+
+        for (int i = 1; i < sz; ++i)
+        {
+            int32_t const c = l[i];
+
+            if (STI_ARRAY == field->getSType())
+            {
+                auto const* arr = static_cast<STArray const*>(field);
+                if (c >= arr->size())
+                    return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+                field = &(arr->operator[](c));
+            }
+            else if (STI_OBJECT == field->getSType())
+            {
+                auto const* o = static_cast<STObject const*>(field);
+
+                auto const it = m.find(c);
+                if (it == m.end())
+                    return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+                auto const& fname(*it->second);
+
+                field = o->peekAtPField(fname);
+            }
+            else  // simple field must be the last one
+            {
+                return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+            }
+
+            if (!field || (STI_NOTPRESENT == field->getSType()))
+                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+        }
+
+        return field;
+    }
+
+    Expected<Bytes, int32_t>
+    getTxNestedField(Slice const& locator) override
+    {
+        // std::cout << tx_->getJson(JsonOptions::none).toStyledString() <<
+        // std::endl;
+        auto const r = locateField(*tx_, locator);
+        if (!r)
+            return Unexpected(r.error());
+
+        auto const* field = r.value();
+        if ((STI_OBJECT == field->getSType()) ||
+            (STI_ARRAY == field->getSType()))
+            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
+        return getAnyFieldData(*field);
+    }
+
+    Expected<Bytes, int32_t>
+    getCurrentLedgerObjNestedField(Slice const& locator) override
+    {
+        auto const sle = env_.le(leKey);
+        if (!sle)
+            return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
+
+        auto const r = locateField(*sle, locator);
+        if (!r)
+            return Unexpected(r.error());
+
+        auto const* field = r.value();
+        if ((STI_OBJECT == field->getSType()) ||
+            (STI_ARRAY == field->getSType()))
+            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
+        return getAnyFieldData(*field);
+    }
+
+    Expected<Bytes, int32_t>
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
+    {
+        --cacheIdx;
+        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+            return Unexpected(HF_ERR_SLOT_OUT_RANGE);
+
+        if (!cache[cacheIdx])
+        {
+            // return Unexpected(HF_ERR_INVALID_SLOT);
+            cache[cacheIdx] = env_.le(leKey);
+        }
+
+        auto const r = locateField(*cache[cacheIdx], locator);
+        if (!r)
+            return Unexpected(r.error());
+
+        auto const* field = r.value();
+        if ((STI_OBJECT == field->getSType()) ||
+            (STI_ARRAY == field->getSType()))
+            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
+        return getAnyFieldData(*field);
+    }
+
+    int32_t
+    getTxArrayLen(SField const& fname) override
+    {
+        if (fname.fieldType != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+
+        auto const* field = tx_->peekAtPField(fname);
+        if (!field)
+            return HF_ERR_FIELD_NOT_FOUND;
+
+        if (field->getSType() != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+        int32_t const sz = static_cast<STArray const*>(field)->size();
+
+        return sz;
+    }
+
+    int32_t
+    getCurrentLedgerObjArrayLen(SField const& fname) override
+    {
+        if (fname.fieldType != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+
+        auto const sle = env_.le(leKey);
+        if (!sle)
+            return HF_ERR_LEDGER_OBJ_NOT_FOUND;
+
+        auto const* field = sle->peekAtPField(fname);
+        if (!field)
+            return HF_ERR_FIELD_NOT_FOUND;
+
+        if (field->getSType() != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+        int32_t const sz = static_cast<STArray const*>(field)->size();
+
+        return sz;
+    }
+
+    int32_t
+    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override
+    {
+        if (fname.fieldType != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+
+        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+            return HF_ERR_SLOT_OUT_RANGE;
+
+        if (!cache[cacheIdx])
+        {
+            // return Unexpected(HF_ERR_INVALID_SLOT);
+            cache[cacheIdx] = env_.le(leKey);
+        }
+
+        auto const* field = cache[cacheIdx]->peekAtPField(fname);
+        if (!field)
+            return HF_ERR_FIELD_NOT_FOUND;
+
+        if (field->getSType() != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+        int32_t const sz = static_cast<STArray const*>(field)->size();
+
+        return sz;
+    }
+
+    int32_t
+    getTxNestedArrayLen(Slice const& locator) override
+    {
+        auto const r = locateField(*tx_, locator);
+        if (!r)
+            return r.error();
+        auto const* field = r.value();
+
+        if (field->getSType() != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+        int32_t const sz = static_cast<STArray const*>(field)->size();
+
+        return sz;
+    }
+
+    int32_t
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
+    {
+        auto const sle = env_.le(leKey);
+        if (!sle)
+            return HF_ERR_LEDGER_OBJ_NOT_FOUND;
+        auto const r = locateField(*sle, locator);
+        if (!r)
+            return r.error();
+        auto const* field = r.value();
+
+        if (field->getSType() != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+        int32_t const sz = static_cast<STArray const*>(field)->size();
+
+        return sz;
+    }
+
+    int32_t
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
+    {
+        --cacheIdx;
+        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+            return HF_ERR_SLOT_OUT_RANGE;
+
+        if (!cache[cacheIdx])
+        {
+            // return Unexpected(HF_ERR_INVALID_SLOT);
+            cache[cacheIdx] = env_.le(leKey);
+        }
+
+        auto const r = locateField(*cache[cacheIdx], locator);
+        if (!r)
+            return r.error();
+
+        auto const* field = r.value();
+
+        if (field->getSType() != STI_ARRAY)
+            return HF_ERR_NO_ARRAY;
+        int32_t const sz = static_cast<STArray const*>(field)->size();
+
+        return sz;
+    }
+
+    int32_t
+    updateData(Bytes const& data) override
+    {
+        ripple::detail::ApplyViewBase v(
+            env_.app().openLedger().current().get(), tapNONE);
+
+        auto sle = v.peek(leKey);
+        if (!sle)
+            return HF_ERR_LEDGER_OBJ_NOT_FOUND;
+
+        sle->setFieldVL(sfData, data);
+        v.update(sle);
+
+        return data.size();
+    }
+
+    Hash
+    computeSha512HalfHash(Bytes const& data) override
+    {
+        auto const hash = sha512Half(data);
+        return hash;
+    }
+
+    Expected<Bytes, int32_t>
+    accountKeylet(AccountID const& account) override
+    {
+        if (!account)
+            return Unexpected(HF_ERR_INVALID_ACCOUNT);
+        auto const keylet = keylet::account(account);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, int32_t>
+    credentialKeylet(
+        AccountID const& subject,
+        AccountID const& issuer,
+        Bytes const& credentialType) override
+    {
+        if (!subject || !issuer || credentialType.empty() ||
+            credentialType.size() > maxCredentialTypeLength)
+            return Unexpected(HF_ERR_INVALID_PARAMS);
+
+        auto const keylet =
+            keylet::credential(subject, issuer, makeSlice(credentialType));
+
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, int32_t>
+    escrowKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HF_ERR_INVALID_ACCOUNT);
+        auto const keylet = keylet::escrow(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, int32_t>
+    oracleKeylet(AccountID const& account, std::uint32_t documentId) override
+    {
+        if (!account)
+            return Unexpected(HF_ERR_INVALID_ACCOUNT);
+        auto const keylet = keylet::oracle(account, documentId);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, int32_t>
+    getNFT(AccountID const& account, uint256 const& nftId) override
+    {
+        if (!account || !nftId)
+        {
+            getJournal().trace() << "WAMR getNFT: Invalid account or NFT ID";
+            return Unexpected(HF_ERR_INVALID_PARAMS);
+        }
+
+        auto obj = nft::findToken(*env_.current(), account, nftId);
+        if (!obj)
+        {
+            getJournal().trace() << "WAMR getNFT: NFT not found";
+            return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
+        }
+
+        auto ouri = obj->at(~sfURI);
+        if (!ouri)
+            return Bytes();
+
+        Slice const s = ouri->value();
+        return Bytes(s.begin(), s.end());
+    }
+
+    int32_t
+    trace(std::string const& msg, Bytes const& data, bool asHex) override
+    {
+#ifdef DEBUG_OUTPUT
+        auto& j = std::cerr;
+#else
+        auto j = getJournal().error();
+#endif
+        if (!asHex)
+            j << msg
+              << std::string_view(
+                     reinterpret_cast<char const*>(data.data()), data.size());
+        else
+        {
+            auto const hex =
+                boost::algorithm::hex(std::string(data.begin(), data.end()));
+            j << msg << hex;
+        }
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
+
+        return msg.size() + data.size() * (asHex ? 2 : 1);
+    }
+
+    int32_t
+    traceNum(std::string const& msg, int64_t data) override
+    {
+#ifdef DEBUG_OUTPUT
+        auto& j = std::cerr;
+#else
+        auto j = getJournal().error();
+#endif
+        j << msg << data;
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
+        return msg.size() + sizeof(data);
     }
 };
 
@@ -832,6 +1399,103 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    perfTest()
+    {
+        testcase("Perf test host functions");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        std::string const funcName("finish");
+        // std::string const funcName("test");
+        auto const& wasmHex = hfPerfTest;
+        // auto const& wasmHex = opcCallPerfTest;
+        std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+        std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+        std::string const credType = "abcde";
+        std::string const credType2 = "fghijk";
+        std::string const credType3 = "0123456";
+        // char const uri[] = "uri";
+
+        Account const alan{"alan"};
+        Account const bob{"bob"};
+        Account const issuer{"issuer"};
+
+        {
+            Env env(*this);
+            // Env env(*this, envconfig(), {}, nullptr,
+            // beast::severities::kTrace);
+            env.fund(XRP(5000), alan, bob, issuer);
+            env.close();
+
+            // // create escrow
+            // auto const seq = env.seq(alan);
+            // auto const k = keylet::escrow(alan, seq);
+            // // auto const allowance = 3'600;
+            // auto escrowCreate = escrow::create(alan, bob, XRP(1000));
+            // XRPAmount txnFees = env.current()->fees().base + 1000;
+            // env(escrowCreate,
+            //     escrow::finish_function(wasmHex),
+            //     escrow::finish_time(env.now() + 11s),
+            //     escrow::cancel_time(env.now() + 100s),
+            //     escrow::data("1000000000"),  // 1000 XRP in drops
+            //     memodata("memo1234567"),
+            //     memodata("2memo1234567"),
+            //     fee(txnFees));
+
+            // // create depositPreauth
+            // auto const k = keylet::depositPreauth(
+            //     bob,
+            //     {{issuer.id(), makeSlice(credType)},
+            //      {issuer.id(), makeSlice(credType2)},
+            //      {issuer.id(), makeSlice(credType3)}});
+            // env(deposit::authCredentials(
+            //     bob,
+            //     {{issuer, credType},
+            //      {issuer, credType2},
+            //      {issuer, credType3}}));
+
+            // cREATE nft
+            [[maybe_unused]] uint256 const nft0{
+                token::getNextID(env, alan, 0u)};
+            env(token::mint(alan, 0u));
+            auto const k = keylet::nftoffer(alan, 0);
+            [[maybe_unused]] uint256 const nft1{
+                token::getNextID(env, alan, 0u)};
+
+            env(token::mint(alan, 0u),
+                token::uri(
+                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
+            [[maybe_unused]] uint256 const nft2{
+                token::getNextID(env, alan, 0u)};
+            env(token::mint(alan, 0u));
+            env.close();
+
+            PerfHostFunctions nfs(env, k, env.tx());
+
+            auto re = runEscrowWasm(wasm, funcName, {}, &nfs);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result);
+                std::cout << "Res: " << re->result << " cost: " << re->cost
+                          << std::endl;
+            }
+
+            // env(escrow::finish(alan, alan, seq),
+            //     escrow::comp_allowance(allowance),
+            //     fee(txnFees),
+            //     ter(tesSUCCESS));
+
+            env.close();
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -853,6 +1517,8 @@ struct Wasm_test : public beast::unit_test::suite
         // TODO: fix result
         testEscrowWasmDN1();
         testEscrowWasmDN2();
+
+        // perfTest();
     }
 };
 
