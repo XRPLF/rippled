@@ -37,9 +37,8 @@ struct LedgerFill
         ReadView const& l,
         RPC::Context* ctx,
         int o = 0,
-        std::vector<TxQ::TxDetails> q = {},
-        LedgerEntryType t = ltANY)
-        : ledger(l), options(o), txQueue(std::move(q)), type(t), context(ctx)
+        std::vector<TxQ::TxDetails> q = {})
+        : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
     {
         if (context)
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
@@ -58,7 +57,6 @@ struct LedgerFill
     ReadView const& ledger;
     int options;
     std::vector<TxQ::TxDetails> txQueue;
-    LedgerEntryType type;
     RPC::Context* context;
     std::optional<NetClock::time_point> closeTime;
 };
