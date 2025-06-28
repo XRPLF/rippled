@@ -112,7 +112,8 @@ LedgerHandler::writeResult(Object& value)
         w[jss::id] = warnRPC_FIELDS_DEPRECATED;
         w[jss::message] =
             "Some fields from your request are deprecated. Please check the "
-            "documentation at https://xrpl.org/docs/references/http-websocket-apis/ "
+            "documentation at "
+            "https://xrpl.org/docs/references/http-websocket-apis/ "
             "and update your request. Field `type` is deprecated.";
     }
 
