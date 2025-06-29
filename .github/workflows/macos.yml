@@ -28,6 +28,7 @@ jobs:
           - Ninja
         configuration:
           - Release
+          - Debug
     runs-on: [self-hosted, macOS]
     env:
       # The `build` action requires these variables.
