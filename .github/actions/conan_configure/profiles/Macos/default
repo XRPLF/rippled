@@ -1,9 +1,9 @@
-{% set compiler, compiler_version, compiler_exe = detect_api.detect_default_compiler() %}
+{% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
 
 [settings]
 os={{ detect_api.detect_os() }}
 arch={{ detect_api.detect_arch() }}
 compiler={{ compiler }}
-compiler.version={{ compiler_version }}
+compiler.version={{detect_api.default_compiler_version(compiler, version)}}
 compiler.cppstd=20
 compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
