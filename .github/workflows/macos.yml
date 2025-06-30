@@ -26,7 +26,11 @@ jobs:
     strategy:
       matrix:
         platform:
-          - macos
+          - Macos
+        compiler:
+          - clang
+        compiler_version:
+          - 17
         generator:
           - Ninja
         configuration:
@@ -98,17 +102,18 @@ jobs:
 
       - name: Configure Conan
         uses: ./.github/actions/conan_configure
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+        # env:
+        #   CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
-          profile: Macos-clang-17-Release
+          profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.compiler_version }}-${{ matrix.configuration }}
 
       - name: build dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+        # env:
+        #   CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
-          profile: Macos-clang-17-Release
+          profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.compiler_version }}-${{ matrix.configuration }}
+
       - name: build
         uses: ./.github/actions/build
         with:

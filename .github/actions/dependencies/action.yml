@@ -1,31 +1,32 @@
 name: dependencies
 inputs:
-  profile:
+  # profile:
+  #   required: false
+  #   default: default
+  compiler:
+    required: false
+  compiler_version:
+    required: false
+  configuration:
     required: false
   conf:
     required: false
-  compiler:
-    required: true
-  compiler_version:
-    required: true
-  configuration:
-    required: true
 # An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
   steps:
-    - name: export custom recipes
-      shell: bash
-      run: |
-        conan export --version 1.1.10 external/snappy
-        conan export --version 9.7.3 external/rocksdb
-        conan export --version 4.0.3 external/soci
-        conan export --version 2.0.8 external/nudb
-    - name: add Ripple Conan remote
-      shell: bash
-      run: |
-        conan remote add ripple --index 0 ${{ env.CONAN_URL }} --force
-        conan remote list
+    # - name: export custom recipes
+    #   shell: bash
+    #   run: |
+    #     conan export --version 1.1.10 external/snappy
+    #     conan export --version 9.7.3 external/rocksdb
+    #     conan export --version 4.0.3 external/soci
+    #     conan export --version 2.0.8 external/nudb
+    # - name: add Ripple Conan remote
+    #   shell: bash
+    #   run: |
+    #     conan remote add ripple --index 0 ${{ env.CONAN_URL }} --force
+    #     conan remote list
     - name: install dependencies
       shell: bash
       run: |
@@ -33,11 +34,14 @@ runs:
         while read -r line; do
           [[ -n "$line" ]] && conf_args+=("--conf" "$line")
         done <<< "${{ inputs.conf }}"
-        conan profile show --profile:all "${{ inputs.profile }}"
-        echo "Running Conan install with conf: ${conf_args[*]}"
-        echo "and profile: ${{ inputs.profile }}"
+        echo "building with config: ${{inputs.configuration }}"
+        # exit 1
+        # echo build_type=Debug >> $CONAN_HOME/profiles/default
+        # conan profile show --profile=default
+        # conan graph info . --profile=default -s:h build_type=Release
+        # exit 1
         conan install . \
-          --profile:all "${{ inputs.profile }}" \
+          -s:a build_type=${{ inputs.configuration }} \
           --output-folder "${build_dir}" \
           --build missing \
           "${conf_args[@]}"

@@ -20,7 +20,6 @@ class Xrpl(ConanFile):
         'jemalloc': [True, False],
         'rocksdb': [True, False],
         'shared': [True, False],
-        'static': [True, False],
         'tests': [True, False],
         'unity': [True, False],
         'xrpld': [True, False],
@@ -32,6 +31,7 @@ class Xrpl(ConanFile):
         'libarchive/3.7.6',
         'nudb/2.0.8',
         'openssl/1.1.1v',
+        'soci/4.0.3',
         'zlib/1.3.1',
     ]
 
@@ -46,7 +46,6 @@ class Xrpl(ConanFile):
         'jemalloc': False,
         'rocksdb': True,
         'shared': False,
-        'static': True,
         'tests': False,
         'unity': False,
         'xrpld': False,
@@ -90,8 +89,6 @@ class Xrpl(ConanFile):
     def validate(self):
         if self.settings.get_safe("compiler.cppstd"):
             check_min_cppstd(self, 20)
-        if self.options.shared and self.options.static:
-            raise ConanInvalidConfiguration("Cannot set both shared and static libraries.")
         if self.settings.os == "Windows" and self.settings.arch == "armv8":
             raise ConanInvalidConfiguration("Windows on ARM64 not supported")
 
@@ -105,11 +102,6 @@ class Xrpl(ConanFile):
                 self.version = match.group(1)
 
     def configure(self):
-        if self.options.shared:
-            self.options.static = False
-        elif self.options.static:
-            self.options.shared = False
-
         if self.settings.compiler == 'apple-clang':
             self.options['boost'].visibility = 'global'
 
@@ -119,8 +111,6 @@ class Xrpl(ConanFile):
         self.requires('boost/1.83.0', force=True, **transitive_headers_opt)
         self.requires('date/3.0.3', **transitive_headers_opt)
         self.requires('lz4/1.10.0', force=True)
-        self.requires('protobuf/3.21.12')
-        self.requires('soci/4.0.3')
         self.requires('sqlite3/3.47.0', force=True)
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
@@ -155,7 +145,7 @@ class Xrpl(ConanFile):
         tc.variables['jemalloc'] = self.options.jemalloc
         tc.variables['rocksdb'] = self.options.rocksdb
         tc.variables['BUILD_SHARED_LIBS'] = self.options.shared
-        tc.variables['static'] = self.options.static
+        tc.variables['static'] = not self.options.shared
         tc.variables['unity'] = self.options.unity
         tc.variables['xrpld'] = self.options.xrpld
         if self.settings.compiler == 'clang' and self.settings.compiler.version == 16:

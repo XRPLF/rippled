@@ -1,10 +1,13 @@
 {% set compiler, compiler_version, compiler_exe = detect_api.detect_default_compiler() %}
+
 [settings]
 os={{ detect_api.detect_os() }}
 arch={{ detect_api.detect_arch() }}
 compiler={{ compiler }}
 compiler.version={{ compiler_version }}
-compiler.runtime_type = {{ profile_name.split("-")[-1] }}
 compiler.cppstd=20
+{% if os == "Windows" %}
 compiler.runtime=static
-build_type={{ profile_name.split("-")[-1] }}
+{% elif os == "Macos" %}
+compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
+{% endif %}

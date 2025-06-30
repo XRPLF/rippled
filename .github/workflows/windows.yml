@@ -67,7 +67,7 @@ jobs:
 
       - name: install Conan
         run: |
-          pip install wheel conan~=2.17
+          pip install wheel conan==2.17
 
       - name: check environment
         run: |
@@ -79,15 +79,15 @@ jobs:
 
       - name: Configure Conan
         uses: ./.github/actions/conan_configure
-        env:
-         CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+        # env:
+        #  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.version.msvc_version }}-${{ matrix.configuration.type }}
 
       - name: build dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+        # env:
+        #   CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.version.msvc_version }}-${{ matrix.configuration.type }}
 

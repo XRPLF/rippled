@@ -2,39 +2,48 @@ name: conan_configure
 description: Set Conan up with some sane defaults
 inputs:
   profile:
+    description: "Conan profile name to use for configuration, specifying Conan's settings <os-compiler-compiler_version-build_type>'"
+    default: "default"
     required: false
-  set_default:
-    required: false
-  conf:
-    required: false
+
   platform:
+    description: "Target platform name (e.g., 'Linux', 'Windows', 'Macos'). Conan's valid 'os' values."
     required: true
+
   configuration:
+    description: "'Release' or 'Debug' CMake build type to use for Conan packages. Conan's 'build_type' setting."
     required: true
+
   compiler:
+    description: "Optional compiler name (e.g., 'gcc', 'clang', 'msvc'). Overrides autodetection and sets the 'compiler' setting in Conan."
     required: false
+
   compiler_version:
+    description: "Optional compiler version (e.g., '12', '16', '2022'). Used with 'compiler' to fully specify the toolchain."
     required: false
+
 runs:
   using: composite
   steps:
     - name: Configure global settings
+      # if: ${{ inputs.platform != 'Linux' }}
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
       run: |
-        python ${ACTION_PATH}/conan_configure.py 2>/dev/null || python3 ${ACTION_PATH}/conan_configure.py
-        if [ -n ${{ inputs.profile }} ]; then
-          profile=${ACTION_PATH}/profiles/${{ inputs.profile }}
-        else
-          profile=${{ inputs.platform }}-${{inputs.compiler}}-${{inputs.compiler_version}}-${{inputs.configuration}}
-        fi
-        conan config install "${profile}" --target-folder profiles
-        conan profile show --profile:all ${profile} >> $GITHUB_STEP_SUMMARY
+        # conan config install ${ACTION_PATH}/profiles/${{ inputs.platform }}/default -tf $(conan config home)/profiles
+        conan config install conan_home/profiles/ -tf profiles # works
+        conan config install ${ACTION_PATH}/global.conf
+        conan profile show >> $GITHUB_STEP_SUMMARY
+        conan config show "*" >> $GITHUB_STEP_SUMMARY
 
     - name: Export custom recipes
       shell: bash
       run: |
+        echo "Trying to export!"
+        echo "CONAN_HOME: $CONAN_HOME"
+        echo "PWD: $PWD"
+        echo "ls -lah: $(ls -lah)"
         conan export --version 1.1.10 external/snappy
         conan export --version 9.7.3 external/rocksdb
         conan export --version 4.0.3 external/soci
@@ -43,38 +52,26 @@ runs:
     - name: Add Ripple Conan remote
       shell: bash
       run: |
-        conan remote add ripple --index 0 ${{ env.CONAN_URL }} --force
+        conan remote add ripple --index 0 ${{ env.CONAN_URL }}
         conan remote list
-
-    - name: List missing packages
-      shell: bash
-      run: |
-        profile=${{ inputs.profile }}
-        conan graph info . --format json --profile:a ${profile} | python3 -c "import sys, json; print(json.dumps([{'ref': v['ref'], 'package_id': v['package_id']} for v in json.load(sys.stdin)['graph']['nodes'].values() if v.get('binary') == 'Missing'], indent=2))"
 
     - name: Archive Conan home dir
       # Create this archive before dependencies are added to the local cache.
       shell: bash
       id: set_artifact_name
       run: |
-        if [ -n ${{ inputs.profile }} ]; then
-          artifact_name=${{ inputs.profile }}
-        else
-          if [[ "${{ inputs.platform }}" == "macos" ]]; then
-            artifact_name="${platform}-${configuration}"
-          elif [[ "${{ inputs.platform }}" == "windows" ]]; then
-            artifact_name="${{ inputs.platform }}-${{ inputs.compiler }}-${{ inputs.configuration }}"
-          else
-            artifact_name="${{ inputs.platform }}-${{ inputs.compiler }}-${{ inputs.compiler_version }}-${{ inputs.configuration }}"
-          fi
-        fi
+        artifact_name="${{ inputs.platform }}-${{ inputs.compiler }}-${{ inputs.compiler_version }}-${{ inputs.configuration }}"
+        echo "artifact_name: ${artifact_name}"
         echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT
-
+        GH_WORKSPACE=${{ github.workspace }}
+        echo "Here: $PWD conan home to"
+        echo "github.workspace: $GH_WORKSPACE"
+        cd $GH_WORKSPACE
         tar -czf conan.tgz -C $(conan config home) .
 
-    - name: Upload Conan home
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ steps.set_artifact_name.outputs.artifact_name }}
-        path: conan.tgz
-        if-no-files-found: error
+    # - name: Upload Conan home
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: ${{ steps.set_artifact_name.outputs.artifact_name }}
+    #     path: conan.tgz
+    #     if-no-files-found: error

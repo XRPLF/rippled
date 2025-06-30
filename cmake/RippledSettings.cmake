@@ -69,6 +69,10 @@ if(is_clang)
 else()
   set(use_lld OFF CACHE BOOL "try lld linker, clang only" FORCE)
 endif()
+
+if(static)
+  set(BUILD_SHARED_LIBS OFF CACHE BOOL "If 'static' is true, set BUILD_SHARED_LIBS to OFF to prevent building shared libs.")
+endif()
 option(jemalloc "Enables jemalloc for heap profiling" OFF)
 option(werr "treat warnings as errors" OFF)
 option(local_protobuf
