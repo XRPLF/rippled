@@ -43,6 +43,8 @@
 
 #include "xrpld/overlay/detail/TrafficCount.h"
 
+#include <functional>
+
 namespace ripple {
 
 namespace CrawlOptions {
@@ -1418,11 +1420,14 @@ OverlayImpl::squelch(
 }
 
 void
-OverlayImpl::squelchAll(PublicKey const& validator, uint32_t squelchDuration)
+OverlayImpl::squelchAll(
+    PublicKey const& validator,
+    uint32_t squelchDuration,
+    std::function<void(Peer::id_t)> callback)
 {
     for_each([&](std::shared_ptr<PeerImp>&& p) {
         p->send(makeSquelchMessage(validator, true, squelchDuration));
-        slots_.registerSquelchedValidator(validator, p->id());
+        callback(p->id());
     });
 }
 

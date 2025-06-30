@@ -31,6 +31,7 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/protocol/PublicKey.h>
 
+#include <functional>
 #include <optional>
 
 namespace ripple {
@@ -101,9 +102,13 @@ public:
      * to register that a (validator,peer) was squelched
      * @param validator Public key of the source validator
      * @param duration Squelch duration in seconds
+     * @param callback a callback to register that a validator was squelched
      */
     virtual void
-    squelchAll(PublicKey const& validator, std::uint32_t duration) = 0;
+    squelchAll(
+        PublicKey const& validator,
+        std::uint32_t duration,
+        std::function<void(Peer::id_t)> callback) = 0;
 
     /** Unsquelch handler
      * @param validator Public key of the source validator
@@ -426,17 +431,6 @@ public:
     void
     deletePeer(Peer::id_t id, bool erase);
 
-    /** Called to register that a given validator was squelched for a given
-     * peer. It is expected that this method is called by SquelchHandler.
-     *
-     * @param validatorKey Validator public key
-     * @param peerID peer ID
-     */
-    void
-    registerSquelchedValidator(
-        PublicKey const& validatorKey,
-        Peer::id_t peerID);
-
     void
     onWrite(beast::PropertyStream::Map& stream) const;
 
@@ -479,6 +473,17 @@ protected:
      */
     bool
     expireAndIsPeerSquelched(PublicKey const& validatorKey, Peer::id_t peerID);
+
+    /** Called to register that a given validator was squelched for a given
+     * peer. It is expected that this method is called by SquelchHandler.
+     *
+     * @param validatorKey Validator public key
+     * @param peerID peer ID
+     */
+    void
+    registerSquelchedValidator(
+        PublicKey const& validatorKey,
+        Peer::id_t peerID);
 
     std::atomic_bool reduceRelayReady_{false};
 

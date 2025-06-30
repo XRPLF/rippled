@@ -481,7 +481,10 @@ Slots::updateUntrustedValidatorSlot(
     // will be eventually cleaned and squelched
     if (untrustedSlots_.size() == MAX_UNTRUSTED_SLOTS)
     {
-        handler_.squelchAll(validator, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
+        handler_.squelchAll(
+            validator,
+            MAX_UNSQUELCH_EXPIRE_DEFAULT.count(),
+            [&](Peer::id_t id) { registerSquelchedValidator(validator, id); });
         return;
     }
 
@@ -570,7 +573,11 @@ Slots::deleteIdlePeers()
                 // sending messages for this validator squelch it
                 if (!it->second.isTrusted_)
                     handler_.squelchAll(
-                        it->first, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
+                        it->first,
+                        MAX_UNSQUELCH_EXPIRE_DEFAULT.count(),
+                        [&](Peer::id_t id) {
+                            registerSquelchedValidator(it->first, id);
+                        });
 
                 it = slots.erase(it);
             }
@@ -586,7 +593,10 @@ Slots::deleteIdlePeers()
     // there might be some good validators in this set that "lapsed".
     // However, since these are untrusted validators we're not concerned
     for (auto const& validator : cleanConsideredValidators())
-        handler_.squelchAll(validator, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
+        handler_.squelchAll(
+            validator,
+            MAX_UNSQUELCH_EXPIRE_DEFAULT.count(),
+            [&](Peer::id_t id) { registerSquelchedValidator(validator, id); });
 }
 
 std::vector<PublicKey>

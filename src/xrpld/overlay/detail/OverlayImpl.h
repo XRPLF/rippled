@@ -48,6 +48,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
@@ -467,8 +468,10 @@ private:
         std::uint32_t squelchDuration) const override;
 
     void
-    squelchAll(PublicKey const& validator, std::uint32_t squelchDuration)
-        override;
+    squelchAll(
+        PublicKey const& validator,
+        std::uint32_t squelchDuration,
+        std::function<void(Peer::id_t)>) override;
 
     void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override;
