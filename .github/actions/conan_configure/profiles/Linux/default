@@ -1,5 +1,4 @@
 {% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
-{% set runtime, _ = detect_api.default_msvc_runtime(compiler) %}
 [settings]
 
 os={{detect_api.detect_os()}}

@@ -26,13 +26,12 @@ runs:
   using: composite
   steps:
     - name: Configure global settings
-      # if: ${{ inputs.platform != 'Linux' }}
       shell: bash
       env:
         ACTION_PATH: ${{ github.action_path }}
       run: |
-        # conan config install ${ACTION_PATH}/profiles/${{ inputs.platform }}/default -tf $(conan config home)/profiles
-        conan config install conan_home/profiles/ -tf profiles # works
+        conan config install ${ACTION_PATH}/profiles/${{ inputs.platform }}/default -tf $(conan config home)/profiles
+        # conan config install conan_home/profiles/ -tf profiles # works
         conan config install ${ACTION_PATH}/global.conf
         conan profile show >> $GITHUB_STEP_SUMMARY
         conan config show "*" >> $GITHUB_STEP_SUMMARY
@@ -40,10 +39,6 @@ runs:
     - name: Export custom recipes
       shell: bash
       run: |
-        echo "Trying to export!"
-        echo "CONAN_HOME: $CONAN_HOME"
-        echo "PWD: $PWD"
-        echo "ls -lah: $(ls -lah)"
         conan export --version 1.1.10 external/snappy
         conan export --version 9.7.3 external/rocksdb
         conan export --version 4.0.3 external/soci
@@ -52,26 +47,16 @@ runs:
     - name: Add Ripple Conan remote
       shell: bash
       run: |
-        conan remote add ripple --index 0 ${{ env.CONAN_URL }}
+        conan remote add ripple --index 0 ${{ env.CONAN_URL }} --force
         conan remote list
 
     - name: Archive Conan home dir
       # Create this archive before dependencies are added to the local cache.
       shell: bash
       id: set_artifact_name
+      env:
+        GH_WORKSPACE: ${{ github.workspace }}
       run: |
         artifact_name="${{ inputs.platform }}-${{ inputs.compiler }}-${{ inputs.compiler_version }}-${{ inputs.configuration }}"
-        echo "artifact_name: ${artifact_name}"
-        echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT
-        GH_WORKSPACE=${{ github.workspace }}
-        echo "Here: $PWD conan home to"
-        echo "github.workspace: $GH_WORKSPACE"
-        cd $GH_WORKSPACE
+        cd ${GH_WORKSPACE}
         tar -czf conan.tgz -C $(conan config home) .
-
-    # - name: Upload Conan home
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: ${{ steps.set_artifact_name.outputs.artifact_name }}
-    #     path: conan.tgz
-    #     if-no-files-found: error
