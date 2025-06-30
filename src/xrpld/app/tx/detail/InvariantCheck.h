@@ -708,6 +708,8 @@ private:
 
 class ValidVault
 {
+    Number static const zero;
+
     struct Vault final
     {
         Asset asset = {};
@@ -725,7 +727,7 @@ class ValidVault
     {
         Asset asset = {};
         MPTIssue share = {};
-        AccountID pseudoId = {};
+        AccountID issuer = {};
         Number sharesTotal = 0;
 
         Shares static make(SLE const&);
@@ -735,6 +737,17 @@ class ValidVault
     std::vector<Shares> updatedMPTs = {};
     std::optional<Vault> deletedVault = {};
     std::vector<Shares> deletedMPTs = {};
+
+    static bool
+    finalizeCreate(Vault const&, Shares const&, beast::Journal const& j);
+    static bool
+    finalizeSet(Vault const&, Shares const&, beast::Journal const& j);
+    static bool
+    finalizeDeposit(Vault const&, Shares const&, beast::Journal const& j);
+    static bool
+    finalizeWithdraw(Vault const&, Shares const&, beast::Journal const& j);
+    static bool
+    finalizeClawback(Vault const&, Shares const&, beast::Journal const& j);
 
 public:
     void

@@ -2060,7 +2060,7 @@ ValidVault::Shares::make(SLE const& from)
     ValidVault::Shares self;
     self.share = MPTIssue(
         makeMptID(from.getFieldU32(sfSequence), from.getAccountID(sfIssuer)));
-    self.pseudoId = from.getAccountID(sfIssuer);
+    self.issuer = from.getAccountID(sfIssuer);
     self.sharesTotal = from.at(sfOutstandingAmount);
     return self;
 }
@@ -2104,6 +2104,71 @@ ValidVault::visitEntry(
     }
 }
 
+Number const ValidVault::zero(0);
+
+bool
+ValidVault::finalizeCreate(
+    Vault const& vault,
+    Shares const& shares,
+    beast::Journal const& j)
+{
+    bool result = true;
+    if (vault.assetsAvailable != zero || vault.assetsTotal != zero ||
+        vault.lossUnrealized != zero || shares.sharesTotal != zero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: created vault must be empty";
+        result = false;
+    }
+    if (vault.assetsMaximum < zero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: AssetsMaximum must be positive";
+        result = false;
+    }
+    if (vault.pseudoId != shares.issuer)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: shares issuer must be vault pseudo-account";
+        result = false;
+    }
+    return result;
+}
+
+bool
+ValidVault::finalizeSet(
+    Vault const& vault,
+    Shares const& shares,
+    beast::Journal const& j)
+{
+    return true;
+}
+
+bool
+ValidVault::finalizeDeposit(
+    Vault const&,
+    Shares const&,
+    beast::Journal const& j)
+{
+    return true;
+}
+
+bool
+ValidVault::finalizeWithdraw(
+    Vault const&,
+    Shares const&,
+    beast::Journal const& j)
+{
+    return true;
+}
+
+bool
+ValidVault::finalizeClawback(
+    Vault const&,
+    Shares const&,
+    beast::Journal const& j)
+{
+    return true;
+}
+
 bool
 ValidVault::finalize(
     STTx const& tx,
@@ -2118,12 +2183,11 @@ ValidVault::finalize(
     if (!isTesSuccess(result))
         return true;  // Do not perform checks
 
-    auto static const zero = Number(0);
     if (deletedVault && tx.getTxnType() == ttVAULT_DELETE)
     {
-        // At this moment we only know a vault is being deleted and there might
-        // be some MPTokenIssuance objects which are deleted in the same
-        // transaction. Find the one matching this vault.
+        // At this moment we only know a vault is being deleted and there
+        // might be some MPTokenIssuance objects which are deleted in the
+        // same transaction. Find the one matching this vault.
         auto deletedShares = [&]() -> std::optional<Shares> {
             for (auto& e : deletedMPTs)
             {
@@ -2135,8 +2199,8 @@ ValidVault::finalize(
 
         if (!deletedShares)
         {
-            JLOG(j.fatal())
-                << "Invariant failed: deleted vault must also delete shares";
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
+                               "delete shares";
             return false;  // That's all we can do here
         }
 
@@ -2164,15 +2228,15 @@ ValidVault::finalize(
     }
     else if (
         updatedVault &&
-        (tx.getTxnType() == ttVAULT_CREATE ||
-         tx.getTxnType() == ttVAULT_DEPOSIT ||
-         tx.getTxnType() == ttVAULT_WITHDRAW ||
-         tx.getTxnType() == ttVAULT_CLAWBACK ||  //
-         tx.getTxnType() == ttVAULT_SET))
+        (tx.getTxnType() == ttVAULT_CREATE ||    //
+         tx.getTxnType() == ttVAULT_SET ||       //
+         tx.getTxnType() == ttVAULT_DEPOSIT ||   //
+         tx.getTxnType() == ttVAULT_WITHDRAW ||  //
+         tx.getTxnType() == ttVAULT_CLAWBACK))
     {
-        // At this moment we only know a vault is being updated and there might
-        // be some MPTokenIssuance objects which are also updated in the same
-        // transaction. Find the one matching this vault.
+        // At this moment we only know a vault is being updated and there
+        // might be some MPTokenIssuance objects which are also updated in
+        // the same transaction. Find the one matching this vault.
         auto updatedShares = [&]() -> std::optional<Shares> {
             for (auto& e : updatedMPTs)
             {
@@ -2196,7 +2260,25 @@ ValidVault::finalize(
             updatedShares = Shares::make(*sleShares);
         }
 
-        bool result = true;
+        bool result = [&]() {
+            switch (tx.getTxnType())
+            {
+                case ttVAULT_CREATE:
+                    return finalizeCreate(*updatedVault, *updatedShares, j);
+                case ttVAULT_SET:
+                    return finalizeSet(*updatedVault, *updatedShares, j);
+                case ttVAULT_DEPOSIT:
+                    return finalizeDeposit(*updatedVault, *updatedShares, j);
+                case ttVAULT_WITHDRAW:
+                    return finalizeWithdraw(*updatedVault, *updatedShares, j);
+                case ttVAULT_CLAWBACK:
+                    return finalizeClawback(*updatedVault, *updatedShares, j);
+                default:
+                    return false;
+            }
+        }();
+
+        // Universal transaction checks
         if (updatedVault->assetsTotal == zero)
         {
             if (updatedShares->sharesTotal != zero)
