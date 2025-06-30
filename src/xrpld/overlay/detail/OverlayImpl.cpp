@@ -595,9 +595,7 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
         }
     }
 
-    {
-        slots_.onWrite(stream);
-    }
+    slots_.onWrite(stream);
 }
 
 //------------------------------------------------------------------------------
