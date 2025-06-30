@@ -54,6 +54,7 @@ jobs:
           brew install conan
           echo '/opt/homebrew/opt/conan/bin' >> $GITHUB_PATH
 
+      - name:
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
@@ -105,14 +106,17 @@ jobs:
         # env:
         #   CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
-          profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.compiler_version }}-${{ matrix.configuration }}
+          platform: ${{ matrix.platform }}
+          compiler: ${{ matrix.compiler }}
+          compiler_version: ${{ matrix.compiler_version }}
+          configuration: ${{ matrix.configuration }}
 
       - name: build dependencies
         uses: ./.github/actions/dependencies
         # env:
         #   CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
-          profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.compiler_version }}-${{ matrix.configuration }}
+          configuration: ${{ matrix.configuration }}
 
       - name: build
         uses: ./.github/actions/build
