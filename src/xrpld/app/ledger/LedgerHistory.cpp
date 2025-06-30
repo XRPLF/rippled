@@ -52,9 +52,7 @@ LedgerHistory::LedgerHistory(
 }
 
 bool
-LedgerHistory::insert(
-    std::shared_ptr<Ledger const> const& ledger,
-    bool validated)
+LedgerHistory::insert(std::shared_ptr<Ledger const> ledger, bool validated)
 {
     if (!ledger->isImmutable())
         LogicError("mutable Ledger in insert");
@@ -63,8 +61,6 @@ LedgerHistory::insert(
         ledger->stateMap().getHash().isNonZero(),
         "ripple::LedgerHistory::insert : nonzero hash");
 
-    // TODOL merge the below into a single call to avoid lock and race
-    // conditions, i.e. - return alreadyHad on assignment somehow.
     bool const alreadyHad = m_ledgers_by_hash.canonicalize_replace_cache(
         ledger->info().hash, ledger);
     if (validated)
@@ -76,7 +72,6 @@ LedgerHistory::insert(
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
-    // TODO: is it safe to get iterator without lock here?
     if (auto it = mLedgersByIndex.find(index); it != mLedgersByIndex.end())
         return it->second;
     return {};
@@ -86,7 +81,6 @@ std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
     {
-        // TODO: this lock is not needed
         auto it = mLedgersByIndex.find(index);
 
         if (it != mLedgersByIndex.end())
@@ -107,8 +101,6 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
     {
         // Add this ledger to the local tracking by index
-        // std::unique_lock sl(m_ledgers_by_hash.peekMutex());
-        // TODO: make sure that canonicalize_replace_client lock the partition
 
         XRPL_ASSERT(
             ret->isImmutable(),
@@ -458,9 +450,6 @@ LedgerHistory::builtLedger(
     XRPL_ASSERT(
         !hash.isZero(), "ripple::LedgerHistory::builtLedger : nonzero hash");
 
-    // std::unique_lock sl(m_consensus_validated.peekMutex());
-    // TODO: make sure that canonicalize_replace_client lock the partition
-
     auto entry = std::make_shared<cv_entry>();
     m_consensus_validated.canonicalize_replace_client(index, entry);
 
@@ -501,9 +490,6 @@ LedgerHistory::validatedLedger(
         !hash.isZero(),
         "ripple::LedgerHistory::validatedLedger : nonzero hash");
 
-    // std::unique_lock sl(m_consensus_validated.peekMutex());
-    // TODO: make sure that canonicalize_replace_client lock the partition
-
     auto entry = std::make_shared<cv_entry>();
     m_consensus_validated.canonicalize_replace_client(index, entry);
 
@@ -537,12 +523,9 @@ LedgerHistory::validatedLedger(
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    // std::unique_lock sl(m_ledgers_by_hash.peekMutex());
-    // TODO: how to ensure that? "Ensure m_ledgers_by_hash doesn't have the
-    // wrong hash for a particular index"
+    auto ledger = m_ledgers_by_hash.fetch(ledgerHash);
     auto it = mLedgersByIndex.find(ledgerIndex);
-
-    if ((it != mLedgersByIndex.end()) && (it->second != ledgerHash))
+    if (ledger && (it != mLedgersByIndex.end()) && (it->second != ledgerHash))
     {
         it->second = ledgerHash;
         return false;
