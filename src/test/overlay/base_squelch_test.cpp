@@ -450,7 +450,7 @@ public:
     Slots::slots_map const&
     getSlots() const
     {
-        return slots_;
+        return trustedSlots_;
     }
 };
 

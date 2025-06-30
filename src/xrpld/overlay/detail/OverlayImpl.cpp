@@ -1481,7 +1481,7 @@ OverlayImpl::updateSlotAndSquelch(
 }
 
 void
-OverlayImpl::updateValidatorSlot(
+OverlayImpl::updateUntrustedValidatorSlot(
     uint256 const& key,
     PublicKey const& validator,
     Peer::id_t peer)
@@ -1491,7 +1491,7 @@ OverlayImpl::updateValidatorSlot(
 
     if (!strand_.running_in_this_thread())
         return post(strand_, [this, key, validator, peer]() {
-            updateValidatorSlot(key, validator, peer);
+            updateUntrustedValidatorSlot(key, validator, peer);
         });
 
     slots_.updateUntrustedValidatorSlot(key, validator, peer, [&]() {
