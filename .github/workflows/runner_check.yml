@@ -28,6 +28,7 @@ jobs:
           echo "Arch: $(uname -m)" | tee -a $GITHUB_STEP_SUMMARY
           echo "Version: $VERSION" | tee -a $GITHUB_STEP_SUMMARY
           echo "Docker engine: $(docker --version)" | tee -a $GITHUB_STEP_SUMMARY
+          echo "test"
           for plugin in compose buildx; do
             if output=$(docker ${plugin} version 2>&1); then
               echo "${plugin} version: $output" | tee -a "$GITHUB_STEP_SUMMARY"
