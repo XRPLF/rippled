@@ -398,6 +398,14 @@ retireFeature(std::string const& name)
     return registerFeature(name, Supported::yes, VoteBehavior::Obsolete);
 }
 
+// Abandoned features are not in the ledger and have no code controlled by the
+// feature. They were never supported, and cannot be voted on.
+uint256
+abandonFeature(std::string const& name)
+{
+    return registerFeature(name, Supported::no, VoteBehavior::Obsolete);
+}
+
 /** Tell FeatureCollections when registration is complete. */
 bool
 registrationIsDone()
@@ -432,6 +440,8 @@ featureToName(uint256 const& f)
 #undef XRPL_FIX
 #pragma push_macro("XRPL_RETIRE")
 #undef XRPL_RETIRE
+#pragma push_macro("XRPL_ABANDON")
+#undef XRPL_ABANDON
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name = registerFeature(#name, supported, vote);
@@ -443,6 +453,11 @@ featureToName(uint256 const& f)
     [[deprecated("The referenced amendment has been retired")]] \
     [[maybe_unused]]                                            \
     uint256 const retired##name = retireFeature(#name);
+
+#define XRPL_ABANDON(name)                                        \
+    [[deprecated("The referenced amendment has been abandoned")]] \
+    [[maybe_unused]]                                              \
+    uint256 const abandoned##name = abandonFeature(#name);
 // clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
@@ -453,6 +468,8 @@ featureToName(uint256 const& f)
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
+#undef XRPL_ABANDON
+#pragma pop_macro("XRPL_ABANDON")
 
 // All of the features should now be registered, since variables in a cpp file
 // are initialized from top to bottom.
