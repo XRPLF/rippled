@@ -701,10 +701,16 @@ private:
     }
 
     void
-    squelchAll(PublicKey const& validator, std::uint32_t duration) override
+    squelchAll(
+        PublicKey const& validator,
+        std::uint32_t duration,
+        std::function<void(Peer::id_t)> callback) override
     {
         for (auto const& [id, peer] : peers_)
+        {
             squelch_(validator, peer, duration);
+            callback(id);
+        }
     }
     void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override
@@ -1580,7 +1586,10 @@ vp_base_squelch_max_selected_peers=2
         }
 
         void
-        squelchAll(PublicKey const&, std::uint32_t) override
+        squelchAll(
+            PublicKey const&,
+            std::uint32_t,
+            std::function<void(Peer::id_t)>) override
         {
         }
 

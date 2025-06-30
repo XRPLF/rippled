@@ -41,8 +41,8 @@ class TestHandler : public reduce_relay::SquelchHandler
 public:
     using squelch_method =
         std::function<void(PublicKey const&, Peer::id_t, std::uint32_t)>;
-    using squelchAll_method =
-        std::function<void(PublicKey const&, std::uint32_t)>;
+    using squelchAll_method = std::function<
+        void(PublicKey const&, std::uint32_t, std::function<void(Peer::id_t)>)>;
     using unsquelch_method = std::function<void(PublicKey const&, Peer::id_t)>;
 
     squelch_method squelch_f_;
@@ -74,9 +74,12 @@ public:
     }
 
     void
-    squelchAll(PublicKey const& validator, std::uint32_t duration) override
+    squelchAll(
+        PublicKey const& validator,
+        std::uint32_t duration,
+        std::function<void(Peer::id_t)> callback) override
     {
-        squelchAll_f_(validator, duration);
+        squelchAll_f_(validator, duration, callback);
     }
 
     void
@@ -148,10 +151,10 @@ public:
             BEAST_EXPECTS(false, "unexpected call to squelch handler");
         };
 
-    TestHandler::squelchAll_method noop_squelchAll = [&](PublicKey const&,
-                                                         std::uint32_t) {
-        BEAST_EXPECTS(false, "unexpected call to squelchAll handler");
-    };
+    TestHandler::squelchAll_method noop_squelchAll =
+        [&](PublicKey const&, std::uint32_t, std::function<void(Peer::id_t)>) {
+            BEAST_EXPECTS(false, "unexpected call to squelchAll handler");
+        };
 
     TestHandler::unsquelch_method noop_unsquelch = [&](PublicKey const&,
                                                        Peer::id_t) {
@@ -369,10 +372,12 @@ vp_enhanced_squelch_enable=0
         auto const newValidator = randomKeyPair(KeyType::ed25519).first;
 
         // once slots are full squelchAll must be called for new peer/validator
-        handler.squelchAll_f_ = [&](PublicKey const& key, std::uint32_t) {
+        handler.squelchAll_f_ = [&](PublicKey const& key,
+                                    std::uint32_t,
+                                    std::function<void(Peer::id_t)> callback) {
             BEAST_EXPECTS(
                 key == newValidator, "unexpected validator squelched");
-            slots.squelchValidator(key, peerID);
+            callback(peerID);
         };
 
         slots.updateUntrustedValidatorSlot(
@@ -401,7 +406,8 @@ vp_enhanced_squelch_enable=0
 
         //  verify that squelchAll is called for each idled slot validator
         handler.squelchAll_f_ = [&](PublicKey const& actualKey,
-                                    std::uint32_t duration) {
+                                    std::uint32_t duration,
+                                    std::function<void(Peer::id_t)> callback) {
             for (auto it = keys.begin(); it != keys.end(); ++it)
             {
                 if (*it == actualKey)
@@ -727,10 +733,12 @@ vp_enhanced_squelch_enable=0
 
         //  verify that squelchAll is called for idle validator
         handler.squelchAll_f_ = [&](PublicKey const& actualKey,
-                                    std::uint32_t duration) {
+                                    std::uint32_t duration,
+                                    std::function<void(Peer::id_t)> callback) {
             BEAST_EXPECTS(
                 actualKey == idleValidator,
                 "unexpected key passed to squelchAll");
+            callback(peerID);
         };
 
         TestStopwatch stopwatch;
