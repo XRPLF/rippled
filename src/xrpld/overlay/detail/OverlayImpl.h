@@ -427,7 +427,7 @@ public:
      * @param peer Peer's id to update the slot for
      */
     void
-    updateValidatorSlot(
+    updateUntrustedValidatorSlot(
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t peer);

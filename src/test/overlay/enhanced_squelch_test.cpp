@@ -104,7 +104,7 @@ public:
     getSlots(bool trusted) const
     {
         if (trusted)
-            return slots_;
+            return trustedSlots_;
 
         return untrustedSlots_;
     }

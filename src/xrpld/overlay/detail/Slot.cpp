@@ -410,7 +410,10 @@ Slots::updateSlotAndSquelch(
     {
         JLOG(journal_.trace())
             << "updateSlotAndSquelch: new slot " << Slice(validator);
-        auto it = slots_
+
+        // if enhanced squelching is disabled, keep untrusted validator slots
+        // separately from trusted ones
+        auto it = (isTrusted ? trustedSlots_ : untrustedSlots_)
                       .emplace(std::make_pair(
                           validator,
                           Slot(
@@ -420,6 +423,7 @@ Slots::updateSlotAndSquelch(
                               isTrusted,
                               clock_)))
                       .first;
+
         it->second.update(validator, id, callback);
     }
     else
@@ -511,21 +515,23 @@ Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
                 .peers = {peer},
             }));
 
-        return {};
+        return std::nullopt;
     }
 
     // the validator idled. Don't update it, it will be cleaned later
     if (now - it->second.lastMessage > IDLED)
-        return {};
+        return std::nullopt;
 
     it->second.peers.insert(peer);
-
     it->second.lastMessage = now;
     ++it->second.count;
 
+    // if the validator has not met selection criteria yet
     if (it->second.count < MAX_MESSAGE_THRESHOLD ||
         it->second.peers.size() < reduce_relay::MAX_SELECTED_PEERS)
-        return {};
+    {
+        return std::nullopt;
+    }
 
     auto const key = it->first;
     consideredValidators_.erase(it);
@@ -541,7 +547,7 @@ Slots::deletePeer(Peer::id_t id, bool erase)
             slot.deletePeer(validator, id, erase);
     };
 
-    f(slots_);
+    f(trustedSlots_);
     f(untrustedSlots_);
 }
 
@@ -573,7 +579,7 @@ Slots::deleteIdlePeers()
         }
     };
 
-    f(slots_);
+    f(trustedSlots_);
     f(untrustedSlots_);
 
     // remove and squelch all validators that the selector deemed unsuitable
@@ -621,7 +627,7 @@ Slots::onWrite(beast::PropertyStream::Map& stream) const
 
     {
         beast::PropertyStream::Set set("trusted", slots);
-        writeSlot(set, slots_);
+        writeSlot(set, trustedSlots_);
     }
 
     {

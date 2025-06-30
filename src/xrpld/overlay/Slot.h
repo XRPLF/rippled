@@ -482,7 +482,14 @@ protected:
 
     std::atomic_bool reduceRelayReady_{false};
 
-    slots_map slots_;
+    // Maintain an open number of slots for trusted validators to reduce
+    // duplicate traffic from trusted validators.
+    slots_map trustedSlots_;
+
+    // Maintain slots for untrusted validators to reduce duplicate traffic from
+    // untrusted validators. If enhanced squelching is enabled, the number of
+    // untrustedSlots_ is capped at reduce_relay::MAX_UNTRUSTED_SLOTS.
+    // Otherwise, there is no limit.
     slots_map untrustedSlots_;
 
     SquelchHandler& handler_;  // squelch/unsquelch handler
