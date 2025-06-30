@@ -2139,6 +2139,11 @@ ValidVault::finalizeSet(
     Shares const& shares,
     beast::Journal const& j)
 {
+    if (vault.assetsMaximum != zero && vault.assetsMaximum < vault.assetsTotal)
+    {
+        JLOG(j.fatal()) << "Invariant failed: invalid AssetsMaximum";
+        return false;
+    }
     return true;
 }
 
