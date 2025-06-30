@@ -743,11 +743,22 @@ class ValidVault
     static bool
     finalizeSet(Vault const&, Shares const&, beast::Journal const& j);
     static bool
-    finalizeDeposit(Vault const&, Shares const&, beast::Journal const& j);
+    finalizeDeposit(
+        std::pair<Vault const&, Vault const&>,
+        std::pair<Shares const&, Shares const&>,
+        Number deposit,
+        beast::Journal const& j);
     static bool
-    finalizeWithdraw(Vault const&, Shares const&, beast::Journal const& j);
+    finalizeWithdraw(
+        std::tuple<Vault const&, Vault const&, Number>,
+        std::tuple<Shares const&, Shares const&, Number>,
+        beast::Journal const& j);
     static bool
-    finalizeClawback(Vault const&, Shares const&, beast::Journal const& j);
+    finalizeClawback(
+        std::pair<Vault const&, Vault const&>,
+        std::pair<Shares const&, Shares const&>,
+        Number clawback,
+        beast::Journal const& j);
 
 public:
     void

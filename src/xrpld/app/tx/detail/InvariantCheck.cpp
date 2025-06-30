@@ -2071,7 +2071,7 @@ ValidVault::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    if (isDelete && before)
+    if (before)
     {
         switch (before->getType())
         {
@@ -2136,12 +2136,12 @@ ValidVault::finalizeCreate(
 bool
 ValidVault::finalizeSet(
     Vault const& vault,
-    Shares const& shares,
+    Shares const&,
     beast::Journal const& j)
 {
-    if (vault.assetsMaximum != zero && vault.assetsMaximum < vault.assetsTotal)
+    if (vault.assetsMaximum < zero)
     {
-        JLOG(j.fatal()) << "Invariant failed: invalid AssetsMaximum";
+        JLOG(j.fatal()) << "Invariant failed: AssetsMaximum must be positive";
         return false;
     }
     return true;
@@ -2149,17 +2149,43 @@ ValidVault::finalizeSet(
 
 bool
 ValidVault::finalizeDeposit(
-    Vault const&,
-    Shares const&,
+    std::pair<Vault const&, Vault const&> vault,
+    std::pair<Shares const&, Shares const&> shares,
+    Number deposit,
     beast::Journal const& j)
 {
-    return true;
+    bool result = true;
+    if (deposit <= zero)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: deposit must be greater than zero";
+        result = false;
+    }
+    if (vault.first.assetsTotal + deposit != vault.second.assetsTotal)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: deposit and assets outstanding do not add up";
+        result = false;
+    }
+    if (vault.first.assetsAvailable + deposit != vault.second.assetsAvailable)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: deposit and assets available do not add up";
+        result = false;
+    }
+    if (shares.first.sharesTotal >= shares.second.sharesTotal)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: deposit must create new shares outstanding";
+        result = false;
+    }
+    return result;
 }
 
 bool
 ValidVault::finalizeWithdraw(
-    Vault const&,
-    Shares const&,
+    std::tuple<Vault const&, Vault const&, Number> vault,
+    std::tuple<Shares const&, Shares const&, Number> shares,
     beast::Journal const& j)
 {
     return true;
@@ -2167,8 +2193,9 @@ ValidVault::finalizeWithdraw(
 
 bool
 ValidVault::finalizeClawback(
-    Vault const&,
-    Shares const&,
+    std::pair<Vault const&, Vault const&>,
+    std::pair<Shares const&, Shares const&>,
+    Number clawback,
     beast::Journal const& j)
 {
     return true;
@@ -2265,6 +2292,33 @@ ValidVault::finalize(
             updatedShares = Shares::make(*sleShares);
         }
 
+        if (!deletedVault.has_value() &&
+            (tx.getTxnType() == ttVAULT_DEPOSIT ||   //
+             tx.getTxnType() == ttVAULT_WITHDRAW ||  //
+             tx.getTxnType() == ttVAULT_CLAWBACK))
+        {
+            JLOG(j.fatal()) << "Invariant failed: vault tx must have old state";
+            return false;  // That's all we can do here
+        }
+
+        auto deletedShares = [&]() -> std::optional<Shares> {
+            for (auto& e : deletedMPTs)
+            {
+                if (e.share.getMptID() == deletedVault->shareMPTID)
+                    return std::move(e);
+            }
+            return std::nullopt;
+        }();
+
+        if (!deletedShares.has_value() &&
+            (tx.getTxnType() == ttVAULT_DEPOSIT ||   //
+             tx.getTxnType() == ttVAULT_WITHDRAW ||  //
+             tx.getTxnType() == ttVAULT_CLAWBACK))
+        {
+            JLOG(j.fatal()) << "Invariant failed: vault tx must old shares";
+            return false;  // That's all we can do here
+        }
+
         bool result = [&]() {
             switch (tx.getTxnType())
             {
@@ -2273,11 +2327,30 @@ ValidVault::finalize(
                 case ttVAULT_SET:
                     return finalizeSet(*updatedVault, *updatedShares, j);
                 case ttVAULT_DEPOSIT:
-                    return finalizeDeposit(*updatedVault, *updatedShares, j);
-                case ttVAULT_WITHDRAW:
-                    return finalizeWithdraw(*updatedVault, *updatedShares, j);
-                case ttVAULT_CLAWBACK:
-                    return finalizeClawback(*updatedVault, *updatedShares, j);
+                    return finalizeDeposit(
+                        {*deletedVault, *updatedVault},
+                        {*deletedShares, *updatedShares},
+                        tx[sfAmount],
+                        j);
+                case ttVAULT_WITHDRAW: {
+                    auto const amount = tx[sfAmount];
+                    auto const assets =
+                        amount.asset() == updatedVault->asset ? amount : zero;
+                    auto const shares =
+                        amount.asset() == updatedShares->share ? amount : zero;
+                    return finalizeWithdraw(
+                        {*deletedVault, *updatedVault, assets},
+                        {*deletedShares, *updatedShares, shares},
+                        j);
+                }
+                case ttVAULT_CLAWBACK: {
+                    auto const amount = tx[~sfAmount];
+                    return finalizeClawback(
+                        {*deletedVault, *updatedVault},
+                        {*deletedShares, *updatedShares},
+                        amount ? *amount : zero,
+                        j);
+                }
                 default:
                     return false;
             }
@@ -2319,7 +2392,6 @@ ValidVault::finalize(
                                    "not be greater than assets outstanding "
                                 << "shares=" << updatedShares->sharesTotal
                                 << " assets=" << updatedVault->assetsTotal;
-
                 result = false;
             }
             if (updatedVault->assetsAvailable <= zero)
@@ -2370,6 +2442,14 @@ ValidVault::finalize(
                                    "be positive";
                 result = false;
             }
+        }
+
+        if (updatedVault->assetsMaximum != zero &&
+            updatedVault->assetsTotal > updatedVault->assetsMaximum)
+        {
+            JLOG(j.fatal()) << "Invariant failed: AssetsTotal must not exceed "
+                               "AssetsMaximum";
+            result = false;
         }
 
         return result;
