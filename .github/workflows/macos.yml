@@ -18,6 +18,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
 jobs:
 
   test:
