@@ -54,7 +54,6 @@ jobs:
           brew install conan
           echo '/opt/homebrew/opt/conan/bin' >> $GITHUB_PATH
 
-      - name:
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
