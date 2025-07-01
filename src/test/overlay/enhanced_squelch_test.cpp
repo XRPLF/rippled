@@ -573,9 +573,9 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testUpdateConsideredValidator_newValidator()
+    testUpdateConsideredValidator_new()
     {
-        testcase("testUpdateConsideredValidator_newValidator");
+        testcase("testUpdateConsideredValidator_new");
         TestStopwatch stopwatch;
         EnhancedSquelchingTestSlots slots(
             env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
@@ -613,9 +613,9 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testUpdateConsideredValidator_idleValidator()
+    testUpdateConsideredValidator_idle()
     {
-        testcase("testUpdateConsideredValidator_idleValidator");
+        testcase("testUpdateConsideredValidator_idle");
         TestStopwatch stopwatch;
         EnhancedSquelchingTestSlots slots(
             env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
@@ -635,7 +635,7 @@ vp_enhanced_squelch_enable=0
         auto const state = slots.getConsideredValidators().at(validator);
 
         // simulate a validator sending a new message before the idle timer
-        stopwatch.advance(reduce_relay::IDLED - std::chrono::seconds(1));
+        stopwatch.advance(reduce_relay::PEER_IDLED - std::chrono::seconds(1));
 
         BEAST_EXPECTS(
             !slots.updateConsideredValidator(validator, peerID),
@@ -647,22 +647,17 @@ vp_enhanced_squelch_enable=0
             "non-idling validator was updated");
 
         // simulate a validator idling
-        stopwatch.advance(reduce_relay::IDLED + std::chrono::seconds(1));
+        stopwatch.advance(reduce_relay::PEER_IDLED + std::chrono::seconds(1));
 
         BEAST_EXPECTS(
             !slots.updateConsideredValidator(validator, peerID),
             "validator was selected with insufficient number of peers");
-
-        auto const idleState = slots.getConsideredValidators().at(validator);
-        // we expect that an idling validator will not be updated
-        BEAST_EXPECTS(
-            newState.count == idleState.count, "idling validator was updated");
     }
 
     void
-    testUpdateConsideredValidator_selectQualifyingValidator()
+    testUpdateConsideredValidator_selectQualifying()
     {
-        testcase("testUpdateConsideredValidator_selectQualifyingValidator");
+        testcase("testUpdateConsideredValidator_selectQualifying");
 
         TestStopwatch stopwatch;
         EnhancedSquelchingTestSlots slots(
@@ -686,7 +681,8 @@ vp_enhanced_squelch_enable=0
                 !slots.updateConsideredValidator(validator2, peerID),
                 "validator was selected before reaching message threshold");
 
-            stopwatch.advance(reduce_relay::IDLED - std::chrono::seconds(1));
+            stopwatch.advance(
+                reduce_relay::PEER_IDLED - std::chrono::seconds(1));
         }
         // as long as the peer criteria is not met, the validator most not be
         // selected
@@ -701,7 +697,8 @@ vp_enhanced_squelch_enable=0
                 !slots.updateConsideredValidator(validator2, i),
                 "validator was selected before reaching enough peers");
 
-            stopwatch.advance(reduce_relay::IDLED - std::chrono::seconds(1));
+            stopwatch.advance(
+                reduce_relay::PEER_IDLED - std::chrono::seconds(1));
         }
 
         auto const consideredValidator =
@@ -721,9 +718,109 @@ vp_enhanced_squelch_enable=0
     }
 
     void
-    testCleanConsideredValidators_deleteIdleValidator()
+    testCleanConsideredValidators_resetIdle()
     {
-        testcase("cleanConsideredValidators_deleteIdleValidator");
+        testcase("testCleanConsideredValidators_resetIdle");
+        auto const validator = randomKeyPair(KeyType::ed25519).first;
+
+        TestStopwatch stopwatch;
+
+        EnhancedSquelchingTestSlots slots(
+            env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
+
+        // send enough messages for a slot to meet peer requirements
+        for (int i = 0;
+             i < env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS;
+             ++i)
+            slots.updateUntrustedValidatorSlot(
+                sha512Half(validator) + static_cast<uint256>(i), validator, i);
+
+        // send enough messages from some peer to be one message away from
+        // meeting the selection criteria
+        for (int i = 0; i < reduce_relay::MAX_MESSAGE_THRESHOLD -
+                 (env_.app()
+                      .config()
+                      .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS +
+                  1);
+             ++i)
+            slots.updateUntrustedValidatorSlot(
+                sha512Half(validator) + static_cast<uint256>(i), validator, 0);
+
+        BEAST_EXPECTS(
+            slots.getConsideredValidators().at(validator).count ==
+                reduce_relay::MAX_MESSAGE_THRESHOLD - 1,
+            "considered validator information is in an invalid state");
+
+        BEAST_EXPECTS(
+            slots.getConsideredValidators().at(validator).peers.size() ==
+                env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS,
+            "considered validator information is in an invalid state");
+
+        stopwatch.advance(reduce_relay::PEER_IDLED + std::chrono::seconds{1});
+
+        // deleteIdlePeers must reset the progress of a validator that idled
+        slots.deleteIdlePeers();
+
+        slots.updateUntrustedValidatorSlot(
+            sha512Half(validator) + static_cast<uint256>(1), validator, 0);
+
+        // we expect that the validator was not selected
+        BEAST_EXPECTS(
+            slots.getSlots(false).size() == 0, "untrusted slot was created");
+
+        BEAST_EXPECTS(
+            slots.getConsideredValidators().at(validator).count == 1,
+            "considered validator information is in an invalid state");
+
+        BEAST_EXPECTS(
+            slots.getConsideredValidators().at(validator).peers.size() == 1,
+            "considered validator information is in an invalid state");
+    }
+
+    void
+    testCleanConsideredValidators_deletePoorlyConnected()
+    {
+        testcase("cleanConsideredValidators_deletePoorlyConnected");
+        auto const validator = randomKeyPair(KeyType::ed25519).first;
+        Peer::id_t peerID = 0;
+        TestHandler handler{noop_handler};
+
+        //  verify that squelchAll is called for poorly connected validator
+        handler.squelchAll_f_ = [&](PublicKey const& actualKey,
+                                    std::uint32_t duration,
+                                    std::function<void(Peer::id_t)> callback) {
+            BEAST_EXPECTS(
+                actualKey == validator, "unexpected key passed to squelchAll");
+            callback(peerID);
+        };
+
+        TestStopwatch stopwatch;
+
+        EnhancedSquelchingTestSlots slots(
+            env_.app().logs(), handler, env_.app().config(), stopwatch);
+
+        // send enough messages from a single peer
+        for (int i = 0; i < 2 * reduce_relay::MAX_MESSAGE_THRESHOLD + 1; ++i)
+            slots.updateUntrustedValidatorSlot(
+                sha512Half(validator) + static_cast<uint256>(i),
+                validator,
+                peerID);
+
+        stopwatch.advance(reduce_relay::PEER_IDLED + std::chrono::seconds{1});
+
+        // deleteIdlePeers must squelch the validator as it failed to reach
+        // peering requirements
+        slots.deleteIdlePeers();
+
+        BEAST_EXPECTS(
+            slots.getConsideredValidators().size() == 0,
+            "poorly connected validator was not deleted");
+    }
+
+    void
+    testCleanConsideredValidators_deleteSilent()
+    {
+        testcase("cleanConsideredValidators_deleteSilent");
         // insert some random validator key
         auto const idleValidator = randomKeyPair(KeyType::ed25519).first;
         auto const validator = randomKeyPair(KeyType::ed25519).first;
@@ -755,7 +852,9 @@ vp_enhanced_squelch_enable=0
             "new validator was not added for consideration");
 
         // simulate a validator idling
-        stopwatch.advance(reduce_relay::IDLED + std::chrono::seconds(1));
+        stopwatch.advance(
+            reduce_relay::MAX_UNTRUSTED_VALIDATOR_IDLE +
+            std::chrono::seconds(1));
         BEAST_EXPECTS(
             !slots.updateConsideredValidator(validator, peerID),
             "validator was selected with insufficient number of peers");
@@ -825,10 +924,12 @@ private:
         testDeleteIdlePeers_deleteIdleSlots();
         testDeleteIdlePeers_deleteIdleUntrustedPeer();
         testUpdateSlotAndSquelch_untrustedValidator();
-        testUpdateConsideredValidator_newValidator();
-        testUpdateConsideredValidator_idleValidator();
-        testUpdateConsideredValidator_selectQualifyingValidator();
-        testCleanConsideredValidators_deleteIdleValidator();
+        testUpdateConsideredValidator_new();
+        testUpdateConsideredValidator_idle();
+        testUpdateConsideredValidator_selectQualifying();
+        testCleanConsideredValidators_deleteSilent();
+        testCleanConsideredValidators_resetIdle();
+        testCleanConsideredValidators_deletePoorlyConnected();
     }
 };
 

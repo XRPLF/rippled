@@ -1722,7 +1722,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     {
         // Count unique messages (Slots has it's own 'HashRouter'), which a peer
         // receives within IDLED seconds since the message has been relayed.
-        if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
+        if (relayed &&
+            (stopwatch().now() - *relayed) < reduce_relay::PEER_IDLED)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, isTrusted);
 
@@ -2366,7 +2367,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             // Count unique messages (Slots has it's own 'HashRouter'), which a
             // peer receives within IDLED seconds since the message has been
             // relayed.
-            if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
+            if (relayed &&
+                (stopwatch().now() - *relayed) < reduce_relay::PEER_IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, isTrusted);
 
