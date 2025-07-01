@@ -1,0 +1,112 @@
+name: windows
+
+on:
+  pull_request:
+  push:
+    # If the branches list is ever changed, be sure to change it on all
+    # build/test jobs (nix, macos, windows, instrumentation)
+    branches:
+      # Always build the package branches
+      - develop
+      - release
+      - master
+      # Branches that opt-in to running
+      - 'ci/**'
+
+# https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+
+jobs:
+  test:
+    name: VS ${{ matrix.version.generator }}-${{ matrix.configuration.type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - generator: 17 2022
+            runs-on: windows-2022
+            msvc_version: 194
+        configuration:
+          - type: Release
+            tests: true
+          - type: Debug
+            # Skip running unit tests on debug builds, because they take an unreasonable amount of time
+            tests: false
+            runtime: static
+        platform:
+          - windows
+        compiler:
+          - msvc
+
+    runs-on: ${{ matrix.version.runs-on }}
+    env:
+      build_dir: build
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: choose Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: learn Python cache directory
+        id: pip-cache
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          echo "dir=$(pip cache dir)" | tee ${GITHUB_OUTPUT}
+
+      - name: restore Python cache directory
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
+
+      - name: install Conan
+        run: |
+          pip install wheel conan==2.18
+
+      - name: check environment
+        run: |
+          dir env:
+          $env:PATH -split ';'
+          python --version
+          conan --version
+          cmake --version
+
+      - name: Configure Conan
+        uses: ./.github/actions/conan_configure
+        with:
+          platform: ${{ matrix.platform }}
+          compiler: ${{ matrix.compiler }}
+          compiler_version: ${{ matrix.version.msvc_version }}
+          configuration: ${{ matrix.configuration }}
+
+      - name: build dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          configuration: ${{ matrix.configuration }}
+
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: 'Visual Studio ${{ matrix.version.generator }}'
+          configuration: ${{ matrix.configuration.type }}
+          # Hard code for now. Move to the matrix if varied options are needed
+          # cmake-args: '-Dassert=TRUE -Dwerr=TRUE -Dreporting=OFF - Dunity=ON'
+          cmake-args: '-Dxrpld=TRUE -Dtests=True -Dunity=ON -Dassert=TRUE -Dwerr=TRUE' # set in conanfile if ci/win?
+          cmake-target: rippled
+
+      - name: test
+        shell: bash
+        if: ${{ matrix.configuration.tests }}
+        working-directory: ${{ env.build_dir }}/${{ matrix.configuration.type }}
+        run: |
+          ./rippled --unittest --unittest-jobs $(nproc)
+          ctest --parallel --output-on-failure
