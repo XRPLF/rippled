@@ -521,10 +521,6 @@ Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
         return std::nullopt;
     }
 
-    // the validator idled. Don't update it, it will be cleaned later
-    if (now - it->second.lastMessage > IDLED)
-        return std::nullopt;
-
     it->second.peers.insert(peer);
     it->second.lastMessage = now;
     ++it->second.count;
@@ -562,19 +558,32 @@ Slots::deleteIdlePeers()
 
         for (auto it = slots.begin(); it != slots.end();)
         {
-            it->second.deleteIdlePeer(it->first);
-            if (now - it->second.getLastSelected() >
-                MAX_UNSQUELCH_EXPIRE_DEFAULT)
+            auto const& validator = it->first;
+            auto& slot = it->second;
+            slot.deleteIdlePeer(validator);
+
+            // delete the slot if the untrusted slot no longer meets the
+            // selection critera or it has not been selected for a while
+            if ((!slot.isTrusted_ &&
+                 slot.getPeers().size() < maxSelectedPeers_) ||
+                now - it->second.getLastSelected() >
+                    reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT)
             {
-                JLOG(journal_.trace()) << "deleteIdlePeers: deleting idle slot "
-                                       << Slice(it->first);
+                JLOG(journal_.trace())
+                    << "deleteIdlePeers: deleting "
+                    << (slot.isTrusted_ ? "trusted" : "untrusted") << " slot "
+                    << Slice(it->first) << " reason: "
+                    << (now - it->second.getLastSelected() >
+                                reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT
+                            ? " inactive "
+                            : " insufficient peers");
 
                 // if an untrusted validator slot idled - peers stopped
                 // sending messages for this validator squelch it
                 if (!it->second.isTrusted_)
                     handler_.squelchAll(
                         it->first,
-                        MAX_UNSQUELCH_EXPIRE_DEFAULT.count(),
+                        reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT.count(),
                         [&](Peer::id_t id) {
                             registerSquelchedValidator(it->first, id);
                         });
@@ -608,10 +617,31 @@ Slots::cleanConsideredValidators()
     for (auto it = consideredValidators_.begin();
          it != consideredValidators_.end();)
     {
-        if (now - it->second.lastMessage > IDLED)
+        // this is a safety check for validators that have
+        // sent a lot of validations via limited number of peers
+        if (it->second.count > 2 * reduce_relay::MAX_MESSAGE_THRESHOLD &&
+            it->second.peers.size() < maxSelectedPeers_)
+        {
+            JLOG(journal_.warn())
+                << "cleanConsideredValidators: removing "
+                   "validator "
+                << Slice(it->first) << " with insufficient peers";
+
+            keys.push_back(it->first);
+            it = consideredValidators_.erase(it);
+        }
+        else if (
+            now - it->second.lastMessage >
+            reduce_relay::MAX_UNTRUSTED_VALIDATOR_IDLE)
         {
             keys.push_back(it->first);
             it = consideredValidators_.erase(it);
+        }
+        // Due to some reason the validator idled, reset their progress
+        else if (now - it->second.lastMessage > reduce_relay::PEER_IDLED)
+        {
+            it->second.reset();
+            ++it;
         }
         else
             ++it;

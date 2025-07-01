@@ -1107,7 +1107,7 @@ protected:
                             .count();
 
                     mustHandle = event.isSelected_ &&
-                        d > milliseconds(reduce_relay::IDLED).count() &&
+                        d > milliseconds(reduce_relay::PEER_IDLED).count() &&
                         network_.overlay().inState(
                             *event.key_, reduce_relay::PeerState::Squelched) >
                             0 &&
@@ -1129,7 +1129,7 @@ protected:
             }
             if (event.state_ == State::WaitReset ||
                 (event.state_ == State::On &&
-                 (now - event.time_ > (reduce_relay::IDLED + seconds(2)))))
+                 (now - event.time_ > (reduce_relay::PEER_IDLED + seconds(2)))))
             {
                 bool handled =
                     event.state_ == State::WaitReset || !event.handled_;
@@ -1319,7 +1319,7 @@ protected:
             network_.overlay().clock().advance(seconds(601));
             BEAST_EXPECT(propagateAndSquelch(log, true));
             network_.overlay().clock().advance(
-                reduce_relay::IDLED + seconds(1));
+                reduce_relay::PEER_IDLED + seconds(1));
             std::uint16_t unsquelched = 0;
             network_.overlay().deleteIdlePeers(
                 [&](PublicKey const& key, PeerWPtr const& peer) {
@@ -1560,7 +1560,7 @@ vp_base_squelch_max_selected_peers=2
             BEAST_EXPECT(peers[0].count == (nMessages - 1));
             // advance the clock
             network_.overlay().clock().advance(
-                reduce_relay::IDLED + seconds(1));
+                reduce_relay::PEER_IDLED + seconds(1));
             network_.overlay().updateSlotAndSquelch(
                 key,
                 network_.validator(0),

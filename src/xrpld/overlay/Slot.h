@@ -148,8 +148,7 @@ public:
         std::size_t timesSelected;  // number of times the peer was selected
     };
 
-    /** Get all peers of the slot. This methos is only to be used in
-     * unit-tests.
+    /** Get all peers of the slot.
      */
     std::unordered_map<Peer::id_t, PeerInfo> const&
     getPeers() const
@@ -520,10 +519,19 @@ protected:
 
     struct ValidatorInfo
     {
-        size_t count;  // the number of messages sent from this validator
-        time_point lastMessage;                // timestamp of the last message
-        std::unordered_set<Peer::id_t> peers;  // a list of peer IDs that sent a
-                                               // message for this validator
+        // the number of messages sent from this validator
+        size_t count;
+        // timestamp of the last message
+        time_point lastMessage;
+        // a list of peer IDs that sent a message for this validator
+        std::unordered_set<Peer::id_t> peers;
+
+        void
+        reset()
+        {
+            count = 0;
+            peers.clear();
+        }
     };
 
     // Untrusted validators considered for open untrusted slots
