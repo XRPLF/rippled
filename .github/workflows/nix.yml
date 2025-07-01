@@ -2,7 +2,7 @@ name: nix
 env:
   CONAN_VERSION: 2.17.1
   CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
-  CONAN_HOME: ${{ github.workspace }}/.conan2
+  # CONAN_HOME: ${{ github.workspace }}/.conan2
   # CONAN_HOME: /root/.conan2
 on:
   pull_request:
@@ -367,11 +367,14 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
       BUILD_DIR: ${{ github.workspace }}/.build
+      SOURCE_DIR: ${{ github.workspace }}/rippled
       COMPILER: clang
       COMPILER_VERSION: 16
       CONFIGURATION: Debug
     runs-on: [self-hosted, heavy]
-    container: debian:bookworm
+    container:
+      image: ghcr.io/xrplf/ci/debian-bookworm:gcc12
+      options: --user root
     steps:
         - name: Install prerequisites
           env:
@@ -391,6 +394,8 @@ jobs:
             pip install --no-cache --break-system-packages conan==${CONAN_VERSION}
         - name: checkout
           uses: actions/checkout@v4
+          with:
+            path: rippled
         - name: Configure Conan
           uses: ./.github/actions/conan_configure
           with:
