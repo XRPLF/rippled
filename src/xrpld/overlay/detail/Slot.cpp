@@ -46,7 +46,7 @@ Slot::deleteIdlePeer(PublicKey const& validator)
         auto& peer = it->second;
         auto id = it->first;
         ++it;
-        if (now - peer.lastMessage > IDLED)
+        if (now - peer.lastMessage > reduce_relay::PEER_IDLED)
         {
             JLOG(journal_.trace())
                 << "deleteIdlePeer: " << Slice(validator) << " " << id
@@ -112,12 +112,12 @@ Slot::update(
     if (state_ != SlotState::Counting || peer.state == PeerState::Squelched)
         return;
 
-    if (++peer.count > MIN_MESSAGE_THRESHOLD)
+    if (++peer.count > reduce_relay::MIN_MESSAGE_THRESHOLD)
         considered_.insert(id);
-    if (peer.count == (MAX_MESSAGE_THRESHOLD + 1))
+    if (peer.count == (reduce_relay::MAX_MESSAGE_THRESHOLD + 1))
         ++reachedThreshold_;
 
-    if (now - lastSelected_ > 2 * MAX_UNSQUELCH_EXPIRE_DEFAULT)
+    if (now - lastSelected_ > 2 * reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT)
     {
         JLOG(journal_.trace())
             << "update: resetting due to inactivity " << Slice(validator) << " "
@@ -150,7 +150,7 @@ Slot::update(
                                        << Slice(validator) << " " << id;
                 continue;
             }
-            if (now - itpeers->second.lastMessage < IDLED)
+            if (now - itpeers->second.lastMessage < reduce_relay::PEER_IDLED)
                 selected.insert(id);
         }
 
@@ -211,14 +211,16 @@ Slot::getSquelchDuration(std::size_t npeers) const
 {
     using namespace std::chrono;
     auto m = std::max(
-        MAX_UNSQUELCH_EXPIRE_DEFAULT, seconds{SQUELCH_PER_PEER * npeers});
-    if (m > MAX_UNSQUELCH_EXPIRE_PEERS)
+        reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT,
+        seconds{reduce_relay::SQUELCH_PER_PEER * npeers});
+    if (m > reduce_relay::MAX_UNSQUELCH_EXPIRE_PEERS)
     {
-        m = MAX_UNSQUELCH_EXPIRE_PEERS;
+        m = reduce_relay::MAX_UNSQUELCH_EXPIRE_PEERS;
         JLOG(journal_.warn())
             << "getSquelchDuration: unexpected squelch duration " << npeers;
     }
-    return seconds{ripple::rand_int(MIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
+    return seconds{
+        ripple::rand_int(reduce_relay::MIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
 }
 
 void
@@ -250,7 +252,7 @@ Slot::deletePeer(PublicKey const& validator, Peer::id_t id, bool erase)
         }
         else if (considered_.find(id) != considered_.end())
         {
-            if (it->second.count > MAX_MESSAGE_THRESHOLD)
+            if (it->second.count > reduce_relay::MAX_MESSAGE_THRESHOLD)
                 --reachedThreshold_;
             considered_.erase(id);
         }
@@ -363,7 +365,7 @@ Slots::expireAndIsPeerSquelched(
 bool
 Slots::addPeerMessage(uint256 const& key, Peer::id_t id)
 {
-    beast::expire(peersWithMessage_, reduce_relay::IDLED);
+    beast::expire(peersWithMessage_, reduce_relay::PEER_IDLED);
 
     if (key.isNonZero())
     {
@@ -466,7 +468,9 @@ Slots::updateUntrustedValidatorSlot(
         {
             registerSquelchedValidator(validator, id);
             handler_.squelch(
-                validator, id, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
+                validator,
+                id,
+                reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
         }
         return;
     }
@@ -479,7 +483,7 @@ Slots::updateUntrustedValidatorSlot(
     // In all of these cases we send a squelch message to all peers.
     // The validator may still  be considered by the selector. However, it
     // will be eventually cleaned and squelched
-    if (untrustedSlots_.size() == MAX_UNTRUSTED_SLOTS)
+    if (untrustedSlots_.size() == reduce_relay::MAX_UNTRUSTED_SLOTS)
     {
         handler_.squelchAll(
             validator,
@@ -526,11 +530,9 @@ Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
     ++it->second.count;
 
     // if the validator has not met selection criteria yet
-    if (it->second.count < MAX_MESSAGE_THRESHOLD ||
+    if (it->second.count < reduce_relay::MAX_MESSAGE_THRESHOLD ||
         it->second.peers.size() < reduce_relay::MAX_SELECTED_PEERS)
-    {
         return std::nullopt;
-    }
 
     auto const key = it->first;
     consideredValidators_.erase(it);
@@ -604,7 +606,7 @@ Slots::deleteIdlePeers()
     for (auto const& validator : cleanConsideredValidators())
         handler_.squelchAll(
             validator,
-            MAX_UNSQUELCH_EXPIRE_DEFAULT.count(),
+            reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT.count(),
             [&](Peer::id_t id) { registerSquelchedValidator(validator, id); });
 }
 
