@@ -27,6 +27,7 @@
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Indexes.h>
@@ -2176,7 +2177,7 @@ ValidVault::finalizeDeposit(
     if (shares.first.sharesTotal >= shares.second.sharesTotal)
     {
         JLOG(j.fatal())
-            << "Invariant failed: deposit must create new shares outstanding";
+            << "Invariant failed: deposit must increase shares outstanding";
         result = false;
     }
     return result;
@@ -2188,7 +2189,68 @@ ValidVault::finalizeWithdraw(
     std::tuple<Shares const&, Shares const&, Number> shares,
     beast::Journal const& j)
 {
-    return true;
+    using std::get;
+    bool result = true;
+    Number const withdrawalAsset = get<2>(vault);
+    Number const withdrawalShares = get<2>(shares);
+    if (withdrawalAsset < zero || withdrawalShares < 0)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: withdrawal must be greater than zero";
+        result = false;
+    }
+    else if (withdrawalAsset != zero)
+    {
+        if (get<0>(vault).assetsTotal - withdrawalAsset !=
+            get<1>(vault).assetsTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: withdrawal and assets "
+                               "outstanding do not add up";
+            result = false;
+        }
+        if (get<0>(vault).assetsAvailable - withdrawalAsset !=
+            get<1>(vault).assetsAvailable)
+        {
+            JLOG(j.fatal()) << "Invariant failed: withdrawal and assets "
+                               "available do not add up";
+            result = false;
+        }
+        if (get<0>(shares).sharesTotal <= get<1>(shares).sharesTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: withdrawal must reduce "
+                               "shares outstanding";
+            result = false;
+        }
+    }
+    else if (withdrawalShares != zero)
+    {
+        if (get<0>(shares).sharesTotal - withdrawalShares !=
+            get<1>(shares).sharesTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: withdrawal and shares "
+                               "outstanding do not add up";
+            result = false;
+        }
+        if (get<0>(vault).assetsTotal <= get<1>(vault).assetsTotal)
+        {
+            JLOG(j.fatal()) << "Invariant failed: withdrawal must reduce "
+                               "assets outstanding";
+            result = false;
+        }
+        if (get<0>(vault).assetsAvailable <= get<1>(vault).assetsAvailable)
+        {
+            JLOG(j.fatal()) << "Invariant failed: withdrawal must reduce "
+                               "assets available";
+            result = false;
+        }
+    }
+    else
+    {
+        JLOG(j.fatal()) << "Invariant failed: withdrawal must not be zero";
+        result = false;
+    }
+
+    return result;
 }
 
 bool
