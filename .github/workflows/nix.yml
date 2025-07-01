@@ -373,7 +373,7 @@ jobs:
       CONFIGURATION: Debug
     runs-on: [self-hosted, heavy]
     container:
-      image: ghcr.io/xrplf/ci/debian-bookworm:gcc12
+      image: ghcr.io/xrplf/ci/debian-bookworm:clang16
       options: --user root
     steps:
         - name: Install prerequisites
@@ -393,9 +393,7 @@ jobs:
             update-alternatives --auto clang
             pip install --no-cache --break-system-packages conan==${CONAN_VERSION}
         - name: checkout
-          uses: actions/checkout@v4
-          with:
-            path: rippled
+          uses: actions/checkout@v4s
         - name: Configure Conan
           uses: ./.github/actions/conan_configure
           with:
@@ -404,15 +402,15 @@ jobs:
             compiler_version: ${{ env.COMPILER_VERSION }}
             configuration: ${{ env.CONFIGURATION }}
 
-        - name: Prepare environment
-          run: |
-            build_dir="${GITHUB_WORKSPACE}/.build"
-            source_dir="${GITHUB_WORKSPACE}"
-            mkdir -p "${build_dir}"
-            echo "SOURCE_DIR=${source_dir}" >> $GITHUB_ENV
-            # echo "BUILD_DIR=${build_dir}" >> $GITHUB_ENV
-            echo "COMPILER=$COMPILER" >> $GITHUB_ENV
-            echo "COMPILER_VERSION=$COMPILER_VERSION" >> $GITHUB_ENV
+        # - name: Prepare environment
+        #   run: |
+        #     build_dir="${GITHUB_WORKSPACE}/.build"
+        #     source_dir="${GITHUB_WORKSPACE}"
+        #     mkdir -p "${build_dir}"
+        #     echo "SOURCE_DIR=${source_dir}" >> $GITHUB_ENV
+        #     # echo "BUILD_DIR=${build_dir}" >> $GITHUB_ENV
+        #     echo "COMPILER=$COMPILER" >> $GITHUB_ENV
+        #     echo "COMPILER_VERSION=$COMPILER_VERSION" >> $GITHUB_ENV
         - name: Build dependencies
           working-directory: ${{ env.BUILD_DIR }}
           run: >-
