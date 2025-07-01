@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,44 +17,27 @@
 */
 //==============================================================================
 
-#include <test/jtx/Env.h>
-
-#include <xrpl/beast/utility/temp_dir.h>
-#include <xrpl/crypto/csprng.h>
+#pragma once
+#include <xrpld/ledger/View.h>
 
 namespace ripple {
+namespace permissioned_dex {
 
-class CryptoPRNG_test : public beast::unit_test::suite
-{
-    void
-    testGetValues()
-    {
-        testcase("Get Values");
-        try
-        {
-            auto& engine = crypto_prng();
-            auto rand_val = engine();
-            BEAST_EXPECT(rand_val >= engine.min());
-            BEAST_EXPECT(rand_val <= engine.max());
+// Check if an account is in a permissioned domain
+[[nodiscard]] bool
+accountInDomain(
+    ReadView const& view,
+    AccountID const& account,
+    Domain const& domainID);
 
-            uint16_t twoByte{0};
-            engine(&twoByte, sizeof(uint16_t));
-            pass();
-        }
-        catch (std::exception&)
-        {
-            fail();
-        }
-    }
+// Check if an offer is in the permissioned domain
+[[nodiscard]] bool
+offerInDomain(
+    ReadView const& view,
+    uint256 const& offerID,
+    Domain const& domainID,
+    beast::Journal j);
 
-public:
-    void
-    run() override
-    {
-        testGetValues();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(CryptoPRNG, core, ripple);
+}  // namespace permissioned_dex
 
 }  // namespace ripple

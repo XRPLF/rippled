@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,47 +17,29 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
+#pragma once
 
-#include <string>
+#include <test/jtx/Env.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-class contract_test : public beast::unit_test::suite
+/** Set the domain on a JTx. */
+class domain
 {
-public:
-    void
-    run() override
-    {
-        try
-        {
-            Throw<std::runtime_error>("Throw test");
-        }
-        catch (std::runtime_error const& e1)
-        {
-            BEAST_EXPECT(std::string(e1.what()) == "Throw test");
+private:
+    uint256 v_;
 
-            try
-            {
-                Rethrow();
-            }
-            catch (std::runtime_error const& e2)
-            {
-                BEAST_EXPECT(std::string(e2.what()) == "Throw test");
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(false);
-            }
-        }
-        catch (...)
-        {
-            BEAST_EXPECT(false);
-        }
+public:
+    explicit domain(uint256 const& v) : v_(v)
+    {
     }
+
+    void
+    operator()(Env&, JTx& jt) const;
 };
 
-BEAST_DEFINE_TESTSUITE(contract, basics, ripple);
-
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
