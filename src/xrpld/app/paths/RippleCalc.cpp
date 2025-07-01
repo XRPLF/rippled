@@ -95,9 +95,6 @@ RippleCalc::rippleCalculate(
             return std::nullopt;
         }();
 
-        bool const ownerPaysTransferFee =
-            view.rules().enabled(featureOwnerPaysFee);
-
         try
         {
             flowOut = flow(
@@ -108,7 +105,7 @@ RippleCalc::rippleCalculate(
                 spsPaths,
                 defaultPaths,
                 partialPayment,
-                ownerPaysTransferFee,
+                false,
                 OfferCrossing::no,
                 limitQuality,
                 sendMax,

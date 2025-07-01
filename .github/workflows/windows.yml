@@ -95,5 +95,6 @@ jobs:
         shell: bash
         if: ${{ matrix.configuration.tests }}
         run: |
-          ${build_dir}/${{ matrix.configuration.type }}/rippled --unittest \
-              --unittest-jobs $(nproc)
+          cd ${build_dir}/${{ matrix.configuration.type }}
+          ./rippled --unittest --unittest-jobs $(nproc)
+          ctest -j $(nproc) --output-on-failure
