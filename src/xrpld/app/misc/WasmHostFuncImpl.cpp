@@ -434,18 +434,64 @@ WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
 }
 
 Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::checkKeylet(AccountID const& account, std::uint32_t seq)
+{
+    if (!account)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::check(account, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::credentialKeylet(
     AccountID const& subject,
     AccountID const& issuer,
     Bytes const& credentialType)
 {
-    if (!subject || !issuer || credentialType.empty() ||
+    if (!subject || !issuer)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    if (credentialType.empty() ||
         credentialType.size() > maxCredentialTypeLength)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     auto const keylet =
         keylet::credential(subject, issuer, makeSlice(credentialType));
 
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::didKeylet(AccountID const& account)
+{
+    if (!account)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::did(account);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::delegateKeylet(
+    AccountID const& account,
+    AccountID const& authorize)
+{
+    if (!account || !authorize)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    if (account == authorize)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+    auto const keylet = keylet::delegate(account, authorize);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::depositPreauthKeylet(
+    AccountID const& account,
+    AccountID const& authorize)
+{
+    if (!account || !authorize)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    if (account == authorize)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+    auto const keylet = keylet::depositPreauth(account, authorize);
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -459,6 +505,43 @@ WasmHostFunctionsImpl::escrowKeylet(AccountID const& account, std::uint32_t seq)
 }
 
 Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::lineKeylet(
+    AccountID const& account1,
+    AccountID const& account2,
+    Currency const& currency)
+{
+    if (!account1 || !account2)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    if (account1 == account2)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+    if (currency.isZero())
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
+    auto const keylet = keylet::line(account1, account2, currency);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::nftOfferKeylet(
+    AccountID const& account,
+    std::uint32_t seq)
+{
+    if (!account)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::nftoffer(account, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::offerKeylet(AccountID const& account, std::uint32_t seq)
+{
+    if (!account)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::offer(account, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::oracleKeylet(
     AccountID const& account,
     std::uint32_t documentId)
@@ -466,6 +549,40 @@ WasmHostFunctionsImpl::oracleKeylet(
     if (!account)
         return Unexpected(HF_ERR_INVALID_ACCOUNT);
     auto const keylet = keylet::oracle(account, documentId);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::paychanKeylet(
+    AccountID const& account,
+    AccountID const& destination,
+    std::uint32_t seq)
+{
+    if (!account || !destination)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    if (account == destination)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+    if (seq == 0)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+    auto const keylet = keylet::payChan(account, destination, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::signersKeylet(AccountID const& account)
+{
+    if (!account)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::signers(account);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::ticketKeylet(AccountID const& account, std::uint32_t seq)
+{
+    if (!account)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::ticket(account, seq);
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 

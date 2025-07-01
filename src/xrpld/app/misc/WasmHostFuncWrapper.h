@@ -162,43 +162,31 @@ computeSha512HalfHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using accountKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-accountKeylet_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results);
+#define ACCOUNT_PARAM uint8_t const*, int32_t
+#define UINT32_PARAM int32_t
+#define CURRENCY_PARAM uint8_t const*, int32_t
+#define BLOB_PARAM uint8_t const*, int32_t
+#define RETURN_PARAM uint8_t*, int32_t
 
-using credentialKeylet_proto = int32_t(
-    uint8_t const*,
-    int32_t,
-    uint8_t const*,
-    int32_t,
-    uint8_t const*,
-    int32_t,
-    uint8_t*,
-    int32_t);
-wasm_trap_t*
-credentialKeylet_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results);
+#define FUNCTION_DEF(FUNC, ...)                              \
+    using FUNC##_proto = int32_t(__VA_ARGS__, RETURN_PARAM); \
+    wasm_trap_t* FUNC##_wrap(                                \
+        void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
-using escrowKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-escrowKeylet_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results);
-
-using oracleKeylet_proto =
-    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-oracleKeylet_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results);
+FUNCTION_DEF(accountKeylet, ACCOUNT_PARAM);
+FUNCTION_DEF(checkKeylet, ACCOUNT_PARAM, UINT32_PARAM);
+FUNCTION_DEF(credentialKeylet, ACCOUNT_PARAM, ACCOUNT_PARAM, BLOB_PARAM);
+FUNCTION_DEF(delegateKeylet, ACCOUNT_PARAM, ACCOUNT_PARAM);
+FUNCTION_DEF(depositPreauthKeylet, ACCOUNT_PARAM, ACCOUNT_PARAM);
+FUNCTION_DEF(didKeylet, ACCOUNT_PARAM);
+FUNCTION_DEF(escrowKeylet, ACCOUNT_PARAM, UINT32_PARAM);
+FUNCTION_DEF(lineKeylet, ACCOUNT_PARAM, ACCOUNT_PARAM, CURRENCY_PARAM);
+FUNCTION_DEF(nftOfferKeylet, ACCOUNT_PARAM, UINT32_PARAM);
+FUNCTION_DEF(offerKeylet, ACCOUNT_PARAM, UINT32_PARAM);
+FUNCTION_DEF(oracleKeylet, ACCOUNT_PARAM, UINT32_PARAM);
+FUNCTION_DEF(paychanKeylet, ACCOUNT_PARAM, ACCOUNT_PARAM, UINT32_PARAM);
+FUNCTION_DEF(signersKeylet, ACCOUNT_PARAM);
+FUNCTION_DEF(ticketKeylet, ACCOUNT_PARAM, UINT32_PARAM);
 
 using getNFT_proto = int32_t(
     uint8_t const*,

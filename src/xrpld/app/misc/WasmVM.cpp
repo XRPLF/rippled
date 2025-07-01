@@ -89,9 +89,20 @@ createImports(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(
             imports, computeSha512HalfHash, "compute_sha512_half", hfs);
         WASM_IMPORT_FUNC2(imports, accountKeylet, "account_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, checkKeylet, "check_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, credentialKeylet, "credential_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, didKeylet, "did_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, delegateKeylet, "delegate_keylet", hfs);
+        WASM_IMPORT_FUNC2(
+            imports, depositPreauthKeylet, "deposit_preauth_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, escrowKeylet, "escrow_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, lineKeylet, "line_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, nftOfferKeylet, "nft_offer_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, offerKeylet, "offer_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, oracleKeylet, "oracle_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, paychanKeylet, "paychan_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, signersKeylet, "signers_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, ticketKeylet, "ticket_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, getNFT, "get_NFT", hfs);
         WASM_IMPORT_FUNC(imports, trace, hfs);
         WASM_IMPORT_FUNC2(imports, traceNum, "trace_num", hfs);

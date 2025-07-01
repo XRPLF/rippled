@@ -68,6 +68,16 @@ getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
     return data;
 }
 
+static Expected<Currency, int32_t>
+getDataCurrency(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
+{
+    auto const r = getData(rt, ptr, sz);
+    if (!r || (r->size() < Currency::bytes))
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
+    return Currency::fromVoid(r->data());
+}
+
 static Expected<AccountID, int32_t>
 getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
 {
@@ -539,140 +549,104 @@ computeSha512HalfHash_wrap(
         hash.size()));
 }
 
-wasm_trap_t*
-accountKeylet_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
-{
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+#define EXTRACT_ARG_Account(i)                                       \
+    ({                                                               \
+        auto _acc = getDataAccount(                                  \
+            rt, params->data[i].of.i32, params->data[i + 1].of.i32); \
+        if (!_acc)                                                   \
+            RET(_acc.error());                                       \
+        _acc.value();                                                \
+    })
 
-    auto const acc =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
-    if (!acc)
-    {
-        RET(acc.error());
+#define EXTRACT_ARG_uint32(i) (params->data[i].of.i32)
+
+#define EXTRACT_ARG_Blob(i)                                                  \
+    ({                                                                       \
+        auto _blob =                                                         \
+            getData(rt, params->data[i].of.i32, params->data[i + 1].of.i32); \
+        if (!_blob)                                                          \
+            RET(_blob.error());                                              \
+        _blob.value();                                                       \
+    })
+
+#define EXTRACT_ARG_Currency(i)                                      \
+    ({                                                               \
+        auto _curr = getDataCurrency(                                \
+            rt, params->data[i].of.i32, params->data[i + 1].of.i32); \
+        if (!_curr)                                                  \
+            RET(_curr.error());                                      \
+        _curr.value();                                               \
+    })
+
+#define KEYLET_WRAPPER(FUNC, i, ...)                                      \
+    wasm_trap_t* FUNC##_wrap(                                             \
+        void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results) \
+    {                                                                     \
+        auto* hf = reinterpret_cast<HostFunctions*>(env);                 \
+        auto const* rt =                                                  \
+            reinterpret_cast<InstanceWrapper const*>(hf->getRT());        \
+                                                                          \
+        auto const k = hf->FUNC(__VA_ARGS__);                             \
+        if (!k)                                                           \
+            RET(k.error());                                               \
+        RET(setData(                                                      \
+            rt,                                                           \
+            params->data[i].of.i32,                                       \
+            params->data[i + 1].of.i32,                                   \
+            k->data(),                                                    \
+            k->size()));                                                  \
     }
 
-    auto const k = hf->accountKeylet(acc.value());
-    if (!k)
-    {
-        RET(k.error());
-    }
+KEYLET_WRAPPER(accountKeylet, 2, EXTRACT_ARG_Account(0))
 
-    RET(setData(
-        rt,
-        params->data[2].of.i32,
-        params->data[3].of.i32,
-        k->data(),
-        k->size()));
-}
+KEYLET_WRAPPER(checkKeylet, 3, EXTRACT_ARG_Account(0), EXTRACT_ARG_uint32(2))
 
-wasm_trap_t*
-credentialKeylet_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
-{
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+KEYLET_WRAPPER(
+    credentialKeylet,
+    6,
+    EXTRACT_ARG_Account(0),
+    EXTRACT_ARG_Account(2),
+    EXTRACT_ARG_Blob(4))
 
-    auto const subject =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
-    if (!subject)
-    {
-        RET(subject.error());
-    }
+KEYLET_WRAPPER(
+    delegateKeylet,
+    4,
+    EXTRACT_ARG_Account(0),
+    EXTRACT_ARG_Account(2))
 
-    auto const issuer =
-        getDataAccount(rt, params->data[2].of.i32, params->data[3].of.i32);
-    if (!issuer)
-    {
-        RET(issuer.error());
-    }
+KEYLET_WRAPPER(
+    depositPreauthKeylet,
+    4,
+    EXTRACT_ARG_Account(0),
+    EXTRACT_ARG_Account(2))
 
-    auto const credType =
-        getData(rt, params->data[4].of.i32, params->data[5].of.i32);
-    if (!credType)
-    {
-        RET(credType.error());
-    }
+KEYLET_WRAPPER(didKeylet, 2, EXTRACT_ARG_Account(0))
 
-    auto const k =
-        hf->credentialKeylet(subject.value(), issuer.value(), credType.value());
-    if (!k)
-    {
-        RET(k.error());
-    }
+KEYLET_WRAPPER(escrowKeylet, 3, EXTRACT_ARG_Account(0), EXTRACT_ARG_uint32(2))
 
-    RET(setData(
-        rt,
-        params->data[6].of.i32,
-        params->data[7].of.i32,
-        k->data(),
-        k->size()));
-}
+KEYLET_WRAPPER(
+    lineKeylet,
+    6,
+    EXTRACT_ARG_Account(0),
+    EXTRACT_ARG_Account(2),
+    EXTRACT_ARG_Currency(4))
 
-wasm_trap_t*
-escrowKeylet_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
-{
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+KEYLET_WRAPPER(nftOfferKeylet, 3, EXTRACT_ARG_Account(0), EXTRACT_ARG_uint32(2))
 
-    auto const acc =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
-    if (!acc)
-    {
-        RET(acc.error());
-    }
+KEYLET_WRAPPER(offerKeylet, 3, EXTRACT_ARG_Account(0), EXTRACT_ARG_uint32(2))
 
-    auto const k = hf->escrowKeylet(acc.value(), params->data[2].of.i32);
-    if (!k)
-    {
-        RET(k.error());
-    }
+KEYLET_WRAPPER(oracleKeylet, 3, EXTRACT_ARG_Account(0), EXTRACT_ARG_uint32(2))
 
-    RET(setData(
-        rt,
-        params->data[3].of.i32,
-        params->data[4].of.i32,
-        k->data(),
-        k->size()));
-}
+KEYLET_WRAPPER(
+    paychanKeylet,
+    5,
+    EXTRACT_ARG_Account(0),
+    EXTRACT_ARG_Account(2),
+    EXTRACT_ARG_uint32(4))
 
-wasm_trap_t*
-oracleKeylet_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
-{
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+KEYLET_WRAPPER(signersKeylet, 2, EXTRACT_ARG_Account(0))
 
-    auto const acc =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
-    if (!acc)
-    {
-        RET(acc.error());
-    }
-
-    auto const k = hf->oracleKeylet(acc.value(), params->data[2].of.i32);
-    if (!k)
-    {
-        RET(k.error());
-    }
-
-    RET(setData(
-        rt,
-        params->data[3].of.i32,
-        params->data[4].of.i32,
-        k->data(),
-        k->size()));
-}
+KEYLET_WRAPPER(ticketKeylet, 3, EXTRACT_ARG_Account(0), EXTRACT_ARG_uint32(2))
 
 wasm_trap_t*
 getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
@@ -702,8 +676,8 @@ getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         RET(HF_ERR_INVALID_PARAMS);
     }
 
-    uint256 const ntfId(uint256::fromVoid(nftRaw->data()));
-    auto const nftURI = hf->getNFT(acc.value(), ntfId);
+    uint256 const nftId(uint256::fromVoid(nftRaw->data()));
+    auto const nftURI = hf->getNFT(acc.value(), nftId);
     if (!nftURI)
     {
         RET(nftURI.error());
