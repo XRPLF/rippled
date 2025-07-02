@@ -67,7 +67,7 @@ struct HostFunctions
         return beast::Journal{beast::Journal::getNullSink()};
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFuncError>
     getLedgerSqn()
     {
         return 1;
@@ -169,7 +169,7 @@ struct HostFunctions
         return HF_ERR_INTERNAL;
     }
 
-    virtual Hash
+    virtual Expected<Hash, HostFuncError>
     computeSha512HalfHash(Bytes const& data)
     {
         return Hash{};

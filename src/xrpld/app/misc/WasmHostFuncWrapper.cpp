@@ -55,14 +55,38 @@ setData(
 
 template <typename T>
 Expected<T, HostFuncError>
-getData(InstanceWrapper const* rt, wasm_val_vec_t const* params, int32_t src);
+getData(InstanceWrapper const* rt, wasm_val_vec_t const* params, int32_t& src);
+
+template <>
+Expected<int32_t, HostFuncError>
+getData<int32_t>(
+    InstanceWrapper const* _rt,
+    wasm_val_vec_t const* params,
+    int32_t& i)
+{
+    auto const result = params->data[i].of.i32;
+    i++;
+    return result;
+}
+
+template <>
+Expected<int64_t, HostFuncError>
+getData<int64_t>(
+    InstanceWrapper const* _rt,
+    wasm_val_vec_t const* params,
+    int32_t& i)
+{
+    auto const result = params->data[i].of.i64;
+    i++;
+    return result;
+}
 
 template <>
 Expected<SFIELD_PARAM, HostFuncError>
 getData<SFIELD_PARAM>(
     InstanceWrapper const* _rt,
     wasm_val_vec_t const* params,
-    int32_t i)
+    int32_t& i)
 {
     auto const& m = SField::getKnownCodeToField();
     auto const it = m.find(params->data[i].of.i32);
@@ -70,6 +94,7 @@ getData<SFIELD_PARAM>(
     {
         return Unexpected(HF_ERR_FIELD_NOT_FOUND);
     }
+    i++;
     return *it->second;
 }
 
@@ -78,10 +103,11 @@ Expected<Bytes, HostFuncError>
 getData<Bytes>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
-    int32_t i)
+    int32_t& i)
 {
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
+    i += 2;
     if (!ssz)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
@@ -101,7 +127,7 @@ Expected<AccountID, HostFuncError>
 getData<AccountID>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
-    int32_t i)
+    int32_t& i)
 {
     auto const r = getData<Bytes>(rt, params, i);
     if (!r || (r->size() < AccountID::bytes))
@@ -115,10 +141,11 @@ Expected<std::string, HostFuncError>
 getData<std::string>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
-    int32_t i)
+    int32_t& i)
 {
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
+    i += 2;
     if (!ssz)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
@@ -142,6 +169,86 @@ hfResult(wasm_val_vec_t* results, T value)
     return nullptr;
 }
 
+template <typename Tuple, std::size_t... Is>
+std::optional<HostFuncError>
+checkErrors(Tuple const& t, std::index_sequence<Is...>)
+{
+    std::optional<HostFuncError> err;
+    ((err = err ? err
+                : (!std::get<Is>(t) ? std::optional{std::get<Is>(t).error()}
+                                    : std::nullopt)),
+     ...);
+    return err;
+}
+
+template <typename... Args, typename Func>
+wasm_trap_t*
+invokeHostFunc(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results,
+    Func&& f)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto expectedArgs = std::make_tuple(getData<Args>(rt, params, index)...);
+
+    constexpr auto N = sizeof...(Args);
+    auto err = checkErrors(expectedArgs, std::make_index_sequence<N>{});
+
+    if (err)
+        return hfResult(results, *err);
+
+    auto unwrappedArgs =
+        std::apply([](auto&&... e) { return std::tuple{*e...}; }, expectedArgs);
+
+    auto result = std::apply(std::forward<Func>(f), unwrappedArgs);
+
+    if (!result)
+        return hfResult(results, result.error());
+
+    if constexpr (std::is_same_v<std::decay_t<decltype(*result)>, Bytes>)
+    {
+        return hfResult(
+            results,
+            setData(
+                rt,
+                params->data[index].of.i32,
+                params->data[index + 1].of.i32,
+                result->data(),
+                result->size()));
+    }
+    else if constexpr (std::is_same_v<std::decay_t<decltype(*result)>, Hash>)
+    {
+        return hfResult(
+            results,
+            setData(
+                rt,
+                params->data[index].of.i32,
+                params->data[index + 1].of.i32,
+                result->data(),
+                result->size()));
+    }
+    else if constexpr (std::is_same_v<std::decay_t<decltype(*result)>, int32_t>)
+    {
+        return hfResult(
+            results,
+            setData(
+                rt,
+                params->data[0].of.i32,
+                params->data[1].of.i32,
+                reinterpret_cast<uint8_t const*>(&result),
+                static_cast<int32_t>(sizeof(result))));
+    }
+    else
+    {
+        static_assert(
+            [] { return false; }(), "Unhandled return type in invokeHostFunc");
+    }
+}
+
 wasm_trap_t*
 getLedgerSqnOld_wrap(
     void* env,
@@ -150,9 +257,22 @@ getLedgerSqnOld_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int32_t const sqn = hf->getLedgerSqn();
-    return hfResult(results, sqn);
+    auto const sqn = hf->getLedgerSqn();
+    if (!sqn)
+    {
+        return hfResult(results, sqn.error());
+    }
+    return hfResult(results, sqn.value());
 }
+
+#define HOST_FUNCTION(funcName, name, return, ...)                        \
+    wasm_trap_t* funcName##_wrap(                                         \
+        void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results) \
+    {                                                                     \
+        auto* hf = reinterpret_cast<HostFunctions*>(env);                 \
+        auto const* rt =                                                  \
+            reinterpret_cast<InstanceWrapper const*>(hf->getRT());        \
+    }
 
 wasm_trap_t*
 getLedgerSqn_wrap(
@@ -160,18 +280,10 @@ getLedgerSqn_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int32_t const sqn = hf->getLedgerSqn();
-
-    return hfResult(
-        results,
-        setData(
-            rt,
-            params->data[0].of.i32,
-            params->data[1].of.i32,
-            reinterpret_cast<uint8_t const*>(&sqn),
-            static_cast<int32_t>(sizeof(sqn))));
+    return invokeHostFunc(
+        env, params, results, [hf = reinterpret_cast<HostFunctions*>(env)]() {
+            return hf->getLedgerSqn();
+        });
 }
 
 wasm_trap_t*
@@ -182,13 +294,14 @@ getParentLedgerTime_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
     int32_t const ltime = hf->getParentLedgerTime();
     return hfResult(
         results,
         setData(
             rt,
-            params->data[0].of.i32,
-            params->data[1].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             reinterpret_cast<uint8_t const*>(&ltime),
             static_cast<int32_t>(sizeof(ltime))));
 }
@@ -201,13 +314,14 @@ getParentLedgerHash_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
     Hash const hash = hf->getParentLedgerHash();
     return hfResult(
         results,
         setData(
             rt,
-            params->data[0].of.i32,
-            params->data[1].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             hash.data(),
             static_cast<int32_t>(hash.size())));
 }
@@ -220,8 +334,9 @@ cacheLedgerObj_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const r = getData<Bytes>(rt, params, 0);
+    auto const r = getData<Bytes>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
@@ -233,9 +348,9 @@ cacheLedgerObj_wrap(
     }
 
     uint256 const key(uint256::fromVoid(r->data()));
-    int32_t const idx =
-        hf->cacheLedgerObj(keylet::unchecked(key), params->data[2].of.i32);
-    return hfResult(results, idx);
+    int32_t const cacheIndex =
+        hf->cacheLedgerObj(keylet::unchecked(key), params->data[index].of.i32);
+    return hfResult(results, cacheIndex);
 }
 
 wasm_trap_t*
@@ -246,8 +361,9 @@ getTxField_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, 0);
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -263,8 +379,8 @@ getTxField_wrap(
         results,
         setData(
             rt,
-            params->data[1].of.i32,
-            params->data[2].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             fieldData->data(),
             fieldData->size()));
 }
@@ -277,9 +393,9 @@ getCurrentLedgerObjField_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    int i = 0;
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, i++);
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -295,8 +411,8 @@ getCurrentLedgerObjField_wrap(
         results,
         setData(
             rt,
-            params->data[1].of.i32,
-            params->data[2].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             fieldData->data(),
             fieldData->size()));
 }
@@ -309,15 +425,20 @@ getLedgerObjField_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, 1);
+    auto const cache = getData<int32_t>(rt, params, index);
+    if (!cache)
+    {
+        return hfResult(results, cache.error());
+    }
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
     }
 
-    auto fieldData =
-        hf->getLedgerObjField(params->data[0].of.i32, fname.value());
+    auto fieldData = hf->getLedgerObjField(cache.value(), fname.value());
     if (!fieldData)
     {
         return hfResult(results, fieldData.error());
@@ -327,8 +448,8 @@ getLedgerObjField_wrap(
         results,
         setData(
             rt,
-            params->data[2].of.i32,
-            params->data[3].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             fieldData->data(),
             fieldData->size()));
 }
@@ -341,8 +462,9 @@ getTxNestedField_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const r = getData<Bytes>(rt, params, 0);
+    auto const r = getData<Bytes>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
@@ -358,8 +480,8 @@ getTxNestedField_wrap(
         results,
         setData(
             rt,
-            params->data[2].of.i32,
-            params->data[3].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             fieldData->data(),
             fieldData->size()));
 }
@@ -372,8 +494,9 @@ getCurrentLedgerObjNestedField_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const r = getData<Bytes>(rt, params, 0);
+    auto const r = getData<Bytes>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
@@ -389,8 +512,8 @@ getCurrentLedgerObjNestedField_wrap(
         results,
         setData(
             rt,
-            params->data[2].of.i32,
-            params->data[3].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             fieldData->data(),
             fieldData->size()));
 }
@@ -403,15 +526,20 @@ getLedgerObjNestedField_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const r = getData<Bytes>(rt, params, 1);
+    auto const cache = getData<int32_t>(rt, params, index);
+    if (!cache)
+    {
+        return hfResult(results, cache.error());
+    }
+    auto const r = getData<Bytes>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
     }
 
-    auto fieldData =
-        hf->getLedgerObjNestedField(params->data[0].of.i32, r.value());
+    auto fieldData = hf->getLedgerObjNestedField(cache.value(), r.value());
     if (!fieldData)
     {
         return hfResult(results, fieldData.error());
@@ -421,8 +549,8 @@ getLedgerObjNestedField_wrap(
         results,
         setData(
             rt,
-            params->data[3].of.i32,
-            params->data[4].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             fieldData->data(),
             fieldData->size()));
 }
@@ -435,8 +563,9 @@ getTxArrayLen_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, 0);
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -454,8 +583,9 @@ getCurrentLedgerObjArrayLen_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, 0);
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -473,15 +603,21 @@ getLedgerObjArrayLen_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, 1);
+    auto const cache = getData<int32_t>(rt, params, index);
+    if (!cache)
+    {
+        return hfResult(results, cache.error());
+    }
+
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
     }
 
-    int32_t sz =
-        hf->getLedgerObjArrayLen(params->data[0].of.i32, fname.value());
+    int32_t sz = hf->getLedgerObjArrayLen(cache.value(), fname.value());
     return hfResult(results, sz);
 }
 
@@ -493,8 +629,9 @@ getTxNestedArrayLen_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const r = getData<Bytes>(rt, params, 0);
+    auto const r = getData<Bytes>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
@@ -512,8 +649,9 @@ getCurrentLedgerObjNestedArrayLen_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const r = getData<Bytes>(rt, params, 0);
+    auto const r = getData<Bytes>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
@@ -531,15 +669,20 @@ getLedgerObjNestedArrayLen_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const r = getData<Bytes>(rt, params, 1);
+    auto const cache = getData<int32_t>(rt, params, index);
+    if (!cache)
+    {
+        return hfResult(results, cache.error());
+    }
+    auto const r = getData<Bytes>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
     }
 
-    int32_t sz =
-        hf->getLedgerObjNestedArrayLen(params->data[0].of.i32, r.value());
+    int32_t sz = hf->getLedgerObjNestedArrayLen(cache.value(), r.value());
     return hfResult(results, sz);
 }
 
@@ -551,16 +694,17 @@ updateData_wrap(
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    if (params->data[1].of.i32 > maxWasmDataLength)
-    {
-        return hfResult(results, HF_ERR_DATA_FIELD_TOO_LARGE);
-    }
-
-    auto const r = getData<Bytes>(rt, params, 0);
+    auto const r = getData<Bytes>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
+    }
+
+    if (r->size() > maxWasmDataLength)
+    {
+        return hfResult(results, HF_ERR_DATA_FIELD_TOO_LARGE);
     }
 
     return hfResult(results, hf->updateData(r.value()));
@@ -572,24 +716,13 @@ computeSha512HalfHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-
-    auto const r = getData<Bytes>(rt, params, 0);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-
-    auto const hash = hf->computeSha512HalfHash(r.value());
-    return hfResult(
+    return invokeHostFunc<Bytes>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[2].of.i32,
-            params->data[3].of.i32,
-            hash.data(),
-            hash.size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+            return hf->computeSha512HalfHash(bytes);
+        });
 }
 
 wasm_trap_t*
@@ -598,29 +731,13 @@ accountKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-
-    auto const acc = getData<AccountID>(rt, params, 0);
-    if (!acc)
-    {
-        return hfResult(results, acc.error());
-    }
-
-    auto const k = hf->accountKeylet(acc.value());
-    if (!k)
-    {
-        return hfResult(results, k.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<AccountID>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[2].of.i32,
-            params->data[3].of.i32,
-            k->data(),
-            k->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](AccountID const& acc) {
+            return hf->accountKeylet(acc);
+        });
 }
 
 wasm_trap_t*
@@ -629,42 +746,16 @@ credentialKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-
-    auto const subject = getData<AccountID>(rt, params, 0);
-    if (!subject)
-    {
-        return hfResult(results, subject.error());
-    }
-
-    auto const issuer = getData<AccountID>(rt, params, 2);
-    if (!issuer)
-    {
-        return hfResult(results, issuer.error());
-    }
-
-    auto const credType = getData<Bytes>(rt, params, 4);
-    if (!credType)
-    {
-        return hfResult(results, credType.error());
-    }
-
-    auto const k =
-        hf->credentialKeylet(subject.value(), issuer.value(), credType.value());
-    if (!k)
-    {
-        return hfResult(results, k.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<AccountID, AccountID, Bytes>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[6].of.i32,
-            params->data[7].of.i32,
-            k->data(),
-            k->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            AccountID const& subj,
+            AccountID const& iss,
+            Bytes const& credType) {
+            return hf->credentialKeylet(subj, iss, credType);
+        });
 }
 
 wasm_trap_t*
@@ -673,29 +764,14 @@ escrowKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-
-    auto const acc = getData<AccountID>(rt, params, 0);
-    if (!acc)
-    {
-        return hfResult(results, acc.error());
-    }
-
-    auto const k = hf->escrowKeylet(acc.value(), params->data[2].of.i32);
-    if (!k)
-    {
-        return hfResult(results, k.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<AccountID, int32_t>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[3].of.i32,
-            params->data[4].of.i32,
-            k->data(),
-            k->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            AccountID const& acc, int32_t seq) {
+            return hf->escrowKeylet(acc, seq);
+        });
 }
 
 wasm_trap_t*
@@ -704,29 +780,14 @@ oracleKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-
-    auto const acc = getData<AccountID>(rt, params, 0);
-    if (!acc)
-    {
-        return hfResult(results, acc.error());
-    }
-
-    auto const k = hf->oracleKeylet(acc.value(), params->data[2].of.i32);
-    if (!k)
-    {
-        return hfResult(results, k.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<AccountID, int32_t>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[3].of.i32,
-            params->data[4].of.i32,
-            k->data(),
-            k->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            AccountID const& acc, int32_t seq) {
+            return hf->oracleKeylet(acc, seq);
+        });
 }
 
 wasm_trap_t*
@@ -734,14 +795,15 @@ getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const acc = getData<AccountID>(rt, params, 0);
+    auto const acc = getData<AccountID>(rt, params, index);
     if (!acc)
     {
         return hfResult(results, acc.error());
     }
 
-    auto const nftRaw = getData<Bytes>(rt, params, 2);
+    auto const nftRaw = getData<Bytes>(rt, params, index);
     if (!nftRaw)
     {
         return hfResult(results, nftRaw.error());
@@ -766,8 +828,8 @@ getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         results,
         setData(
             rt,
-            params->data[4].of.i32,
-            params->data[5].of.i32,
+            params->data[index].of.i32,
+            params->data[index + 1].of.i32,
             nftURI->data(),
             nftURI->size()));
 }
@@ -777,20 +839,27 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const msg = getData<std::string>(rt, params, 0);
+    auto const msg = getData<std::string>(rt, params, index);
     if (!msg)
     {
         return hfResult(results, msg.error());
     }
 
-    auto const data = getData<Bytes>(rt, params, 2);
+    auto const data = getData<Bytes>(rt, params, index);
     if (!data)
     {
         return hfResult(results, data.error());
     }
 
-    auto const e = hf->trace(msg.value(), data.value(), params->data[4].of.i32);
+    auto const asHex = getData<int32_t>(rt, params, index);
+    if (!asHex)
+    {
+        return hfResult(results, asHex.error());
+    }
+
+    auto const e = hf->trace(msg.value(), data.value(), asHex.value());
     return hfResult(results, e);
 }
 
@@ -799,14 +868,21 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
 
-    auto const msg = getData<std::string>(rt, params, 0);
+    auto const msg = getData<std::string>(rt, params, index);
     if (!msg)
     {
         return hfResult(results, msg.error());
     }
 
-    auto const e = hf->traceNum(msg.value(), params->data[2].of.i64);
+    auto const number = getData<int64_t>(rt, params, index);
+    if (!number)
+    {
+        return hfResult(results, number.error());
+    }
+
+    auto const e = hf->traceNum(msg.value(), number.value());
     return hfResult(results, e);
 }
 

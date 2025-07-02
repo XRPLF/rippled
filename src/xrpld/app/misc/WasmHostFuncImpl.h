@@ -57,7 +57,7 @@ public:
         return ctx.journal;
     }
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getLedgerSqn() override;
 
     int32_t
@@ -108,7 +108,7 @@ public:
     int32_t
     updateData(Bytes const& data) override;
 
-    Hash
+    Expected<Hash, HostFuncError>
     computeSha512HalfHash(Bytes const& data) override;
 
     Expected<Bytes, int32_t>

@@ -110,7 +110,7 @@ public:
         return env_.journal;
     }
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getLedgerSqn() override
     {
         return static_cast<int32_t>(env_.current()->seq());
@@ -148,8 +148,10 @@ public:
         }
         else if (fname == sfSequence)
         {
-            int32_t x = getLedgerSqn();
-            uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
+            auto const x = getLedgerSqn();
+            if (!x)
+                return Unexpected(x.error());
+            uint8_t const* p = reinterpret_cast<uint8_t const*>(&x.value());
             return Bytes{p, p + sizeof(x)};
         }
         return Bytes();
@@ -259,7 +261,7 @@ public:
         return 0;
     }
 
-    Hash
+    Expected<Hash, HostFuncError>
     computeSha512HalfHash(Bytes const& data) override
     {
         return env_.current()->info().parentHash;
@@ -425,7 +427,7 @@ public:
         return env_.journal;
     }
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getLedgerSqn() override
     {
         return static_cast<int32_t>(env_.current()->seq());
@@ -835,7 +837,7 @@ public:
         return data.size();
     }
 
-    Hash
+    Expected<Hash, HostFuncError>
     computeSha512HalfHash(Bytes const& data) override
     {
         auto const hash = sha512Half(data);

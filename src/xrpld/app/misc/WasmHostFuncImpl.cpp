@@ -30,7 +30,7 @@
 
 namespace ripple {
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::getLedgerSqn()
 {
     return ctx.view().seq();
@@ -418,7 +418,7 @@ WasmHostFunctionsImpl::updateData(Bytes const& data)
     return 0;
 }
 
-Hash
+Expected<Hash, HostFuncError>
 WasmHostFunctionsImpl::computeSha512HalfHash(Bytes const& data)
 {
     auto const hash = sha512Half(data);
