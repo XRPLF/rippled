@@ -123,6 +123,26 @@ getData<Bytes>(
 }
 
 template <>
+Expected<uint256, HostFuncError>
+getData<uint256>(
+    InstanceWrapper const* rt,
+    wasm_val_vec_t const* params,
+    int32_t& i)
+{
+    auto const r = getData<Bytes>(rt, params, i);
+    if (!r)
+    {
+        return Unexpected(r.error());
+    }
+
+    if (r->size() != uint256::bytes)
+    {
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+    }
+    return uint256::fromVoid(r->data());
+}
+
+template <>
 Expected<AccountID, HostFuncError>
 getData<AccountID>(
     InstanceWrapper const* rt,
@@ -292,18 +312,10 @@ getParentLedgerTime_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-    int32_t const ltime = hf->getParentLedgerTime();
-    return hfResult(
-        results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            reinterpret_cast<uint8_t const*>(&ltime),
-            static_cast<int32_t>(sizeof(ltime))));
+    return invokeHostFunc(
+        env, params, results, [hf = reinterpret_cast<HostFunctions*>(env)]() {
+            return hf->getParentLedgerTime();
+        });
 }
 
 wasm_trap_t*
@@ -312,18 +324,10 @@ getParentLedgerHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-    Hash const hash = hf->getParentLedgerHash();
-    return hfResult(
-        results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            hash.data(),
-            static_cast<int32_t>(hash.size())));
+    return invokeHostFunc(
+        env, params, results, [hf = reinterpret_cast<HostFunctions*>(env)]() {
+            return hf->getParentLedgerHash();
+        });
 }
 
 wasm_trap_t*
@@ -336,21 +340,23 @@ cacheLedgerObj_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const r = getData<Bytes>(rt, params, index);
+    auto const r = getData<uint256>(rt, params, index);
     if (!r)
     {
         return hfResult(results, r.error());
     }
-
-    if (r->size() < uint256::bytes)
+    auto const cache = getData<int32_t>(rt, params, index);
+    if (!cache)
     {
-        return hfResult(results, HF_ERR_INVALID_PARAMS);
+        return hfResult(results, cache.error());
     }
-
-    uint256 const key(uint256::fromVoid(r->data()));
-    int32_t const cacheIndex =
-        hf->cacheLedgerObj(keylet::unchecked(key), params->data[index].of.i32);
-    return hfResult(results, cacheIndex);
+    auto const cacheIndex =
+        hf->cacheLedgerObj(keylet::unchecked(r.value()), cache.value());
+    if (!cacheIndex)
+    {
+        return hfResult(results, cacheIndex.error());
+    }
+    return hfResult(results, cacheIndex.value());
 }
 
 wasm_trap_t*
@@ -571,8 +577,12 @@ getTxArrayLen_wrap(
         return hfResult(results, fname.error());
     }
 
-    int32_t sz = hf->getTxArrayLen(fname.value());
-    return hfResult(results, sz);
+    auto const sz = hf->getTxArrayLen(fname.value());
+    if (!sz)
+    {
+        return hfResult(results, sz.error());
+    }
+    return hfResult(results, sz.value());
 }
 
 wasm_trap_t*
@@ -591,8 +601,12 @@ getCurrentLedgerObjArrayLen_wrap(
         return hfResult(results, fname.error());
     }
 
-    int32_t sz = hf->getCurrentLedgerObjArrayLen(fname.value());
-    return hfResult(results, sz);
+    auto const sz = hf->getCurrentLedgerObjArrayLen(fname.value());
+    if (!sz)
+    {
+        return hfResult(results, sz.error());
+    }
+    return hfResult(results, sz.value());
 }
 
 wasm_trap_t*
@@ -617,8 +631,12 @@ getLedgerObjArrayLen_wrap(
         return hfResult(results, fname.error());
     }
 
-    int32_t sz = hf->getLedgerObjArrayLen(cache.value(), fname.value());
-    return hfResult(results, sz);
+    auto const sz = hf->getLedgerObjArrayLen(cache.value(), fname.value());
+    if (!sz)
+    {
+        return hfResult(results, sz.error());
+    }
+    return hfResult(results, sz.value());
 }
 
 wasm_trap_t*
@@ -637,8 +655,12 @@ getTxNestedArrayLen_wrap(
         return hfResult(results, r.error());
     }
 
-    int32_t sz = hf->getTxNestedArrayLen(r.value());
-    return hfResult(results, sz);
+    auto const sz = hf->getTxNestedArrayLen(r.value());
+    if (!sz)
+    {
+        return hfResult(results, sz.error());
+    }
+    return hfResult(results, sz.value());
 }
 
 wasm_trap_t*
@@ -657,8 +679,12 @@ getCurrentLedgerObjNestedArrayLen_wrap(
         return hfResult(results, r.error());
     }
 
-    int32_t sz = hf->getCurrentLedgerObjNestedArrayLen(r.value());
-    return hfResult(results, sz);
+    auto const sz = hf->getCurrentLedgerObjNestedArrayLen(r.value());
+    if (!sz)
+    {
+        return hfResult(results, sz.error());
+    }
+    return hfResult(results, sz.value());
 }
 
 wasm_trap_t*
@@ -682,8 +708,12 @@ getLedgerObjNestedArrayLen_wrap(
         return hfResult(results, r.error());
     }
 
-    int32_t sz = hf->getLedgerObjNestedArrayLen(cache.value(), r.value());
-    return hfResult(results, sz);
+    auto const sz = hf->getLedgerObjNestedArrayLen(cache.value(), r.value());
+    if (!sz)
+    {
+        return hfResult(results, sz.error());
+    }
+    return hfResult(results, sz.value());
 }
 
 wasm_trap_t*
@@ -706,8 +736,13 @@ updateData_wrap(
     {
         return hfResult(results, HF_ERR_DATA_FIELD_TOO_LARGE);
     }
+    auto const result = hf->updateData(r.value());
+    if (!result)
+    {
+        return hfResult(results, result.error());
+    }
 
-    return hfResult(results, hf->updateData(r.value()));
+    return hfResult(results, result.value());
 }
 
 wasm_trap_t*
@@ -860,7 +895,11 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     }
 
     auto const e = hf->trace(msg.value(), data.value(), asHex.value());
-    return hfResult(results, e);
+    if (!e)
+    {
+        return hfResult(results, e.error());
+    }
+    return hfResult(results, e.value());
 }
 
 wasm_trap_t*
@@ -883,7 +922,11 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     }
 
     auto const e = hf->traceNum(msg.value(), number.value());
-    return hfResult(results, e);
+    if (!e)
+    {
+        return hfResult(results, e.error());
+    }
+    return hfResult(results, e.value());
 }
 
 }  // namespace ripple

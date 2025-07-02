@@ -36,19 +36,19 @@ WasmHostFunctionsImpl::getLedgerSqn()
     return ctx.view().seq();
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::getParentLedgerTime()
 {
     return ctx.view().parentCloseTime().time_since_epoch().count();
 }
 
-Hash
+Expected<Hash, HostFuncError>
 WasmHostFunctionsImpl::getParentLedgerHash()
 {
     return ctx.view().info().parentHash;
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx)
 {
     if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
@@ -126,7 +126,7 @@ getAnyFieldData(STBase const& obj)
     return msg.getData();
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::getTxField(SField const& fname)
 {
     auto const* field = ctx.tx.peekAtPField(fname);
@@ -138,7 +138,7 @@ WasmHostFunctionsImpl::getTxField(SField const& fname)
     return getAnyFieldData(*field);
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
 {
     auto const sle = ctx.view().read(leKey);
@@ -154,7 +154,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
     return getAnyFieldData(*field);
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
 {
     --cacheIdx;
@@ -173,7 +173,7 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
     return getAnyFieldData(*field);
 }
 
-static Expected<STBase const*, int32_t>
+static Expected<STBase const*, HostFuncError>
 locateField(STObject const& obj, Bytes const& bytesLoc)
 {
     Slice const& loc = makeSlice(bytesLoc);
@@ -231,7 +231,7 @@ locateField(STObject const& obj, Bytes const& bytesLoc)
     return field;
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::getTxNestedField(Bytes const& locator)
 {
     auto const r = locateField(ctx.tx, locator);
@@ -245,7 +245,7 @@ WasmHostFunctionsImpl::getTxNestedField(Bytes const& locator)
     return getAnyFieldData(*field);
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Bytes const& locator)
 {
     auto const sle = ctx.view().read(leKey);
@@ -263,7 +263,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Bytes const& locator)
     return getAnyFieldData(*field);
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::getLedgerObjNestedField(
     int32_t cacheIdx,
     Bytes const& locator)
@@ -286,7 +286,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
     return getAnyFieldData(*field);
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
 {
     if (fname.fieldType != STI_ARRAY)
@@ -303,7 +303,7 @@ WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
     return sz;
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
 {
     if (fname.fieldType != STI_ARRAY)
@@ -324,7 +324,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
     return sz;
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::getLedgerObjArrayLen(
     int32_t cacheIdx,
     SField const& fname)
@@ -349,7 +349,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
     return sz;
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::getTxNestedArrayLen(Bytes const& locator)
 {
     auto const r = locateField(ctx.tx, locator);
@@ -364,7 +364,7 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Bytes const& locator)
     return sz;
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Bytes const& locator)
 {
     auto const sle = ctx.view().read(leKey);
@@ -382,7 +382,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Bytes const& locator)
     return sz;
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     int32_t cacheIdx,
     Bytes const& locator)
@@ -407,7 +407,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     return sz;
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::updateData(Bytes const& data)
 {
     auto sle = ctx.view().peek(leKey);
@@ -425,7 +425,7 @@ WasmHostFunctionsImpl::computeSha512HalfHash(Bytes const& data)
     return hash;
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
 {
     if (!account)
@@ -434,7 +434,7 @@ WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::credentialKeylet(
     AccountID const& subject,
     AccountID const& issuer,
@@ -450,7 +450,7 @@ WasmHostFunctionsImpl::credentialKeylet(
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::escrowKeylet(AccountID const& account, std::uint32_t seq)
 {
     if (!account)
@@ -459,7 +459,7 @@ WasmHostFunctionsImpl::escrowKeylet(AccountID const& account, std::uint32_t seq)
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::oracleKeylet(
     AccountID const& account,
     std::uint32_t documentId)
@@ -470,7 +470,7 @@ WasmHostFunctionsImpl::oracleKeylet(
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
-Expected<Bytes, int32_t>
+Expected<Bytes, HostFuncError>
 WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
 {
     if (!account || !nftId)
@@ -494,7 +494,7 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
     return Bytes(s.begin(), s.end());
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::trace(
     std::string const& msg,
     Bytes const& data,
@@ -519,7 +519,7 @@ WasmHostFunctionsImpl::trace(
     return msg.size() + data.size() * (asHex ? 2 : 1);
 }
 
-int32_t
+Expected<int32_t, HostFuncError>
 WasmHostFunctionsImpl::traceNum(std::string const& msg, int64_t data)
 {
 #ifdef DEBUG_OUTPUT

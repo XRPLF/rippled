@@ -60,79 +60,79 @@ public:
     Expected<int32_t, HostFuncError>
     getLedgerSqn() override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getParentLedgerTime() override;
 
-    Hash
+    Expected<Hash, HostFuncError>
     getParentLedgerHash() override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     getTxField(SField const& fname) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     getCurrentLedgerObjField(SField const& fname) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     getTxNestedField(Bytes const& locator) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     getCurrentLedgerObjNestedField(Bytes const& locator) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getTxArrayLen(SField const& fname) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getCurrentLedgerObjArrayLen(SField const& fname) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getTxNestedArrayLen(Bytes const& locator) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     updateData(Bytes const& data) override;
 
     Expected<Hash, HostFuncError>
     computeSha512HalfHash(Bytes const& data) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     accountKeylet(AccountID const& account) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
         Bytes const& credentialType) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     escrowKeylet(AccountID const& account, std::uint32_t seq) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     oracleKeylet(AccountID const& account, std::uint32_t documentId) override;
 
-    Expected<Bytes, int32_t>
+    Expected<Bytes, HostFuncError>
     getNFT(AccountID const& account, uint256 const& nftId) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     trace(std::string const& msg, Bytes const& data, bool asHex) override;
 
-    int32_t
+    Expected<int32_t, HostFuncError>
     traceNum(std::string const& msg, int64_t data) override;
 };
 
