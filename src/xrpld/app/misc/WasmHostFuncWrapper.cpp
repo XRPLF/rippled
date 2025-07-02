@@ -26,6 +26,8 @@
 
 namespace ripple {
 
+#define SFIELD_PARAM std::reference_wrapper<SField const>
+
 static int32_t
 setData(
     InstanceWrapper const* rt,
@@ -54,6 +56,22 @@ setData(
 template <typename T>
 Expected<T, HostFuncError>
 getData(InstanceWrapper const* rt, wasm_val_vec_t const* params, int32_t src);
+
+template <>
+Expected<SFIELD_PARAM, HostFuncError>
+getData<SFIELD_PARAM>(
+    InstanceWrapper const* _rt,
+    wasm_val_vec_t const* params,
+    int32_t i)
+{
+    auto const& m = SField::getKnownCodeToField();
+    auto const it = m.find(params->data[i].of.i32);
+    if (it == m.end())
+    {
+        return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+    }
+    return *it->second;
+}
 
 template <>
 Expected<Bytes, HostFuncError>
@@ -219,15 +237,13 @@ getTxField_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const& m = SField::getKnownCodeToField();
-    auto const it = m.find(params->data[0].of.i32);
-    if (it == m.end())
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, 0);
+    if (!fname)
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(fname.error());
     }
-    auto const& fname(*it->second);
 
-    auto fieldData = hf->getTxField(fname);
+    auto fieldData = hf->getTxField(fname.value());
     if (!fieldData)
     {
         RET(fieldData.error());
@@ -250,15 +266,13 @@ getCurrentLedgerObjField_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const& m = SField::getKnownCodeToField();
-    auto const it = m.find(params->data[0].of.i32);
-    if (it == m.end())
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, 0);
+    if (!fname)
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(fname.error());
     }
-    auto const& fname(*it->second);
 
-    auto fieldData = hf->getCurrentLedgerObjField(fname);
+    auto fieldData = hf->getCurrentLedgerObjField(fname.value());
     if (!fieldData)
     {
         RET(fieldData.error());
@@ -281,15 +295,14 @@ getLedgerObjField_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const& m = SField::getKnownCodeToField();
-    auto const it = m.find(params->data[1].of.i32);
-    if (it == m.end())
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, 1);
+    if (!fname)
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(fname.error());
     }
-    auto const& fname(*it->second);
 
-    auto fieldData = hf->getLedgerObjField(params->data[0].of.i32, fname);
+    auto fieldData =
+        hf->getLedgerObjField(params->data[0].of.i32, fname.value());
     if (!fieldData)
     {
         RET(fieldData.error());
@@ -398,17 +411,15 @@ getTxArrayLen_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const& m = SField::getKnownCodeToField();
-    auto const it = m.find(params->data[0].of.i32);
-    if (it == m.end())
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, 0);
+    if (!fname)
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(fname.error());
     }
-    auto const& fname(*it->second);
 
-    int32_t sz = hf->getTxArrayLen(fname);
+    int32_t sz = hf->getTxArrayLen(fname.value());
     RET(sz);
 }
 
@@ -419,17 +430,15 @@ getCurrentLedgerObjArrayLen_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const& m = SField::getKnownCodeToField();
-    auto const it = m.find(params->data[0].of.i32);
-    if (it == m.end())
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, 0);
+    if (!fname)
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(fname.error());
     }
-    auto const& fname(*it->second);
 
-    int32_t sz = hf->getCurrentLedgerObjArrayLen(fname);
+    int32_t sz = hf->getCurrentLedgerObjArrayLen(fname.value());
     RET(sz);
 }
 
@@ -440,17 +449,16 @@ getLedgerObjArrayLen_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const& m = SField::getKnownCodeToField();
-    auto const it = m.find(params->data[1].of.i32);
-    if (it == m.end())
+    auto const& fname = getData<SFIELD_PARAM>(rt, params, 1);
+    if (!fname)
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(fname.error());
     }
-    auto const& fname(*it->second);
 
-    int32_t sz = hf->getLedgerObjArrayLen(params->data[0].of.i32, fname);
+    int32_t sz =
+        hf->getLedgerObjArrayLen(params->data[0].of.i32, fname.value());
     RET(sz);
 }
 
