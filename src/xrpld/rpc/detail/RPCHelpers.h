@@ -257,7 +257,7 @@ isAccountObjectsValidType(LedgerEntryType const& type);
  * @return the api version number
  */
 unsigned int
-getAPIVersionNumber(const Json::Value& value, bool betaEnabled);
+getAPIVersionNumber(Json::Value const& value, bool betaEnabled);
 
 /** Return a ledger based on ledger_hash or ledger_index,
     or an RPC error */
@@ -269,7 +269,9 @@ keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
     unsigned int apiVersion = apiVersionIfUnspecified);
+
 }  // namespace RPC
+
 }  // namespace ripple
 
 #endif

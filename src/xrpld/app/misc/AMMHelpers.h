@@ -48,6 +48,8 @@ reduceOffer(auto const& amount)
 
 }  // namespace detail
 
+enum class IsDeposit : bool { No = false, Yes = true };
+
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
  * @param asset2 AMM another side of the pool reserve
@@ -67,7 +69,7 @@ ammLPTokens(
  * @return tokens
  */
 STAmount
-lpTokensIn(
+lpTokensOut(
     STAmount const& asset1Balance,
     STAmount const& asset1Deposit,
     STAmount const& lptAMMBalance,
@@ -96,7 +98,7 @@ ammAssetIn(
  * @return tokens out amount
  */
 STAmount
-lpTokensOut(
+lpTokensIn(
     STAmount const& asset1Balance,
     STAmount const& asset1Withdraw,
     STAmount const& lptAMMBalance,
@@ -110,7 +112,7 @@ lpTokensOut(
  * @return calculated asset amount
  */
 STAmount
-withdrawByTokens(
+ammAssetOut(
     STAmount const& assetBalance,
     STAmount const& lptAMMBalance,
     STAmount const& lpTokens,
@@ -382,9 +384,9 @@ changeSpotPriceQuality(
             {
                 JLOG(j.error())
                     << "changeSpotPriceQuality failed: " << to_string(pool.in)
-                    << " " << to_string(pool.out) << " " << " " << quality
-                    << " " << tfee << " " << to_string(amounts.in) << " "
-                    << to_string(amounts.out);
+                    << " " << to_string(pool.out) << " "
+                    << " " << quality << " " << tfee << " "
+                    << to_string(amounts.in) << " " << to_string(amounts.out);
                 Throw<std::runtime_error>("changeSpotPriceQuality failed");
             }
             else
@@ -608,13 +610,13 @@ square(Number const& n);
  * withdraw to cancel out the precision loss.
  * @param lptAMMBalance LPT AMM Balance
  * @param lpTokens LP tokens to deposit or withdraw
- * @param isDeposit true if deposit, false if withdraw
+ * @param isDeposit Yes if deposit, No if withdraw
  */
 STAmount
 adjustLPTokens(
     STAmount const& lptAMMBalance,
     STAmount const& lpTokens,
-    bool isDeposit);
+    IsDeposit isDeposit);
 
 /** Calls adjustLPTokens() and adjusts deposit or withdraw amounts if
  * the adjusted LP tokens are less than the provided LP tokens.
@@ -624,7 +626,7 @@ adjustLPTokens(
  * @param lptAMMBalance LPT AMM Balance
  * @param lpTokens LP tokens to deposit or withdraw
  * @param tfee trading fee in basis points
- * @param isDeposit true if deposit, false if withdraw
+ * @param isDeposit Yes if deposit, No if withdraw
  * @return
  */
 std::tuple<STAmount, std::optional<STAmount>, STAmount>
@@ -635,13 +637,148 @@ adjustAmountsByLPTokens(
     STAmount const& lptAMMBalance,
     STAmount const& lpTokens,
     std::uint16_t tfee,
-    bool isDeposit);
+    IsDeposit isDeposit);
 
 /** Positive solution for quadratic equation:
  * x = (-b + sqrt(b**2 + 4*a*c))/(2*a)
  */
 Number
 solveQuadraticEq(Number const& a, Number const& b, Number const& c);
+
+STAmount
+multiply(STAmount const& amount, Number const& frac, Number::rounding_mode rm);
+
+namespace detail {
+
+inline Number::rounding_mode
+getLPTokenRounding(IsDeposit isDeposit)
+{
+    // Minimize on deposit, maximize on withdraw to ensure
+    // AMM invariant sqrt(poolAsset1 * poolAsset2) >= LPTokensBalance
+    return isDeposit == IsDeposit::Yes ? Number::downward : Number::upward;
+}
+
+inline Number::rounding_mode
+getAssetRounding(IsDeposit isDeposit)
+{
+    // Maximize on deposit, minimize on withdraw to ensure
+    // AMM invariant sqrt(poolAsset1 * poolAsset2) >= LPTokensBalance
+    return isDeposit == IsDeposit::Yes ? Number::upward : Number::downward;
+}
+
+}  // namespace detail
+
+/** Round AMM equal deposit/withdrawal amount. Deposit/withdrawal formulas
+ * calculate the amount as a fractional value of the pool balance. The rounding
+ * takes place on the last step of multiplying the balance by the fraction if
+ * AMMv1_3 is enabled.
+ */
+template <typename A>
+STAmount
+getRoundedAsset(
+    Rules const& rules,
+    STAmount const& balance,
+    A const& frac,
+    IsDeposit isDeposit)
+{
+    if (!rules.enabled(fixAMMv1_3))
+    {
+        if constexpr (std::is_same_v<A, STAmount>)
+            return multiply(balance, frac, balance.issue());
+        else
+            return toSTAmount(balance.issue(), balance * frac);
+    }
+    auto const rm = detail::getAssetRounding(isDeposit);
+    return multiply(balance, frac, rm);
+}
+
+/** Round AMM single deposit/withdrawal amount.
+ * The lambda's are used to delay evaluation until the function
+ * is executed so that the calculation is not done twice. noRoundCb() is
+ * called if AMMv1_3 is disabled. Otherwise, the rounding is set and
+ * the amount is:
+ *   isDeposit is Yes - the balance multiplied by productCb()
+ *   isDeposit is No - the result of productCb(). The rounding is
+ *     the same for all calculations in productCb()
+ */
+STAmount
+getRoundedAsset(
+    Rules const& rules,
+    std::function<Number()>&& noRoundCb,
+    STAmount const& balance,
+    std::function<Number()>&& productCb,
+    IsDeposit isDeposit);
+
+/** Round AMM deposit/withdrawal LPToken amount. Deposit/withdrawal formulas
+ * calculate the lptokens as a fractional value of the AMM total lptokens.
+ * The rounding takes place on the last step of multiplying the balance by
+ * the fraction if AMMv1_3 is enabled. The tokens are then
+ * adjusted to factor in the loss in precision (we only keep 16 significant
+ * digits) when adding the lptokens to the balance.
+ */
+STAmount
+getRoundedLPTokens(
+    Rules const& rules,
+    STAmount const& balance,
+    Number const& frac,
+    IsDeposit isDeposit);
+
+/** Round AMM single deposit/withdrawal LPToken amount.
+ * The lambda's are used to delay evaluation until the function is executed
+ * so that the calculations are not done twice.
+ * noRoundCb() is called if AMMv1_3 is disabled. Otherwise, the rounding is set
+ * and the lptokens are:
+ *   if isDeposit is Yes - the result of productCb(). The rounding is
+ *     the same for all calculations in productCb()
+ *   if isDeposit is No - the balance multiplied by productCb()
+ * The lptokens are then adjusted to factor in the loss in precision
+ * (we only keep 16 significant digits) when adding the lptokens to the balance.
+ */
+STAmount
+getRoundedLPTokens(
+    Rules const& rules,
+    std::function<Number()>&& noRoundCb,
+    STAmount const& lptAMMBalance,
+    std::function<Number()>&& productCb,
+    IsDeposit isDeposit);
+
+/* Next two functions adjust asset in/out amount to factor in the adjusted
+ * lptokens. The lptokens are calculated from the asset in/out. The lptokens are
+ * then adjusted to factor in the loss in precision. The adjusted lptokens might
+ * be less than the initially calculated tokens. Therefore, the asset in/out
+ * must be adjusted. The rounding might result in the adjusted amount being
+ * greater than the original asset in/out amount. If this happens,
+ * then the original amount is reduced by the difference in the adjusted amount
+ * and the original amount. The actual tokens and the actual adjusted amount
+ * are then recalculated. The minimum of the original and the actual
+ * adjusted amount is returned.
+ */
+std::pair<STAmount, STAmount>
+adjustAssetInByTokens(
+    Rules const& rules,
+    STAmount const& balance,
+    STAmount const& amount,
+    STAmount const& lptAMMBalance,
+    STAmount const& tokens,
+    std::uint16_t tfee);
+std::pair<STAmount, STAmount>
+adjustAssetOutByTokens(
+    Rules const& rules,
+    STAmount const& balance,
+    STAmount const& amount,
+    STAmount const& lptAMMBalance,
+    STAmount const& tokens,
+    std::uint16_t tfee);
+
+/** Find a fraction of tokens after the tokens are adjusted. The fraction
+ * is used to adjust equal deposit/withdraw amount.
+ */
+Number
+adjustFracByTokens(
+    Rules const& rules,
+    STAmount const& lptAMMBalance,
+    STAmount const& tokens,
+    Number const& frac);
 
 }  // namespace ripple
 

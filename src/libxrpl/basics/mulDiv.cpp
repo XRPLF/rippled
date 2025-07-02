@@ -31,9 +31,7 @@ namespace ripple {
 std::optional<std::uint64_t>
 mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)
 {
-    using namespace boost::multiprecision;
-
-    uint128_t result;
+    boost::multiprecision::uint128_t result;
     result = multiply(result, value, mul);
 
     result /= div;

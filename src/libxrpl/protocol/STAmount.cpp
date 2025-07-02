@@ -38,6 +38,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -90,13 +91,13 @@ setSTAmountCanonicalizeSwitchover(bool v)
     *getStaticSTAmountCanonicalizeSwitchover() = v;
 }
 
-static const std::uint64_t tenTo14 = 100000000000000ull;
-static const std::uint64_t tenTo14m1 = tenTo14 - 1;
-static const std::uint64_t tenTo17 = tenTo14 * 1000;
+static std::uint64_t const tenTo14 = 100000000000000ull;
+static std::uint64_t const tenTo14m1 = tenTo14 - 1;
+static std::uint64_t const tenTo17 = tenTo14 * 1000;
 
 //------------------------------------------------------------------------------
 static std::int64_t
-getInt64Value(STAmount const& amount, bool valid, const char* error)
+getInt64Value(STAmount const& amount, bool valid, char const* error)
 {
     if (!valid)
         Throw<std::runtime_error>(error);
@@ -309,6 +310,7 @@ STAmount::xrp() const
             "Cannot return non-native STAmount as XRPAmount");
 
     auto drops = static_cast<XRPAmount::value_type>(mValue);
+    XRPL_ASSERT(mOffset == 0, "ripple::STAmount::xrp : amount is canonical");
 
     if (mIsNegative)
         drops = -drops;
@@ -338,6 +340,7 @@ STAmount::mpt() const
         Throw<std::logic_error>("Cannot return STAmount as MPTAmount");
 
     auto value = static_cast<MPTAmount::value_type>(mValue);
+    XRPL_ASSERT(mOffset == 0, "ripple::STAmount::mpt : amount is canonical");
 
     if (mIsNegative)
         value = -value;
@@ -501,6 +504,162 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
 
     // overflow -- very bad offer
     return 0;
+}
+
+/**
+ * @brief Safely checks if two STAmount values can be added without overflow,
+ * underflow, or precision loss.
+ *
+ * This function determines whether the addition of two STAmount objects is
+ * safe, depending on their type:
+ * - For XRP amounts, it checks for integer overflow and underflow.
+ * - For IOU amounts, it checks for acceptable precision loss.
+ * - For MPT amounts, it checks for overflow and underflow within 63-bit signed
+ * integer limits.
+ * - If either amount is zero, addition is always considered safe.
+ * - If the amounts are of different currencies or types, addition is not
+ * allowed.
+ *
+ * @param a The first STAmount to add.
+ * @param b The second STAmount to add.
+ * @return true if the addition is safe; false otherwise.
+ */
+bool
+canAdd(STAmount const& a, STAmount const& b)
+{
+    // cannot add different currencies
+    if (!areComparable(a, b))
+        return false;
+
+    // special case: adding anything to zero is always fine
+    if (a == beast::zero || b == beast::zero)
+        return true;
+
+    // XRP case (overflow & underflow check)
+    if (isXRP(a) && isXRP(b))
+    {
+        XRPAmount A = a.xrp();
+        XRPAmount B = b.xrp();
+
+        if ((B > XRPAmount{0} &&
+             A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} -
+                     B) ||
+            (B < XRPAmount{0} &&
+             A < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} -
+                     B))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    // IOU case (precision check)
+    if (a.holds<Issue>() && b.holds<Issue>())
+    {
+        static STAmount const one{IOUAmount{1, 0}, noIssue()};
+        static STAmount const maxLoss{IOUAmount{1, -4}, noIssue()};
+        STAmount lhs = divide((a - b) + b, a, noIssue()) - one;
+        STAmount rhs = divide((b - a) + a, b, noIssue()) - one;
+        return ((rhs.negative() ? -rhs : rhs) +
+                (lhs.negative() ? -lhs : lhs)) <= maxLoss;
+    }
+
+    // MPT (overflow & underflow check)
+    if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
+    {
+        MPTAmount A = a.mpt();
+        MPTAmount B = b.mpt();
+        if ((B > MPTAmount{0} &&
+             A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} -
+                     B) ||
+            (B < MPTAmount{0} &&
+             A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} -
+                     B))
+        {
+            return false;
+        }
+
+        return true;
+    }
+    // LCOV_EXCL_START
+    UNREACHABLE("STAmount::canAdd : unexpected STAmount type");
+    return false;
+    // LCOV_EXCL_STOP
+}
+
+/**
+ * @brief Determines if it is safe to subtract one STAmount from another.
+ *
+ * This function checks whether subtracting amount `b` from amount `a` is valid,
+ * considering currency compatibility and underflow conditions for specific
+ * types.
+ *
+ * - Subtracting zero is always allowed.
+ * - Subtraction is only allowed between comparable currencies.
+ * - For XRP amounts, ensures no underflow or overflow occurs.
+ * - For IOU amounts, subtraction is always allowed (no underflow).
+ * - For MPT amounts, ensures no underflow or overflow occurs.
+ *
+ * @param a The minuend (amount to subtract from).
+ * @param b The subtrahend (amount to subtract).
+ * @return true if subtraction is allowed, false otherwise.
+ */
+bool
+canSubtract(STAmount const& a, STAmount const& b)
+{
+    // Cannot subtract different currencies
+    if (!areComparable(a, b))
+        return false;
+
+    // Special case: subtracting zero is always fine
+    if (b == beast::zero)
+        return true;
+
+    // XRP case (underflow & overflow check)
+    if (isXRP(a) && isXRP(b))
+    {
+        XRPAmount A = a.xrp();
+        XRPAmount B = b.xrp();
+        // Check for underflow
+        if (B > XRPAmount{0} && A < B)
+            return false;
+
+        // Check for overflow
+        if (B < XRPAmount{0} &&
+            A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} +
+                    B)
+            return false;
+
+        return true;
+    }
+
+    // IOU case (no underflow)
+    if (a.holds<Issue>() && b.holds<Issue>())
+    {
+        return true;
+    }
+
+    // MPT case (underflow & overflow check)
+    if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
+    {
+        MPTAmount A = a.mpt();
+        MPTAmount B = b.mpt();
+
+        // Underflow check
+        if (B > MPTAmount{0} && A < B)
+            return false;
+
+        // Overflow check
+        if (B < MPTAmount{0} &&
+            A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} +
+                    B)
+            return false;
+        return true;
+    }
+    // LCOV_EXCL_START
+    UNREACHABLE("STAmount::canSubtract : unexpected STAmount type");
+    return false;
+    // LCOV_EXCL_STOP
 }
 
 void
@@ -680,9 +839,9 @@ STAmount::add(Serializer& s) const
 }
 
 bool
-STAmount::isEquivalent(const STBase& t) const
+STAmount::isEquivalent(STBase const& t) const
 {
-    const STAmount* v = dynamic_cast<const STAmount*>(&t);
+    STAmount const* v = dynamic_cast<STAmount const*>(&t);
     return v && (*v == *this);
 }
 
@@ -865,75 +1024,16 @@ amountFromQuality(std::uint64_t rate)
 STAmount
 amountFromString(Asset const& asset, std::string const& amount)
 {
-    static boost::regex const reNumber(
-        "^"                       // the beginning of the string
-        "([-+]?)"                 // (optional) + or - character
-        "(0|[1-9][0-9]*)"         // a number (no leading zeroes, unless 0)
-        "(\\.([0-9]+))?"          // (optional) period followed by any number
-        "([eE]([+-]?)([0-9]+))?"  // (optional) E, optional + or -, any number
-        "$",
-        boost::regex_constants::optimize);
-
-    boost::smatch match;
-
-    if (!boost::regex_match(amount, match, reNumber))
-        Throw<std::runtime_error>("Number '" + amount + "' is not valid");
-
-    // Match fields:
-    //   0 = whole input
-    //   1 = sign
-    //   2 = integer portion
-    //   3 = whole fraction (with '.')
-    //   4 = fraction (without '.')
-    //   5 = whole exponent (with 'e')
-    //   6 = exponent sign
-    //   7 = exponent number
-
-    // CHECKME: Why 32? Shouldn't this be 16?
-    if ((match[2].length() + match[4].length()) > 32)
-        Throw<std::runtime_error>("Number '" + amount + "' is overlong");
-
-    bool negative = (match[1].matched && (match[1] == "-"));
-
-    // Can't specify XRP or MPT using fractional representation
-    if ((asset.native() || asset.holds<MPTIssue>()) && match[3].matched)
+    auto const parts = partsFromString(amount);
+    if ((asset.native() || asset.holds<MPTIssue>()) && parts.exponent < 0)
         Throw<std::runtime_error>(
             "XRP and MPT must be specified as integral amount.");
-
-    std::uint64_t mantissa;
-    int exponent;
-
-    if (!match[4].matched)  // integer only
-    {
-        mantissa =
-            beast::lexicalCastThrow<std::uint64_t>(std::string(match[2]));
-        exponent = 0;
-    }
-    else
-    {
-        // integer and fraction
-        mantissa = beast::lexicalCastThrow<std::uint64_t>(match[2] + match[4]);
-        exponent = -(match[4].length());
-    }
-
-    if (match[5].matched)
-    {
-        // we have an exponent
-        if (match[6].matched && (match[6] == "-"))
-            exponent -= beast::lexicalCastThrow<int>(std::string(match[7]));
-        else
-            exponent += beast::lexicalCastThrow<int>(std::string(match[7]));
-    }
-
-    return {asset, mantissa, exponent, negative};
+    return {asset, parts.mantissa, parts.exponent, parts.negative};
 }
 
 STAmount
 amountFromJson(SField const& name, Json::Value const& v)
 {
-    STAmount::mantissa_type mantissa = 0;
-    STAmount::exponent_type exponent = 0;
-    bool negative = false;
     Asset asset;
 
     Json::Value value;
@@ -1025,36 +1125,38 @@ amountFromJson(SField const& name, Json::Value const& v)
         }
     }
 
+    NumberParts parts;
+
     if (value.isInt())
     {
         if (value.asInt() >= 0)
         {
-            mantissa = value.asInt();
+            parts.mantissa = value.asInt();
         }
         else
         {
-            mantissa = -value.asInt();
-            negative = true;
+            parts.mantissa = -value.asInt();
+            parts.negative = true;
         }
     }
     else if (value.isUInt())
     {
-        mantissa = v.asUInt();
+        parts.mantissa = v.asUInt();
     }
     else if (value.isString())
     {
-        auto const ret = amountFromString(asset, value.asString());
-
-        mantissa = ret.mantissa();
-        exponent = ret.exponent();
-        negative = ret.negative();
+        parts = partsFromString(value.asString());
+        // Can't specify XRP or MPT using fractional representation
+        if ((asset.native() || asset.holds<MPTIssue>()) && parts.exponent < 0)
+            Throw<std::runtime_error>(
+                "XRP and MPT must be specified as integral amount.");
     }
     else
     {
         Throw<std::runtime_error>("invalid amount type");
     }
 
-    return {name, asset, mantissa, exponent, negative};
+    return {name, asset, parts.mantissa, parts.exponent, parts.negative};
 }
 
 bool
@@ -1065,7 +1167,7 @@ amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource)
         result = amountFromJson(sfGeneric, jvSource);
         return true;
     }
-    catch (const std::exception& e)
+    catch (std::exception const& e)
     {
         JLOG(debugLog().warn())
             << "amountFromJsonNoThrow: caught: " << e.what();

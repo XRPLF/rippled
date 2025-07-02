@@ -256,8 +256,8 @@ public:
         if ((cores == 1) || ((config.NODE_SIZE == 0) && (cores == 2)))
             return 1;
 
-        // Otherwise, prefer two threads.
-        return 2;
+        // Otherwise, prefer six threads.
+        return 6;
 #endif
     }
 
@@ -285,7 +285,7 @@ public:
                   config_->CONFIG_DIR),
               *this,
               logs_->journal("PerfLog"),
-              [this] { signalStop(); }))
+              [this] { signalStop("PerfLog"); }))
 
         , m_txMaster(*this)
 
@@ -442,8 +442,8 @@ public:
               std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
         , hashRouter_(std::make_unique<HashRouter>(
-              stopwatch(),
-              HashRouter::getDefaultHoldTime()))
+              setup_HashRouter(*config_),
+              stopwatch()))
 
         , mValidations(
               ValidationParms(),
@@ -505,7 +505,7 @@ public:
     void
     run() override;
     void
-    signalStop(std::string msg = "") override;
+    signalStop(std::string msg) override;
     bool
     checkSigs() const override;
     void
@@ -977,7 +977,7 @@ public:
         if (!config_->standalone() &&
             !getRelationalDatabase().transactionDbHasSpace(*config_))
         {
-            signalStop();
+            signalStop("Out of transaction DB space");
         }
 
         // VFALCO NOTE Does the order of calls matter?
@@ -1137,7 +1137,7 @@ public:
         return maxDisallowedLedger_;
     }
 
-    virtual const std::optional<uint256>&
+    virtual std::optional<uint256> const&
     trapTxID() const override
     {
         return trapTxID_;
@@ -1193,7 +1193,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(m_journal.info()) << "Received signal " << signum;
 
             if (signum == SIGTERM || signum == SIGINT)
-                signalStop();
+                signalStop("Signal: " + to_string(signum));
         });
 
     auto debug_log = config_->getDebugLogFile();

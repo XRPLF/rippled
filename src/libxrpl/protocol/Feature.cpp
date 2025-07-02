@@ -139,27 +139,27 @@ class FeatureCollections
     {
         if (i >= features.size())
             LogicError("Invalid FeatureBitset index");
-        const auto& sequence = features.get<Feature::byIndex>();
+        auto const& sequence = features.get<Feature::byIndex>();
         return sequence[i];
     }
     size_t
     getIndex(Feature const& feature) const
     {
-        const auto& sequence = features.get<Feature::byIndex>();
+        auto const& sequence = features.get<Feature::byIndex>();
         auto const it_to = sequence.iterator_to(feature);
         return it_to - sequence.begin();
     }
     Feature const*
     getByFeature(uint256 const& feature) const
     {
-        const auto& feature_index = features.get<Feature::byFeature>();
+        auto const& feature_index = features.get<Feature::byFeature>();
         auto const feature_it = feature_index.find(feature);
         return feature_it == feature_index.end() ? nullptr : &*feature_it;
     }
     Feature const*
     getByName(std::string const& name) const
     {
-        const auto& name_index = features.get<Feature::byName>();
+        auto const& name_index = features.get<Feature::byName>();
         auto const name_it = name_index.find(name);
         return name_it == name_index.end() ? nullptr : &*name_it;
     }
@@ -240,7 +240,7 @@ FeatureCollections::getRegisteredFeature(std::string const& name) const
 }
 
 void
-check(bool condition, const char* logicErrorMessage)
+check(bool condition, char const* logicErrorMessage)
 {
     if (!condition)
         LogicError(logicErrorMessage);
@@ -254,7 +254,7 @@ FeatureCollections::registerFeature(
 {
     check(!readOnly, "Attempting to register a feature after startup.");
     check(
-        support == Supported::yes || vote == VoteBehavior::DefaultNo,
+        support == Supported::yes || vote != VoteBehavior::DefaultYes,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
     if (!i)
@@ -268,7 +268,7 @@ FeatureCollections::registerFeature(
         features.emplace_back(name, f);
 
         auto const getAmendmentSupport = [=]() {
-            if (vote == VoteBehavior::Obsolete)
+            if (vote == VoteBehavior::Obsolete && support == Supported::yes)
                 return AmendmentSupport::Retired;
             return support == Supported::yes ? AmendmentSupport::Supported
                                              : AmendmentSupport::Unsupported;
@@ -398,6 +398,14 @@ retireFeature(std::string const& name)
     return registerFeature(name, Supported::yes, VoteBehavior::Obsolete);
 }
 
+// Abandoned features are not in the ledger and have no code controlled by the
+// feature. They were never supported, and cannot be voted on.
+uint256
+abandonFeature(std::string const& name)
+{
+    return registerFeature(name, Supported::no, VoteBehavior::Obsolete);
+}
+
 /** Tell FeatureCollections when registration is complete. */
 bool
 registrationIsDone()
@@ -432,14 +440,25 @@ featureToName(uint256 const& f)
 #undef XRPL_FIX
 #pragma push_macro("XRPL_RETIRE")
 #undef XRPL_RETIRE
+#pragma push_macro("XRPL_ABANDON")
+#undef XRPL_ABANDON
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name = registerFeature(#name, supported, vote);
 #define XRPL_FIX(name, supported, vote) \
     uint256 const fix##name = registerFeature("fix" #name, supported, vote);
-#define XRPL_RETIRE(name)                                                     \
-    [[deprecated("The referenced amendment has been retired"), maybe_unused]] \
+
+// clang-format off
+#define XRPL_RETIRE(name)                                       \
+    [[deprecated("The referenced amendment has been retired")]] \
+    [[maybe_unused]]                                            \
     uint256 const retired##name = retireFeature(#name);
+
+#define XRPL_ABANDON(name)                                        \
+    [[deprecated("The referenced amendment has been abandoned")]] \
+    [[maybe_unused]]                                              \
+    uint256 const abandoned##name = abandonFeature(#name);
+// clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
 
@@ -449,13 +468,15 @@ featureToName(uint256 const& f)
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
+#undef XRPL_ABANDON
+#pragma pop_macro("XRPL_ABANDON")
 
 // All of the features should now be registered, since variables in a cpp file
 // are initialized from top to bottom.
 //
 // Use initialization of one final static variable to set
 // featureCollections::readOnly.
-[[maybe_unused]] static const bool readOnlySet =
+[[maybe_unused]] static bool const readOnlySet =
     featureCollections.registrationIsDone();
 
 }  // namespace ripple

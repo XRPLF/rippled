@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
 
 #include <xrpl/protocol/Feature.h>
@@ -48,6 +49,43 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         return temMALFORMED;
 
     return preflight2(ctx);
+}
+
+TER
+MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
+
+    auto const txFlags = tx.getFlags();
+
+    // this is added in case more flags will be added for MPTokenIssuanceSet
+    // in the future. Currently unreachable.
+    if (txFlags & tfMPTokenIssuanceSetPermissionMask)
+        return tecNO_DELEGATE_PERMISSION;  // LCOV_EXCL_LINE
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
+
+    if (txFlags & tfMPTLock &&
+        !granularPermissions.contains(MPTokenIssuanceLock))
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (txFlags & tfMPTUnlock &&
+        !granularPermissions.contains(MPTokenIssuanceUnlock))
+        return tecNO_DELEGATE_PERMISSION;
+
+    return tesSUCCESS;
 }
 
 TER

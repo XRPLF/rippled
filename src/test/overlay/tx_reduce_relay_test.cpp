@@ -41,7 +41,7 @@ public:
 
 private:
     void
-    doTest(const std::string& msg, bool log, std::function<void(bool)> f)
+    doTest(std::string const& msg, bool log, std::function<void(bool)> f)
     {
         testcase(msg);
         f(log);
@@ -131,7 +131,7 @@ private:
             sendTx_++;
         }
         void
-        addTxQueue(const uint256& hash) override
+        addTxQueue(uint256 const& hash) override
         {
             queueTx_++;
         }

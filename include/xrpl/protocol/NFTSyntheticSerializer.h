@@ -28,6 +28,8 @@
 
 namespace ripple {
 
+namespace RPC {
+
 /**
    Adds common synthetic fields to transaction-related JSON responses
 
@@ -40,6 +42,7 @@ insertNFTSyntheticInJson(
     TxMeta const&);
 /** @} */
 
+}  // namespace RPC
 }  // namespace ripple
 
 #endif

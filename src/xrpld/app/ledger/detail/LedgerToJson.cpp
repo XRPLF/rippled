@@ -168,7 +168,7 @@ fillJsonTx(
         if (!fill.ledger.open())
             txJson[jss::ledger_hash] = to_string(fill.ledger.info().hash);
 
-        const bool validated =
+        bool const validated =
             fill.context->ledgerMaster.isValidated(fill.ledger);
         txJson[jss::validated] = validated;
         if (validated)

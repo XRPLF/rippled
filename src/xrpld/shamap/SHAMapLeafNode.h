@@ -42,9 +42,9 @@ protected:
         SHAMapHash const& hash);
 
 public:
-    SHAMapLeafNode(const SHAMapLeafNode&) = delete;
+    SHAMapLeafNode(SHAMapLeafNode const&) = delete;
     SHAMapLeafNode&
-    operator=(const SHAMapLeafNode&) = delete;
+    operator=(SHAMapLeafNode const&) = delete;
 
     bool
     isLeaf() const final override

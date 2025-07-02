@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,52 +17,27 @@
 */
 //==============================================================================
 
-#include <test/jtx/did.h>
-
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
+#pragma once
+#include <xrpld/ledger/View.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
+namespace permissioned_dex {
 
-/** DID operations. */
-namespace did {
+// Check if an account is in a permissioned domain
+[[nodiscard]] bool
+accountInDomain(
+    ReadView const& view,
+    AccountID const& account,
+    Domain const& domainID);
 
-Json::Value
-set(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDSet;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    return jv;
-}
+// Check if an offer is in the permissioned domain
+[[nodiscard]] bool
+offerInDomain(
+    ReadView const& view,
+    uint256 const& offerID,
+    Domain const& domainID,
+    beast::Journal j);
 
-Json::Value
-setValid(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDSet;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    jv[sfURI.jsonName] = strHex(std::string{"uri"});
-    return jv;
-}
+}  // namespace permissioned_dex
 
-Json::Value
-del(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDDelete;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    return jv;
-}
-
-}  // namespace did
-
-}  // namespace jtx
-
-}  // namespace test
 }  // namespace ripple

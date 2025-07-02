@@ -96,6 +96,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcNOT_SYNCED,             "notSynced",            "Not synced to the network.", 503},
     {rpcNO_EVENTS,              "noEvents",             "Current transport does not support events.", 405},
     {rpcNO_NETWORK,             "noNetwork",            "Not synced to the network.", 503},
+    {rpcWRONG_NETWORK,          "wrongNetwork",         "Wrong network.", 503},
     {rpcNO_PERMISSION,          "noPermission",         "You don't have permission for this command.", 401},
     {rpcNO_PF_REQUEST,          "noPathRequest",        "No pathfinding request in progress.", 404},
     {rpcOBJECT_NOT_FOUND,       "objectNotFound",       "The requested object was not found.", 404},
@@ -106,6 +107,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcSRC_ACT_MALFORMED,      "srcActMalformed",      "Source account is malformed.", 400},
     {rpcSRC_ACT_MISSING,        "srcActMissing",        "Source account not provided.", 400},
     {rpcSRC_ACT_NOT_FOUND,      "srcActNotFound",       "Source account not found.", 404},
+    {rpcDELEGATE_ACT_NOT_FOUND, "delegateActNotFound",  "Delegate account not found.", 404},
     {rpcSRC_CUR_MALFORMED,      "srcCurMalformed",      "Source currency is malformed.", 400},
     {rpcSRC_ISR_MALFORMED,      "srcIsrMalformed",      "Source issuer is malformed.", 400},
     {rpcSTREAM_MALFORMED,       "malformedStream",      "Stream malformed.", 400},
@@ -114,7 +116,8 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcUNKNOWN_COMMAND,        "unknownCmd",           "Unknown method.", 405},
     {rpcORACLE_MALFORMED,       "oracleMalformed",      "Oracle request is malformed.", 400},
     {rpcBAD_CREDENTIALS,        "badCredentials",       "Credentials do not exist, are not accepted, or have expired.", 400},
-    {rpcTX_SIGNED,              "transactionSigned",    "Transaction should not be signed.", 400}};
+    {rpcTX_SIGNED,              "transactionSigned",    "Transaction should not be signed.", 400},
+    {rpcDOMAIN_MALFORMED,       "domainMalformed",      "Domain is malformed.", 400}};
 // clang-format on
 
 // Sort and validate unorderedErrorInfos at compile time.  Should be

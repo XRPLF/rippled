@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,47 +17,39 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
+#ifndef RIPPLE_TX_BATCH_H_INCLUDED
+#define RIPPLE_TX_BATCH_H_INCLUDED
 
-#include <string>
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 
-class contract_test : public beast::unit_test::suite
+class Batch : public Transactor
 {
 public:
-    void
-    run() override
-    {
-        try
-        {
-            Throw<std::runtime_error>("Throw test");
-        }
-        catch (std::runtime_error const& e1)
-        {
-            BEAST_EXPECT(std::string(e1.what()) == "Throw test");
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-            try
-            {
-                Rethrow();
-            }
-            catch (std::runtime_error const& e2)
-            {
-                BEAST_EXPECT(std::string(e2.what()) == "Throw test");
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(false);
-            }
-        }
-        catch (...)
-        {
-            BEAST_EXPECT(false);
-        }
+    explicit Batch(ApplyContext& ctx) : Transactor(ctx)
+    {
     }
+
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
+    static NotTEC
+    checkSign(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
 };
 
-BEAST_DEFINE_TESTSUITE(contract, basics, ripple);
-
 }  // namespace ripple
+
+#endif
