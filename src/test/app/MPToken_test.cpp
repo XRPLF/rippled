@@ -78,38 +78,35 @@ class MPToken_test : public beast::unit_test::suite
                      .domainID = uint256(42),
                      .err = temDISABLED});
             }
+            else if (!features[featurePermissionedDomains])
+            {
+                // tries to set DomainID when PD is disabled
+                mptAlice.create(
+                    {.maxAmt = 100,
+                     .assetScale = 0,
+                     .metadata = "test",
+                     .flags = tfMPTRequireAuth,
+                     .domainID = uint256(42),
+                     .err = temDISABLED});
+            }
             else
             {
-                if (!features[featurePermissionedDomains])
-                {
-                    // tries to set DomainID when PD is disabled
-                    mptAlice.create(
-                        {.maxAmt = 100,
-                         .assetScale = 0,
-                         .metadata = "test",
-                         .flags = tfMPTRequireAuth,
-                         .domainID = uint256(42),
-                         .err = temDISABLED});
-                }
-                else
-                {
-                    // tries to set DomainID when RequireAuth is not set
-                    mptAlice.create(
-                        {.maxAmt = 100,
-                         .assetScale = 0,
-                         .metadata = "test",
-                         .domainID = uint256(42),
-                         .err = temMALFORMED});
+                // tries to set DomainID when RequireAuth is not set
+                mptAlice.create(
+                    {.maxAmt = 100,
+                     .assetScale = 0,
+                     .metadata = "test",
+                     .domainID = uint256(42),
+                     .err = temMALFORMED});
 
-                    // tries to set zero DomainID
-                    mptAlice.create(
-                        {.maxAmt = 100,
-                         .assetScale = 0,
-                         .metadata = "test",
-                         .flags = tfMPTRequireAuth,
-                         .domainID = beast::zero,
-                         .err = temMALFORMED});
-                }
+                // tries to set zero DomainID
+                mptAlice.create(
+                    {.maxAmt = 100,
+                     .assetScale = 0,
+                     .metadata = "test",
+                     .flags = tfMPTRequireAuth,
+                     .domainID = beast::zero,
+                     .err = temMALFORMED});
             }
 
             // tries to set a txfee greater than max

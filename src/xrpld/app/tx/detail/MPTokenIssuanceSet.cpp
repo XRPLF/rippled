@@ -113,14 +113,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    bool const lockingEnabled = sleMptIssuance->isFlag(lsfMPTCanLock);
-    if (!ctx.view.rules().enabled(featureSingleAssetVault))
+    if (!sleMptIssuance->isFlag(lsfMPTCanLock))
     {
-        if (!lockingEnabled)
+        // For readability two separate `if` rather than `||` of two conditions
+        if (!ctx.view.rules().enabled(featureSingleAssetVault))
+            return tecNO_PERMISSION;
+        else if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
             return tecNO_PERMISSION;
     }
-    else if (ctx.tx.getFlags() != 0 && !lockingEnabled)
-        return tecNO_PERMISSION;
 
     // ensure it is issued by the tx submitter
     if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])

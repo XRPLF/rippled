@@ -22,8 +22,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include <optional>
-
 namespace ripple {
 namespace test {
 namespace jtx {
