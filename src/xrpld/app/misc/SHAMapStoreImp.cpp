@@ -645,7 +645,7 @@ SHAMapStoreImp::healthWait()
         // of lastRotated in run()?
         lastGoodValidatedLedger_ = index;
     }
-    numMissing = ledgerMaster_->missingFromCompleteLedgerRange(
+    auto numMissing = ledgerMaster_->missingFromCompleteLedgerRange(
         lastGoodValidatedLedger_, index);
     while (
         !stop_ &&
