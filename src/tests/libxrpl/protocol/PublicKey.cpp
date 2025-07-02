@@ -158,14 +158,16 @@ TEST_CASE("Base58")
         auto const si = toBase58(TokenType::NodePublic, keys[i]);
         CHECK(!si.empty());
         auto const ski = parseBase58<PublicKey>(TokenType::NodePublic, si);
-        CHECK(ski && (keys[i] == *ski));
+        CHECK(ski);
+        CHECK(keys[i] == *ski);
         for (std::size_t j = i; j != keys.size(); ++j)
         {
             CHECK((keys[i] == keys[j]) == (i == j));
             auto const sj = toBase58(TokenType::NodePublic, keys[j]);
             CHECK((si == sj) == (i == j));
             auto const skj = parseBase58<PublicKey>(TokenType::NodePublic, sj);
-            CHECK(skj && (keys[j] == *skj));
+            CHECK(skj);
+            CHECK(keys[j] == *skj);
             CHECK((*ski == *skj) == (i == j));
         }
     }
@@ -235,14 +237,16 @@ TEST_CASE("Base58")
         auto const si = toBase58(TokenType::NodePublic, keys[i]);
         CHECK(!si.empty());
         auto const ski = parseBase58<PublicKey>(TokenType::NodePublic, si);
-        CHECK(ski && (keys[i] == *ski));
+        CHECK(ski);
+        CHECK(keys[i] == *ski);
         for (std::size_t j = i; j != keys.size(); ++j)
         {
             CHECK((keys[i] == keys[j]) == (i == j));
             auto const sj = toBase58(TokenType::NodePublic, keys[j]);
             CHECK((si == sj) == (i == j));
             auto const skj = parseBase58<PublicKey>(TokenType::NodePublic, sj);
-            CHECK(skj && (keys[j] == *skj));
+            CHECK(skj);
+            CHECK(keys[j] == *skj);
             CHECK((*ski == *skj) == (i == j));
         }
     }

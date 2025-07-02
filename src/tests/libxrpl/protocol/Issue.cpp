@@ -145,48 +145,34 @@ using Domain = uint256;
             Set c;
 
             c.insert(a1);
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.insert(a2);
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Issue(c1, i2)) == 0))
-                return;
-            if (!CHECK(c.erase(Issue(c1, i1)) == 1))
-                return;
-            if (!CHECK(c.erase(Issue(c2, i2)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Issue(c1, i2)) == 0);
+            CHECK(c.erase(Issue(c1, i1)) == 1);
+            CHECK(c.erase(Issue(c2, i2)) == 1);
+            CHECK(c.empty());
         }
 
         {
             Set c;
 
             c.insert(a1);
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.insert(a2);
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Issue(c1, i2)) == 0))
-                return;
-            if (!CHECK(c.erase(Issue(c1, i1)) == 1))
-                return;
-            if (!CHECK(c.erase(Issue(c2, i2)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Issue(c1, i2)) == 0);
+            CHECK(c.erase(Issue(c1, i1)) == 1);
+            CHECK(c.erase(Issue(c2, i2)) == 1);
+            CHECK(c.empty());
 
 #if STL_SET_HAS_EMPLACE
             c.emplace(c1, i1);
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.emplace(c2, i2);
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 #endif
         }
     }
@@ -206,40 +192,28 @@ using Domain = uint256;
             Map c;
 
             c.insert(std::make_pair(a1, 1));
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.insert(std::make_pair(a2, 2));
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Issue(c1, i2)) == 0))
-                return;
-            if (!CHECK(c.erase(Issue(c1, i1)) == 1))
-                return;
-            if (!CHECK(c.erase(Issue(c2, i2)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Issue(c1, i2)) == 0);
+            CHECK(c.erase(Issue(c1, i1)) == 1);
+            CHECK(c.erase(Issue(c2, i2)) == 1);
+            CHECK(c.empty());
         }
 
         {
             Map c;
 
             c.insert(std::make_pair(a1, 1));
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.insert(std::make_pair(a2, 2));
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Issue(c1, i2)) == 0))
-                return;
-            if (!CHECK(c.erase(Issue(c1, i1)) == 1))
-                return;
-            if (!CHECK(c.erase(Issue(c2, i2)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Issue(c1, i2)) == 0);
+            CHECK(c.erase(Issue(c1, i1)) == 1);
+            CHECK(c.erase(Issue(c2, i2)) == 1);
+            CHECK(c.empty());
         }
     }
 
@@ -259,25 +233,17 @@ using Domain = uint256;
         Set c;
 
         c.insert(std::make_pair(a1, domain1));
-        if (!CHECK(c.size() == 1))
-            return;
+        CHECK(c.size() == 1);
         c.insert(std::make_pair(a2, domain1));
-        if (!CHECK(c.size() == 2))
-            return;
+        CHECK(c.size() == 2);
         c.insert(std::make_pair(a2, domain2));
-        if (!CHECK(c.size() == 3))
-            return;
+        CHECK(c.size() == 3);
 
-        if (!CHECK(c.erase(std::make_pair(Issue(c1, i2), domain1)) == 0))
-            return;
-        if (!CHECK(c.erase(std::make_pair(a1, domain1)) == 1))
-            return;
-        if (!CHECK(c.erase(std::make_pair(a2, domain1)) == 1))
-            return;
-        if (!CHECK(c.erase(std::make_pair(a2, domain2)) == 1))
-            return;
-        if (!CHECK(c.empty()))
-            return;
+        CHECK(c.erase(std::make_pair(Issue(c1, i2), domain1)) == 0);
+        CHECK(c.erase(std::make_pair(a1, domain1)) == 1);
+        CHECK(c.erase(std::make_pair(a2, domain1)) == 1);
+        CHECK(c.erase(std::make_pair(a2, domain2)) == 1);
+        CHECK(c.empty());
     }
 
     template <class Map>
@@ -296,25 +262,17 @@ using Domain = uint256;
         Map c;
 
         c.insert(std::make_pair(std::make_pair(a1, domain1), 1));
-        if (!CHECK(c.size() == 1))
-            return;
+        CHECK(c.size() == 1);
         c.insert(std::make_pair(std::make_pair(a2, domain1), 2));
-        if (!CHECK(c.size() == 2))
-            return;
+        CHECK(c.size() == 2);
         c.insert(std::make_pair(std::make_pair(a2, domain2), 2));
-        if (!CHECK(c.size() == 3))
-            return;
+        CHECK(c.size() == 3);
 
-        if (!CHECK(c.erase(std::make_pair(Issue(c1, i2), domain1)) == 0))
-            return;
-        if (!CHECK(c.erase(std::make_pair(a1, domain1)) == 1))
-            return;
-        if (!CHECK(c.erase(std::make_pair(a2, domain1)) == 1))
-            return;
-        if (!CHECK(c.erase(std::make_pair(a2, domain2)) == 1))
-            return;
-        if (!CHECK(c.empty()))
-            return;
+        CHECK(c.erase(std::make_pair(Issue(c1, i2), domain1)) == 0);
+        CHECK(c.erase(std::make_pair(a1, domain1)) == 1);
+        CHECK(c.erase(std::make_pair(a2, domain1)) == 1);
+        CHECK(c.erase(std::make_pair(a2, domain2)) == 1);
+        CHECK(c.empty());
     }
 
 
@@ -561,48 +519,34 @@ using Domain = uint256;
             Set c;
 
             c.insert(b1);
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.insert(b2);
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0))
-                return;
-            if (!CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0);
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.empty());
         }
 
         {
             Set c;
 
             c.insert(b1);
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.insert(b2);
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0))
-                return;
-            if (!CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0);
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.empty());
 
 #if STL_SET_HAS_EMPLACE
             c.emplace(a1, a2);
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.emplace(a2, a1);
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 #endif
         }
 
@@ -610,35 +554,24 @@ using Domain = uint256;
             Set c;
 
             c.insert(b1_d1);
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.insert(b2_d1);
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
             c.insert(b1_d2);
-            if (!CHECK(c.size() == 3))
-                return;
+            CHECK(c.size() == 3);
             c.insert(b2_d2);
-            if (!CHECK(c.size() == 4))
-                return;
+            CHECK(c.size() == 4);
 
             // Try removing non-existent elements
-            if (!CHECK(c.erase(Book(a2, a2, domain1)) == 0))
-                return;
+            CHECK(c.erase(Book(a2, a2, domain1)) == 0);
 
-            if (!CHECK(c.erase(Book(a1, a2, domain1)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, domain1)) == 1))
-                return;
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.erase(Book(a1, a2, domain1)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain1)) == 1);
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Book(a1, a2, domain2)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, domain2)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Book(a1, a2, domain2)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain2)) == 1);
+            CHECK(c.empty());
         }
 
         {
@@ -648,22 +581,15 @@ using Domain = uint256;
             c.insert(b2);
             c.insert(b1_d1);
             c.insert(b2_d1);
-            if (!CHECK(c.size() == 4))
-                return;
+            CHECK(c.size() == 4);
 
-            if (!CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Book(a1, a2, domain1)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, domain1)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Book(a1, a2, domain1)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain1)) == 1);
+            CHECK(c.empty());
         }
     }
 
@@ -696,21 +622,15 @@ using Domain = uint256;
 
             // c.insert (value_type (b1, 1));
             c.insert(std::make_pair(b1, 1));
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             // c.insert (value_type (b2, 2));
             c.insert(std::make_pair(b2, 1));
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0))
-                return;
-            if (!CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0);
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.empty());
         }
 
         {
@@ -718,56 +638,39 @@ using Domain = uint256;
 
             // c.insert (value_type (b1, 1));
             c.insert(std::make_pair(b1, 1));
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             // c.insert (value_type (b2, 2));
             c.insert(std::make_pair(b2, 1));
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0))
-                return;
-            if (!CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0);
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.empty());
         }
 
         {
             Map c;
 
             c.insert(std::make_pair(b1_d1, 10));
-            if (!CHECK(c.size() == 1))
-                return;
+            CHECK(c.size() == 1);
             c.insert(std::make_pair(b2_d1, 20));
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.size() == 2);
             c.insert(std::make_pair(b1_d2, 30));
-            if (!CHECK(c.size() == 3))
-                return;
+            CHECK(c.size() == 3);
             c.insert(std::make_pair(b2_d2, 40));
-            if (!CHECK(c.size() == 4))
-                return;
+            CHECK(c.size() == 4);
 
             // Try removing non-existent elements
-            if (!CHECK(c.erase(Book(a2, a2, domain1)) == 0))
-                return;
+            CHECK(c.erase(Book(a2, a2, domain1)) == 0);
 
-            if (!CHECK(c.erase(Book(a1, a2, domain1)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, domain1)) == 1))
-                return;
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.erase(Book(a1, a2, domain1)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain1)) == 1);
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Book(a1, a2, domain2)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, domain2)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Book(a1, a2, domain2)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain2)) == 1);
+            CHECK(c.empty());
         }
 
         {
@@ -777,28 +680,19 @@ using Domain = uint256;
             c.insert(std::make_pair(b2, 2));
             c.insert(std::make_pair(b1_d1, 3));
             c.insert(std::make_pair(b2_d1, 4));
-            if (!CHECK(c.size() == 4))
-                return;
+            CHECK(c.size() == 4);
 
             // Try removing non-existent elements
-            if (!CHECK(c.erase(Book(a1, a1, domain1)) == 0))
-                return;
-            if (!CHECK(c.erase(Book(a2, a2, domain2)) == 0))
-                return;
+            CHECK(c.erase(Book(a1, a1, domain1)) == 0);
+            CHECK(c.erase(Book(a2, a2, domain2)) == 0);
 
-            if (!CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1))
-                return;
-            if (!CHECK(c.size() == 2))
-                return;
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.size() == 2);
 
-            if (!CHECK(c.erase(Book(a1, a2, domain1)) == 1))
-                return;
-            if (!CHECK(c.erase(Book(a2, a1, domain1)) == 1))
-                return;
-            if (!CHECK(c.empty()))
-                return;
+            CHECK(c.erase(Book(a1, a2, domain1)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain1)) == 1);
+            CHECK(c.empty());
         }
     }
 
@@ -810,6 +704,8 @@ using Domain = uint256;
 
 
 }  // namespace ripple
+
+using namespace ripple;
 
 TEST_SUITE_BEGIN("Issue");
 

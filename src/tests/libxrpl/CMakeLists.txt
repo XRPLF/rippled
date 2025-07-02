@@ -12,7 +12,5 @@ xrpl_add_test(basics)
 target_link_libraries(xrpl.test.basics PRIVATE xrpl.imports.test)
 xrpl_add_test(crypto)
 target_link_libraries(xrpl.test.crypto PRIVATE xrpl.imports.test)
-
-# Protocol unit tests
 xrpl_add_test(protocol)
 target_link_libraries(xrpl.test.protocol PRIVATE xrpl.imports.test)
