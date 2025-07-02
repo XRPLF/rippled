@@ -95,7 +95,7 @@ SuiteJournalSink::writeAlways(
     }();
 
     static std::mutex log_mutex;
-    std::lock_guard lock(log_mutex_);
+    std::lock_guard lock(log_mutex);
     suite_.log << s << partition_ << text << std::endl;
 }
 
