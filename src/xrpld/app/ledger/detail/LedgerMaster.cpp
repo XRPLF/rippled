@@ -1597,7 +1597,7 @@ LedgerMaster::getCompleteLedgers() const
 std::size_t
 LedgerMaster::missingFromCompleteLedgerRange(
     LedgerIndex first,
-    LedgerIndex last) const;
+    LedgerIndex last) const
 {
     // Make a copy of the range to avoid holding the lock
     auto const range = [&] {
