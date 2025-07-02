@@ -1,12 +1,10 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
+    Copyright (c) 2024 Ripple Labs Inc.
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
-
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -17,44 +15,23 @@
 */
 //==============================================================================
 
-#include <test/jtx/Env.h>
-
-#include <xrpl/beast/utility/temp_dir.h>
-#include <xrpl/crypto/csprng.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
 
-class CryptoPRNG_test : public beast::unit_test::suite
+inline void
+serializeBatch(
+    Serializer& msg,
+    std::uint32_t const& flags,
+    std::vector<uint256> const& txids)
 {
-    void
-    testGetValues()
-    {
-        testcase("Get Values");
-        try
-        {
-            auto& engine = crypto_prng();
-            auto rand_val = engine();
-            BEAST_EXPECT(rand_val >= engine.min());
-            BEAST_EXPECT(rand_val <= engine.max());
-
-            uint16_t twoByte{0};
-            engine(&twoByte, sizeof(uint16_t));
-            pass();
-        }
-        catch (std::exception&)
-        {
-            fail();
-        }
-    }
-
-public:
-    void
-    run() override
-    {
-        testGetValues();
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(CryptoPRNG, core, ripple);
+    msg.add32(HashPrefix::batch);
+    msg.add32(flags);
+    msg.add32(std::uint32_t(txids.size()));
+    for (auto const& txid : txids)
+        msg.addBitString(txid);
+}
 
 }  // namespace ripple

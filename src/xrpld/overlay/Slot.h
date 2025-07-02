@@ -20,6 +20,7 @@
 #ifndef RIPPLE_OVERLAY_SLOT_H_INCLUDED
 #define RIPPLE_OVERLAY_SLOT_H_INCLUDED
 
+#include <xrpld/core/Config.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/ReduceRelayCommon.h>
 
@@ -32,7 +33,6 @@
 #include <xrpl/protocol/messages.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 #include <set>
 #include <tuple>
@@ -109,16 +109,25 @@ private:
     using id_t = Peer::id_t;
     using time_point = typename clock_type::time_point;
 
+    // a callback to report ignored squelches
+    using ignored_squelch_callback = std::function<void()>;
+
     /** Constructor
      * @param journal Journal for logging
      * @param handler Squelch/Unsquelch implementation
+     * @param maxSelectedPeers the maximum number of peers to be selected as
+     * validator message source
      */
-    Slot(SquelchHandler const& handler, beast::Journal journal)
+    Slot(
+        SquelchHandler const& handler,
+        beast::Journal journal,
+        uint16_t maxSelectedPeers)
         : reachedThreshold_(0)
         , lastSelected_(clock_type::now())
         , state_(SlotState::Counting)
         , handler_(handler)
         , journal_(journal)
+        , maxSelectedPeers_(maxSelectedPeers)
     {
     }
 
@@ -129,7 +138,7 @@ private:
      * slot's state to Counting. If the number of messages for the peer is >
      * MIN_MESSAGE_THRESHOLD then add peer to considered peers pool. If the
      * number of considered peers who reached MAX_MESSAGE_THRESHOLD is
-     * MAX_SELECTED_PEERS then randomly select MAX_SELECTED_PEERS from
+     * maxSelectedPeers_ then randomly select maxSelectedPeers_ from
      * considered peers, and call squelch handler for each peer, which is not
      * selected and not already in Squelched state. Set the state for those
      * peers to Squelched and reset the count of all peers. Set slot's state to
@@ -139,9 +148,14 @@ private:
      * @param id Peer id which received the message
      * @param type  Message type (Validation and Propose Set only,
      *     others are ignored, future use)
+     * @param callback A callback to report ignored squelches
      */
     void
-    update(PublicKey const& validator, id_t id, protocol::MessageType type);
+    update(
+        PublicKey const& validator,
+        id_t id,
+        protocol::MessageType type,
+        ignored_squelch_callback callback);
 
     /** Handle peer deletion when a peer disconnects.
      * If the peer is in Selected state then
@@ -223,17 +237,26 @@ private:
         time_point expire;       // squelch expiration time
         time_point lastMessage;  // time last message received
     };
+
     std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
+
     // pool of peers considered as the source of messages
     // from validator - peers that reached MIN_MESSAGE_THRESHOLD
     std::unordered_set<id_t> considered_;
+
     // number of peers that reached MAX_MESSAGE_THRESHOLD
     std::uint16_t reachedThreshold_;
+
     // last time peers were selected, used to age the slot
     typename clock_type::time_point lastSelected_;
+
     SlotState state_;                // slot's state
     SquelchHandler const& handler_;  // squelch/unsquelch handler
     beast::Journal const journal_;   // logging
+
+    // the maximum number of peers that should be selected as a validator
+    // message source
+    uint16_t const maxSelectedPeers_;
 };
 
 template <typename clock_type>
@@ -264,7 +287,8 @@ void
 Slot<clock_type>::update(
     PublicKey const& validator,
     id_t id,
-    protocol::MessageType type)
+    protocol::MessageType type,
+    ignored_squelch_callback callback)
 {
     using namespace std::chrono;
     auto now = clock_type::now();
@@ -302,6 +326,10 @@ Slot<clock_type>::update(
 
     peer.lastMessage = now;
 
+    // report if we received a message from a squelched peer
+    if (peer.state == PeerState::Squelched)
+        callback();
+
     if (state_ != SlotState::Counting || peer.state == PeerState::Squelched)
         return;
 
@@ -319,17 +347,17 @@ Slot<clock_type>::update(
         return;
     }
 
-    if (reachedThreshold_ == MAX_SELECTED_PEERS)
+    if (reachedThreshold_ == maxSelectedPeers_)
     {
-        // Randomly select MAX_SELECTED_PEERS peers from considered.
+        // Randomly select maxSelectedPeers_ peers from considered.
         // Exclude peers that have been idling > IDLED -
         // it's possible that deleteIdlePeer() has not been called yet.
-        // If number of remaining peers != MAX_SELECTED_PEERS
+        // If number of remaining peers != maxSelectedPeers_
         // then reset the Counting state and let deleteIdlePeer() handle
         // idled peers.
         std::unordered_set<id_t> selected;
         auto const consideredPoolSize = considered_.size();
-        while (selected.size() != MAX_SELECTED_PEERS && considered_.size() != 0)
+        while (selected.size() != maxSelectedPeers_ && considered_.size() != 0)
         {
             auto i =
                 considered_.size() == 1 ? 0 : rand_int(considered_.size() - 1);
@@ -347,7 +375,7 @@ Slot<clock_type>::update(
                 selected.insert(id);
         }
 
-        if (selected.size() != MAX_SELECTED_PEERS)
+        if (selected.size() != maxSelectedPeers_)
         {
             JLOG(journal_.trace())
                 << "update: selection failed " << Slice(validator) << " " << id;
@@ -364,7 +392,7 @@ Slot<clock_type>::update(
             << *std::next(s, 1) << " " << *std::next(s, 2);
 
         XRPL_ASSERT(
-            peers_.size() >= MAX_SELECTED_PEERS,
+            peers_.size() >= maxSelectedPeers_,
             "ripple::reduce_relay::Slot::update : minimum peers");
 
         // squelch peers which are not selected and
@@ -382,7 +410,7 @@ Slot<clock_type>::update(
                     str << k << " ";
                 v.state = PeerState::Squelched;
                 std::chrono::seconds duration =
-                    getSquelchDuration(peers_.size() - MAX_SELECTED_PEERS);
+                    getSquelchDuration(peers_.size() - maxSelectedPeers_);
                 v.expire = now + duration;
                 handler_.squelch(validator, k, duration.count());
             }
@@ -544,15 +572,41 @@ class Slots final
 
 public:
     /**
-     * @param app Applicaton reference
+     * @param logs reference to the logger
      * @param handler Squelch/unsquelch implementation
+     * @param config reference to the global config
      */
-    Slots(Logs& logs, SquelchHandler const& handler)
-        : handler_(handler), logs_(logs), journal_(logs.journal("Slots"))
+    Slots(Logs& logs, SquelchHandler const& handler, Config const& config)
+        : handler_(handler)
+        , logs_(logs)
+        , journal_(logs.journal("Slots"))
+        , baseSquelchEnabled_(config.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
+        , maxSelectedPeers_(config.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)
     {
     }
     ~Slots() = default;
-    /** Calls Slot::update of Slot associated with the validator.
+
+    /** Check if base squelching feature is enabled and ready */
+    bool
+    baseSquelchReady()
+    {
+        return baseSquelchEnabled_ && reduceRelayReady();
+    }
+
+    /** Check if reduce_relay::WAIT_ON_BOOTUP time passed since startup */
+    bool
+    reduceRelayReady()
+    {
+        if (!reduceRelayReady_)
+            reduceRelayReady_ =
+                reduce_relay::epoch<std::chrono::minutes>(clock_type::now()) >
+                reduce_relay::WAIT_ON_BOOTUP;
+
+        return reduceRelayReady_;
+    }
+
+    /** Calls Slot::update of Slot associated with the validator, with a noop
+     * callback.
      * @param key Message's hash
      * @param validator Validator's public key
      * @param id Peer's id which received the message
@@ -563,7 +617,25 @@ public:
         uint256 const& key,
         PublicKey const& validator,
         id_t id,
-        protocol::MessageType type);
+        protocol::MessageType type)
+    {
+        updateSlotAndSquelch(key, validator, id, type, []() {});
+    }
+
+    /** Calls Slot::update of Slot associated with the validator.
+     * @param key Message's hash
+     * @param validator Validator's public key
+     * @param id Peer's id which received the message
+     * @param type Received protocol message type
+     * @param callback A callback to report ignored validations
+     */
+    void
+    updateSlotAndSquelch(
+        uint256 const& key,
+        PublicKey const& validator,
+        id_t id,
+        protocol::MessageType type,
+        typename Slot<clock_type>::ignored_squelch_callback callback);
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator.
@@ -651,10 +723,16 @@ private:
     bool
     addPeerMessage(uint256 const& key, id_t id);
 
+    std::atomic_bool reduceRelayReady_{false};
+
     hash_map<PublicKey, Slot<clock_type>> slots_;
     SquelchHandler const& handler_;  // squelch/unsquelch handler
     Logs& logs_;
     beast::Journal const journal_;
+
+    bool const baseSquelchEnabled_;
+    uint16_t const maxSelectedPeers_;
+
     // Maintain aged container of message/peers. This is required
     // to discard duplicate message from the same peer. A message
     // is aged after IDLED seconds. A message received IDLED seconds
@@ -702,7 +780,8 @@ Slots<clock_type>::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     id_t id,
-    protocol::MessageType type)
+    protocol::MessageType type,
+    typename Slot<clock_type>::ignored_squelch_callback callback)
 {
     if (!addPeerMessage(key, id))
         return;
@@ -712,15 +791,17 @@ Slots<clock_type>::updateSlotAndSquelch(
     {
         JLOG(journal_.trace())
             << "updateSlotAndSquelch: new slot " << Slice(validator);
-        auto it = slots_
-                      .emplace(std::make_pair(
-                          validator,
-                          Slot<clock_type>(handler_, logs_.journal("Slot"))))
-                      .first;
-        it->second.update(validator, id, type);
+        auto it =
+            slots_
+                .emplace(std::make_pair(
+                    validator,
+                    Slot<clock_type>(
+                        handler_, logs_.journal("Slot"), maxSelectedPeers_)))
+                .first;
+        it->second.update(validator, id, type, callback);
     }
     else
-        it->second.update(validator, id, type);
+        it->second.update(validator, id, type, callback);
 }
 
 template <typename clock_type>

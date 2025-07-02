@@ -28,6 +28,7 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/app/ledger/Ledger.h>
@@ -471,6 +472,15 @@ public:
     PrettyAmount
     balance(Account const& account, Issue const& issue) const;
 
+    PrettyAmount
+    balance(Account const& account, MPTIssue const& mptIssue) const;
+
+    /** Returns the IOU limit on an account.
+        Returns 0 if the trust line does not exist.
+    */
+    PrettyAmount
+    limit(Account const& account, Issue const& issue) const;
+
     /** Return the number of objects owned by an account.
      * Returns 0 if the account does not exist.
      */
@@ -588,13 +598,16 @@ public:
     }
 
     /** Return metadata for the last JTx.
-
-        Effects:
-
-            The open ledger is closed as if by a call
-            to close(). The metadata for the last
-            transaction ID, if any, is returned.
-    */
+     *
+     *  NOTE: this has a side effect of closing the open ledger.
+     *  The ledger will only be closed if it includes transactions.
+     *
+     *  Effects:
+     *
+     *      The open ledger is closed as if by a call
+     *      to close(). The metadata for the last
+     *      transaction ID, if any, is returned.
+     */
     std::shared_ptr<STObject const>
     meta();
 
@@ -617,6 +630,12 @@ public:
 
     void
     disableFeature(uint256 const feature);
+
+    bool
+    enabled(uint256 feature) const
+    {
+        return current()->rules().enabled(feature);
+    }
 
 private:
     void
