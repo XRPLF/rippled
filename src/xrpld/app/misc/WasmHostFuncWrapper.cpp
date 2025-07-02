@@ -130,6 +130,7 @@ getData<uint256>(
     int32_t& i)
 {
     auto const r = getData<Bytes>(rt, params, i);
+    i++;
     if (!r)
     {
         return Unexpected(r.error());
@@ -257,10 +258,10 @@ invokeHostFunc(
             results,
             setData(
                 rt,
-                params->data[0].of.i32,
-                params->data[1].of.i32,
-                reinterpret_cast<uint8_t const*>(&result),
-                static_cast<int32_t>(sizeof(result))));
+                params->data[index].of.i32,
+                params->data[index + 1].of.i32,
+                reinterpret_cast<uint8_t const*>(&result.value()),
+                static_cast<int32_t>(sizeof(result.value()))));
     }
     else
     {
