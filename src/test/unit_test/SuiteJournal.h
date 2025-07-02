@@ -94,7 +94,7 @@ SuiteJournalSink::writeAlways(
         return "FTL:";
     }();
 
-    static std::mutex log_mutex_;
+    static std::mutex log_mutex;
     std::lock_guard lock(log_mutex_);
     suite_.log << s << partition_ << text << std::endl;
 }
