@@ -2255,12 +2255,41 @@ ValidVault::finalizeWithdraw(
 
 bool
 ValidVault::finalizeClawback(
-    std::pair<Vault const&, Vault const&>,
-    std::pair<Shares const&, Shares const&>,
+    std::pair<Vault const&, Vault const&> vault,
+    std::pair<Shares const&, Shares const&> shares,
     Number clawback,
     beast::Journal const& j)
 {
-    return true;
+    bool result = true;
+    if (clawback < zero)
+    {
+        JLOG(j.fatal()) << "Invariant failed: clawback must be positive";
+        result = false;
+    }
+    if (clawback > zero)
+    {
+        if (vault.first.assetsTotal - clawback != vault.second.assetsTotal)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: clawback and assets outstanding "
+                   "do not add up";
+            result = false;
+        }
+        if (vault.first.assetsAvailable - clawback !=
+            vault.second.assetsAvailable)
+        {
+            JLOG(j.fatal()) << "Invariant failed: clawback and assets "
+                               "available do not add up";
+            result = false;
+        }
+    }
+    if (shares.first.sharesTotal <= shares.second.sharesTotal)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: clawback must reduce shares outstanding";
+        result = false;
+    }
+    return result;
 }
 
 bool
