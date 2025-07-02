@@ -37,14 +37,16 @@ int32_t const HF_ERR_NOT_LEAF_FIELD = -5;
 int32_t const HF_ERR_LOCATOR_MALFORMED = -6;
 int32_t const HF_ERR_SLOT_OUT_RANGE = -7;
 int32_t const HF_ERR_SLOTS_FULL = -8;
-int32_t const HF_ERR_INVALID_SLOT = -9;
+int32_t const HF_ERR_EMPTY_SLOT = -9;
 int32_t const HF_ERR_LEDGER_OBJ_NOT_FOUND = -10;
 int32_t const HF_ERR_DECODING = -11;
 int32_t const HF_ERR_DATA_FIELD_TOO_LARGE = -12;
-int32_t const HF_ERR_OUT_OF_BOUNDS = -13;
+int32_t const HF_ERR_POINTER_OUT_OF_BOUNDS = -13;
 int32_t const HF_ERR_NO_MEM_EXPORTED = -14;
 int32_t const HF_ERR_INVALID_PARAMS = -15;
 int32_t const HF_ERR_INVALID_ACCOUNT = -16;
+int32_t const HF_ERR_INVALID_FIELD = -17;
+int32_t const HF_ERR_INDEX_OUT_OF_BOUNDS = -18;
 
 struct HostFunctions
 {
