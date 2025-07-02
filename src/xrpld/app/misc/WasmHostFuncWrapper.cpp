@@ -331,7 +331,7 @@ getTxNestedField_wrap(
         RET(r.error());
     }
 
-    auto fieldData = hf->getTxNestedField(makeSlice(r.value()));
+    auto fieldData = hf->getTxNestedField(r.value());
     if (!fieldData)
     {
         RET(fieldData.error());
@@ -360,7 +360,7 @@ getCurrentLedgerObjNestedField_wrap(
         RET(r.error());
     }
 
-    auto fieldData = hf->getCurrentLedgerObjNestedField(makeSlice(r.value()));
+    auto fieldData = hf->getCurrentLedgerObjNestedField(r.value());
     if (!fieldData)
     {
         RET(fieldData.error());
@@ -389,8 +389,8 @@ getLedgerObjNestedField_wrap(
         RET(r.error());
     }
 
-    auto fieldData = hf->getLedgerObjNestedField(
-        params->data[0].of.i32, makeSlice(r.value()));
+    auto fieldData =
+        hf->getLedgerObjNestedField(params->data[0].of.i32, r.value());
     if (!fieldData)
     {
         RET(fieldData.error());
@@ -477,7 +477,7 @@ getTxNestedArrayLen_wrap(
         RET(r.error());
     }
 
-    int32_t sz = hf->getTxNestedArrayLen(makeSlice(r.value()));
+    int32_t sz = hf->getTxNestedArrayLen(r.value());
     RET(sz);
 }
 
@@ -496,7 +496,7 @@ getCurrentLedgerObjNestedArrayLen_wrap(
         RET(r.error());
     }
 
-    int32_t sz = hf->getCurrentLedgerObjNestedArrayLen(makeSlice(r.value()));
+    int32_t sz = hf->getCurrentLedgerObjNestedArrayLen(r.value());
     RET(sz);
 }
 
@@ -515,8 +515,8 @@ getLedgerObjNestedArrayLen_wrap(
         RET(r.error());
     }
 
-    int32_t sz = hf->getLedgerObjNestedArrayLen(
-        params->data[0].of.i32, makeSlice(r.value()));
+    int32_t sz =
+        hf->getLedgerObjNestedArrayLen(params->data[0].of.i32, r.value());
     RET(sz);
 }
 

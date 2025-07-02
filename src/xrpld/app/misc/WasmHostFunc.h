@@ -110,19 +110,19 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, int32_t>
-    getTxNestedField(Slice const& locator)
+    getTxNestedField(Bytes const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Bytes, int32_t>
-    getCurrentLedgerObjNestedField(Slice const& locator)
+    getCurrentLedgerObjNestedField(Bytes const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Bytes, int32_t>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator)
+    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
@@ -146,19 +146,19 @@ struct HostFunctions
     }
 
     virtual int32_t
-    getTxNestedArrayLen(Slice const& locator)
+    getTxNestedArrayLen(Bytes const& locator)
     {
         return HF_ERR_INTERNAL;
     }
 
     virtual int32_t
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator)
+    getCurrentLedgerObjNestedArrayLen(Bytes const& locator)
     {
         return HF_ERR_INTERNAL;
     }
 
     virtual int32_t
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator)
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator)
     {
         return HF_ERR_INTERNAL;
     }

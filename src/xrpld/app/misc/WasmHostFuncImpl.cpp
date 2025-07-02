@@ -174,8 +174,9 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
 }
 
 static Expected<STBase const*, int32_t>
-locateField(STObject const& obj, Slice const& loc)
+locateField(STObject const& obj, Bytes const& bytesLoc)
 {
+    Slice const& loc = makeSlice(bytesLoc);
     if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
         return Unexpected(HF_ERR_LOCATOR_MALFORMED);
 
@@ -231,7 +232,7 @@ locateField(STObject const& obj, Slice const& loc)
 }
 
 Expected<Bytes, int32_t>
-WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
+WasmHostFunctionsImpl::getTxNestedField(Bytes const& locator)
 {
     auto const r = locateField(ctx.tx, locator);
     if (!r)
@@ -245,7 +246,7 @@ WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
 }
 
 Expected<Bytes, int32_t>
-WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
+WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Bytes const& locator)
 {
     auto const sle = ctx.view().read(leKey);
     if (!sle)
@@ -265,7 +266,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::getLedgerObjNestedField(
     int32_t cacheIdx,
-    Slice const& locator)
+    Bytes const& locator)
 {
     --cacheIdx;
     if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
@@ -349,7 +350,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
 }
 
 int32_t
-WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
+WasmHostFunctionsImpl::getTxNestedArrayLen(Bytes const& locator)
 {
     auto const r = locateField(ctx.tx, locator);
     if (!r)
@@ -364,7 +365,7 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
 }
 
 int32_t
-WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
+WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Bytes const& locator)
 {
     auto const sle = ctx.view().read(leKey);
     if (!sle)
@@ -384,7 +385,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
 int32_t
 WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     int32_t cacheIdx,
-    Slice const& locator)
+    Bytes const& locator)
 {
     --cacheIdx;
     if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)

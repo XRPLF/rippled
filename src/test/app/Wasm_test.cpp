@@ -188,7 +188,7 @@ public:
     }
 
     Expected<Bytes, int32_t>
-    getTxNestedField(Slice const& locator) override
+    getTxNestedField(Bytes const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
@@ -198,7 +198,7 @@ public:
     }
 
     Expected<Bytes, int32_t>
-    getCurrentLedgerObjNestedField(Slice const& locator) override
+    getCurrentLedgerObjNestedField(Bytes const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
@@ -208,7 +208,7 @@ public:
     }
 
     Expected<Bytes, int32_t>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
+    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
@@ -236,19 +236,19 @@ public:
     }
 
     int32_t
-    getTxNestedArrayLen(Slice const& locator) override
+    getTxNestedArrayLen(Bytes const& locator) override
     {
         return 32;
     }
 
     int32_t
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
+    getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override
     {
         return 32;
     }
 
     int32_t
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override
     {
         return 32;
     }
@@ -579,7 +579,7 @@ public:
     }
 
     static Expected<STBase const*, int32_t>
-    locateField(STObject const& obj, Slice const& loc)
+    locateField(STObject const& obj, Bytes const& loc)
     {
         if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
             return Unexpected(HF_ERR_LOCATOR_MALFORMED);
@@ -636,7 +636,7 @@ public:
     }
 
     Expected<Bytes, int32_t>
-    getTxNestedField(Slice const& locator) override
+    getTxNestedField(Bytes const& locator) override
     {
         // std::cout << tx_->getJson(JsonOptions::none).toStyledString() <<
         // std::endl;
@@ -653,7 +653,7 @@ public:
     }
 
     Expected<Bytes, int32_t>
-    getCurrentLedgerObjNestedField(Slice const& locator) override
+    getCurrentLedgerObjNestedField(Bytes const& locator) override
     {
         auto const sle = env_.le(leKey);
         if (!sle)
@@ -672,7 +672,7 @@ public:
     }
 
     Expected<Bytes, int32_t>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
+    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override
     {
         --cacheIdx;
         if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
@@ -761,7 +761,7 @@ public:
     }
 
     int32_t
-    getTxNestedArrayLen(Slice const& locator) override
+    getTxNestedArrayLen(Bytes const& locator) override
     {
         auto const r = locateField(*tx_, locator);
         if (!r)
@@ -776,7 +776,7 @@ public:
     }
 
     int32_t
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
+    getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override
     {
         auto const sle = env_.le(leKey);
         if (!sle)
@@ -794,7 +794,7 @@ public:
     }
 
     int32_t
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override
     {
         --cacheIdx;
         if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)

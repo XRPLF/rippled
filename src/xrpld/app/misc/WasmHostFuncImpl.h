@@ -79,13 +79,13 @@ public:
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override;
 
     Expected<Bytes, int32_t>
-    getTxNestedField(Slice const& locator) override;
+    getTxNestedField(Bytes const& locator) override;
 
     Expected<Bytes, int32_t>
-    getCurrentLedgerObjNestedField(Slice const& locator) override;
+    getCurrentLedgerObjNestedField(Bytes const& locator) override;
 
     Expected<Bytes, int32_t>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override;
+    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override;
 
     int32_t
     getTxArrayLen(SField const& fname) override;
@@ -97,13 +97,13 @@ public:
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override;
 
     int32_t
-    getTxNestedArrayLen(Slice const& locator) override;
+    getTxNestedArrayLen(Bytes const& locator) override;
 
     int32_t
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override;
+    getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override;
 
     int32_t
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override;
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override;
 
     int32_t
     updateData(Bytes const& data) override;
