@@ -26,6 +26,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 
@@ -176,7 +177,13 @@ struct HostFunctions
     virtual Expected<Bytes, int32_t>
     accountKeylet(AccountID const& account)
     {
-        return Bytes{};
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
+    checkKeylet(AccountID const& account, std::uint32_t seq)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Bytes, int32_t>
@@ -189,13 +196,73 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, int32_t>
+    didKeylet(AccountID const& account)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
+    delegateKeylet(AccountID const& account, AccountID const& authorize)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
+    depositPreauthKeylet(AccountID const& account, AccountID const& authorize)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
     escrowKeylet(AccountID const& account, std::uint32_t seq)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Bytes, int32_t>
+    lineKeylet(
+        AccountID const& account1,
+        AccountID const& account2,
+        Currency const& currency)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
+    nftOfferKeylet(AccountID const& account, std::uint32_t seq)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
+    offerKeylet(AccountID const& account, std::uint32_t seq)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
     oracleKeylet(AccountID const& account, std::uint32_t docId)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
+    paychanKeylet(
+        AccountID const& account,
+        AccountID const& destination,
+        std::uint32_t seq)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
+    signersKeylet(AccountID const& account)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<Bytes, int32_t>
+    ticketKeylet(AccountID const& account, std::uint32_t seq)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }

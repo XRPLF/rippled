@@ -78,6 +78,16 @@ getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
     return AccountID::fromVoid(r->data());
 }
 
+static Expected<Currency, int32_t>
+getDataCurrency(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
+{
+    auto const r = getData(rt, ptr, sz);
+    if (!r || (r->size() < Currency::bytes))
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
+    return Currency::fromVoid(r->data());
+}
+
 static Expected<std::string, int32_t>
 getDataString(InstanceWrapper const* rt, int32_t src, int32_t ssz)
 {
@@ -570,6 +580,36 @@ accountKeylet_wrap(
 }
 
 wasm_trap_t*
+checkKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->checkKeylet(acc.value(), params->data[2].of.i32);
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[3].of.i32,
+        params->data[4].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
 credentialKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -615,6 +655,107 @@ credentialKeylet_wrap(
 }
 
 wasm_trap_t*
+delegateKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const authorize =
+        getDataAccount(rt, params->data[2].of.i32, params->data[3].of.i32);
+    if (!authorize)
+    {
+        RET(authorize.error());
+    }
+
+    auto const k = hf->delegateKeylet(acc.value(), authorize.value());
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[4].of.i32,
+        params->data[5].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+depositPreauthKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const authorize =
+        getDataAccount(rt, params->data[2].of.i32, params->data[3].of.i32);
+    if (!authorize)
+    {
+        RET(authorize.error());
+    }
+
+    auto const k = hf->depositPreauthKeylet(acc.value(), authorize.value());
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[4].of.i32,
+        params->data[5].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+didKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->didKeylet(acc.value());
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[2].of.i32,
+        params->data[3].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
 escrowKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -645,6 +786,110 @@ escrowKeylet_wrap(
 }
 
 wasm_trap_t*
+lineKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc1 =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc1)
+    {
+        RET(acc1.error());
+    }
+
+    auto const acc2 =
+        getDataAccount(rt, params->data[2].of.i32, params->data[3].of.i32);
+    if (!acc2)
+    {
+        RET(acc2.error());
+    }
+
+    auto const currency =
+        getDataCurrency(rt, params->data[4].of.i32, params->data[5].of.i32);
+    if (!currency)
+    {
+        RET(currency.error());
+    }
+
+    auto const k = hf->lineKeylet(acc1.value(), acc2.value(), currency.value());
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[6].of.i32,
+        params->data[7].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+nftOfferKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->nftOfferKeylet(acc.value(), params->data[2].of.i32);
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[3].of.i32,
+        params->data[4].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+offerKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->offerKeylet(acc.value(), params->data[2].of.i32);
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[3].of.i32,
+        params->data[4].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
 oracleKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -661,6 +906,104 @@ oracleKeylet_wrap(
     }
 
     auto const k = hf->oracleKeylet(acc.value(), params->data[2].of.i32);
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[3].of.i32,
+        params->data[4].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+paychanKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const dest =
+        getDataAccount(rt, params->data[2].of.i32, params->data[3].of.i32);
+    if (!dest)
+    {
+        RET(dest.error());
+    }
+
+    auto const k =
+        hf->paychanKeylet(acc.value(), dest.value(), params->data[4].of.i32);
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[5].of.i32,
+        params->data[6].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+signersKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->signersKeylet(acc.value());
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[2].of.i32,
+        params->data[3].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+ticketKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->ticketKeylet(acc.value(), params->data[2].of.i32);
     if (!k)
     {
         RET(k.error());
