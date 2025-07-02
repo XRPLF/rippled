@@ -51,9 +51,19 @@ setData(
     return ssz;
 }
 
-static Expected<Bytes, HostFuncError>
-getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
+template <typename T>
+Expected<T, HostFuncError>
+getData(InstanceWrapper const* rt, wasm_val_vec_t const* params, int32_t src);
+
+template <>
+Expected<Bytes, HostFuncError>
+getData<Bytes>(
+    InstanceWrapper const* rt,
+    wasm_val_vec_t const* params,
+    int32_t i)
 {
+    auto const src = params->data[i].of.i32;
+    auto const ssz = params->data[i + 1].of.i32;
     if (!ssz)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
@@ -68,19 +78,29 @@ getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
     return data;
 }
 
-static Expected<AccountID, HostFuncError>
-getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
+template <>
+Expected<AccountID, HostFuncError>
+getData<AccountID>(
+    InstanceWrapper const* rt,
+    wasm_val_vec_t const* params,
+    int32_t i)
 {
-    auto const r = getData(rt, ptr, sz);
+    auto const r = getData<Bytes>(rt, params, i);
     if (!r || (r->size() < AccountID::bytes))
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     return AccountID::fromVoid(r->data());
 }
 
-static Expected<std::string, HostFuncError>
-getDataString(InstanceWrapper const* rt, int32_t src, int32_t ssz)
+template <>
+Expected<std::string, HostFuncError>
+getData<std::string>(
+    InstanceWrapper const* rt,
+    wasm_val_vec_t const* params,
+    int32_t i)
 {
+    auto const src = params->data[i].of.i32;
+    auto const ssz = params->data[i + 1].of.i32;
     if (!ssz)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
@@ -173,7 +193,7 @@ cacheLedgerObj_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const r = getData<Bytes>(rt, params, 0);
     if (!r)
     {
         RET(r.error());
@@ -292,7 +312,7 @@ getTxNestedField_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const r = getData<Bytes>(rt, params, 0);
     if (!r)
     {
         RET(r.error());
@@ -321,7 +341,7 @@ getCurrentLedgerObjNestedField_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const r = getData<Bytes>(rt, params, 0);
     if (!r)
     {
         RET(r.error());
@@ -350,7 +370,7 @@ getLedgerObjNestedField_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const r = getData(rt, params->data[1].of.i32, params->data[2].of.i32);
+    auto const r = getData<Bytes>(rt, params, 1);
     if (!r)
     {
         RET(r.error());
@@ -443,7 +463,7 @@ getTxNestedArrayLen_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const r = getData<Bytes>(rt, params, 0);
     if (!r)
     {
         RET(r.error());
@@ -462,7 +482,7 @@ getCurrentLedgerObjNestedArrayLen_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const r = getData<Bytes>(rt, params, 0);
     if (!r)
     {
         RET(r.error());
@@ -481,7 +501,7 @@ getLedgerObjNestedArrayLen_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const r = getData(rt, params->data[1].of.i32, params->data[2].of.i32);
+    auto const r = getData<Bytes>(rt, params, 1);
     if (!r)
     {
         RET(r.error());
@@ -506,7 +526,7 @@ updateData_wrap(
         RET(HF_ERR_DATA_FIELD_TOO_LARGE)
     }
 
-    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const r = getData<Bytes>(rt, params, 0);
     if (!r)
     {
         RET(r.error());
@@ -524,7 +544,7 @@ computeSha512HalfHash_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const r = getData<Bytes>(rt, params, 0);
     if (!r)
     {
         RET(r.error());
@@ -548,8 +568,7 @@ accountKeylet_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const acc =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const acc = getData<AccountID>(rt, params, 0);
     if (!acc)
     {
         RET(acc.error());
@@ -578,22 +597,19 @@ credentialKeylet_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const subject =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const subject = getData<AccountID>(rt, params, 0);
     if (!subject)
     {
         RET(subject.error());
     }
 
-    auto const issuer =
-        getDataAccount(rt, params->data[2].of.i32, params->data[3].of.i32);
+    auto const issuer = getData<AccountID>(rt, params, 2);
     if (!issuer)
     {
         RET(issuer.error());
     }
 
-    auto const credType =
-        getData(rt, params->data[4].of.i32, params->data[5].of.i32);
+    auto const credType = getData<Bytes>(rt, params, 4);
     if (!credType)
     {
         RET(credType.error());
@@ -623,8 +639,7 @@ escrowKeylet_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const acc =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const acc = getData<AccountID>(rt, params, 0);
     if (!acc)
     {
         RET(acc.error());
@@ -653,8 +668,7 @@ oracleKeylet_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const acc =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const acc = getData<AccountID>(rt, params, 0);
     if (!acc)
     {
         RET(acc.error());
@@ -680,15 +694,13 @@ getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const acc =
-        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const acc = getData<AccountID>(rt, params, 0);
     if (!acc)
     {
         RET(acc.error());
     }
 
-    auto const nftRaw =
-        getData(rt, params->data[2].of.i32, params->data[3].of.i32);
+    auto const nftRaw = getData<Bytes>(rt, params, 2);
     if (!nftRaw)
     {
         RET(nftRaw.error());
@@ -723,15 +735,13 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const msg =
-        getDataString(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const msg = getData<std::string>(rt, params, 0);
     if (!msg)
     {
         RET(msg.error());
     }
 
-    auto const data =
-        getData(rt, params->data[2].of.i32, params->data[3].of.i32);
+    auto const data = getData<Bytes>(rt, params, 2);
     if (!data)
     {
         RET(data.error());
@@ -747,8 +757,7 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto const msg =
-        getDataString(rt, params->data[0].of.i32, params->data[1].of.i32);
+    auto const msg = getData<std::string>(rt, params, 0);
     if (!msg)
     {
         RET(msg.error());
