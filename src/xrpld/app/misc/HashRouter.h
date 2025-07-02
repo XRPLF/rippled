@@ -27,6 +27,7 @@
 #include <xrpl/beast/container/aged_unordered_map.h>
 
 #include <optional>
+#include <set>
 
 namespace ripple {
 
