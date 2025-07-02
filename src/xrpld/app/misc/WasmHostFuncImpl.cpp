@@ -70,7 +70,7 @@ WasmHostFunctionsImpl::cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx)
     return cache[cacheIdx] ? cacheIdx + 1 : HF_ERR_LEDGER_OBJ_NOT_FOUND;
 }
 
-Expected<Bytes, int32_t>
+static Expected<Bytes, int32_t>
 getAnyFieldData(STBase const* obj)
 {
     // auto const& fname = obj.getFName();
