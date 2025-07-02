@@ -58,7 +58,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (*domain == beast::zero)
             return temMALFORMED;
 
-        // Cannot set MPTRequireAuth on a public MPTokenIssuance
+        // Domain present implies that MPTokenIssuance is not public
         if ((ctx.tx.getFlags() & tfMPTRequireAuth) == 0)
             return temMALFORMED;
     }
