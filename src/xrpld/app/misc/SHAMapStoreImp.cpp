@@ -634,21 +634,39 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 SHAMapStoreImp::HealthResult
 SHAMapStoreImp::healthWait()
 {
+    auto index = ledgerMaster_->getValidLedgerIndex();
     auto age = ledgerMaster_->getValidatedLedgerAge();
     OperatingMode mode = netOPs_->getOperatingMode();
     std::unique_lock lock(mutex_);
-    while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold_))
+
+    if (lastGoodValidatedLedger_ == 0)
+    {
+        // TODO: Do we want to initialze lastGoodValidatedLedger_ to the value
+        // of lastRotated in run()?
+        lastGoodValidatedLedger_ = index;
+    }
+    numMissing = ledgerMaster_->missingFromCompleteLedgerRange(
+        lastGoodValidatedLedger_, index);
+    while (
+        !stop_ &&
+        (mode != OperatingMode::FULL || age > ageThreshold_ || numMissing > 0))
     {
         lock.unlock();
-        JLOG(journal_.warn()) << "Waiting " << recoveryWaitTime_.count()
-                              << "s for node to stabilize. state: "
-                              << app_.getOPs().strOperatingMode(mode, false)
-                              << ". age " << age.count() << 's';
+        JLOG(journal_.warn())
+            << "Waiting " << recoveryWaitTime_.count()
+            << "s for node to stabilize. state: "
+            << app_.getOPs().strOperatingMode(mode, false) << ". age "
+            << age.count() << "s. Missing ledgers: " << numMissing;
         std::this_thread::sleep_for(recoveryWaitTime_);
+        index = ledgerMaster_->getValidLedgerIndex();
         age = ledgerMaster_->getValidatedLedgerAge();
         mode = netOPs_->getOperatingMode();
         lock.lock();
+        numMissing = ledgerMaster_->missingFromCompleteLedgerRange(
+            lastGoodValidatedLedger_, index);
     }
+
+    lastGoodValidatedLedger_ = index;
 
     return stop_ ? stopping : keepGoing;
 }

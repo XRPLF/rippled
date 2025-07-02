@@ -1588,10 +1588,34 @@ LedgerMaster::getPublishedLedger()
 }
 
 std::string
-LedgerMaster::getCompleteLedgers()
+LedgerMaster::getCompleteLedgers() const
 {
     std::lock_guard sl(mCompleteLock);
     return to_string(mCompleteLedgers);
+}
+
+std::size_t
+LedgerMaster::missingFromCompleteLedgerRange(
+    LedgerIndex first,
+    LedgerIndex last) const;
+{
+    // Make a copy of the range to avoid holding the lock
+    auto const range = [&] {
+        std::lock_guard sl(mCompleteLock);
+        return mCompleteLedgers;
+    }();
+
+    std::size_t missing = 0;
+
+    for (LedgerIndex idx = first; idx <= last; ++idx)
+    {
+        if (!boost::icl::contains(range, idx))
+        {
+            ++missing;
+        }
+    }
+
+    return missing;
 }
 
 std::optional<NetClock::time_point>
