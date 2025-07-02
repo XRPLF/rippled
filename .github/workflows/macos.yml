@@ -71,6 +71,9 @@ jobs:
           nproc --version
           echo -n "nproc returns: "
           nproc
+          system_profiler SPHardwareDataType
+          sysctl -n hw.logicalcpu
+          clang --version
       - name: configure Conan
         run : |
           conan profile new default --detect || true
@@ -89,9 +92,11 @@ jobs:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
-      # TODO: Temporary disabled tests
-      # - name: test
-      #   run: |
-      #     n=$(nproc)
-      #     echo "Using $n test jobs"
-      #     ${build_dir}/rippled --unittest --unittest-jobs $n
+      - name: test
+        run: |
+          n=$(nproc)
+          echo "Using $n test jobs"
+
+          cd ${build_dir}
+          ./rippled --unittest --unittest-jobs $n
+          ctest -j $n --output-on-failure

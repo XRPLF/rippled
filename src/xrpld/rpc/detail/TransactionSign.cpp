@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <optional>
 
 namespace ripple {
 namespace RPC {
@@ -222,6 +223,22 @@ checkPayment(
             rpcINVALID_PARAMS,
             "Cannot specify both 'tx_json.Paths' and 'build_path'");
 
+    std::optional<uint256> domain;
+    if (tx_json.isMember(sfDomainID.jsonName))
+    {
+        uint256 num;
+        if (!tx_json[sfDomainID.jsonName].isString() ||
+            !num.parseHex(tx_json[sfDomainID.jsonName].asString()))
+        {
+            return RPC::make_error(
+                rpcDOMAIN_MALFORMED, "Unable to parse 'DomainID'.");
+        }
+        else
+        {
+            domain = num;
+        }
+    }
+
     if (!tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
     {
         STAmount sendMax;
@@ -260,6 +277,7 @@ checkPayment(
                     sendMax.issue().account,
                     amount,
                     std::nullopt,
+                    domain,
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {
@@ -463,9 +481,6 @@ transactionPreProcessImpl(
             tx_json[jss::Sequence] =
                 hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
         }
-
-        if (!tx_json.isMember(jss::Flags))
-            tx_json[jss::Flags] = tfFullyCanonicalSig;
 
         if (!tx_json.isMember(jss::NetworkID))
         {
@@ -749,6 +764,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 [[nodiscard]] static XRPAmount
 getTxFee(Application const& app, Config const& config, Json::Value tx)
 {
+    auto const& ledger = app.openLedger().current();
     // autofilling only needed in this function so that the `STParsedJSONObject`
     // parsing works properly it should not be modifying the actual `tx` object
     if (!tx.isMember(jss::Fee))
@@ -774,6 +790,9 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
     if (tx.isMember(jss::Signers))
     {
         if (!tx[jss::Signers].isArray())
+            return config.FEES.reference_fee;
+
+        if (tx[jss::Signers].size() > STTx::maxMultiSigners(&ledger->rules()))
             return config.FEES.reference_fee;
 
         // check multi-signed signers
@@ -804,6 +823,10 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
     try
     {
         STTx const& stTx = STTx(std::move(parsed.object.value()));
+        std::string reason;
+        if (!passesLocalChecks(stTx, reason))
+            return config.FEES.reference_fee;
+
         return calculateBaseFee(*app.openLedger().current(), stTx);
     }
     catch (std::exception& e)

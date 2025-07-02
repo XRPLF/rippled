@@ -63,7 +63,9 @@
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
@@ -1190,6 +1192,15 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
+    // Enforce Network bar for batch txn
+    if (iTrans->isFlag(tfInnerBatchTxn) &&
+        m_ledgerMaster.getValidatedRules().enabled(featureBatch))
+    {
+        JLOG(m_journal.error())
+            << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
+        return;
+    }
+
     // this is an asynchronous interface
     auto const trans = sterilize(*iTrans);
 
@@ -1249,15 +1260,25 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         return false;
     }
 
+    auto const view = m_ledgerMaster.getCurrentLedger();
+
+    // This function is called by several different parts of the codebase
+    // under no circumstances will we ever accept an inner txn within a batch
+    // txn from the network.
+    auto const sttx = *transaction->getSTransaction();
+    if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatch))
+    {
+        transaction->setStatus(INVALID);
+        transaction->setResult(temINVALID_FLAG);
+        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        return false;
+    }
+
     // NOTE eahennis - I think this check is redundant,
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
-    auto const view = m_ledgerMaster.getCurrentLedger();
-    auto const [validity, reason] = checkValidity(
-        app_.getHashRouter(),
-        *transaction->getSTransaction(),
-        view->rules(),
-        app_.config());
+    auto const [validity, reason] =
+        checkValidity(app_.getHashRouter(), sttx, view->rules(), app_.config());
     XRPL_ASSERT(
         validity == Validity::Valid,
         "ripple::NetworkOPsImp::processTransaction : valid validity");
@@ -1659,13 +1680,17 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 auto const toSkip =
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
-
-                if (toSkip)
+                if (auto const sttx = *(e.transaction->getSTransaction());
+                    toSkip &&
+                    // Skip relaying if it's an inner batch txn and batch
+                    // feature is enabled
+                    !(sttx.isFlag(tfInnerBatchTxn) &&
+                      newOL->rules().enabled(featureBatch)))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
 
-                    e.transaction->getSTransaction()->add(s);
+                    sttx.add(s);
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
                     tx.set_receivetimestamp(
@@ -3020,6 +3045,11 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
+    // never publish an inner txn inside a batch txn
+    if (transaction->isFlag(tfInnerBatchTxn) &&
+        ledger->rules().enabled(featureBatch))
+        return;
+
     MultiApiJson jvObj =
         transJson(transaction, result, false, ledger, std::nullopt);
 
@@ -3229,6 +3259,7 @@ NetworkOPsImp::transJson(
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
         RPC::insertDeliveredAmount(
             jvObj[jss::meta], *ledger, transaction, meta->get());
+        RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
         RPC::insertMPTokenIssuanceID(
             jvObj[jss::meta], transaction, meta->get());
     }
@@ -3711,7 +3742,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 {
                     auto stx = tx->getSTransaction();
                     if (stx->getAccountID(sfAccount) == accountId &&
-                        stx->getSeqProxy().value() == 1)
+                        stx->getSeqValue() == 1)
                         return true;
                 }
 
