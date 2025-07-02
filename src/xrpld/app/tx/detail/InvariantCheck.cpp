@@ -2056,7 +2056,7 @@ ValidVault::Shares::make(SLE const& from)
 {
     XRPL_ASSERT(
         from.getType() == ltMPTOKEN_ISSUANCE,
-        "ValidVault::Vault::make : from MPTokenIssuance object");
+        "ValidVault::Shares::make : from MPTokenIssuance object");
 
     ValidVault::Shares self;
     self.share = MPTIssue(
