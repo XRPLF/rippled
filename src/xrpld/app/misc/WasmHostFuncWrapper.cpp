@@ -51,7 +51,7 @@ setData(
     return ssz;
 }
 
-static Expected<Bytes, int32_t>
+static Expected<Bytes, HostFuncError>
 getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
 {
     if (!ssz)
@@ -68,7 +68,7 @@ getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
     return data;
 }
 
-static Expected<AccountID, int32_t>
+static Expected<AccountID, HostFuncError>
 getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
 {
     auto const r = getData(rt, ptr, sz);
@@ -78,7 +78,7 @@ getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
     return AccountID::fromVoid(r->data());
 }
 
-static Expected<std::string, int32_t>
+static Expected<std::string, HostFuncError>
 getDataString(InstanceWrapper const* rt, int32_t src, int32_t ssz)
 {
     if (!ssz)
