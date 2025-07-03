@@ -39,12 +39,15 @@ setData(
     if (!ssz)
         return 0;
 
+    if (dst < 0 || dsz < 0 || !src || ssz < 0)
+        return HF_ERR_INVALID_PARAMS;
+
     auto mem = rt ? rt->getMem() : wmem();
 
     if (!mem.s)
         return HF_ERR_NO_MEM_EXPORTED;
     if (dst + dsz > mem.s)
-        return HF_ERR_OUT_OF_BOUNDS;
+        return HF_ERR_POINTER_OUT_OF_BOUNDS;
     if (ssz > dsz)
         return HF_ERR_BUFFER_TOO_SMALL;
 
@@ -54,11 +57,11 @@ setData(
 }
 
 template <typename T>
-Expected<T, HostFuncError>
+Expected<T, HostFunctionError>
 getData(InstanceWrapper const* rt, wasm_val_vec_t const* params, int32_t& src);
 
 template <>
-Expected<int32_t, HostFuncError>
+Expected<int32_t, HostFunctionError>
 getData<int32_t>(
     InstanceWrapper const* _rt,
     wasm_val_vec_t const* params,
@@ -70,7 +73,7 @@ getData<int32_t>(
 }
 
 template <>
-Expected<int64_t, HostFuncError>
+Expected<int64_t, HostFunctionError>
 getData<int64_t>(
     InstanceWrapper const* _rt,
     wasm_val_vec_t const* params,
@@ -82,7 +85,7 @@ getData<int64_t>(
 }
 
 template <>
-Expected<SFIELD_PARAM, HostFuncError>
+Expected<SFIELD_PARAM, HostFunctionError>
 getData<SFIELD_PARAM>(
     InstanceWrapper const* _rt,
     wasm_val_vec_t const* params,
@@ -92,14 +95,14 @@ getData<SFIELD_PARAM>(
     auto const it = m.find(params->data[i].of.i32);
     if (it == m.end())
     {
-        return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+        return Unexpected(HF_ERR_INVALID_FIELD);
     }
     i++;
     return *it->second;
 }
 
 template <>
-Expected<Bytes, HostFuncError>
+Expected<Bytes, HostFunctionError>
 getData<Bytes>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
@@ -108,7 +111,7 @@ getData<Bytes>(
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
     i += 2;
-    if (!ssz)
+    if (src < 0 || ssz <= 0)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     auto mem = rt ? rt->getMem() : wmem();
@@ -116,14 +119,14 @@ getData<Bytes>(
         return Unexpected(HF_ERR_NO_MEM_EXPORTED);
 
     if (src + ssz > mem.s)
-        return Unexpected(HF_ERR_OUT_OF_BOUNDS);
+        return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
 
     Bytes data(mem.p + src, mem.p + src + ssz);
     return data;
 }
 
 template <>
-Expected<uint256, HostFuncError>
+Expected<uint256, HostFunctionError>
 getData<uint256>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
@@ -144,21 +147,21 @@ getData<uint256>(
 }
 
 template <>
-Expected<AccountID, HostFuncError>
+Expected<AccountID, HostFunctionError>
 getData<AccountID>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
     int32_t& i)
 {
     auto const r = getData<Bytes>(rt, params, i);
-    if (!r || (r->size() < AccountID::bytes))
+    if (!r || (r->size() != AccountID::bytes))
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     return AccountID::fromVoid(r->data());
 }
 
 template <>
-Expected<std::string, HostFuncError>
+Expected<std::string, HostFunctionError>
 getData<std::string>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
@@ -167,7 +170,7 @@ getData<std::string>(
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
     i += 2;
-    if (!ssz)
+    if (src < 0 || ssz <= 0)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     auto mem = rt ? rt->getMem() : wmem();
@@ -175,7 +178,7 @@ getData<std::string>(
         return Unexpected(HF_ERR_NO_MEM_EXPORTED);
 
     if (src + ssz > mem.s)
-        return Unexpected(HF_ERR_OUT_OF_BOUNDS);
+        return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
 
     std::string data(mem.p + src, mem.p + src + ssz);
     return data;
@@ -191,10 +194,10 @@ hfResult(wasm_val_vec_t* results, T value)
 }
 
 template <typename Tuple, std::size_t... Is>
-std::optional<HostFuncError>
+std::optional<HostFunctionError>
 checkErrors(Tuple const& t, std::index_sequence<Is...>)
 {
-    std::optional<HostFuncError> err;
+    std::optional<HostFunctionError> err;
     ((err = err ? err
                 : (!std::get<Is>(t) ? std::optional{std::get<Is>(t).error()}
                                     : std::nullopt)),

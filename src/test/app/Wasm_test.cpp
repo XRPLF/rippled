@@ -54,7 +54,7 @@ public:
     {
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     get_ledger_sqn()
     {
         return (int32_t)env->current()->seq();
@@ -110,32 +110,32 @@ public:
         return env_.journal;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerSqn() override
     {
         return static_cast<int32_t>(env_.current()->seq());
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getParentLedgerTime() override
     {
         return env_.current()->parentCloseTime().time_since_epoch().count() +
             clock_drift_;
     }
 
-    Expected<Hash, HostFuncError>
+    Expected<Hash, HostFunctionError>
     getParentLedgerHash() override
     {
         return env_.current()->info().parentHash;
     }
 
-    virtual Expected<int32_t, HostFuncError>
+    virtual Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override
     {
         return 1;
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getTxField(SField const& fname) override
     {
         if (fname == sfAccount)
@@ -157,7 +157,7 @@ public:
         return Bytes();
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjField(SField const& fname) override
     {
         auto const& sn = fname.getName();
@@ -176,7 +176,7 @@ public:
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override
     {
         // auto const& sn = fname.getName();
@@ -189,7 +189,7 @@ public:
         return data_;
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getTxNestedField(Bytes const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
@@ -199,7 +199,7 @@ public:
         return Bytes(&a[0], &a[sizeof(a)]);
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjNestedField(Bytes const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
@@ -209,7 +209,7 @@ public:
         return Bytes(&a[0], &a[sizeof(a)]);
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
@@ -219,55 +219,55 @@ public:
         return Bytes(&a[0], &a[sizeof(a)]);
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname) override
     {
         return 32;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjArrayLen(SField const& fname) override
     {
         return 32;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override
     {
         return 32;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getTxNestedArrayLen(Bytes const& locator) override
     {
         return 32;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override
     {
         return 32;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override
     {
         return 32;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     updateData(Bytes const& data) override
     {
         return 0;
     }
 
-    Expected<Hash, HostFuncError>
+    Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Bytes const& data) override
     {
         return env_.current()->info().parentHash;
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     accountKeylet(AccountID const& account) override
     {
         if (!account)
@@ -276,7 +276,7 @@ public:
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
@@ -289,7 +289,7 @@ public:
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     escrowKeylet(AccountID const& account, std::uint32_t seq) override
     {
         if (!account)
@@ -298,7 +298,7 @@ public:
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     oracleKeylet(AccountID const& account, std::uint32_t documentId) override
     {
         if (!account)
@@ -307,7 +307,7 @@ public:
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) override
     {
         if (!account || !nftId)
@@ -319,7 +319,7 @@ public:
         return Bytes(s.begin(), s.end());
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     trace(std::string const& msg, Bytes const& data, bool asHex) override
     {
 #ifdef DEBUG_OUTPUT
@@ -345,7 +345,7 @@ public:
         return msg.size() + data.size() * (asHex ? 2 : 1);
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     traceNum(std::string const& msg, int64_t data) override
     {
 #ifdef DEBUG_OUTPUT
@@ -427,25 +427,25 @@ public:
         return env_.journal;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerSqn() override
     {
         return static_cast<int32_t>(env_.current()->seq());
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getParentLedgerTime() override
     {
         return env_.current()->parentCloseTime().time_since_epoch().count();
     }
 
-    Expected<Hash, HostFuncError>
+    Expected<Hash, HostFunctionError>
     getParentLedgerHash() override
     {
         return env_.current()->info().parentHash;
     }
 
-    virtual Expected<int32_t, HostFuncError>
+    virtual Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const&, int32_t cacheIdx) override
     {
         static int32_t intIdx = 0;
@@ -527,7 +527,7 @@ public:
         return msg.getData();
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getTxField(SField const& fname) override
     {
         auto const* field = tx_->peekAtPField(fname);
@@ -540,7 +540,7 @@ public:
         return getAnyFieldData(*field);
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjField(SField const& fname) override
     {
         auto const sle = env_.le(leKey);
@@ -557,7 +557,7 @@ public:
         return getAnyFieldData(*field);
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override
     {
         --cacheIdx;
@@ -580,7 +580,7 @@ public:
         return getAnyFieldData(*field);
     }
 
-    static Expected<STBase const*, HostFuncError>
+    static Expected<STBase const*, HostFunctionError>
     locateField(STObject const& obj, Bytes const& loc)
     {
         if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
@@ -637,7 +637,7 @@ public:
         return field;
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getTxNestedField(Bytes const& locator) override
     {
         // std::cout << tx_->getJson(JsonOptions::none).toStyledString() <<
@@ -654,7 +654,7 @@ public:
         return getAnyFieldData(*field);
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjNestedField(Bytes const& locator) override
     {
         auto const sle = env_.le(leKey);
@@ -673,7 +673,7 @@ public:
         return getAnyFieldData(*field);
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override
     {
         --cacheIdx;
@@ -698,7 +698,7 @@ public:
         return getAnyFieldData(*field);
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname) override
     {
         if (fname.fieldType != STI_ARRAY)
@@ -715,7 +715,7 @@ public:
         return sz;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjArrayLen(SField const& fname) override
     {
         if (fname.fieldType != STI_ARRAY)
@@ -736,7 +736,7 @@ public:
         return sz;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override
     {
         if (fname.fieldType != STI_ARRAY)
@@ -762,7 +762,7 @@ public:
         return sz;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getTxNestedArrayLen(Bytes const& locator) override
     {
         auto const r = locateField(*tx_, locator);
@@ -777,7 +777,7 @@ public:
         return sz;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override
     {
         auto const sle = env_.le(leKey);
@@ -795,7 +795,7 @@ public:
         return sz;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override
     {
         --cacheIdx;
@@ -821,7 +821,7 @@ public:
         return sz;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     updateData(Bytes const& data) override
     {
         ripple::detail::ApplyViewBase v(
@@ -837,14 +837,14 @@ public:
         return data.size();
     }
 
-    Expected<Hash, HostFuncError>
+    Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Bytes const& data) override
     {
         auto const hash = sha512Half(data);
         return hash;
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     accountKeylet(AccountID const& account) override
     {
         if (!account)
@@ -853,7 +853,7 @@ public:
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
@@ -869,7 +869,7 @@ public:
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     escrowKeylet(AccountID const& account, std::uint32_t seq) override
     {
         if (!account)
@@ -878,7 +878,7 @@ public:
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     oracleKeylet(AccountID const& account, std::uint32_t documentId) override
     {
         if (!account)
@@ -887,7 +887,7 @@ public:
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) override
     {
         if (!account || !nftId)
@@ -911,7 +911,7 @@ public:
         return Bytes(s.begin(), s.end());
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     trace(std::string const& msg, Bytes const& data, bool asHex) override
     {
 #ifdef DEBUG_OUTPUT
@@ -937,7 +937,7 @@ public:
         return msg.size() + data.size() * (asHex ? 2 : 1);
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     traceNum(std::string const& msg, int64_t data) override
     {
 #ifdef DEBUG_OUTPUT
@@ -1302,7 +1302,7 @@ struct Wasm_test : public beast::unit_test::suite
                 explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                Expected<Bytes, HostFuncError>
+                Expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) override
                 {
                     return Unexpected(HF_ERR_FIELD_NOT_FOUND);
@@ -1322,7 +1322,7 @@ struct Wasm_test : public beast::unit_test::suite
                 explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                Expected<Bytes, HostFuncError>
+                Expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) override
                 {
                     return Bytes((MAX_PAGES + 1) * 64 * 1024, 1);

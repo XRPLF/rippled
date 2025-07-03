@@ -57,82 +57,82 @@ public:
         return ctx.journal;
     }
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerSqn() override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getParentLedgerTime() override;
 
-    Expected<Hash, HostFuncError>
+    Expected<Hash, HostFunctionError>
     getParentLedgerHash() override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getTxField(SField const& fname) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjField(SField const& fname) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getTxNestedField(Bytes const& locator) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjNestedField(Bytes const& locator) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjArrayLen(SField const& fname) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getTxNestedArrayLen(Bytes const& locator) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     updateData(Bytes const& data) override;
 
-    Expected<Hash, HostFuncError>
+    Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Bytes const& data) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     accountKeylet(AccountID const& account) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
         Bytes const& credentialType) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     escrowKeylet(AccountID const& account, std::uint32_t seq) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     oracleKeylet(AccountID const& account, std::uint32_t documentId) override;
 
-    Expected<Bytes, HostFuncError>
+    Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     trace(std::string const& msg, Bytes const& data, bool asHex) override;
 
-    Expected<int32_t, HostFuncError>
+    Expected<int32_t, HostFunctionError>
     traceNum(std::string const& msg, int64_t data) override;
 };
 
