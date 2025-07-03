@@ -73,6 +73,27 @@ enum {
 // millisecond for each ledger timeout
 auto constexpr ledgerAcquireTimeout = 3000ms;
 
+std::string
+to_string(InboundLedger::Reason reason)
+{
+    using enum InboundLedger::Reason;
+    switch (reason)
+    {
+        case HISTORY:
+            return "HISTORY";
+        case GENERIC:
+            return "GENERIC";
+        case CONSENSUS:
+            return "CONSENSUS";
+        case PREFERRED:
+            return "PREFERRED";
+        default:
+            UNREACHABLE(
+                "ripple::to_string(InboundLedger::Reason) : unknown value");
+            return "unknown";
+    }
+}
+
 InboundLedger::InboundLedger(
     Application& app,
     uint256 const& hash,
@@ -102,7 +123,7 @@ InboundLedger::InboundLedger(
 }
 
 void
-InboundLedger::init(ScopedLockType& collectionLock)
+InboundLedger::init(ScopedLockType& collectionLock, bool broadcast)
 {
     ScopedLockType sl(mtx_);
     collectionLock.unlock();
@@ -113,8 +134,18 @@ InboundLedger::init(ScopedLockType& collectionLock)
 
     if (!complete_)
     {
-        addPeers();
-        queueJob(sl);
+        if (broadcast)
+        {
+            addPeers();
+            queueJob(sl);
+        }
+        else
+        {
+            // Delay to give time to build the ledger before sending
+            JLOG(journal_.debug()) << "init: Deferring peer requests";
+            deferred_ = true;
+            setTimer(sl);
+        }
         return;
     }
 
@@ -132,7 +163,7 @@ InboundLedger::init(ScopedLockType& collectionLock)
     app_.getLedgerMaster().storeLedger(mLedger);
 
     // Check if this could be a newer fully-validated ledger
-    if (mReason == Reason::CONSENSUS)
+    if (mReason >= Reason::CONSENSUS)
         app_.getLedgerMaster().checkAccept(mLedger);
 }
 
@@ -145,8 +176,8 @@ InboundLedger::getPeerCount() const
     });
 }
 
-void
-InboundLedger::update(std::uint32_t seq)
+bool
+InboundLedger::update(std::uint32_t seq, bool broadcast)
 {
     ScopedLockType sl(mtx_);
 
@@ -156,6 +187,27 @@ InboundLedger::update(std::uint32_t seq)
 
     // Prevent this from being swept
     touch();
+
+    // If the signal is to broadcast, and this request has never tried to
+    // broadcast before, cancel any waiting timer, then fire off the job to
+    // broadcast. Note that this is calling mPeerSet->getPeerIds(), not
+    // getPeerCount(), because the latter will filter out peers that have been
+    // tried, but are since lost. This wants to check if peers have _ever_ been
+    // tried. If they have, stick with the normal timer flow.
+    if (broadcast && mPeerSet->getPeerIds().empty())
+    {
+        if (cancelTimer(sl))
+        {
+            JLOG(journal_.debug())
+                << "update: cancelling timer to send peer requests";
+            deferred_ = false;
+            skipNext_ = true;
+            addPeers();
+            queueJob(sl);
+            return true;
+        }
+    }
+    return false;
 }
 
 bool
