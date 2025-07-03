@@ -25,9 +25,9 @@
 #include <doctest/doctest.h>
 
 #include <algorithm>
+#include <regex>
 #include <sstream>
 #include <string>
-#include <regex>
 
 namespace ripple {
 
@@ -227,8 +227,7 @@ TEST_CASE("compare")
         CHECK((lhs > rhs) == (!(lhsEqRhs || lhsLtRhs)));
     };
 
-#define DO_COMPARE(lhs, rhs, eq, lt) \
-    doCompare(lhs, rhs, eq, lt, __LINE__)
+#define DO_COMPARE(lhs, rhs, eq, lt) doCompare(lhs, rhs, eq, lt, __LINE__)
 
     Json::Value const null0;
     Json::Value const intNeg1{-1};

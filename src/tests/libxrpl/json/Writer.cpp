@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/json/Writer.h>
+
 #include <doctest/doctest.h>
 
 #include <memory>
@@ -33,13 +34,15 @@ struct WriterFixture
     std::string output;
     std::unique_ptr<Writer> writer;
 
-    void setup()
+    void
+    setup()
     {
         output.clear();
         writer = std::make_unique<Writer>(stringOutput(output));
     }
 
-    void expectOutput(std::string const& expected)
+    void
+    expectOutput(std::string const& expected)
     {
         writer.reset();
         CHECK(output == expected);
@@ -181,7 +184,9 @@ TEST_CASE_FIXTURE(WriterFixture, "complex object")
     writer->startSet(Writer::array, "subarray");
     writer->append(23.5);
     writer->finishAll();
-    expectOutput("{\"hello\":\"world\",\"array\":[true,12,[{\"goodbye\":\"cruel world.\",\"subarray\":[23.5]}]]}");
+    expectOutput(
+        "{\"hello\":\"world\",\"array\":[true,12,[{\"goodbye\":\"cruel "
+        "world.\",\"subarray\":[23.5]}]]}");
 }
 
 TEST_CASE_FIXTURE(WriterFixture, "json value")

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/json/Object.h>
+
 #include <doctest/doctest.h>
 
 #include <memory>
@@ -36,7 +37,8 @@ struct JsonObjectFixture
     Object&
     makeRoot()
     {
-        writerObject = std::make_unique<WriterObject>(stringWriterObject(output));
+        writerObject =
+            std::make_unique<WriterObject>(stringWriterObject(output));
         return **writerObject;
     }
 
@@ -79,7 +81,8 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "simple")
     root["temperature"] = 98.6;
 
     expectResult(
-        "{\"hello\":\"world\",\"skidoo\":23,\"awake\":false,\"temperature\":98.6}");
+        "{\"hello\":\"world\",\"skidoo\":23,\"awake\":false,\"temperature\":98."
+        "6}");
 }
 
 TEST_CASE_FIXTURE(JsonObjectFixture, "oneSub")
@@ -110,9 +113,11 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "subs")
         root["obj2"] = value;
     }
     auto case1 =
-        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"h\":\"w\",\"f\":false}}";
+        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"h\":"
+        "\"w\",\"f\":false}}";
     auto case2 =
-        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"f\":false,\"h\":\"w\"}}";
+        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"f\":"
+        "false,\"h\":\"w\"}}";
 
     writerObject.reset();
     CHECK((output == case1 || output == case2));
@@ -135,7 +140,8 @@ TEST_CASE_FIXTURE(JsonObjectFixture, "subsShort")
         object.set("f", false);
     }
     expectResult(
-        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"h\":\"w\",\"f\":false}}");
+        "{\"ar\":[23,false,23.5],\"obj\":{\"hello\":\"world\"},\"obj2\":{\"h\":"
+        "\"w\",\"f\":false}}");
 }
 
 TEST_CASE_FIXTURE(JsonObjectFixture, "failureObject")
