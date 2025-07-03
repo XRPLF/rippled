@@ -89,6 +89,7 @@ private:
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
+    LedgerIndex lastGoodValidatedLedger_ = 0;
     mutable std::condition_variable cond_;
     mutable std::condition_variable rendezvous_;
     mutable std::mutex mutex_;
@@ -230,6 +231,8 @@ private:
     enum HealthResult { stopping, keepGoing };
     [[nodiscard]] HealthResult
     healthWait();
+    bool
+    hasCompleteRange(LedgerIndex first, LedgerIndex last);
 
 public:
     void
