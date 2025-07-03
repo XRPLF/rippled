@@ -13,7 +13,6 @@
 #include <boost/optional.hpp>
 
 #include <condition_variable>
-#include <functional>
 #include <mutex>
 #include <thread>
 #include <vector>

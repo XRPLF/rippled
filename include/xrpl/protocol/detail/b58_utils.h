@@ -27,7 +27,6 @@
 #include <boost/outcome.hpp>
 #include <boost/outcome/result.hpp>
 
-#include <cinttypes>
 #include <span>
 #include <system_error>
 #include <tuple>

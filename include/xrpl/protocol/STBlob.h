@@ -27,7 +27,6 @@
 #include <xrpl/protocol/STBase.h>
 
 #include <cstring>
-#include <memory>
 
 namespace ripple {
 
