@@ -20,11 +20,10 @@
 #ifndef RIPPLE_LEDGER_VIEW_H_INCLUDED
 #define RIPPLE_LEDGER_VIEW_H_INCLUDED
 
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/OpenView.h>
-#include <xrpld/ledger/ReadView.h>
-
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
@@ -576,6 +575,16 @@ addEmptyHolding(
         },
         asset.value());
 }
+
+[[nodiscard]] TER
+authorizeMPToken(
+    ApplyView& view,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t flags,
+    std::optional<AccountID> holderID,
+    beast::Journal journal);
 
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
