@@ -29,7 +29,7 @@
 
 namespace ripple {
 
-enum HostFunctionErrors : int32_t {
+enum HostFunctionError : int32_t {
     HF_ERR_INTERNAL = -1,
     HF_ERR_FIELD_NOT_FOUND = -2,
     HF_ERR_BUFFER_TOO_SMALL = -3,
@@ -69,121 +69,121 @@ struct HostFunctions
         return beast::Journal{beast::Journal::getNullSink()};
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFunctionError>
     getLedgerSqn()
     {
         return 1;
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFunctionError>
     getParentLedgerTime()
     {
         return 1;
     }
 
-    virtual Hash
+    virtual Expected<Hash, HostFunctionError>
     getParentLedgerHash()
     {
-        return {};
+        return Hash{};
     }
 
-    virtual int32_t
-    cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx)
+    virtual Expected<int32_t, HostFunctionError>
+    cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
+    virtual Expected<Bytes, HostFunctionError>
     getTxField(SField const& fname)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
+    virtual Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjField(SField const& fname)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
+    virtual Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
-    getTxNestedField(Slice const& locator)
+    virtual Expected<Bytes, HostFunctionError>
+    getTxNestedField(Bytes const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
-    getCurrentLedgerObjNestedField(Slice const& locator)
+    virtual Expected<Bytes, HostFunctionError>
+    getCurrentLedgerObjNestedField(Bytes const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator)
+    virtual Expected<Bytes, HostFunctionError>
+    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjArrayLen(SField const& fname)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFunctionError>
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
-    getTxNestedArrayLen(Slice const& locator)
+    virtual Expected<int32_t, HostFunctionError>
+    getTxNestedArrayLen(Bytes const& locator)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator)
+    virtual Expected<int32_t, HostFunctionError>
+    getCurrentLedgerObjNestedArrayLen(Bytes const& locator)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator)
+    virtual Expected<int32_t, HostFunctionError>
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFunctionError>
     updateData(Bytes const& data)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Hash
+    virtual Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Bytes const& data)
     {
         return Hash{};
     }
 
-    virtual Expected<Bytes, int32_t>
+    virtual Expected<Bytes, HostFunctionError>
     accountKeylet(AccountID const& account)
     {
         return Bytes{};
     }
 
-    virtual Expected<Bytes, int32_t>
+    virtual Expected<Bytes, HostFunctionError>
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
@@ -192,34 +192,34 @@ struct HostFunctions
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
+    virtual Expected<Bytes, HostFunctionError>
     escrowKeylet(AccountID const& account, std::uint32_t seq)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
+    virtual Expected<Bytes, HostFunctionError>
     oracleKeylet(AccountID const& account, std::uint32_t docId)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual Expected<Bytes, int32_t>
+    virtual Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFunctionError>
     trace(std::string const& msg, Bytes const& data, bool asHex)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
-    virtual int32_t
+    virtual Expected<int32_t, HostFunctionError>
     traceNum(std::string const& msg, int64_t data)
     {
-        return HF_ERR_INTERNAL;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual ~HostFunctions() = default;
