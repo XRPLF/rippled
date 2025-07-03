@@ -130,7 +130,7 @@ isOnlyLiquidityProvider(
  * update LPTokenBalance to match the LP's trustline balance.
  */
 Expected<bool, TER>
-VerifyAndAdjustLPTokenBalance(
+verifyAndAdjustLPTokenBalance(
     Sandbox& sb,
     STAmount const& lpTokens,
     std::shared_ptr<SLE>& ammSle,

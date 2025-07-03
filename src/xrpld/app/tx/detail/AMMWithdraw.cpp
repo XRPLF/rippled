@@ -311,7 +311,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (sb.rules().enabled(fixAMMv1_1))
     {
         if (auto const res =
-                VerifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, account_);
+                verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, account_);
             !res)
             return {res.error(), false};
     }

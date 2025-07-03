@@ -155,10 +155,10 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (holdLPtokens == beast::zero)
         return tecAMM_BALANCE;
 
-    if (sb.rules().enabled(fixAMMClawback))
+    if (sb.rules().enabled(fixAMMClawbackRounding))
     {
         if (auto const res =
-                VerifyAndAdjustLPTokenBalance(sb, holdLPtokens, ammSle, holder);
+                verifyAndAdjustLPTokenBalance(sb, holdLPtokens, ammSle, holder);
             !res)
             return res.error();  // LCOV_EXCL_LINE
     }
@@ -282,7 +282,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             ctx_.journal);
 
     auto const& rules = sb.rules();
-    if (rules.enabled(fixAMMClawback))
+    if (rules.enabled(fixAMMClawbackRounding))
     {
         auto tokensAdj =
             getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
@@ -294,8 +294,11 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         // LCOV_EXCL_STOP
 
         frac = adjustFracByTokens(rules, lptAMMBalance, tokensAdj, frac);
-        amount2Withdraw =
+        auto amount2Rounded =
             getRoundedAsset(rules, amount2Balance, frac, IsDeposit::No);
+
+        auto amountRounded =
+            getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
 
         return AMMWithdraw::withdraw(
             sb,
@@ -303,8 +306,8 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             ammAccount,
             holder,
             amountBalance,
-            amount,
-            toSTAmount(amount2Balance.issue(), amount2Withdraw),
+            amountRounded,
+            amount2Rounded,
             lptAMMBalance,
             tokensAdj,
             0,
