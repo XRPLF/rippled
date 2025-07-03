@@ -17,42 +17,42 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
-#define RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
-
-#include <test/jtx/TestSuite.h>
-
 #include <xrpl/json/Output.h>
-#include <xrpl/json/Writer.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_writer.h>
+#include <doctest/doctest.h>
 
-namespace ripple {
-namespace test {
+#include <string>
 
-class TestOutputSuite : public TestSuite
+using namespace ripple;
+using namespace Json;
+
+TEST_SUITE_BEGIN("JsonOutput");
+
+static void
+checkOutput(std::string const& valueDesc)
 {
-protected:
-    std::string output_;
-    std::unique_ptr<Json::Writer> writer_;
+    std::string output;
+    Json::Value value;
+    REQUIRE(Json::Reader().parse(valueDesc, value));
+    auto out = stringOutput(output);
+    outputJson(value, out);
 
-    void
-    setup(std::string const& testName)
-    {
-        testcase(testName);
-        output_.clear();
-        writer_ = std::make_unique<Json::Writer>(Json::stringOutput(output_));
-    }
+    auto expected = Json::FastWriter().write(value);
+    CHECK(output == expected);
+    CHECK(output == valueDesc);
+    CHECK(output == jsonAsString(value));
+}
 
-    // Test the result and report values.
-    void
-    expectResult(std::string const& expected, std::string const& message = "")
-    {
-        writer_.reset();
+TEST_CASE("output cases")
+{
+    checkOutput("{}");
+    checkOutput("[]");
+    checkOutput("[23,4.25,true,null,\"string\"]");
+    checkOutput("{\"hello\":\"world\"}");
+    checkOutput("[{}]");
+    checkOutput("[[]]");
+    checkOutput("{\"array\":[{\"12\":23},{},null,false,0.5]}");
+}
 
-        expectEquals(output_, expected, message);
-    }
-};
-
-}  // namespace test
-}  // namespace ripple
-
-#endif
+TEST_SUITE_END();
