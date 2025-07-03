@@ -732,21 +732,6 @@ class Invariants_test : public beast::unit_test::suite
         testcase << "no zero escrow";
 
         doInvariantCheck(
-            {{"Cannot return non-native STAmount as XRPAmount"}},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
-                // escrow with nonnative amount
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
-                if (!sle)
-                    return false;
-                auto sleNew = std::make_shared<SLE>(
-                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
-                STAmount nonNative(A2["USD"](51));
-                sleNew->setFieldAmount(sfAmount, nonNative);
-                ac.view().insert(sleNew);
-                return true;
-            });
-
-        doInvariantCheck(
             {{"XRP net change of -1000000 doesn't match fee 0"},
              {"escrow specifies invalid amount"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
@@ -774,6 +759,153 @@ class Invariants_test : public beast::unit_test::suite
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
                 sleNew->setFieldAmount(sfAmount, INITIAL_XRP + drops(1));
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // IOU < 0
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                // escrow with too-little iou
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+                auto sleNew = std::make_shared<SLE>(
+                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
+
+                Issue const usd{
+                    Currency(0x5553440000000000), AccountID(0x4985601)};
+                STAmount amt(usd, -1);
+                sleNew->setFieldAmount(sfAmount, amt);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // IOU bad currency
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                // escrow with bad iou currency
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+                auto sleNew = std::make_shared<SLE>(
+                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
+
+                Issue const bad{badCurrency(), AccountID(0x4985601)};
+                STAmount amt(bad, 1);
+                sleNew->setFieldAmount(sfAmount, amt);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // MPT < 0
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                // escrow with too-little mpt
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+                auto sleNew = std::make_shared<SLE>(
+                    keylet::escrow(A1, (*sle)[sfSequence] + 2));
+
+                MPTIssue const mpt{
+                    MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                STAmount amt(mpt, -1);
+                sleNew->setFieldAmount(sfAmount, amt);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // MPT OutstandingAmount < 0
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                // mpissuance outstanding is negative
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+
+                MPTIssue const mpt{
+                    MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                auto sleNew =
+                    std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                sleNew->setFieldU64(sfOutstandingAmount, -1);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // MPT LockedAmount < 0
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                // mpissuance locked is less than locked
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+
+                MPTIssue const mpt{
+                    MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                auto sleNew =
+                    std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                sleNew->setFieldU64(sfLockedAmount, -1);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // MPT OutstandingAmount < LockedAmount
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                // mpissuance outstanding is less than locked
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+
+                MPTIssue const mpt{
+                    MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                auto sleNew =
+                    std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
+                sleNew->setFieldU64(sfOutstandingAmount, 1);
+                sleNew->setFieldU64(sfLockedAmount, 10);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // MPT MPTAmount < 0
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                // mptoken amount is negative
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+
+                MPTIssue const mpt{
+                    MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                auto sleNew =
+                    std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), A1));
+                sleNew->setFieldU64(sfMPTAmount, -1);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        // MPT LockedAmount < 0
+        doInvariantCheck(
+            {{"escrow specifies invalid amount"}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                // mptoken locked amount is negative
+                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+
+                MPTIssue const mpt{
+                    MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                auto sleNew =
+                    std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), A1));
+                sleNew->setFieldU64(sfLockedAmount, -1);
                 ac.view().insert(sleNew);
                 return true;
             });
