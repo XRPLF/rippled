@@ -368,11 +368,15 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #undef UNTYPED_SFIELD
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
+#pragma push_macro("ARRAY_SFIELD")
+#undef ARRAY_SFIELD
 
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     extern SField const sfName;
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     extern SF_##stiSuffix const sfName;
+#define ARRAY_SFIELD(sfName, sfItemName, stiSuffix, fieldValue, ...) \
+    UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, __VA_ARGS__)
 
 extern SField const sfInvalid;
 extern SField const sfGeneric;
@@ -383,6 +387,8 @@ extern SField const sfGeneric;
 #pragma pop_macro("TYPED_SFIELD")
 #undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
+#undef ARRAY_SFIELD
+#pragma pop_macro("ARRAY_SFIELD")
 
 }  // namespace ripple
 

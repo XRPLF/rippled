@@ -937,7 +937,20 @@ chooseLedgerEntryType(Json::Value const& params)
             std::tuple<char const*, char const*, LedgerEntryType>>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
+#pragma push_macro("LEDGER_ENTRY_FIELD")
+#undef LEDGER_ENTRY_FIELD
+#pragma push_macro("DEFINE_LEDGER_ENTRY_FIELDS")
+#undef DEFINE_LEDGER_ENTRY_FIELDS
+#pragma push_macro("LEDGER_ENTRIES_BEGIN")
+#undef LEDGER_ENTRIES_BEGIN
+#pragma push_macro("LEDGER_ENTRIES_END")
+#undef LEDGER_ENTRIES_END
 
+#define LEDGER_ENTRIES_BEGIN
+#define LEDGER_ENTRIES_END
+
+#define DEFINE_LEDGER_ENTRY_FIELDS(...) ({__VA_ARGS__})
+#define LEDGER_ENTRY_FIELD(...) {__VA_ARGS__},
 #define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
     {jss::name, jss::rpcName, tag},
 
@@ -945,6 +958,14 @@ chooseLedgerEntryType(Json::Value const& params)
 
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY_FIELD
+#pragma pop_macro("LEDGER_ENTRY_FIELD")
+#undef DEFINE_LEDGER_ENTRY_FIELDS
+#pragma pop_macro("DEFINE_LEDGER_ENTRY_FIELDS")
+#undef LEDGER_ENTRIES_BEGIN
+#pragma pop_macro("LEDGER_ENTRIES_BEGIN")
+#undef LEDGER_ENTRIES_END
+#pragma pop_macro("LEDGER_ENTRIES_END")
         });
 
         auto const& p = params[jss::type];
