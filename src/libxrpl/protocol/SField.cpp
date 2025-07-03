@@ -52,6 +52,8 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 #undef UNTYPED_SFIELD
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
+#pragma push_macro("ARRAY_SFIELD")
+#undef ARRAY_SFIELD
 
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     SField const sfName(                                   \
@@ -66,6 +68,13 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
         STI_##stiSuffix,                                 \
         fieldValue,                                      \
         std::string_view(#sfName).substr(2).data(),      \
+        ##__VA_ARGS__);
+#define ARRAY_SFIELD(sfName, sfItemName, stiSuffix, fieldValue, ...) \
+    SField const sfName(                                             \
+        access,                                                      \
+        STI_##stiSuffix,                                             \
+        fieldValue,                                                  \
+        std::string_view(#sfName).substr(2).data(),                  \
         ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
@@ -82,6 +91,8 @@ SField const sfIndex(access, STI_UINT256, 258, "index");
 #pragma pop_macro("TYPED_SFIELD")
 #undef UNTYPED_SFIELD
 #pragma pop_macro("UNTYPED_SFIELD")
+#undef ARRAY_SFIELD
+#pragma pop_macro("ARRAY_SFIELD")
 
 SField::SField(
     private_access_tag_t,
