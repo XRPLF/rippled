@@ -577,6 +577,16 @@ addEmptyHolding(
         asset.value());
 }
 
+[[nodiscard]] TER
+authorizeMPToken(
+    ApplyView& view,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t flags,
+    std::optional<AccountID> holderID,
+    beast::Journal journal);
+
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //
