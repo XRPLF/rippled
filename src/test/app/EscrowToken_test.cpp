@@ -129,6 +129,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 createResult);
             env.close();
@@ -181,6 +182,36 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::cancel(bob, alice, seq1), ter(tecNO_TARGET));
             env.close();
         }
+
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(5000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(USD(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, USD(5000)));
+            env(pay(gw, bob, USD(5000)));
+            env.close();
+
+            bool const withTokenFix =
+                env.current()->rules().enabled(fixTokenEscrowV1);
+            auto const createResult =
+                withTokenFix ? ter(temMALFORMED) : ter(tesSUCCESS);
+
+            env(escrow::create(alice, bob, USD(1'000)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                // no cancel_time
+                fee(baseFee * 150),
+                createResult);
+            env.close();
+        }
     }
 
     void
@@ -211,6 +242,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         env(escrow::create(alice, bob, USD(1'000)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
+            escrow::cancel_time(env.now() + 60s),
             fee(baseFee * 150),
             ter(tesSUCCESS));
         env.close();
@@ -232,6 +264,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         env(escrow::create(alice, bob, USD(1'000)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
+            escrow::cancel_time(env.now() + 2s),
             fee(baseFee * 150),
             ter(tecNO_PERMISSION));
         env.close();
@@ -267,6 +300,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             env(escrow::create(alice, bob, USD(1)),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(XRP(-1)),
                 ter(temBAD_FEE));
             env.close();
@@ -285,6 +319,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(-1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(temBAD_AMOUNT));
             env.close();
@@ -303,6 +338,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, BAD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(temBAD_CURRENCY));
             env.close();
@@ -329,6 +365,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(gw, alice, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -349,6 +386,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_ISSUER));
             env.close();
@@ -373,6 +411,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(gw, alice, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -392,6 +431,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_LINE));
             env.close();
@@ -417,6 +457,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_AUTH));
             env.close();
@@ -442,6 +483,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_AUTH));
             env.close();
@@ -473,6 +515,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecFROZEN));
             env.close();
@@ -504,6 +547,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecFROZEN));
             env.close();
@@ -528,6 +572,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecINSUFFICIENT_FUNDS));
             env.close();
@@ -555,6 +600,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(10'001)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecINSUFFICIENT_FUNDS));
             env.close();
@@ -582,6 +628,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecPRECISION_LOSS));
             env.close();
@@ -621,6 +668,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -663,6 +711,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -711,6 +760,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -745,6 +795,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -779,6 +830,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(5)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -816,6 +868,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(5)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -875,18 +928,24 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
 
+            auto const trustResult =
+                env.current()->rules().enabled(fixTokenEscrowV1)
+                ? ter(tecHAS_OBLIGATIONS)
+                : ter(tesSUCCESS);
             env(pay(alice, gw, USD(9'999)));
             env(trust(gw, aliceUSD(0)), txflags(tfSetfAuth));
-            env(trust(alice, USD(0)));
+            env(trust(alice, USD(0)), trustResult);
             env.close();
 
             env.trust(USD(10'000), alice);
             env.close();
 
             // alice cannot cancel because she is not authorized
-            env(escrow::cancel(bob, alice, seq1),
-                fee(baseFee),
-                ter(tecNO_AUTH));
+            auto const cancelResult =
+                env.current()->rules().enabled(fixTokenEscrowV1)
+                ? ter(tesSUCCESS)
+                : ter(tecNO_AUTH);
+            env(escrow::cancel(bob, alice, seq1), fee(baseFee), cancelResult);
             env.close();
         }
     }
@@ -924,6 +983,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -1116,7 +1176,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const bseq = env.seq(bob);
 
             env(escrow::create(alice, bob, USD(1'000)),
-                escrow::finish_time(env.now() + 1s));
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 500s));
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] ==
                 static_cast<std::uint8_t>(tesSUCCESS));
@@ -1235,7 +1296,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const aseq = env.seq(alice);
 
             env(escrow::create(alice, gw, USD(1'000)),
-                escrow::finish_time(env.now() + 1s));
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 500s));
 
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] ==
@@ -1347,6 +1409,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(t.src, t.dst, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150));
             env.close();
 
@@ -1399,6 +1462,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(gw, alice, USD(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(baseFee * 150),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -1437,6 +1501,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(t.src, t.dst, USD(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(baseFee * 150));
             env.close();
 
@@ -1467,6 +1532,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(gw, gw, USD(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -1508,6 +1574,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150));
             env.close();
             auto const transferRate = escrow::rate(env, alice, seq1);
@@ -1546,6 +1613,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(baseFee * 150));
             env.close();
             auto transferRate = escrow::rate(env, alice, seq1);
@@ -1589,6 +1657,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(baseFee * 150));
             env.close();
             auto transferRate = escrow::rate(env, alice, seq1);
@@ -1682,6 +1751,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150));
             env.close();
 
@@ -1733,6 +1803,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         env(escrow::create(alice, bob, delta),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
+            escrow::cancel_time(env.now() + 2s),
             fee(baseFee * 150),
             ter(tecNO_AUTH));
         env.close();
@@ -1749,6 +1820,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         env(escrow::create(alice, bob, delta),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
+            escrow::cancel_time(env.now() + 10s),
             fee(baseFee * 150));
         env.close();
 
@@ -1797,6 +1869,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecFROZEN));
             env.close();
@@ -1810,6 +1883,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(baseFee * 150));
             env.close();
 
@@ -1872,6 +1946,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecFROZEN));
             env.close();
@@ -1885,6 +1960,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(baseFee * 150));
             env.close();
 
@@ -1948,6 +2024,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecFROZEN));
             env.close();
@@ -1962,6 +2039,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150));
             env.close();
 
@@ -2034,6 +2112,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150));
             env.close();
             env(pay(alice, gw, USD(10'000)), ter(tecPATH_PARTIAL));
@@ -2057,12 +2136,14 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, delta),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150));
             env.close();
 
             env(escrow::create(alice, bob, USD(10'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecINSUFFICIENT_FUNDS));
             env.close();
@@ -2099,6 +2180,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecPRECISION_LOSS));
             env.close();
@@ -2108,6 +2190,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, USD(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150));
             env.close();
 
@@ -2158,6 +2241,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 createResult);
             env.close();
@@ -2208,6 +2292,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(jv,
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 result);
             env.close();
@@ -2236,6 +2321,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(-1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(temBAD_AMOUNT));
             env.close();
@@ -2269,6 +2355,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(gw, alice, MPT(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -2292,6 +2379,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(jv,
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecOBJECT_NOT_FOUND));
             env.close();
@@ -2318,6 +2406,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(3)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_PERMISSION));
             env.close();
@@ -2341,6 +2430,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(4)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecOBJECT_NOT_FOUND));
             env.close();
@@ -2373,6 +2463,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(5)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_AUTH));
             env.close();
@@ -2408,6 +2499,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(6)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_AUTH));
             env.close();
@@ -2439,6 +2531,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(7)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecLOCKED));
             env.close();
@@ -2470,6 +2563,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(8)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecLOCKED));
             env.close();
@@ -2496,6 +2590,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(9)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecNO_AUTH));
             env.close();
@@ -2523,6 +2618,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(11)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecINSUFFICIENT_FUNDS));
             env.close();
@@ -2551,6 +2647,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(11)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tecINSUFFICIENT_FUNDS));
             env.close();
@@ -2591,6 +2688,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -2664,6 +2762,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(8)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -2714,6 +2813,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -2750,6 +2850,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -2787,6 +2888,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -2842,7 +2944,10 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.authorize(
                 {.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
 
-            env(escrow::cancel(bob, alice, seq1), ter(tecNO_AUTH));
+            auto const result = env.current()->rules().enabled(fixTokenEscrowV1)
+                ? ter(tesSUCCESS)
+                : ter(tecNO_AUTH);
+            env(escrow::cancel(bob, alice, seq1), result);
             env.close();
         }
 
@@ -2915,6 +3020,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 30s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -2985,6 +3091,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, alice, MPT(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 30s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -3041,6 +3148,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -3048,6 +3156,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(carol, bob, MPT(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -3089,6 +3198,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(1)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 30s),
                 fee(baseFee * 150));
             env.close();
 
@@ -3146,6 +3256,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(maxMPTokenAmount - 10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 30s),
                 fee(baseFee * 150));
             env.close();
 
@@ -3154,6 +3265,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 30s),
                 fee(baseFee * 150));
             env.close();
 
@@ -3313,7 +3425,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const bseq = env.seq(bob);
 
             env(escrow::create(alice, bob, MPT(1'000)),
-                escrow::finish_time(env.now() + 1s));
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 500s));
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] ==
                 static_cast<std::uint8_t>(tesSUCCESS));
@@ -3432,6 +3545,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, gw, MPT(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150));
             env.close();
 
@@ -3495,6 +3609,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(125)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150));
             env.close();
             auto const transferRate = escrow::rate(env, alice, seq1);
@@ -3589,8 +3704,12 @@ struct EscrowToken_test : public beast::unit_test::suite
         env(escrow::create(alice, bob, MPT(100)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
+            escrow::cancel_time(env.now() + 30s),
             fee(baseFee * 150));
         env.close();
+
+        mptGw.authorize(
+            {.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
 
         // bob can finish escrow - is authorized
         env(escrow::finish(bob, alice, seq),
@@ -3690,6 +3809,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, gw, MPT(100)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 10s),
                 fee(baseFee * 150));
             env.close();
 
@@ -3749,6 +3869,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 30s),
                 fee(baseFee * 150));
             env.close();
 
@@ -3801,6 +3922,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, MPT(10)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 30s),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
@@ -3877,7 +3999,9 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
         testIOUWithFeats(all);
+        testIOUWithFeats(all - fixTokenEscrowV1);
         testMPTWithFeats(all);
+        testMPTWithFeats(all - fixTokenEscrowV1);
     }
 };
 

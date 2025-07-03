@@ -133,6 +133,9 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         if (!ctx.rules.enabled(featureTokenEscrow))
             return temBAD_AMOUNT;
 
+        if (ctx.rules.enabled(fixTokenEscrowV1) && !ctx.tx[~sfCancelAfter])
+            return temMALFORMED;
+
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowCreatePreflightHelper<T>(ctx);
@@ -418,15 +421,28 @@ escrowLockApplyHelper<Issue>(
         return tecINTERNAL;
     // LCOV_EXCL_STOP
 
-    auto const ter = rippleCredit(
-        view,
-        sender,
-        issuer,
-        amount,
-        amount.holds<MPTIssue>() ? false : true,
-        journal);
+    auto const ter = rippleCredit(view, sender, issuer, amount, true, journal);
     if (ter != tesSUCCESS)
         return ter;  // LCOV_EXCL_LINE
+
+    // Increase the locked count on the trust line
+    if (view.rules().enabled(fixTokenEscrowV1))
+    {
+        auto const sleRippleState =
+            view.peek(keylet::line(sender, issuer, amount.getCurrency()));
+        if (!sleRippleState)
+            return tecINTERNAL;
+
+        if (!sleRippleState->isFieldPresent(sfLockedCount))
+            sleRippleState->setFieldU32(sfLockedCount, 1);
+        else
+            sleRippleState->setFieldU32(
+                sfLockedCount,
+                (*sleRippleState)[~sfLockedCount].value_or(0) + 1);
+
+        view.update(sleRippleState);
+    }
+
     return tesSUCCESS;
 }
 
@@ -928,6 +944,23 @@ escrowUnlockApplyHelper<Issue>(
         // if the transfer would exceed the line limit return tecLIMIT_EXCEEDED
         if (lineLimit < lineBalance)
             return tecLIMIT_EXCEEDED;
+
+        // Decrease the locked count on the ripple state line, if 0 remove the
+        // field
+        if (view.rules().enabled(fixTokenEscrowV1))
+        {
+            if (!sleRippleState->isFieldPresent(sfLockedCount))
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            auto const finalCount =
+                (*sleRippleState)[~sfLockedCount].value_or(0) - 1;
+            if (finalCount == 0)
+                sleRippleState->makeFieldAbsent(sfLockedCount);
+            else
+                sleRippleState->setFieldU32(sfLockedCount, finalCount);
+
+            view.update(sleRippleState);
+        }
     }
 
     // if destination is not the issuer then transfer funds
@@ -1229,9 +1262,12 @@ escrowCancelPreclaimHelper<Issue>(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account);
-        ter != tesSUCCESS)
-        return ter;
+    if (!ctx.view.rules().enabled(fixTokenEscrowV1))
+    {
+        if (auto const ter = requireAuth(ctx.view, amount.issue(), account);
+            ter != tesSUCCESS)
+            return ter;
+    }
 
     return tesSUCCESS;
 }
@@ -1257,11 +1293,14 @@ escrowCancelPreclaimHelper<MPTIssue>(
 
     // If the issuer has requireAuth set, check if the account is
     // authorized
-    auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter =
-            requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
-        ter != tesSUCCESS)
-        return ter;
+    if (!ctx.view.rules().enabled(fixTokenEscrowV1))
+    {
+        auto const& mptIssue = amount.get<MPTIssue>();
+        if (auto const ter =
+                requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
+            ter != tesSUCCESS)
+            return ter;
+    }
 
     return tesSUCCESS;
 }
