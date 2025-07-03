@@ -115,6 +115,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(50)});
                 env(tx);
+                env.close();
             }
 
             {
@@ -124,6 +125,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(50)});
                 env(tx);
+                env.close();
             }
 
             {
@@ -145,6 +147,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfAssetsMaximum] = asset(50).number();
                 env(tx, ter(tecLIMIT_EXCEEDED));
+                env.close();
             }
 
             {
@@ -152,6 +155,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfAssetsMaximum] = asset(150).number();
                 env(tx);
+                env.close();
             }
 
             {
@@ -159,6 +163,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfData] = "0";
                 env(tx);
+                env.close();
             }
 
             {
@@ -175,6 +180,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(100)});
                 env(tx, ter(tecLIMIT_EXCEEDED));
+                env.close();
             }
 
             {
@@ -182,6 +188,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfAssetsMaximum] = asset(0).number();
                 env(tx);
+                env.close();
             }
 
             {
@@ -191,6 +198,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(1000)});
                 env(tx, ter(tecINSUFFICIENT_FUNDS));
+                env.close();
             }
 
             {
@@ -200,6 +208,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(100)});
                 env(tx);
+                env.close();
             }
 
             {
@@ -212,6 +221,7 @@ class Vault_test : public beast::unit_test::suite
                      .holder = depositor,
                      .amount = asset(10)});
                 env(tx, code);
+                env.close();
             }
 
             {
@@ -221,6 +231,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.clawback(
                     {.issuer = issuer, .id = keylet.key, .holder = depositor});
                 env(tx, code);
+                env.close();
             }
 
             if (!asset.raw().native())
@@ -231,6 +242,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(200)});
                 env(tx);
+                env.close();
             }
 
             {
@@ -242,6 +254,7 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(100)});
                 tx[sfDestination] = alice.human();
                 env(tx, ter{tecNO_PERMISSION});
+                env.close();
             }
 
             if (!asset.raw().native())
@@ -255,6 +268,7 @@ class Vault_test : public beast::unit_test::suite
                 tx[sfDestination] = erin.human();
                 env(tx,
                     ter{asset.raw().holds<Issue>() ? tecNO_LINE : tecNO_AUTH});
+                env.close();
             }
 
             if (!asset.raw().native() && asset.raw().holds<Issue>())
@@ -269,6 +283,7 @@ class Vault_test : public beast::unit_test::suite
                     {.depositor = erin, .id = keylet.key, .amount = asset(10)});
                 env(tx);
                 env(pay(erin, depositor, share(10)));
+                env.close();
 
                 testcase(prefix + " withdraw to authorized 3rd party");
                 // Depositor withdraws shares, destined to Erin
@@ -278,6 +293,8 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(10)});
                 tx[sfDestination] = erin.human();
                 env(tx);
+                env.close();
+
                 // Erin returns assets to issuer
                 env(pay(erin, issuer, asset(10)));
 
@@ -297,6 +314,7 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(100)});
                 tx[sfDestination] = dave.human();
                 env(tx, ter{tecDST_TAG_NEEDED});
+                env.close();
             }
 
             {
@@ -307,6 +325,7 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(100)});
                 tx[sfDestination] = charlie.human();
                 env(tx);
+                env.close();
             }
 
             {
@@ -317,6 +336,7 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(50)});
                 tx[sfDestination] = issuer.human();
                 env(tx);
+                env.close();
             }
 
             {
@@ -326,18 +346,21 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(50)});
                 env(tx);
+                env.close();
             }
 
             {
                 testcase(prefix + " fail to delete because wrong owner");
                 auto tx = vault.del({.owner = issuer, .id = keylet.key});
                 env(tx, ter(tecNO_PERMISSION));
+                env.close();
             }
 
             {
                 testcase(prefix + " delete empty vault");
                 auto tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx);
+                env.close();
                 BEAST_EXPECT(!env.le(keylet));
             }
         };
@@ -2506,6 +2529,7 @@ class Vault_test : public beast::unit_test::suite
                  .id = keylet.key,
                  .amount = asset(50)});
             env(tx);
+            env.close();
 
             tx = vault.clawback(
                 {.issuer = issuer,
@@ -2520,6 +2544,7 @@ class Vault_test : public beast::unit_test::suite
                  .holder = owner,
                  .amount = asset(0)});
             env(tx);
+            env.close();
 
             tx = vault.del({
                 .owner = owner,
@@ -2566,6 +2591,7 @@ class Vault_test : public beast::unit_test::suite
             auto tx = vault.deposit(
                 {.depositor = owner, .id = keylet.key, .amount = asset(50)});
             env(tx);
+            env.close();
         }
 
         {
