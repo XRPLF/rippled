@@ -220,7 +220,9 @@ invokeHostFunc(
     auto err = checkErrors(expectedArgs, std::make_index_sequence<N>{});
 
     if (err)
+    {
         return hfResult(results, *err);
+    }
 
     auto unwrappedArgs =
         std::apply([](auto&&... e) { return std::tuple{*e...}; }, expectedArgs);
@@ -228,7 +230,9 @@ invokeHostFunc(
     auto result = std::apply(std::forward<Func>(f), unwrappedArgs);
 
     if (!result)
+    {
         return hfResult(results, result.error());
+    }
 
     if constexpr (std::is_same_v<std::decay_t<decltype(*result)>, Bytes>)
     {
@@ -337,6 +341,14 @@ cacheLedgerObj_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
+    // return invokeHostFunc<uint256, int32_t>(
+    //     env,
+    //     params,
+    //     results,
+    //     [hf = reinterpret_cast<HostFunctions*>(env)](uint256 id, int32_t
+    //     cache) {
+    //         return hf->cacheLedgerObj(id, cache);
+    //     });
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
@@ -351,8 +363,7 @@ cacheLedgerObj_wrap(
     {
         return hfResult(results, cache.error());
     }
-    auto const cacheIndex =
-        hf->cacheLedgerObj(keylet::unchecked(r.value()), cache.value());
+    auto const cacheIndex = hf->cacheLedgerObj(r.value(), cache.value());
     if (!cacheIndex)
     {
         return hfResult(results, cacheIndex.error());
@@ -366,30 +377,13 @@ getTxField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
-    if (!fname)
-    {
-        return hfResult(results, fname.error());
-    }
-
-    auto fieldData = hf->getTxField(fname.value());
-    if (!fieldData)
-    {
-        return hfResult(results, fieldData.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<SFIELD_PARAM>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            fieldData->data(),
-            fieldData->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](SFIELD_PARAM fname) {
+            return hf->getTxField(fname);
+        });
 }
 
 wasm_trap_t*
@@ -398,30 +392,13 @@ getCurrentLedgerObjField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
-    if (!fname)
-    {
-        return hfResult(results, fname.error());
-    }
-
-    auto fieldData = hf->getCurrentLedgerObjField(fname.value());
-    if (!fieldData)
-    {
-        return hfResult(results, fieldData.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<SFIELD_PARAM>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            fieldData->data(),
-            fieldData->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](SFIELD_PARAM fname) {
+            return hf->getCurrentLedgerObjField(fname);
+        });
 }
 
 wasm_trap_t*
@@ -430,35 +407,14 @@ getLedgerObjField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const cache = getData<int32_t>(rt, params, index);
-    if (!cache)
-    {
-        return hfResult(results, cache.error());
-    }
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
-    if (!fname)
-    {
-        return hfResult(results, fname.error());
-    }
-
-    auto fieldData = hf->getLedgerObjField(cache.value(), fname.value());
-    if (!fieldData)
-    {
-        return hfResult(results, fieldData.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<int32_t, SFIELD_PARAM>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            fieldData->data(),
-            fieldData->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            int32_t cache, SFIELD_PARAM fname) {
+            return hf->getLedgerObjField(cache, fname);
+        });
 }
 
 wasm_trap_t*
@@ -467,30 +423,13 @@ getTxNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const r = getData<Bytes>(rt, params, index);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-
-    auto fieldData = hf->getTxNestedField(r.value());
-    if (!fieldData)
-    {
-        return hfResult(results, fieldData.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<Bytes>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            fieldData->data(),
-            fieldData->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+            return hf->getTxNestedField(bytes);
+        });
 }
 
 wasm_trap_t*
@@ -499,30 +438,13 @@ getCurrentLedgerObjNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const r = getData<Bytes>(rt, params, index);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-
-    auto fieldData = hf->getCurrentLedgerObjNestedField(r.value());
-    if (!fieldData)
-    {
-        return hfResult(results, fieldData.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<Bytes>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            fieldData->data(),
-            fieldData->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+            return hf->getCurrentLedgerObjNestedField(bytes);
+        });
 }
 
 wasm_trap_t*
@@ -531,35 +453,14 @@ getLedgerObjNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const cache = getData<int32_t>(rt, params, index);
-    if (!cache)
-    {
-        return hfResult(results, cache.error());
-    }
-    auto const r = getData<Bytes>(rt, params, index);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-
-    auto fieldData = hf->getLedgerObjNestedField(cache.value(), r.value());
-    if (!fieldData)
-    {
-        return hfResult(results, fieldData.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<int32_t, Bytes>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            fieldData->data(),
-            fieldData->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            int32_t cache, Bytes const& bytes) {
+            return hf->getLedgerObjNestedField(cache, bytes);
+        });
 }
 
 wasm_trap_t*
@@ -568,22 +469,13 @@ getTxArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
-    if (!fname)
-    {
-        return hfResult(results, fname.error());
-    }
-
-    auto const sz = hf->getTxArrayLen(fname.value());
-    if (!sz)
-    {
-        return hfResult(results, sz.error());
-    }
-    return hfResult(results, sz.value());
+    return invokeHostFunc<SFIELD_PARAM>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](SFIELD_PARAM fname) {
+            return hf->getTxArrayLen(fname);
+        });
 }
 
 wasm_trap_t*
@@ -592,22 +484,13 @@ getCurrentLedgerObjArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
-    if (!fname)
-    {
-        return hfResult(results, fname.error());
-    }
-
-    auto const sz = hf->getCurrentLedgerObjArrayLen(fname.value());
-    if (!sz)
-    {
-        return hfResult(results, sz.error());
-    }
-    return hfResult(results, sz.value());
+    return invokeHostFunc<SFIELD_PARAM>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](SFIELD_PARAM fname) {
+            return hf->getCurrentLedgerObjArrayLen(fname);
+        });
 }
 
 wasm_trap_t*
@@ -616,28 +499,14 @@ getLedgerObjArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const cache = getData<int32_t>(rt, params, index);
-    if (!cache)
-    {
-        return hfResult(results, cache.error());
-    }
-
-    auto const& fname = getData<SFIELD_PARAM>(rt, params, index);
-    if (!fname)
-    {
-        return hfResult(results, fname.error());
-    }
-
-    auto const sz = hf->getLedgerObjArrayLen(cache.value(), fname.value());
-    if (!sz)
-    {
-        return hfResult(results, sz.error());
-    }
-    return hfResult(results, sz.value());
+    return invokeHostFunc<int32_t, SFIELD_PARAM>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            int32_t cache, SFIELD_PARAM fname) {
+            return hf->getLedgerObjArrayLen(cache, fname);
+        });
 }
 
 wasm_trap_t*
@@ -646,22 +515,13 @@ getTxNestedArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const r = getData<Bytes>(rt, params, index);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-
-    auto const sz = hf->getTxNestedArrayLen(r.value());
-    if (!sz)
-    {
-        return hfResult(results, sz.error());
-    }
-    return hfResult(results, sz.value());
+    return invokeHostFunc<Bytes>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+            return hf->getTxNestedArrayLen(bytes);
+        });
 }
 
 wasm_trap_t*
@@ -670,51 +530,28 @@ getCurrentLedgerObjNestedArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const r = getData<Bytes>(rt, params, index);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-
-    auto const sz = hf->getCurrentLedgerObjNestedArrayLen(r.value());
-    if (!sz)
-    {
-        return hfResult(results, sz.error());
-    }
-    return hfResult(results, sz.value());
+    return invokeHostFunc<Bytes>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+            return hf->getCurrentLedgerObjNestedArrayLen(bytes);
+        });
 }
-
 wasm_trap_t*
 getLedgerObjNestedArrayLen_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const cache = getData<int32_t>(rt, params, index);
-    if (!cache)
-    {
-        return hfResult(results, cache.error());
-    }
-    auto const r = getData<Bytes>(rt, params, index);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-
-    auto const sz = hf->getLedgerObjNestedArrayLen(cache.value(), r.value());
-    if (!sz)
-    {
-        return hfResult(results, sz.error());
-    }
-    return hfResult(results, sz.value());
+    return invokeHostFunc<int32_t, Bytes>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            int32_t cache, Bytes const& bytes) {
+            return hf->getLedgerObjNestedArrayLen(cache, bytes);
+        });
 }
 
 wasm_trap_t*
@@ -723,27 +560,13 @@ updateData_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const r = getData<Bytes>(rt, params, index);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-
-    if (r->size() > maxWasmDataLength)
-    {
-        return hfResult(results, HF_ERR_DATA_FIELD_TOO_LARGE);
-    }
-    auto const result = hf->updateData(r.value());
-    if (!result)
-    {
-        return hfResult(results, result.error());
-    }
-
-    return hfResult(results, result.value());
+    return invokeHostFunc<Bytes>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+            return hf->updateData(bytes);
+        });
 }
 
 wasm_trap_t*
@@ -829,45 +652,14 @@ oracleKeylet_wrap(
 wasm_trap_t*
 getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const acc = getData<AccountID>(rt, params, index);
-    if (!acc)
-    {
-        return hfResult(results, acc.error());
-    }
-
-    auto const nftRaw = getData<Bytes>(rt, params, index);
-    if (!nftRaw)
-    {
-        return hfResult(results, nftRaw.error());
-    }
-
-    if (nftRaw->size() != uint256::bytes)
-    {
-        hf->getJournal().trace()
-            << "WAMR getNFT: Invalid NFT data size: " << nftRaw->size()
-            << ", expected " << (uint256::bytes);
-        return hfResult(results, HF_ERR_INVALID_PARAMS);
-    }
-
-    uint256 const ntfId(uint256::fromVoid(nftRaw->data()));
-    auto const nftURI = hf->getNFT(acc.value(), ntfId);
-    if (!nftURI)
-    {
-        return hfResult(results, nftURI.error());
-    }
-
-    return hfResult(
+    return invokeHostFunc<AccountID, uint256>(
+        env,
+        params,
         results,
-        setData(
-            rt,
-            params->data[index].of.i32,
-            params->data[index + 1].of.i32,
-            nftURI->data(),
-            nftURI->size()));
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            AccountID const& acc, uint256 nftId) {
+            return hf->getNFT(acc, nftId);
+        });
 }
 
 wasm_trap_t*

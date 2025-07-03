@@ -86,7 +86,7 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFuncError>
-    cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx)
+    cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }

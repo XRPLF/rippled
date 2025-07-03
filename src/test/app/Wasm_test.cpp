@@ -130,7 +130,7 @@ public:
     }
 
     virtual Expected<int32_t, HostFuncError>
-    cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx) override
+    cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override
     {
         return 1;
     }
@@ -446,7 +446,7 @@ public:
     }
 
     virtual Expected<int32_t, HostFuncError>
-    cacheLedgerObj(Keylet const&, int32_t cacheIdx) override
+    cacheLedgerObj(uint256 const&, int32_t cacheIdx) override
     {
         static int32_t intIdx = 0;
 

@@ -67,7 +67,7 @@ public:
     getParentLedgerHash() override;
 
     Expected<int32_t, HostFuncError>
-    cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx) override;
+    cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override;
 
     Expected<Bytes, HostFuncError>
     getTxField(SField const& fname) override;
