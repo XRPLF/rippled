@@ -151,14 +151,16 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!accountSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
-    if (holdLPtokens == beast::zero)
-        return tecAMM_BALANCE;
-
     if (sb.rules().enabled(fixAMMClawbackRounding))
     {
-        if (auto const res =
-                verifyAndAdjustLPTokenBalance(sb, holdLPtokens, ammSle, holder);
+        // retrieve LP token balance inside the amendment gate to avoid
+        // inconsistent error behavior
+        auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
+        if (lpTokenBalance == beast::zero)
+            return tecAMM_BALANCE;
+
+        if (auto const res = verifyAndAdjustLPTokenBalance(
+                sb, lpTokenBalance, ammSle, holder);
             !res)
             return res.error();  // LCOV_EXCL_LINE
     }
@@ -179,6 +181,10 @@ AMMClawback::applyGuts(Sandbox& sb)
     STAmount newLPTokenBalance;
     STAmount amountWithdraw;
     std::optional<STAmount> amount2Withdraw;
+
+    auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
+    if (holdLPtokens == beast::zero)
+        return tecAMM_BALANCE;
 
     if (!clawAmount)
         // Because we are doing a two-asset withdrawal,
