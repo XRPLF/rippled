@@ -30,11 +30,11 @@
 
 namespace ripple {
 
-NotTEC
-DepositPreauth::preflight(PreflightContext const& ctx)
+bool
+DepositPreauth::isEnabled(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureDepositPreauth))
-        return temDISABLED;
+        return false;
 
     bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
     bool const unauthArrPresent =
@@ -42,19 +42,17 @@ DepositPreauth::preflight(PreflightContext const& ctx)
     int const authCredPresent =
         static_cast<int>(authArrPresent) + static_cast<int>(unauthArrPresent);
 
-    if (authCredPresent && !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
+    return !authCredPresent || ctx.rules.enabled(featureCredentials);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    auto& tx = ctx.tx;
-
-    if (tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
+NotTEC
+DepositPreauth::doPreflight(PreflightContext const& ctx)
+{
+    bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
+    bool const unauthArrPresent =
+        ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
+    int const authCredPresent =
+        static_cast<int>(authArrPresent) + static_cast<int>(unauthArrPresent);
 
     auto const optAuth = ctx.tx[~sfAuthorize];
     auto const optUnauth = ctx.tx[~sfUnauthorize];
@@ -102,7 +100,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
             return err;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

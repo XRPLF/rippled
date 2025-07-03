@@ -29,7 +29,7 @@ Permission::Permission()
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) {value, delegatable},
+#define TRANSACTION(tag, value, name, delegatable, ...) {value, delegatable},
 
 #include <xrpl/protocol/detail/transactions.macro>
 

@@ -26,22 +26,16 @@
 
 namespace ripple {
 
-NotTEC
-DeleteOracle::preflight(PreflightContext const& ctx)
+bool
+DeleteOracle::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePriceOracle))
-        return temDISABLED;
+    return ctx.rules.enabled(featurePriceOracle);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "Oracle Delete: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
-    return preflight2(ctx);
+NotTEC
+DeleteOracle::doPreflight(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
 }
 
 TER
