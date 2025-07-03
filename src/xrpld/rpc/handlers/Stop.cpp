@@ -31,7 +31,7 @@ struct JsonContext;
 Json::Value
 doStop(RPC::JsonContext& context)
 {
-    context.app.signalStop();
+    context.app.signalStop("RPC");
     return RPC::makeObjectValue(systemName() + " server stopping");
 }
 

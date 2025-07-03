@@ -348,7 +348,7 @@ populateJsonResponse(
                             txnMeta->getJson(JsonOptions::include_date);
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
-                        insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
+                        RPC::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                         RPC::insertMPTokenIssuanceID(
                             jvObj[jss::meta], sttx, *txnMeta);
                     }
