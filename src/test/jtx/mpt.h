@@ -105,6 +105,7 @@ struct MPTCreate
     std::optional<std::uint32_t> holderCount = std::nullopt;
     bool fund = true;
     std::optional<std::uint32_t> flags = {0};
+    std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -138,6 +139,7 @@ struct MPTSet
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
+    std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -163,6 +165,9 @@ public:
 
     void
     set(MPTSet const& set = {});
+
+    [[nodiscard]] bool
+    checkDomainID(std::optional<uint256> expected) const;
 
     [[nodiscard]] bool
     checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount)
