@@ -102,8 +102,8 @@ getData<SFIELD_PARAM>(
 }
 
 template <>
-Expected<Bytes, HostFunctionError>
-getData<Bytes>(
+Expected<Slice, HostFunctionError>
+getData<Slice>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
     int32_t& i)
@@ -121,7 +121,7 @@ getData<Bytes>(
     if (src + ssz > mem.s)
         return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
 
-    Bytes data(mem.p + src, mem.p + src + ssz);
+    Slice data(mem.p + src, ssz);
     return data;
 }
 
@@ -132,7 +132,7 @@ getData<uint256>(
     wasm_val_vec_t const* params,
     int32_t& i)
 {
-    auto const r = getData<Bytes>(rt, params, i);
+    auto const r = getData<Slice>(rt, params, i);
     i++;
     if (!r)
     {
@@ -153,7 +153,7 @@ getData<AccountID>(
     wasm_val_vec_t const* params,
     int32_t& i)
 {
-    auto const r = getData<Bytes>(rt, params, i);
+    auto const r = getData<Slice>(rt, params, i);
     if (!r || (r->size() != AccountID::bytes))
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
@@ -426,11 +426,11 @@ getTxNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<Bytes>(
+    return invokeHostFunc<Slice>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->getTxNestedField(bytes);
         });
 }
@@ -441,11 +441,11 @@ getCurrentLedgerObjNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<Bytes>(
+    return invokeHostFunc<Slice>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->getCurrentLedgerObjNestedField(bytes);
         });
 }
@@ -456,12 +456,12 @@ getLedgerObjNestedField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<int32_t, Bytes>(
+    return invokeHostFunc<int32_t, Slice>(
         env,
         params,
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](
-            int32_t cache, Bytes const& bytes) {
+            int32_t cache, Slice const& bytes) {
             return hf->getLedgerObjNestedField(cache, bytes);
         });
 }
@@ -518,11 +518,11 @@ getTxNestedArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<Bytes>(
+    return invokeHostFunc<Slice>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->getTxNestedArrayLen(bytes);
         });
 }
@@ -533,11 +533,11 @@ getCurrentLedgerObjNestedArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<Bytes>(
+    return invokeHostFunc<Slice>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->getCurrentLedgerObjNestedArrayLen(bytes);
         });
 }
@@ -547,12 +547,12 @@ getLedgerObjNestedArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<int32_t, Bytes>(
+    return invokeHostFunc<int32_t, Slice>(
         env,
         params,
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](
-            int32_t cache, Bytes const& bytes) {
+            int32_t cache, Slice const& bytes) {
             return hf->getLedgerObjNestedArrayLen(cache, bytes);
         });
 }
@@ -563,11 +563,11 @@ updateData_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<Bytes>(
+    return invokeHostFunc<Slice>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->updateData(bytes);
         });
 }
@@ -578,11 +578,11 @@ computeSha512HalfHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<Bytes>(
+    return invokeHostFunc<Slice>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](Bytes const& bytes) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->computeSha512HalfHash(bytes);
         });
 }
@@ -608,14 +608,14 @@ credentialKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<AccountID, AccountID, Bytes>(
+    return invokeHostFunc<AccountID, AccountID, Slice>(
         env,
         params,
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](
             AccountID const& subj,
             AccountID const& iss,
-            Bytes const& credType) {
+            Slice const& credType) {
             return hf->credentialKeylet(subj, iss, credType);
         });
 }
@@ -678,7 +678,7 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, msg.error());
     }
 
-    auto const data = getData<Bytes>(rt, params, index);
+    auto const data = getData<Slice>(rt, params, index);
     if (!data)
     {
         return hfResult(results, data.error());

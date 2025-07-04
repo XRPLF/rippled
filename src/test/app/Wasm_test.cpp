@@ -190,7 +190,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getTxNestedField(Bytes const& locator) override
+    getTxNestedField(Slice const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
@@ -200,7 +200,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Bytes const& locator) override
+    getCurrentLedgerObjNestedField(Slice const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
@@ -210,7 +210,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
     {
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
@@ -238,31 +238,31 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Bytes const& locator) override
+    getTxNestedArrayLen(Slice const& locator) override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
     {
         return 32;
     }
 
     Expected<int32_t, HostFunctionError>
-    updateData(Bytes const& data) override
+    updateData(Slice const& data) override
     {
         return 0;
     }
 
     Expected<Hash, HostFunctionError>
-    computeSha512HalfHash(Bytes const& data) override
+    computeSha512HalfHash(Slice const& data) override
     {
         return env_.current()->info().parentHash;
     }
@@ -280,12 +280,11 @@ public:
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
-        Bytes const& credentialType) override
+        Slice const& credentialType) override
     {
         if (!subject || !issuer || credentialType.empty())
             return Unexpected(HF_ERR_INVALID_ACCOUNT);
-        auto const keylet =
-            keylet::credential(subject, issuer, makeSlice(credentialType));
+        auto const keylet = keylet::credential(subject, issuer, credentialType);
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
@@ -320,7 +319,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    trace(std::string const& msg, Bytes const& data, bool asHex) override
+    trace(std::string const& msg, Slice const& data, bool asHex) override
     {
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
@@ -581,7 +580,7 @@ public:
     }
 
     static Expected<STBase const*, HostFunctionError>
-    locateField(STObject const& obj, Bytes const& loc)
+    locateField(STObject const& obj, Slice const& loc)
     {
         if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
             return Unexpected(HF_ERR_LOCATOR_MALFORMED);
@@ -638,7 +637,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getTxNestedField(Bytes const& locator) override
+    getTxNestedField(Slice const& locator) override
     {
         // std::cout << tx_->getJson(JsonOptions::none).toStyledString() <<
         // std::endl;
@@ -655,7 +654,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Bytes const& locator) override
+    getCurrentLedgerObjNestedField(Slice const& locator) override
     {
         auto const sle = env_.le(leKey);
         if (!sle)
@@ -674,7 +673,7 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
     {
         --cacheIdx;
         if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
@@ -763,7 +762,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Bytes const& locator) override
+    getTxNestedArrayLen(Slice const& locator) override
     {
         auto const r = locateField(*tx_, locator);
         if (!r)
@@ -778,7 +777,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
     {
         auto const sle = env_.le(leKey);
         if (!sle)
@@ -796,7 +795,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
     {
         --cacheIdx;
         if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
@@ -822,7 +821,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    updateData(Bytes const& data) override
+    updateData(Slice const& data) override
     {
         ripple::detail::ApplyViewBase v(
             env_.app().openLedger().current().get(), tapNONE);
@@ -838,7 +837,7 @@ public:
     }
 
     Expected<Hash, HostFunctionError>
-    computeSha512HalfHash(Bytes const& data) override
+    computeSha512HalfHash(Slice const& data) override
     {
         auto const hash = sha512Half(data);
         return hash;
@@ -857,14 +856,13 @@ public:
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
-        Bytes const& credentialType) override
+        Slice const& credentialType) override
     {
         if (!subject || !issuer || credentialType.empty() ||
             credentialType.size() > maxCredentialTypeLength)
             return Unexpected(HF_ERR_INVALID_PARAMS);
 
-        auto const keylet =
-            keylet::credential(subject, issuer, makeSlice(credentialType));
+        auto const keylet = keylet::credential(subject, issuer, credentialType);
 
         return Bytes{keylet.key.begin(), keylet.key.end()};
     }
@@ -912,7 +910,7 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    trace(std::string const& msg, Bytes const& data, bool asHex) override
+    trace(std::string const& msg, Slice const& data, bool asHex) override
     {
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;

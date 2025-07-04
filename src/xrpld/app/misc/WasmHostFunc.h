@@ -112,19 +112,19 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getTxNestedField(Bytes const& locator)
+    getTxNestedField(Slice const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Bytes const& locator)
+    getCurrentLedgerObjNestedField(Slice const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator)
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
@@ -148,31 +148,31 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Bytes const& locator)
+    getTxNestedArrayLen(Slice const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Bytes const& locator)
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator)
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    updateData(Bytes const& data)
+    updateData(Slice const& data)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Hash, HostFunctionError>
-    computeSha512HalfHash(Bytes const& data)
+    computeSha512HalfHash(Slice const& data)
     {
         return Hash{};
     }
@@ -187,7 +187,7 @@ struct HostFunctions
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
-        Bytes const& credentialType)
+        Slice const& credentialType)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
@@ -211,7 +211,7 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    trace(std::string const& msg, Bytes const& data, bool asHex)
+    trace(std::string const& msg, Slice const& data, bool asHex)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }

@@ -170,9 +170,8 @@ noField(STBase const* field)
 }
 
 static Expected<STBase const*, HostFunctionError>
-locateField(STObject const& obj, Bytes const& bytesLoc)
+locateField(STObject const& obj, Slice const& loc)
 {
-    Slice const& loc = makeSlice(bytesLoc);
     if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
         return Unexpected(HF_ERR_LOCATOR_MALFORMED);
 
@@ -228,7 +227,7 @@ locateField(STObject const& obj, Bytes const& bytesLoc)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getTxNestedField(Bytes const& locator)
+WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
 {
     auto const r = locateField(ctx.tx, locator);
     if (!r)
@@ -238,7 +237,7 @@ WasmHostFunctionsImpl::getTxNestedField(Bytes const& locator)
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Bytes const& locator)
+WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 {
     auto const sle = ctx.view().read(leKey);
     if (!sle)
@@ -254,7 +253,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Bytes const& locator)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerObjNestedField(
     int32_t cacheIdx,
-    Bytes const& locator)
+    Slice const& locator)
 {
     --cacheIdx;
     if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
@@ -334,7 +333,7 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getTxNestedArrayLen(Bytes const& locator)
+WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
 {
     auto const r = locateField(ctx.tx, locator);
     if (!r)
@@ -349,7 +348,7 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Bytes const& locator)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Bytes const& locator)
+WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
 {
     auto const sle = ctx.view().read(leKey);
     if (!sle)
@@ -369,7 +368,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Bytes const& locator)
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     int32_t cacheIdx,
-    Bytes const& locator)
+    Slice const& locator)
 {
     --cacheIdx;
     if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
@@ -391,7 +390,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::updateData(Bytes const& data)
+WasmHostFunctionsImpl::updateData(Slice const& data)
 {
     if (data.size() > maxWasmDataLength)
     {
@@ -406,7 +405,7 @@ WasmHostFunctionsImpl::updateData(Bytes const& data)
 }
 
 Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::computeSha512HalfHash(Bytes const& data)
+WasmHostFunctionsImpl::computeSha512HalfHash(Slice const& data)
 {
     auto const hash = sha512Half(data);
     return hash;
@@ -425,7 +424,7 @@ Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::credentialKeylet(
     AccountID const& subject,
     AccountID const& issuer,
-    Bytes const& credentialType)
+    Slice const& credentialType)
 {
     if (!subject || !issuer)
         return Unexpected(HF_ERR_INVALID_ACCOUNT);
@@ -434,8 +433,7 @@ WasmHostFunctionsImpl::credentialKeylet(
         credentialType.size() > maxCredentialTypeLength)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
-    auto const keylet =
-        keylet::credential(subject, issuer, makeSlice(credentialType));
+    auto const keylet = keylet::credential(subject, issuer, credentialType);
 
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
@@ -484,7 +482,7 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::trace(
     std::string const& msg,
-    Bytes const& data,
+    Slice const& data,
     bool asHex)
 {
 #ifdef DEBUG_OUTPUT

@@ -79,13 +79,13 @@ public:
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override;
 
     Expected<Bytes, HostFunctionError>
-    getTxNestedField(Bytes const& locator) override;
+    getTxNestedField(Slice const& locator) override;
 
     Expected<Bytes, HostFunctionError>
-    getCurrentLedgerObjNestedField(Bytes const& locator) override;
+    getCurrentLedgerObjNestedField(Slice const& locator) override;
 
     Expected<Bytes, HostFunctionError>
-    getLedgerObjNestedField(int32_t cacheIdx, Bytes const& locator) override;
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override;
 
     Expected<int32_t, HostFunctionError>
     getTxArrayLen(SField const& fname) override;
@@ -97,19 +97,19 @@ public:
     getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override;
 
     Expected<int32_t, HostFunctionError>
-    getTxNestedArrayLen(Bytes const& locator) override;
+    getTxNestedArrayLen(Slice const& locator) override;
 
     Expected<int32_t, HostFunctionError>
-    getCurrentLedgerObjNestedArrayLen(Bytes const& locator) override;
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override;
 
     Expected<int32_t, HostFunctionError>
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Bytes const& locator) override;
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override;
 
     Expected<int32_t, HostFunctionError>
-    updateData(Bytes const& data) override;
+    updateData(Slice const& data) override;
 
     Expected<Hash, HostFunctionError>
-    computeSha512HalfHash(Bytes const& data) override;
+    computeSha512HalfHash(Slice const& data) override;
 
     Expected<Bytes, HostFunctionError>
     accountKeylet(AccountID const& account) override;
@@ -118,7 +118,7 @@ public:
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
-        Bytes const& credentialType) override;
+        Slice const& credentialType) override;
 
     Expected<Bytes, HostFunctionError>
     escrowKeylet(AccountID const& account, std::uint32_t seq) override;
@@ -130,7 +130,7 @@ public:
     getNFT(AccountID const& account, uint256 const& nftId) override;
 
     Expected<int32_t, HostFunctionError>
-    trace(std::string const& msg, Bytes const& data, bool asHex) override;
+    trace(std::string const& msg, Slice const& data, bool asHex) override;
 
     Expected<int32_t, HostFunctionError>
     traceNum(std::string const& msg, int64_t data) override;
