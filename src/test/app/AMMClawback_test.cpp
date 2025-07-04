@@ -2190,11 +2190,13 @@ class AMMClawback_test : public beast::unit_test::suite
             }
             else
             {
+                auto const lpBalance = IOUAmount{989, -12};
                 env(amm::ammClawback(gw, alice, USD, XRP, USD(1)));
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount(USD, UINT64_C(7000000000000000), -28),
                     XRPAmount(1),
-                    IOUAmount{989, -12}));
+                    lpBalance));
+                BEAST_EXPECT(amm.expectLPTokens(alice, lpBalance));
             }
         }
 
@@ -2222,20 +2224,28 @@ class AMMClawback_test : public beast::unit_test::suite
             env(amm::ammClawback(gw, alice, USD, XRP, USD(0.5)));
 
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
+            {
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount(USD, UINT64_C(5013266196406), -13),
                     XRPAmount(1002653),
                     IOUAmount{708'9829046744236, -13}));
+            }
             else if (!features[fixAMMClawbackRounding])
+            {
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount(USD, UINT64_C(5013266196407), -13),
                     XRPAmount(1002654),
                     IOUAmount{708'9829046744941, -13}));
+            }
             else if (features[fixAMMv1_3] && features[fixAMMClawbackRounding])
+            {
+                auto const lpBalance = IOUAmount{708'9829046743238, -13};
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount(USD, UINT64_C(5013266196406999), -16),
                     XRPAmount(1002655),
-                    IOUAmount{708'9829046743238, -13}));
+                    lpBalance));
+                BEAST_EXPECT(amm.expectLPTokens(alice, lpBalance));
+            }
         }
 
         // IOU/XRP pool. AMMClawback all of last holder's USD balance
@@ -2419,10 +2429,12 @@ class AMMClawback_test : public beast::unit_test::suite
             {
                 env(amm::ammClawback(gw, alice, USD, EUR, USD(1)),
                     txflags(tfClawTwoAssets));
+                auto const lpBalance = IOUAmount{5, -12};
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount(USD, UINT64_C(4), -15),
                     STAmount(EUR, UINT64_C(8), -9),
-                    IOUAmount{5, -12}));
+                    lpBalance));
+                BEAST_EXPECT(amm.expectLPTokens(alice, lpBalance));
             }
         }
     }
