@@ -1245,6 +1245,97 @@ class MPToken_test : public beast::unit_test::suite
                 // authorize to move his funds!
                 mptAlice.pay(bob, alice, 10, tecNO_AUTH);
             }
+
+            {
+                Env env{*this, features};
+                std::string const credType = "credential";
+                // credIssuer1 is the owner of domainId1 and a credential issuer
+                Account const credIssuer1{"credIssuer1"};
+                // credIssuer2 is the owner of domainId2 and a credential issuer
+                // Note, domainId2 also lists credentials issued by credIssuer1
+                Account const credIssuer2{"credIssuer2"};
+                env.fund(XRP(1000), credIssuer1, credIssuer2, bob, carol);
+
+                auto const domainId1 = [&]() {
+                    pdomain::Credentials const credentials{
+                        {.issuer = credIssuer1, .credType = credType}};
+
+                    env(pdomain::setTx(credIssuer1, credentials));
+                    return [&]() {
+                        auto tx = env.tx()->getJson(JsonOptions::none);
+                        return pdomain::getNewDomain(env.meta());
+                    }();
+                }();
+
+                auto const domainId2 = [&]() {
+                    pdomain::Credentials const credentials{
+                        {.issuer = credIssuer1, .credType = credType},
+                        {.issuer = credIssuer2, .credType = credType}};
+
+                    env(pdomain::setTx(credIssuer2, credentials));
+                    return [&]() {
+                        auto tx = env.tx()->getJson(JsonOptions::none);
+                        return pdomain::getNewDomain(env.meta());
+                    }();
+                }();
+
+                // bob is authorized via credIssuer1 which is recognized by both
+                // domainId1 and domainId2
+                env(credentials::create(bob, credIssuer1, credType));
+                env(credentials::accept(bob, credIssuer1, credType));
+                env.close();
+
+                // carol is authorized via credIssuer2, only recognized by
+                // domainId2
+                env(credentials::create(carol, credIssuer2, credType));
+                env(credentials::accept(carol, credIssuer2, credType));
+                env.close();
+
+                MPTTester mptAlice(env, alice, {});
+                env.close();
+
+                mptAlice.create({
+                    .ownerCount = 1,
+                    .holderCount = 0,
+                    .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+                    .domainID = domainId1,
+                });
+
+                // bob and carol create an empty MPToken
+                mptAlice.authorize({.account = bob});
+                mptAlice.authorize({.account = carol});
+                env.close();
+
+                // alice sends 50 MPT to bob but cannot send to carol
+                mptAlice.pay(alice, bob, 50);
+                mptAlice.pay(alice, carol, 50, tecNO_AUTH);
+                env.close();
+
+                // bob cannot send to carol because they are not on the same
+                // domain (since credIssuer2 is not recognized by domainId1)
+                mptAlice.pay(bob, carol, 10, tecNO_AUTH);
+                env.close();
+
+                // alice updates domainID to domainId2 which recognizes both
+                // credIssuer1 and credIssuer2
+                mptAlice.set({.domainID = domainId2});
+                // alice can now send to carol
+                mptAlice.pay(alice, carol, 10);
+                env.close();
+
+                // bob can now send to carol because both are in the same
+                // domain
+                mptAlice.pay(bob, carol, 10);
+                env.close();
+
+                // bob loses his authorization and can no longer send MPT
+                env(credentials::deleteCred(
+                    credIssuer1, bob, credIssuer1, credType));
+                env.close();
+
+                mptAlice.pay(bob, carol, 10, tecNO_AUTH);
+                mptAlice.pay(bob, alice, 10, tecNO_AUTH);
+            }
         }
 
         // Non-issuer cannot send to each other if MPTCanTransfer isn't set
