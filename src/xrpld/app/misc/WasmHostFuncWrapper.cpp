@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-#define SFIELD_PARAM std::reference_wrapper<SField const>
+using SFieldParam = std::reference_wrapper<SField const>;
 
 static int32_t
 setData(
@@ -85,8 +85,8 @@ getData<int64_t>(
 }
 
 template <>
-Expected<SFIELD_PARAM, HostFunctionError>
-getData<SFIELD_PARAM>(
+Expected<SFieldParam, HostFunctionError>
+getData<SFieldParam>(
     InstanceWrapper const* _rt,
     wasm_val_vec_t const* params,
     int32_t& i)
@@ -293,15 +293,6 @@ getLedgerSqnOld_wrap(
     return hfResult(results, sqn.value());
 }
 
-#define HOST_FUNCTION(funcName, name, return, ...)                        \
-    wasm_trap_t* funcName##_wrap(                                         \
-        void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results) \
-    {                                                                     \
-        auto* hf = reinterpret_cast<HostFunctions*>(env);                 \
-        auto const* rt =                                                  \
-            reinterpret_cast<InstanceWrapper const*>(hf->getRT());        \
-    }
-
 wasm_trap_t*
 getLedgerSqn_wrap(
     void* env,
@@ -380,11 +371,11 @@ getTxField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<SFIELD_PARAM>(
+    return invokeHostFunc<SFieldParam>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](SFIELD_PARAM fname) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](SFieldParam fname) {
             return hf->getTxField(fname);
         });
 }
@@ -395,11 +386,11 @@ getCurrentLedgerObjField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<SFIELD_PARAM>(
+    return invokeHostFunc<SFieldParam>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](SFIELD_PARAM fname) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](SFieldParam fname) {
             return hf->getCurrentLedgerObjField(fname);
         });
 }
@@ -410,12 +401,12 @@ getLedgerObjField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<int32_t, SFIELD_PARAM>(
+    return invokeHostFunc<int32_t, SFieldParam>(
         env,
         params,
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](
-            int32_t cache, SFIELD_PARAM fname) {
+            int32_t cache, SFieldParam fname) {
             return hf->getLedgerObjField(cache, fname);
         });
 }
@@ -472,11 +463,11 @@ getTxArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<SFIELD_PARAM>(
+    return invokeHostFunc<SFieldParam>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](SFIELD_PARAM fname) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](SFieldParam fname) {
             return hf->getTxArrayLen(fname);
         });
 }
@@ -487,11 +478,11 @@ getCurrentLedgerObjArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<SFIELD_PARAM>(
+    return invokeHostFunc<SFieldParam>(
         env,
         params,
         results,
-        [hf = reinterpret_cast<HostFunctions*>(env)](SFIELD_PARAM fname) {
+        [hf = reinterpret_cast<HostFunctions*>(env)](SFieldParam fname) {
             return hf->getCurrentLedgerObjArrayLen(fname);
         });
 }
@@ -502,12 +493,12 @@ getLedgerObjArrayLen_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    return invokeHostFunc<int32_t, SFIELD_PARAM>(
+    return invokeHostFunc<int32_t, SFieldParam>(
         env,
         params,
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](
-            int32_t cache, SFIELD_PARAM fname) {
+            int32_t cache, SFieldParam fname) {
             return hf->getLedgerObjArrayLen(cache, fname);
         });
 }
