@@ -27,6 +27,7 @@
 #include <type_traits>
 
 namespace ripple {
+class STPath;
 namespace test {
 namespace jtx {
 
@@ -34,12 +35,12 @@ namespace jtx {
 class paths
 {
 private:
-    Issue in_;
+    Asset in_;
     int depth_;
     unsigned int limit_;
 
 public:
-    paths(Issue const& in, int depth = 7, unsigned int limit = 4)
+    paths(Asset const& in, int depth = 7, unsigned int limit = 4)
         : in_(in), depth_(depth), limit_(limit)
     {
     }
@@ -64,6 +65,8 @@ public:
 
     template <class T, class... Args>
     explicit path(T const& t, Args const&... args);
+
+    path(STPath const& p);
 
     void
     operator()(Env&, JTx& jt) const;

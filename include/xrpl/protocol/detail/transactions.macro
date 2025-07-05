@@ -90,8 +90,8 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey, Delegation::notDelegatable, ({
 
 /** This transaction type creates an offer to trade one asset for another. */
 TRANSACTION(ttOFFER_CREATE, 7, OfferCreate, Delegation::delegatable, ({
-    {sfTakerPays, soeREQUIRED},
-    {sfTakerGets, soeREQUIRED},
+    {sfTakerPays, soeREQUIRED, soeMPTSupported},
+    {sfTakerGets, soeREQUIRED, soeMPTSupported},
     {sfExpiration, soeOPTIONAL},
     {sfOfferSequence, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL},
@@ -149,7 +149,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, Delegation::delegatable, (
 /** This transaction type creates a new check. */
 TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, Delegation::delegatable, ({
     {sfDestination, soeREQUIRED},
-    {sfSendMax, soeREQUIRED},
+    {sfSendMax, soeREQUIRED, soeMPTSupported},
     {sfExpiration, soeOPTIONAL},
     {sfDestinationTag, soeOPTIONAL},
     {sfInvoiceID, soeOPTIONAL},
@@ -158,8 +158,8 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, Delegation::delegatable, ({
 /** This transaction type cashes an existing check. */
 TRANSACTION(ttCHECK_CASH, 17, CheckCash, Delegation::delegatable, ({
     {sfCheckID, soeREQUIRED},
-    {sfAmount, soeOPTIONAL},
-    {sfDeliverMin, soeOPTIONAL},
+    {sfAmount, soeOPTIONAL, soeMPTSupported},
+    {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
 }))
 
 /** This transaction type cancels an existing check. */
@@ -238,24 +238,24 @@ TRANSACTION(ttCLAWBACK, 30, Clawback, Delegation::delegatable, ({
 /** This transaction claws back tokens from an AMM pool. */
 TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback, Delegation::delegatable, ({
     {sfHolder, soeREQUIRED},
-    {sfAsset, soeREQUIRED},
-    {sfAsset2, soeREQUIRED},
-    {sfAmount, soeOPTIONAL},
+    {sfAsset, soeREQUIRED, soeMPTSupported},
+    {sfAsset2, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
 
 /** This transaction type creates an AMM instance */
 TRANSACTION(ttAMM_CREATE, 35, AMMCreate, Delegation::delegatable, ({
-    {sfAmount, soeREQUIRED},
-    {sfAmount2, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfAmount2, soeREQUIRED, soeMPTSupported},
     {sfTradingFee, soeREQUIRED},
 }))
 
 /** This transaction type deposits into an AMM instance */
 TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit, Delegation::delegatable, ({
-    {sfAsset, soeREQUIRED},
-    {sfAsset2, soeREQUIRED},
-    {sfAmount, soeOPTIONAL},
-    {sfAmount2, soeOPTIONAL},
+    {sfAsset, soeREQUIRED, soeMPTSupported},
+    {sfAsset2, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeOPTIONAL, soeMPTSupported},
+    {sfAmount2, soeOPTIONAL, soeMPTSupported},
     {sfEPrice, soeOPTIONAL},
     {sfLPTokenOut, soeOPTIONAL},
     {sfTradingFee, soeOPTIONAL},
@@ -263,25 +263,25 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit, Delegation::delegatable, ({
 
 /** This transaction type withdraws from an AMM instance */
 TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw, Delegation::delegatable, ({
-    {sfAsset, soeREQUIRED},
-    {sfAsset2, soeREQUIRED},
-    {sfAmount, soeOPTIONAL},
-    {sfAmount2, soeOPTIONAL},
+    {sfAsset, soeREQUIRED, soeMPTSupported},
+    {sfAsset2, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeOPTIONAL, soeMPTSupported},
+    {sfAmount2, soeOPTIONAL, soeMPTSupported},
     {sfEPrice, soeOPTIONAL},
     {sfLPTokenIn, soeOPTIONAL},
 }))
 
 /** This transaction type votes for the trading fee */
 TRANSACTION(ttAMM_VOTE, 38, AMMVote, Delegation::delegatable, ({
-    {sfAsset, soeREQUIRED},
-    {sfAsset2, soeREQUIRED},
+    {sfAsset, soeREQUIRED, soeMPTSupported},
+    {sfAsset2, soeREQUIRED, soeMPTSupported},
     {sfTradingFee, soeREQUIRED},
 }))
 
 /** This transaction type bids for the auction slot */
 TRANSACTION(ttAMM_BID, 39, AMMBid, Delegation::delegatable, ({
-    {sfAsset, soeREQUIRED},
-    {sfAsset2, soeREQUIRED},
+    {sfAsset, soeREQUIRED, soeMPTSupported},
+    {sfAsset2, soeREQUIRED, soeMPTSupported},
     {sfBidMin, soeOPTIONAL},
     {sfBidMax, soeOPTIONAL},
     {sfAuthAccounts, soeOPTIONAL},
@@ -289,8 +289,8 @@ TRANSACTION(ttAMM_BID, 39, AMMBid, Delegation::delegatable, ({
 
 /** This transaction type deletes AMM in the empty state */
 TRANSACTION(ttAMM_DELETE, 40, AMMDelete, Delegation::delegatable, ({
-    {sfAsset, soeREQUIRED},
-    {sfAsset2, soeREQUIRED},
+    {sfAsset, soeREQUIRED, soeMPTSupported},
+    {sfAsset2, soeREQUIRED, soeMPTSupported},
 }))
 
 /** This transactions creates a crosschain sequence number */
