@@ -164,7 +164,10 @@ struct FlowMPT_test : public beast::unit_test::suite
                      .issuer = gw,
                      .holders = {alice, carol}});
                 auto const EUR = issue2(
-                    {.env = env, .token = "EUR", .issuer = gw, .holders = {bob}});
+                    {.env = env,
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {bob}});
 
                 env(pay(gw, alice, USD(100)));
                 env(pay(gw, bob, EUR(100)));
@@ -728,7 +731,7 @@ struct FlowMPT_test : public beast::unit_test::suite
         {
             // Offer where the owner is also the issuer, sender pays
             // fee
-            Env env(*this, features - featureOwnerPaysFee);
+            Env env(*this, features);
 
             env.fund(XRP(10'000), alice, bob, gw);
 
