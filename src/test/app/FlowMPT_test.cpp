@@ -41,10 +41,10 @@ struct FlowMPT_test : public beast::unit_test::suite
     struct IssuerArgs
     {
         jtx::Env& env;
-        // 3-letter currency is Issue, ignored if MPT
-        std::string id = "";
-        jtx::Account gw;
-        Accounts accounts;
+        // 3-letter currency if Issue, ignored if MPT
+        std::string token = "";
+        jtx::Account issuer;
+        Accounts holders;
         // trust-limit if Issue, maxAmount if MPT
         std::optional<std::uint64_t> limit = std::nullopt;
         // 0-50'000 (0-50%)
@@ -54,14 +54,14 @@ struct FlowMPT_test : public beast::unit_test::suite
     static auto
     issueHelperIOU(IssuerArgs const& args)
     {
-        auto const iou = args.gw[args.id];
+        auto const iou = args.issuer[args.token];
         if (args.transferFee != 0)
         {
             auto const tfee =
                 1. + static_cast<double>(args.transferFee) / 100'000;
-            args.env(rate(args.gw, tfee));
+            args.env(rate(args.issuer, tfee));
         }
-        for (auto const& account : args.accounts)
+        for (auto const& account : args.holders)
         {
             args.env(fset(account, asfDefaultRipple));
             args.env(trust(account, iou(args.limit.value_or(1'000))));
@@ -77,8 +77,8 @@ struct FlowMPT_test : public beast::unit_test::suite
         {
             MPT const mpt = MPTTester(
                 {.env = args.env,
-                 .issuer = args.gw,
-                 .holders = args.accounts,
+                 .issuer = args.issuer,
+                 .holders = args.holders,
                  .transferFee = args.transferFee,
                  .maxAmt = *args.limit});
             return mpt;
@@ -87,8 +87,8 @@ struct FlowMPT_test : public beast::unit_test::suite
         {
             MPT const mpt = MPTTester(
                 {.env = args.env,
-                 .issuer = args.gw,
-                 .holders = args.accounts,
+                 .issuer = args.issuer,
+                 .holders = args.holders,
                  .transferFee = args.transferFee});
             return mpt;
         }
@@ -160,11 +160,11 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, carol}});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, carol}});
                 auto const EUR = issue2(
-                    {.env = env, .id = "EUR", .gw = gw, .accounts = {bob}});
+                    {.env = env, .token = "EUR", .issuer = gw, .holders = {bob}});
 
                 env(pay(gw, alice, USD(100)));
                 env(pay(gw, bob, EUR(100)));
@@ -208,14 +208,14 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
                 auto const BTC = issue2(
                     {.env = env,
-                     .id = "BTC",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "BTC",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
 
                 env(pay(gw, alice, BTC(50)));
                 env(pay(gw, bob, USD(50)));
@@ -241,14 +241,14 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
                 auto const BTC = issue2(
                     {.env = env,
-                     .id = "BTC",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "BTC",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
 
                 env(pay(gw, alice, BTC(50)));
                 env(pay(gw, bob, USD(50)));
@@ -326,19 +326,19 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
                 auto const BTC = issue2(
                     {.env = env,
-                     .id = "BTC",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "BTC",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
                 auto const EUR = issue3(
                     {.env = env,
-                     .id = "EUR",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
 
                 env(pay(gw, alice, BTC(60)));
                 env(pay(gw, bob, USD(50)));
@@ -390,21 +390,21 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol},
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol},
                      .limit = 100'000});
                 auto const BTC = issue2(
                     {.env = env,
-                     .id = "BTC",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol},
+                     .token = "BTC",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol},
                      .limit = 100'000});
                 auto const EUR = issue3(
                     {.env = env,
-                     .id = "EUR",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol},
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol},
                      .limit = 100'000});
 
                 env(pay(gw, alice, BTC(60)));
@@ -499,14 +499,14 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
                 auto const EUR = issue1(
                     {.env = env,
-                     .id = "EUR",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol}});
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol}});
 
                 env(pay(gw, alice, USD(1'000)));
                 env(pay(gw, bob, EUR(1'000)));
@@ -575,9 +575,6 @@ struct FlowMPT_test : public beast::unit_test::suite
         using namespace jtx;
 
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
-        auto const BTC = gw["BTC"];
-        auto const EUR = gw["EUR"];
         Account const alice("alice");
         Account const bob("bob");
         Account const carol("carol");
@@ -643,12 +640,12 @@ struct FlowMPT_test : public beast::unit_test::suite
                 sendmax(XRP(50)),
                 txflags(tfPartialPayment));
 
+            // bob pays 25% on 500USD -> 100USD; 400USD goes to carol
             env.require(
                 balance(alice, XRP(10'000 - 50) - txfee(env, 2)),
-                balance(bob, USD(25)),  // owner pays transfer fee
-                balance(carol, USD(500)));
+                balance(bob, USD(150)),
+                balance(carol, USD(400)));
         }
-
         {
             // Transfer fee two consecutive offers
             auto test = [&](auto&& issue1, auto&& issue2) {
@@ -658,18 +655,18 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol},
-                     .transferFee = 25'000,
-                     .limit = 1'000});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol},
+                     .limit = 1'000,
+                     .transferFee = 25'000});
                 auto const EUR = issue2(
                     {.env = env,
-                     .id = "EUR",
-                     .gw = gw,
-                     .accounts = {alice, bob, carol},
-                     .transferFee = 25'000,
-                     .limit = 1'000});
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol},
+                     .limit = 1'000,
+                     .transferFee = 25'000});
 
                 env(pay(gw, bob, USD(50)));
                 env(pay(gw, bob, EUR(50)));
@@ -679,23 +676,35 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 env(pay(alice, carol, EUR(40)),
                     path(~USD, ~EUR),
-                    sendmax(XRP(40)));
+                    sendmax(XRP(40)),
+                    txflags(tfPartialPayment));
                 // +1 for fset in helperIssueIOU
-                bool const extraFee =
-                    std::is_same_v<std::decay_t<decltype(EUR)>, IOU> ||
-                    std::is_same_v<std::decay_t<decltype(USD)>, IOU>;
+                using tEUR = std::decay_t<decltype(EUR)>;
+                using tUSD = std::decay_t<decltype(USD)>;
+                bool constexpr extraFee =
+                    std::is_same_v<tEUR, IOU> || std::is_same_v<tUSD, IOU>;
                 auto const fee = txfee(env, extraFee ? 4 : 3);
+                // bob pays 25% on 40USD (40 since sendmax is 40XRP)
+                // 8USD goes to gw and 32USD goes back to bob ->
+                // bob's USD balance is 42USD. USD/EUR offer is 32USD/32EUR.
+                // bob pays 25% on 32EUR -> 7EUR if MPT, 6.4EUR if IOU,
+                // therefore carl gets 25EUR if MPT, 25.6EUR if IOU.
+                auto const carolEUR = [&]() {
+                    if constexpr (std::is_same_v<tEUR, IOU>)
+                        return EUR(25.6);
+                    else
+                        return EUR(25);
+                }();
                 env.require(
                     balance(alice, XRP(10'000 - 40) - fee),
-                    balance(bob, USD(40)),
-                    balance(bob, EUR(0)),
-                    balance(carol, EUR(40)));
+                    balance(bob, USD(42)),
+                    balance(bob, EUR(18)),
+                    balance(carol, carolEUR));
             };
             testHelper2TokensMix(test);
         }
-
         {
-            // Offer where the owner is also the issuer, owner pays
+            // Offer where the owner is also the issuer, sender pays
             // fee
             Env env(*this, features);
 
@@ -709,12 +718,13 @@ struct FlowMPT_test : public beast::unit_test::suite
                  .maxAmt = 1'000});
 
             env(offer(gw, XRP(100), USD(100)));
-            env(pay(alice, bob, USD(100)), sendmax(XRP(100)));
+            env(pay(alice, bob, USD(100)),
+                sendmax(XRP(100)),
+                txflags(tfPartialPayment));
             env.require(
                 balance(alice, XRP(10'000 - 100) - txfee(env, 2)),
-                balance(bob, USD(100)));
+                balance(bob, USD(80)));
         }
-
         {
             // Offer where the owner is also the issuer, sender pays
             // fee
@@ -757,14 +767,14 @@ struct FlowMPT_test : public beast::unit_test::suite
 
             auto const USD = issue1(
                 {.env = env,
-                 .id = "USD",
-                 .gw = gw,
-                 .accounts = {alice, carol, bob}});
+                 .token = "USD",
+                 .issuer = gw,
+                 .holders = {alice, carol, bob}});
             auto const EUR = issue2(
                 {.env = env,
-                 .id = "EUR",
-                 .gw = gw,
-                 .accounts = {alice, carol, bob}});
+                 .token = "EUR",
+                 .issuer = gw,
+                 .holders = {alice, carol, bob}});
 
             env(pay(gw, alice, EUR(50)));
             env(pay(gw, bob, USD(50)));
@@ -882,15 +892,15 @@ struct FlowMPT_test : public beast::unit_test::suite
 
             auto const USD = issue1(
                 {.env = env,
-                 .id = "USD",
-                 .gw = gw1,
-                 .accounts = {alice},
+                 .token = "USD",
+                 .issuer = gw1,
+                 .holders = {alice},
                  .limit = 20'000});
             auto const EUR = issue2(
                 {.env = env,
-                 .id = "EUR",
-                 .gw = gw2,
-                 .accounts = {alice},
+                 .token = "EUR",
+                 .issuer = gw2,
+                 .holders = {alice},
                  .limit = 20'000});
 
             env(pay(gw1, alice, USD(10)));
@@ -1295,14 +1305,14 @@ struct FlowMPT_test : public beast::unit_test::suite
 
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob}});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob}});
                 auto const EUR = issue2(
                     {.env = env,
-                     .id = "EUR",
-                     .gw = gw,
-                     .accounts = {alice, bob}});
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, bob}});
                 env(pay(gw, alice, USD(100)));
                 env(pay(gw, alice, EUR(100)));
                 env.close();
@@ -1328,14 +1338,14 @@ struct FlowMPT_test : public beast::unit_test::suite
                 env.fund(XRP(10'000), alice, bob, gw);
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob}});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob}});
                 auto const EUR = issue2(
                     {.env = env,
-                     .id = "EUR",
-                     .gw = gw,
-                     .accounts = {alice, bob}});
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, bob}});
                 env(pay(gw, alice, USD(100)));
                 env(pay(gw, alice, EUR(100)));
                 env.close();
@@ -1361,19 +1371,19 @@ struct FlowMPT_test : public beast::unit_test::suite
                 env.close();
                 auto const USD = issue1(
                     {.env = env,
-                     .id = "USD",
-                     .gw = gw,
-                     .accounts = {alice, bob}});
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob}});
                 auto const EUR = issue2(
                     {.env = env,
-                     .id = "EUR",
-                     .gw = gw,
-                     .accounts = {alice, bob}});
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, bob}});
                 auto const JPY = issue3(
                     {.env = env,
-                     .id = "JPY",
-                     .gw = gw,
-                     .accounts = {alice, bob}});
+                     .token = "JPY",
+                     .issuer = gw,
+                     .holders = {alice, bob}});
                 env(pay(gw, alice, USD(100)));
                 env(pay(gw, alice, EUR(100)));
                 env(pay(gw, alice, JPY(100)));
@@ -2243,15 +2253,12 @@ struct FlowMPT_test : public beast::unit_test::suite
     testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
-        FeatureBitset const ownerPaysFee{featureOwnerPaysFee};
 
         testMaxAndSelfPaymentEdgeCases(features);
         testFalseDry(features);
         testDirectStep(features);
         testBookStep(features);
-        testDirectStep(features | ownerPaysFee);
-        testBookStep(features | ownerPaysFee);
-        testTransferRate(features | ownerPaysFee);
+        testTransferRate(features);
         testSelfPayment1(features);
         testSelfPayment2(features);
         testSelfFundedXRPEndpoint(false, features);
