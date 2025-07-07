@@ -164,102 +164,6 @@ public:
     }
 
     void
-    testAutoBridgedLimitsTaker(FeatureBitset features)
-    {
-        testcase("Auto Bridged Limits Taker");
-
-        using namespace jtx;
-        Env env(*this, features);
-
-        auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
-        auto const EUR = gw["EUR"];
-
-        env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan", "evita");
-
-        env.trust(USD(2000), "alice");
-        env(pay(gw, "alice", USD(2000)));
-        env.trust(USD(1000), "carol");
-        env(pay(gw, "carol", USD(3)));
-        env.trust(USD(1000), "evita");
-        env(pay(gw, "evita", USD(1000)));
-
-        n_offers(env, 302, "alice", EUR(2), XRP(1));
-        n_offers(env, 300, "alice", XRP(1), USD(4));
-        n_offers(env, 497, "carol", XRP(1), USD(3));
-        n_offers(env, 1001, "evita", EUR(1), USD(1));
-
-        // Bob offers to buy 2000 USD for 2000 EUR, even though he only has
-        // 1000 EUR.
-        //  1. He spends 600 EUR taking Alice's auto-bridged offers and
-        //     gets 1200 USD for that.
-        //  2. He spends another 2 EUR taking one of Alice's EUR->XRP and
-        //     one of Carol's XRP-USD offers.  He gets 3 USD for that.
-        //  3. The remainder of Carol's offers are now unfunded.  We've
-        //     consumed 602 offers so far.  We now chew through 398 more
-        //     of Carol's unfunded offers until we hit the 1000 offer limit.
-        //     This sets have_bridge to false -- we will handle no more
-        //     bridged offers.
-        //  4. However, have_direct is still true.  So we go around one more
-        //     time and take one of Evita's offers.
-        //  5. After taking one of Evita's offers we notice (again) that our
-        //     offer count was exceeded.  So we completely stop after taking
-        //     one of Evita's offers.
-        env.trust(EUR(10000), "bob");
-        env.close();
-        env(pay(gw, "bob", EUR(1000)));
-        env.close();
-        env(offer("bob", USD(2000), EUR(2000)));
-        env.require(balance("bob", USD(1204)));
-        env.require(balance("bob", EUR(397)));
-
-        env.require(balance("alice", USD(800)));
-        env.require(balance("alice", EUR(602)));
-        env.require(offers("alice", 1));
-        env.require(owners("alice", 3));
-
-        env.require(balance("carol", USD(0)));
-        env.require(balance("carol", EUR(none)));
-        env.require(offers("carol", 100));
-        env.require(owners("carol", 101));
-
-        env.require(balance("evita", USD(999)));
-        env.require(balance("evita", EUR(1)));
-        env.require(offers("evita", 1000));
-        env.require(owners("evita", 1002));
-
-        // Dan offers to buy 900 EUR for 900 USD.
-        //  1. He removes all 100 of Carol's remaining unfunded offers.
-        //  2. Then takes 850 USD from Evita's offers.
-        //  3. Consuming 850 of Evita's funded offers hits the crossing
-        //     limit.  So Dan's offer crossing stops even though he would
-        //     be willing to take another 50 of Evita's offers.
-        env.trust(EUR(10000), "dan");
-        env.close();
-        env(pay(gw, "dan", EUR(1000)));
-        env.close();
-
-        env(offer("dan", USD(900), EUR(900)));
-        env.require(balance("dan", USD(850)));
-        env.require(balance("dan", EUR(150)));
-
-        env.require(balance("alice", USD(800)));
-        env.require(balance("alice", EUR(602)));
-        env.require(offers("alice", 1));
-        env.require(owners("alice", 3));
-
-        env.require(balance("carol", USD(0)));
-        env.require(balance("carol", EUR(none)));
-        env.require(offers("carol", 0));
-        env.require(owners("carol", 1));
-
-        env.require(balance("evita", USD(149)));
-        env.require(balance("evita", EUR(851)));
-        env.require(offers("evita", 150));
-        env.require(owners("evita", 152));
-    }
-
-    void
     testAutoBridgedLimits(FeatureBitset features)
     {
         testcase("Auto Bridged Limits");
@@ -279,9 +183,6 @@ public:
         auto const bob = Account("bob");
         auto const carol = Account("carol");
 
-        // auto const USD = gw["USD"];
-        // auto const EUR = gw["EUR"];
-
         // There are two almost identical tests. There is a strand with a large
         // number of unfunded offers that will cause the strand to be marked dry
         // even though there will still be liquidity available on that strand.
@@ -295,159 +196,192 @@ public:
         // number of offers consumed by all the steps combined exceeds 1500, the
         // payment stops.
         {
-            Env env(*this, features);
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this, features);
 
-            env.fund(XRP(100'000'000), gw, alice, bob, carol);
+                env.fund(XRP(100'000'000), gw, alice, bob, carol);
 
-            MPT const USD = MPTTester(
-                {.env = env, .issuer = gw, .holders = {alice, carol}});
-            MPT const EUR =
-                MPTTester({.env = env, .issuer = gw, .holders = {bob}});
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, carol},
+                     .limit = maxMPTokenAmount});
+                auto const EUR = issue2(
+                    {.env = env,
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {bob},
+                     .limit = maxMPTokenAmount});
 
-            env(pay(gw, alice, USD(4'000)));
-            env(pay(gw, carol, USD(3)));
+                env(pay(gw, alice, USD(4'000)));
+                env(pay(gw, carol, USD(3)));
 
-            // Notice the strand with the 800 unfunded offers has the initial
-            // best quality
-            n_offers(env, 2'000, alice, EUR(2), XRP(1));
-            n_offers(env, 100, alice, XRP(1), USD(4));
-            n_offers(
-                env, 801, carol, XRP(1), USD(3));  // only one offer is funded
-            n_offers(env, 1'000, alice, XRP(1), USD(3));
+                // Notice the strand with the 800 unfunded offers has the
+                // initial best quality
+                n_offers(env, 2'000, alice, EUR(2), XRP(1));
+                n_offers(env, 100, alice, XRP(1), USD(4));
+                n_offers(
+                    env,
+                    801,
+                    carol,
+                    XRP(1),
+                    USD(3));  // only one offer is funded
+                n_offers(env, 1'000, alice, XRP(1), USD(3));
 
-            n_offers(env, 1, alice, EUR(500), USD(500));
+                n_offers(env, 1, alice, EUR(500), USD(500));
 
-            // Bob offers to buy 2000 USD for 2000 EUR; He starts with 2000 EUR
-            //  1. The best quality is the autobridged offers that take 2 EUR
-            //  and give 4 USD.
-            //     Bob spends 200 EUR and receives 400 USD.
-            //     100 EUR->XRP offers consumed.
-            //     100 XRP->USD offers consumed.
-            //     200 total offers consumed.
-            //
-            //  2. The best quality is the autobridged offers that take 2 EUR
-            //  and give 3 USD.
-            //     a. One of Carol's offers is taken. This leaves her other
-            //     offers unfunded.
-            //     b. Carol's remaining 800 offers are consumed as unfunded.
-            //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
-            //        A book step is allowed to consume a maxium of 1000 offers
-            //        at a given quality, and that limit is now reached.
-            //     d. Now the strand is dry, even though there are still funded
-            //     XRP(1) to USD(3) offers available.
-            //        Bob has spent 400 EUR and received 600 USD in this step.
-            //        200 EUR->XRP offers consumed
-            //        800 unfunded XRP->USD offers consumed
-            //        200 funded XRP->USD offers consumed (1 carol, 199 alice)
-            //        1400 total offers consumed so far (100 left before the
-            //        limit)
-            //  3. The best is the non-autobridged offers that takes 500 EUR and
-            //  gives 500 USD.
-            //     Bob started with 2000 EUR
-            //     Bob spent 500 EUR (100+400)
-            //     Bob has 1500 EUR left
-            //     In this step:
-            //     Bob spents 500 EUR and receives 500 USD.
-            // In total:
-            //           Bob spent 1100 EUR (200 + 400 + 500)
-            //           Bob has 900 EUR remaining (2000 - 1100)
-            //           Bob received 1500 USD (400 + 600 + 500)
-            //           Alice spent 1497 USD (100*4 + 199*3 + 500)
-            //           Alice has 2503 remaining (4000 - 1497)
-            //           Alice received 1100 EUR (200 + 400 + 500)
-            env(pay(gw, bob, EUR(2'000)));
-            env.close();
-            env(offer(bob, USD(4'000), EUR(4'000)));
-            env.close();
+                // Bob offers to buy 2000 USD for 2000 EUR; He starts with 2000
+                // EUR
+                //  1. The best quality is the autobridged offers that take 2
+                //  EUR and give 4 USD.
+                //     Bob spends 200 EUR and receives 400 USD.
+                //     100 EUR->XRP offers consumed.
+                //     100 XRP->USD offers consumed.
+                //     200 total offers consumed.
+                //
+                //  2. The best quality is the autobridged offers that take 2
+                //  EUR and give 3 USD.
+                //     a. One of Carol's offers is taken. This leaves her other
+                //     offers unfunded.
+                //     b. Carol's remaining 800 offers are consumed as unfunded.
+                //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
+                //        A book step is allowed to consume a maxium of 1000
+                //        offers at a given quality, and that limit is now
+                //        reached.
+                //     d. Now the strand is dry, even though there are still
+                //     funded XRP(1) to USD(3) offers available.
+                //        Bob has spent 400 EUR and received 600 USD in this
+                //        step. 200 EUR->XRP offers consumed 800 unfunded
+                //        XRP->USD offers consumed 200 funded XRP->USD offers
+                //        consumed (1 carol, 199 alice) 1400 total offers
+                //        consumed so far (100 left before the limit)
+                //  3. The best is the non-autobridged offers that takes 500 EUR
+                //  and gives 500 USD.
+                //     Bob started with 2000 EUR
+                //     Bob spent 500 EUR (100+400)
+                //     Bob has 1500 EUR left
+                //     In this step:
+                //     Bob spents 500 EUR and receives 500 USD.
+                // In total:
+                //           Bob spent 1100 EUR (200 + 400 + 500)
+                //           Bob has 900 EUR remaining (2000 - 1100)
+                //           Bob received 1500 USD (400 + 600 + 500)
+                //           Alice spent 1497 USD (100*4 + 199*3 + 500)
+                //           Alice has 2503 remaining (4000 - 1497)
+                //           Alice received 1100 EUR (200 + 400 + 500)
+                env(pay(gw, bob, EUR(2'000)));
+                env.close();
+                env(offer(bob, USD(4'000), EUR(4'000)));
+                env.close();
 
-            env.require(balance(bob, USD(1'500)));
-            env.require(balance(bob, EUR(900)));
-            env.require(offers(bob, 1));
-            env.require(owners(bob, 3));
+                env.require(balance(bob, USD(1'500)));
+                env.require(balance(bob, EUR(900)));
+                env.require(offers(bob, 1));
+                env.require(owners(bob, 3));
 
-            env.require(balance(alice, USD(2'503)));
-            env.require(balance(alice, EUR(1'100)));
-            auto const numAOffers =
-                2'000 + 100 + 1'000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
-            env.require(offers(alice, numAOffers));
-            env.require(owners(alice, numAOffers + 2));
+                env.require(balance(alice, USD(2'503)));
+                env.require(balance(alice, EUR(1'100)));
+                auto const numAOffers =
+                    2'000 + 100 + 1'000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
+                env.require(offers(alice, numAOffers));
+                env.require(owners(alice, numAOffers + 2));
 
-            env.require(offers(carol, 0));
+                env.require(offers(carol, 0));
+            };
+            testHelper2TokensMix(test);
         }
         {
-            Env env(*this, features);
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this, features);
 
-            env.fund(XRP(100'000'000), gw, alice, bob, carol);
+                env.fund(XRP(100'000'000), gw, alice, bob, carol);
 
-            MPT const USD = MPTTester(
-                {.env = env, .issuer = gw, .holders = {alice, carol}});
-            MPT const EUR =
-                MPTTester({.env = env, .issuer = gw, .holders = {bob}});
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, carol},
+                     .limit = maxMPTokenAmount});
+                auto const EUR = issue2(
+                    {.env = env,
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {bob},
+                     .limit = maxMPTokenAmount});
 
-            env(pay(gw, alice, USD(4'000)));
-            env(pay(gw, carol, USD(3)));
+                env(pay(gw, alice, USD(4'000)));
+                env(pay(gw, carol, USD(3)));
 
-            // Notice the strand with the 800 unfunded offers does not have the
-            // initial best quality
-            n_offers(env, 1, alice, EUR(1), USD(10));
-            n_offers(env, 2'000, alice, EUR(2), XRP(1));
-            n_offers(env, 100, alice, XRP(1), USD(4));
-            n_offers(
-                env, 801, carol, XRP(1), USD(3));  // only one offer is funded
-            n_offers(env, 1'000, alice, XRP(1), USD(3));
+                // Notice the strand with the 800 unfunded offers does not have
+                // the initial best quality
+                n_offers(env, 1, alice, EUR(1), USD(10));
+                n_offers(env, 2'000, alice, EUR(2), XRP(1));
+                n_offers(env, 100, alice, XRP(1), USD(4));
+                n_offers(
+                    env,
+                    801,
+                    carol,
+                    XRP(1),
+                    USD(3));  // only one offer is funded
+                n_offers(env, 1'000, alice, XRP(1), USD(3));
 
-            n_offers(env, 1, alice, EUR(499), USD(499));
+                n_offers(env, 1, alice, EUR(499), USD(499));
 
-            // Bob offers to buy 2000 USD for 2000 EUR; He starts with 2000 EUR
-            //  1. The best quality is the offer that takes 1 EUR and gives 10
-            //  USD
-            //     Bob spends 1 EUR and receives 10 USD.
-            //
-            //  2. The best quality is the autobridged offers that takes 2 EUR
-            //  and gives 4 USD.
-            //     Bob spends 200 EUR and receives 400 USD.
-            //
-            //  3. The best quality is the autobridged offers that takes 2 EUR
-            //  and gives 3 USD.
-            //     a. One of Carol's offers is taken. This leaves her other
-            //     offers unfunded.
-            //     b. Carol's remaining 800 offers are consumed as unfunded.
-            //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
-            //        A book step is allowed to consume a maxium of 1000 offers
-            //        at a given quality, and that limit is now reached.
-            //     d. Now the strand is dry, even though there are still funded
-            //     XRP(1) to USD(3) offers available. Bob has spent 400 EUR and
-            //     received 600 USD in this step. (200 funded offers consumed
-            //     800 unfunded offers)
-            //  4. The best is the non-autobridged offers that takes 499 EUR and
-            //  gives 499 USD.
-            //     Bob has 2000 EUR, and has spent 1+200+400=601 EUR. He has
-            //     1399 left. Bob spent 499 EUR and receives 499 USD.
-            // In total: Bob spent EUR(1 + 200 + 400 + 499) = EUR(1100). He
-            // started with 2000 so has 900 remaining
-            //           Bob received USD(10 + 400 + 600 + 499) = USD(1509).
-            //           Alice spent 10 + 100*4 + 199*3 + 499 = 1506 USD. She
-            //           started with 4000 so has 2494 USD remaining. Alice
-            //           received 200 + 400 + 500 = 1100 EUR
-            env.close();
-            env(pay(gw, bob, EUR(2'000)));
-            env.close();
-            env(offer(bob, USD(4'000), EUR(4'000)));
-            env.close();
+                // Bob offers to buy 2000 USD for 2000 EUR; He starts with 2000
+                // EUR
+                //  1. The best quality is the offer that takes 1 EUR and gives
+                //  10 USD
+                //     Bob spends 1 EUR and receives 10 USD.
+                //
+                //  2. The best quality is the autobridged offers that takes 2
+                //  EUR and gives 4 USD.
+                //     Bob spends 200 EUR and receives 400 USD.
+                //
+                //  3. The best quality is the autobridged offers that takes 2
+                //  EUR and gives 3 USD.
+                //     a. One of Carol's offers is taken. This leaves her other
+                //     offers unfunded.
+                //     b. Carol's remaining 800 offers are consumed as unfunded.
+                //     c. 199 of alice's XRP(1) to USD(3) offers are consumed.
+                //        A book step is allowed to consume a maxium of 1000
+                //        offers at a given quality, and that limit is now
+                //        reached.
+                //     d. Now the strand is dry, even though there are still
+                //     funded XRP(1) to USD(3) offers available. Bob has spent
+                //     400 EUR and received 600 USD in this step. (200 funded
+                //     offers consumed 800 unfunded offers)
+                //  4. The best is the non-autobridged offers that takes 499 EUR
+                //  and gives 499 USD.
+                //     Bob has 2000 EUR, and has spent 1+200+400=601 EUR. He has
+                //     1399 left. Bob spent 499 EUR and receives 499 USD.
+                // In total: Bob spent EUR(1 + 200 + 400 + 499) = EUR(1100). He
+                // started with 2000 so has 900 remaining
+                //           Bob received USD(10 + 400 + 600 + 499) = USD(1509).
+                //           Alice spent 10 + 100*4 + 199*3 + 499 = 1506 USD.
+                //           She started with 4000 so has 2494 USD remaining.
+                //           Alice received 200 + 400 + 500 = 1100 EUR
+                env.close();
+                env(pay(gw, bob, EUR(2'000)));
+                env.close();
+                env(offer(bob, USD(4'000), EUR(4'000)));
+                env.close();
 
-            env.require(balance(bob, USD(1'509)));
-            env.require(balance(bob, EUR(900)));
-            env.require(offers(bob, 1));
-            env.require(owners(bob, 3));
+                env.require(balance(bob, USD(1'509)));
+                env.require(balance(bob, EUR(900)));
+                env.require(offers(bob, 1));
+                env.require(owners(bob, 3));
 
-            env.require(balance(alice, USD(2'494)));
-            env.require(balance(alice, EUR(1'100)));
-            auto const numAOffers =
-                1 + 2'000 + 100 + 1'000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
-            env.require(offers(alice, numAOffers));
-            env.require(owners(alice, numAOffers + 2));
+                env.require(balance(alice, USD(2'494)));
+                env.require(balance(alice, EUR(1'100)));
+                auto const numAOffers = 1 + 2'000 + 100 + 1'000 + 1 -
+                    (1 + 2 * 100 + 2 * 199 + 1 + 1);
+                env.require(offers(alice, numAOffers));
+                env.require(owners(alice, numAOffers + 2));
 
-            env.require(offers(carol, 0));
+                env.require(offers(carol, 0));
+            };
+            testHelper2TokensMix(test);
         }
     }
 
