@@ -69,13 +69,13 @@ struct HostFunctions
         return beast::Journal{beast::Journal::getNullSink()};
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn()
     {
         return 1;
     }
 
-    virtual Expected<int32_t, HostFunctionError>
+    virtual Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime()
     {
         return 1;

@@ -211,7 +211,8 @@ invokeHostFunc(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results,
-    Func&& f)
+    Func&& f,
+    std::string const& funcName)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
@@ -224,6 +225,8 @@ invokeHostFunc(
 
     if (err)
     {
+        hf->getJournal().trace()
+            << "invokeHostFunc: param error: " << *err << std::endl;
         return hfResult(results, *err);
     }
 
@@ -234,6 +237,8 @@ invokeHostFunc(
 
     if (!result)
     {
+        hf->getJournal().trace()
+            << "invokeHostFunc: returning error: " << result.error();
         return hfResult(results, result.error());
     }
 
@@ -261,14 +266,21 @@ invokeHostFunc(
     }
     else if constexpr (std::is_same_v<std::decay_t<decltype(*result)>, int32_t>)
     {
+        return hfResult(results, result.value());
+    }
+    else if constexpr (std::is_same_v<
+                           std::decay_t<decltype(*result)>,
+                           std::uint32_t>)
+    {
+        auto const unwrappedResult = result.value();
         return hfResult(
             results,
             setData(
                 rt,
                 params->data[index].of.i32,
                 params->data[index + 1].of.i32,
-                reinterpret_cast<uint8_t const*>(&result.value()),
-                static_cast<int32_t>(sizeof(result.value()))));
+                reinterpret_cast<uint8_t const*>(&unwrappedResult),
+                static_cast<int32_t>(sizeof(unwrappedResult))));
     }
     else
     {
@@ -290,7 +302,7 @@ getLedgerSqnOld_wrap(
     {
         return hfResult(results, sqn.error());
     }
-    return hfResult(results, sqn.value());
+    return hfResult(results, static_cast<int32_t>(sqn.value()));
 }
 
 wasm_trap_t*
@@ -300,9 +312,13 @@ getLedgerSqn_wrap(
     wasm_val_vec_t* results)
 {
     return invokeHostFunc(
-        env, params, results, [hf = reinterpret_cast<HostFunctions*>(env)]() {
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)]() {
             return hf->getLedgerSqn();
-        });
+        },
+        "getLedgerSqn");
 }
 
 wasm_trap_t*
@@ -312,9 +328,13 @@ getParentLedgerTime_wrap(
     wasm_val_vec_t* results)
 {
     return invokeHostFunc(
-        env, params, results, [hf = reinterpret_cast<HostFunctions*>(env)]() {
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)]() {
             return hf->getParentLedgerTime();
-        });
+        },
+        "getParentLedgerTime");
 }
 
 wasm_trap_t*
@@ -324,9 +344,13 @@ getParentLedgerHash_wrap(
     wasm_val_vec_t* results)
 {
     return invokeHostFunc(
-        env, params, results, [hf = reinterpret_cast<HostFunctions*>(env)]() {
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)]() {
             return hf->getParentLedgerHash();
-        });
+        },
+        "getParentLedgerHash");
 }
 
 wasm_trap_t*
@@ -335,34 +359,15 @@ cacheLedgerObj_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    // return invokeHostFunc<uint256, int32_t>(
-    //     env,
-    //     params,
-    //     results,
-    //     [hf = reinterpret_cast<HostFunctions*>(env)](uint256 id, int32_t
-    //     cache) {
-    //         return hf->cacheLedgerObj(id, cache);
-    //     });
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const r = getData<uint256>(rt, params, index);
-    if (!r)
-    {
-        return hfResult(results, r.error());
-    }
-    auto const cache = getData<int32_t>(rt, params, index);
-    if (!cache)
-    {
-        return hfResult(results, cache.error());
-    }
-    auto const cacheIndex = hf->cacheLedgerObj(r.value(), cache.value());
-    if (!cacheIndex)
-    {
-        return hfResult(results, cacheIndex.error());
-    }
-    return hfResult(results, cacheIndex.value());
+    return invokeHostFunc<uint256, int32_t>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            uint256 id, int32_t cache) {
+            return hf->cacheLedgerObj(id, cache);
+        },
+        "cacheLedgerObj");
 }
 
 wasm_trap_t*
@@ -377,7 +382,8 @@ getTxField_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](SFieldParam fname) {
             return hf->getTxField(fname);
-        });
+        },
+        "getTxField");
 }
 
 wasm_trap_t*
@@ -392,7 +398,8 @@ getCurrentLedgerObjField_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](SFieldParam fname) {
             return hf->getCurrentLedgerObjField(fname);
-        });
+        },
+        "getCurrentLedgerObj");
 }
 
 wasm_trap_t*
@@ -408,7 +415,8 @@ getLedgerObjField_wrap(
         [hf = reinterpret_cast<HostFunctions*>(env)](
             int32_t cache, SFieldParam fname) {
             return hf->getLedgerObjField(cache, fname);
-        });
+        },
+        "getLedgerObjField");
 }
 
 wasm_trap_t*
@@ -423,7 +431,8 @@ getTxNestedField_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->getTxNestedField(bytes);
-        });
+        },
+        "getTxNestedField");
 }
 
 wasm_trap_t*
@@ -438,7 +447,8 @@ getCurrentLedgerObjNestedField_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->getCurrentLedgerObjNestedField(bytes);
-        });
+        },
+        "getCurrentLedgerObjNestedField");
 }
 
 wasm_trap_t*
@@ -454,7 +464,8 @@ getLedgerObjNestedField_wrap(
         [hf = reinterpret_cast<HostFunctions*>(env)](
             int32_t cache, Slice const& bytes) {
             return hf->getLedgerObjNestedField(cache, bytes);
-        });
+        },
+        "getLedgerObjNestedField");
 }
 
 wasm_trap_t*
@@ -469,7 +480,8 @@ getTxArrayLen_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](SFieldParam fname) {
             return hf->getTxArrayLen(fname);
-        });
+        },
+        "getTxArrayLen");
 }
 
 wasm_trap_t*
@@ -484,7 +496,8 @@ getCurrentLedgerObjArrayLen_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](SFieldParam fname) {
             return hf->getCurrentLedgerObjArrayLen(fname);
-        });
+        },
+        "getCurrentLedgerObjArrayLen");
 }
 
 wasm_trap_t*
@@ -500,7 +513,8 @@ getLedgerObjArrayLen_wrap(
         [hf = reinterpret_cast<HostFunctions*>(env)](
             int32_t cache, SFieldParam fname) {
             return hf->getLedgerObjArrayLen(cache, fname);
-        });
+        },
+        "getLedgerObjArrayLen");
 }
 
 wasm_trap_t*
@@ -515,7 +529,8 @@ getTxNestedArrayLen_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->getTxNestedArrayLen(bytes);
-        });
+        },
+        "getTxNestedArrayLen");
 }
 
 wasm_trap_t*
@@ -530,7 +545,8 @@ getCurrentLedgerObjNestedArrayLen_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->getCurrentLedgerObjNestedArrayLen(bytes);
-        });
+        },
+        "getCurrentLedgerObjNestedArrayLen");
 }
 wasm_trap_t*
 getLedgerObjNestedArrayLen_wrap(
@@ -545,7 +561,8 @@ getLedgerObjNestedArrayLen_wrap(
         [hf = reinterpret_cast<HostFunctions*>(env)](
             int32_t cache, Slice const& bytes) {
             return hf->getLedgerObjNestedArrayLen(cache, bytes);
-        });
+        },
+        "getLedgerObjNestedArrayLen");
 }
 
 wasm_trap_t*
@@ -560,7 +577,8 @@ updateData_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->updateData(bytes);
-        });
+        },
+        "updateData");
 }
 
 wasm_trap_t*
@@ -575,7 +593,8 @@ computeSha512HalfHash_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](Slice const& bytes) {
             return hf->computeSha512HalfHash(bytes);
-        });
+        },
+        "computeSha512HalfHash");
 }
 
 wasm_trap_t*
@@ -590,7 +609,8 @@ accountKeylet_wrap(
         results,
         [hf = reinterpret_cast<HostFunctions*>(env)](AccountID const& acc) {
             return hf->accountKeylet(acc);
-        });
+        },
+        "accountKeylet");
 }
 
 wasm_trap_t*
@@ -608,7 +628,8 @@ credentialKeylet_wrap(
             AccountID const& iss,
             Slice const& credType) {
             return hf->credentialKeylet(subj, iss, credType);
-        });
+        },
+        "credentialKeylet");
 }
 
 wasm_trap_t*
@@ -624,7 +645,8 @@ escrowKeylet_wrap(
         [hf = reinterpret_cast<HostFunctions*>(env)](
             AccountID const& acc, int32_t seq) {
             return hf->escrowKeylet(acc, seq);
-        });
+        },
+        "escrowKeylet");
 }
 
 wasm_trap_t*
@@ -640,7 +662,8 @@ oracleKeylet_wrap(
         [hf = reinterpret_cast<HostFunctions*>(env)](
             AccountID const& acc, int32_t seq) {
             return hf->oracleKeylet(acc, seq);
-        });
+        },
+        "oracleKeylet");
 }
 
 wasm_trap_t*
@@ -653,67 +676,36 @@ getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         [hf = reinterpret_cast<HostFunctions*>(env)](
             AccountID const& acc, uint256 nftId) {
             return hf->getNFT(acc, nftId);
-        });
+        },
+        "getNFT");
 }
 
 wasm_trap_t*
 trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const msg = getData<std::string>(rt, params, index);
-    if (!msg)
-    {
-        return hfResult(results, msg.error());
-    }
-
-    auto const data = getData<Slice>(rt, params, index);
-    if (!data)
-    {
-        return hfResult(results, data.error());
-    }
-
-    auto const asHex = getData<int32_t>(rt, params, index);
-    if (!asHex)
-    {
-        return hfResult(results, asHex.error());
-    }
-
-    auto const e = hf->trace(msg.value(), data.value(), asHex.value());
-    if (!e)
-    {
-        return hfResult(results, e.error());
-    }
-    return hfResult(results, e.value());
+    return invokeHostFunc<std::string, Slice, int32_t>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            std::string const& msg, Slice const& data, int32_t const& asHex) {
+            return hf->trace(msg, data, asHex);
+        },
+        "trace");
 }
 
 wasm_trap_t*
 traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    int index = 0;
-
-    auto const msg = getData<std::string>(rt, params, index);
-    if (!msg)
-    {
-        return hfResult(results, msg.error());
-    }
-
-    auto const number = getData<int64_t>(rt, params, index);
-    if (!number)
-    {
-        return hfResult(results, number.error());
-    }
-
-    auto const e = hf->traceNum(msg.value(), number.value());
-    if (!e)
-    {
-        return hfResult(results, e.error());
-    }
-    return hfResult(results, e.value());
+    return invokeHostFunc<std::string, int64_t>(
+        env,
+        params,
+        results,
+        [hf = reinterpret_cast<HostFunctions*>(env)](
+            std::string const& msg, int64_t const& number) {
+            return hf->traceNum(msg, number);
+        },
+        "trace");
 }
 
 }  // namespace ripple

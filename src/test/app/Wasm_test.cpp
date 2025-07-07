@@ -110,13 +110,13 @@ public:
         return env_.journal;
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        return static_cast<int32_t>(env_.current()->seq());
+        return static_cast<std::uint32_t>(env_.current()->seq());
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime() override
     {
         return env_.current()->parentCloseTime().time_since_epoch().count() +
@@ -151,8 +151,10 @@ public:
             auto const x = getLedgerSqn();
             if (!x)
                 return Unexpected(x.error());
-            uint8_t const* p = reinterpret_cast<uint8_t const*>(&x.value());
-            return Bytes{p, p + sizeof(x)};
+            std::uint32_t const data = x.value();
+            auto const* b = reinterpret_cast<uint8_t const*>(&data);
+            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+            return Bytes{b, e};
         }
         return Bytes();
     }
@@ -326,7 +328,7 @@ public:
 #else
         auto j = getJournal().trace();
 #endif
-        j << msg;
+        j << "WASM TRACE: " << msg;
         if (!asHex)
             j << std::string_view(
                 reinterpret_cast<char const*>(data.data()), data.size());
@@ -352,7 +354,7 @@ public:
 #else
         auto j = getJournal().trace();
 #endif
-        j << msg << data;
+        j << "WASM TRACE NUM: " << msg << data;
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -426,13 +428,13 @@ public:
         return env_.journal;
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        return static_cast<int32_t>(env_.current()->seq());
+        return static_cast<std::uint32_t>(env_.current()->seq());
     }
 
-    Expected<int32_t, HostFunctionError>
+    Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime() override
     {
         return env_.current()->parentCloseTime().time_since_epoch().count();
@@ -1387,7 +1389,7 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testEscrowWasmDN2()
+    testEscrowWasmDN3()
     {
         testcase("wasm devnet 3 test");
 
@@ -1553,7 +1555,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         // TODO: fix result
         testEscrowWasmDN1();
-        testEscrowWasmDN2();
+        testEscrowWasmDN3();
 
         // perfTest();
     }

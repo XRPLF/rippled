@@ -30,13 +30,13 @@
 
 namespace ripple {
 
-Expected<int32_t, HostFunctionError>
+Expected<std::uint32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerSqn()
 {
     return ctx.view().seq();
 }
 
-Expected<int32_t, HostFunctionError>
+Expected<std::uint32_t, HostFunctionError>
 WasmHostFunctionsImpl::getParentLedgerTime()
 {
     return ctx.view().parentCloseTime().time_since_epoch().count();
@@ -92,35 +92,34 @@ getAnyFieldData(STBase const* obj)
             return Unexpected(HF_ERR_NOT_LEAF_FIELD);
             break;
         case STI_ACCOUNT: {
-            auto const& super(static_cast<STAccount const*>(obj));
-            auto const& data = super->value();
+            auto const& account(static_cast<STAccount const*>(obj));
+            auto const& data = account->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
         case STI_AMOUNT: {
-            auto const& super(static_cast<STAmount const*>(obj));
-            int64_t const data = super->xrp().drops();
+            auto const& amount(static_cast<STAmount const*>(obj));
+            int64_t const data = amount->xrp().drops();
             auto const* b = reinterpret_cast<uint8_t const*>(&data);
             auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
             return Bytes{b, e};
         }
         break;
         case STI_VL: {
-            auto const& super(static_cast<STBlob const*>(obj));
-            auto const& data = super->value();
+            auto const& vl(static_cast<STBlob const*>(obj));
+            auto const& data = vl->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
         case STI_UINT256: {
-            auto const& super(static_cast<STBitString<256> const*>(obj));
-            auto const& data = super->value();
+            auto const& num(static_cast<STBitString<256> const*>(obj));
+            auto const& data = num->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
         case STI_UINT32: {
-            auto const& super(
-                static_cast<STInteger<std::uint32_t> const*>(obj));
-            std::uint32_t const data = super->value();
+            auto const& num(static_cast<STInteger<std::uint32_t> const*>(obj));
+            std::uint32_t const data = num->value();
             auto const* b = reinterpret_cast<uint8_t const*>(&data);
             auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
             return Bytes{b, e};
