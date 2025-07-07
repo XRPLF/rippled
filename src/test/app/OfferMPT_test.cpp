@@ -3853,15 +3853,15 @@ public:
                 {.env = env,
                  .token = "BTC",
                  .issuer = gw,
-                 .transferFee = 25'000,
-                 .limit = 40});
+                 .limit = 40,
+                 .transferFee = 25'000});
             using tBTC = std::decay_t<decltype(BTC)>;
             auto const USD = issue2(
                 {.env = env,
                  .token = "USD",
                  .issuer = gw,
-                 .transferFee = 25'000,
-                 .limit = 8'000});
+                 .limit = 8'000,
+                 .transferFee = 25'000});
             using tUSD = std::decay_t<decltype(USD)>;
 
             // Test cases
