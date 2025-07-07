@@ -1363,7 +1363,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto const s = sink.messages().str();
             BEAST_EXPECT(
-                countSubstr(s, "WAMR Error: failed to call func") == 1);
+                countSubstr(s, "WAMR Error: failure to call func") == 1);
             BEAST_EXPECT(
                 countSubstr(s, "Exception: wasm operand stack overflow") > 0);
         }

@@ -795,7 +795,7 @@ WamrEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
     if (trap)
     {
         ret.f = true;
-        print_wasm_error("failed to call func", trap, j_);
+        print_wasm_error("failure to call func", trap, j_);
     }
 
     // assert(results[0].kind == WASM_I32);
