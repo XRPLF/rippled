@@ -84,6 +84,20 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
         create(*arg.create);
 }
 
+MPTTester::MPTTester(
+    Env& env,
+    Account const& issuer,
+    MPTID const& id,
+    std::vector<Account> const& holders,
+    bool close)
+    : env_(env)
+    , issuer_(issuer)
+    , holders_(makeHolders(holders))
+    , id_(id)
+    , close_(close)
+{
+}
+
 static MPTCreate
 makeMPTCreate(MPTInitDef const& arg)
 {

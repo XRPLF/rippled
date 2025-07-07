@@ -651,6 +651,66 @@ public:
     }
 };
 
+struct IssuerArgs
+{
+    jtx::Env& env;
+    // 3-letter currency if Issue, ignored if MPT
+    std::string token = "";
+    jtx::Account issuer;
+    std::vector<jtx::Account> holders;
+    // trust-limit if Issue, maxAmount if MPT
+    std::optional<std::uint64_t> limit = std::nullopt;
+    // 0-50'000 (0-50%)
+    std::uint16_t transferFee = 0;
+};
+
+namespace detail {
+
+IOU
+issueHelperIOU(IssuerArgs const& args);
+
+MPT
+issueHelperMPT(IssuerArgs const& args);
+
+}  // namespace detail
+
+template <typename TTester>
+void
+testHelper2TokensMix(TTester&& tester)
+{
+    tester(detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU);
+}
+
+template <typename TTester>
+void
+testHelper3TokensMix(TTester&& tester)
+{
+    tester(
+        detail::issueHelperMPT, detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(
+        detail::issueHelperMPT, detail::issueHelperMPT, detail::issueHelperIOU);
+    tester(
+        detail::issueHelperMPT, detail::issueHelperIOU, detail::issueHelperMPT);
+    tester(
+        detail::issueHelperMPT, detail::issueHelperIOU, detail::issueHelperIOU);
+    tester(
+        detail::issueHelperIOU, detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(
+        detail::issueHelperIOU, detail::issueHelperMPT, detail::issueHelperIOU);
+    tester(
+        detail::issueHelperIOU, detail::issueHelperIOU, detail::issueHelperMPT);
+}
+
+template <typename T>
+std::uint16_t
+extraFee(T&& issue)
+{
+    using t = std::invoke_result_t<T, IssuerArgs>;
+    return std::is_same_v<t, IOU> ? 1 : 0;
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

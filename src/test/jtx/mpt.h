@@ -181,6 +181,12 @@ class MPTTester
 public:
     MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
+    MPTTester(
+        Env& env,
+        Account const& issuer,
+        MPTID const& id,
+        std::vector<Account> const& holders = {},
+        bool close = true);
     operator MPT() const;
 
     void

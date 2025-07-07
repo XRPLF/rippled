@@ -18,8 +18,11 @@
 //==============================================================================
 
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/trust.h>
 
 #include <xrpld/rpc/RPCHandler.h>
 
@@ -645,6 +648,52 @@ equal(std::unique_ptr<ripple::Step> const& s1, ripple::Book const& bsi)
         return false;
     return bookStepEqual(*s1, bsi);
 }
+
+namespace detail {
+
+IOU
+issueHelperIOU(IssuerArgs const& args)
+{
+    auto const iou = args.issuer[args.token];
+    if (args.transferFee != 0)
+    {
+        auto const tfee = 1. + static_cast<double>(args.transferFee) / 100'000;
+        args.env(rate(args.issuer, tfee));
+    }
+    for (auto const& account : args.holders)
+    {
+        args.env(fset(account, asfDefaultRipple));
+        args.env(trust(account, iou(args.limit.value_or(1'000))));
+    }
+    return iou;
+}
+
+MPT
+issueHelperMPT(IssuerArgs const& args)
+{
+    using namespace jtx;
+    if (args.limit)
+    {
+        MPT const mpt = MPTTester(
+            {.env = args.env,
+             .issuer = args.issuer,
+             .holders = args.holders,
+             .transferFee = args.transferFee,
+             .maxAmt = *args.limit});
+        return mpt;
+    }
+    else
+    {
+        MPT const mpt = MPTTester(
+            {.env = args.env,
+             .issuer = args.issuer,
+             .holders = args.holders,
+             .transferFee = args.transferFee});
+        return mpt;
+    }
+}
+
+}  // namespace detail
 
 }  // namespace jtx
 }  // namespace test
