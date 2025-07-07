@@ -322,7 +322,9 @@ SHAMapStoreImp::run()
                 << lastRotated << " deleteInterval " << deleteInterval_
                 << " canDelete_ " << canDelete_ << " state "
                 << app_.getOPs().strOperatingMode(false) << " age "
-                << ledgerMaster_->getValidatedLedgerAge().count() << 's';
+                << ledgerMaster_->getValidatedLedgerAge().count()
+                << "s. Complete ledgers: "
+                << ledgerMaster_->getCompleteLedgers();
 
             clearPrior(lastRotated);
             if (healthWait() == stopping)
@@ -385,7 +387,9 @@ SHAMapStoreImp::run()
                     clearCaches(validatedSeq);
                 });
 
-            JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
+            JLOG(journal_.warn()) << "finished rotation " << validatedSeq
+                                  << "s. Complete ledgers: "
+                                  << ledgerMaster_->getCompleteLedgers();
         }
     }
 }
@@ -656,7 +660,9 @@ SHAMapStoreImp::healthWait()
             << "Waiting " << recoveryWaitTime_.count()
             << "s for node to stabilize. state: "
             << app_.getOPs().strOperatingMode(mode, false) << ". age "
-            << age.count() << "s. Missing ledgers: " << numMissing;
+            << age.count() << "s. Missing ledgers: " << numMissing
+            << ". Expect: " << lastGoodValidatedLedger_ << "-" << index
+            << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
         std::this_thread::sleep_for(recoveryWaitTime_);
         index = ledgerMaster_->getValidLedgerIndex();
         age = ledgerMaster_->getValidatedLedgerAge();
