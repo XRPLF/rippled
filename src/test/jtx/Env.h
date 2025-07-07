@@ -74,7 +74,7 @@ inline FeatureBitset
 supported_amendments()
 {
     static FeatureBitset const ids = [] {
-        auto const& sa = ripple::detail::supportedAmendments();
+        auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
         for (auto const& [s, vote] : sa)
