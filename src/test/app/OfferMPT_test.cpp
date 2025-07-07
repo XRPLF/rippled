@@ -1150,7 +1150,6 @@ public:
         auto const partner = Account{"partner"};
 
         auto test = [&](auto&& issue1, auto&& issue2) {
-
             Env env{*this, features};
             env.close();
 
