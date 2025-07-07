@@ -185,7 +185,7 @@ getData<std::string>(
 }
 
 template <typename T>
-nullptr_t
+std::nullptr_t
 hfResult(wasm_val_vec_t* results, T value)
 {
     results->data[0] = WASM_I32_VAL(value);
