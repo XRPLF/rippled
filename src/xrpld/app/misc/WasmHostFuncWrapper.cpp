@@ -193,15 +193,12 @@ hfResult(wasm_val_vec_t* results, T value)
     return nullptr;
 }
 
-template <typename Tuple, std::size_t... Is>
+template <typename... Args>
 std::optional<HostFunctionError>
-checkErrors(Tuple const& t, std::index_sequence<Is...>)
+checkErrors(Args const&... args)
 {
     std::optional<HostFunctionError> err;
-    ((err = err ? err
-                : (!std::get<Is>(t) ? std::optional{std::get<Is>(t).error()}
-                                    : std::nullopt)),
-     ...);
+    ((err = !args ? args.error() : err), ...);  // Fold expression
     return err;
 }
 
@@ -220,8 +217,8 @@ invokeHostFunc(
 
     auto expectedArgs = std::make_tuple(getData<Args>(rt, params, index)...);
 
-    constexpr auto N = sizeof...(Args);
-    auto err = checkErrors(expectedArgs, std::make_index_sequence<N>{});
+    auto err = std::apply(
+        [](auto const&... args) { return checkErrors(args...); }, expectedArgs);
 
     if (err)
     {
