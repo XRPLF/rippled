@@ -33,6 +33,23 @@ namespace test {
 
 struct PayStrandMPT_test : public beast::unit_test::suite
 {
+    jtx::DirectStepInfo
+    makeEndpointStep(
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        jtx::IOU const& iou)
+    {
+        return jtx::DirectStepInfo{src, dst, iou.currency};
+    }
+    jtx::MPTEndpointStepInfo
+    makeEndpointStep(
+        jtx::Account const& src,
+        jtx::Account const& dst,
+        jtx::MPT const& mpt)
+    {
+        return jtx::MPTEndpointStepInfo{src, dst, mpt.mpt()};
+    }
+
     void
     testToStrand(FeatureBitset features)
     {
@@ -44,8 +61,6 @@ struct PayStrandMPT_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const carol = Account("carol");
         auto const gw = Account("gw");
-        auto const USDC = gw["USD"];
-        auto const EURC = gw["EUR"];
 
         using M = MPTEndpointStepInfo;
         using B = ripple::Book;
@@ -80,210 +95,239 @@ struct PayStrandMPT_test : public beast::unit_test::suite
         };
 
         {
-            Env env(*this, features);
-            env.fund(XRP(10'000), alice, bob, gw);
-            MPT const USD = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .maxAmt = 1'000});
-            MPT const bobUSD = MPTTester(
-                {.env = env,
-                 .issuer = bob,
-                 .holders = {alice},
-                 .maxAmt = 1'000});
-            MPT const EUR = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob},
-                 .maxAmt = 1'000});
-            MPT const bobEUR = MPTTester(
-                {.env = env,
-                 .issuer = bob,
-                 .holders = {alice},
-                 .maxAmt = 1'000});
-            env(pay(gw, alice, EUR(100)));
+            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this, features);
+                env.fund(XRP(10'000), alice, bob, gw);
+                MPT const USD = MPTTester(
+                    {.env = env,
+                     .issuer = gw,
+                     .holders = {alice, bob},
+                     .maxAmt = 1'000});
+                auto const bobUSD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = bob,
+                     .holders = {alice},
+                     .limit = 1'000});
+                MPT const EUR = MPTTester(
+                    {.env = env,
+                     .issuer = gw,
+                     .holders = {alice, bob},
+                     .maxAmt = 1'000});
+                auto const bobEUR = issue2(
+                    {.env = env,
+                     .token = "EUR",
+                     .issuer = bob,
+                     .holders = {alice},
+                     .limit = 1'000});
+                env(pay(gw, alice, EUR(100)));
 
-            {
-                // Original test is
-                // STPath({ipe(bob["USD"]), cpe(EUR.currency)});
-                // which ripples through same currency, different issuer.
-                // This results in 5 steps:
-                // 1 DirectStep alice -> gw EUR/gw
-                // 2 Book EUR/gw USD/bob
-                // 3 Book USD/bob EUR/bob
-                // 4 Book EUR/bob XRP
-                // 5 XRPEndpoint
-                // This is somewhat equivalent path with MPT
-                STPath const path =
-                    STPath({ipe(bobUSD), ipe(bobEUR), cpe(xrpCurrency())});
-                auto [ter, _] = toStrand(
-                    *env.current(),
-                    alice,
-                    alice,
-                    /*deliver*/ xrpIssue(),
-                    /*limitQuality*/ std::nullopt,
-                    /*sendMaxIssue*/ EUR,
-                    path,
-                    true,
-                    OfferCrossing::no,
-                    ammContext,
-                    std::nullopt,
-                    env.app().logs().journal("Flow"));
-                (void)_;
-                BEAST_EXPECT(ter == tesSUCCESS);
-            }
-            {
-                STPath const path = STPath({ipe(USD), cpe(xrpCurrency())});
-                auto [ter, _] = toStrand(
-                    *env.current(),
-                    alice,
-                    alice,
-                    /*deliver*/ xrpIssue(),
-                    /*limitQuality*/ std::nullopt,
-                    /*sendMaxIssue*/ EUR,
-                    path,
-                    true,
-                    OfferCrossing::no,
-                    ammContext,
-                    std::nullopt,
-                    env.app().logs().journal("Flow"));
-                (void)_;
-                BEAST_EXPECT(ter == tesSUCCESS);
-            }
+                {
+                    // Original test is
+                    // STPath({ipe(bob["USD"]), cpe(EUR.currency)});
+                    // which ripples through same currency, different issuer.
+                    // This results in 5 steps:
+                    // 1 DirectStep alice -> gw EUR/gw
+                    // 2 Book EUR/gw USD/bob
+                    // 3 Book USD/bob EUR/bob
+                    // 4 Book EUR/bob XRP
+                    // 5 XRPEndpoint
+                    // This is somewhat equivalent path with MPT
+                    STPath const path =
+                        STPath({ipe(bobUSD), ipe(bobEUR), cpe(xrpCurrency())});
+                    auto [ter, _] = toStrand(
+                        *env.current(),
+                        alice,
+                        alice,
+                        /*deliver*/ xrpIssue(),
+                        /*limitQuality*/ std::nullopt,
+                        /*sendMaxIssue*/ EUR,
+                        path,
+                        true,
+                        OfferCrossing::no,
+                        ammContext,
+                        std::nullopt,
+                        env.app().logs().journal("Flow"));
+                    (void)_;
+                    BEAST_EXPECT(ter == tesSUCCESS);
+                }
+                {
+                    STPath const path = STPath({ipe(USD), cpe(xrpCurrency())});
+                    auto [ter, _] = toStrand(
+                        *env.current(),
+                        alice,
+                        alice,
+                        /*deliver*/ xrpIssue(),
+                        /*limitQuality*/ std::nullopt,
+                        /*sendMaxIssue*/ EUR,
+                        path,
+                        true,
+                        OfferCrossing::no,
+                        ammContext,
+                        std::nullopt,
+                        env.app().logs().journal("Flow"));
+                    (void)_;
+                    BEAST_EXPECT(ter == tesSUCCESS);
+                }
+            };
+            testHelper2TokensMix(testMultiToken);
         }
         {
-            Env env(*this, features);
-            env.fund(XRP(10'000), alice, bob, carol, gw);
-            auto USDM = MPTTester({.env = env, .issuer = gw, .maxAmt = 1'000});
-            MPT const USD = USDM;
-            auto EURM = MPTTester({.env = env, .issuer = gw, .maxAmt = 1'000});
-            MPT const EUR = EURM;
+            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this, features);
+                env.fund(XRP(10'000), alice, bob, carol, gw);
+                auto USD = issue1(
+                    {.env = env, .token = "USD", .issuer = gw, .limit = 1'000});
+                using tUSD = std::decay_t<decltype(USD)>;
+                auto EUR = issue2(
+                    {.env = env, .token = "EUR", .issuer = gw, .limit = 1'000});
+                using tEUR = std::decay_t<decltype(EUR)>;
 
-            test(env, USD, std::nullopt, STPath(), tecNO_AUTH);
+                auto const err = [&]() {
+                    if constexpr (std::is_same_v<tUSD, MPT>)
+                        return tecNO_AUTH;
+                    else
+                        return terNO_LINE;
+                }();
+                test(env, USD, std::nullopt, STPath(), err);
 
-            USDM.authorizeHolders({alice, bob, carol});
+                if constexpr (std::is_same_v<tUSD, MPT>)
+                    MPTTester(env, gw, USD)
+                        .authorizeHolders({alice, bob, carol});
+                else
+                    env.trust(USD(1'000), alice, bob, carol);
 
-            test(env, USD, std::nullopt, STPath(), tecPATH_DRY);
+                test(env, USD, std::nullopt, STPath(), tecPATH_DRY);
 
-            env(pay(gw, alice, USD(100)));
-            env(pay(gw, carol, USD(100)));
+                env(pay(gw, alice, USD(100)));
+                env(pay(gw, carol, USD(100)));
 
-            // Insert implied account
-            test(
-                env,
-                USD,
-                std::nullopt,
-                STPath(),
-                tesSUCCESS,
-                M{alice, gw, USD},
-                M{gw, bob, USD});
-            EURM.authorizeHolders({alice, bob});
+                // Insert implied account
+                test(
+                    env,
+                    USD,
+                    std::nullopt,
+                    STPath(),
+                    tesSUCCESS,
+                    makeEndpointStep(alice, gw, USD),
+                    makeEndpointStep(gw, bob, USD));
+                if constexpr (std::is_same_v<tEUR, MPT>)
+                    MPTTester(env, gw, EUR).authorizeHolders({alice, bob});
+                else
+                    env.trust(EUR(1'000), alice, bob);
 
-            // Insert implied offer
-            test(
-                env,
-                EUR,
-                USD,
-                STPath(),
-                tesSUCCESS,
-                M{alice, gw, USD},
-                B{USD, EUR, std::nullopt},
-                M{gw, bob, EUR});
+                // Insert implied offer
+                test(
+                    env,
+                    EUR,
+                    USD,
+                    STPath(),
+                    tesSUCCESS,
+                    makeEndpointStep(alice, gw, USD),
+                    B{USD, EUR, std::nullopt},
+                    makeEndpointStep(gw, bob, EUR));
 
-            // Path with explicit offer
-            test(
-                env,
-                EUR,
-                USD,
-                STPath({ipe(EUR)}),
-                tesSUCCESS,
-                M{alice, gw, USD},
-                B{USD, EUR, std::nullopt},
-                M{gw, bob, EUR});
+                // Path with explicit offer
+                test(
+                    env,
+                    EUR,
+                    USD,
+                    STPath({ipe(EUR)}),
+                    tesSUCCESS,
+                    makeEndpointStep(alice, gw, USD),
+                    B{USD, EUR, std::nullopt},
+                    makeEndpointStep(gw, bob, EUR));
 
-            // Path with XRP src currency
-            test(
-                env,
-                USD,
-                xrpIssue(),
-                STPath({ipe(USD)}),
-                tesSUCCESS,
-                XRPS{alice},
-                B{XRP, USD, std::nullopt},
-                M{gw, bob, USD});
+                // Path with XRP src currency
+                test(
+                    env,
+                    USD,
+                    xrpIssue(),
+                    STPath({ipe(USD)}),
+                    tesSUCCESS,
+                    XRPS{alice},
+                    B{XRP, USD, std::nullopt},
+                    makeEndpointStep(gw, bob, USD));
 
-            // Path with XRP dst currency.
-            test(
-                env,
-                xrpIssue(),
-                USD,
-                STPath({STPathElement{
-                    STPathElement::typeCurrency,
-                    xrpAccount(),
-                    xrpCurrency(),
-                    xrpAccount()}}),
-                tesSUCCESS,
-                M{alice, gw, USD},
-                B{USD, XRP, std::nullopt},
-                XRPS{bob});
+                // Path with XRP dst currency.
+                test(
+                    env,
+                    xrpIssue(),
+                    USD,
+                    STPath({STPathElement{
+                        STPathElement::typeCurrency,
+                        xrpAccount(),
+                        xrpCurrency(),
+                        xrpAccount()}}),
+                    tesSUCCESS,
+                    makeEndpointStep(alice, gw, USD),
+                    B{USD, XRP, std::nullopt},
+                    XRPS{bob});
 
-            // Path with XRP cross currency bridged payment
-            test(
-                env,
-                EUR,
-                USD,
-                STPath({cpe(xrpCurrency())}),
-                tesSUCCESS,
-                M{alice, gw, USD},
-                B{USD, XRP, std::nullopt},
-                B{XRP, EUR, std::nullopt},
-                M{gw, bob, EUR});
+                // Path with XRP cross currency bridged payment
+                test(
+                    env,
+                    EUR,
+                    USD,
+                    STPath({cpe(xrpCurrency())}),
+                    tesSUCCESS,
+                    makeEndpointStep(alice, gw, USD),
+                    B{USD, XRP, std::nullopt},
+                    B{XRP, EUR, std::nullopt},
+                    makeEndpointStep(gw, bob, EUR));
 
-            // Create an offer with the same in/out issue
-            test(env, EUR, USD, STPath({ipe(USD), ipe(EUR)}), temBAD_PATH);
+                // Create an offer with the same in/out issue
+                test(env, EUR, USD, STPath({ipe(USD), ipe(EUR)}), temBAD_PATH);
 
-            // The same offer can't appear more than once on a path
-            test(
-                env,
-                EUR,
-                USD,
-                STPath({ipe(EUR), ipe(USD), ipe(EUR)}),
-                temBAD_PATH_LOOP);
+                // The same offer can't appear more than once on a path
+                test(
+                    env,
+                    EUR,
+                    USD,
+                    STPath({ipe(EUR), ipe(USD), ipe(EUR)}),
+                    temBAD_PATH_LOOP);
+            };
+            testHelper2TokensMix(testMultiToken);
         }
 
         {
             // cannot have more than one offer with the same output issue
 
             using namespace jtx;
-            Env env(*this, features);
 
-            env.fund(XRP(10'000), alice, bob, carol, gw);
+            auto testMultiToken = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this, features);
 
-            MPT const USD = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .maxAmt = 10'000});
-            MPT const EUR = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .maxAmt = 10'000});
+                env.fund(XRP(10'000), alice, bob, carol, gw);
 
-            env(pay(gw, bob, USD(100)));
-            env(pay(gw, bob, EUR(100)));
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol},
+                     .limit = 10'000});
+                auto const EUR = issue2(
+                    {.env = env,
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, bob, carol},
+                     .limit = 10'000});
 
-            env(offer(bob, XRP(100), USD(100)));
-            env(offer(bob, USD(100), EUR(100)), txflags(tfPassive));
-            env(offer(bob, EUR(100), USD(100)), txflags(tfPassive));
+                env(pay(gw, bob, USD(100)));
+                env(pay(gw, bob, EUR(100)));
 
-            // payment path: XRP -> XRP/USD -> USD/EUR -> EUR/USD
-            env(pay(alice, carol, USD(100)),
-                path(~USD, ~EUR, ~USD),
-                sendmax(XRP(200)),
-                txflags(tfNoRippleDirect),
-                ter(temBAD_PATH_LOOP));
+                env(offer(bob, XRP(100), USD(100)));
+                env(offer(bob, USD(100), EUR(100)), txflags(tfPassive));
+                env(offer(bob, EUR(100), USD(100)), txflags(tfPassive));
+
+                // payment path: XRP -> XRP/USD -> USD/EUR -> EUR/USD
+                env(pay(alice, carol, USD(100)),
+                    path(~USD, ~EUR, ~USD),
+                    sendmax(XRP(200)),
+                    txflags(tfNoRippleDirect),
+                    ter(temBAD_PATH_LOOP));
+            };
+            testHelper2TokensMix(testMultiToken);
         }
 
         {
@@ -487,39 +531,46 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                 ter(temBAD_PATH_LOOP));
         }
         {
-            Env env(*this, features);
+            auto testMultiToken =
+                [&](auto&& issue1, auto&& issue2, auto&& issue3) {
+                    Env env(*this, features);
 
-            env.fund(XRP(10'000), alice, bob, carol, gw);
-            MPT const USD = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .maxAmt = 10'000});
-            MPT const EUR = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .maxAmt = 10'000});
-            MPT const CNY = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, bob, carol},
-                 .maxAmt = 10'000});
+                    env.fund(XRP(10'000), alice, bob, carol, gw);
+                    auto const USD = issue1(
+                        {.env = env,
+                         .token = "USD",
+                         .issuer = gw,
+                         .holders = {alice, bob, carol},
+                         .limit = 10'000});
+                    auto const EUR = issue2(
+                        {.env = env,
+                         .token = "EUR",
+                         .issuer = gw,
+                         .holders = {alice, bob, carol},
+                         .limit = 10'000});
+                    auto const CNY = issue3(
+                        {.env = env,
+                         .token = "CNY",
+                         .issuer = gw,
+                         .holders = {alice, bob, carol},
+                         .limit = 10'000});
 
-            env(pay(gw, bob, USD(100)));
-            env(pay(gw, bob, EUR(100)));
-            env(pay(gw, bob, CNY(100)));
+                    env(pay(gw, bob, USD(100)));
+                    env(pay(gw, bob, EUR(100)));
+                    env(pay(gw, bob, CNY(100)));
 
-            env(offer(bob, XRP(100), USD(100)), txflags(tfPassive));
-            env(offer(bob, USD(100), EUR(100)), txflags(tfPassive));
-            env(offer(bob, EUR(100), CNY(100)), txflags(tfPassive));
+                    env(offer(bob, XRP(100), USD(100)), txflags(tfPassive));
+                    env(offer(bob, USD(100), EUR(100)), txflags(tfPassive));
+                    env(offer(bob, EUR(100), CNY(100)), txflags(tfPassive));
 
-            // payment path: XRP->XRP/USD->USD/EUR->USD/CNY
-            env(pay(alice, carol, CNY(100)),
-                sendmax(XRP(100)),
-                path(~USD, ~EUR, ~USD, ~CNY),
-                txflags(tfNoRippleDirect),
-                ter(temBAD_PATH_LOOP));
+                    // payment path: XRP->XRP/USD->USD/EUR->USD/CNY
+                    env(pay(alice, carol, CNY(100)),
+                        sendmax(XRP(100)),
+                        path(~USD, ~EUR, ~USD, ~CNY),
+                        txflags(tfNoRippleDirect),
+                        ter(temBAD_PATH_LOOP));
+                };
+            testHelper3TokensMix(testMultiToken);
         }
     }
 
