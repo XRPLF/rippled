@@ -293,7 +293,7 @@ public:
             testPairwise(features);
         };
         using namespace jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         withFeatsTests(sa - featureFlowCross - featurePermissionedDEX);
         withFeatsTests(sa - featurePermissionedDEX);
         withFeatsTests(sa);

@@ -5409,7 +5409,7 @@ public:
     run(std::uint32_t instance, bool last = false)
     {
         using namespace jtx;
-        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const all{testable_amendments()};
         static FeatureBitset const flowCross{featureFlowCross};
         static FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         static FeatureBitset const rmSmallIncreasedQOffers{
@@ -5504,7 +5504,7 @@ class Offer_manual_test : public OfferBaseUtil_test
     run() override
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
