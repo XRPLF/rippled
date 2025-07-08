@@ -1971,6 +1971,13 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
+            // ComputationAllowance value of 0
+            env(escrow::finish(carol, alice, seq),
+                escrow::comp_allowance(0),
+                ter(temBAD_LIMIT));
+        }
+
+        {
             // not enough fees
             // This function takes 4 gas
             // In testing, 1 gas costs 1 drop

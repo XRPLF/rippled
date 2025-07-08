@@ -743,6 +743,10 @@ EscrowFinish::preflight(PreflightContext const& ctx)
 
     if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
     {
+        if (*allowance == 0)
+        {
+            return temBAD_LIMIT;
+        }
         if (*allowance > ctx.app.config().FEES.extension_compute_limit)
         {
             JLOG(ctx.j.debug())
