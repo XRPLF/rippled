@@ -71,7 +71,7 @@ noripple(Account const& account, Args const&... args)
 }
 
 inline FeatureBitset
-supported_amendments()
+testable_amendments()
 {
     static FeatureBitset const ids = [] {
         auto const& sa = allAmendments();
@@ -236,7 +236,7 @@ public:
         beast::severities::Severity thresh = beast::severities::kError)
         : Env(suite_,
               std::move(config),
-              supported_amendments(),
+              testable_amendments(),
               std::move(logs),
               thresh)
     {

@@ -66,7 +66,7 @@ private:
             {},
             0,
             {},
-            {supported_amendments() | featureSingleAssetVault});
+            {testable_amendments() | featureSingleAssetVault});
 
         // XRP to IOU, without featureSingleAssetVault
         testAMM(
@@ -77,7 +77,7 @@ private:
             {},
             0,
             {},
-            {supported_amendments() - featureSingleAssetVault});
+            {testable_amendments() - featureSingleAssetVault});
 
         // IOU to IOU
         testAMM(
@@ -1385,7 +1385,7 @@ private:
         testcase("Deposit");
 
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         // Equal deposit: 1000000 tokens, 10% of the current pool
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -1687,7 +1687,7 @@ private:
         testcase("Invalid Withdraw");
 
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         testAMM(
             [&](AMM& ammAlice, Env& env) {
@@ -2267,7 +2267,7 @@ private:
         testcase("Withdraw");
 
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         // Equal withdrawal by Carol: 1000000 of tokens, 10% of the current
         // pool
@@ -2688,7 +2688,7 @@ private:
     {
         testcase("Fee Vote");
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         // One vote sets fee to 1%.
         testAMM([&](AMM& ammAlice, Env& env) {
@@ -4855,7 +4855,7 @@ private:
     {
         testcase("Amendment");
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const noAMM{all - featureAMM};
         FeatureBitset const noNumber{all - fixUniversalNumber};
         FeatureBitset const noAMMAndNumber{
@@ -5646,7 +5646,7 @@ private:
         testcase("Auto Delete");
 
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
 
         {
             Env env(
@@ -6306,7 +6306,7 @@ private:
     {
         testcase("Fix Default Inner Object");
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
 
         auto test = [&](FeatureBitset features,
                         TER const& err1,
@@ -7043,7 +7043,7 @@ private:
             {{xrpPool, iouPool}},
             889,
             std::nullopt,
-            {jtx::supported_amendments() | fixAMMv1_1});
+            {jtx::testable_amendments() | fixAMMv1_1});
     }
 
     void
@@ -7513,10 +7513,10 @@ private:
         };
 
         testCase(
-            "tecDUPLICATE", supported_amendments() - featureSingleAssetVault);
+            "tecDUPLICATE", testable_amendments() - featureSingleAssetVault);
         testCase(
             "terADDRESS_COLLISION",
-            supported_amendments() | featureSingleAssetVault);
+            testable_amendments() | featureSingleAssetVault);
     }
 
     void
@@ -7894,7 +7894,7 @@ private:
     void
     run() override
     {
-        FeatureBitset const all{jtx::supported_amendments()};
+        FeatureBitset const all{jtx::testable_amendments()};
         testInvalidInstance();
         testInstanceCreate();
         testInvalidDeposit(all);
