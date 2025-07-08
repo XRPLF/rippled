@@ -7322,7 +7322,8 @@ private:
         }
         // If featureAMMClawback is enabled, AMMCreate is allowed for
         // clawback-enabled issuer. Clawback from the AMM Account is not
-        // allowed, which will return tecAMM_ACCOUNT. We can only use
+        // allowed, which will return tecAMM_ACCOUNT or tecPSEUDO_ACCOUNT,
+        // depending on whether SingleAssetVault is enabled. We can only use
         // AMMClawback transaction to claw back from AMM Account.
         else
         {
@@ -7333,13 +7334,16 @@ private:
             // By doing this, we make the clawback transaction's Amount field's
             // subfield `issuer` to be the AMM account, which means
             // we are clawing back from an AMM account. This should return an
-            // tecAMM_ACCOUNT error because regular Clawback transaction is not
+            // error because regular Clawback transaction is not
             // allowed for clawing back from an AMM account. Please notice the
             // `issuer` subfield represents the account being clawed back, which
             // is confusing.
+            auto const error = features[featureSingleAssetVault]
+                ? ter{tecPSEUDO_ACCOUNT}
+                : ter{tecAMM_ACCOUNT};
             Issue usd(USD.issue().currency, amm.ammAccount());
             auto amount = amountFromString(usd, "10");
-            env(claw(gw, amount), ter(tecAMM_ACCOUNT));
+            env(claw(gw, amount), error);
         }
     }
 
@@ -7945,6 +7949,8 @@ private:
         testLPTokenBalance(all - fixAMMv1_3);
         testLPTokenBalance(all - fixAMMv1_1 - fixAMMv1_3);
         testAMMClawback(all);
+        testAMMClawback(all - featureSingleAssetVault);
+        testAMMClawback(all - featureAMMClawback - featureSingleAssetVault);
         testAMMClawback(all - featureAMMClawback);
         testAMMClawback(all - fixAMMv1_1 - fixAMMv1_3 - featureAMMClawback);
         testAMMDepositWithFrozenAssets(all);
