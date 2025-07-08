@@ -123,6 +123,10 @@ class LedgerMaster_test : public beast::unit_test::suite
     void
     testCompleteLedgerRange(FeatureBitset features)
     {
+        // Note that this test is intentionally very similar to
+        // SHAMapStore_test::testLedgerGaps, but has a different
+        // focus.
+
         testcase("Complete Ledger operations");
 
         using namespace test::jtx;

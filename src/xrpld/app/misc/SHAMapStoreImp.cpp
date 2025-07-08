@@ -308,6 +308,12 @@ SHAMapStoreImp::run()
             validatedSeq >= lastRotated + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
 
+        // Note that this is set after the healthWait() check, so that we don't
+        // start the rotation until the validated ledger is fully processed. It
+        // is not guaranteed to be done at this point. It also allows the
+        // testLedgerGaps unit test to work.
+        lastGoodValidatedLedger_ = validatedSeq;
+
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
@@ -639,12 +645,6 @@ SHAMapStoreImp::healthWait()
     OperatingMode mode = netOPs_->getOperatingMode();
     std::unique_lock lock(mutex_);
 
-    if (lastGoodValidatedLedger_ == 0)
-    {
-        // TODO: Do we want to initialze lastGoodValidatedLedger_ to the value
-        // of lastRotated in run()?
-        lastGoodValidatedLedger_ = index;
-    }
     auto numMissing = ledgerMaster_->missingFromCompleteLedgerRange(
         lastGoodValidatedLedger_, index);
     while (
