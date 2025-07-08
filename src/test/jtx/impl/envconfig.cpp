@@ -73,6 +73,15 @@ setupConfigForUnitTests(Config& cfg)
 namespace jtx {
 
 std::unique_ptr<Config>
+online_delete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval)
+{
+    cfg->LEDGER_HISTORY = deleteInterval;
+    auto& section = cfg->section(ConfigSection::nodeDatabase());
+    section.set("online_delete", std::to_string(deleteInterval));
+    return cfg;
+}
+
+std::unique_ptr<Config>
 no_admin(std::unique_ptr<Config> cfg)
 {
     (*cfg)[PORT_RPC].set("admin", "");

@@ -39,10 +39,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     static auto
     onlineDelete(std::unique_ptr<Config> cfg)
     {
-        cfg->LEDGER_HISTORY = deleteInterval;
-        auto& section = cfg->section(ConfigSection::nodeDatabase());
-        section.set("online_delete", std::to_string(deleteInterval));
-        return cfg;
+        return online_delete(std::move(cfg), deleteInterval);
     }
 
     static auto
