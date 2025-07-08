@@ -308,9 +308,6 @@ SHAMapStoreImp::run()
             validatedSeq >= lastRotated + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
 
-        JLOG(journal_.fatal())
-            << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
-
         // Note that this is set after the healthWait() check, so that we don't
         // start the rotation until the validated ledger is fully processed. It
         // is not guaranteed to be done at this point. It also allows the
@@ -320,7 +317,7 @@ SHAMapStoreImp::run()
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
-            JLOG(journal_.fatal())
+            JLOG(journal_.warn())
                 << "rotating  validatedSeq " << validatedSeq << " lastRotated "
                 << lastRotated << " deleteInterval " << deleteInterval_
                 << " canDelete_ " << canDelete_ << " state "
@@ -388,7 +385,7 @@ SHAMapStoreImp::run()
                     clearCaches(validatedSeq);
                 });
 
-            JLOG(journal_.fatal()) << "finished rotation " << validatedSeq;
+            JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
         }
     }
 }
@@ -655,7 +652,7 @@ SHAMapStoreImp::healthWait()
         (mode != OperatingMode::FULL || age > ageThreshold_ || numMissing > 0))
     {
         lock.unlock();
-        JLOG(journal_.fatal())
+        JLOG(journal_.warn())
             << "Waiting " << recoveryWaitTime_.count()
             << "s for node to stabilize. state: "
             << app_.getOPs().strOperatingMode(mode, false) << ". age "
@@ -669,8 +666,6 @@ SHAMapStoreImp::healthWait()
             lastGoodValidatedLedger_, index);
     }
 
-    JLOG(journal_.fatal()) << "healthWait: Setting lastGoodValidatedLedger_ to "
-                           << index;
     lastGoodValidatedLedger_ = index;
 
     return stop_ ? stopping : keepGoing;
