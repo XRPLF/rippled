@@ -81,6 +81,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), gw, alice, bob, carol);
+                env.close();
 
                 auto const USD = issue1(
                     {.env = env,
@@ -132,6 +133,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
+                env.close();
 
                 auto const USD = issue1(
                     {.env = env,
@@ -165,6 +167,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
+                env.close();
 
                 auto const USD = issue1(
                     {.env = env,
@@ -201,6 +204,7 @@ struct FlowMPT_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
+            env.close();
 
             MPT const USD = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob, carol}});
@@ -226,6 +230,7 @@ struct FlowMPT_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
+            env.close();
 
             MPT const USD = MPTTester(
                 {.env = env, .issuer = gw, .holders = {alice, bob, carol}});
@@ -250,6 +255,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
+                env.close();
 
                 auto const USD = issue1(
                     {.env = env,
@@ -314,6 +320,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
+                env.close();
 
                 auto const USD = issue1(
                     {.env = env,

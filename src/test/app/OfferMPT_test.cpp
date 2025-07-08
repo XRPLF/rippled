@@ -210,6 +210,7 @@ public:
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
+            env.close();
 
             auto const USD = issue1(
                 {.env = env,
@@ -1795,6 +1796,7 @@ public:
             Env env(*this, features);
 
             env.fund(XRP(100'000'000), alice, bob, carol, gw);
+            env.close();
 
             auto const USD = issue1(
                 {.env = env,
@@ -2063,6 +2065,7 @@ public:
                  .token = "XXX",
                  .issuer = gw,
                  .holders = {alice, bob}});
+            env.close();
 
             env(pay(gw, alice, XTS(1'000)));
             env(pay(gw, alice, XXX(100)));
@@ -2124,6 +2127,7 @@ public:
         Env env{*this, features};
 
         env.fund(XRP(10'000'000), gw);
+        env.close();
 
         auto MUSD = MPTTester({.env = env, .issuer = gw});
         MPT const USD = MUSD;
@@ -2217,7 +2221,14 @@ public:
             }
             std::uint32_t const acctOfferSeq = env.seq(acct) - 1;
 
-            BEAST_EXPECT(env.balance(acct, USD) == t.balanceUsd);
+            auto const expBalanceUsd = [&]() {
+                if (t.scale == 1)
+                    return t.balanceUsd;
+                // crossed offer has XRP available balance of 1 fee
+                // mpt to XRP ratio is 10
+                return USD(f.value() / 10);
+            }();
+            BEAST_EXPECT(env.balance(acct, USD) == expBalanceUsd);
             BEAST_EXPECT(
                 env.balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
             env.require(offers(acct, t.offers));
@@ -2239,7 +2250,7 @@ public:
                 if (t.balanceUsd.value().signum())
                 {
                     // Verify the correct contents of MPT
-                    BEAST_EXPECT(env.balance(acct, USD) == t.balanceUsd);
+                    BEAST_EXPECT(env.balance(acct, USD) == expBalanceUsd);
                 }
                 else
                 {
@@ -3665,6 +3676,7 @@ public:
 
         auto test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
+            auto const baseFee = env.current()->fees().base.drops();
 
             auto const startXrpBalance = XRP(4'000'000);
 
@@ -3677,12 +3689,14 @@ public:
                  .issuer = gw,
                  .transferFee = 25'000});
             using tBTC = std::decay_t<decltype(BTC)>;
+            env.close();
             auto const USD = issue2(
                 {.env = env,
                  .token = "USD",
                  .issuer = gw,
                  .transferFee = 25'000});
             using tUSD = std::decay_t<decltype(USD)>;
+            env.close();
 
             // Test cases
             struct Actor
@@ -3709,10 +3723,10 @@ public:
             // clang-format off
             TestData const tests[]{
                 //        btcStart   --------------------- actor[0] ---------------------    -------------------- actor[1] -------------------
-                {0, 0, 1, BTC(200), {{"ann", 0, drops(3899999999960), BTC(200), USD(3000)}, {"abe", 0, drops(4099999999970), BTC(  0), USD( 750)}}},  // no BTC xfer fee
-                {0, 1, 0, BTC(200), {{"bev", 0, drops(4099999999960), BTC( 75), USD(2000)}, {"bob", 0, drops(3899999999970), BTC(100), USD(   0)}}},  // no USD xfer fee
-                {0, 0, 0, BTC(200), {{"cam", 0, drops(3999999999950), BTC(200), USD(2000)}                                                     }},  // no xfer fee
-                {0, 1, 0, BTC( 50), {{"deb", 1, drops(4039999999960), BTC(  0), USD(2000)}, {"dan", 1, drops(3959999999970), BTC( 40), USD(   0)}}},  // no USD xfer fee
+                {0, 0, 1, BTC(200), {{"ann", 0, drops(3900000'000000 - 4 * baseFee), BTC(200), USD(3000)}, {"abe", 0, drops(4100000'000000 - 3 * baseFee), BTC( 0), USD(750)}}},  // no BTC xfer fee
+                {0, 1, 0, BTC(200), {{"bev", 0, drops(4100000'000000 - 4 * baseFee), BTC( 75), USD(2000)}, {"bob", 0, drops(3900000'000000 - 3 * baseFee), BTC(100), USD(  0)}}},  // no USD xfer fee
+                {0, 0, 0, BTC(200), {{"cam", 0, drops(4000000'000000 - 5 * baseFee), BTC(200), USD(2000)}                                                     }},  // no xfer fee
+                {0, 1, 0, BTC( 50), {{"deb", 1, drops(4040000'000000 - 4 * baseFee), BTC(  0), USD(2000)}, {"dan", 1, drops(3960000'000000 - 3 * baseFee), BTC( 40), USD(  0)}}},  // no USD xfer fee
             };
             // clang-format on
 
@@ -3747,6 +3761,7 @@ public:
                         env(trust(actor.acct, USD(8000)));
                         env.close();
                     }
+                    env.close();
                 }
 
                 env(pay(gw, self, t.btcStart));
@@ -3843,6 +3858,7 @@ public:
 
         auto test = [&](auto&& issue1, auto&& issue2) {
             Env env{*this, features};
+            auto const baseFee = env.current()->fees().base.drops();
 
             auto const startXrpBalance = XRP(4'000'000);
 
@@ -3863,6 +3879,7 @@ public:
                  .limit = 8'000,
                  .transferFee = 25'000});
             using tUSD = std::decay_t<decltype(USD)>;
+            env.close();
 
             // Test cases
             struct Actor
@@ -3889,8 +3906,8 @@ public:
             // clang-format off
             TestData const flowTests[]{
                 //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-                {0, 0, 1, BTC(5), {{"gay", 1, drops(3949999999960), BTC(5), USD(2500)}, {"gar", 1, drops(4049999999970), BTC(0), USD(1375)}}}, // no BTC xfer fee
-                {0, 0, 0, BTC(5), {{"hye", 2, drops(3999999999950), BTC(5), USD(2000)}                                                     }}  // no xfer fee
+                {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - 4 * baseFee), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - 3 * baseFee), BTC(0), USD(1375)}}}, // no BTC xfer fee
+                {0, 0, 0, BTC(5), {{"hye", 2, drops(4000000'000000 - 5 * baseFee), BTC(5), USD(2000)}                                                     }}  // no xfer fee
             };
             // clang-format on
 

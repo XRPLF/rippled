@@ -1379,16 +1379,17 @@ class CheckMPT_test : public beast::unit_test::suite
         env(check::cash(bob, chkIdUsd1, USD(200)), ticket::use(bobTicketSeq++));
         env.close();
 
+        auto const baseFee = env.current()->fees().base;
         env.require(owners(alice, 7));
         env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         env.require(balance(alice, USD(700)));
-        env.require(balance(alice, drops(699'999'940)));
+        env.require(balance(alice, XRP(700) - 6 * baseFee));
         env.require(owners(bob, 7));
         BEAST_EXPECT(env.seq(bob) == bobSeq);
         env.require(balance(bob, USD(200)));
-        env.require(balance(bob, drops(1'299'999'940)));
+        env.require(balance(bob, XRP(1'300) - 6 * baseFee));
     }
 
     void

@@ -3244,6 +3244,7 @@ class MPToken_test : public beast::unit_test::suite
             Env env(*this, features);
             auto const EUR = gw["EUR"];
             env.fund(XRP(1'000), gw, alice, carol, bob);
+            env.close();
 
             env(trust(alice, EUR(1'000)));
             env(pay(gw, alice, EUR(300)));
