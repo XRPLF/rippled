@@ -681,6 +681,7 @@ public:
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
         env.close();
+        storeHash();
 
         auto& lm = env.app().getLedgerMaster();
         LedgerIndex minSeq = 2;
@@ -688,6 +689,8 @@ public:
         auto& store = env.app().getSHAMapStore();
         store.rendezvous();
         LedgerIndex lastRotated = store.getLastRotated();
+        LedgerIndex betterMinSeq = minSeq;
+        LedgerIndex betterLastRotated = lastRotated;
         BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
         BEAST_EXPECTS(
             lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
@@ -703,13 +706,14 @@ public:
             lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
 
         // Close enough ledgers to rotate a few times
-        while (maxSeq < 20)
+        while (maxSeq < 28)
         {
             for (int t = 0; t < 3; ++t)
             {
                 env(noop(alice));
             }
             env.close();
+            storeHash();
             store.rendezvous();
 
             ++maxSeq;
@@ -752,6 +756,7 @@ public:
                 // Close another ledger, which will trigger a rotation, but the
                 // rotation will be stuck until the missing ledger is filled in.
                 env.close();
+                storeHash();
                 // DO NOT CALL rendezvous()! You'll end up with a deadlock.
                 ++maxSeq;
 
@@ -776,6 +781,7 @@ public:
                 for (int l = 0; l < 5; ++l)
                 {
                     env.close();
+                    storeHash();
                     // DO NOT CALL rendezvous()! You'll end up with a deadlock.
                     ++maxSeq;
                     // Nothing has changed
@@ -803,6 +809,33 @@ public:
 
                 minSeq = lastRotated;
                 lastRotated = deleteSeq + 1;
+                betterMinSeq = betterLastRotated;
+                betterLastRotated = maxSeq + 2;
+
+                // Bypass caching and try to load the ledger roots from the node
+                // store
+                for (auto const& [seq, hash] : hashes)
+                {
+                    auto const nodeObject = ns.fetchNodeObject(hash);
+                    std::stringstream ss;
+                    ss << "minSeq: " << minSeq << ", maxSeq: " << maxSeq
+                       << ", search: " << seq;
+                    if (betterMinSeq != minSeq)
+                        ss << ", betterMinSeq: " << betterMinSeq;
+                    ss << ". Should " << (seq < minSeq ? "NOT " : "")
+                       << "be found";
+                    BEAST_EXPECT(minSeq <= betterMinSeq);
+                    if (betterMinSeq != minSeq && seq >= minSeq &&
+                        seq < betterMinSeq)
+                        ss << ", but actually will NOT be found";
+                    if (seq < minSeq)
+                        BEAST_EXPECTS(!nodeObject, ss.str());
+                    // Uncommenting this condition allows the test to succeed
+                    // else if (seq < betterMinSeq)
+                    //   BEAST_EXPECTS(!nodeObject, ss.str());
+                    else
+                        BEAST_EXPECTS(nodeObject, ss.str());
+                }
             }
             BEAST_EXPECT(maxSeq != lastRotated + deleteInterval);
             BEAST_EXPECTS(
