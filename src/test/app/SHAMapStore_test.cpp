@@ -244,9 +244,10 @@ public:
 
         store.rendezvous();
 
-        BEAST_EXPECT(store.getLastRotated() == deleteInterval + 3);
+        BEAST_EXPECT(env.closed()->info().seq == deleteInterval + 3);
         lastRotated = store.getLastRotated();
-        BEAST_EXPECT(lastRotated == 11);
+        BEAST_EXPECT(lastRotated == deleteInterval + 5);
+        BEAST_EXPECT(lastRotated == 13);
 
         // That took care of the fake hashes
         ledgerCheck(env, deleteInterval + 1, 3);
@@ -254,9 +255,11 @@ public:
         accountTransactionCheck(env, 2 * deleteInterval);
 
         // The last iteration of this loop should trigger a rotate
-        for (auto i = lastRotated - 1; i < lastRotated + deleteInterval - 1;
+        for (auto i = lastRotated - 3; i < lastRotated + deleteInterval - 1;
              ++i)
         {
+            BEAST_EXPECT(store.getLastRotated() == lastRotated);
+
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
@@ -274,7 +277,8 @@ public:
 
         store.rendezvous();
 
-        BEAST_EXPECT(store.getLastRotated() == deleteInterval + lastRotated);
+        BEAST_EXPECT(
+            store.getLastRotated() == deleteInterval + lastRotated + 2);
 
         ledgerCheck(env, deleteInterval + 1, lastRotated);
         transactionCheck(env, 0);
@@ -415,8 +419,8 @@ public:
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
-        lastRotated = ledgerSeq - 1;
+        lastRotated = store.getLastRotated();
+        BEAST_EXPECT(lastRotated == ledgerSeq + 1);
 
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
         {
@@ -443,10 +447,10 @@ public:
 
         store.rendezvous();
 
-        ledgerCheck(env, ledgerSeq - firstBatch, firstBatch);
+        ledgerCheck(env, ledgerSeq - firstBatch - 2, firstBatch + 2);
 
-        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
-        lastRotated = ledgerSeq - 1;
+        lastRotated = store.getLastRotated();
+        BEAST_EXPECT(lastRotated == ledgerSeq + 1);
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "always");
@@ -482,13 +486,13 @@ public:
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
-        lastRotated = ledgerSeq - 1;
+        lastRotated = store.getLastRotated();
+        BEAST_EXPECT(lastRotated == ledgerSeq + 1);
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "now");
         BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq - 1);
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == lastRotated);
 
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
         {
@@ -517,8 +521,8 @@ public:
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
-        lastRotated = ledgerSeq - 1;
+        lastRotated = store.getLastRotated();
+        BEAST_EXPECT(lastRotated == ledgerSeq + 1);
     }
 
     std::unique_ptr<NodeStore::Backend>
@@ -686,8 +690,6 @@ public:
         LedgerIndex maxSeq = env.closed()->info().seq;
         auto& store = env.app().getSHAMapStore();
         LedgerIndex lastRotated = store.getLastRotated();
-        LedgerIndex betterMinSeq = minSeq;
-        LedgerIndex betterLastRotated = lastRotated;
         BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
         BEAST_EXPECTS(
             lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
@@ -799,9 +801,7 @@ public:
                 store.rendezvous();
 
                 minSeq = lastRotated;
-                lastRotated = deleteSeq + 1;
-                betterMinSeq = betterLastRotated;
-                betterLastRotated = maxSeq + 2;
+                lastRotated = maxSeq + 2;
 
                 // Bypass caching and try to load the ledger roots from the node
                 // store
@@ -810,20 +810,10 @@ public:
                     auto const nodeObject = ns.fetchNodeObject(hash);
                     std::stringstream ss;
                     ss << "minSeq: " << minSeq << ", maxSeq: " << maxSeq
-                       << ", search: " << seq;
-                    if (betterMinSeq != minSeq)
-                        ss << ", betterMinSeq: " << betterMinSeq;
-                    ss << ". Should " << (seq < minSeq ? "NOT " : "")
-                       << "be found";
-                    BEAST_EXPECT(minSeq <= betterMinSeq);
-                    if (betterMinSeq != minSeq && seq >= minSeq &&
-                        seq < betterMinSeq)
-                        ss << ", but actually will NOT be found";
+                       << ", search: " << seq << ". Should "
+                       << (seq < minSeq ? "NOT " : "") << "be found";
                     if (seq < minSeq)
                         BEAST_EXPECTS(!nodeObject, ss.str());
-                    // Uncommenting this condition allows the test to succeed
-                    // else if (seq < betterMinSeq)
-                    //   BEAST_EXPECTS(!nodeObject, ss.str());
                     else
                         BEAST_EXPECTS(nodeObject, ss.str());
                 }
