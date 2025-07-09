@@ -72,19 +72,19 @@ struct HostFunctions
     virtual Expected<std::uint32_t, HostFunctionError>
     getLedgerSqn()
     {
-        return 1;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<std::uint32_t, HostFunctionError>
     getParentLedgerTime()
     {
-        return 1;
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Hash, HostFunctionError>
     getParentLedgerHash()
     {
-        return Hash{};
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
@@ -174,13 +174,13 @@ struct HostFunctions
     virtual Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data)
     {
-        return Hash{};
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Bytes, HostFunctionError>
     accountKeylet(AccountID const& account)
     {
-        return Bytes{};
+        return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Bytes, HostFunctionError>
