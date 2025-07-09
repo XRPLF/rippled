@@ -662,7 +662,6 @@ issueHelperIOU(IssuerArgs const& args)
     }
     for (auto const& account : args.holders)
     {
-        args.env(fset(account, asfDefaultRipple));
         args.env(trust(account, iou(args.limit.value_or(1'000))));
     }
     return iou;

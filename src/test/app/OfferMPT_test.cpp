@@ -68,6 +68,8 @@ public:
             Env env{*this, features};
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
+            env.close();
+
             auto const USD = issue1(
                 {.env = env,
                  .token = "USD",
@@ -1873,13 +1875,8 @@ public:
             auto const starting_xrp =
                 XRP(100) + env.current()->fees().accountReserve(3) + base * 4;
 
-            env.fund(starting_xrp, gw1, gw2, gw3);
-            auto const alice_starting_xrp = starting_xrp +
-                base * (extraFee(issue1) + extraFee(issue2) + extraFee(issue3));
-            env.fund(alice_starting_xrp, alice);
-            auto const bob_starting_xrp =
-                starting_xrp + base * (extraFee(issue1) + extraFee(issue2));
-            env.fund(bob_starting_xrp, bob);
+            env.fund(starting_xrp, gw1, gw2, gw3, alice, bob);
+            env.close();
 
             auto const USD1 = issue1(
                 {.env = env,
@@ -2049,11 +2046,8 @@ public:
             auto const starting_xrp =
                 XRP(100.1) + env.current()->fees().accountReserve(1) + base * 2;
 
-            env.fund(starting_xrp, gw);
-            env.fund(
-                starting_xrp + base * (extraFee(issue1) + extraFee(issue2)),
-                alice,
-                bob);
+            env.fund(starting_xrp, gw, alice, bob);
+            env.close();
 
             auto const XTS = issue1(
                 {.env = env,
@@ -2365,8 +2359,8 @@ public:
 
             // Each account has enough for the reserve, two MPT's, one
             // offer, and two fees.
-            env.fund(reserve(env, 3) + fee * (3 + extraFee(issue1)), alice);
-            env.fund(reserve(env, 3) + fee * (2 + extraFee(issue2)), bob);
+            env.fund(reserve(env, 3) + fee * 3, alice);
+            env.fund(reserve(env, 3) + fee * 2, bob);
             env.close();
 
             auto const USD = issue1(
@@ -3431,12 +3425,7 @@ public:
             Env env{*this, features};
 
             auto const fee = env.current()->fees().base;
-            auto const extraFeeA = extraFee(issue1);
-            auto const extraFeeB = extraFee(issue2);
-            env.fund(reserve(env, 4) + (fee * 5), bob);
-            env.fund(reserve(env, 4) + (fee * (5 + extraFeeB)), ann);
-            env.fund(
-                reserve(env, 4) + (fee * (5 + extraFeeA + extraFeeB)), cam);
+            env.fund(reserve(env, 4) + (fee * 5), ann, bob, cam);
             env.close();
 
             auto const A_BUX = issue1(
@@ -3570,15 +3559,9 @@ public:
             Env env{*this, features};
 
             auto const fee = env.current()->fees().base;
-            auto const extraFeeJPY = extraFee(issue1);
-            auto const extraFeeBTC = extraFee(issue2);
             env.fund(
-                reserve(env, 2) + drops(400'000'000'000) +
-                    (fee * (1 + extraFeeJPY)),
-                alice);
-            env.fund(
-                reserve(env, 2) + drops(400'000'000'000) +
-                    (fee * (1 + extraFeeBTC)),
+                reserve(env, 2) + drops(400'000'000'000) + fee,
+                alice,
                 bob);
             env.fund(reserve(env, 2) + (fee * 4), gw);
             env.close();

@@ -703,14 +703,6 @@ testHelper3TokensMix(TTester&& tester)
         detail::issueHelperIOU, detail::issueHelperIOU, detail::issueHelperMPT);
 }
 
-template <typename T>
-std::uint16_t
-extraFee(T&& issue)
-{
-    using t = std::invoke_result_t<T, IssuerArgs>;
-    return std::is_same_v<t, IOU> ? 1 : 0;
-}
-
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

@@ -586,6 +586,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 Env env(*this, features);
 
                 env.fund(XRP(10'000), alice, bob, carol, gw);
+                env.close();
 
                 auto const USD = issue1(
                     {.env = env,
@@ -615,9 +616,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 // +1 for fset in helperIssueIOU
                 using tEUR = std::decay_t<decltype(EUR)>;
                 using tUSD = std::decay_t<decltype(USD)>;
-                bool constexpr extraFee =
-                    std::is_same_v<tEUR, IOU> || std::is_same_v<tUSD, IOU>;
-                auto const fee = txfee(env, extraFee ? 4 : 3);
+                auto const fee = txfee(env, 3);
                 // bob pays 25% on 40USD (40 since sendmax is 40XRP)
                 // 8USD goes to gw and 32USD goes back to bob ->
                 // bob's USD balance is 42USD. USD/EUR offer is 32USD/32EUR.
@@ -698,6 +697,7 @@ struct FlowMPT_test : public beast::unit_test::suite
 
             env.fund(XRP(10'000), alice, carol, gw);
             env.fund(reserve(env, 5), bob);
+            env.close();
 
             auto const USD = issue1(
                 {.env = env,
