@@ -24,9 +24,15 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
 
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -1604,6 +1610,78 @@ class Invariants_test : public beast::unit_test::suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
     }
 
+    void
+    testVault()
+    {
+        using namespace test::jtx;
+        testcase << "Vault";
+
+        doInvariantCheck(
+            {"vault deletion succeeded without deleting a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"deleted vault must also delete shares"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                ac.view().erase(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"deleted vault must have no shares outstanding",
+             "deleted vault must have no assets outstanding",
+             "deleted vault must have no assets available"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                ac.view().erase(sleVault);
+                ac.view().erase(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                env(vault.deposit(
+                    {.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+    }
+
 public:
     void
     run() override
@@ -1623,6 +1701,7 @@ public:
         testNFTokenPageInvariants();
         testPermissionedDomainInvariants();
         testPermissionedDEX();
+        testVault();
     }
 };
 

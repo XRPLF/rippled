@@ -2306,6 +2306,12 @@ ValidVault::finalize(
     if (!isTesSuccess(result))
         return true;  // Do not perform checks
 
+    if (tx.getTxnType() == ttVAULT_DELETE && !deletedVault.has_value())
+    {
+        JLOG(j.fatal()) << "Invariant failed: vault deletion succeeded without "
+                           "deleting a vault";
+        return false;  // That's all we can do here
+    }
     if (deletedVault && tx.getTxnType() == ttVAULT_DELETE)
     {
         // At this moment we only know a vault is being deleted and there
