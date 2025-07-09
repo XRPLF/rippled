@@ -178,7 +178,6 @@ jobs:
       - name: upgrade conan
         run: |
           pip install --upgrade "conan<2"
-          rm -rf $GITHUB_WORKSPACE/.build
       - name: download cache
         uses: actions/download-artifact@v4
         with:
