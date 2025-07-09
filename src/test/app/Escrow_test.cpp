@@ -2370,12 +2370,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
 
         {
-            Env env{
-                *this,
-                envconfig(),
-                supported_amendments(),
-                nullptr,
-                beast::severities::kTrace};
+            Env env{*this};
             env.fund(XRP(5000), alice, carol);
 
             BEAST_EXPECT(env.seq(alice) == 4);
@@ -2392,15 +2387,23 @@ struct Escrow_test : public beast::unit_test::suite
 
             // set up a bunch of objects to check their keylets
             env(check::create(alice, carol, XRP(100)));
-            env(credentials::create(alice, carol, "termsandconditions"));
+            env.close();
+            env(credentials::create(alice, alice, "termsandconditions"));
+            env.close();
             env(delegate::set(alice, carol, {"TrustSet"}));
+            env.close();
             env(did::set(alice), did::data("alice_did"));
+            env.close();
             env(escrow::create(alice, carol, XRP(100)),
                 escrow::finish_time(env.now() + 100s));
+            env.close();
             env(token::createOffer(carol, tokenId, XRP(100)),
                 token::owner(alice));
+            env.close();
             env(create(alice, carol, XRP(1000), 100s, alice.pk()));
+            env.close();
             env(signers(alice, 1, {{carol, 1}}));
+            env.close();
             env(ticket::create(alice, 1));
             env.close();
 
@@ -2408,7 +2411,7 @@ struct Escrow_test : public beast::unit_test::suite
                 (*env.le(alice))[sfOwnerCount] == 10,
                 "H" + std::to_string((*env.le(alice))[sfOwnerCount]));
             if (BEAST_EXPECTS(
-                    env.seq(alice) == 14, std::to_string(env.seq(alice))))
+                    env.seq(alice) == 15, std::to_string(env.seq(alice))))
             {
                 auto const seq = env.seq(alice);
                 XRPAmount txnFees = env.current()->fees().base + 1000;
@@ -2434,24 +2437,24 @@ struct Escrow_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testEnablement(features);
-        // testTiming(features);
-        // testTags(features);
-        // testDisallowXRP(features);
-        // test1571(features);
-        // testFails(features);
-        // testLockup(features);
-        // testEscrowConditions(features);
-        // testMetaAndOwnership(features);
-        // testConsequences(features);
-        // testEscrowWithTickets(features);
-        // testCredentials(features);
-        // testCreateFinishFunctionPreflight();
-        // testFinishWasmFailures();
-        // testFinishFunction();
+        testEnablement(features);
+        testTiming(features);
+        testTags(features);
+        testDisallowXRP(features);
+        test1571(features);
+        testFails(features);
+        testLockup(features);
+        testEscrowConditions(features);
+        testMetaAndOwnership(features);
+        testConsequences(features);
+        testEscrowWithTickets(features);
+        testCredentials(features);
+        testCreateFinishFunctionPreflight();
+        testFinishWasmFailures();
+        testFinishFunction();
 
         // // TODO: Update module with new host functions
-        // testAllHostFunctions();
+        testAllHostFunctions();
         testKeyletHostFunctions();
     }
 
@@ -2462,7 +2465,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
         testWithFeats(all);
-        // testWithFeats(all - featureTokenEscrow);
+        testWithFeats(all - featureTokenEscrow);
     };
 };
 
