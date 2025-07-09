@@ -91,10 +91,10 @@ createImports(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(imports, accountKeylet, "account_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, checkKeylet, "check_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, credentialKeylet, "credential_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, didKeylet, "did_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, delegateKeylet, "delegate_keylet", hfs);
         WASM_IMPORT_FUNC2(
             imports, depositPreauthKeylet, "deposit_preauth_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, didKeylet, "did_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, escrowKeylet, "escrow_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, lineKeylet, "line_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, nftOfferKeylet, "nft_offer_keylet", hfs);
