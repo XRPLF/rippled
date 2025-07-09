@@ -2387,23 +2387,15 @@ struct Escrow_test : public beast::unit_test::suite
 
             // set up a bunch of objects to check their keylets
             env(check::create(alice, carol, XRP(100)));
-            env.close();
             env(credentials::create(alice, alice, "termsandconditions"));
-            env.close();
             env(delegate::set(alice, carol, {"TrustSet"}));
-            env.close();
             env(did::set(alice), did::data("alice_did"));
-            env.close();
             env(escrow::create(alice, carol, XRP(100)),
                 escrow::finish_time(env.now() + 100s));
-            env.close();
             env(token::createOffer(carol, tokenId, XRP(100)),
                 token::owner(alice));
-            env.close();
             env(create(alice, carol, XRP(1000), 100s, alice.pk()));
-            env.close();
             env(signers(alice, 1, {{carol, 1}}));
-            env.close();
             env(ticket::create(alice, 1));
             env.close();
 
@@ -2453,7 +2445,7 @@ struct Escrow_test : public beast::unit_test::suite
         testFinishWasmFailures();
         testFinishFunction();
 
-        // // TODO: Update module with new host functions
+        // TODO: Update module with new host functions
         testAllHostFunctions();
         testKeyletHostFunctions();
     }
