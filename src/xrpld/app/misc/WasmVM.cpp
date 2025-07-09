@@ -101,7 +101,7 @@ createImports(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(imports, offerKeylet, "offer_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, oracleKeylet, "oracle_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, paychanKeylet, "paychan_keylet", hfs);
-        // WASM_IMPORT_FUNC2(imports, signersKeylet, "signers_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, signersKeylet, "signers_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, ticketKeylet, "ticket_keylet", hfs);
         WASM_IMPORT_FUNC2(imports, getNFT, "get_NFT", hfs);
         WASM_IMPORT_FUNC(imports, trace, hfs);
