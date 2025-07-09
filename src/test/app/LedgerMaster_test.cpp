@@ -175,7 +175,8 @@ class LedgerMaster_test : public beast::unit_test::suite
             if (maxSeq == lastRotated + deleteInterval)
             {
                 minSeq = lastRotated;
-                lastRotated = maxSeq;
+                lastRotated = store.getLastRotated();
+                BEAST_EXPECT(lastRotated = maxSeq + 2);
             }
             BEAST_EXPECTS(
                 env.closed()->info().seq == maxSeq,
