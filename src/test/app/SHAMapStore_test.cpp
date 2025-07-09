@@ -672,6 +672,14 @@ public:
             BEAST_EXPECT(root);
         };
 
+        auto failureMessage = [&](char const* label,
+                                  auto expected,
+                                  auto actual) {
+            std::stringstream ss;
+            ss << label << ": Expected: " << expected << ", Got: " << actual;
+            return ss.str();
+        };
+
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
         env.close();
@@ -730,7 +738,10 @@ public:
                 BEAST_EXPECTS(
                     lm.getCompleteLedgers() ==
                         expectedRange(minSeq, deleteSeq, maxSeq),
-                    lm.getCompleteLedgers());
+                    failureMessage(
+                        "Complete ledgers",
+                        expectedRange(minSeq, deleteSeq, maxSeq),
+                        lm.getCompleteLedgers()));
                 BEAST_EXPECT(
                     lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 1);
 
@@ -744,11 +755,15 @@ public:
                 // Nothing has changed
                 BEAST_EXPECTS(
                     store.getLastRotated() == lastRotated,
-                    to_string(store.getLastRotated()));
+                    failureMessage(
+                        "lastRotated", lastRotated, store.getLastRotated()));
                 BEAST_EXPECTS(
                     lm.getCompleteLedgers() ==
                         expectedRange(minSeq, deleteSeq, maxSeq),
-                    lm.getCompleteLedgers());
+                    failureMessage(
+                        "Complete ledgers",
+                        expectedRange(minSeq, deleteSeq, maxSeq),
+                        lm.getCompleteLedgers()));
 
                 using namespace std::chrono_literals;
                 // Close 5 more ledgers, waiting one second in between to
@@ -765,11 +780,17 @@ public:
                     // Nothing has changed
                     BEAST_EXPECTS(
                         store.getLastRotated() == lastRotated,
-                        to_string(store.getLastRotated()));
+                        failureMessage(
+                            "lastRotated",
+                            lastRotated,
+                            store.getLastRotated()));
                     BEAST_EXPECTS(
                         lm.getCompleteLedgers() ==
                             expectedRange(minSeq, deleteSeq, maxSeq),
-                        lm.getCompleteLedgers());
+                        failureMessage(
+                            "Complete Ledgers",
+                            expectedRange(minSeq, deleteSeq, maxSeq),
+                            lm.getCompleteLedgers()));
                     std::this_thread::sleep_for(1s);
                 }
 
@@ -800,15 +821,19 @@ public:
             BEAST_EXPECT(maxSeq != lastRotated + deleteInterval);
             BEAST_EXPECTS(
                 env.closed()->info().seq == maxSeq,
-                to_string(env.closed()->info().seq));
+                failureMessage("maxSeq", maxSeq, env.closed()->info().seq));
             BEAST_EXPECTS(
                 store.getLastRotated() == lastRotated,
-                to_string(store.getLastRotated()));
+                failureMessage(
+                    "lastRotated", lastRotated, store.getLastRotated()));
             std::stringstream expectedRange;
             expectedRange << minSeq << "-" << maxSeq;
             BEAST_EXPECTS(
                 lm.getCompleteLedgers() == expectedRange.str(),
-                lm.getCompleteLedgers());
+                failureMessage(
+                    "CompleteLedgers",
+                    expectedRange.str(),
+                    lm.getCompleteLedgers()));
             BEAST_EXPECT(
                 lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
             BEAST_EXPECT(
