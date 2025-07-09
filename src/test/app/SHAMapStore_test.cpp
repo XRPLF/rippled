@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
 #include <xrpld/app/misc/SHAMapStore.h>
@@ -39,6 +40,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     static auto
     onlineDelete(std::unique_ptr<Config> cfg)
     {
+        using namespace jtx;
         return online_delete(std::move(cfg), deleteInterval);
     }
 
