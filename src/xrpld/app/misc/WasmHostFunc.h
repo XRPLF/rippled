@@ -30,22 +30,26 @@
 
 namespace ripple {
 
-int32_t const HF_ERR_INTERNAL = -1;
-int32_t const HF_ERR_FIELD_NOT_FOUND = -2;
-int32_t const HF_ERR_BUFFER_TOO_SMALL = -3;
-int32_t const HF_ERR_NO_ARRAY = -4;
-int32_t const HF_ERR_NOT_LEAF_FIELD = -5;
-int32_t const HF_ERR_LOCATOR_MALFORMED = -6;
-int32_t const HF_ERR_SLOT_OUT_RANGE = -7;
-int32_t const HF_ERR_SLOTS_FULL = -8;
-int32_t const HF_ERR_INVALID_SLOT = -9;
-int32_t const HF_ERR_LEDGER_OBJ_NOT_FOUND = -10;
-int32_t const HF_ERR_DECODING = -11;
-int32_t const HF_ERR_DATA_FIELD_TOO_LARGE = -12;
-int32_t const HF_ERR_OUT_OF_BOUNDS = -13;
-int32_t const HF_ERR_NO_MEM_EXPORTED = -14;
-int32_t const HF_ERR_INVALID_PARAMS = -15;
-int32_t const HF_ERR_INVALID_ACCOUNT = -16;
+enum HostFunctionErrors : int32_t {
+    HF_ERR_INTERNAL = -1,
+    HF_ERR_FIELD_NOT_FOUND = -2,
+    HF_ERR_BUFFER_TOO_SMALL = -3,
+    HF_ERR_NO_ARRAY = -4,
+    HF_ERR_NOT_LEAF_FIELD = -5,
+    HF_ERR_LOCATOR_MALFORMED = -6,
+    HF_ERR_SLOT_OUT_RANGE = -7,
+    HF_ERR_SLOTS_FULL = -8,
+    HF_ERR_EMPTY_SLOT = -9,
+    HF_ERR_LEDGER_OBJ_NOT_FOUND = -10,
+    HF_ERR_DECODING = -11,
+    HF_ERR_DATA_FIELD_TOO_LARGE = -12,
+    HF_ERR_POINTER_OUT_OF_BOUNDS = -13,
+    HF_ERR_NO_MEM_EXPORTED = -14,
+    HF_ERR_INVALID_PARAMS = -15,
+    HF_ERR_INVALID_ACCOUNT = -16,
+    HF_ERR_INVALID_FIELD = -17,
+    HF_ERR_INDEX_OUT_OF_BOUNDS = -18,
+};
 
 struct HostFunctions
 {

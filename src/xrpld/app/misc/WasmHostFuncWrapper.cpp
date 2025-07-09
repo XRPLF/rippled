@@ -37,12 +37,15 @@ setData(
     if (!ssz)
         return 0;
 
+    if (dst < 0 || dsz < 0 || !src || ssz < 0)
+        return HF_ERR_INVALID_PARAMS;
+
     auto mem = rt ? rt->getMem() : wmem();
 
     if (!mem.s)
         return HF_ERR_NO_MEM_EXPORTED;
     if (dst + dsz > mem.s)
-        return HF_ERR_OUT_OF_BOUNDS;
+        return HF_ERR_POINTER_OUT_OF_BOUNDS;
     if (ssz > dsz)
         return HF_ERR_BUFFER_TOO_SMALL;
 
@@ -54,7 +57,7 @@ setData(
 static Expected<Bytes, int32_t>
 getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
 {
-    if (!ssz)
+    if (src < 0 || ssz <= 0)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     auto mem = rt ? rt->getMem() : wmem();
@@ -62,7 +65,7 @@ getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
         return Unexpected(HF_ERR_NO_MEM_EXPORTED);
 
     if (src + ssz > mem.s)
-        return Unexpected(HF_ERR_OUT_OF_BOUNDS);
+        return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
 
     Bytes data(mem.p + src, mem.p + src + ssz);
     return data;
@@ -72,7 +75,7 @@ static Expected<AccountID, int32_t>
 getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
 {
     auto const r = getData(rt, ptr, sz);
-    if (!r || (r->size() < AccountID::bytes))
+    if (!r || (r->size() != AccountID::bytes))
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     return AccountID::fromVoid(r->data());
@@ -91,7 +94,7 @@ getDataCurrency(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
 static Expected<std::string, int32_t>
 getDataString(InstanceWrapper const* rt, int32_t src, int32_t ssz)
 {
-    if (!ssz)
+    if (src < 0 || ssz <= 0)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     auto mem = rt ? rt->getMem() : wmem();
@@ -99,7 +102,7 @@ getDataString(InstanceWrapper const* rt, int32_t src, int32_t ssz)
         return Unexpected(HF_ERR_NO_MEM_EXPORTED);
 
     if (src + ssz > mem.s)
-        return Unexpected(HF_ERR_OUT_OF_BOUNDS);
+        return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
 
     std::string data(mem.p + src, mem.p + src + ssz);
     return data;
@@ -189,7 +192,7 @@ cacheLedgerObj_wrap(
         RET(r.error());
     }
 
-    if (r->size() < uint256::bytes)
+    if (r->size() != uint256::bytes)
     {
         RET(HF_ERR_INVALID_PARAMS);
     }
@@ -213,7 +216,7 @@ getTxField_wrap(
     auto const it = m.find(params->data[0].of.i32);
     if (it == m.end())
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(HF_ERR_INVALID_FIELD);
     }
     auto const& fname(*it->second);
 
@@ -244,7 +247,7 @@ getCurrentLedgerObjField_wrap(
     auto const it = m.find(params->data[0].of.i32);
     if (it == m.end())
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(HF_ERR_INVALID_FIELD);
     }
     auto const& fname(*it->second);
 
@@ -275,7 +278,7 @@ getLedgerObjField_wrap(
     auto const it = m.find(params->data[1].of.i32);
     if (it == m.end())
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(HF_ERR_INVALID_FIELD);
     }
     auto const& fname(*it->second);
 
@@ -394,7 +397,7 @@ getTxArrayLen_wrap(
     auto const it = m.find(params->data[0].of.i32);
     if (it == m.end())
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(HF_ERR_INVALID_FIELD);
     }
     auto const& fname(*it->second);
 
@@ -415,7 +418,7 @@ getCurrentLedgerObjArrayLen_wrap(
     auto const it = m.find(params->data[0].of.i32);
     if (it == m.end())
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(HF_ERR_INVALID_FIELD);
     }
     auto const& fname(*it->second);
 
@@ -436,7 +439,7 @@ getLedgerObjArrayLen_wrap(
     auto const it = m.find(params->data[1].of.i32);
     if (it == m.end())
     {
-        RET(HF_ERR_FIELD_NOT_FOUND);
+        RET(HF_ERR_INVALID_FIELD);
     }
     auto const& fname(*it->second);
 
