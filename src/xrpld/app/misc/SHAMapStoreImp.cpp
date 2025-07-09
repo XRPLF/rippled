@@ -378,7 +378,13 @@ SHAMapStoreImp::run()
             if (healthWait() == stopping)
                 return;
 
-            lastRotated = validatedSeq;
+            // The rotation process takes time, and more ledgers - possibly many
+            // more - may have been written to the now-archive database before
+            // the writable database was created. Update the validatedSeq to the
+            // current validated ledger sequence plus a buffer to ensure that
+            // all modified nodes for that ledger forward are all written to the
+            // new writable database.
+            lastRotated = ledgerMaster_->getValidLedgerIndex() + 2;
 
             dbRotating_->rotate(
                 std::move(newBackend),
