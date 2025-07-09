@@ -233,7 +233,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         }
 
         HostFunctions mock;
-        auto const re = preflightEscrowWasm(code, "finish", {}, &mock);
+        auto const re = preflightEscrowWasm(code, "finish", {}, &mock, ctx.j);
         if (!isTesSuccess(re))
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
