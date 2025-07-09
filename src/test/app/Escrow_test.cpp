@@ -2342,7 +2342,7 @@ struct Escrow_test : public beast::unit_test::suite
     void
     testKeyletHostFunctions()
     {
-        testcase("Test all host functions");
+        testcase("Test all keylet host functions");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -2389,6 +2389,7 @@ struct Escrow_test : public beast::unit_test::suite
             env(check::create(alice, carol, XRP(100)));
             env(credentials::create(alice, alice, "termsandconditions"));
             env(delegate::set(alice, carol, {"TrustSet"}));
+            env(deposit::auth(alice, carol));
             env(did::set(alice), did::data("alice_did"));
             env(escrow::create(alice, carol, XRP(100)),
                 escrow::finish_time(env.now() + 100s));
@@ -2399,11 +2400,9 @@ struct Escrow_test : public beast::unit_test::suite
             env(ticket::create(alice, 1));
             env.close();
 
-            BEAST_EXPECTS(
-                (*env.le(alice))[sfOwnerCount] == 10,
-                "H" + std::to_string((*env.le(alice))[sfOwnerCount]));
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 11);
             if (BEAST_EXPECTS(
-                    env.seq(alice) == 15, std::to_string(env.seq(alice))))
+                    env.seq(alice) == 16, std::to_string(env.seq(alice))))
             {
                 auto const seq = env.seq(alice);
                 XRPAmount txnFees = env.current()->fees().base + 1000;
