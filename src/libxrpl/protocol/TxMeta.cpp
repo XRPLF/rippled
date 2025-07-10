@@ -22,6 +22,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -189,7 +191,10 @@ TxMeta::getAffectedAccounts() const
                                 list.insert(issuer);
                         }
                     }
-                    else if (field.getFName() == sfMPTokenIssuanceID)
+                    else if (
+                        getCurrentTransactionRules()->enabled(
+                            featureMPTHistory) &&
+                        field.getFName() == sfMPTokenIssuanceID)
                     {
                         auto mptID =
                             dynamic_cast<STBitString<192> const*>(&field);

@@ -762,64 +762,84 @@ class AccountTx_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         using namespace std::chrono_literals;
-
-        Env env(*this);
-
+        auto features = jtx::supported_amendments();
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
-
-        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+        std::optional<uint256> ledgerHash1;
+        std::optional<uint256> ledgerHash2;
 
         // check the latest mpt-related txn is in alice's account history
-        auto const checkAliceAcctTx = [&](size_t size,
-                                          Json::StaticString txType) {
-            Json::Value params;
-            params[jss::account] = alice.human();
-            params[jss::limit] = 100;
-            auto const jv =
-                env.rpc("json", "account_tx", to_string(params))[jss::result];
+        auto const checkAliceAcctTx =
+            [&](Env& env, size_t size, Json::StaticString txType) {
+                Json::Value params;
+                params[jss::account] = alice.human();
+                params[jss::limit] = 100;
+                auto const jv = env.rpc(
+                    "json", "account_tx", to_string(params))[jss::result];
 
-            BEAST_EXPECT(jv[jss::transactions].size() == size);
-            auto const& tx0(jv[jss::transactions][0u][jss::tx]);
-            BEAST_EXPECT(tx0[jss::TransactionType] == txType);
+                BEAST_EXPECT(jv[jss::transactions].size() == size);
+                auto const& tx0(jv[jss::transactions][0u][jss::tx]);
+                BEAST_EXPECT(tx0[jss::TransactionType] == txType);
+            };
 
-            std::string const txHash{
-                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
-            BEAST_EXPECT(tx0[jss::hash] == txHash);
-        };
+        {
+            Env env(*this, features | featureMPTHistory);
 
-        // alice creates issuance
-        mptAlice.create(
-            {.ownerCount = 1,
-             .holderCount = 0,
-             .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
-        checkAliceAcctTx(3, jss::MPTokenIssuanceCreate);
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags =
+                     tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer});
 
-        // bob creates a MPToken;
-        mptAlice.authorize({.account = bob});
-        checkAliceAcctTx(4, jss::MPTokenAuthorize);
+            checkAliceAcctTx(env, 3, jss::MPTokenIssuanceCreate);
 
-        // alice authorizes bob
-        mptAlice.authorize({.account = alice, .holder = bob});
-        checkAliceAcctTx(5, jss::MPTokenAuthorize);
+            // bob creates a MPToken;
+            // with featureMPTHistory, this tx should show up in alice's account
+            // history
+            mptAlice.authorize({.account = bob});
+            checkAliceAcctTx(env, 4, jss::MPTokenAuthorize);
 
-        // carol creates a MPToken;
-        mptAlice.authorize({.account = carol});
-        checkAliceAcctTx(6, jss::MPTokenAuthorize);
+            ledgerHash1 = env.closed()->info().hash;
+        }
 
-        // alice authorizes carol
-        mptAlice.authorize({.account = alice, .holder = carol});
-        checkAliceAcctTx(7, jss::MPTokenAuthorize);
+        {
+            Env env(*this, features - featureMPTHistory);
 
-        // alice pays bob 100 tokens
-        mptAlice.pay(alice, bob, 100);
-        checkAliceAcctTx(8, jss::Payment);
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
 
-        // bob pays carol 10 tokens
-        mptAlice.pay(bob, carol, 10);
-        checkAliceAcctTx(9, jss::Payment);
+            // alice creates issuance
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags =
+                     tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer});
+
+            checkAliceAcctTx(env, 3, jss::MPTokenIssuanceCreate);
+
+            // bob creates a MPToken;
+            // without featureMPTHistory, this tx should NOT show up in alice's
+            // account history
+            mptAlice.authorize({.account = bob});
+            checkAliceAcctTx(env, 3, jss::MPTokenIssuanceCreate);
+
+            ledgerHash2 = env.closed()->info().hash;
+        }
+
+        std::cout << "ledgerHash1 " << to_string(ledgerHash1.value())
+                  << std::endl;
+        std::cout << "ledgerHash2 " << to_string(ledgerHash2.value())
+                  << std::endl;
+
+        auto const expectedLedgerHash =
+            "1D6B581B977FA443FDD2419CF8E98199170F5C6887661F5908E4D76A5270EC7C";
+
+        BEAST_EXPECT(to_string(ledgerHash1.value()) == expectedLedgerHash);
+        BEAST_EXPECT(to_string(ledgerHash2.value()) == expectedLedgerHash);
+        BEAST_EXPECT(ledgerHash1 == ledgerHash2);
     }
 
 public:
