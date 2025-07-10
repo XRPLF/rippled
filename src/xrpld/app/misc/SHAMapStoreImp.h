@@ -107,11 +107,11 @@ private:
     std::uint32_t deleteBatch_ = 100;
     std::chrono::milliseconds backOff_{100};
     std::chrono::seconds ageThreshold_{60};
-    /// If  the node is out of sync during an online_delete healthWait()
-    /// call, sleep the thread for this time, and continue checking until
-    /// recovery.
+    /// If  the node is out of sync, or any recent ledgers are not
+    /// available during an online_delete healthWait() call, sleep
+    /// the thread for this time, and continue checking until recovery.
     /// See also: "recovery_wait_seconds" in rippled-example.cfg
-    std::chrono::seconds recoveryWaitTime_{5};
+    std::chrono::seconds recoveryWaitTime_{1};
 
     // these do not exist upon SHAMapStore creation, but do exist
     // as of run() or before
