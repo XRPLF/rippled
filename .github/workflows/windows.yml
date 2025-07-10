@@ -72,7 +72,7 @@ jobs:
         run: |
           conan config install conan/profiles/default -tf $(conan config home)/profiles/
           conan config install conan/global.conf -tf $(conan config home)
-          conan profile show default
+          conan profile show
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
