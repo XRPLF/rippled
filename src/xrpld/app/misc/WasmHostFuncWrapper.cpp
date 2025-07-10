@@ -40,16 +40,20 @@ setData(
         return 0;
 
     if (dst < 0 || dsz < 0 || !src || ssz < 0)
-        return HF_ERR_INVALID_PARAMS;
+        return static_cast<std::underlying_type_t<HostFunctionError>>(
+            HostFunctionError::INVALID_PARAMS);
 
     auto mem = rt ? rt->getMem() : wmem();
 
     if (!mem.s)
-        return HF_ERR_NO_MEM_EXPORTED;
+        return static_cast<std::underlying_type_t<HostFunctionError>>(
+            HostFunctionError::NO_MEM_EXPORTED);
     if (dst + dsz > mem.s)
-        return HF_ERR_POINTER_OUT_OF_BOUNDS;
+        return static_cast<std::underlying_type_t<HostFunctionError>>(
+            HostFunctionError::POINTER_OUT_OF_BOUNDS);
     if (ssz > dsz)
-        return HF_ERR_BUFFER_TOO_SMALL;
+        return static_cast<std::underlying_type_t<HostFunctionError>>(
+            HostFunctionError::BUFFER_TOO_SMALL);
 
     memcpy(mem.p + dst, src, ssz);
 
@@ -95,7 +99,7 @@ getData<SFieldCRef>(
     auto const it = m.find(params->data[i].of.i32);
     if (it == m.end())
     {
-        return Unexpected(HF_ERR_INVALID_FIELD);
+        return Unexpected(HostFunctionError::INVALID_FIELD);
     }
     i++;
     return *it->second;
@@ -111,14 +115,14 @@ getData<Slice>(
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
     if (src < 0 || ssz <= 0)
-        return Unexpected(HF_ERR_INVALID_PARAMS);
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     auto mem = rt ? rt->getMem() : wmem();
     if (!mem.s)
-        return Unexpected(HF_ERR_NO_MEM_EXPORTED);
+        return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
 
     if (src + ssz > mem.s)
-        return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
+        return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
 
     Slice data(mem.p + src, ssz);
     i += 2;
@@ -140,7 +144,7 @@ getData<uint256>(
 
     if (r->size() != uint256::bytes)
     {
-        return Unexpected(HF_ERR_INVALID_PARAMS);
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
     }
     return uint256::fromVoid(r->data());
 }
@@ -154,7 +158,7 @@ getData<AccountID>(
 {
     auto const r = getData<Slice>(rt, params, i);
     if (!r || (r->size() != AccountID::bytes))
-        return Unexpected(HF_ERR_INVALID_PARAMS);
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     return AccountID::fromVoid(r->data());
 }
@@ -169,24 +173,38 @@ getData<std::string_view>(
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
     if (src < 0 || ssz <= 0)
-        return Unexpected(HF_ERR_INVALID_PARAMS);
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     auto mem = rt ? rt->getMem() : wmem();
     if (!mem.s)
-        return Unexpected(HF_ERR_NO_MEM_EXPORTED);
+        return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
 
     if (src + ssz > mem.s)
-        return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
+        return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
 
     std::string data(mem.p + src, mem.p + src + ssz);
     i += 2;
     return std::string_view(data);
 }
 
-static std::nullptr_t
+template <class T>
+std::nullptr_t
+hfResult(wasm_val_vec_t* results, T value);
+
+template <>
+std::nullptr_t
 hfResult(wasm_val_vec_t* results, int32_t value)
 {
     results->data[0] = WASM_I32_VAL(value);
+    results->num_elems = 1;
+    return nullptr;
+}
+template <>
+std::nullptr_t
+hfResult(wasm_val_vec_t* results, HostFunctionError value)
+{
+    results->data[0] = WASM_I32_VAL(
+        static_cast<std::underlying_type_t<HostFunctionError>>(value));
     results->num_elems = 1;
     return nullptr;
 }
