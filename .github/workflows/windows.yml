@@ -72,10 +72,11 @@ jobs:
         run: |
           conan config install conan/profiles/default -tf $(conan config home)/profiles/
           conan config install conan/global.conf -tf $(conan config home)
+          conan profile show default
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/devgit
           CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
           CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
