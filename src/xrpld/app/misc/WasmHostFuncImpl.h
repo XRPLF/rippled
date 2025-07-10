@@ -108,6 +108,12 @@ public:
     Expected<int32_t, HostFunctionError>
     updateData(Slice const& data) override;
 
+    Expected<int32_t, HostFunctionError>
+    checkSignature(
+        Slice const& message,
+        Slice const& signature,
+        Slice const& pubkey) override;
+
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override;
 
