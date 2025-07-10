@@ -403,6 +403,7 @@ struct Escrow_test : public beast::unit_test::suite
                 withTokenEscrow ? ter(tecNO_PERMISSION) : ter(temBAD_AMOUNT);
             env(escrow::create("alice", "carol", Account("alice")["USD"](500)),
                 escrow::finish_time(env.now() + 5s),
+                escrow::cancel_time(env.now() + 10s),
                 txResult);
         }
 

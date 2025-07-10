@@ -1439,6 +1439,14 @@ trustDelete(
     std::uint64_t uLowNode = sleRippleState->getFieldU64(sfLowNode);
     std::uint64_t uHighNode = sleRippleState->getFieldU64(sfHighNode);
 
+    if (view.rules().enabled(fixTokenEscrowV1) &&
+        (*sleRippleState)[~sfLockedCount].value_or(0) != 0)
+    {
+        JLOG(j.warn()) << "trustDelete: Trust line has locked count: "
+                       << sleRippleState->key();
+        return tecHAS_OBLIGATIONS;
+    }
+
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
     if (!view.dirRemove(
