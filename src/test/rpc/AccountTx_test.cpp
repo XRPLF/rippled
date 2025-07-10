@@ -802,7 +802,7 @@ class AccountTx_test : public beast::unit_test::suite
             // history
             mptAlice.authorize({.account = bob});
             checkAliceAcctTx(env, 4, jss::MPTokenAuthorize);
-
+            env.close();
             ledgerHash1 = env.closed()->info().hash;
         }
 
@@ -825,7 +825,7 @@ class AccountTx_test : public beast::unit_test::suite
             // account history
             mptAlice.authorize({.account = bob});
             checkAliceAcctTx(env, 3, jss::MPTokenIssuanceCreate);
-
+            env.close();
             ledgerHash2 = env.closed()->info().hash;
         }
 
@@ -835,7 +835,7 @@ class AccountTx_test : public beast::unit_test::suite
                   << std::endl;
 
         auto const expectedLedgerHash =
-            "1D6B581B977FA443FDD2419CF8E98199170F5C6887661F5908E4D76A5270EC7C";
+            "0BD507BB87D3C0E73B462485E6E381798A8C82FC49BF17FE39C60E08A1AF035D";
 
         BEAST_EXPECT(to_string(ledgerHash1.value()) == expectedLedgerHash);
         BEAST_EXPECT(to_string(ledgerHash2.value()) == expectedLedgerHash);
