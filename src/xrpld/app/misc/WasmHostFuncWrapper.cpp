@@ -601,6 +601,42 @@ updateData_wrap(
 }
 
 wasm_trap_t*
+checkSignature_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const message = getData<Slice>(rt, params, index);
+    if (!message)
+    {
+        return hfResult(results, message.error());
+    }
+
+    auto const signature = getData<Slice>(rt, params, index);
+    if (!signature)
+    {
+        return hfResult(results, signature.error());
+    }
+
+    auto const pubkey = getData<Slice>(rt, params, index);
+    if (!pubkey)
+    {
+        return hfResult(results, pubkey.error());
+    }
+
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->checkSignature(*message, *signature, *pubkey),
+        index);
+}
+
+wasm_trap_t*
 computeSha512HalfHash_wrap(
     void* env,
     wasm_val_vec_t const* params,

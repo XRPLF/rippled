@@ -412,6 +412,19 @@ WasmHostFunctionsImpl::updateData(Slice const& data)
     return 0;
 }
 
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::checkSignature(
+    Slice const& message,
+    Slice const& signature,
+    Slice const& pubkey)
+{
+    if (!publicKeyType(pubkey))
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
+    PublicKey const pk(pubkey);
+    return verify(pk, message, signature, /*canonical*/ true);
+}
+
 Expected<Hash, HostFunctionError>
 WasmHostFunctionsImpl::computeSha512HalfHash(Slice const& data)
 {

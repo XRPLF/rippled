@@ -172,6 +172,15 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
+    virtual Expected<int32_t, HostFunctionError>
+    checkSignature(
+        Slice const& message,
+        Slice const& signature,
+        Slice const& pubkey)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
     virtual Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data)
     {
