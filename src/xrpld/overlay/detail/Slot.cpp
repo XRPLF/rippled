@@ -98,8 +98,8 @@ Slot::update(
 
     JLOG(journal_.trace())
         << "update: existing peer " << Slice(validator) << " " << id
-        << " slot state " << static_cast<int>(state_) << " peer state "
-        << static_cast<int>(peer.state) << " count " << peer.count << " last "
+        << " slot state " << to_string(state_) << " peer state "
+        << to_string(peer.state) << " count " << peer.count << " last "
         << duration_cast<milliseconds>(now - peer.lastMessage).count()
         << " pool " << considered_.size() << " threshold " << reachedThreshold_;
 
@@ -530,8 +530,7 @@ Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
     ++it->second.count;
 
     // if the validator has not met selection criteria yet
-    if (it->second.count < reduce_relay::MAX_MESSAGE_THRESHOLD ||
-        it->second.peers.size() < reduce_relay::MAX_SELECTED_PEERS)
+    if (it->second.count < reduce_relay::MAX_MESSAGE_THRESHOLD)
         return std::nullopt;
 
     auto const key = it->first;
