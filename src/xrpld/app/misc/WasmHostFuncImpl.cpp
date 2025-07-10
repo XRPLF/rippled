@@ -480,7 +480,7 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
 
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::trace(
-    std::string const& msg,
+    std::string_view const& msg,
     Slice const& data,
     bool asHex)
 {
@@ -490,13 +490,16 @@ WasmHostFunctionsImpl::trace(
     auto j = ctx.journal.trace();
 #endif
     if (!asHex)
+    {
         j << "WAMR TRACE (" << leKey.key << "): " << msg << " - "
           << std::string_view(
                  reinterpret_cast<char const*>(data.data()), data.size());
+    }
     else
     {
-        auto const hex =
-            boost::algorithm::hex(std::string(data.begin(), data.end()));
+        std::string hex;
+        hex.reserve(data.size() * 2);
+        boost::algorithm::hex(data.begin(), data.end(), hex.begin());
         j << "WAMR DEV TRACE (" << leKey.key << "): " << msg << " - " << hex;
     }
 
@@ -504,7 +507,7 @@ WasmHostFunctionsImpl::trace(
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::traceNum(std::string const& msg, int64_t data)
+WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 {
 #ifdef DEBUG_OUTPUT
     auto j = ctx.journal.error();

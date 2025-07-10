@@ -130,10 +130,10 @@ public:
     getNFT(AccountID const& account, uint256 const& nftId) override;
 
     Expected<int32_t, HostFunctionError>
-    trace(std::string const& msg, Slice const& data, bool asHex) override;
+    trace(std::string_view const& msg, Slice const& data, bool asHex) override;
 
     Expected<int32_t, HostFunctionError>
-    traceNum(std::string const& msg, int64_t data) override;
+    traceNum(std::string_view const& msg, int64_t data) override;
 };
 
 }  // namespace ripple

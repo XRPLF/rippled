@@ -26,7 +26,7 @@
 
 namespace ripple {
 
-using SFieldParam = std::reference_wrapper<SField const>;
+using SFieldCRef = std::reference_wrapper<SField const>;
 
 static int32_t
 setData(
@@ -85,8 +85,8 @@ getData<int64_t>(
 }
 
 template <>
-Expected<SFieldParam, HostFunctionError>
-getData<SFieldParam>(
+Expected<SFieldCRef, HostFunctionError>
+getData<SFieldCRef>(
     InstanceWrapper const* _rt,
     wasm_val_vec_t const* params,
     int32_t& i)
@@ -110,7 +110,6 @@ getData<Slice>(
 {
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
-    i += 2;
     if (src < 0 || ssz <= 0)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
@@ -122,6 +121,7 @@ getData<Slice>(
         return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
 
     Slice data(mem.p + src, ssz);
+    i += 2;
     return data;
 }
 
@@ -133,7 +133,6 @@ getData<uint256>(
     int32_t& i)
 {
     auto const r = getData<Slice>(rt, params, i);
-    i++;
     if (!r)
     {
         return Unexpected(r.error());
@@ -161,15 +160,14 @@ getData<AccountID>(
 }
 
 template <>
-Expected<std::string, HostFunctionError>
-getData<std::string>(
+Expected<std::string_view, HostFunctionError>
+getData<std::string_view>(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
     int32_t& i)
 {
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
-    i += 2;
     if (src < 0 || ssz <= 0)
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
@@ -181,25 +179,16 @@ getData<std::string>(
         return Unexpected(HF_ERR_POINTER_OUT_OF_BOUNDS);
 
     std::string data(mem.p + src, mem.p + src + ssz);
-    return data;
+    i += 2;
+    return std::string_view(data);
 }
 
-template <typename T>
-std::nullptr_t
-hfResult(wasm_val_vec_t* results, T value)
+static std::nullptr_t
+hfResult(wasm_val_vec_t* results, int32_t value)
 {
     results->data[0] = WASM_I32_VAL(value);
     results->num_elems = 1;
     return nullptr;
-}
-
-template <typename... Args>
-std::optional<HostFunctionError>
-checkErrors(Args const&... args)
-{
-    std::optional<HostFunctionError> err;
-    ((err = !args ? args.error() : err), ...);  // Fold expression
-    return err;
 }
 
 template <typename T>
@@ -208,8 +197,8 @@ returnResult(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results,
-    Expected<T, HostFunctionError> result,
-    int32_t& index)
+    Expected<T, HostFunctionError> const& result,
+    int32_t index)
 {
     if (!result)
     {
@@ -353,7 +342,7 @@ getTxField_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const fname = getData<SFieldParam>(rt, params, index);
+    auto const fname = getData<SFieldCRef>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -371,7 +360,7 @@ getCurrentLedgerObjField_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const fname = getData<SFieldParam>(rt, params, index);
+    auto const fname = getData<SFieldCRef>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -397,7 +386,7 @@ getLedgerObjField_wrap(
         return hfResult(results, cache.error());
     }
 
-    auto const fname = getData<SFieldParam>(rt, params, index);
+    auto const fname = getData<SFieldCRef>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -486,7 +475,7 @@ getTxArrayLen_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const fname = getData<SFieldParam>(rt, params, index);
+    auto const fname = getData<SFieldCRef>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -505,7 +494,7 @@ getCurrentLedgerObjArrayLen_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const fname = getData<SFieldParam>(rt, params, index);
+    auto const fname = getData<SFieldCRef>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -531,7 +520,7 @@ getLedgerObjArrayLen_wrap(
         return hfResult(results, cache.error());
     }
 
-    auto const fname = getData<SFieldParam>(rt, params, index);
+    auto const fname = getData<SFieldCRef>(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -786,7 +775,7 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const msg = getData<std::string>(rt, params, index);
+    auto const msg = getData<std::string_view>(rt, params, index);
     if (!msg)
     {
         return hfResult(results, msg.error());
@@ -815,7 +804,7 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const msg = getData<std::string>(rt, params, index);
+    auto const msg = getData<std::string_view>(rt, params, index);
     if (!msg)
     {
         return hfResult(results, msg.error());

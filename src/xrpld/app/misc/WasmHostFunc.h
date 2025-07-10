@@ -211,13 +211,13 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    trace(std::string const& msg, Slice const& data, bool asHex)
+    trace(std::string_view const& msg, Slice const& data, bool asHex)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    traceNum(std::string const& msg, int64_t data)
+    traceNum(std::string_view const& msg, int64_t data)
     {
         return Unexpected(HF_ERR_INTERNAL);
     }

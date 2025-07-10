@@ -924,7 +924,7 @@ WamrEngine::runHlp(
     auto const res = call<1>(f, p);
 
     if (res.f)
-        throw std::runtime_error("<" + std::string(funcName) + "> failed");
+        throw std::runtime_error("<" + std::string(funcName) + "> failure");
     else if (!res.r.num_elems)
         throw std::runtime_error(
             "<" + std::string(funcName) + "> return nothing");
