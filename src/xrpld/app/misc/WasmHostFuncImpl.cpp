@@ -48,6 +48,12 @@ WasmHostFunctionsImpl::getParentLedgerHash()
     return ctx.view().info().parentHash;
 }
 
+Expected<Hash, HostFunctionError>
+WasmHostFunctionsImpl::getParentAccountHash()
+{
+    return ctx.view().info().accountHash;
+}
+
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 {

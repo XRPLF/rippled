@@ -45,6 +45,7 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
         WASM_IMPORT_FUNC2(i, getParentLedgerTime, "get_parent_ledger_time", hfs,                                    60);
         WASM_IMPORT_FUNC2(i, getParentLedgerHash, "get_parent_ledger_hash", hfs,                                    60);
+        WASM_IMPORT_FUNC2(i, getParentAccountHash, "get_parent_account_hash", hfs,                                  60);
         WASM_IMPORT_FUNC2(i, cacheLedgerObj, "cache_ledger_obj", hfs,                                             5000);
         WASM_IMPORT_FUNC2(i, getTxField, "get_tx_field", hfs,                                                       70);
         WASM_IMPORT_FUNC2(i, getCurrentLedgerObjField, "get_current_ledger_obj_field", hfs,                         70);
