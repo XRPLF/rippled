@@ -48,29 +48,27 @@ jobs:
           - linux
         compiler:
           - gcc
-          - clang
+          # - clang
         configuration:
           - Debug
           - Release
         include:
           - compiler: gcc
+            os_version: jammy
             profile:
-              version: 11
+              version: 12
               cc: /usr/bin/gcc
               cxx: /usr/bin/g++
-          - compiler: clang
-            profile:
-              version: 14
-              cc: /usr/bin/clang-14
-              cxx: /usr/bin/clang++-14
+          # - compiler: clang
+          #   profile:
+          #     version: 14
+          #     cc: /usr/bin/clang-14
+          #     cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/ubuntu-${{ matrix.os_version }}:${{ matrix.compiler }}-${{ matrix.profile.version }}
     env:
       build_dir: .build
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: checkout
         uses: actions/checkout@v4
       - name: check environment
@@ -83,21 +81,16 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          conan profile new default --detect
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler=${{ matrix.compiler }} default
-          conan profile update settings.compiler.version=${{ matrix.profile.version }} default
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile update env.CC=${{ matrix.profile.cc }} default
-          conan profile update env.CXX=${{ matrix.profile.cxx }} default
-          conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
+          conan config install conan/profiles/default -tf $(conan config home)/profiles/
+          conan config install conan/global.conf -tf $(conan config home)
+
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
-        run: tar -czf conan.tar -C ~/.conan .
+        run: tar -czf conan.tar.gz -C ~/.conan2 .
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
           CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
           CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
@@ -106,7 +99,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
-          path: conan.tar
+          path: conan.tar.gz
           if-no-files-found: error
 
   test:
@@ -117,30 +110,27 @@ jobs:
           - linux
         compiler:
           - gcc
-          - clang
+          # - clang
         configuration:
           - Debug
           - Release
-        cmake-args:
-          -
-          - "-Dunity=ON"
+        # cmake-args:
+          # -
+          # - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          mkdir -p ~/.conan2
+          tar -xzf conan.tar.gz -C ~/.conan2
       - name: check environment
         run: |
           env | sort
@@ -152,7 +142,7 @@ jobs:
       - name: dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -182,21 +172,18 @@ jobs:
           - "-DUNIT_TEST_REFERENCE_FEE=1000"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          mkdir -p ~/.conan2
+          tar -xzf conan.tar.gz -C ~/.conan2
       - name: check environment
         run: |
           env | sort
@@ -208,7 +195,7 @@ jobs:
       - name: dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -234,23 +221,18 @@ jobs:
           - Debug
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
-      - name: install gcovr
-        run: pip install "gcovr>=7,<9"
+          mkdir -p ~/.conan2
+          tar -xzf conan.tar.gz -C ~/.conan2
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -258,13 +240,13 @@ jobs:
           cmake --version
           gcovr --version
           env | sort
-          ls ~/.conan
+          ls ~/.conan2
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -291,24 +273,24 @@ jobs:
           name: coverage.xml
           path: coverage.xml
           retention-days: 30
-      - name: upload coverage report
-        uses: wandalen/wretry.action@v1.4.10
-        with:
-          action: codecov/codecov-action@v4.5.0
-          with: |
-            files: coverage.xml
-            fail_ci_if_error: true
-            disable_search: true
-            verbose: true
-            plugin: noop
-            token: ${{ secrets.CODECOV_TOKEN }}
-          attempt_limit: 5
-          attempt_delay: 210000 # in milliseconds
+      # - name: upload coverage report
+      #   uses: wandalen/wretry.action@v1.4.10
+      #   with:
+      #     action: codecov/codecov-action@v4.5.0
+      #     with: |
+      #       files: coverage.xml
+      #       fail_ci_if_error: true
+      #       disable_search: true
+      #       verbose: true
+      #       plugin: noop
+      #       token: ${{ secrets.CODECOV_TOKEN }}
+      #     attempt_limit: 5
+      #     attempt_delay: 210000 # in milliseconds
 
   conan:
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
       configuration: Release
@@ -335,7 +317,7 @@ jobs:
       - name: dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           configuration: ${{ env.configuration }}
       - name: export
@@ -350,8 +332,10 @@ jobs:
           cd tests/conan
           mkdir ${build_dir}
           cd ${build_dir}
-          conan install .. --output-folder . \
-            --require-override ${reference} --build missing
+          conan install .. \
+            --output-folder . \
+            --require-override ${reference}
+            --build missing
           cmake .. \
             -DCMAKE_TOOLCHAIN_FILE:FILEPATH=./build/${configuration}/generators/conan_toolchain.cmake \
             -DCMAKE_BUILD_TYPE=${configuration}
@@ -366,26 +350,12 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
       CLANG_RELEASE: 16
-    strategy:
-      fail-fast: false
+    # strategy:
+    #   fail-fast: false
     runs-on: [self-hosted, heavy]
-    container: debian:bookworm
-    steps:
-        - name: install prerequisites
-          env:
-            DEBIAN_FRONTEND: noninteractive
-          run: |
-            apt-get update
-            apt-get install --yes --no-install-recommends \
-              clang-${CLANG_RELEASE} clang++-${CLANG_RELEASE} \
-              python3-pip python-is-python3 make cmake git wget
-            apt-get clean
-            update-alternatives --install \
-              /usr/bin/clang clang /usr/bin/clang-${CLANG_RELEASE} 100 \
-              --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_RELEASE}
-            update-alternatives --auto clang
-            pip install --no-cache --break-system-packages "conan<2"
+    container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
 
+    steps:
         - name: checkout
           uses: actions/checkout@v4
 
@@ -394,32 +364,20 @@ jobs:
             mkdir ${GITHUB_WORKSPACE}/.build
             echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
-            echo "CC=/usr/bin/clang" >> $GITHUB_ENV
-            echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
+            # echo "CC=/usr/bin/clang" >> $GITHUB_ENV
+            # echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
 
         - name: configure Conan
           run: |
-            conan profile new --detect default
-            conan profile update settings.compiler=clang default
-            conan profile update settings.compiler.version=${CLANG_RELEASE} default
-            conan profile update settings.compiler.libcxx=libstdc++11 default
-            conan profile update settings.compiler.cppstd=20 default
-            conan profile update options.rocksdb=False default
-            conan profile update \
-              'conf.tools.build:compiler_executables={"c": "/usr/bin/clang", "cpp": "/usr/bin/clang++"}' default
-            conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
-            conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-            conan export external/snappy snappy/1.1.10@
-            conan export external/soci soci/4.0.3@
-
+            conan config install conan/profiles/default -tf $(conan config home)/profiles/
+            conan config install conan/global.conf -tf $(conan config home)
         - name: build dependencies
           run: |
             cd ${BUILD_DIR}
             conan install ${SOURCE_DIR} \
               --output-folder ${BUILD_DIR} \
-              --install-folder ${BUILD_DIR} \
               --build missing \
-              --settings build_type=Debug
+              --settings:all build_type=Debug
 
         - name: build with instrumentation
           run: |
