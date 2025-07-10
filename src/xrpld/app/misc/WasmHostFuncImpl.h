@@ -148,6 +148,9 @@ public:
     getNFTTaxon(uint256 const& nftId) override;
 
     Expected<int32_t, HostFunctionError>
+    getNFTFlags(uint256 const& nftId) override;
+
+    Expected<int32_t, HostFunctionError>
     trace(std::string_view const& msg, Slice const& data, bool asHex) override;
 
     Expected<int32_t, HostFunctionError>
