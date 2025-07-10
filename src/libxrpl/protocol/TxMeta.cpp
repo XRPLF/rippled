@@ -191,11 +191,11 @@ TxMeta::getAffectedAccounts() const
                     }
                     else if (field.getFName() == sfMPTokenIssuanceID)
                     {
-                        auto lim =
+                        auto mptID =
                             dynamic_cast<STBitString<192> const*>(&field);
-                        if (lim != nullptr)
+                        if (mptID != nullptr)
                         {
-                            auto issuer = MPTIssue(lim->value()).getIssuer();
+                            auto issuer = MPTIssue(mptID->value()).getIssuer();
 
                             if (issuer.isNonZero())
                                 list.insert(issuer);
