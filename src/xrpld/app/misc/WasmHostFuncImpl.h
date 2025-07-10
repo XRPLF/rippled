@@ -66,6 +66,9 @@ public:
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override;
 
+    Expected<Hash, HostFunctionError>
+    getParentAccountHash() override;
+
     Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override;
 

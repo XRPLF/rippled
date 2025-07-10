@@ -88,6 +88,12 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
+    virtual Expected<Hash, HostFunctionError>
+    getParentAccountHash()
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
     virtual Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     {
