@@ -2442,7 +2442,8 @@ class AMMClawback_test : public beast::unit_test::suite
     void
     run() override
     {
-        FeatureBitset const all{jtx::supported_amendments()};
+        FeatureBitset const all{
+            jtx::supported_amendments() | fixAMMClawbackRounding};
 
         testInvalidRequest();
         testFeatureDisabled(all - featureAMMClawback);
