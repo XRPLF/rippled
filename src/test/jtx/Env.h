@@ -71,10 +71,10 @@ noripple(Account const& account, Args const&... args)
 }
 
 inline FeatureBitset
-supported_amendments()
+testable_amendments()
 {
     static FeatureBitset const ids = [] {
-        auto const& sa = ripple::detail::supportedAmendments();
+        auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
         for (auto const& [s, vote] : sa)
@@ -236,7 +236,7 @@ public:
         beast::severities::Severity thresh = beast::severities::kError)
         : Env(suite_,
               std::move(config),
-              supported_amendments(),
+              testable_amendments(),
               std::move(logs),
               thresh)
     {

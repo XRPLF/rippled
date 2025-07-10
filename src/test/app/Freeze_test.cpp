@@ -2106,7 +2106,7 @@ public:
             testNFTOffersWhenFreeze(features);
         };
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testAll(
             sa - featureFlowCross - featureDeepFreeze - featurePermissionedDEX -
             fixEnforceNFTokenTrustlineV2);

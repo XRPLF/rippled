@@ -2035,7 +2035,7 @@ class AMMClawback_test : public jtx::AMMTest
     void
     run() override
     {
-        FeatureBitset const all{jtx::supported_amendments()};
+        FeatureBitset const all{jtx::testable_amendments()};
         testInvalidRequest(all);
         testFeatureDisabled(all - featureAMMClawback);
         testAMMClawbackSpecificAmount(all);

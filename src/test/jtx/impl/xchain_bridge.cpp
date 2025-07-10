@@ -389,7 +389,7 @@ XChainBridgeObjects::XChainBridgeObjects()
           bridge_rpc(mcDoor, xrpIssue(), Account::master, xrpIssue()))
     , jvb(bridge(mcDoor, xrpIssue(), Account::master, xrpIssue()))
     , jvub(bridge(mcuDoor, xrpIssue(), Account::master, xrpIssue()))
-    , features(supported_amendments() | FeatureBitset{featureXChainBridge})
+    , features(testable_amendments() | FeatureBitset{featureXChainBridge})
     , signers([] {
         constexpr int numSigners = UT_XCHAIN_DEFAULT_NUM_SIGNERS;
         std::vector<signer> result;
