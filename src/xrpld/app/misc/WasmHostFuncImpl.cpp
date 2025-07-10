@@ -637,6 +637,12 @@ WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId)
     return Bytes{issuer.begin(), issuer.end()};
 }
 
+Expected<std::uint32_t, HostFunctionError>
+WasmHostFunctionsImpl::getNFTTaxon(uint256 const& nftId)
+{
+    return nft::toUInt32(nft::getTaxon(nftId));
+}
+
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::trace(
     std::string_view const& msg,
