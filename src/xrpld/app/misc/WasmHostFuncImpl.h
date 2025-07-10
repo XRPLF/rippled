@@ -67,10 +67,10 @@ public:
     getParentLedgerHash() override;
 
     Expected<Hash, HostFunctionError>
-    getParentAccountHash() override;
+    getLedgerAccountHash() override;
 
     Expected<Hash, HostFunctionError>
-    getParentTransactionHash() override;
+    getLedgerTransactionHash() override;
 
     Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override;

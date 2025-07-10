@@ -49,13 +49,13 @@ WasmHostFunctionsImpl::getParentLedgerHash()
 }
 
 Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::getParentAccountHash()
+WasmHostFunctionsImpl::getLedgerAccountHash()
 {
     return ctx.view().info().accountHash;
 }
 
 Expected<Hash, HostFunctionError>
-WasmHostFunctionsImpl::getParentTransactionHash()
+WasmHostFunctionsImpl::getLedgerTransactionHash()
 {
     return ctx.view().info().txHash;
 }

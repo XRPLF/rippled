@@ -44,16 +44,16 @@ getParentLedgerHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getParentAccountHash_proto = int32_t(uint8_t*, int32_t);
+using getLedgerAccountHash_proto = int32_t(uint8_t*, int32_t);
 wasm_trap_t*
-getParentAccountHash_wrap(
+getLedgerAccountHash_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getParentTransactionHash_proto = int32_t(uint8_t*, int32_t);
+using getLedgerTransactionHash_proto = int32_t(uint8_t*, int32_t);
 wasm_trap_t*
-getParentTransactionHash_wrap(
+getLedgerTransactionHash_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);

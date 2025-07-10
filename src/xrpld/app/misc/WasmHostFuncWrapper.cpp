@@ -286,7 +286,7 @@ getParentLedgerHash_wrap(
 }
 
 wasm_trap_t*
-getParentAccountHash_wrap(
+getLedgerAccountHash_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
@@ -295,11 +295,11 @@ getParentAccountHash_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    return returnResult(rt, params, results, hf->getParentAccountHash(), index);
+    return returnResult(rt, params, results, hf->getLedgerAccountHash(), index);
 }
 
 wasm_trap_t*
-getParentTransactionHash_wrap(
+getLedgerTransactionHash_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
@@ -309,7 +309,7 @@ getParentTransactionHash_wrap(
     int index = 0;
 
     return returnResult(
-        rt, params, results, hf->getParentTransactionHash(), index);
+        rt, params, results, hf->getLedgerTransactionHash(), index);
 }
 
 wasm_trap_t*

@@ -89,13 +89,13 @@ struct HostFunctions
     }
 
     virtual Expected<Hash, HostFunctionError>
-    getParentAccountHash()
+    getLedgerAccountHash()
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
 
     virtual Expected<Hash, HostFunctionError>
-    getParentTransactionHash()
+    getLedgerTransactionHash()
     {
         return Unexpected(HF_ERR_INTERNAL);
     }
