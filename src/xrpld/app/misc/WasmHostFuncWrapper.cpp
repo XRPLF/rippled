@@ -170,21 +170,11 @@ getData<std::string_view>(
     wasm_val_vec_t const* params,
     int32_t& i)
 {
-    auto const src = params->data[i].of.i32;
-    auto const ssz = params->data[i + 1].of.i32;
-    if (src < 0 || ssz <= 0)
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
-
-    auto mem = rt ? rt->getMem() : wmem();
-    if (!mem.s)
-        return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
-
-    if (src + ssz > mem.s)
-        return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
-
-    std::string data(mem.p + src, mem.p + src + ssz);
-    i += 2;
-    return std::string_view(data);
+    auto const r = getData<Slice>(rt, params, i);
+    if (!r)
+        return Unexpected(r.error());
+    return std::string_view(
+        reinterpret_cast<char const*>(r->data()), r->size());
 }
 
 template <class T>
