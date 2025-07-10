@@ -46,7 +46,7 @@ jobs:
       - name: choose Python
         uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.13
       - name: learn Python cache directory
         id: pip-cache
         shell: bash
@@ -59,7 +59,7 @@ jobs:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
-        run: pip install wheel 'conan<2'
+        run: pip install wheel conan
       - name: check environment
         run: |
           dir env:
@@ -70,15 +70,13 @@ jobs:
       - name: configure Conan
         shell: bash
         run: |
-          conan profile new default --detect
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update \
-            settings.compiler.runtime=MT${{ matrix.configuration.runtime }} \
-            default
+          conan config install conan/profiles/default -tf $(conan config home)/profiles/
+          conan config install conan/global.conf -tf $(conan config home)
+          cat $(conan profile path default)
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
           CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
           CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:

@@ -38,13 +38,12 @@ jobs:
         uses: actions/checkout@v4
       - name: install Conan
         run: |
-          brew install conan@1
-          echo '/opt/homebrew/opt/conan@1/bin' >> $GITHUB_PATH
+          brew install conan
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
       - name: install python
-        run: | 
+        run: |
           if which python > /dev/null 2>&1; then
               echo "Python executable exists"
           else
@@ -76,12 +75,12 @@ jobs:
           clang --version
       - name: configure Conan
         run : |
-          conan profile new default --detect || true
-          conan profile update settings.compiler.cppstd=20 default
+          conan config install conan/profiles/default -tf $(conan config home)/profiles/
+          conan config install conan/global.conf -tf $(conan config home)
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
           CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
           CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
