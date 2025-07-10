@@ -55,7 +55,7 @@ static constexpr uint16_t MAX_MESSAGE_THRESHOLD = 20;
 static constexpr uint16_t MAX_SELECTED_PEERS = 5;
 
 // Max number of untrusted slots the server will maintain
-static constexpr uint16_t MAX_UNTRUSTED_SLOTS = 5;
+static constexpr uint16_t MAX_UNTRUSTED_SLOTS = 30;
 
 // The maximum of seconds an untrusted validator can go without sending a
 // validation message. After this, a validator may be squelched
