@@ -94,6 +94,12 @@ struct HostFunctions
         return Unexpected(HF_ERR_INTERNAL);
     }
 
+    virtual Expected<Hash, HostFunctionError>
+    getParentTransactionHash()
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
     virtual Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     {
