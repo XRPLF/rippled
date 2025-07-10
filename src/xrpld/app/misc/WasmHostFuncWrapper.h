@@ -331,6 +331,13 @@ using getNFT_proto = int32_t(
 wasm_trap_t*
 getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
+using getNFTIssuer_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getNFTIssuer_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using trace_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
 wasm_trap_t*

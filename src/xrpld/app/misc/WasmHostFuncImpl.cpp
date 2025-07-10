@@ -627,6 +627,16 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
     return Bytes(s.begin(), s.end());
 }
 
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId)
+{
+    auto const issuer = nft::getIssuer(nftId);
+    if (!issuer)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
+    return Bytes{issuer.begin(), issuer.end()};
+}
+
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::trace(
     std::string_view const& msg,

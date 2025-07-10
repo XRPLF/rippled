@@ -298,6 +298,12 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
+    virtual Expected<Bytes, HostFunctionError>
+    getNFTIssuer(uint256 const& nftId)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
     virtual Expected<int32_t, HostFunctionError>
     trace(std::string_view const& msg, Slice const& data, bool asHex)
     {
