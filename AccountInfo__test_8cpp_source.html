@@ -753,29 +753,56 @@ $(function() {
 <div class="line"><a id="l00675" name="l00675"></a><span class="lineno">  675</span>            BEAST_EXPECT(</div>
 <div class="line"><a id="l00676" name="l00676"></a><span class="lineno">  676</span>                !getAccountFlag(allowTrustLineClawbackFlag.first, bob));</div>
 <div class="line"><a id="l00677" name="l00677"></a><span class="lineno">  677</span>        }</div>
-<div class="line"><a id="l00678" name="l00678"></a><span class="lineno">  678</span>    }</div>
-<div class="line"><a id="l00679" name="l00679"></a><span class="lineno">  679</span> </div>
-<div class="line"><a id="l00680" name="l00680"></a><span class="lineno">  680</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00681" name="l00681"></a><span class="lineno">  681</span>    <a class="code hl_function" href="classbeast_1_1unit__test_1_1suite.html#aea7ffa0eca5e015d21be62a18adb8393">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a id="l00682" name="l00682"></a><span class="lineno">  682</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span>        <a class="code hl_function" href="classripple_1_1test_1_1AccountInfo__test.html#abf82c46999579cc69f6796f4c0ee5382">testErrors</a>();</div>
-<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>        testSignerLists();</div>
-<div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span>        testSignerListsApiVersion2();</div>
-<div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span>        testSignerListsV2();</div>
-<div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span> </div>
-<div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span>        FeatureBitset <span class="keyword">const</span> allFeatures{</div>
-<div class="line"><a id="l00689" name="l00689"></a><span class="lineno">  689</span>            <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">ripple::test::jtx::supported_amendments</a>()};</div>
-<div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span>        testAccountFlags(allFeatures);</div>
-<div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>        testAccountFlags(allFeatures - featureDisallowIncoming);</div>
-<div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span>        testAccountFlags(</div>
-<div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span>            allFeatures - featureDisallowIncoming - featureClawback);</div>
-<div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span>    }</div>
-<div class="line"><a id="l00695" name="l00695"></a><span class="lineno">  695</span>};</div>
-<div class="line"><a id="l00696" name="l00696"></a><span class="lineno">  696</span> </div>
-<div class="line"><a id="l00697" name="l00697"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test.html#a9c317a221c77b5009e7a898e17a74411">  697</a></span>BEAST_DEFINE_TESTSUITE(AccountInfo, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1rpc.html">rpc</a>, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a id="l00698" name="l00698"></a><span class="lineno">  698</span> </div>
-<div class="line"><a id="l00699" name="l00699"></a><span class="lineno">  699</span>}  <span class="comment">// namespace test</span></div>
-<div class="line"><a id="l00700" name="l00700"></a><span class="lineno">  700</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00678" name="l00678"></a><span class="lineno">  678</span> </div>
+<div class="line"><a id="l00679" name="l00679"></a><span class="lineno">  679</span>        <span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::string_view, std::uint32_t&gt;</a></div>
+<div class="line"><a id="l00680" name="l00680"></a><span class="lineno">  680</span>            allowTrustLineLockingFlag{</div>
+<div class="line"><a id="l00681" name="l00681"></a><span class="lineno">  681</span>                <span class="stringliteral">&quot;allowTrustLineLocking&quot;</span>, <a class="code hl_variable" href="namespaceripple.html#a2964a536384262367942d4024dfdd98d">asfAllowTrustLineLocking</a>};</div>
+<div class="line"><a id="l00682" name="l00682"></a><span class="lineno">  682</span> </div>
+<div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span>        <span class="keywordflow">if</span> (features[featureTokenEscrow])</div>
+<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>        {</div>
+<div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span>            <span class="keyword">auto</span> <span class="keyword">const</span> f1 =</div>
+<div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span>                getAccountFlag(allowTrustLineLockingFlag.first, bob);</div>
+<div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span>            BEAST_EXPECT(f1.has_value());</div>
+<div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span>            BEAST_EXPECT(!f1.value());</div>
+<div class="line"><a id="l00689" name="l00689"></a><span class="lineno">  689</span> </div>
+<div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span>            <span class="comment">// Set allowTrustLineLocking</span></div>
+<div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(bob, allowTrustLineLockingFlag.second));</div>
+<div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span>            env.close();</div>
+<div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span>            <span class="keyword">auto</span> <span class="keyword">const</span> f2 =</div>
+<div class="line"><a id="l00694" name="l00694"></a><span class="lineno">  694</span>                getAccountFlag(allowTrustLineLockingFlag.first, bob);</div>
+<div class="line"><a id="l00695" name="l00695"></a><span class="lineno">  695</span>            BEAST_EXPECT(f2.has_value());</div>
+<div class="line"><a id="l00696" name="l00696"></a><span class="lineno">  696</span>            BEAST_EXPECT(f2.value());</div>
+<div class="line"><a id="l00697" name="l00697"></a><span class="lineno">  697</span>        }</div>
+<div class="line"><a id="l00698" name="l00698"></a><span class="lineno">  698</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00699" name="l00699"></a><span class="lineno">  699</span>        {</div>
+<div class="line"><a id="l00700" name="l00700"></a><span class="lineno">  700</span>            BEAST_EXPECT(!getAccountFlag(allowTrustLineLockingFlag.first, bob));</div>
+<div class="line"><a id="l00701" name="l00701"></a><span class="lineno">  701</span>        }</div>
+<div class="line"><a id="l00702" name="l00702"></a><span class="lineno">  702</span>    }</div>
+<div class="line"><a id="l00703" name="l00703"></a><span class="lineno">  703</span> </div>
+<div class="line"><a id="l00704" name="l00704"></a><span class="lineno">  704</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00705" name="l00705"></a><span class="lineno">  705</span>    <a class="code hl_function" href="classbeast_1_1unit__test_1_1suite.html#aea7ffa0eca5e015d21be62a18adb8393">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a id="l00706" name="l00706"></a><span class="lineno">  706</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00707" name="l00707"></a><span class="lineno">  707</span>        <a class="code hl_function" href="classripple_1_1test_1_1AccountInfo__test.html#abf82c46999579cc69f6796f4c0ee5382">testErrors</a>();</div>
+<div class="line"><a id="l00708" name="l00708"></a><span class="lineno">  708</span>        testSignerLists();</div>
+<div class="line"><a id="l00709" name="l00709"></a><span class="lineno">  709</span>        testSignerListsApiVersion2();</div>
+<div class="line"><a id="l00710" name="l00710"></a><span class="lineno">  710</span>        testSignerListsV2();</div>
+<div class="line"><a id="l00711" name="l00711"></a><span class="lineno">  711</span> </div>
+<div class="line"><a id="l00712" name="l00712"></a><span class="lineno">  712</span>        FeatureBitset <span class="keyword">const</span> allFeatures{</div>
+<div class="line"><a id="l00713" name="l00713"></a><span class="lineno">  713</span>            <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">ripple::test::jtx::supported_amendments</a>()};</div>
+<div class="line"><a id="l00714" name="l00714"></a><span class="lineno">  714</span>        testAccountFlags(allFeatures);</div>
+<div class="line"><a id="l00715" name="l00715"></a><span class="lineno">  715</span>        testAccountFlags(allFeatures - featureDisallowIncoming);</div>
+<div class="line"><a id="l00716" name="l00716"></a><span class="lineno">  716</span>        testAccountFlags(</div>
+<div class="line"><a id="l00717" name="l00717"></a><span class="lineno">  717</span>            allFeatures - featureDisallowIncoming - featureClawback);</div>
+<div class="line"><a id="l00718" name="l00718"></a><span class="lineno">  718</span>        testAccountFlags(</div>
+<div class="line"><a id="l00719" name="l00719"></a><span class="lineno">  719</span>            allFeatures - featureDisallowIncoming - featureClawback -</div>
+<div class="line"><a id="l00720" name="l00720"></a><span class="lineno">  720</span>            featureTokenEscrow);</div>
+<div class="line"><a id="l00721" name="l00721"></a><span class="lineno">  721</span>    }</div>
+<div class="line"><a id="l00722" name="l00722"></a><span class="lineno">  722</span>};</div>
+<div class="line"><a id="l00723" name="l00723"></a><span class="lineno">  723</span> </div>
+<div class="line"><a id="l00724" name="l00724"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test.html#a9c317a221c77b5009e7a898e17a74411">  724</a></span>BEAST_DEFINE_TESTSUITE(AccountInfo, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1rpc.html">rpc</a>, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00725" name="l00725"></a><span class="lineno">  725</span> </div>
+<div class="line"><a id="l00726" name="l00726"></a><span class="lineno">  726</span>}  <span class="comment">// namespace test</span></div>
+<div class="line"><a id="l00727" name="l00727"></a><span class="lineno">  727</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
 <div class="ttc" id="abasic_string_view_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00149">json_value.h:150</a></div></div>
@@ -806,6 +833,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a0ce63352f37481632452056bb649eb58"><div class="ttname"><a href="namespaceripple.html#a0ce63352f37481632452056bb649eb58">ripple::asfGlobalFreeze</a></div><div class="ttdeci">constexpr std::uint32_t asfGlobalFreeze</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00083">TxFlags.h:83</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1d8ec9af2fd805d04e032c52f6968211"><div class="ttname"><a href="namespaceripple.html#a1d8ec9af2fd805d04e032c52f6968211">ripple::asfDepositAuth</a></div><div class="ttdeci">constexpr std::uint32_t asfDepositAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00085">TxFlags.h:85</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a1dc3be353a462b0e773a87943306c501"><div class="ttname"><a href="namespaceripple.html#a1dc3be353a462b0e773a87943306c501">ripple::asfDisallowIncomingNFTokenOffer</a></div><div class="ttdeci">constexpr std::uint32_t asfDisallowIncomingNFTokenOffer</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00090">TxFlags.h:90</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2964a536384262367942d4024dfdd98d"><div class="ttname"><a href="namespaceripple.html#a2964a536384262367942d4024dfdd98d">ripple::asfAllowTrustLineLocking</a></div><div class="ttdeci">constexpr std::uint32_t asfAllowTrustLineLocking</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00095">TxFlags.h:95</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2e3220cb8c660141f5300a9e38841295"><div class="ttname"><a href="namespaceripple.html#a2e3220cb8c660141f5300a9e38841295">ripple::asfRequireDest</a></div><div class="ttdeci">constexpr std::uint32_t asfRequireDest</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00077">TxFlags.h:77</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f">ripple::rpcACT_NOT_FOUND</a></div><div class="ttdeci">@ rpcACT_NOT_FOUND</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00070">ErrorCodes.h:70</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">ripple::rpcACT_MALFORMED</a></div><div class="ttdeci">@ rpcACT_MALFORMED</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00090">ErrorCodes.h:90</a></div></div>
