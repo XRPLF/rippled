@@ -24,6 +24,7 @@ class Xrpl(ConanFile):
     }
 
     requires = [
+        'doctest/2.4.11',
         'grpc/1.50.1',
         'libarchive/3.7.6',
         'nudb/2.0.8',
@@ -163,7 +164,17 @@ class Xrpl(ConanFile):
         # `include/`, not `include/ripple/proto/`.
         libxrpl.includedirs = ['include', 'include/ripple/proto']
         libxrpl.requires = [
-            'boost::boost',
+            'boost::headers',
+            'boost::chrono',
+            'boost::container',
+            'boost::coroutine',
+            'boost::date_time',
+            'boost::filesystem',
+            'boost::json',
+            'boost::program_options',
+            'boost::regex',
+            'boost::system',
+            'boost::thread',
             'date::date',
             'grpc::grpc++',
             'libarchive::libarchive',
