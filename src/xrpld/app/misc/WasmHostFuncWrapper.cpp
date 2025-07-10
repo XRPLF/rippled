@@ -252,15 +252,15 @@ returnResult(
                            std::decay_t<decltype(*result)>,
                            std::uint32_t>)
     {
-        auto const unwrappedResult = result.value();
+        auto const resultValue = result.value();
         return hfResult(
             results,
             setData(
                 rt,
                 params->data[index].of.i32,
                 params->data[index + 1].of.i32,
-                reinterpret_cast<uint8_t const*>(&unwrappedResult),
-                static_cast<int32_t>(sizeof(unwrappedResult))));
+                reinterpret_cast<uint8_t const*>(&resultValue),
+                static_cast<int32_t>(sizeof(resultValue))));
     }
     else
     {
