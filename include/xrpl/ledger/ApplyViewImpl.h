@@ -20,9 +20,8 @@
 #ifndef RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
 #define RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
 
-#include <xrpld/ledger/OpenView.h>
-#include <xrpld/ledger/detail/ApplyViewBase.h>
-
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
