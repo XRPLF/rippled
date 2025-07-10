@@ -345,6 +345,13 @@ getNFTTaxon_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using getNFTFlags_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+getNFTFlags_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using trace_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
 wasm_trap_t*

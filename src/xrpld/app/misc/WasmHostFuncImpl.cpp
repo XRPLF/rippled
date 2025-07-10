@@ -644,6 +644,12 @@ WasmHostFunctionsImpl::getNFTTaxon(uint256 const& nftId)
 }
 
 Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::getNFTFlags(uint256 const& nftId)
+{
+    return nft::getFlags(nftId);
+}
+
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::trace(
     std::string_view const& msg,
     Slice const& data,
