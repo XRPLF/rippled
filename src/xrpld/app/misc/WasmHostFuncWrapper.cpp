@@ -177,11 +177,6 @@ getData<std::string_view>(
         reinterpret_cast<char const*>(r->data()), r->size());
 }
 
-template <class T>
-std::nullptr_t
-hfResult(wasm_val_vec_t* results, T value);
-
-template <>
 std::nullptr_t
 hfResult(wasm_val_vec_t* results, int32_t value)
 {
@@ -189,7 +184,7 @@ hfResult(wasm_val_vec_t* results, int32_t value)
     results->num_elems = 1;
     return nullptr;
 }
-template <>
+
 std::nullptr_t
 hfResult(wasm_val_vec_t* results, HostFunctionError value)
 {
