@@ -23,6 +23,7 @@
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <memory>
 
@@ -79,8 +80,16 @@ TransactionAcquire::done()
         // just updates the consensus and related structures when we acquire
         // a transaction set. No need to update them if we're shutting down.
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "completeAcquire", [pap, hash, map]() {
-                pap->getInboundTransactions().giveSet(hash, map, true);
+            jtTXN_DATA,
+            "completeAcquire",
+            [pap, hash, map, journal = journal_]() {
+                perf::measureDurationAndLog(
+                    [&]() {
+                        pap->getInboundTransactions().giveSet(hash, map, true);
+                    },
+                    "completeAcquire",
+                    1s,
+                    journal);
             });
     }
 }

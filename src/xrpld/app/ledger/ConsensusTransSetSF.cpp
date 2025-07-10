@@ -23,10 +23,13 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/nodestore/Database.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -65,9 +68,14 @@ ConsensusTransSetSF::gotNode(
                 "ripple::ConsensusTransSetSF::gotNode : transaction hash "
                 "match");
             auto const pap = &app_;
-            app_.getJobQueue().addJob(jtTRANSACTION, "TXS->TXN", [pap, stx]() {
-                pap->getOPs().submitTransaction(stx);
-            });
+            app_.getJobQueue().addJob(
+                jtTRANSACTION, "TXS->TXN", [pap, stx, journal = j_]() {
+                    perf::measureDurationAndLog(
+                        [&]() { pap->getOPs().submitTransaction(stx); },
+                        "TXS->TXN",
+                        1s,
+                        journal);
+                });
         }
         catch (std::exception const& ex)
         {
