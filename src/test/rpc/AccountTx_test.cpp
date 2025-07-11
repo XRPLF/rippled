@@ -800,6 +800,12 @@ class AccountTx_test : public beast::unit_test::suite
         // bob creates a MPToken;
         mptAlice.authorize({.account = bob});
         checkAliceAcctTx(4, jss::MPTokenAuthorize);
+        env.close();
+
+        // ledger hash should be fixed regardless any change to account history
+        BEAST_EXPECT(
+            to_string(env.closed()->info().hash) ==
+            "0BD507BB87D3C0E73B462485E6E381798A8C82FC49BF17FE39C60E08A1AF035D");
 
         // alice authorizes bob
         mptAlice.authorize({.account = alice, .holder = bob});
