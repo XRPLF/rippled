@@ -622,7 +622,7 @@ STTx::getBatchTransactionIDs() const
     XRPL_ASSERT(
         getFieldArray(sfRawTransactions).size() != 0,
         "STTx::getBatchTransactionIDs : empty raw transactions");
-    // Don't early return so that the size check is always done.
+    // Don't early return so that the size assert is always hit.
     if (batch_txn_ids_.size() == 0)
     {
         for (STObject const& rb : getFieldArray(sfRawTransactions))

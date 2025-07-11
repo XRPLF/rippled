@@ -46,11 +46,18 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 bool
 CreateOffer::isEnabled(PreflightContext const& ctx)
 {
+    // TODO: Remove or update this check. Even though FlowCross was enabled a
+    // long time ago, if a network did manage to enable PermissionedDex and not
+    // FlowCross, then no offers of any kind would be allowed.
+    //
     // Permissioned offers should use the PE (which must be enabled by
     // featureFlowCross amendment)
+    if (ctx.rules.enabled(featurePermissionedDEX) &&
+        !ctx.rules.enabled(featureFlowCross))
+        return false;
+
     return (!ctx.tx.isFieldPresent(sfDomainID)) ||
-        (ctx.rules.enabled(featurePermissionedDEX) &&
-         ctx.rules.enabled(featureFlowCross));
+        ctx.rules.enabled(featurePermissionedDEX);
 }
 
 std::uint32_t
