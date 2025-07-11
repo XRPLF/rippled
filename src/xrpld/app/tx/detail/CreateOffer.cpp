@@ -43,39 +43,39 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
-NotTEC
-CreateOffer::preflight(PreflightContext const& ctx)
+bool
+CreateOffer::isEnabled(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDEX))
-        return temDISABLED;
-
+    // TODO: Remove or update this check. Even though FlowCross was enabled a
+    // long time ago, if a network did manage to enable PermissionedDex and not
+    // FlowCross, then no offers of any kind would be allowed.
+    //
     // Permissioned offers should use the PE (which must be enabled by
     // featureFlowCross amendment)
     if (ctx.rules.enabled(featurePermissionedDEX) &&
         !ctx.rules.enabled(featureFlowCross))
-        return temDISABLED;
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return (!ctx.tx.isFieldPresent(sfDomainID)) ||
+        ctx.rules.enabled(featurePermissionedDEX);
+}
 
+std::uint32_t
+CreateOffer::getFlagsMask(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(featurePermissionedDEX) &&
+        ctx.tx.isFieldPresent(sfDomainID))
+        return tfOfferCreateMask;
+    return tfOfferCreateMask | tfHybrid;
+}
+
+NotTEC
+CreateOffer::preflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfOfferCreateMask)
-    {
-        JLOG(j.debug()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
-
-    if (!ctx.rules.enabled(featurePermissionedDEX) && tx.isFlag(tfHybrid))
-        return temINVALID_FLAG;
-
-    if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
-        return temINVALID_FLAG;
-
     bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
 
@@ -142,7 +142,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

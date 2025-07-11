@@ -40,7 +40,6 @@
 #include <utility>
 
 namespace ripple {
-namespace test {
 
 namespace detail {
 
@@ -211,6 +210,8 @@ public:
 };
 
 }  // namespace detail
+
+namespace test {
 
 //------------------------------------------------------------------------------
 

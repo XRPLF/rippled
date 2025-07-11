@@ -24,7 +24,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/Units.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
@@ -42,7 +42,7 @@ class XRPAmount : private boost::totally_ordered<XRPAmount>,
                   private boost::additive<XRPAmount, std::int64_t>
 {
 public:
-    using unit_type = feeunit::dropTag;
+    using unit_type = unit::dropTag;
     using value_type = std::int64_t;
 
 private:
