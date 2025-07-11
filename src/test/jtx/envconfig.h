@@ -77,6 +77,17 @@ envconfig(F&& modfunc, Args&&... args)
     return modfunc(envconfig(), std::forward<Args>(args)...);
 }
 
+/// @brief adjust config to enable online_delete
+///
+/// @param cfg config instance to be modified
+///
+/// @param deleteInterval how many new ledgers should be available before
+/// rotating. Defaults to 8, because the standalone minimum is 8.
+///
+/// @return unique_ptr to Config instance
+std::unique_ptr<Config>
+online_delete(std::unique_ptr<Config> cfg, std::uint32_t deleteInterval = 8);
+
 /// @brief adjust config so no admin ports are enabled
 ///
 /// this is intended for use with envconfig, as in

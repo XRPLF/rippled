@@ -89,6 +89,11 @@ private:
     std::thread thread_;
     bool stop_ = false;
     bool healthy_ = true;
+    // Used to prevent ledger gaps from forming during online deletion. Keeps
+    // track of the last validated ledger that was processed without gaps. There
+    // are no guarantees about gaps while online delete is not running. For
+    // that, use advisory_delete and check for gaps externally.
+    LedgerIndex lastGoodValidatedLedger_ = 0;
     mutable std::condition_variable cond_;
     mutable std::condition_variable rendezvous_;
     mutable std::mutex mutex_;
@@ -230,6 +235,8 @@ private:
     enum HealthResult { stopping, keepGoing };
     [[nodiscard]] HealthResult
     healthWait();
+    bool
+    hasCompleteRange(LedgerIndex first, LedgerIndex last);
 
 public:
     void

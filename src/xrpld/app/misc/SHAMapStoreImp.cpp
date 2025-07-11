@@ -308,6 +308,12 @@ SHAMapStoreImp::run()
             validatedSeq >= lastRotated + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
 
+        // Note that this is set after the healthWait() check, so that we don't
+        // start the rotation until the validated ledger is fully processed. It
+        // is not guaranteed to be done at this point. It also allows the
+        // testLedgerGaps unit test to work.
+        lastGoodValidatedLedger_ = validatedSeq;
+
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
@@ -316,7 +322,9 @@ SHAMapStoreImp::run()
                 << lastRotated << " deleteInterval " << deleteInterval_
                 << " canDelete_ " << canDelete_ << " state "
                 << app_.getOPs().strOperatingMode(false) << " age "
-                << ledgerMaster_->getValidatedLedgerAge().count() << 's';
+                << ledgerMaster_->getValidatedLedgerAge().count()
+                << "s. Complete ledgers: "
+                << ledgerMaster_->getCompleteLedgers();
 
             clearPrior(lastRotated);
             if (healthWait() == stopping)
@@ -379,7 +387,9 @@ SHAMapStoreImp::run()
                     clearCaches(validatedSeq);
                 });
 
-            JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
+            JLOG(journal_.warn()) << "finished rotation " << validatedSeq
+                                  << "s. Complete ledgers: "
+                                  << ledgerMaster_->getCompleteLedgers();
         }
     }
 }
@@ -634,21 +644,35 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
 SHAMapStoreImp::HealthResult
 SHAMapStoreImp::healthWait()
 {
+    auto index = ledgerMaster_->getValidLedgerIndex();
     auto age = ledgerMaster_->getValidatedLedgerAge();
     OperatingMode mode = netOPs_->getOperatingMode();
     std::unique_lock lock(mutex_);
-    while (!stop_ && (mode != OperatingMode::FULL || age > ageThreshold_))
+
+    auto numMissing = ledgerMaster_->missingFromCompleteLedgerRange(
+        lastGoodValidatedLedger_, index);
+    while (
+        !stop_ &&
+        (mode != OperatingMode::FULL || age > ageThreshold_ || numMissing > 0))
     {
         lock.unlock();
-        JLOG(journal_.warn()) << "Waiting " << recoveryWaitTime_.count()
-                              << "s for node to stabilize. state: "
-                              << app_.getOPs().strOperatingMode(mode, false)
-                              << ". age " << age.count() << 's';
+        JLOG(journal_.warn())
+            << "Waiting " << recoveryWaitTime_.count()
+            << "s for node to stabilize. state: "
+            << app_.getOPs().strOperatingMode(mode, false) << ". age "
+            << age.count() << "s. Missing ledgers: " << numMissing
+            << ". Expect: " << lastGoodValidatedLedger_ << "-" << index
+            << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
         std::this_thread::sleep_for(recoveryWaitTime_);
+        index = ledgerMaster_->getValidLedgerIndex();
         age = ledgerMaster_->getValidatedLedgerAge();
         mode = netOPs_->getOperatingMode();
         lock.lock();
+        numMissing = ledgerMaster_->missingFromCompleteLedgerRange(
+            lastGoodValidatedLedger_, index);
     }
+
+    lastGoodValidatedLedger_ = index;
 
     return stop_ ? stopping : keepGoing;
 }

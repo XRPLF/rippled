@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
 #include <xrpld/app/misc/SHAMapStore.h>
@@ -39,10 +40,8 @@ class SHAMapStore_test : public beast::unit_test::suite
     static auto
     onlineDelete(std::unique_ptr<Config> cfg)
     {
-        cfg->LEDGER_HISTORY = deleteInterval;
-        auto& section = cfg->section(ConfigSection::nodeDatabase());
-        section.set("online_delete", std::to_string(deleteInterval));
-        return cfg;
+        using namespace jtx;
+        return online_delete(std::move(cfg), deleteInterval);
     }
 
     static auto
@@ -646,12 +645,157 @@ public:
     }
 
     void
+    testLedgerGaps()
+    {
+        // Note that this test is intentionally very similar to
+        // LedgerMaster_test::testCompleteLedgerRange, but has a different
+        // focus.
+
+        testcase("Wait for ledger gaps to fill in");
+
+        using namespace test::jtx;
+
+        Env env{*this, envconfig(onlineDelete)};
+
+        auto const alice = Account("alice");
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        auto& lm = env.app().getLedgerMaster();
+        LedgerIndex minSeq = 2;
+        LedgerIndex maxSeq = env.closed()->info().seq;
+        auto& store = env.app().getSHAMapStore();
+        LedgerIndex lastRotated = store.getLastRotated();
+        BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
+        BEAST_EXPECTS(
+            lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
+        BEAST_EXPECTS(lastRotated == 3, to_string(lastRotated));
+        BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
+        BEAST_EXPECT(
+            lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
+        BEAST_EXPECT(
+            lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
+        BEAST_EXPECT(
+            lm.missingFromCompleteLedgerRange(minSeq - 2, maxSeq - 2) == 2);
+        BEAST_EXPECT(
+            lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
+
+        // Close enough ledgers to rotate a few times
+        while (maxSeq < 20)
+        {
+            for (int t = 0; t < 3; ++t)
+            {
+                env(noop(alice));
+            }
+            env.close();
+            store.rendezvous();
+
+            ++maxSeq;
+
+            if (maxSeq + 1 == lastRotated + deleteInterval)
+            {
+                // The next ledger will trigger a rotation. Delete an arbitrary
+                // ledger from LedgerMaster.
+                LedgerIndex const deleteSeq = maxSeq;
+                lm.clearLedger(deleteSeq);
+
+                auto expectedRange =
+                    [](auto minSeq, auto deleteSeq, auto maxSeq) {
+                        std::stringstream expectedRange;
+                        expectedRange << minSeq << "-" << (deleteSeq - 1);
+                        if (deleteSeq + 1 == maxSeq)
+                            expectedRange << "," << maxSeq;
+                        else if (deleteSeq < maxSeq)
+                            expectedRange << "," << (deleteSeq + 1) << "-"
+                                          << maxSeq;
+                        return expectedRange.str();
+                    };
+                BEAST_EXPECTS(
+                    lm.getCompleteLedgers() ==
+                        expectedRange(minSeq, deleteSeq, maxSeq),
+                    lm.getCompleteLedgers());
+                BEAST_EXPECT(
+                    lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 1);
+
+                // Close another ledger, which will trigger a rotation, but the
+                // rotation will be stuck until the missing ledger is filled in.
+                env.close();
+                // DO NOT CALL rendezvous()! You'll end up with a deadlock.
+                ++maxSeq;
+
+                // Nothing has changed
+                BEAST_EXPECTS(
+                    store.getLastRotated() == lastRotated,
+                    to_string(store.getLastRotated()));
+                BEAST_EXPECTS(
+                    lm.getCompleteLedgers() ==
+                        expectedRange(minSeq, deleteSeq, maxSeq),
+                    lm.getCompleteLedgers());
+
+                using namespace std::chrono_literals;
+                // Close 5 more ledgers, waiting one second in between to
+                // simulate the ledger making progress while online delete waits
+                // for the missing ledger to be filled in.
+                // This ensures the healthWait check has time to run and
+                // detect the gap.
+                for (int l = 0; l < 5; ++l)
+                {
+                    env.close();
+                    // DO NOT CALL rendezvous()! You'll end up with a deadlock.
+                    ++maxSeq;
+                    // Nothing has changed
+                    BEAST_EXPECTS(
+                        store.getLastRotated() == lastRotated,
+                        to_string(store.getLastRotated()));
+                    BEAST_EXPECTS(
+                        lm.getCompleteLedgers() ==
+                            expectedRange(minSeq, deleteSeq, maxSeq),
+                        lm.getCompleteLedgers());
+                    std::this_thread::sleep_for(1s);
+                }
+
+                // Put the missing ledger back in LedgerMaster
+                lm.setLedgerRangePresent(deleteSeq, deleteSeq);
+
+                // Wait for the rotation to finish
+                store.rendezvous();
+
+                minSeq = lastRotated;
+                lastRotated = deleteSeq + 1;
+            }
+            BEAST_EXPECT(maxSeq != lastRotated + deleteInterval);
+            BEAST_EXPECTS(
+                env.closed()->info().seq == maxSeq,
+                to_string(env.closed()->info().seq));
+            BEAST_EXPECTS(
+                store.getLastRotated() == lastRotated,
+                to_string(store.getLastRotated()));
+            std::stringstream expectedRange;
+            expectedRange << minSeq << "-" << maxSeq;
+            BEAST_EXPECTS(
+                lm.getCompleteLedgers() == expectedRange.str(),
+                lm.getCompleteLedgers());
+            BEAST_EXPECT(
+                lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
+            BEAST_EXPECT(
+                lm.missingFromCompleteLedgerRange(minSeq + 1, maxSeq - 1) == 0);
+            BEAST_EXPECT(
+                lm.missingFromCompleteLedgerRange(minSeq - 1, maxSeq + 1) == 2);
+            BEAST_EXPECT(
+                lm.missingFromCompleteLedgerRange(minSeq - 2, maxSeq - 2) == 2);
+            BEAST_EXPECT(
+                lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
+        }
+    }
+
+    void
     run() override
     {
         testClear();
         testAutomatic();
         testCanDelete();
         testRotate();
+        testLedgerGaps();
     }
 };
 
