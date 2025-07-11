@@ -84,6 +84,8 @@
 
 namespace ripple {
 
+static constexpr std::size_t maxFeatureNameSize = 63;
+
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
 enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
 

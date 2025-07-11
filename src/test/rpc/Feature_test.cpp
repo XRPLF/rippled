@@ -22,6 +22,7 @@
 #include <xrpld/app/misc/AmendmentTable.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -202,16 +203,18 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto jrr = env.rpc("feature", "MultiSignReserve")[jss::result];
+        std::string const name = "MultiSignReserve";
+        auto jrr = env.rpc("feature", name)[jss::result];
         BEAST_EXPECTS(jrr[jss::status] == jss::success, "status");
         jrr.removeMember(jss::status);
         BEAST_EXPECT(jrr.size() == 1);
-        BEAST_EXPECT(
-            jrr.isMember("586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF"
-                         "1FC07EFE41D"));
+        auto const expected =
+            to_string(sha512Half(Slice(name.data(), name.size())));
+        BEAST_EXPECT(expected.size() == maxFeatureNameSize + 1);
+        BEAST_EXPECT(jrr.isMember(expected));
         auto feature = *(jrr.begin());
 
-        BEAST_EXPECTS(feature[jss::name] == "MultiSignReserve", "name");
+        BEAST_EXPECTS(feature[jss::name] == name, "name");
         BEAST_EXPECTS(!feature[jss::enabled].asBool(), "enabled");
         BEAST_EXPECTS(
             feature[jss::vetoed].isBool() && !feature[jss::vetoed].asBool(),

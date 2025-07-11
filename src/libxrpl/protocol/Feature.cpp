@@ -256,6 +256,9 @@ FeatureCollections::registerFeature(
     check(
         support == Supported::yes || vote != VoteBehavior::DefaultYes,
         "Invalid feature parameters. Must be supported to be up-voted.");
+    check(
+        name.size() <= maxFeatureNameSize,
+        "Feature name must not be exceed 63 characters");
     Feature const* i = getByName(name);
     if (!i)
     {
