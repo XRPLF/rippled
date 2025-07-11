@@ -256,9 +256,6 @@ FeatureCollections::registerFeature(
     check(
         support == Supported::yes || vote != VoteBehavior::DefaultYes,
         "Invalid feature parameters. Must be supported to be up-voted.");
-    check(
-        name.size() <= maxFeatureNameSize,
-        "Feature name must not be exceed 63 characters");
     Feature const* i = getByName(name);
     if (!i)
     {
@@ -446,10 +443,20 @@ featureToName(uint256 const& f)
 #pragma push_macro("XRPL_ABANDON")
 #undef XRPL_ABANDON
 
+template <std::size_t N>
+constexpr auto
+enforceMaxFeatureNameSize(char const (&n)[N]) -> char const*
+{
+    static_assert(N <= maxFeatureNameSize);
+    return n;
+}
+
 #define XRPL_FEATURE(name, supported, vote) \
-    uint256 const feature##name = registerFeature(#name, supported, vote);
-#define XRPL_FIX(name, supported, vote) \
-    uint256 const fix##name = registerFeature("fix" #name, supported, vote);
+    uint256 const feature##name =           \
+        registerFeature(enforceMaxFeatureNameSize(#name), supported, vote);
+#define XRPL_FIX(name, supported, vote)        \
+    uint256 const fix##name = registerFeature( \
+        enforceMaxFeatureNameSize("fix" #name), supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE(name)                                       \

@@ -210,7 +210,6 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECT(jrr.size() == 1);
         auto const expected =
             to_string(sha512Half(Slice(name.data(), name.size())));
-        BEAST_EXPECT(expected.size() == maxFeatureNameSize + 1);
         BEAST_EXPECT(jrr.isMember(expected));
         auto feature = *(jrr.begin());
 
