@@ -244,9 +244,10 @@ public:
 
         store.rendezvous();
 
-        BEAST_EXPECT(store.getLastRotated() == deleteInterval + 3);
+        BEAST_EXPECT(env.closed()->info().seq == deleteInterval + 3);
         lastRotated = store.getLastRotated();
-        BEAST_EXPECT(lastRotated == 11);
+        BEAST_EXPECT(lastRotated == deleteInterval + 5);
+        BEAST_EXPECT(lastRotated == 13);
 
         // That took care of the fake hashes
         ledgerCheck(env, deleteInterval + 1, 3);
@@ -254,9 +255,11 @@ public:
         accountTransactionCheck(env, 2 * deleteInterval);
 
         // The last iteration of this loop should trigger a rotate
-        for (auto i = lastRotated - 1; i < lastRotated + deleteInterval - 1;
+        for (auto i = lastRotated - 3; i < lastRotated + deleteInterval - 1;
              ++i)
         {
+            BEAST_EXPECT(store.getLastRotated() == lastRotated);
+
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
@@ -274,7 +277,8 @@ public:
 
         store.rendezvous();
 
-        BEAST_EXPECT(store.getLastRotated() == deleteInterval + lastRotated);
+        BEAST_EXPECT(
+            store.getLastRotated() == deleteInterval + lastRotated + 2);
 
         ledgerCheck(env, deleteInterval + 1, lastRotated);
         transactionCheck(env, 0);
@@ -415,8 +419,8 @@ public:
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
-        lastRotated = ledgerSeq - 1;
+        lastRotated = store.getLastRotated();
+        BEAST_EXPECT(lastRotated == ledgerSeq + 1);
 
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
         {
@@ -443,10 +447,10 @@ public:
 
         store.rendezvous();
 
-        ledgerCheck(env, ledgerSeq - firstBatch, firstBatch);
+        ledgerCheck(env, ledgerSeq - firstBatch - 2, firstBatch + 2);
 
-        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
-        lastRotated = ledgerSeq - 1;
+        lastRotated = store.getLastRotated();
+        BEAST_EXPECT(lastRotated == ledgerSeq + 1);
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "always");
@@ -482,13 +486,13 @@ public:
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
-        lastRotated = ledgerSeq - 1;
+        lastRotated = store.getLastRotated();
+        BEAST_EXPECT(lastRotated == ledgerSeq + 1);
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "now");
         BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq - 1);
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == lastRotated);
 
         for (; ledgerSeq < lastRotated + deleteInterval; ++ledgerSeq)
         {
@@ -517,8 +521,8 @@ public:
 
         ledgerCheck(env, ledgerSeq - lastRotated, lastRotated);
 
-        BEAST_EXPECT(store.getLastRotated() == ledgerSeq - 1);
-        lastRotated = ledgerSeq - 1;
+        lastRotated = store.getLastRotated();
+        BEAST_EXPECT(lastRotated == ledgerSeq + 1);
     }
 
     std::unique_ptr<NodeStore::Backend>
@@ -657,9 +661,29 @@ public:
 
         Env env{*this, envconfig(onlineDelete)};
 
+        auto& ns = env.app().getNodeStore();
+        std::map<LedgerIndex, uint256> hashes;
+        auto storeHash = [&]() {
+            hashes.emplace(
+                env.current()->info().seq, env.current()->info().hash);
+
+            auto const& root =
+                ns.fetchNodeObject(hashes[env.current()->info().seq]);
+            BEAST_EXPECT(root);
+        };
+
+        auto failureMessage = [&](char const* label,
+                                  auto expected,
+                                  auto actual) {
+            std::stringstream ss;
+            ss << label << ": Expected: " << expected << ", Got: " << actual;
+            return ss.str();
+        };
+
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);
         env.close();
+        storeHash();
 
         auto& lm = env.app().getLedgerMaster();
         LedgerIndex minSeq = 2;
@@ -681,13 +705,14 @@ public:
             lm.missingFromCompleteLedgerRange(minSeq + 2, maxSeq + 2) == 2);
 
         // Close enough ledgers to rotate a few times
-        while (maxSeq < 20)
+        while (maxSeq < 28)
         {
             for (int t = 0; t < 3; ++t)
             {
                 env(noop(alice));
             }
             env.close();
+            storeHash();
             store.rendezvous();
 
             ++maxSeq;
@@ -713,24 +738,32 @@ public:
                 BEAST_EXPECTS(
                     lm.getCompleteLedgers() ==
                         expectedRange(minSeq, deleteSeq, maxSeq),
-                    lm.getCompleteLedgers());
+                    failureMessage(
+                        "Complete ledgers",
+                        expectedRange(minSeq, deleteSeq, maxSeq),
+                        lm.getCompleteLedgers()));
                 BEAST_EXPECT(
                     lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 1);
 
                 // Close another ledger, which will trigger a rotation, but the
                 // rotation will be stuck until the missing ledger is filled in.
                 env.close();
+                storeHash();
                 // DO NOT CALL rendezvous()! You'll end up with a deadlock.
                 ++maxSeq;
 
                 // Nothing has changed
                 BEAST_EXPECTS(
                     store.getLastRotated() == lastRotated,
-                    to_string(store.getLastRotated()));
+                    failureMessage(
+                        "lastRotated", lastRotated, store.getLastRotated()));
                 BEAST_EXPECTS(
                     lm.getCompleteLedgers() ==
                         expectedRange(minSeq, deleteSeq, maxSeq),
-                    lm.getCompleteLedgers());
+                    failureMessage(
+                        "Complete ledgers",
+                        expectedRange(minSeq, deleteSeq, maxSeq),
+                        lm.getCompleteLedgers()));
 
                 using namespace std::chrono_literals;
                 // Close 5 more ledgers, waiting one second in between to
@@ -741,16 +774,23 @@ public:
                 for (int l = 0; l < 5; ++l)
                 {
                     env.close();
+                    storeHash();
                     // DO NOT CALL rendezvous()! You'll end up with a deadlock.
                     ++maxSeq;
                     // Nothing has changed
                     BEAST_EXPECTS(
                         store.getLastRotated() == lastRotated,
-                        to_string(store.getLastRotated()));
+                        failureMessage(
+                            "lastRotated",
+                            lastRotated,
+                            store.getLastRotated()));
                     BEAST_EXPECTS(
                         lm.getCompleteLedgers() ==
                             expectedRange(minSeq, deleteSeq, maxSeq),
-                        lm.getCompleteLedgers());
+                        failureMessage(
+                            "Complete Ledgers",
+                            expectedRange(minSeq, deleteSeq, maxSeq),
+                            lm.getCompleteLedgers()));
                     std::this_thread::sleep_for(1s);
                 }
 
@@ -761,20 +801,39 @@ public:
                 store.rendezvous();
 
                 minSeq = lastRotated;
-                lastRotated = deleteSeq + 1;
+                lastRotated = maxSeq + 2;
+
+                // Bypass caching and try to load the ledger roots from the node
+                // store
+                for (auto const& [seq, hash] : hashes)
+                {
+                    auto const nodeObject = ns.fetchNodeObject(hash);
+                    std::stringstream ss;
+                    ss << "minSeq: " << minSeq << ", maxSeq: " << maxSeq
+                       << ", search: " << seq << ". Should "
+                       << (seq < minSeq ? "NOT " : "") << "be found";
+                    if (seq < minSeq)
+                        BEAST_EXPECTS(!nodeObject, ss.str());
+                    else
+                        BEAST_EXPECTS(nodeObject, ss.str());
+                }
             }
             BEAST_EXPECT(maxSeq != lastRotated + deleteInterval);
             BEAST_EXPECTS(
                 env.closed()->info().seq == maxSeq,
-                to_string(env.closed()->info().seq));
+                failureMessage("maxSeq", maxSeq, env.closed()->info().seq));
             BEAST_EXPECTS(
                 store.getLastRotated() == lastRotated,
-                to_string(store.getLastRotated()));
+                failureMessage(
+                    "lastRotated", lastRotated, store.getLastRotated()));
             std::stringstream expectedRange;
             expectedRange << minSeq << "-" << maxSeq;
             BEAST_EXPECTS(
                 lm.getCompleteLedgers() == expectedRange.str(),
-                lm.getCompleteLedgers());
+                failureMessage(
+                    "CompleteLedgers",
+                    expectedRange.str(),
+                    lm.getCompleteLedgers()));
             BEAST_EXPECT(
                 lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
             BEAST_EXPECT(
