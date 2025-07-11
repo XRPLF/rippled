@@ -36,7 +36,7 @@ CancelCheck::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-CancelCheck::doPreflight(PreflightContext const& ctx)
+CancelCheck::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }

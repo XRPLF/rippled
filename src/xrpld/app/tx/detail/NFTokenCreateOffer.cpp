@@ -39,7 +39,7 @@ NFTokenCreateOffer::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-NFTokenCreateOffer::doPreflight(PreflightContext const& ctx)
+NFTokenCreateOffer::preflight(PreflightContext const& ctx)
 {
     auto const txFlags = ctx.tx.getFlags();
 

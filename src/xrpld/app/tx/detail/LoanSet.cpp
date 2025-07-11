@@ -59,7 +59,7 @@ LoanSet::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanSet::doPreflight(PreflightContext const& ctx)
+LoanSet::preflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
     auto const counterPartySig = ctx.tx.getFieldObject(sfCounterpartySignature);

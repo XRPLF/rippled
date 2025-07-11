@@ -37,7 +37,7 @@ AMMBid::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-AMMBid::doPreflight(PreflightContext const& ctx)
+AMMBid::preflight(PreflightContext const& ctx)
 {
     if (auto const res = invalidAMMAssetPair(
             ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))

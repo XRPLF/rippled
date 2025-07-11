@@ -49,7 +49,7 @@ LoanBrokerCoverWithdraw::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanBrokerCoverWithdraw::doPreflight(PreflightContext const& ctx)
+LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanBrokerID] == beast::zero)
         return temINVALID;

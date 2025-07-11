@@ -49,7 +49,7 @@ LoanBrokerDelete::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanBrokerDelete::doPreflight(PreflightContext const& ctx)
+LoanBrokerDelete::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }

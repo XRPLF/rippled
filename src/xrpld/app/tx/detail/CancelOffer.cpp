@@ -26,7 +26,7 @@
 namespace ripple {
 
 NotTEC
-CancelOffer::doPreflight(PreflightContext const& ctx)
+CancelOffer::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx[sfOfferSequence])
     {

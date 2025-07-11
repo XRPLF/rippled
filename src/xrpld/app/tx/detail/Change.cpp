@@ -35,7 +35,7 @@ namespace ripple {
 
 template <>
 NotTEC
-Transactor::preflight<Change>(PreflightContext const& ctx)
+Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 {
     // 0 means "Allow any flags"
     // The check for tfChangeMask is gated by LendingProtocol because that

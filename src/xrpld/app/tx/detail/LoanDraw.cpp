@@ -51,7 +51,7 @@ LoanDraw::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanDraw::doPreflight(PreflightContext const& ctx)
+LoanDraw::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::zero)
         return temINVALID;

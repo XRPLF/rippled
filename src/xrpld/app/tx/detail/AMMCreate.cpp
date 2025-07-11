@@ -38,7 +38,7 @@ AMMCreate::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-AMMCreate::doPreflight(PreflightContext const& ctx)
+AMMCreate::preflight(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];

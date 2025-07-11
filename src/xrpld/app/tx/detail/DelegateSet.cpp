@@ -35,7 +35,7 @@ DelegateSet::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-DelegateSet::doPreflight(PreflightContext const& ctx)
+DelegateSet::preflight(PreflightContext const& ctx)
 {
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
     if (permissions.size() > permissionMaxSize)

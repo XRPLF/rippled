@@ -49,7 +49,7 @@ LoanBrokerCoverDeposit::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanBrokerCoverDeposit::doPreflight(PreflightContext const& ctx)
+LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanBrokerID] == beast::zero)
         return temINVALID;

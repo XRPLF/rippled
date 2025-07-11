@@ -51,7 +51,7 @@ LoanDelete::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanDelete::doPreflight(PreflightContext const& ctx)
+LoanDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::zero)
         return temINVALID;

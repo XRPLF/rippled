@@ -40,7 +40,7 @@ public:
     getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     static NotTEC
     checkSign(PreclaimContext const& ctx);

@@ -210,7 +210,7 @@ Batch::getFlagsMask(PreflightContext const& ctx)
  * code otherwise.
  */
 NotTEC
-Batch::doPreflight(PreflightContext const& ctx)
+Batch::preflight(PreflightContext const& ctx)
 {
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);

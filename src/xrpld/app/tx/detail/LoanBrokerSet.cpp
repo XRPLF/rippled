@@ -52,7 +52,7 @@ LoanBrokerSet::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanBrokerSet::doPreflight(PreflightContext const& ctx)
+LoanBrokerSet::preflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData]; data && !data->empty() &&

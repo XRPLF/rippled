@@ -51,7 +51,7 @@ LoanPay::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanPay::doPreflight(PreflightContext const& ctx)
+LoanPay::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::zero)
         return temINVALID;

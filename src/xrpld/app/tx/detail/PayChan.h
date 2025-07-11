@@ -40,7 +40,7 @@ public:
     getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     static TER
     preclaim(PreclaimContext const& ctx);
@@ -69,7 +69,7 @@ public:
     getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     TER
     doApply() override;
@@ -95,7 +95,7 @@ public:
     getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     static TER
     preclaim(PreclaimContext const& ctx);

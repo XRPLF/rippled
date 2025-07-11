@@ -58,7 +58,7 @@ LoanManage::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-LoanManage::doPreflight(PreflightContext const& ctx)
+LoanManage::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::zero)
         return temINVALID;

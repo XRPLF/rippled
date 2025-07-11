@@ -49,7 +49,7 @@ DeleteAccount::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-DeleteAccount::doPreflight(PreflightContext const& ctx)
+DeleteAccount::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.

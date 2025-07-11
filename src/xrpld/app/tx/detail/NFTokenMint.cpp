@@ -84,7 +84,7 @@ NFTokenMint::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-NFTokenMint::doPreflight(PreflightContext const& ctx)
+NFTokenMint::preflight(PreflightContext const& ctx)
 {
     if (auto const f = ctx.tx[~sfTransferFee])
     {

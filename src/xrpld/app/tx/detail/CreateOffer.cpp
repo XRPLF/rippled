@@ -70,7 +70,7 @@ CreateOffer::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-CreateOffer::doPreflight(PreflightContext const& ctx)
+CreateOffer::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;

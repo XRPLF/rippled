@@ -33,7 +33,7 @@ DeleteOracle::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-DeleteOracle::doPreflight(PreflightContext const& ctx)
+DeleteOracle::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
