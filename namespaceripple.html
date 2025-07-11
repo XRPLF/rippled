@@ -4180,6 +4180,9 @@ requires ( <a class="elRef" href="http://en.cppreference.com/w/cpp/types/is_same
 <tr class="memitem:a62e9ba0cf1379cc7c73007cafd91b972"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Expected.html">Expected</a>&lt; bool, <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a62e9ba0cf1379cc7c73007cafd91b972">isOnlyLiquidityProvider</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;ammIssue, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;lpAccount)</td></tr>
 <tr class="memdesc:a62e9ba0cf1379cc7c73007cafd91b972"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return true if the Liquidity Provider is the only AMM provider, false otherwise.  <a href="namespaceripple.html#a62e9ba0cf1379cc7c73007cafd91b972">More...</a><br /></td></tr>
 <tr class="separator:a62e9ba0cf1379cc7c73007cafd91b972"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c0288f25088dd5b24ce567290b2a75b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Expected.html">Expected</a>&lt; bool, <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6c0288f25088dd5b24ce567290b2a75b">verifyAndAdjustLPTokenBalance</a> (<a class="el" href="classripple_1_1Sandbox.html">Sandbox</a> &amp;sb, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;lpTokens, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; &amp;ammSle, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account)</td></tr>
+<tr class="memdesc:a6c0288f25088dd5b24ce567290b2a75b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Due to rounding, the LPTokenBalance of the last LP might not match the LP's trustline balance.  <a href="namespaceripple.html#a6c0288f25088dd5b24ce567290b2a75b">More...</a><br /></td></tr>
+<tr class="separator:a6c0288f25088dd5b24ce567290b2a75b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7f0e432d5fa980cfc588654bb6c77d7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae7f0e432d5fa980cfc588654bb6c77d7">operator&lt;</a> (<a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;lhs, <a class="el" href="classripple_1_1CanonicalTXSet_1_1Key.html">CanonicalTXSet::Key</a> const &amp;rhs)</td></tr>
 <tr class="separator:ae7f0e432d5fa980cfc588654bb6c77d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace07ad1d6a80473343ca26e55942008c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ace07ad1d6a80473343ca26e55942008c">verifyValidDomain</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> domainID, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
@@ -29785,7 +29788,7 @@ template&lt;typename A &gt; </div>
 
 <p>Get AMM pool balances. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00030">30</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00031">31</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -29842,7 +29845,7 @@ template&lt;typename A &gt; </div>
 <p>Get AMM pool and LP token balances. </p>
 <p >If both optIssue are provided then they are used as the AMM token pair issues. Otherwise the missing issues are fetched from ammSle. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00046">46</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00047">47</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -29898,7 +29901,7 @@ template&lt;typename A &gt; </div>
 
 <p>Get the balance of LP tokens. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00112">112</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00113">113</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -29940,7 +29943,7 @@ template&lt;typename A &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00162">162</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00163">163</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -29979,7 +29982,7 @@ template&lt;typename A &gt; </div>
 <p>Get AMM trading fee for the given account. </p>
 <p >The fee is discounted if the account is the auction slot owner or one of the slot's authorized accounts. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00178">178</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00179">179</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -30017,7 +30020,7 @@ template&lt;typename A &gt; </div>
 
 <p>Returns total amount held by AMM for the given token. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00210">210</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00211">211</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -30062,7 +30065,7 @@ template&lt;typename A &gt; </div>
 <p>Delete trustlines to AMM. </p>
 <p >If all trustlines are deleted then AMM object and account are deleted. Otherwise tecIMPCOMPLETE is returned. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00282">282</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00283">283</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -30112,7 +30115,7 @@ template&lt;typename A &gt; </div>
 
 <p>Initialize Auction and Voting slots and set the trading/discounted fee. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00339">339</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00340">340</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -30151,7 +30154,52 @@ template&lt;typename A &gt; </div>
 <p>Return true if the Liquidity Provider is the only AMM provider, false otherwise. </p>
 <p >Return tecINTERNAL if encountered an unexpected condition, for instance Liquidity Provider has more than one LPToken trustline. </p>
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00386">386</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00387">387</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a6c0288f25088dd5b24ce567290b2a75b" name="a6c0288f25088dd5b24ce567290b2a75b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c0288f25088dd5b24ce567290b2a75b">&#9670;&#160;</a></span>verifyAndAdjustLPTokenBalance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1Expected.html">Expected</a>&lt; bool, <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> &gt; ripple::verifyAndAdjustLPTokenBalance </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Sandbox.html">Sandbox</a> &amp;&#160;</td>
+          <td class="paramname"><em>sb</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lpTokens</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> &gt; &amp;&#160;</td>
+          <td class="paramname"><em>ammSle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Due to rounding, the LPTokenBalance of the last LP might not match the LP's trustline balance. </p>
+<p >If it's within the tolerance, update LPTokenBalance to match the LP's trustline balance. </p>
+
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00469">469</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -30525,7 +30573,7 @@ template&lt;typename A &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00236">236</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMUtils_8cpp_source.html#l00237">237</a> of file <a class="el" href="AMMUtils_8cpp_source.html">AMMUtils.cpp</a>.</p>
 
 </div>
 </div>
@@ -35533,7 +35581,7 @@ template&lt;class T , class C &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00687">687</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AMMWithdraw_8cpp_source.html#l00672">672</a> of file <a class="el" href="AMMWithdraw_8cpp_source.html">AMMWithdraw.cpp</a>.</p>
 
 </div>
 </div>
