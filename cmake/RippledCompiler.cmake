@@ -96,6 +96,7 @@ else ()
     string (APPEND CMAKE_CXX_FLAGS " -Wextra -Wno-unused-parameter")
   endif ()
   # not MSVC
+  add_compile_options(-Wno-restrict)
   target_compile_options (common
     INTERFACE
       $<$<BOOL:${werr}>:-Werror>
