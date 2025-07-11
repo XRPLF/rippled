@@ -112,69 +112,6 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
     return tesSUCCESS;
 }
 
-/** Performs early sanity checks on the account and fee fields */
-NotTEC
-preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
-{
-    // This is inappropriate in preflight0, because only Change transactions
-    // skip this function, and those do not allow an sfTicketSequence field.
-    if (ctx.tx.isFieldPresent(sfTicketSequence) &&
-        !ctx.rules.enabled(featureTicketBatch))
-    {
-        return temMALFORMED;
-    }
-
-    if (ctx.tx.isFieldPresent(sfDelegate))
-    {
-        if (!ctx.rules.enabled(featurePermissionDelegation))
-            return temDISABLED;
-
-        if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
-            return temBAD_SIGNER;
-    }
-
-    if (auto const ret = preflight0(ctx, flagMask))
-        return ret;
-
-    auto const id = ctx.tx.getAccountID(sfAccount);
-    if (id == beast::zero)
-    {
-        JLOG(ctx.j.warn()) << "preflight1: bad account id";
-        return temBAD_SRC_ACCOUNT;
-    }
-
-    // No point in going any further if the transaction fee is malformed.
-    auto const fee = ctx.tx.getFieldAmount(sfFee);
-    if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
-    {
-        JLOG(ctx.j.debug()) << "preflight1: invalid fee";
-        return temBAD_FEE;
-    }
-
-    if (auto const ret = preflightCheckSigningKey(ctx.tx, ctx.j))
-        return ret;
-
-    // An AccountTxnID field constrains transaction ordering more than the
-    // Sequence field.  Tickets, on the other hand, reduce ordering
-    // constraints.  Because Tickets and AccountTxnID work against one
-    // another the combination is unsupported and treated as malformed.
-    //
-    // We return temINVALID for such transactions.
-    if (ctx.tx.getSeqProxy().isTicket() &&
-        ctx.tx.isFieldPresent(sfAccountTxnID))
-        return temINVALID;
-
-    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
-        return temINVALID_FLAG;
-
-    XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
-            !ctx.rules.enabled(featureBatch),
-        "Inner batch transaction must have a parent batch ID.");
-
-    return tesSUCCESS;
-}
-
 std::optional<NotTEC>
 preflightCheckSimulateKeys(
     ApplyFlags flags,
@@ -217,11 +154,77 @@ preflightCheckSimulateKeys(
     return {};
 }
 
+}  // namespace detail
+
+/** Performs early sanity checks on the account and fee fields */
+NotTEC
+Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
+{
+    // This is inappropriate in preflight0, because only Change transactions
+    // skip this function, and those do not allow an sfTicketSequence field.
+    if (ctx.tx.isFieldPresent(sfTicketSequence) &&
+        !ctx.rules.enabled(featureTicketBatch))
+    {
+        return temMALFORMED;
+    }
+
+    if (ctx.tx.isFieldPresent(sfDelegate))
+    {
+        if (!ctx.rules.enabled(featurePermissionDelegation))
+            return temDISABLED;
+
+        if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
+            return temBAD_SIGNER;
+    }
+
+    if (auto const ret = preflight0(ctx, flagMask))
+        return ret;
+
+    auto const id = ctx.tx.getAccountID(sfAccount);
+    if (id == beast::zero)
+    {
+        JLOG(ctx.j.warn()) << "preflight1: bad account id";
+        return temBAD_SRC_ACCOUNT;
+    }
+
+    // No point in going any further if the transaction fee is malformed.
+    auto const fee = ctx.tx.getFieldAmount(sfFee);
+    if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
+    {
+        JLOG(ctx.j.debug()) << "preflight1: invalid fee";
+        return temBAD_FEE;
+    }
+
+    if (auto const ret = detail::preflightCheckSigningKey(ctx.tx, ctx.j))
+        return ret;
+
+    // An AccountTxnID field constrains transaction ordering more than the
+    // Sequence field.  Tickets, on the other hand, reduce ordering
+    // constraints.  Because Tickets and AccountTxnID work against one
+    // another the combination is unsupported and treated as malformed.
+    //
+    // We return temINVALID for such transactions.
+    if (ctx.tx.getSeqProxy().isTicket() &&
+        ctx.tx.isFieldPresent(sfAccountTxnID))
+        return temINVALID;
+
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+        return temINVALID_FLAG;
+
+    XRPL_ASSERT(
+        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
+            !ctx.rules.enabled(featureBatch),
+        "Inner batch transaction must have a parent batch ID.");
+
+    return tesSUCCESS;
+}
+
 /** Checks whether the signature appears valid */
 NotTEC
-preflight2(PreflightContext const& ctx)
+Transactor::preflight2(PreflightContext const& ctx)
 {
-    if (auto const ret = preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+    if (auto const ret =
+            detail::preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
         // Skips following checks if the transaction is being simulated,
         // regardless of success or failure
         return *ret;
@@ -235,8 +238,6 @@ preflight2(PreflightContext const& ctx)
     }
     return tesSUCCESS;
 }
-
-}  // namespace detail
 
 //------------------------------------------------------------------------------
 

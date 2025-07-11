@@ -378,11 +378,6 @@ Batch::doPreflight(PreflightContext const& ctx)
             requiredSigners.insert(innerAccount);
     }
 
-    // LCOV_EXCL_START
-    if (auto const ret = detail::preflight2(ctx); !isTesSuccess(ret))
-        return ret;
-    // LCOV_EXCL_STOP
-
     // Validation Batch Signers
     std::unordered_set<AccountID> batchSigners;
     if (ctx.tx.isFieldPresent(sfBatchSigners))
