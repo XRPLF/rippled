@@ -19,6 +19,7 @@
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/misc/MPTUtils.h>
 #include <xrpld/app/tx/detail/AMMDeposit.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>
@@ -35,6 +36,16 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
+    auto const amount = ctx.tx[~sfAmount];
+    auto const amount2 = ctx.tx[~sfAmount2];
+
+    if (!ctx.rules.enabled(featureMPTokensV2) &&
+        (ctx.tx[sfAsset].holds<MPTIssue>() ||
+         ctx.tx[sfAsset2].holds<MPTIssue>() ||
+         (amount && amount->holds<MPTIssue>()) ||
+         (amount2 && amount2->holds<MPTIssue>())))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -45,8 +56,6 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    auto const amount = ctx.tx[~sfAmount];
-    auto const amount2 = ctx.tx[~sfAmount2];
     auto const ePrice = ctx.tx[~sfEPrice];
     auto const lpTokens = ctx.tx[~sfLPTokenOut];
     auto const tradingFee = ctx.tx[~sfTradingFee];
@@ -97,18 +106,18 @@ AMMDeposit::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const asset = ctx.tx[sfAsset].get<Issue>();
-    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
+    auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
     if (auto const res = invalidAMMAssetPair(asset, asset2))
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid asset pair.";
         return res;
     }
 
-    if (amount && amount2 && amount->issue() == amount2->issue())
+    if (amount && amount2 && amount->asset() == amount2->asset())
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid tokens, same issue."
-                            << amount->issue() << " " << amount2->issue();
+                            << amount->asset() << " " << amount2->asset();
         return temBAD_AMM_TOKENS;
     }
 
@@ -146,7 +155,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         if (auto const res = invalidAMMAmount(
                 *ePrice,
                 std::make_optional(
-                    std::make_pair(amount->issue(), amount->issue()))))
+                    std::make_pair(amount->asset(), amount->asset()))))
         {
             JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
             return res;
@@ -181,6 +190,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         std::nullopt,
         std::nullopt,
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         ctx.j);
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
@@ -220,7 +230,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     auto balance = [&](auto const& deposit) -> TER {
         if (isXRP(deposit))
         {
-            auto const lpIssue = (*ammSle)[sfLPTokenBalance].issue();
+            auto const lpIssue = (*ammSle)[sfLPTokenBalance].get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = ctx.view.read(
                 keylet::line(accountID, lpIssue.account, lpIssue.currency));
@@ -230,12 +240,13 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 return tecUNFUNDED_AMM;
             return tecINSUF_RESERVE_LINE;
         }
-        return (accountID == deposit.issue().account ||
+        return (accountID == deposit.asset().getIssuer() ||
                 accountHolds(
                     ctx.view,
                     accountID,
-                    deposit.issue(),
+                    deposit.asset(),
                     FreezeHandling::fhIGNORE_FREEZE,
+                    AuthHandling::ahIGNORE_AUTH,
                     ctx.j) >= deposit)
             ? TER(tesSUCCESS)
             : tecUNFUNDED_AMM;
@@ -245,8 +256,12 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
     {
         // Check if either of the assets is frozen, AMMDeposit is not allowed
         // if either asset is frozen
-        auto checkAsset = [&](Issue const& asset) -> TER {
-            if (auto const ter = requireAuth(ctx.view, asset, accountID))
+        auto checkAsset = [&](Asset const& asset) -> TER {
+            // WeakAuth - don't need to check if MPT object exists as might be
+            // depositing into non-MPT pool. It'll fail on send if MPT doesn't
+            // exist.
+            if (auto const ter = requireAuth(
+                    ctx.view, asset, accountID, MPTAuthType::WeakAuth))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Deposit: account is not authorized, " << asset;
@@ -257,7 +272,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             {
                 JLOG(ctx.j.debug())
                     << "AMM Deposit: account or currency is frozen, "
-                    << to_string(accountID) << " " << to_string(asset.currency);
+                    << to_string(accountID) << " " << to_string(asset);
 
                 return tecFROZEN;
             }
@@ -265,10 +280,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return tesSUCCESS;
         };
 
-        if (auto const ter = checkAsset(ctx.tx[sfAsset].get<Issue>()))
+        if (auto const ter = checkAsset(ctx.tx[sfAsset]))
             return ter;
 
-        if (auto const ter = checkAsset(ctx.tx[sfAsset2].get<Issue>()))
+        if (auto const ter = checkAsset(ctx.tx[sfAsset2]))
             return ter;
     }
 
@@ -282,19 +297,19 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         {
             // This normally should not happen.
             // Account is not authorized to hold the assets it's depositing,
-            // or it doesn't even have a trust line for them
+            // or it doesn't even have a trust line or MPT for them.
             if (auto const ter =
-                    requireAuth(ctx.view, amount->issue(), accountID))
+                    requireAuth(ctx.view, amount->asset(), accountID))
             {
                 // LCOV_EXCL_START
                 JLOG(ctx.j.debug())
                     << "AMM Deposit: account is not authorized, "
-                    << amount->issue();
+                    << amount->asset();
                 return ter;
                 // LCOV_EXCL_STOP
             }
             // AMM account or currency frozen
-            if (isFrozen(ctx.view, ammAccountID, amount->issue()))
+            if (isFrozen(ctx.view, ammAccountID, amount->asset()))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Deposit: AMM account or currency is frozen, "
@@ -302,11 +317,11 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                 return tecFROZEN;
             }
             // Account frozen
-            if (isIndividualFrozen(ctx.view, accountID, amount->issue()))
+            if (isIndividualFrozen(ctx.view, accountID, amount->asset()))
             {
                 JLOG(ctx.j.debug()) << "AMM Deposit: account is frozen, "
                                     << to_string(accountID) << " "
-                                    << to_string(amount->issue().currency);
+                                    << to_string(amount->asset());
                 return tecFROZEN;
             }
             if (checkBalance)
@@ -342,7 +357,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
     // Equal deposit lp tokens
     if (auto const lpTokens = ctx.tx[~sfLPTokenOut];
-        lpTokens && lpTokens->issue() != lptAMMBalance.issue())
+        lpTokens && lpTokens->asset() != lptAMMBalance.asset())
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid LPTokens.";
         return temBAD_AMM_TOKENS;
@@ -360,6 +375,15 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             return tecINSUF_RESERVE_LINE;
         }
     }
+
+    if (auto const ter =
+            isMPTTxAllowed(ctx.view, ttAMM_DEPOSIT, ctx.tx[sfAsset], accountID);
+        ter != tesSUCCESS)
+        return ter;
+    if (auto const ter = isMPTTxAllowed(
+            ctx.view, ttAMM_DEPOSIT, ctx.tx[sfAsset2], accountID);
+        ter != tesSUCCESS)
+        return ter;
 
     return tesSUCCESS;
 }
@@ -379,9 +403,10 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const expected = ammHolds(
         sb,
         *ammSle,
-        amount ? amount->issue() : std::optional<Issue>{},
-        amount2 ? amount2->issue() : std::optional<Issue>{},
+        amount ? amount->asset() : std::optional<Asset>{},
+        amount2 ? amount2->asset() : std::optional<Asset>{},
         FreezeHandling::fhZERO_IF_FROZEN,
+        AuthHandling::ahIGNORE_AUTH,
         ctx_.journal);
     if (!expected)
         return {expected.error(), false};  // LCOV_EXCL_LINE
@@ -452,7 +477,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
                 ammAccountID,
                 *amount,
                 *amount2,
-                lptAMMBalance.issue(),
+                lptAMMBalance.asset(),
                 tfee);
         // should not happen.
         // LCOV_EXCL_START
@@ -471,7 +496,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         // and the voting
         if (lptAMMBalance == beast::zero)
             initializeFeeAuctionVote(
-                sb, ammSle, account_, lptAMMBalance.issue(), tfee);
+                sb, ammSle, account_, lptAMMBalance.asset(), tfee);
 
         sb.update(ammSle);
     }
@@ -514,7 +539,7 @@ AMMDeposit::deposit(
             return temBAD_AMOUNT;
         if (isXRP(depositAmount))
         {
-            auto const& lpIssue = lpTokensDeposit.issue();
+            auto const& lpIssue = lpTokensDeposit.get<Issue>();
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const sle = view.read(
                 keylet::line(account_, lpIssue.account, lpIssue.currency));
@@ -522,12 +547,13 @@ AMMDeposit::deposit(
                 return tesSUCCESS;
         }
         else if (
-            account_ == depositAmount.issue().account ||
+            account_ == depositAmount.asset().getIssuer() ||
             accountHolds(
                 view,
                 account_,
-                depositAmount.issue(),
+                depositAmount.asset(),
                 FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
                 ctx_.journal) >= depositAmount)
             return tesSUCCESS;
         return tecUNFUNDED_AMM;
@@ -658,7 +684,7 @@ AMMDeposit::equalDepositTokens(
         if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
             return {tecAMM_INVALID_TOKENS, STAmount{}};
         auto const frac =
-            divide(tokensAdj, lptAMMBalance, lptAMMBalance.issue());
+            divide(tokensAdj, lptAMMBalance, lptAMMBalance.asset());
         // amounts factor in the adjusted tokens
         auto const amountDeposit =
             getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
@@ -1008,7 +1034,7 @@ AMMDeposit::equalDepositInEmptyState(
     AccountID const& ammAccount,
     STAmount const& amount,
     STAmount const& amount2,
-    Issue const& lptIssue,
+    Asset const& lptIssue,
     std::uint16_t tfee)
 {
     return deposit(

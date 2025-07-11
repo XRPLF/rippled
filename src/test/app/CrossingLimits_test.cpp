@@ -77,10 +77,7 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
 
-        // The number of allowed offers to cross is different between
-        // Taker and FlowCross.  Taker allows 850 and FlowCross allows 1000.
-        // Accommodate that difference in the test.
-        int const maxConsumed = features[featureFlowCross] ? 1000 : 850;
+        int const maxConsumed = 1000;
 
         env.fund(XRP(100000000), gw, "alice", "bob", "carol");
         int const bobsOfferCount = maxConsumed + 150;
@@ -119,11 +116,7 @@ public:
 
         env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan", "evita");
 
-        // The number of offers allowed to cross is different between
-        // Taker and FlowCross.  Taker allows 850 and FlowCross allows 1000.
-        // Accommodate that difference in the test.
-        bool const isFlowCross{features[featureFlowCross]};
-        int const maxConsumed = isFlowCross ? 1000 : 850;
+        int const maxConsumed = 1000;
 
         int const evitasOfferCount{maxConsumed + 49};
         env.trust(USD(1000), "alice");
@@ -133,14 +126,9 @@ public:
         env.trust(USD(evitasOfferCount + 1), "evita");
         env(pay(gw, "evita", USD(evitasOfferCount + 1)));
 
-        // Taker and FlowCross have another difference we must accommodate.
-        // Taker allows a total of 1000 unfunded offers to be consumed
-        // beyond the 850 offers it can take.  FlowCross draws no such
-        // distinction; its limit is 1000 funded or unfunded.
-        //
         // Give carol an extra 150 (unfunded) offers when we're using Taker
         // to accommodate that difference.
-        int const carolsOfferCount{isFlowCross ? 700 : 850};
+        int const carolsOfferCount{700};
         n_offers(env, 400, "alice", XRP(1), USD(1));
         n_offers(env, carolsOfferCount, "carol", XRP(1), USD(1));
         n_offers(env, evitasOfferCount, "evita", XRP(1), USD(1));
@@ -172,105 +160,13 @@ public:
     }
 
     void
-    testAutoBridgedLimitsTaker(FeatureBitset features)
+    testAutoBridgedLimits(FeatureBitset features)
     {
-        testcase("Auto Bridged Limits Taker");
+        testcase("Auto Bridged Limits");
 
-        using namespace jtx;
-        Env env(*this, features);
-
-        auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
-        auto const EUR = gw["EUR"];
-
-        env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan", "evita");
-
-        env.trust(USD(2000), "alice");
-        env(pay(gw, "alice", USD(2000)));
-        env.trust(USD(1000), "carol");
-        env(pay(gw, "carol", USD(3)));
-        env.trust(USD(1000), "evita");
-        env(pay(gw, "evita", USD(1000)));
-
-        n_offers(env, 302, "alice", EUR(2), XRP(1));
-        n_offers(env, 300, "alice", XRP(1), USD(4));
-        n_offers(env, 497, "carol", XRP(1), USD(3));
-        n_offers(env, 1001, "evita", EUR(1), USD(1));
-
-        // Bob offers to buy 2000 USD for 2000 EUR, even though he only has
-        // 1000 EUR.
-        //  1. He spends 600 EUR taking Alice's auto-bridged offers and
-        //     gets 1200 USD for that.
-        //  2. He spends another 2 EUR taking one of Alice's EUR->XRP and
-        //     one of Carol's XRP-USD offers.  He gets 3 USD for that.
-        //  3. The remainder of Carol's offers are now unfunded.  We've
-        //     consumed 602 offers so far.  We now chew through 398 more
-        //     of Carol's unfunded offers until we hit the 1000 offer limit.
-        //     This sets have_bridge to false -- we will handle no more
-        //     bridged offers.
-        //  4. However, have_direct is still true.  So we go around one more
-        //     time and take one of Evita's offers.
-        //  5. After taking one of Evita's offers we notice (again) that our
-        //     offer count was exceeded.  So we completely stop after taking
-        //     one of Evita's offers.
-        env.trust(EUR(10000), "bob");
-        env.close();
-        env(pay(gw, "bob", EUR(1000)));
-        env.close();
-        env(offer("bob", USD(2000), EUR(2000)));
-        env.require(balance("bob", USD(1204)));
-        env.require(balance("bob", EUR(397)));
-
-        env.require(balance("alice", USD(800)));
-        env.require(balance("alice", EUR(602)));
-        env.require(offers("alice", 1));
-        env.require(owners("alice", 3));
-
-        env.require(balance("carol", USD(0)));
-        env.require(balance("carol", EUR(none)));
-        env.require(offers("carol", 100));
-        env.require(owners("carol", 101));
-
-        env.require(balance("evita", USD(999)));
-        env.require(balance("evita", EUR(1)));
-        env.require(offers("evita", 1000));
-        env.require(owners("evita", 1002));
-
-        // Dan offers to buy 900 EUR for 900 USD.
-        //  1. He removes all 100 of Carol's remaining unfunded offers.
-        //  2. Then takes 850 USD from Evita's offers.
-        //  3. Consuming 850 of Evita's funded offers hits the crossing
-        //     limit.  So Dan's offer crossing stops even though he would
-        //     be willing to take another 50 of Evita's offers.
-        env.trust(EUR(10000), "dan");
-        env.close();
-        env(pay(gw, "dan", EUR(1000)));
-        env.close();
-
-        env(offer("dan", USD(900), EUR(900)));
-        env.require(balance("dan", USD(850)));
-        env.require(balance("dan", EUR(150)));
-
-        env.require(balance("alice", USD(800)));
-        env.require(balance("alice", EUR(602)));
-        env.require(offers("alice", 1));
-        env.require(owners("alice", 3));
-
-        env.require(balance("carol", USD(0)));
-        env.require(balance("carol", EUR(none)));
-        env.require(offers("carol", 0));
-        env.require(owners("carol", 1));
-
-        env.require(balance("evita", USD(149)));
-        env.require(balance("evita", EUR(851)));
-        env.require(offers("evita", 150));
-        env.require(owners("evita", 152));
-    }
-
-    void
-    testAutoBridgedLimitsFlowCross(FeatureBitset features)
-    {
-        testcase("Auto Bridged Limits FlowCross");
+        // Extracts as much as possible in one book at one Quality
+        // before proceeding to the other book.  This reduces the number of
+        // times we change books.
 
         // If any book step in a payment strand consumes 1000 offers, the
         // liquidity from the offers is used, but that strand will be marked as
@@ -453,26 +349,6 @@ public:
     }
 
     void
-    testAutoBridgedLimits(FeatureBitset features)
-    {
-        // Taker and FlowCross are too different in the way they handle
-        // autobridging to make one test suit both approaches.
-        //
-        //  o Taker alternates between books, completing one full increment
-        //    before returning to make another pass.
-        //
-        //  o FlowCross extracts as much as possible in one book at one Quality
-        //    before proceeding to the other book.  This reduces the number of
-        //    times we change books.
-        //
-        // So the tests for the two forms of autobridging are separate.
-        if (features[featureFlowCross])
-            testAutoBridgedLimitsFlowCross(features);
-        else
-            testAutoBridgedLimitsTaker(features);
-    }
-
-    void
     testOfferOverflow(FeatureBitset features)
     {
         testcase("Offer Overflow");
@@ -522,25 +398,12 @@ public:
         n_offers(env, 998, alice, XRP(0.96), USD(1));
         n_offers(env, 998, alice, XRP(0.95), USD(1));
 
-        bool const withFlowCross = features[featureFlowCross];
-        bool const withSortStrands = features[featureFlowSortStrands];
-
-        auto const expectedTER = [&]() -> TER {
-            if (withFlowCross && !withSortStrands)
-                return TER{tecOVERSIZE};
-            return tesSUCCESS;
-        }();
+        auto const expectedTER = tesSUCCESS;
 
         env(offer(bob, USD(8000), XRP(8000)), ter(expectedTER));
         env.close();
 
-        auto const expectedUSD = [&] {
-            if (!withFlowCross)
-                return USD(850);
-            if (!withSortStrands)
-                return USD(0);
-            return USD(1996);
-        }();
+        auto const expectedUSD = USD(1996);
 
         env.require(balance(bob, expectedUSD));
     }
@@ -559,10 +422,6 @@ public:
         auto const sa = supported_amendments();
         testAll(sa);
         testAll(sa - featurePermissionedDEX);
-        testAll(sa - featureFlowSortStrands - featurePermissionedDEX);
-        testAll(
-            sa - featureFlowCross - featureFlowSortStrands -
-            featurePermissionedDEX);
     }
 };
 

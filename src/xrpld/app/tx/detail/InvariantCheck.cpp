@@ -288,7 +288,7 @@ NoZeroEscrow::visitEntry(
                 if (amount <= beast::zero)
                     return true;
 
-                if (badCurrency() == amount.getCurrency())
+                if (badCurrency() == amount.get<Issue>().currency)
                     return true;
             }
 
@@ -589,8 +589,8 @@ NoXRPTrustLines::visitEntry(
         // relying on .native() just in case native somehow
         // were systematically incorrect
         xrpTrustLine_ =
-            after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
+            after->getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
+            after->getFieldAmount(sfHighLimit).asset() == xrpIssue();
     }
 }
 
@@ -811,7 +811,7 @@ TransfersNotFrozen::recordBalanceChanges(
     STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
-    auto const currency = after->at(sfBalance).getCurrency();
+    auto const currency = after->at(sfBalance).get<Issue>().currency;
 
     // Change from low account's perspective, which is trust line default
     recordBalance(
@@ -1325,18 +1325,34 @@ ValidClawback::finalize(
             return false;
         }
 
-        if (trustlinesChanged == 1)
+        bool const mptV2Enabled = view.rules().enabled(featureMPTokensV2);
+        if (trustlinesChanged == 1 || (mptV2Enabled && mptokensChanged == 1))
         {
             AccountID const issuer = tx.getAccountID(sfAccount);
             STAmount const& amount = tx.getFieldAmount(sfAmount);
             AccountID const& holder = amount.getIssuer();
-            STAmount const holderBalance = accountHolds(
-                view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+            STAmount const holderBalance = [&]() {
+                if (amount.holds<Issue>())
+                    return accountHolds(
+                        view,
+                        holder,
+                        amount.get<Issue>().currency,
+                        issuer,
+                        fhIGNORE_FREEZE,
+                        j);
+                return accountHolds(
+                    view,
+                    issuer,
+                    amount.get<MPTIssue>(),
+                    fhIGNORE_FREEZE,
+                    ahIGNORE_AUTH,
+                    j);
+            }();
 
             if (holderBalance.signum() < 0)
             {
                 JLOG(j.fatal())
-                    << "Invariant failed: trustline balance is negative";
+                    << "Invariant failed: trustline or MPT balance is negative";
                 return false;
             }
         }
@@ -1396,8 +1412,8 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE ||
-            tx.getTxnType() == ttVAULT_CREATE)
+        auto const txnType = tx.getTxnType();
+        if (txnType == ttMPTOKEN_ISSUANCE_CREATE || txnType == ttVAULT_CREATE)
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -1418,8 +1434,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY ||
-            tx.getTxnType() == ttVAULT_DELETE)
+        if (txnType == ttMPTOKEN_ISSUANCE_DESTROY || txnType == ttVAULT_DELETE)
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -1440,8 +1455,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE ||
-            tx.getTxnType() == ttVAULT_DEPOSIT)
+        if (txnType == ttMPTOKEN_AUTHORIZE || txnType == ttVAULT_DEPOSIT)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -1481,7 +1495,7 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_SET)
+        if (txnType == ttMPTOKEN_ISSUANCE_SET)
         {
             if (mptIssuancesDeleted_ > 0)
             {
@@ -1508,7 +1522,79 @@ ValidMPTIssuance::finalize(
                 mptokensCreated_ == 0 && mptokensDeleted_ == 0;
         }
 
-        if (tx.getTxnType() == ttESCROW_FINISH)
+        if (txnType == ttAMM_CREATE || txnType == ttCHECK_CASH ||
+            txnType == ttOFFER_CREATE || txnType == ttPAYMENT)
+        {
+            if (mptIssuancesDeleted_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while removing MPT issuances";
+            }
+            else if (mptIssuancesCreated_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while creating MPT issuances";
+            }
+            else if (mptokensDeleted_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while removing MPTokens";
+            }
+            // AMM can be created with IOU/MPT or MPT/MPT
+            else if (
+                (txnType == ttAMM_CREATE && mptokensCreated_ > 2) ||
+                (txnType == ttCHECK_CASH && mptokensCreated_ > 1))
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while creating MPTokens";
+            }
+
+            // Offer crossing or payment may consume multiple offers
+            // where takerPays is MPT amount. If the offer owner doesn't
+            // own MPT then MPT is created automatically.
+            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
+                ((txnType == ttAMM_CREATE && mptokensCreated_ <= 2) ||
+                 (txnType == ttCHECK_CASH && mptokensCreated_ <= 1) ||
+                 txnType == ttOFFER_CREATE || txnType == ttPAYMENT) &&
+                mptokensDeleted_ == 0;
+        }
+
+        if (txnType == ttAMM_DELETE || txnType == ttAMM_WITHDRAW ||
+            txnType == ttAMM_CLAWBACK)
+        {
+            if (mptIssuancesDeleted_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while removing MPT issuances";
+            }
+            else if (mptIssuancesCreated_ > 0)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while creating MPT issuances";
+            }
+            else if (mptokensDeleted_ > 2)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while removing MPTokens";
+            }
+            // MPToken can be created if LP withdraws from MPT pool,
+            // and doesn't own MPToken object for this MPT
+            else if (
+                (txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK) &&
+                mptokensCreated_ > 1)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
+                                   "succeeded while creating MPTokens";
+            }
+
+            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
+                ((txnType == ttAMM_DELETE && mptokensCreated_ == 0) ||
+                 ((txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK) &&
+                  mptokensCreated_ <= 1)) &&
+                mptokensDeleted_ <= 2;
+        }
+
+        if (txnType == ttESCROW_FINISH)
             return true;
     }
 
@@ -1839,16 +1925,17 @@ ValidAMM::finalizeCreate(
         auto const [amount, amount2] = ammPoolHolds(
             view,
             *ammAccount_,
-            tx[sfAmount].get<Issue>(),
-            tx[sfAmount2].get<Issue>(),
+            tx[sfAmount].asset(),
+            tx[sfAmount2].asset(),
             fhIGNORE_FREEZE,
+            ahIGNORE_AUTH,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
         // all balances are greater than zero
         if (!validBalances(
                 amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
-            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->issue()) !=
+            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) !=
                 *lptAMMBalanceAfter_)
         {
             JLOG(j.error()) << "AMMCreate invariant failed: " << amount << " "
@@ -1904,9 +1991,10 @@ ValidAMM::generalInvariant(
     auto const [amount, amount2] = ammPoolHolds(
         view,
         *ammAccount_,
-        tx[sfAsset].get<Issue>(),
-        tx[sfAsset2].get<Issue>(),
+        tx[sfAsset],
+        tx[sfAsset2],
         fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
         j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens
@@ -2017,6 +2105,100 @@ ValidAMM::finalize(
             return finalizeDEX(enforce, j);
         default:
             break;
+    }
+
+    return true;
+}
+
+void
+ValidPayment::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (overflow_)
+        return;
+
+    auto makeKey = [](SLE const& sle) {
+        if (sle.getType() == ltMPTOKEN_ISSUANCE)
+            return makeMptID(sle[sfSequence], sle[sfIssuer]);
+        return sle[sfMPTokenIssuanceID];
+    };
+
+    if (before)
+    {
+        auto const type = before->getType();
+        if (type == ltMPTOKEN_ISSUANCE)
+        {
+            data_[makeKey(*before)].outstandingBefore =
+                (*before)[sfOutstandingAmount];
+        }
+        else if (type == ltMPTOKEN)
+        {
+            auto const& account = (*before)[sfAccount];
+            data_[makeKey((*before))].mptAmount[account].before =
+                (*before)[sfMPTAmount];
+        }
+    }
+
+    if (after)
+    {
+        auto const type = after->getType();
+        if (type == ltMPTOKEN_ISSUANCE)
+        {
+            overflow_ = (*after)[sfOutstandingAmount] >
+                (*after)[~sfMaximumAmount].value_or(maxMPTokenAmount);
+            data_[makeKey(*after)].outstandingAfter =
+                (*after)[sfOutstandingAmount];
+        }
+        else if (type == ltMPTOKEN)
+        {
+            auto const& account = (*after)[sfAccount];
+            data_[makeKey((*after))].mptAmount[account].after =
+                (*after)[sfMPTAmount];
+        }
+    }
+}
+
+bool
+ValidPayment::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    auto const txType = tx.getTxnType();
+    // Transactions that execute over the payment engine
+    if (result == tesSUCCESS &&
+        (txType == ttPAYMENT || txType == ttOFFER_CREATE ||
+         txType == ttCHECK_CASH))
+    {
+        bool const enforce = view.rules().enabled(featureMPTokensV2);
+        if (overflow_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
+            return enforce ? false : true;
+        }
+
+        for (auto const& [id, data] : data_)
+        {
+            (void)id;
+            std::int64_t diff = 0;
+            for (auto [acct, amount] : data.mptAmount)
+            {
+                (void)acct;
+                diff += amount.after - amount.before;
+            }
+            if (data.outstandingAfter != (data.outstandingBefore + diff))
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: invalid OutstandingAmount balance "
+                    << data.outstandingBefore << " " << data.outstandingAfter
+                    << " " << diff;
+                return enforce ? false : true;
+            }
+        }
     }
 
     return true;
