@@ -2312,7 +2312,7 @@ ValidVault::finalize(
                            "deleting a vault";
         return false;  // That's all we can do here
     }
-    if (deletedVault && tx.getTxnType() == ttVAULT_DELETE)
+    else if (tx.getTxnType() == ttVAULT_DELETE)
     {
         // At this moment we only know a vault is being deleted and there
         // might be some MPTokenIssuance objects which are deleted in the
@@ -2356,12 +2356,27 @@ ValidVault::finalize(
         return result;
     }
     else if (
-        updatedVault &&
         (tx.getTxnType() == ttVAULT_CREATE ||    //
          tx.getTxnType() == ttVAULT_SET ||       //
          tx.getTxnType() == ttVAULT_DEPOSIT ||   //
          tx.getTxnType() == ttVAULT_WITHDRAW ||  //
-         tx.getTxnType() == ttVAULT_CLAWBACK))
+         tx.getTxnType() == ttVAULT_CLAWBACK) &&
+        !updatedVault.has_value())
+    {
+        // Note, ttVAULT_SET might not update a vault
+        if (tx.getTxnType() == ttVAULT_SET)
+            return true;
+
+        JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
+                           "without updating or creating a vault";
+        return false;  // That's all we can do here
+    }
+    else if (
+        tx.getTxnType() == ttVAULT_CREATE ||    //
+        tx.getTxnType() == ttVAULT_SET ||       //
+        tx.getTxnType() == ttVAULT_DEPOSIT ||   //
+        tx.getTxnType() == ttVAULT_WITHDRAW ||  //
+        tx.getTxnType() == ttVAULT_CLAWBACK)
     {
         // At this moment we only know a vault is being updated and there
         // might be some MPTokenIssuance objects which are also updated in
@@ -2394,8 +2409,11 @@ ValidVault::finalize(
              tx.getTxnType() == ttVAULT_WITHDRAW ||  //
              tx.getTxnType() == ttVAULT_CLAWBACK))
         {
-            JLOG(j.fatal()) << "Invariant failed: vault tx must have old state";
-            return false;  // That's all we can do here
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "ripple::ValidVault::finalize : missing old vault state");
+            return false;
+            // LCOV_EXCL_STOP
         }
 
         auto deletedShares = [&]() -> std::optional<Shares> {
@@ -2412,8 +2430,11 @@ ValidVault::finalize(
              tx.getTxnType() == ttVAULT_WITHDRAW ||  //
              tx.getTxnType() == ttVAULT_CLAWBACK))
         {
-            JLOG(j.fatal()) << "Invariant failed: vault tx must old shares";
-            return false;  // That's all we can do here
+            // LCOV_EXCL_START
+            UNREACHABLE(
+                "ripple::ValidVault::finalize : missing old shares state");
+            return false;
+            // LCOV_EXCL_STOP
         }
 
         bool result = [&]() {

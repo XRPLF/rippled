@@ -30,6 +30,7 @@
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -1678,6 +1679,68 @@ class Invariants_test : public beast::unit_test::suite
                 env(tx);
                 env(vault.deposit(
                     {.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+
+        // Note, ttVAULT_SET is allowed not to modify a vault.
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating or creating a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating or creating a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating or creating a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating or creating a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
                 return true;
             });
     }
