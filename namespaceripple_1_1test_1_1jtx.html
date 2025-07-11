@@ -438,6 +438,8 @@ Functions</h2></td></tr>
 <tr class="memitem:aebc7e483be9178d00e0d809cf0a1a867"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#aebc7e483be9178d00e0d809cf0a1a867">addGrpcConfigWithSecureGateway</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;secureGateway)</td></tr>
 <tr class="memdesc:aebc7e483be9178d00e0d809cf0a1a867"><td class="mdescLeft">&#160;</td><td class="mdescRight">add a grpc address, port and secure_gateway to config  <a href="namespaceripple_1_1test_1_1jtx.html#aebc7e483be9178d00e0d809cf0a1a867">More...</a><br /></td></tr>
 <tr class="separator:aebc7e483be9178d00e0d809cf0a1a867"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1408e17157937b765c8d2e923ebae224"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a1408e17157937b765c8d2e923ebae224">makeConfig</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; extraTxQ={}, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; extraVoting={})</td></tr>
+<tr class="separator:a1408e17157937b765c8d2e923ebae224"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50cacef3867fc01273aa9c29231f9a7c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;account, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> on, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> off=0)</td></tr>
 <tr class="memdesc:a50cacef3867fc01273aa9c29231f9a7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add and/or remove flag.  <a href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">More...</a><br /></td></tr>
 <tr class="separator:a50cacef3867fc01273aa9c29231f9a7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1821,6 +1823,36 @@ template&lt;class F , class... Args&gt; </div>
 </dl>
 
 <p class="definition">Definition at line <a class="el" href="envconfig_8cpp_source.html#l00130">130</a> of file <a class="el" href="envconfig_8cpp_source.html">envconfig.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a1408e17157937b765c8d2e923ebae224" name="a1408e17157937b765c8d2e923ebae224"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1408e17157937b765c8d2e923ebae224">&#9670;&#160;</a></span>makeConfig()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1Config.html">Config</a> &gt; ripple::test::jtx::makeConfig </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td>
+          <td class="paramname"><em>extraTxQ</em> = <code>{}</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td>
+          <td class="paramname"><em>extraVoting</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="envconfig_8cpp_source.html#l00144">144</a> of file <a class="el" href="envconfig_8cpp_source.html">envconfig.cpp</a>.</p>
 
 </div>
 </div>
