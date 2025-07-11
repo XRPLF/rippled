@@ -22,10 +22,3 @@ source = "git+https://github.com/ripple/craft.git?branch=remove-submodules#530c9
 dependencies = [
  "log",
 ]
-
-[[package]]
-name = "xrpl_std_example"
-version = "0.0.1"
-dependencies = [
- "xrpl-std",
-]
