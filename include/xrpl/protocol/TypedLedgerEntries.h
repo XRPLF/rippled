@@ -143,7 +143,7 @@ public:
         return *array_;
     }
 
-    template <typename ...TArgs>
+    template <typename... TArgs>
     ProxyType
     createItem(TArgs&&... args)
     {

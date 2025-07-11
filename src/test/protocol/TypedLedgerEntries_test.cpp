@@ -30,7 +30,8 @@ struct TypedLedgerEntries_test : public beast::unit_test::suite
     {
         testcase("testAccessSTArrayProxy");
         STArray innerArray;
-        STArrayProxy<InnerObjectType<SFieldNames::field_sfSignerEntry>> array{&innerArray};
+        STArrayProxy<InnerObjectType<SFieldNames::field_sfSignerEntry>> array{
+            &innerArray};
 
         BEAST_EXPECT(array.empty());
         auto item = array.createItem();
