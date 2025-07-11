@@ -23,6 +23,13 @@
 
 namespace ripple {
 
+using SFieldCRef = std::reference_wrapper<SField const>;
+
+// helper function, only in `.h` for testing purposes
+template <typename T>
+Expected<T, HostFunctionError>
+getData(InstanceWrapper const* rt, wasm_val_vec_t const* params, int32_t& src);
+
 using getLedgerSqnOld_proto = int32_t();
 wasm_trap_t*
 getLedgerSqnOld_wrap(

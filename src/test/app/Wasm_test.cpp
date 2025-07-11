@@ -21,7 +21,9 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
+#include <xrpld/app/misc/WamrVM.h>
 #include <xrpld/app/misc/WasmHostFunc.h>
+#include <xrpld/app/misc/WasmHostFuncWrapper.h>
 #include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
@@ -76,6 +78,85 @@ getLedgerSqn_wrap(void* env, wasm_val_vec_t const*, wasm_val_vec_t* results)
 
 struct Wasm_test : public beast::unit_test::suite
 {
+    void
+    testGetDataHelperFunctions()
+    {
+        testcase("getData helper functions");
+
+        auto& engine = WasmEngine::instance();
+
+        {
+            // test int32_t
+            wasm_val_vec_t params;
+            wasm_val_t values[1];
+
+            values[0].kind = WASM_I32;
+            values[0].of.i32 = 42;
+
+            wasm_val_vec_new(&params, 1, values);
+            InstanceWrapper const wrapper;
+            int index = 0;
+            auto const result = getData<int32_t>(&wrapper, &params, index);
+            BEAST_EXPECT(result && result.value() == 42);
+            BEAST_EXPECT(index == 1);
+        }
+
+        {
+            // test int64_t
+            wasm_val_vec_t params;
+            wasm_val_t values[1];
+
+            values[0].kind = WASM_I64;
+            values[0].of.i64 = 1234;
+
+            wasm_val_vec_new(&params, 1, values);
+            InstanceWrapper const wrapper;
+            int index = 0;
+            auto const result = getData<int64_t>(&wrapper, &params, index);
+            BEAST_EXPECT(result && result.value() == 1234);
+            BEAST_EXPECT(index == 1);
+        }
+
+        {
+            // test SFieldCRef
+            wasm_val_vec_t params;
+            wasm_val_t values[1];
+
+            values[0].kind = WASM_I32;
+            values[0].of.i32 = sfAccount.fieldCode;
+
+            wasm_val_vec_new(&params, 1, values);
+            InstanceWrapper const wrapper;
+            int index = 0;
+            auto const result = getData<SFieldCRef>(&wrapper, &params, index);
+            BEAST_EXPECT(result && result.value().get() == sfAccount);
+            BEAST_EXPECT(index == 1);
+        }
+
+        {
+            // test Slice
+            wasm_val_vec_t params;
+            wasm_val_t values[2];
+
+            values[0].kind = WASM_I32;
+            values[0].of.i32 = 0;
+
+            values[0].kind = WASM_I32;
+            values[0].of.i32 = 2;
+
+            wasm_val_vec_new(&params, 2, values);
+            InstanceWrapper const wrapper;
+
+            auto mem = wrapper.getMem();
+            mem.s = 2;
+
+            int index = 0;
+            auto const result = getData<Slice>(&wrapper, &params, index);
+            BEAST_EXPECT(result && result.value() == Slice{});
+            BEAST_EXPECT(index == 2);
+        }
+    }
+
     void
     testWasmFib()
     {
@@ -659,6 +740,7 @@ struct Wasm_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
+        testGetDataHelperFunctions();
         testWasmLib();
         testBadWasm();
         testWasmCheckJson();

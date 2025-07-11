@@ -26,8 +26,6 @@
 
 namespace ripple {
 
-using SFieldCRef = std::reference_wrapper<SField const>;
-
 static int32_t
 setData(
     InstanceWrapper const* rt,
@@ -59,10 +57,6 @@ setData(
 
     return ssz;
 }
-
-template <typename T>
-Expected<T, HostFunctionError>
-getData(InstanceWrapper const* rt, wasm_val_vec_t const* params, int32_t& src);
 
 template <>
 Expected<int32_t, HostFunctionError>
