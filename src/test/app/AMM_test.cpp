@@ -5649,13 +5649,7 @@ private:
         FeatureBitset const all{supported_amendments()};
 
         {
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
-                    return cfg;
-                }),
-                all);
+            Env env(*this, all, XRPAmount(1));
             fund(env, gw, {alice}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw, XRP(10'000), USD(10'000));
             for (auto i = 0; i < maxDeletableAMMTrustLines + 10; ++i)
@@ -5720,13 +5714,7 @@ private:
         }
 
         {
-            Env env(
-                *this,
-                envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = XRPAmount(1);
-                    return cfg;
-                }),
-                all);
+            Env env(*this, all, XRPAmount(1));
             fund(env, gw, {alice}, XRP(20'000), {USD(10'000)});
             AMM amm(env, gw, XRP(10'000), USD(10'000));
             for (auto i = 0; i < maxDeletableAMMTrustLines * 2 + 10; ++i)
