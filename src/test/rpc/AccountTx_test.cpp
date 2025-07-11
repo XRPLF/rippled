@@ -763,7 +763,10 @@ class AccountTx_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::chrono_literals;
 
-        Env env(*this);
+        auto p = test::jtx::envconfig();
+        auto& votingSection = p->section("voting");
+        votingSection.set("reference_fee", "10");
+        Env env(*this, std::move(p));
 
         Account const alice{"alice"};
         Account const bob{"bob"};
