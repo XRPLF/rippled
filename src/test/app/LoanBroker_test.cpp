@@ -197,6 +197,8 @@ class LoanBroker_test : public beast::unit_test::suite
 
             auto verifyCoverAmount =
                 [&env, &vault, &broker, &pseudoAccount, this](auto n) {
+                    using namespace jtx;
+
                     auto const amount = vault.asset(n);
                     BEAST_EXPECT(
                         broker->at(sfCoverAvailable) == amount.number());

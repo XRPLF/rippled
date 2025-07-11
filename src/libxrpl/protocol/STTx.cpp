@@ -495,6 +495,8 @@ multiSignHelper(
         auto const accountID = signer.getAccountID(sfAccount);
 
         // The account owner may not usually multisign for themselves.
+        // If they can, txnAccountID will be unseated, which is not equal to any
+        // value.
         if (txnAccountID == accountID)
             return Unexpected("Invalid multisigner.");
 
@@ -556,7 +558,7 @@ STTx::checkBatchMultiSign(
         batchSigner,
         std::nullopt,
         fullyCanonical,
-        [&dataStart](AccountID const& accountID) mutable -> Serializer {
+        [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
@@ -588,7 +590,7 @@ STTx::checkMultiSign(
         sigObject,
         txnAccountID,
         fullyCanonical,
-        [&dataStart](AccountID const& accountID) mutable -> Serializer {
+        [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
@@ -620,11 +622,12 @@ STTx::getBatchTransactionIDs() const
     XRPL_ASSERT(
         getFieldArray(sfRawTransactions).size() != 0,
         "STTx::getBatchTransactionIDs : empty raw transactions");
-    if (batch_txn_ids_.size() != 0)
-        return batch_txn_ids_;
-
-    for (STObject const& rb : getFieldArray(sfRawTransactions))
-        batch_txn_ids_.push_back(rb.getHash(HashPrefix::transactionID));
+    // Don't early return so that the size check is always done.
+    if (batch_txn_ids_.size() == 0)
+    {
+        for (STObject const& rb : getFieldArray(sfRawTransactions))
+            batch_txn_ids_.push_back(rb.getHash(HashPrefix::transactionID));
+    }
 
     XRPL_ASSERT(
         batch_txn_ids_.size() == getFieldArray(sfRawTransactions).size(),

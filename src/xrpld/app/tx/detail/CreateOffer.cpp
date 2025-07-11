@@ -48,12 +48,9 @@ CreateOffer::isEnabled(PreflightContext const& ctx)
 {
     // Permissioned offers should use the PE (which must be enabled by
     // featureFlowCross amendment)
-    if (ctx.rules.enabled(featurePermissionedDEX) &&
-        !ctx.rules.enabled(featureFlowCross))
-        return false;
-
     return (!ctx.tx.isFieldPresent(sfDomainID)) ||
-        ctx.rules.enabled(featurePermissionedDEX);
+        (ctx.rules.enabled(featurePermissionedDEX) &&
+         ctx.rules.enabled(featureFlowCross));
 }
 
 std::uint32_t
