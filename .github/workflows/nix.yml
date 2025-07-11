@@ -50,7 +50,7 @@ jobs:
           - gcc
           - clang
         configuration:
-          # - Debug
+          - Debug
           - Release
         include:
           - compiler: gcc
@@ -131,7 +131,6 @@ jobs:
             compiler_version: 16
             distro: debian
             codename: bookworm
-
         cmake-args:
           -
           - "-Dunity=ON"
@@ -368,6 +367,7 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
       CLANG_RELEASE: 16
+      CONAN_URL:  http://18.143.149.228:8081/artifactory/api/conan/dev
     # strategy:
     #   fail-fast: false
     runs-on: [self-hosted, heavy]
@@ -389,6 +389,7 @@ jobs:
           run: |
             conan config install conan/profiles/default -tf $(conan config home)/profiles/
             conan config install conan/global.conf -tf $(conan config home)
+            conan remote add --index 0 ripple ${{ env.CONAN_URL }}
         - name: build dependencies
           run: |
             cd ${BUILD_DIR}
