@@ -316,6 +316,18 @@ private:
         beast::Journal j);
 
     void trapTransaction(uint256) const;
+
+    // Helper functions for preflight checks. Do not use directly.
+    /** Performs early sanity checks on the account and fee fields.
+
+        (And passes flagMask to preflight0)
+    */
+    static NotTEC
+    preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
+
+    /** Checks whether the signature appears valid */
+    static NotTEC
+    preflight2(PreflightContext const& ctx);
 };
 
 inline bool
@@ -337,16 +349,15 @@ namespace detail {
 NotTEC
 preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
 
-/** Performs early sanity checks on the account and fee fields.
-
-    (And passes flagMask to preflight0)
-*/
-NotTEC
-preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
-
-/** Checks whether the signature appears valid */
-NotTEC
-preflight2(PreflightContext const& ctx);
+/** Checks the special signing key state needed for simulation
+ *
+ * Normally called from preflight2 with ctx.tx.
+ */
+std::optional<NotTEC>
+preflightCheckSimulateKeys(
+    ApplyFlags flags,
+    STObject const& sigObject,
+    beast::Journal j);
 }  // namespace detail
 
 // Defined in Change.cpp
@@ -361,13 +372,13 @@ Transactor::preflight(PreflightContext const& ctx)
     if (!T::isEnabled(ctx))
         return temDISABLED;
 
-    if (auto const ret = ripple::detail::preflight1(ctx, T::getFlagsMask(ctx)))
+    if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
         return ret;
 
     if (auto const ret = T::doPreflight(ctx))
         return ret;
 
-    return ripple::detail::preflight2(ctx);
+    return preflight2(ctx);
 }
 
 template <class T>

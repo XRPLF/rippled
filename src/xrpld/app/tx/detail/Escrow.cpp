@@ -650,14 +650,6 @@ EscrowFinish::doPreflight(PreflightContext const& ctx)
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
         return temMALFORMED;
 
-    // Verify the transaction signature. If it doesn't work
-    // then don't do any more work.
-    {
-        auto const ret = detail::preflight2(ctx);
-        if (!isTesSuccess(ret))
-            return ret;
-    }
-
     if (cb && fb)
     {
         auto& router = ctx.app.getHashRouter();

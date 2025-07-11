@@ -112,9 +112,53 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
     return tesSUCCESS;
 }
 
+std::optional<NotTEC>
+preflightCheckSimulateKeys(
+    ApplyFlags flags,
+    STObject const& sigObject,
+    beast::Journal j)
+{
+    if (ctx.flags & tapDRY_RUN)  // simulation
+    {
+        if (!ctx.tx.getSignature().empty())
+        {
+            // NOTE: This code should never be hit because it's checked in the
+            // `simulate` RPC
+            return temINVALID;  // LCOV_EXCL_LINE
+        }
+
+        if (!ctx.tx.isFieldPresent(sfSigners))
+        {
+            // no signers, no signature - a valid simulation
+            return tesSUCCESS;
+        }
+
+        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+        {
+            if (signer.isFieldPresent(sfTxnSignature) &&
+                !signer[sfTxnSignature].empty())
+            {
+                // NOTE: This code should never be hit because it's
+                // checked in the `simulate` RPC
+                return temINVALID;  // LCOV_EXCL_LINE
+            }
+        }
+
+        if (!ctx.tx.getSigningPubKey().empty())
+        {
+            // trying to single-sign _and_ multi-sign a transaction
+            return temINVALID;
+        }
+        return tesSUCCESS;
+    }
+    return {};
+}
+
+}  // namespace detail
+
 /** Performs early sanity checks on the account and fee fields */
 NotTEC
-preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
+Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     // This is inappropriate in preflight0, because only Change transactions
     // skip this function, and those do not allow an sfTicketSequence field.
@@ -151,7 +195,7 @@ preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return temBAD_FEE;
     }
 
-    if (auto const ret = preflightCheckSigningKey(ctx.tx, ctx.j))
+    if (auto const ret = detail::preflightCheckSigningKey(ctx.tx, ctx.j))
         return ret;
 
     // An AccountTxnID field constrains transaction ordering more than the
@@ -177,41 +221,13 @@ preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 
 /** Checks whether the signature appears valid */
 NotTEC
-preflight2(PreflightContext const& ctx)
+Transactor::preflight2(PreflightContext const& ctx)
 {
-    if (ctx.flags & tapDRY_RUN)  // simulation
-    {
-        if (!ctx.tx.getSignature().empty())
-        {
-            // NOTE: This code should never be hit because it's checked in the
-            // `simulate` RPC
-            return temINVALID;  // LCOV_EXCL_LINE
-        }
-
-        if (!ctx.tx.isFieldPresent(sfSigners))
-        {
-            // no signers, no signature - a valid simulation
-            return tesSUCCESS;
-        }
-
-        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
-        {
-            if (signer.isFieldPresent(sfTxnSignature) &&
-                !signer[sfTxnSignature].empty())
-            {
-                // NOTE: This code should never be hit because it's
-                // checked in the `simulate` RPC
-                return temINVALID;  // LCOV_EXCL_LINE
-            }
-        }
-
-        if (!ctx.tx.getSigningPubKey().empty())
-        {
-            // trying to single-sign _and_ multi-sign a transaction
-            return temINVALID;
-        }
-        return tesSUCCESS;
-    }
+    if (auto const ret =
+            detail::preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+        // Skips following checks if the transaction is being simulated,
+        // regardless of success or failure
+        return *ret;
 
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
@@ -222,8 +238,6 @@ preflight2(PreflightContext const& ctx)
     }
     return tesSUCCESS;
 }
-
-}  // namespace detail
 
 //------------------------------------------------------------------------------
 
