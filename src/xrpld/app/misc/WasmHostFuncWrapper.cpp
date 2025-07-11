@@ -527,6 +527,11 @@ computeSha512HalfHash_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        RET(HF_ERR_DATA_FIELD_TOO_LARGE);
+    }
+
     auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
     if (!r)
     {
@@ -726,6 +731,11 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
+    if (params->data[1].of.i32 + params->data[3].of.i32 > maxWasmDataLength)
+    {
+        RET(HF_ERR_DATA_FIELD_TOO_LARGE);
+    }
+
     auto const msg =
         getDataString(rt, params->data[0].of.i32, params->data[1].of.i32);
     if (!msg)
@@ -749,6 +759,11 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        RET(HF_ERR_DATA_FIELD_TOO_LARGE);
+    }
 
     auto const msg =
         getDataString(rt, params->data[0].of.i32, params->data[1].of.i32);
