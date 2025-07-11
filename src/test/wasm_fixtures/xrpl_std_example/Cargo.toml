@@ -1,0 +1,10 @@
+[package]
+edition = "2024"
+name = "xrpl_std_example"
+version = "0.0.1"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xrpl-std = { git = "https://github.com/ripple/craft.git", branch = "remove-submodules", package = "xrpl-std" }
