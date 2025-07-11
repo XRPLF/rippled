@@ -81,8 +81,8 @@ namespace ripple {
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{
-        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
+    auto const amount = ctx.tx[sfAmount];
+    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::zero};
 }
 
 template <ValidIssueType T>
