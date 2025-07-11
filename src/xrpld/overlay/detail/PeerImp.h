@@ -26,6 +26,7 @@
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
@@ -703,6 +704,7 @@ PeerImp::PeerImp(
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
+    ++app_.getPerfLog().getPeerCounters().connection.totalOutboundConnects;
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
     JLOG(journal_.info())
