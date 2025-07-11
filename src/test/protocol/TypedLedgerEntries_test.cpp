@@ -28,23 +28,24 @@ struct TypedLedgerEntries_test : public beast::unit_test::suite
     void
     testAccessSTArrayProxy()
     {
+        testcase("testAccessSTArrayProxy");
         STArray innerArray;
-        STArrayProxy<LedgerObjectType<ltSIGNER_LIST>> array{&innerArray};
+        STArrayProxy<InnerObjectType<SFieldNames::field_sfSignerEntry>> array{&innerArray};
 
         BEAST_EXPECT(array.empty());
         auto item = array.createItem();
-        item.fsfOwnerNode() = 1;
+        item.fsfSignerWeight() = 1;
         array.push_back(item);
 
-        BEAST_EXPECT(array.back().fsfOwnerNode() == 1);
+        BEAST_EXPECT(array.back().fsfSignerWeight() == 1);
 
-        BEAST_EXPECT(array.value().back()[sfOwnerNode] == 1);
+        BEAST_EXPECT(array.value().back()[sfSignerWeight] == 1);
 
-        BEAST_EXPECT(array.begin()->fsfOwnerNode() == 1);
+        BEAST_EXPECT(array.begin()->fsfSignerWeight() == 1);
         BEAST_EXPECT(std::distance(array.begin(), array.end()) == 1);
         BEAST_EXPECT(array.size() == 1);
         BEAST_EXPECT(!array.empty());
-        BEAST_EXPECT(array.at(0).fsfOwnerNode() == 1);
+        BEAST_EXPECT(array.at(0).fsfSignerWeight() == 1);
         BEAST_EXPECT(!array.at(1).isValid());
         BEAST_EXPECT(array.valid());
         BEAST_EXPECT(
@@ -132,6 +133,7 @@ struct TypedLedgerEntries_test : public beast::unit_test::suite
     {
         testGet();
         testSet();
+        testAccessSTArrayProxy();
     }
 };
 
