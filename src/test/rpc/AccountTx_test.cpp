@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -763,10 +764,9 @@ class AccountTx_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::chrono_literals;
 
-        auto p = test::jtx::envconfig();
-        auto& votingSection = p->section("voting");
-        votingSection.set("reference_fee", "10");
-        Env env(*this, std::move(p));
+        auto cfg = makeConfig();
+        cfg->FEES.reference_fee = 10;
+        Env env(*this, std::move(cfg));
 
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -805,7 +805,8 @@ class AccountTx_test : public beast::unit_test::suite
         checkAliceAcctTx(4, jss::MPTokenAuthorize);
         env.close();
 
-        // ledger hash should be fixed regardless any change to account history
+        // ledger hash should be fixed regardless any change to account
+        // history
         BEAST_EXPECT(
             to_string(env.closed()->info().hash) ==
             "0BD507BB87D3C0E73B462485E6E381798A8C82FC49BF17FE39C60E08A1AF035D");
