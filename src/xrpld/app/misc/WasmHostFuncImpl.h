@@ -73,6 +73,9 @@ public:
     getLedgerTransactionHash() override;
 
     Expected<int32_t, HostFunctionError>
+    getBaseFee() override;
+
+    Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override;
 
     Expected<Bytes, HostFunctionError>

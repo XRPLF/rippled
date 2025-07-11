@@ -61,6 +61,13 @@ WasmHostFunctionsImpl::getLedgerTransactionHash()
 }
 
 Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::getBaseFee()
+{
+    // relatively safe to assume the tx base fee won't be > 2^31-1 drops
+    return static_cast<int32_t>(ctx.view().fees().base.drops());
+}
+
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 {
     auto const& keylet = keylet::unchecked(objId);
