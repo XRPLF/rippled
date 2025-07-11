@@ -47,18 +47,20 @@ jobs:
         platform:
           - linux
         compiler:
-          # - gcc
+          - gcc
           - clang
         configuration:
           # - Debug
           - Release
         include:
-          # - compiler: gcc
-            # os_version: jammy
-            # profile:
-            #   version: 12
-            #   cc: /usr/bin/gcc
-            #   cxx: /usr/bin/g++
+          - compiler: gcc
+            compiler_version: 12
+            distro: ubuntu
+            codename: jammy
+            profile:
+              version: 12
+              cc: /usr/bin/gcc
+              cxx: /usr/bin/g++
           - compiler: clang
             compiler_version: 16
             distro: debian
@@ -68,7 +70,7 @@ jobs:
               cc: /usr/bin/clang-16
               cxx: /usr/bin/clang++-16
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}-act
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
     steps:
@@ -112,29 +114,30 @@ jobs:
         platform:
           - linux
         compiler:
-          # - gcc
+          - gcc
           - clang
         configuration:
-          # - Debug
+          - Debug
           - Release
         include:
-          # - compiler: gcc
-            # os_version: jammy
-            # profile:
-            #   version: 12
-            #   cc: /usr/bin/gcc
-            #   cxx: /usr/bin/g++
+          - compiler: gcc
+            distro: ubuntu
+            codename: jammy
+            profile:
+              version: 12
+              cc: /usr/bin/gcc
+              cxx: /usr/bin/g++
           - compiler: clang
             compiler_version: 16
             distro: debian
             codename: bookworm
 
-        # cmake-args:
-          # -
-          # - "-Dunity=ON"
+        cmake-args:
+          -
+          - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}-act
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
     steps:
@@ -368,7 +371,7 @@ jobs:
     # strategy:
     #   fail-fast: false
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/debian-bookworm:clang-16-act
+    container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
 
     steps:
         - name: checkout
