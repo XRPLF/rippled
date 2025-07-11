@@ -524,8 +524,10 @@ public:
 // Check equal with tolerance
 bool
 checkNear(IOUAmount const& expected, IOUAmount const& actual);
+bool
+checkNear(MPTAmount const& expected, MPTAmount const& actual);
 template <typename T>
-    requires(std::is_same_v<T, XRPAmount> || std::is_same_v<T, MPTAmount>)
+    requires(std::is_same_v<T, XRPAmount>)
 bool
 checkNear(T const& expected, T const& actual)
 {

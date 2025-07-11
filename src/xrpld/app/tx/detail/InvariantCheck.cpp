@@ -1325,7 +1325,8 @@ ValidClawback::finalize(
             return false;
         }
 
-        if (trustlinesChanged == 1 || mptokensChanged == 1)
+        bool const mptV2Enabled = view.rules().enabled(featureMPTokensV2);
+        if (trustlinesChanged == 1 || (mptV2Enabled && mptokensChanged == 1))
         {
             AccountID const issuer = tx.getAccountID(sfAccount);
             STAmount const& amount = tx.getFieldAmount(sfAmount);
@@ -2164,7 +2165,7 @@ ValidPayment::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const,
-    ReadView const&,
+    ReadView const& view,
     beast::Journal const& j)
 {
     auto const txType = tx.getTxnType();
@@ -2173,10 +2174,11 @@ ValidPayment::finalize(
         (txType == ttPAYMENT || txType == ttOFFER_CREATE ||
          txType == ttCHECK_CASH))
     {
+        bool const enforce = view.rules().enabled(featureMPTokensV2);
         if (overflow_)
         {
             JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
-            return false;
+            return enforce ? false : true;
         }
 
         for (auto const& [id, data] : data_)
@@ -2194,7 +2196,7 @@ ValidPayment::finalize(
                     << "Invariant failed: invalid OutstandingAmount balance "
                     << data.outstandingBefore << " " << data.outstandingAfter
                     << " " << diff;
-                return false;
+                return enforce ? false : true;
             }
         }
     }

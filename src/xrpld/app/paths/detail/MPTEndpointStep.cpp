@@ -258,23 +258,6 @@ public:
         return true;
     }
 
-    bool
-    verifyDstQualityIn(std::uint32_t dstQIn) const
-    {
-        // Payments have no particular expectations for what dstQIn will be.
-        return true;
-    }
-
-    std::uint32_t
-    quality(ReadView const& sb, QualityDirection qDir) const;
-
-    // Compute the maximum value that can flow from src->dst at
-    // the best available quality.
-    // return: first element is max amount that can flow,
-    //         second is the debt direction w.r.t. the source account
-    std::pair<MPTAmount, DebtDirection>
-    maxFlow(ReadView const& sb, MPTAmount const& desired) const;
-
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
     TER
@@ -316,24 +299,6 @@ public:
         return issues(prevStepDir);
     }
 
-    bool
-    verifyDstQualityIn(std::uint32_t dstQIn) const
-    {
-        // Due to a couple of factors dstQIn is always QUALITY_ONE for
-        // offer crossing.  If that changes we need to know.
-        return dstQIn == QUALITY_ONE;
-    }
-
-    std::uint32_t
-    quality(ReadView const& sb, QualityDirection qDir) const;
-
-    // Compute the maximum value that can flow from src->dst at
-    // the best available quality.
-    // return: first element is max amount that can flow,
-    //         second is the debt direction w.r.t the source
-    std::pair<MPTAmount, DebtDirection>
-    maxFlow(ReadView const& sb, MPTAmount const& desired) const;
-
     // Verify the consistency of the step.  These checks are specific to
     // offer crossing and assume that general checks were already performed.
     TER
@@ -352,37 +317,6 @@ public:
 };
 
 //------------------------------------------------------------------------------
-
-std::uint32_t
-MPTEndpointPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
-{
-    // MPT doesn't have Quality fields like trust line
-    return QUALITY_ONE;
-}
-
-std::uint32_t
-MPTEndpointOfferCrossingStep::quality(ReadView const&, QualityDirection qDir)
-    const
-{
-    // MPT doesn't have Quality fields like trust line
-    return QUALITY_ONE;
-}
-
-std::pair<MPTAmount, DebtDirection>
-MPTEndpointPaymentStep::maxFlow(ReadView const& sb, MPTAmount const&) const
-{
-    return maxPaymentFlow(sb);
-}
-
-std::pair<MPTAmount, DebtDirection>
-MPTEndpointOfferCrossingStep::maxFlow(
-    ReadView const& sb,
-    MPTAmount const& desired) const
-{
-    // Unlike IOU, MPT can't exceed the limit (MaximumAmount).
-    // See DirectIOfferCrossingStep::maxFlow().
-    return maxPaymentFlow(sb);
-}
 
 TER
 MPTEndpointPaymentStep::check(
@@ -555,13 +489,11 @@ MPTEndpointStep<TDerived>::revImp(
     cache_.reset();
 
     auto const [maxSrcToDst, srcDebtDir] =
-        static_cast<TDerived const*>(this)->maxFlow(sb, out);
+        static_cast<TDerived const*>(this)->maxPaymentFlow(sb);
 
     auto const [srcQOut, dstQIn] =
         qualities(sb, srcDebtDir, StrandDirection::reverse);
-    XRPL_ASSERT(
-        static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn),
-        "MPTEndpointStep<TDerived>::revImp : verify dst quaity in");
+    (void)dstQIn;
 
     MPTIssue const srcToDstIss(mptIssue_);
 
@@ -583,8 +515,8 @@ MPTEndpointStep<TDerived>::revImp(
         err != tesSUCCESS)
         return {beast::zero, beast::zero};
 
-    MPTAmount const srcToDst =
-        mulRatio(out, QUALITY_ONE, dstQIn, /*roundUp*/ true);
+    // Don't have to factor in dstQIn since it is always QUALITY_ONE
+    MPTAmount const srcToDst = out;
 
     if (srcToDst <= maxSrcToDst)
     {
@@ -615,8 +547,8 @@ MPTEndpointStep<TDerived>::revImp(
     // limiting node
     MPTAmount const in =
         mulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
-    MPTAmount const actualOut =
-        mulRatio(maxSrcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
+    // Don't have to factor in dsqQIn since it's always QUALITY_ONE
+    MPTAmount const actualOut = maxSrcToDst;
     cache_.emplace(in, maxSrcToDst, actualOut, srcDebtDir);
 
     auto const ter = rippleCredit(
@@ -696,10 +628,11 @@ MPTEndpointStep<TDerived>::fwdImp(
     XRPL_ASSERT(cache_, "MPTEndpointStep<TDerived>::fwdImp : valid cache");
 
     auto const [maxSrcToDst, srcDebtDir] =
-        static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
+        static_cast<TDerived const*>(this)->maxPaymentFlow(sb);
 
     auto const [srcQOut, dstQIn] =
         qualities(sb, srcDebtDir, StrandDirection::forward);
+    (void)dstQIn;
 
     MPTIssue const srcToDstIss(mptIssue_);
 
@@ -726,8 +659,8 @@ MPTEndpointStep<TDerived>::fwdImp(
 
     if (srcToDst <= maxSrcToDst)
     {
-        MPTAmount const out =
-            mulRatio(srcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
+        // Don't have to factor in dstQIn since it's always QUALITY_ONE
+        MPTAmount const out = srcToDst;
         setCacheLimiting(in, srcToDst, out, srcDebtDir);
         auto const ter = rippleCredit(
             sb,
@@ -753,8 +686,8 @@ MPTEndpointStep<TDerived>::fwdImp(
         // limiting node
         MPTAmount const actualIn =
             mulRatio(maxSrcToDst, srcQOut, QUALITY_ONE, /*roundUp*/ true);
-        MPTAmount const out =
-            mulRatio(maxSrcToDst, dstQIn, QUALITY_ONE, /*roundUp*/ false);
+        // Don't have to factor in dstQIn since it's always QUALITY_ONE
+        MPTAmount const out = maxSrcToDst;
         setCacheLimiting(actualIn, maxSrcToDst, out, srcDebtDir);
         auto const ter = rippleCredit(
             sb,
@@ -798,7 +731,7 @@ MPTEndpointStep<TDerived>::validFwd(
         "MPTEndpoint<TDerived>::validFwd : not XRP or IOU");
 
     auto const [maxSrcToDst, srcDebtDir] =
-        static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
+        static_cast<TDerived const*>(this)->maxPaymentFlow(sb);
     (void)srcDebtDir;
 
     try
@@ -842,8 +775,8 @@ MPTEndpointStep<TDerived>::qualitiesSrcRedeems(ReadView const& sb) const
         return {QUALITY_ONE, QUALITY_ONE};
 
     auto const prevStepQIn = prevStep_->lineQualityIn(sb);
-    auto srcQOut =
-        static_cast<TDerived const*>(this)->quality(sb, QualityDirection::out);
+    // Unlike trustline MPT doesn't have line quality field
+    auto srcQOut = QUALITY_ONE;
 
     if (prevStepQIn > srcQOut)
         srcQOut = prevStepQIn;
@@ -868,12 +801,9 @@ MPTEndpointStep<TDerived>::qualitiesSrcIssues(
     std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
         ? transferRate(sb, mptIssue_.getMptID()).value
         : QUALITY_ONE;
-    auto dstQIn =
-        static_cast<TDerived const*>(this)->quality(sb, QualityDirection::in);
 
-    if (isLast_ && dstQIn > QUALITY_ONE)
-        dstQIn = QUALITY_ONE;
-    return {srcQOut, dstQIn};
+    // Unlike trustline, MPT doesn't have line quality field
+    return {srcQOut, QUALITY_ONE};
 }
 
 // Returns srcQOut, dstQIn
@@ -904,7 +834,7 @@ std::uint32_t
 MPTEndpointStep<TDerived>::lineQualityIn(ReadView const& v) const
 {
     // dst quality in
-    return static_cast<TDerived const*>(this)->quality(v, QualityDirection::in);
+    return QUALITY_ONE;
 }
 
 template <class TDerived>
@@ -918,6 +848,7 @@ MPTEndpointStep<TDerived>::qualityUpperBound(
     auto const [srcQOut, dstQIn] = redeems(dir)
         ? qualitiesSrcRedeems(v)
         : qualitiesSrcIssues(v, prevStepDir);
+    (void)dstQIn;
 
     MPTIssue const iss{mptIssue_};
     // Be careful not to switch the parameters to `getRate`. The
@@ -927,7 +858,8 @@ MPTEndpointStep<TDerived>::qualityUpperBound(
     // first parameter is called `offerOut`, it should take the `dstQIn`
     // variable.
     return {
-        Quality(getRate(STAmount(iss, dstQIn), STAmount(iss, srcQOut))), dir};
+        Quality(getRate(STAmount(iss, QUALITY_ONE), STAmount(iss, srcQOut))),
+        dir};
 }
 
 template <class TDerived>
@@ -987,7 +919,7 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
     if (!ctx.isLast && !ctx.isFirst)
     {
         JLOG(j_.warn()) << "MPTEndpointStep: MPT can only be an endpoint";
-        return terNO_RIPPLE;
+        return temBAD_PATH;
     }
 
     return static_cast<TDerived const*>(this)->check(ctx, sleSrc);

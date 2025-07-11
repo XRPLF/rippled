@@ -210,7 +210,6 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         STAmount volA = std::get<0>(entry.second);
         STAmount volB = std::get<1>(entry.second);
 
-        // Do we need mpt_issuance_id_a, etc if MPT?
         if (volA.holds<Issue>())
             inner[jss::currency_a] =
                 (isXRP(volA) ? "XRP_drops" : to_string(volA.asset()));

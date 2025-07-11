@@ -215,30 +215,32 @@ ammAccountHolds(
     AccountID const& ammAccountID,
     Asset const& asset)
 {
+    // Get the actual AMM balance without factoring in the balance hook
     if (asset.holds<MPTIssue>())
-        return accountHolds(
-            view,
-            ammAccountID,
-            asset.get<MPTIssue>(),
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            beast::Journal(beast::Journal::getNullSink()));
-    Issue const& issue = asset.get<Issue>();
-    if (isXRP(issue))
     {
-        if (auto const sle = view.read(keylet::account(ammAccountID)))
-            return (*sle)[sfBalance];
+        auto const& issue = asset.get<MPTIssue>();
+        if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID)))
+            return STAmount{issue, (*sle)[sfMPTAmount]};
     }
-    else if (auto const sle = view.read(
-                 keylet::line(ammAccountID, issue.account, issue.currency));
-             sle &&
-             !isFrozen(view, ammAccountID, issue.currency, issue.account))
+    else
     {
-        auto amount = (*sle)[sfBalance];
-        if (ammAccountID > issue.account)
-            amount.negate();
-        amount.setIssuer(issue.account);
-        return amount;
+        Issue const& issue = asset.get<Issue>();
+        if (isXRP(issue))
+        {
+            if (auto const sle = view.read(keylet::account(ammAccountID)))
+                return (*sle)[sfBalance];
+        }
+        else if (auto const sle = view.read(
+                     keylet::line(ammAccountID, issue.account, issue.currency));
+                 sle &&
+                 !isFrozen(view, ammAccountID, issue.currency, issue.account))
+        {
+            auto amount = (*sle)[sfBalance];
+            if (ammAccountID > issue.account)
+                amount.negate();
+            amount.setIssuer(issue.account);
+            return amount;
+        }
     }
 
     return STAmount{asset};
