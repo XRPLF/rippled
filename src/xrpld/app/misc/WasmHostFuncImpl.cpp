@@ -650,6 +650,12 @@ WasmHostFunctionsImpl::getNFTFlags(uint256 const& nftId)
 }
 
 Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::getNFTTransferFee(uint256 const& nftId)
+{
+    return nft::getTransferFee(nftId);
+}
+
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::trace(
     std::string_view const& msg,
     Slice const& data,

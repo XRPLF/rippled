@@ -317,6 +317,12 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
+    getNFTTransferFee(uint256 const& nftId)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
     trace(std::string_view const& msg, Slice const& data, bool asHex)
     {
         return Unexpected(HostFunctionError::INTERNAL);
