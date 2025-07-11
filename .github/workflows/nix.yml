@@ -121,6 +121,7 @@ jobs:
           - Release
         include:
           - compiler: gcc
+            compiler_version: 12
             distro: ubuntu
             codename: jammy
             profile:
