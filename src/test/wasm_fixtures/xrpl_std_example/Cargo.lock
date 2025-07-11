@@ -3,13 +3,6 @@
 version = 4
 
 [[package]]
-name = "kyc"
-version = "0.1.0"
-dependencies = [
- "xrpl-std",
-]
-
-[[package]]
 name = "log"
 version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -18,7 +11,6 @@ checksum = "13dc2df351e3202783a1fe0d44375f7295ffb4049267b0f3018346dc122a1d94"
 [[package]]
 name = "xrpl-std"
 version = "0.0.1"
-source = "git+https://github.com/ripple/craft.git?branch=remove-submodules#530c9fb08a62ec8fc8eb069e94ed0d5da0b5bec5"
 dependencies = [
  "log",
 ]

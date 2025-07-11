@@ -3,55 +3,62 @@ include(xrpl_add_test)
 # Test requirements.
 find_package(doctest REQUIRED)
 
-# After conan setup or before any other targets are defined
-add_custom_command(
-  OUTPUT ${CMAKE_BINARY_DIR}/wasm_module.wasm
-  COMMAND cargo build --release --target wasm32-unknown-unknown
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures
-  COMMENT "Building Rust WASM module"
+file(GLOB_RECURSE WASM_SOURCE_FILES
+  ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/Cargo.toml
+  ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/**/*.rs
+  ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/**/Cargo.toml
+  ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/**/Cargo.lock
 )
 
-# Step 1: Define where the wasm output lives
-set(RUST_WASM_OUTPUT
-    ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/target/wasm32-unknown-unknown/release/kyc.wasm)
+# Build Rust WASM fixtures and pass them into wasm_test_fixtures.h
+set(RUST_WASM_OUTPUT_DIR
+    ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures/target/wasm32-unknown-unknown/release)
 
-# Step 2: Tell CMake to run cargo build
 add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/kyc.wasm
-    COMMAND cargo build --release --target wasm32-unknown-unknown
+    OUTPUT ${CMAKE_BINARY_DIR}/wasm
+    COMMAND cargo build --release --target wasm32-unknown-unknown --workspace
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/test/wasm_fixtures
+    DEPENDS ${WASM_SOURCE_FILES}
     COMMENT "Building Rust WASM module"
 )
 
-# Step 3: Define a target for it
-add_custom_target(kyc_wasm ALL
-    DEPENDS ${CMAKE_BINARY_DIR}/kyc.wasm
+add_custom_target(wasm_fixtures ALL
+    DEPENDS ${CMAKE_BINARY_DIR}/wasm
 )
 
-# Step 4: Copy the wasm file to your build dir
 add_custom_command(
-    TARGET kyc_wasm POST_BUILD
+    TARGET wasm_fixtures POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/wasm
     COMMAND ${CMAKE_COMMAND} -E copy
-            ${RUST_WASM_OUTPUT}
-            ${CMAKE_BINARY_DIR}/kyc.wasm
+            ${RUST_WASM_OUTPUT_DIR}/*.wasm
+            ${CMAKE_BINARY_DIR}/wasm
     COMMENT "Copying .wasm to build directory"
 )
 
 set(EMBED_HEADER ${CMAKE_BINARY_DIR}/wasm_test_fixtures.h)
 
+# 2. Glob all .wasm files in the output folder
+file(GLOB WASM_FILES ${CMAKE_BINARY_DIR}/wasm/*.wasm)
+
+# 3. Start building up the embedding command
 add_custom_command(
   OUTPUT ${EMBED_HEADER}
-  COMMAND xxd -i -n wasm_testcase_a ${CMAKE_BINARY_DIR}/kyc.wasm > ${EMBED_HEADER}
-#   COMMAND xxd -i -n wasm_testcase_b ${WASM_B} >> ${EMBED_HEADER}
-  COMMENT "Embedding multiple WASM testcases into a single header"
+  COMMAND ${CMAKE_COMMAND} -E echo "// Embedded WASM fixtures" > ${EMBED_HEADER}
+  COMMENT "Embedding all WASM testcases into a single header"
 )
 
-add_custom_target(embed_wasm_modules ALL
-  DEPENDS ${EMBED_HEADER}
-)
+# 4. For each .wasm file, add a `xxd -i -n ...` line to the custom command
+foreach(wasm_file ${WASM_FILES})
+  get_filename_component(wasm_name ${wasm_file} NAME_WE) # e.g. "kyc"
+  add_custom_command(
+    OUTPUT ${EMBED_HEADER}
+    APPEND
+    COMMAND xxd -i -n wasm_${wasm_name} ${wasm_file} >> ${EMBED_HEADER}
+  )
+endforeach()
 
 add_custom_target(embed_wasm_header ALL
-  DEPENDS ${CMAKE_BINARY_DIR}/wasm_test_fixtures.h
+  DEPENDS ${EMBED_HEADER}
 )
 
 add_dependencies(rippled embed_wasm_header)
