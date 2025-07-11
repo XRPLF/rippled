@@ -2638,7 +2638,7 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        testcase("failed pseudo-account allocation");
+        testcase("Pseudo-account allocation failure");
         Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Vault vault{env};
