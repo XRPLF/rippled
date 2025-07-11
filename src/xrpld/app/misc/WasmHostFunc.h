@@ -101,6 +101,12 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
+    getBaseFee()
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     {
         return Unexpected(HostFunctionError::INTERNAL);

@@ -313,6 +313,19 @@ getLedgerTransactionHash_wrap(
 }
 
 wasm_trap_t*
+getBaseFee_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    return returnResult(rt, params, results, hf->getBaseFee(), index);
+}
+
+wasm_trap_t*
 cacheLedgerObj_wrap(
     void* env,
     wasm_val_vec_t const* params,
