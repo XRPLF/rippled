@@ -112,3 +112,6 @@ bld.rippled/
 
 # Suggested in-tree build directory
 /.build/
+
+src/test/wasm_fixtures/target
+src/test/wasm_fixtures/debug

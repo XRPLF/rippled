@@ -17,6 +17,17 @@
 */
 //==============================================================================
 
+#include <test/app/wasm_fixtures/fixtures.h>
+#include <test/jtx.h>
+
+#include <xrpld/app/misc/WasmHostFunc.h>
+#include <xrpld/app/misc/WasmVM.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/ledger/detail/ApplyViewBase.h>
+
+#include <wasm_c_api.h>
+#include <wasm_test_fixtures.h>
+
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
 #endif
