@@ -26,6 +26,7 @@
 #include <xrpld/ledger/detail/ApplyViewBase.h>
 
 #include <wasm_c_api.h>
+#include <wasm_test_fixtures.h>
 
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
