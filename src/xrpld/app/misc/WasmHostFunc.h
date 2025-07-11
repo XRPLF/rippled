@@ -107,6 +107,18 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(uint256 const& amendmentId)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(std::string_view const& amendmentName)
+    {
+        return Unexpected(HF_ERR_INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     {
         return Unexpected(HostFunctionError::INTERNAL);
