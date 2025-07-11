@@ -1165,6 +1165,25 @@ getNFTTransferFee_wrap(
 }
 
 wasm_trap_t*
+getNFTSerial_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const nftId = getData<uint256>(rt, params, index);
+    if (!nftId)
+    {
+        return hfResult(results, nftId.error());
+    }
+
+    return returnResult(rt, params, results, hf->getNFTSerial(*nftId), index);
+}
+
+wasm_trap_t*
 trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
