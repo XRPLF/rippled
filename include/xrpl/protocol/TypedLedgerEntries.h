@@ -143,10 +143,11 @@ public:
         return *array_;
     }
 
+    template <typename ...TArgs>
     ProxyType
-    createItem()
+    createItem(TArgs&&... args)
     {
-        return ProxyType::create();
+        return ProxyType::create(std::forward<TArgs>(args)...);
     }
 
     void
