@@ -822,9 +822,9 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 mulRatio(ofrAmt.in, ofrInRate, QUALITY_ONE, /*roundUp*/ true);
         }
 
-        // Limit offer's input if MPT, BookStep is the first step, and
-        // this offer is not owned by the issuer. Otherwise, OutstandingAmount
-        // may overflow.
+        // Limit offer's input if MPT, BookStep is the first step (an issuer
+        // is making a cross-currency payment), and this offer is not owned
+        // by the issuer. Otherwise, OutstandingAmount may overflow.
         auto const& asset = offer.assetIn();
         auto const& issuer = asset.getIssuer();
         if (isAssetInMPT && !prevStep_ && offer.owner() != issuer)

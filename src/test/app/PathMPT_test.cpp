@@ -293,6 +293,13 @@ public:
                 "bob",
                 USD(-1),
                 std::optional<STAmount>(XRP(100'000'000)));
+            if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
+            {
+                auto const& pathElem = st[0][0];
+                BEAST_EXPECT(
+                    pathElem.isOffer() && pathElem.getIssuerID() == gw.id() &&
+                    pathElem.getMPTID() == USD.issuanceID);
+            }
             BEAST_EXPECT(sa == XRP(100));
             BEAST_EXPECT(equal(da, USD(100)));
         }

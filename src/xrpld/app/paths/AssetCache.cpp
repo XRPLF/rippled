@@ -79,7 +79,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
                 // for either value of outgoing.
                 XRPL_ASSERT(
                     size <= totalLineCount_,
-                    "ripple::RippleLineCache::getRippleLines : maximum lines");
+                    "ripple::AssetCache::getRippleLines : maximum lines");
                 totalLineCount_ -= size;
                 lines_.erase(otheriter);
             }
@@ -101,7 +101,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
     {
         XRPL_ASSERT(
             it->second == nullptr,
-            "ripple::RippleLineCache::getRippleLines : null lines");
+            "ripple::Asset::getRippleLines : null lines");
         auto lines =
             PathFindTrustLine::getItems(accountID, *ledger_, direction);
         if (lines.size())
@@ -114,7 +114,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 
     XRPL_ASSERT(
         !it->second || (it->second->size() > 0),
-        "ripple::RippleLineCache::getRippleLines : null or nonempty lines");
+        "ripple::AssetCache::getRippleLines : null or nonempty lines");
     auto const size = it->second ? it->second->size() : 0;
     JLOG(journal_.trace()) << "getRippleLines for ledger "
                            << ledger_->info().seq << " found " << size

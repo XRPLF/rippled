@@ -154,7 +154,7 @@ MPTokenAuthorize::createMPToken(
     ApplyView& view,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    std::uint32_t flags)
+    std::uint32_t const flags)
 {
     auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
 
@@ -189,11 +189,8 @@ MPTokenAuthorize::checkCreateMPT(
     auto const mptokenID = keylet::mptoken(mptIssuanceID.key, holder);
     if (!view.exists(mptokenID))
     {
-        if (auto const err = createMPToken(
-                view,
-                mptIssue.getMptID(),
-                holder,
-                lsfMPTCanTransfer | lsfMPTCanTrade);
+        if (auto const err =
+                createMPToken(view, mptIssue.getMptID(), holder, 0);
             err != tesSUCCESS)
             return err;
         auto const sleAcct = view.peek(keylet::account(holder));

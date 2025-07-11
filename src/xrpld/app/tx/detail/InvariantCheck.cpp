@@ -2137,7 +2137,7 @@ ValidPayment::visitEntry(
         {
             auto const& account = (*before)[sfAccount];
             data_[makeKey((*before))].mptAmount[account].before =
-                (*before)[sfMPTAmount];
+                (*before)[sfMPTAmount] + (*before)[~sfLockedAmount].value_or(0);
         }
     }
 
@@ -2155,7 +2155,7 @@ ValidPayment::visitEntry(
         {
             auto const& account = (*after)[sfAccount];
             data_[makeKey((*after))].mptAmount[account].after =
-                (*after)[sfMPTAmount];
+                (*after)[sfMPTAmount] + (*after)[~sfLockedAmount].value_or(0);
         }
     }
 }
@@ -2168,11 +2168,8 @@ ValidPayment::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    auto const txType = tx.getTxnType();
     // Transactions that execute over the payment engine
-    if (result == tesSUCCESS &&
-        (txType == ttPAYMENT || txType == ttOFFER_CREATE ||
-         txType == ttCHECK_CASH))
+    if (result == tesSUCCESS)
     {
         bool const enforce = view.rules().enabled(featureMPTokensV2);
         if (overflow_)

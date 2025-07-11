@@ -922,6 +922,14 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return temBAD_PATH;
     }
 
+    auto const& issuer = mptIssue_.getIssuer();
+    if ((src_ != issuer && dst_ != issuer) ||
+        (src_ == issuer && dst_ == issuer))
+    {
+        JLOG(j_.warn()) << "MPTEndpointStep: invalid src/dst";
+        return temBAD_PATH;
+    }
+
     return static_cast<TDerived const*>(this)->check(ctx, sleSrc);
 }
 
