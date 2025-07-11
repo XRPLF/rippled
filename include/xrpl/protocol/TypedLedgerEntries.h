@@ -137,12 +137,22 @@ public:
         return valid();
     }
 
+    /**
+     * Returns the underlying STArray
+     */
     STArray&
     value()
     {
         return *array_;
     }
 
+    /**
+     * Creates an instance of ProxyType. The ProxyType may be something
+     * complicated this is just a shortcut.
+     * @tparam TArgs types of the arguments
+     * @param args arguments
+     * @return The instance
+     */
     template <typename... TArgs>
     ProxyType
     createItem(TArgs&&... args)
@@ -207,8 +217,16 @@ private:
     STArray* array_;
 };
 
-// We need a way to address each field so that we can map the field names
-// to field types
+/*
+ * We need a way to address each field so that we can map the field names
+ * to field types.
+ * How it works is:
+ * 1. We take the name of an item defined in sfields.macro. e.g. sfScale
+ * 2. We prefix it with field_, becoming field_sfScale
+ * 3. Put everything into the enum class SFieldNames
+ *
+ * Then the enum SFieldNames has all the field names defined in it.
+*/
 #pragma push_macro("UNTYPED_SFIELD")
 #undef UNTYPED_SFIELD
 #pragma push_macro("TYPED_SFIELD")
@@ -257,9 +275,20 @@ struct GetFieldType
     constexpr static SFieldNames ItemField = SFieldNames::field_sfInvalid;
 };
 
-// For each field defined in sfields.macro, we will have a template
-// specialisation of GetFieldType for it, and each GetFieldType will
-// have a static Value member and a static ItemField member
+/*
+ * For each field defined in sfields.macro, we will have a template
+ * specialisation of GetFieldType for it, and each GetFieldType will
+ * have a static Value member and a static ItemField member
+ *
+ * How this works is:
+ * 1. We have a base definition of GetFieldType which basically gives no information.
+ * 2. Take an untyped field definition from sfields.macro. e.g. UNTYPED_SFIELD(sfMemo, OBJECT, 10)
+ * 3. Create a new template specialisation for GetFieldType, with the template parameter being the corresponding SFieldNames enum we defined earliler
+ * 4. Set the Value field to the stiSuffix
+ * 5. If it's an object, Value will be AggregateFieldTypes::OBJECT
+ * 6. If it's an array, Value will be AggregateFieldTypes::ARRAY, and ItemField will be the value provided in the macro
+ * 7. We don't care about the typed fields because we can get the type easily
+ */
 #pragma push_macro("UNTYPED_SFIELD")
 #undef UNTYPED_SFIELD
 #pragma push_macro("TYPED_SFIELD")
@@ -421,7 +450,7 @@ struct GetFieldValue<
     }
 };
 
-// This type returns an std::optional when the field is marked as optional.
+// This type returns a std::optional when the field is marked as optional.
 template <
     SFieldNames FieldName,
     SFieldNames ItemFieldName,
@@ -512,6 +541,9 @@ struct GetFieldValue<
     using InnerObjectType =
         typename GetInnerObjectStruct<ItemFieldName, InnerObjectTypesArray>::
             Struct;
+
+    // If we know what type the STArray holds (i.e. the field is defined by ARRAY_SFIELD and the item type is not Invalid), we return an STArrayProxy, otherwise,
+    // we return an untyped STArray
     template <typename TFieldType>
     static std::conditional_t<
         !std::is_void_v<InnerObjectType>,
@@ -539,8 +571,34 @@ struct GetFieldValue<
     }
 };
 
-// We're defining the inner object type array so that we can use it
-// in the get function.
+/*
+ * This inner_objects.macro is from InnerObjectFormats.cpp.
+ * We're defining the inner object type array so that we can use it
+ * in the get function.
+ * How this works is, for example, the macro file is:
+ *
+ * INNER_OBJECT_BEGIN
+ *
+ * INNER_OBJECT(sfSignerEntry,
+ *     FIELDS(
+ *         FIELD(sfSignerEntry, sfAccount, soeREQUIRED)
+ *         FIELD(sfSignerEntry, sfSignerWeight, soeREQUIRED)
+ *         FIELD(sfSignerEntry, sfWalletLocator, soeOPTIONAL)
+ *     )
+ * )
+ *
+ * INNER_OBJECT_END
+ *
+ * 1. Replace INNER_OBJECT_BEGIN with using InnerObjectTypesArray = std::tuple<
+ * 2. Replace INNER_OBJECT with InnerObjectTypePair<SFieldNames::field_sfSignerEntry, struct InnerObject_sfSignerEntry>,
+ * 3. Replace INNER_OBJECT_END with void>;
+ *
+ * The resulting code is:
+ * using InnerObjectTypesArray = std::tuple<InnerObjectTypePair<SFieldNames::field_sfSignerEntry, struct InnerObject_sfSignerEntry>, void>;
+ * which we're defining a tuple with some pairs inside. When we want to look up a type from the field name,
+ * we iterate through the tuple and then return the pair that the field name is the same as the one we're looking for.
+ * The type struct InnerObject_sfSignerEntry yet to be defined, but we'll define it later.
+ */
 #pragma push_macro("INNER_OBJECT")
 #pragma push_macro("FIELDS")
 #pragma push_macro("FIELD")
@@ -564,8 +622,37 @@ struct GetFieldValue<
 #pragma pop_macro("INNER_OBJECT_BEGIN")
 #pragma pop_macro("INNER_OBJECT_END")
 
-// We're defining each inner object type here.
-
+/*
+ * We're defining each inner object type here.
+ *
+ * How this works is, for example, the macro file is like this:
+ *
+ * INNER_OBJECT_BEGIN
+ *
+ * INNER_OBJECT(sfSignerEntry,
+ *     FIELDS(
+ *         FIELD(sfSignerEntry, sfAccount, soeREQUIRED)
+ *         FIELD(sfSignerEntry, sfSignerWeight, soeREQUIRED)
+ *         FIELD(sfSignerEntry, sfWalletLocator, soeOPTIONAL)
+ *     )
+ * )
+ *
+ * INNER_OBJECT_END
+ *
+ * 1. We leave INNER_OBJECT_BEGIN and INNER_OBJECT_END empty as we don't need them
+ * 2. Replace INNER_OBJECT with struct InnerObject_sfSignerEntry with some methods defined
+ * 3. Replace FIELD with auto fsfSignerEntry() that returns the value of this field
+ *
+ * In the end, we'll have a struct like the following:
+ * struct InnerObject_sfSignerEntry
+ * {
+ *      static InnerObject_sfSignerEntry fromObject();
+ *      static InnerObject_sfSignerEntry create();
+ *
+ *      ValueProxy<SignerEntry> fsfSignerEntry();
+ * };
+ *
+ */
 #pragma push_macro("INNER_OBJECT")
 #pragma push_macro("FIELDS")
 #pragma push_macro("FIELD")
@@ -672,6 +759,26 @@ struct LedgerEntry
 {
 };
 
+/*
+ * We're defining ledger entries here.
+ * This is very similar to what happens above, and in the end, we'll have something like:
+ *
+ * struct LedgerEntry<ltCheck>
+ * {
+ *      static LedgerEntry fromObject();
+ *      static LedgerEntry create();
+ *
+ *      ValueProxy<SignerEntry> fsfSignerEntry();
+ * };
+ *
+ * The only difference is that we don't have to define a type array, and
+ * we only need template specialisation for them.
+ * The reason is that an inner object may return another inner object, but
+ * a ledger entry should never have a field that returns another ledger entry,
+ * meaning there's not going to be a circular dependency, and a type array
+ * allows us to define each type later and look up in it when they're not
+ * fully defined.
+ */
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 #pragma push_macro("LEDGER_ENTRY_DUPLICATE")
@@ -803,10 +910,12 @@ struct LedgerEntry
 
 }  // namespace detail
 
+// This gives an inner object that the field name corresponds to.
 template <SFieldNames FieldName>
 using InnerObjectType = typename detail::
     GetInnerObjectStruct<FieldName, detail::InnerObjectTypesArray>::Struct;
 
+// This gives a ledger entry type that the LedgerEntryType corresponds to.
 template <LedgerEntryType EntryType>
 using LedgerObjectType = detail::LedgerEntry<EntryType>;
 }  // namespace ripple
