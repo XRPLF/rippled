@@ -17,18 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/AMM.h>
+#include <test/jtx.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/permissioned_domains.h>
-#include <test/jtx/utility.h>
-#include <test/jtx/vault.h>
 
 #include <xrpld/ledger/View.h>
 
