@@ -25,10 +25,28 @@ namespace ripple {
 
 using SFieldCRef = std::reference_wrapper<SField const>;
 
-// helper function, only in `.h` for testing purposes
-template <typename T>
-Expected<T, HostFunctionError>
-getData(InstanceWrapper const* rt, wasm_val_vec_t const* params, int32_t& src);
+// helper functions, only in `.h` for testing purposes
+template <class IW>
+Expected<int32_t, HostFunctionError>
+getDataInt32(IW const* _rt, wasm_val_vec_t const* params, int32_t& i);
+template <class IW>
+Expected<int64_t, HostFunctionError>
+getDataInt64(IW const* _rt, wasm_val_vec_t const* params, int32_t& i);
+template <class IW>
+Expected<SFieldCRef, HostFunctionError>
+getDataSField(IW const* _rt, wasm_val_vec_t const* params, int32_t& i);
+template <class IW>
+Expected<Slice, HostFunctionError>
+getDataSlice(IW const* rt, wasm_val_vec_t const* params, int32_t& i);
+template <class IW>
+Expected<uint256, HostFunctionError>
+getDataUInt256(IW const* rt, wasm_val_vec_t const* params, int32_t& i);
+template <class IW>
+Expected<AccountID, HostFunctionError>
+getDataAccountID(IW const* rt, wasm_val_vec_t const* params, int32_t& i);
+template <class IW>
+Expected<std::string_view, HostFunctionError>
+getDataString(IW const* rt, wasm_val_vec_t const* params, int32_t& i);
 
 using getLedgerSqnOld_proto = int32_t();
 wasm_trap_t*

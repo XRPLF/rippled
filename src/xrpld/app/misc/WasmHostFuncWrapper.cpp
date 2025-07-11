@@ -58,36 +58,27 @@ setData(
     return ssz;
 }
 
-template <>
+template <class IW>
 Expected<int32_t, HostFunctionError>
-getData<int32_t>(
-    InstanceWrapper const* _rt,
-    wasm_val_vec_t const* params,
-    int32_t& i)
+getDataInt32(IW const* _rt, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i32;
     i++;
     return result;
 }
 
-template <>
+template <class IW>
 Expected<int64_t, HostFunctionError>
-getData<int64_t>(
-    InstanceWrapper const* _rt,
-    wasm_val_vec_t const* params,
-    int32_t& i)
+getDataInt64(IW const* _rt, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i64;
     i++;
     return result;
 }
 
-template <>
+template <class IW>
 Expected<SFieldCRef, HostFunctionError>
-getData<SFieldCRef>(
-    InstanceWrapper const* _rt,
-    wasm_val_vec_t const* params,
-    int32_t& i)
+getDataSField(IW const* _rt, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const& m = SField::getKnownCodeToField();
     auto const it = m.find(params->data[i].of.i32);
@@ -99,12 +90,9 @@ getData<SFieldCRef>(
     return *it->second;
 }
 
-template <>
+template <class IW>
 Expected<Slice, HostFunctionError>
-getData<Slice>(
-    InstanceWrapper const* rt,
-    wasm_val_vec_t const* params,
-    int32_t& i)
+getDataSlice(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
@@ -123,14 +111,11 @@ getData<Slice>(
     return data;
 }
 
-template <>
+template <class IW>
 Expected<uint256, HostFunctionError>
-getData<uint256>(
-    InstanceWrapper const* rt,
-    wasm_val_vec_t const* params,
-    int32_t& i)
+getDataUInt256(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const r = getData<Slice>(rt, params, i);
+    auto const r = getDataSlice(rt, params, i);
     if (!r)
     {
         return Unexpected(r.error());
@@ -143,28 +128,22 @@ getData<uint256>(
     return uint256::fromVoid(r->data());
 }
 
-template <>
+template <class IW>
 Expected<AccountID, HostFunctionError>
-getData<AccountID>(
-    InstanceWrapper const* rt,
-    wasm_val_vec_t const* params,
-    int32_t& i)
+getDataAccountID(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const r = getData<Slice>(rt, params, i);
+    auto const r = getDataSlice(rt, params, i);
     if (!r || (r->size() != AccountID::bytes))
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     return AccountID::fromVoid(r->data());
 }
 
-template <>
+template <class IW>
 Expected<std::string_view, HostFunctionError>
-getData<std::string_view>(
-    InstanceWrapper const* rt,
-    wasm_val_vec_t const* params,
-    int32_t& i)
+getDataString(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const r = getData<Slice>(rt, params, i);
+    auto const r = getDataSlice(rt, params, i);
     if (!r)
         return Unexpected(r.error());
     return std::string_view(
@@ -313,13 +292,13 @@ cacheLedgerObj_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const id = getData<uint256>(rt, params, index);
+    auto const id = getDataUInt256(rt, params, index);
     if (!id)
     {
         return hfResult(results, id.error());
     }
 
-    auto const cache = getData<int32_t>(rt, params, index);
+    auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
         return hfResult(results, cache.error());
@@ -339,7 +318,7 @@ getTxField_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const fname = getData<SFieldCRef>(rt, params, index);
+    auto const fname = getDataSField(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -357,7 +336,7 @@ getCurrentLedgerObjField_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const fname = getData<SFieldCRef>(rt, params, index);
+    auto const fname = getDataSField(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -377,13 +356,13 @@ getLedgerObjField_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const cache = getData<int32_t>(rt, params, index);
+    auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
         return hfResult(results, cache.error());
     }
 
-    auto const fname = getData<SFieldCRef>(rt, params, index);
+    auto const fname = getDataSField(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -403,7 +382,7 @@ getTxNestedField_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getData<Slice>(rt, params, index);
+    auto const bytes = getDataSlice(rt, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -423,7 +402,7 @@ getCurrentLedgerObjNestedField_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getData<Slice>(rt, params, index);
+    auto const bytes = getDataSlice(rt, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -442,13 +421,13 @@ getLedgerObjNestedField_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const cache = getData<int32_t>(rt, params, index);
+    auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
         return hfResult(results, cache.error());
     }
 
-    auto const bytes = getData<Slice>(rt, params, index);
+    auto const bytes = getDataSlice(rt, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -472,7 +451,7 @@ getTxArrayLen_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const fname = getData<SFieldCRef>(rt, params, index);
+    auto const fname = getDataSField(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -491,7 +470,7 @@ getCurrentLedgerObjArrayLen_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const fname = getData<SFieldCRef>(rt, params, index);
+    auto const fname = getDataSField(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -511,13 +490,13 @@ getLedgerObjArrayLen_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const cache = getData<int32_t>(rt, params, index);
+    auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
         return hfResult(results, cache.error());
     }
 
-    auto const fname = getData<SFieldCRef>(rt, params, index);
+    auto const fname = getDataSField(rt, params, index);
     if (!fname)
     {
         return hfResult(results, fname.error());
@@ -537,7 +516,7 @@ getTxNestedArrayLen_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getData<Slice>(rt, params, index);
+    auto const bytes = getDataSlice(rt, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -557,7 +536,7 @@ getCurrentLedgerObjNestedArrayLen_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getData<Slice>(rt, params, index);
+    auto const bytes = getDataSlice(rt, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -580,13 +559,13 @@ getLedgerObjNestedArrayLen_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const cache = getData<int32_t>(rt, params, index);
+    auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
         return hfResult(results, cache.error());
     }
 
-    auto const bytes = getData<Slice>(rt, params, index);
+    auto const bytes = getDataSlice(rt, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -609,7 +588,7 @@ updateData_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getData<Slice>(rt, params, index);
+    auto const bytes = getDataSlice(rt, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -628,7 +607,7 @@ computeSha512HalfHash_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getData<Slice>(rt, params, index);
+    auto const bytes = getDataSlice(rt, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -647,7 +626,7 @@ accountKeylet_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const acc = getData<AccountID>(rt, params, index);
+    auto const acc = getDataAccountID(rt, params, index);
     if (!acc)
     {
         return hfResult(results, acc.error());
@@ -666,19 +645,19 @@ credentialKeylet_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const subj = getData<AccountID>(rt, params, index);
+    auto const subj = getDataAccountID(rt, params, index);
     if (!subj)
     {
         return hfResult(results, subj.error());
     }
 
-    auto const iss = getData<AccountID>(rt, params, index);
+    auto const iss = getDataAccountID(rt, params, index);
     if (!iss)
     {
         return hfResult(results, iss.error());
     }
 
-    auto const credType = getData<Slice>(rt, params, index);
+    auto const credType = getDataSlice(rt, params, index);
     if (!credType)
     {
         return hfResult(results, credType.error());
@@ -702,13 +681,13 @@ escrowKeylet_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const acc = getData<AccountID>(rt, params, index);
+    auto const acc = getDataAccountID(rt, params, index);
     if (!acc)
     {
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getData<int32_t>(rt, params, index);
+    auto const seq = getDataInt32(rt, params, index);
     if (!seq)
     {
         return hfResult(results, seq.error());
@@ -728,13 +707,13 @@ oracleKeylet_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const acc = getData<AccountID>(rt, params, index);
+    auto const acc = getDataAccountID(rt, params, index);
     if (!acc)
     {
         return hfResult(results, acc.error());
     }
 
-    auto const seq = getData<int32_t>(rt, params, index);
+    auto const seq = getDataInt32(rt, params, index);
     if (!seq)
     {
         return hfResult(results, seq.error());
@@ -750,13 +729,13 @@ getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const acc = getData<AccountID>(rt, params, index);
+    auto const acc = getDataAccountID(rt, params, index);
     if (!acc)
     {
         return hfResult(results, acc.error());
     }
 
-    auto const nftId = getData<uint256>(rt, params, index);
+    auto const nftId = getDataUInt256(rt, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
@@ -772,19 +751,19 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const msg = getData<std::string_view>(rt, params, index);
+    auto const msg = getDataString(rt, params, index);
     if (!msg)
     {
         return hfResult(results, msg.error());
     }
 
-    auto const data = getData<Slice>(rt, params, index);
+    auto const data = getDataSlice(rt, params, index);
     if (!data)
     {
         return hfResult(results, data.error());
     }
 
-    auto const asHex = getData<int32_t>(rt, params, index);
+    auto const asHex = getDataInt32(rt, params, index);
     if (!asHex)
     {
         return hfResult(results, asHex.error());
@@ -801,13 +780,13 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const msg = getData<std::string_view>(rt, params, index);
+    auto const msg = getDataString(rt, params, index);
     if (!msg)
     {
         return hfResult(results, msg.error());
     }
 
-    auto const number = getData<int64_t>(rt, params, index);
+    auto const number = getDataInt64(rt, params, index);
     if (!number)
     {
         return hfResult(results, number.error());

@@ -76,6 +76,23 @@ getLedgerSqn_wrap(void* env, wasm_val_vec_t const*, wasm_val_vec_t* results)
     return nullptr;
 }
 
+class MockInstanceWrapper
+{
+    wmem mem_;
+
+public:
+    MockInstanceWrapper(wmem mem) : mem_(mem)
+    {
+    }
+
+    // Mock methods to simulate the behavior of InstanceWrapper
+    wmem
+    getMem() const
+    {
+        return mem_;
+    }
+};
+
 struct Wasm_test : public beast::unit_test::suite
 {
     void
@@ -83,7 +100,9 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("getData helper functions");
 
-        auto& engine = WasmEngine::instance();
+        [[maybe_unused]] auto& engine = WasmEngine::instance();
+
+        InstanceWrapper const emptyWrapper;
 
         {
             // test int32_t
@@ -94,9 +113,8 @@ struct Wasm_test : public beast::unit_test::suite
             values[0].of.i32 = 42;
 
             wasm_val_vec_new(&params, 1, values);
-            InstanceWrapper const wrapper;
             int index = 0;
-            auto const result = getData<int32_t>(&wrapper, &params, index);
+            auto const result = getDataInt32(&emptyWrapper, &params, index);
             BEAST_EXPECT(result && result.value() == 42);
             BEAST_EXPECT(index == 1);
         }
@@ -110,9 +128,8 @@ struct Wasm_test : public beast::unit_test::suite
             values[0].of.i64 = 1234;
 
             wasm_val_vec_new(&params, 1, values);
-            InstanceWrapper const wrapper;
             int index = 0;
-            auto const result = getData<int64_t>(&wrapper, &params, index);
+            auto const result = getDataInt64(&emptyWrapper, &params, index);
             BEAST_EXPECT(result && result.value() == 1234);
             BEAST_EXPECT(index == 1);
         }
@@ -126,9 +143,8 @@ struct Wasm_test : public beast::unit_test::suite
             values[0].of.i32 = sfAccount.fieldCode;
 
             wasm_val_vec_new(&params, 1, values);
-            InstanceWrapper const wrapper;
             int index = 0;
-            auto const result = getData<SFieldCRef>(&wrapper, &params, index);
+            auto const result = getDataSField(&emptyWrapper, &params, index);
             BEAST_EXPECT(result && result.value().get() == sfAccount);
             BEAST_EXPECT(index == 1);
         }
@@ -145,14 +161,17 @@ struct Wasm_test : public beast::unit_test::suite
             values[0].of.i32 = 2;
 
             wasm_val_vec_new(&params, 2, values);
-            InstanceWrapper const wrapper;
 
-            auto mem = wrapper.getMem();
-            mem.s = 2;
+            std::vector<std::uint8_t> buffer = {'a', 'b', 'c'};
+
+            wmem m;
+            m.p = buffer.data();
+            m.s = buffer.size();
+            MockInstanceWrapper const wrapper(m);
 
             int index = 0;
-            auto const result = getData<Slice>(&wrapper, &params, index);
-            BEAST_EXPECT(result && result.value() == Slice{});
+            auto const result = getDataSlice(&wrapper, &params, index);
+            BEAST_EXPECT(result && result.value() == Slice(buffer.data(), 3));
             BEAST_EXPECT(index == 2);
         }
     }
