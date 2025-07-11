@@ -24,13 +24,16 @@ class Xrpl(ConanFile):
     }
 
     requires = [
-        'doctest/2.4.11',
         'grpc/1.50.1',
         'libarchive/3.7.6',
         'nudb/2.0.8',
         'openssl/1.1.1v',
         'soci/4.0.3',
         'zlib/1.3.1',
+    ]
+
+    test_requires = [
+        'doctest/2.4.11',
     ]
 
     tool_requires = [
@@ -86,12 +89,13 @@ class Xrpl(ConanFile):
     }
 
     def set_version(self):
-        path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
-        regex = r'versionString\s?=\s?\"(.*)\"'
-        with open(path, 'r') as file:
-            matches = (re.search(regex, line) for line in file)
-            match = next(m for m in matches if m)
-            self.version = match.group(1)
+        if self.version is None:
+            path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
+            regex = r'versionString\s?=\s?\"(.*)\"'
+            with open(path, encoding='utf-8') as file:
+                matches = (re.search(regex, line) for line in file)
+                match = next(m for m in matches if m)
+                self.version = match.group(1)
 
     def configure(self):
         if self.settings.compiler == 'apple-clang':
