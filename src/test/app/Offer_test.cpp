@@ -3561,9 +3561,7 @@ public:
 
         using namespace jtx;
 
-        // The problem was identified when featureOwnerPaysFee was enabled,
-        // so make sure that gets included.
-        Env env{*this, features | featureOwnerPaysFee};
+        Env env{*this, features};
 
         // The fee that's charged for transactions.
         auto const fee = env.current()->fees().base;

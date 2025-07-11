@@ -264,7 +264,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             sendMaxIssue,
             rcp.paths,
             /*defaultPaths*/ rcp.paths.empty(),
-            sb.rules().enabled(featureOwnerPaysFee),
+            false,
             OfferCrossing::no,
             ammContext,
             std::nullopt,
