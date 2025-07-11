@@ -37,7 +37,7 @@ public:
     isEnabled(PreflightContext const& ctx);
 
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     TER
     doApply() override;
@@ -58,7 +58,7 @@ public:
     isEnabled(PreflightContext const& ctx);
 
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     static TER
     deleteSLE(ApplyContext& ctx, Keylet sleKeylet, AccountID const owner);

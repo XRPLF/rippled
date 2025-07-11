@@ -33,7 +33,7 @@ NFTokenModify::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-NFTokenModify::doPreflight(PreflightContext const& ctx)
+NFTokenModify::preflight(PreflightContext const& ctx)
 {
     if (auto owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
         return temMALFORMED;

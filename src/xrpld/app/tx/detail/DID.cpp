@@ -49,7 +49,7 @@ DIDSet::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-DIDSet::doPreflight(PreflightContext const& ctx)
+DIDSet::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx.isFieldPresent(sfURI) &&
         !ctx.tx.isFieldPresent(sfDIDDocument) && !ctx.tx.isFieldPresent(sfData))
@@ -175,7 +175,7 @@ DIDDelete::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-DIDDelete::doPreflight(PreflightContext const& ctx)
+DIDDelete::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }

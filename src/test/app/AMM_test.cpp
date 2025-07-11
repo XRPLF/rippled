@@ -3571,7 +3571,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::preflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf == temDISABLED);
                 env.app().config().features.insert(featureAMM);
             }
@@ -3586,7 +3586,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::preflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf != tesSUCCESS);
             }
 
@@ -3601,7 +3601,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = Transactor::preflight<AMMBid>(pfctx);
+                auto pf = Transactor::invokePreflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }

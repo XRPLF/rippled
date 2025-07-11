@@ -46,7 +46,7 @@ DepositPreauth::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-DepositPreauth::doPreflight(PreflightContext const& ctx)
+DepositPreauth::preflight(PreflightContext const& ctx)
 {
     bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
     bool const unauthArrPresent =

@@ -40,7 +40,7 @@ CreateTicket::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-CreateTicket::doPreflight(PreflightContext const& ctx)
+CreateTicket::preflight(PreflightContext const& ctx)
 {
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
         count < minValidCount || count > maxValidCount)

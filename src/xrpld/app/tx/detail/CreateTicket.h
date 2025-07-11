@@ -74,7 +74,7 @@ public:
 
     /** Enforce constraints beyond those of the Transactor base class. */
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     /** Enforce constraints beyond those of the Transactor base class. */
     static TER

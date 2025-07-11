@@ -46,7 +46,7 @@ AMMClawback::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-AMMClawback::doPreflight(PreflightContext const& ctx)
+AMMClawback::preflight(PreflightContext const& ctx)
 {
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];

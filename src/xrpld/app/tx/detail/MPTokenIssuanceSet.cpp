@@ -38,7 +38,7 @@ MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-MPTokenIssuanceSet::doPreflight(PreflightContext const& ctx)
+MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
     auto const txFlags = ctx.tx.getFlags();
 

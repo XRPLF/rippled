@@ -74,7 +74,7 @@ SetTrust::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-SetTrust::doPreflight(PreflightContext const& ctx)
+SetTrust::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;

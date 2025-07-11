@@ -37,7 +37,7 @@ VaultClawback::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-VaultClawback::doPreflight(PreflightContext const& ctx)
+VaultClawback::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::zero)
     {

@@ -200,8 +200,8 @@ public:
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
-    /* Do NOT define a preflight function in a derived class.
-       Instead, define
+    /* Do NOT define an invokePreflight function in a derived class.
+       Instead, define:
 
         // Optional if the transaction is gated on an amendment
         static bool
@@ -211,12 +211,18 @@ public:
         static std::uint32_t
         getFlagsMask(PreflightContext const& ctx);
 
+        // Required, even if it just returns tesSUCCESS.
         static NotTEC
-        doPreflight(PreflightContext const& ctx);
+        preflight(PreflightContext const& ctx);
+
+       * Do not try to call preflight1 or preflight2 directly.
+       * Do not check whether relevant amendments are enabled in preflight.
+         Instead, define isEnabled.
+       * Do not check flags in preflight. Instead, define getFlagsMask.
     */
     template <class T>
     static NotTEC
-    preflight(PreflightContext const& ctx);
+    invokePreflight(PreflightContext const& ctx);
 
     static TER
     preclaim(PreclaimContext const& ctx)
@@ -317,15 +323,21 @@ private:
 
     void trapTransaction(uint256) const;
 
-    // Helper functions for preflight checks. Do not use directly.
     /** Performs early sanity checks on the account and fee fields.
 
         (And passes flagMask to preflight0)
+
+        Do not try to call preflight1 from preflight() in derived classes. See
+        the description of invokePreflight for details.
     */
     static NotTEC
     preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
 
-    /** Checks whether the signature appears valid */
+    /** Checks whether the signature appears valid
+
+        Do not try to call preflight2 from preflight() in derived classes. See
+        the description of invokePreflight for details.
+    */
     static NotTEC
     preflight2(PreflightContext const& ctx);
 };
@@ -363,11 +375,11 @@ preflightCheckSimulateKeys(
 // Defined in Change.cpp
 template <>
 NotTEC
-Transactor::preflight<Change>(PreflightContext const& ctx);
+Transactor::invokePreflight<Change>(PreflightContext const& ctx);
 
 template <class T>
 NotTEC
-Transactor::preflight(PreflightContext const& ctx)
+Transactor::invokePreflight(PreflightContext const& ctx)
 {
     if (!T::isEnabled(ctx))
         return temDISABLED;
@@ -375,7 +387,7 @@ Transactor::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
         return ret;
 
-    if (auto const ret = T::doPreflight(ctx))
+    if (auto const ret = T::preflight(ctx))
         return ret;
 
     return preflight2(ctx);

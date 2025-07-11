@@ -36,7 +36,7 @@ PermissionedDomainSet::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-PermissionedDomainSet::doPreflight(PreflightContext const& ctx)
+PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),

@@ -38,7 +38,7 @@ MPTokenIssuanceDestroy::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-MPTokenIssuanceDestroy::doPreflight(PreflightContext const& ctx)
+MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }

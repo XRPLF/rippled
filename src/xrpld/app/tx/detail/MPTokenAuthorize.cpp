@@ -39,7 +39,7 @@ MPTokenAuthorize::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-MPTokenAuthorize::doPreflight(PreflightContext const& ctx)
+MPTokenAuthorize::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[~sfHolder])
         return temMALFORMED;

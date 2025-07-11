@@ -49,7 +49,7 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 }
 
 NotTEC
-SetRegularKey::doPreflight(PreflightContext const& ctx)
+SetRegularKey::preflight(PreflightContext const& ctx)
 {
     if (ctx.rules.enabled(fixMasterKeyAsRegularKey) &&
         ctx.tx.isFieldPresent(sfRegularKey) &&

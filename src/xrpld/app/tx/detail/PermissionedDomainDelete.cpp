@@ -31,7 +31,7 @@ PermissionedDomainDelete::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-PermissionedDomainDelete::doPreflight(PreflightContext const& ctx)
+PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     if (domain == beast::zero)

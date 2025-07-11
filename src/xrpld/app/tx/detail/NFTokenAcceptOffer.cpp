@@ -40,7 +40,7 @@ NFTokenAcceptOffer::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-NFTokenAcceptOffer::doPreflight(PreflightContext const& ctx)
+NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 {
     auto const bo = ctx.tx[~sfNFTokenBuyOffer];
     auto const so = ctx.tx[~sfNFTokenSellOffer];

@@ -1210,7 +1210,7 @@ toClaim(STTx const& tx)
 
 template <class TAttestation>
 NotTEC
-attestationDoPreflight(PreflightContext const& ctx)
+attestationpreflight(PreflightContext const& ctx)
 {
     if (!publicKeyType(ctx.tx[sfPublicKey]))
         return temMALFORMED;
@@ -1374,7 +1374,7 @@ XChainCreateBridge::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-XChainCreateBridge::doPreflight(PreflightContext const& ctx)
+XChainCreateBridge::preflight(PreflightContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
     auto const reward = ctx.tx[sfSignatureReward];
@@ -1558,7 +1558,7 @@ BridgeModify::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-BridgeModify::doPreflight(PreflightContext const& ctx)
+BridgeModify::preflight(PreflightContext const& ctx)
 {
     auto const account = ctx.tx[sfAccount];
     auto const reward = ctx.tx[~sfSignatureReward];
@@ -1665,7 +1665,7 @@ XChainClaim::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-XChainClaim::doPreflight(PreflightContext const& ctx)
+XChainClaim::preflight(PreflightContext const& ctx)
 {
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
     auto const amount = ctx.tx[sfAmount];
@@ -1900,7 +1900,7 @@ XChainCommit::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-XChainCommit::doPreflight(PreflightContext const& ctx)
+XChainCommit::preflight(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
@@ -2011,7 +2011,7 @@ XChainCreateClaimID::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-XChainCreateClaimID::doPreflight(PreflightContext const& ctx)
+XChainCreateClaimID::preflight(PreflightContext const& ctx)
 {
     auto const reward = ctx.tx[sfSignatureReward];
 
@@ -2123,9 +2123,9 @@ XChainAddClaimAttestation::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-XChainAddClaimAttestation::doPreflight(PreflightContext const& ctx)
+XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationDoPreflight<Attestations::AttestationClaim>(ctx);
+    return attestationpreflight<Attestations::AttestationClaim>(ctx);
 }
 
 TER
@@ -2149,9 +2149,9 @@ XChainAddAccountCreateAttestation::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-XChainAddAccountCreateAttestation::doPreflight(PreflightContext const& ctx)
+XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
-    return attestationDoPreflight<Attestations::AttestationCreateAccount>(ctx);
+    return attestationpreflight<Attestations::AttestationCreateAccount>(ctx);
 }
 
 TER
@@ -2175,7 +2175,7 @@ XChainCreateAccountCommit::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-XChainCreateAccountCommit::doPreflight(PreflightContext const& ctx)
+XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
 

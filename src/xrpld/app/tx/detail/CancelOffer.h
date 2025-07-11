@@ -36,7 +36,7 @@ public:
     }
 
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     static TER
     preclaim(PreclaimContext const& ctx);

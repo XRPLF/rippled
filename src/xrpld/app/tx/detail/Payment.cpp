@@ -90,7 +90,7 @@ Payment::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::doPreflight(PreflightContext const& ctx)
+Payment::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;

@@ -37,7 +37,7 @@ VaultWithdraw::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-VaultWithdraw::doPreflight(PreflightContext const& ctx)
+VaultWithdraw::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::zero)
     {

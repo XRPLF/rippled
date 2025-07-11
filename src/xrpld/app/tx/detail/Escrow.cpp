@@ -126,7 +126,7 @@ EscrowCreate::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-EscrowCreate::doPreflight(PreflightContext const& ctx)
+EscrowCreate::preflight(PreflightContext const& ctx)
 {
     STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
@@ -640,7 +640,7 @@ EscrowFinish::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-EscrowFinish::doPreflight(PreflightContext const& ctx)
+EscrowFinish::preflight(PreflightContext const& ctx)
 {
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
@@ -1202,7 +1202,7 @@ EscrowCancel::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-EscrowCancel::doPreflight(PreflightContext const& ctx)
+EscrowCancel::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }

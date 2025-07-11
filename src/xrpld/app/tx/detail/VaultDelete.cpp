@@ -34,7 +34,7 @@ VaultDelete::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-VaultDelete::doPreflight(PreflightContext const& ctx)
+VaultDelete::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::zero)
     {

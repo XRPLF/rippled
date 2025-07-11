@@ -41,7 +41,7 @@ AMMWithdraw::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-AMMWithdraw::doPreflight(PreflightContext const& ctx)
+AMMWithdraw::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
 

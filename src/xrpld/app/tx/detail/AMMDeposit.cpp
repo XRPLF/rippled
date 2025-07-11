@@ -43,7 +43,7 @@ AMMDeposit::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-AMMDeposit::doPreflight(PreflightContext const& ctx)
+AMMDeposit::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
 

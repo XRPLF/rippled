@@ -179,7 +179,7 @@ PayChanCreate::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-PayChanCreate::doPreflight(PreflightContext const& ctx)
+PayChanCreate::preflight(PreflightContext const& ctx)
 {
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
@@ -335,7 +335,7 @@ PayChanFund::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-PayChanFund::doPreflight(PreflightContext const& ctx)
+PayChanFund::preflight(PreflightContext const& ctx)
 {
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
@@ -433,7 +433,7 @@ PayChanClaim::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-PayChanClaim::doPreflight(PreflightContext const& ctx)
+PayChanClaim::preflight(PreflightContext const& ctx)
 {
     auto const bal = ctx.tx[~sfBalance];
     if (bal && (!isXRP(*bal) || *bal <= beast::zero))

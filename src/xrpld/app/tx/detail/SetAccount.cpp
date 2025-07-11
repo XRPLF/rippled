@@ -64,7 +64,7 @@ SetAccount::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-SetAccount::doPreflight(PreflightContext const& ctx)
+SetAccount::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;

@@ -39,7 +39,7 @@ VaultDeposit::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-VaultDeposit::doPreflight(PreflightContext const& ctx)
+VaultDeposit::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::zero)
     {
