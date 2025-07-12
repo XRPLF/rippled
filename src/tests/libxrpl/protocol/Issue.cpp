@@ -1,0 +1,860 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2012, 2013 Ripple Labs Inc.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#include <xrpl/basics/UnorderedContainers.h>
+#include <doctest/doctest.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Issue.h>
+
+#include <sys/types.h>
+
+#include <map>
+#include <optional>
+#include <set>
+#include <typeinfo>
+#include <unordered_set>
+
+#if BEAST_MSVC
+#define STL_SET_HAS_EMPLACE 1
+#else
+#define STL_SET_HAS_EMPLACE 0
+#endif
+
+#ifndef RIPPLE_ASSETS_ENABLE_STD_HASH
+#if BEAST_MAC || BEAST_IOS
+#define RIPPLE_ASSETS_ENABLE_STD_HASH 0
+#else
+#define RIPPLE_ASSETS_ENABLE_STD_HASH 1
+#endif
+#endif
+
+namespace ripple {
+
+namespace {
+
+using Domain = uint256;
+
+    // Comparison, hash tests for uint60 (via base_uint)
+    template <typename Unsigned>
+    void
+    testUnsigned()
+    {
+        Unsigned const u1(1);
+        Unsigned const u2(2);
+        Unsigned const u3(3);
+
+        CHECK(u1 != u2);
+        CHECK(u1 < u2);
+        CHECK(u1 <= u2);
+        CHECK(u2 <= u2);
+        CHECK(u2 == u2);
+        CHECK(u2 >= u2);
+        CHECK(u3 >= u2);
+        CHECK(u3 > u2);
+
+        std::hash<Unsigned> hash;
+
+        CHECK(hash(u1) == hash(u1));
+        CHECK(hash(u2) == hash(u2));
+        CHECK(hash(u3) == hash(u3));
+        CHECK(hash(u1) != hash(u2));
+        CHECK(hash(u1) != hash(u3));
+        CHECK(hash(u2) != hash(u3));
+    }
+
+    //--------------------------------------------------------------------------
+
+    // Comparison, hash tests for Issue
+    template <class Issue>
+    void
+    testIssue()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Currency const c3(3);
+        AccountID const i3(3);
+
+        CHECK(Issue(c1, i1) != Issue(c2, i1));
+        CHECK(Issue(c1, i1) < Issue(c2, i1));
+        CHECK(Issue(c1, i1) <= Issue(c2, i1));
+        CHECK(Issue(c2, i1) <= Issue(c2, i1));
+        CHECK(Issue(c2, i1) == Issue(c2, i1));
+        CHECK(Issue(c2, i1) >= Issue(c2, i1));
+        CHECK(Issue(c3, i1) >= Issue(c2, i1));
+        CHECK(Issue(c3, i1) > Issue(c2, i1));
+        CHECK(Issue(c1, i1) != Issue(c1, i2));
+        CHECK(Issue(c1, i1) < Issue(c1, i2));
+        CHECK(Issue(c1, i1) <= Issue(c1, i2));
+        CHECK(Issue(c1, i2) <= Issue(c1, i2));
+        CHECK(Issue(c1, i2) == Issue(c1, i2));
+        CHECK(Issue(c1, i2) >= Issue(c1, i2));
+        CHECK(Issue(c1, i3) >= Issue(c1, i2));
+        CHECK(Issue(c1, i3) > Issue(c1, i2));
+
+        std::hash<Issue> hash;
+
+        CHECK(hash(Issue(c1, i1)) == hash(Issue(c1, i1)));
+        CHECK(hash(Issue(c1, i2)) == hash(Issue(c1, i2)));
+        CHECK(hash(Issue(c1, i3)) == hash(Issue(c1, i3)));
+        CHECK(hash(Issue(c2, i1)) == hash(Issue(c2, i1)));
+        CHECK(hash(Issue(c2, i2)) == hash(Issue(c2, i2)));
+        CHECK(hash(Issue(c2, i3)) == hash(Issue(c2, i3)));
+        CHECK(hash(Issue(c3, i1)) == hash(Issue(c3, i1)));
+        CHECK(hash(Issue(c3, i2)) == hash(Issue(c3, i2)));
+        CHECK(hash(Issue(c3, i3)) == hash(Issue(c3, i3)));
+        CHECK(hash(Issue(c1, i1)) != hash(Issue(c1, i2)));
+        CHECK(hash(Issue(c1, i1)) != hash(Issue(c1, i3)));
+        CHECK(hash(Issue(c1, i1)) != hash(Issue(c2, i1)));
+        CHECK(hash(Issue(c1, i1)) != hash(Issue(c2, i2)));
+        CHECK(hash(Issue(c1, i1)) != hash(Issue(c2, i3)));
+        CHECK(hash(Issue(c1, i1)) != hash(Issue(c3, i1)));
+        CHECK(hash(Issue(c1, i1)) != hash(Issue(c3, i2)));
+        CHECK(hash(Issue(c1, i1)) != hash(Issue(c3, i3)));
+    }
+
+    template <class Set>
+    void
+    testIssueSet()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Issue const a1(c1, i1);
+        Issue const a2(c2, i2);
+
+        {
+            Set c;
+
+            c.insert(a1);
+            CHECK(c.size() == 1);
+            c.insert(a2);
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Issue(c1, i2)) == 0);
+            CHECK(c.erase(Issue(c1, i1)) == 1);
+            CHECK(c.erase(Issue(c2, i2)) == 1);
+            CHECK(c.empty());
+        }
+
+        {
+            Set c;
+
+            c.insert(a1);
+            CHECK(c.size() == 1);
+            c.insert(a2);
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Issue(c1, i2)) == 0);
+            CHECK(c.erase(Issue(c1, i1)) == 1);
+            CHECK(c.erase(Issue(c2, i2)) == 1);
+            CHECK(c.empty());
+
+#if STL_SET_HAS_EMPLACE
+            c.emplace(c1, i1);
+            CHECK(c.size() == 1);
+            c.emplace(c2, i2);
+            CHECK(c.size() == 2);
+#endif
+        }
+    }
+
+    template <class Map>
+    void
+    testIssueMap()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Issue const a1(c1, i1);
+        Issue const a2(c2, i2);
+
+        {
+            Map c;
+
+            c.insert(std::make_pair(a1, 1));
+            CHECK(c.size() == 1);
+            c.insert(std::make_pair(a2, 2));
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Issue(c1, i2)) == 0);
+            CHECK(c.erase(Issue(c1, i1)) == 1);
+            CHECK(c.erase(Issue(c2, i2)) == 1);
+            CHECK(c.empty());
+        }
+
+        {
+            Map c;
+
+            c.insert(std::make_pair(a1, 1));
+            CHECK(c.size() == 1);
+            c.insert(std::make_pair(a2, 2));
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Issue(c1, i2)) == 0);
+            CHECK(c.erase(Issue(c1, i1)) == 1);
+            CHECK(c.erase(Issue(c2, i2)) == 1);
+            CHECK(c.empty());
+        }
+    }
+
+    template <class Set>
+    void
+    testIssueDomainSet()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Issue const a1(c1, i1);
+        Issue const a2(c2, i2);
+        uint256 const domain1{1};
+        uint256 const domain2{2};
+
+        Set c;
+
+        c.insert(std::make_pair(a1, domain1));
+        CHECK(c.size() == 1);
+        c.insert(std::make_pair(a2, domain1));
+        CHECK(c.size() == 2);
+        c.insert(std::make_pair(a2, domain2));
+        CHECK(c.size() == 3);
+
+        CHECK(c.erase(std::make_pair(Issue(c1, i2), domain1)) == 0);
+        CHECK(c.erase(std::make_pair(a1, domain1)) == 1);
+        CHECK(c.erase(std::make_pair(a2, domain1)) == 1);
+        CHECK(c.erase(std::make_pair(a2, domain2)) == 1);
+        CHECK(c.empty());
+    }
+
+    template <class Map>
+    void
+    testIssueDomainMap()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Issue const a1(c1, i1);
+        Issue const a2(c2, i2);
+        uint256 const domain1{1};
+        uint256 const domain2{2};
+
+        Map c;
+
+        c.insert(std::make_pair(std::make_pair(a1, domain1), 1));
+        CHECK(c.size() == 1);
+        c.insert(std::make_pair(std::make_pair(a2, domain1), 2));
+        CHECK(c.size() == 2);
+        c.insert(std::make_pair(std::make_pair(a2, domain2), 2));
+        CHECK(c.size() == 3);
+
+        CHECK(c.erase(std::make_pair(Issue(c1, i2), domain1)) == 0);
+        CHECK(c.erase(std::make_pair(a1, domain1)) == 1);
+        CHECK(c.erase(std::make_pair(a2, domain1)) == 1);
+        CHECK(c.erase(std::make_pair(a2, domain2)) == 1);
+        CHECK(c.empty());
+    }
+
+
+    //--------------------------------------------------------------------------
+
+    // Comparison, hash tests for Book
+    template <class Book>
+    void
+    testBook()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Currency const c3(3);
+        AccountID const i3(3);
+
+        Issue a1(c1, i1);
+        Issue a2(c1, i2);
+        Issue a3(c2, i2);
+        Issue a4(c3, i2);
+        uint256 const domain1{1};
+        uint256 const domain2{2};
+
+        // Books without domains
+        CHECK(Book(a1, a2, std::nullopt) != Book(a2, a3, std::nullopt));
+        CHECK(Book(a1, a2, std::nullopt) < Book(a2, a3, std::nullopt));
+        CHECK(Book(a1, a2, std::nullopt) <= Book(a2, a3, std::nullopt));
+        CHECK(Book(a2, a3, std::nullopt) <= Book(a2, a3, std::nullopt));
+        CHECK(Book(a2, a3, std::nullopt) == Book(a2, a3, std::nullopt));
+        CHECK(Book(a2, a3, std::nullopt) >= Book(a2, a3, std::nullopt));
+        CHECK(Book(a3, a4, std::nullopt) >= Book(a2, a3, std::nullopt));
+        CHECK(Book(a3, a4, std::nullopt) > Book(a2, a3, std::nullopt));
+
+        // test domain books
+        {
+            // Books with different domains
+            CHECK(Book(a2, a3, domain1) != Book(a2, a3, domain2));
+            CHECK(Book(a2, a3, domain1) < Book(a2, a3, domain2));
+            CHECK(Book(a2, a3, domain2) > Book(a2, a3, domain1));
+
+            // One Book has a domain, the other does not
+            CHECK(Book(a2, a3, domain1) != Book(a2, a3, std::nullopt));
+            CHECK(Book(a2, a3, std::nullopt) < Book(a2, a3, domain1));
+            CHECK(Book(a2, a3, domain1) > Book(a2, a3, std::nullopt));
+
+            // Both Books have the same domain
+            CHECK(Book(a2, a3, domain1) == Book(a2, a3, domain1));
+            CHECK(Book(a2, a3, domain2) == Book(a2, a3, domain2));
+            CHECK(
+                Book(a2, a3, std::nullopt) == Book(a2, a3, std::nullopt));
+
+            // Both Books have no domain
+            CHECK(
+                Book(a2, a3, std::nullopt) == Book(a2, a3, std::nullopt));
+
+            // Testing comparisons with >= and <=
+
+            // When comparing books with domain1 vs domain2
+            CHECK(Book(a2, a3, domain1) <= Book(a2, a3, domain2));
+            CHECK(Book(a2, a3, domain2) >= Book(a2, a3, domain1));
+            CHECK(Book(a2, a3, domain1) >= Book(a2, a3, domain1));
+            CHECK(Book(a2, a3, domain2) <= Book(a2, a3, domain2));
+
+            // One Book has domain1 and the other has no domain
+            CHECK(Book(a2, a3, domain1) > Book(a2, a3, std::nullopt));
+            CHECK(Book(a2, a3, std::nullopt) < Book(a2, a3, domain1));
+
+            // One Book has domain2 and the other has no domain
+            CHECK(Book(a2, a3, domain2) > Book(a2, a3, std::nullopt));
+            CHECK(Book(a2, a3, std::nullopt) < Book(a2, a3, domain2));
+
+            // Comparing two Books with no domains
+            CHECK(
+                Book(a2, a3, std::nullopt) <= Book(a2, a3, std::nullopt));
+            CHECK(
+                Book(a2, a3, std::nullopt) >= Book(a2, a3, std::nullopt));
+
+            // Test case where domain1 is less than domain2
+            CHECK(Book(a2, a3, domain1) <= Book(a2, a3, domain2));
+            CHECK(Book(a2, a3, domain2) >= Book(a2, a3, domain1));
+
+            // Test case where domain2 is equal to domain1
+            CHECK(Book(a2, a3, domain1) >= Book(a2, a3, domain1));
+            CHECK(Book(a2, a3, domain1) <= Book(a2, a3, domain1));
+
+            // More test cases involving a4 (with domain2)
+
+            // Comparing Book with domain2 (a4) to a Book with domain1
+            CHECK(Book(a2, a3, domain1) < Book(a3, a4, domain2));
+            CHECK(Book(a3, a4, domain2) > Book(a2, a3, domain1));
+
+            // Comparing Book with domain2 (a4) to a Book with no domain
+            CHECK(Book(a3, a4, domain2) > Book(a2, a3, std::nullopt));
+            CHECK(Book(a2, a3, std::nullopt) < Book(a3, a4, domain2));
+
+            // Comparing Book with domain2 (a4) to a Book with the same domain
+            CHECK(Book(a3, a4, domain2) == Book(a3, a4, domain2));
+
+            // Comparing Book with domain2 (a4) to a Book with domain1
+            CHECK(Book(a2, a3, domain1) < Book(a3, a4, domain2));
+            CHECK(Book(a3, a4, domain2) > Book(a2, a3, domain1));
+        }
+
+        std::hash<Book> hash;
+
+        //         log << std::hex << hash (Book (a1, a2));
+        //         log << std::hex << hash (Book (a1, a2));
+        //
+        //         log << std::hex << hash (Book (a1, a3));
+        //         log << std::hex << hash (Book (a1, a3));
+        //
+        //         log << std::hex << hash (Book (a1, a4));
+        //         log << std::hex << hash (Book (a1, a4));
+        //
+        //         log << std::hex << hash (Book (a2, a3));
+        //         log << std::hex << hash (Book (a2, a3));
+        //
+        //         log << std::hex << hash (Book (a2, a4));
+        //         log << std::hex << hash (Book (a2, a4));
+        //
+        //         log << std::hex << hash (Book (a3, a4));
+        //         log << std::hex << hash (Book (a3, a4));
+
+        CHECK(
+            hash(Book(a1, a2, std::nullopt)) ==
+            hash(Book(a1, a2, std::nullopt)));
+        CHECK(
+            hash(Book(a1, a3, std::nullopt)) ==
+            hash(Book(a1, a3, std::nullopt)));
+        CHECK(
+            hash(Book(a1, a4, std::nullopt)) ==
+            hash(Book(a1, a4, std::nullopt)));
+        CHECK(
+            hash(Book(a2, a3, std::nullopt)) ==
+            hash(Book(a2, a3, std::nullopt)));
+        CHECK(
+            hash(Book(a2, a4, std::nullopt)) ==
+            hash(Book(a2, a4, std::nullopt)));
+        CHECK(
+            hash(Book(a3, a4, std::nullopt)) ==
+            hash(Book(a3, a4, std::nullopt)));
+
+        CHECK(
+            hash(Book(a1, a2, std::nullopt)) !=
+            hash(Book(a1, a3, std::nullopt)));
+        CHECK(
+            hash(Book(a1, a2, std::nullopt)) !=
+            hash(Book(a1, a4, std::nullopt)));
+        CHECK(
+            hash(Book(a1, a2, std::nullopt)) !=
+            hash(Book(a2, a3, std::nullopt)));
+        CHECK(
+            hash(Book(a1, a2, std::nullopt)) !=
+            hash(Book(a2, a4, std::nullopt)));
+        CHECK(
+            hash(Book(a1, a2, std::nullopt)) !=
+            hash(Book(a3, a4, std::nullopt)));
+
+        // Books with domain
+        CHECK(
+            hash(Book(a1, a2, domain1)) == hash(Book(a1, a2, domain1)));
+        CHECK(
+            hash(Book(a1, a3, domain1)) == hash(Book(a1, a3, domain1)));
+        CHECK(
+            hash(Book(a1, a4, domain1)) == hash(Book(a1, a4, domain1)));
+        CHECK(
+            hash(Book(a2, a3, domain1)) == hash(Book(a2, a3, domain1)));
+        CHECK(
+            hash(Book(a2, a4, domain1)) == hash(Book(a2, a4, domain1)));
+        CHECK(
+            hash(Book(a3, a4, domain1)) == hash(Book(a3, a4, domain1)));
+        CHECK(
+            hash(Book(a1, a2, std::nullopt)) ==
+            hash(Book(a1, a2, std::nullopt)));
+
+        // Comparing Books with domain1 vs no domain
+        CHECK(
+            hash(Book(a1, a2, std::nullopt)) != hash(Book(a1, a2, domain1)));
+        CHECK(
+            hash(Book(a1, a3, std::nullopt)) != hash(Book(a1, a3, domain1)));
+        CHECK(
+            hash(Book(a1, a4, std::nullopt)) != hash(Book(a1, a4, domain1)));
+        CHECK(
+            hash(Book(a2, a3, std::nullopt)) != hash(Book(a2, a3, domain1)));
+        CHECK(
+            hash(Book(a2, a4, std::nullopt)) != hash(Book(a2, a4, domain1)));
+        CHECK(
+            hash(Book(a3, a4, std::nullopt)) != hash(Book(a3, a4, domain1)));
+
+        // Books with domain1 but different Issues
+        CHECK(
+            hash(Book(a1, a2, domain1)) != hash(Book(a1, a3, domain1)));
+        CHECK(
+            hash(Book(a1, a2, domain1)) != hash(Book(a1, a4, domain1)));
+        CHECK(
+            hash(Book(a2, a3, domain1)) != hash(Book(a2, a4, domain1)));
+        CHECK(
+            hash(Book(a1, a2, domain1)) != hash(Book(a2, a3, domain1)));
+        CHECK(
+            hash(Book(a2, a4, domain1)) != hash(Book(a3, a4, domain1)));
+        CHECK(
+            hash(Book(a3, a4, domain1)) != hash(Book(a1, a4, domain1)));
+
+        // Books with domain1 and domain2
+        CHECK(
+            hash(Book(a1, a2, domain1)) != hash(Book(a1, a2, domain2)));
+        CHECK(
+            hash(Book(a1, a3, domain1)) != hash(Book(a1, a3, domain2)));
+        CHECK(
+            hash(Book(a1, a4, domain1)) != hash(Book(a1, a4, domain2)));
+        CHECK(
+            hash(Book(a2, a3, domain1)) != hash(Book(a2, a3, domain2)));
+        CHECK(
+            hash(Book(a2, a4, domain1)) != hash(Book(a2, a4, domain2)));
+        CHECK(
+            hash(Book(a3, a4, domain1)) != hash(Book(a3, a4, domain2)));
+    }
+
+    //--------------------------------------------------------------------------
+
+    template <class Set>
+    void
+    testBookSet()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Issue const a1(c1, i1);
+        Issue const a2(c2, i2);
+        Book const b1(a1, a2, std::nullopt);
+        Book const b2(a2, a1, std::nullopt);
+
+        uint256 const domain1{1};
+        uint256 const domain2{2};
+
+        Book const b1_d1(a1, a2, domain1);
+        Book const b2_d1(a2, a1, domain1);
+        Book const b1_d2(a1, a2, domain2);
+        Book const b2_d2(a2, a1, domain2);
+
+        {
+            Set c;
+
+            c.insert(b1);
+            CHECK(c.size() == 1);
+            c.insert(b2);
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0);
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.empty());
+        }
+
+        {
+            Set c;
+
+            c.insert(b1);
+            CHECK(c.size() == 1);
+            c.insert(b2);
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0);
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.empty());
+
+#if STL_SET_HAS_EMPLACE
+            c.emplace(a1, a2);
+            CHECK(c.size() == 1);
+            c.emplace(a2, a1);
+            CHECK(c.size() == 2);
+#endif
+        }
+
+        {
+            Set c;
+
+            c.insert(b1_d1);
+            CHECK(c.size() == 1);
+            c.insert(b2_d1);
+            CHECK(c.size() == 2);
+            c.insert(b1_d2);
+            CHECK(c.size() == 3);
+            c.insert(b2_d2);
+            CHECK(c.size() == 4);
+
+            // Try removing non-existent elements
+            CHECK(c.erase(Book(a2, a2, domain1)) == 0);
+
+            CHECK(c.erase(Book(a1, a2, domain1)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain1)) == 1);
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Book(a1, a2, domain2)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain2)) == 1);
+            CHECK(c.empty());
+        }
+
+        {
+            Set c;
+
+            c.insert(b1);
+            c.insert(b2);
+            c.insert(b1_d1);
+            c.insert(b2_d1);
+            CHECK(c.size() == 4);
+
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Book(a1, a2, domain1)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain1)) == 1);
+            CHECK(c.empty());
+        }
+    }
+
+    template <class Map>
+    void
+    testBookMap()
+    {
+        Currency const c1(1);
+        AccountID const i1(1);
+        Currency const c2(2);
+        AccountID const i2(2);
+        Issue const a1(c1, i1);
+        Issue const a2(c2, i2);
+        Book const b1(a1, a2, std::nullopt);
+        Book const b2(a2, a1, std::nullopt);
+
+        uint256 const domain1{1};
+        uint256 const domain2{2};
+
+        Book const b1_d1(a1, a2, domain1);
+        Book const b2_d1(a2, a1, domain1);
+        Book const b1_d2(a1, a2, domain2);
+        Book const b2_d2(a2, a1, domain2);
+
+        // typename Map::value_type value_type;
+        // std::pair <Book const, int> value_type;
+
+        {
+            Map c;
+
+            // c.insert (value_type (b1, 1));
+            c.insert(std::make_pair(b1, 1));
+            CHECK(c.size() == 1);
+            // c.insert (value_type (b2, 2));
+            c.insert(std::make_pair(b2, 1));
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0);
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.empty());
+        }
+
+        {
+            Map c;
+
+            // c.insert (value_type (b1, 1));
+            c.insert(std::make_pair(b1, 1));
+            CHECK(c.size() == 1);
+            // c.insert (value_type (b2, 2));
+            c.insert(std::make_pair(b2, 1));
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Book(a1, a1, std::nullopt)) == 0);
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.empty());
+        }
+
+        {
+            Map c;
+
+            c.insert(std::make_pair(b1_d1, 10));
+            CHECK(c.size() == 1);
+            c.insert(std::make_pair(b2_d1, 20));
+            CHECK(c.size() == 2);
+            c.insert(std::make_pair(b1_d2, 30));
+            CHECK(c.size() == 3);
+            c.insert(std::make_pair(b2_d2, 40));
+            CHECK(c.size() == 4);
+
+            // Try removing non-existent elements
+            CHECK(c.erase(Book(a2, a2, domain1)) == 0);
+
+            CHECK(c.erase(Book(a1, a2, domain1)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain1)) == 1);
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Book(a1, a2, domain2)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain2)) == 1);
+            CHECK(c.empty());
+        }
+
+        {
+            Map c;
+
+            c.insert(std::make_pair(b1, 1));
+            c.insert(std::make_pair(b2, 2));
+            c.insert(std::make_pair(b1_d1, 3));
+            c.insert(std::make_pair(b2_d1, 4));
+            CHECK(c.size() == 4);
+
+            // Try removing non-existent elements
+            CHECK(c.erase(Book(a1, a1, domain1)) == 0);
+            CHECK(c.erase(Book(a2, a2, domain2)) == 0);
+
+            CHECK(c.erase(Book(a1, a2, std::nullopt)) == 1);
+            CHECK(c.erase(Book(a2, a1, std::nullopt)) == 1);
+            CHECK(c.size() == 2);
+
+            CHECK(c.erase(Book(a1, a2, domain1)) == 1);
+            CHECK(c.erase(Book(a2, a1, domain1)) == 1);
+            CHECK(c.empty());
+        }
+    }
+
+
+    //--------------------------------------------------------------------------
+
+    // End of helper functions.
+}
+
+
+}  // namespace ripple
+
+using namespace ripple;
+
+TEST_SUITE_BEGIN("Issue");
+
+TEST_CASE("Unsigned types")
+{
+    testUnsigned<Currency>();
+    testUnsigned<AccountID>();
+}
+
+TEST_CASE("Issue")
+{
+    testIssue<Issue>();
+}
+
+TEST_CASE("Issue sets")
+{
+    INFO("std::set <Issue>");
+    testIssueSet<std::set<Issue>>();
+
+    INFO("std::set <Issue>");
+    testIssueSet<std::set<Issue>>();
+
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
+    INFO("std::unordered_set <Issue>");
+    testIssueSet<std::unordered_set<Issue>>();
+
+    INFO("std::unordered_set <Issue>");
+    testIssueSet<std::unordered_set<Issue>>();
+#endif
+
+    INFO("hash_set <Issue>");
+    testIssueSet<hash_set<Issue>>();
+
+    INFO("hash_set <Issue>");
+    testIssueSet<hash_set<Issue>>();
+}
+
+TEST_CASE("Issue maps")
+{
+    INFO("std::map <Issue, int>");
+    testIssueMap<std::map<Issue, int>>();
+
+    INFO("std::map <Issue, int>");
+    testIssueMap<std::map<Issue, int>>();
+
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
+    INFO("std::unordered_map <Issue, int>");
+    testIssueMap<std::unordered_map<Issue, int>>();
+
+    INFO("std::unordered_map <Issue, int>");
+    testIssueMap<std::unordered_map<Issue, int>>();
+
+    INFO("hash_map <Issue, int>");
+    testIssueMap<hash_map<Issue, int>>();
+
+    INFO("hash_map <Issue, int>");
+    testIssueMap<hash_map<Issue, int>>();
+#endif
+}
+
+TEST_CASE("Book")
+{
+    testBook<Book>();
+}
+
+TEST_CASE("Book sets")
+{
+    INFO("std::set <Book>");
+    testBookSet<std::set<Book>>();
+
+    INFO("std::set <Book>");
+    testBookSet<std::set<Book>>();
+
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
+    INFO("std::unordered_set <Book>");
+    testBookSet<std::unordered_set<Book>>();
+
+    INFO("std::unordered_set <Book>");
+    testBookSet<std::unordered_set<Book>>();
+#endif
+
+    INFO("hash_set <Book>");
+    testBookSet<hash_set<Book>>();
+
+    INFO("hash_set <Book>");
+    testBookSet<hash_set<Book>>();
+}
+
+TEST_CASE("Book maps")
+{
+    INFO("std::map <Book, int>");
+    testBookMap<std::map<Book, int>>();
+
+    INFO("std::map <Book, int>");
+    testBookMap<std::map<Book, int>>();
+
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
+    INFO("std::unordered_map <Book, int>");
+    testBookMap<std::unordered_map<Book, int>>();
+
+    INFO("std::unordered_map <Book, int>");
+    testBookMap<std::unordered_map<Book, int>>();
+
+    INFO("hash_map <Book, int>");
+    testBookMap<hash_map<Book, int>>();
+
+    INFO("hash_map <Book, int>");
+    testBookMap<hash_map<Book, int>>();
+#endif
+}
+
+TEST_CASE("Issue domain sets")
+{
+    INFO("std::set <std::pair<Issue, Domain>>");
+    testIssueDomainSet<std::set<std::pair<Issue, Domain>>>();
+
+    INFO("std::set <std::pair<Issue, Domain>>");
+    testIssueDomainSet<std::set<std::pair<Issue, Domain>>>();
+
+    INFO("hash_set <std::pair<Issue, Domain>>");
+    testIssueDomainSet<hash_set<std::pair<Issue, Domain>>>();
+
+    INFO("hash_set <std::pair<Issue, Domain>>");
+    testIssueDomainSet<hash_set<std::pair<Issue, Domain>>>();
+}
+
+TEST_CASE("Issue domain maps")
+{
+    INFO("std::map <std::pair<Issue, Domain>, int>");
+    testIssueDomainMap<std::map<std::pair<Issue, Domain>, int>>();
+
+    INFO("std::map <std::pair<Issue, Domain>, int>");
+    testIssueDomainMap<std::map<std::pair<Issue, Domain>, int>>();
+
+#if RIPPLE_ASSETS_ENABLE_STD_HASH
+    INFO("hash_map <std::pair<Issue, Domain>, int>");
+    testIssueDomainMap<hash_map<std::pair<Issue, Domain>, int>>();
+
+    INFO("hash_map <std::pair<Issue, Domain>, int>");
+    testIssueDomainMap<hash_map<std::pair<Issue, Domain>, int>>();
+
+    INFO("hardened_hash_map <std::pair<Issue, Domain>, int>");
+    testIssueDomainMap<hardened_hash_map<std::pair<Issue, Domain>, int>>();
+
+    INFO("hardened_hash_map <std::pair<Issue, Domain>, int>");
+    testIssueDomainMap<hardened_hash_map<std::pair<Issue, Domain>, int>>();
+#endif
+}
+
+TEST_SUITE_END();
+
+
