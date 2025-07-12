@@ -1521,31 +1521,39 @@ struct FlowMPT_test : public beast::unit_test::suite
         // OutstandingAmount is already at max, the payment succeeds
         // since USD is redeemed.
         {
-            Env env(*this);
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
 
-            env.fund(XRP(1'000), gw, alice, carol);
+                env.fund(XRP(1'000), gw, alice, carol);
+                env.close();
 
-            MPT const USD = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, carol},
-                 .maxAmt = 100});
-            MPT const EUR = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, carol},
-                 .maxAmt = 100});
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, carol},
+                     .limit = 100});
+                using tUSD = std::decay_t<decltype(USD)>;
+                auto const EUR = issue2(
+                    {.env = env,
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, carol},
+                     .limit = 100});
 
-            env(pay(gw, alice, USD(100)));
+                env(pay(gw, alice, USD(100)));
 
-            env(offer(alice, EUR(100), USD(100)));
+                env(offer(alice, EUR(100), USD(100)));
 
-            env(pay(gw, carol, USD(100)), sendmax(EUR(100)), path(~USD));
+                env(pay(gw, carol, USD(100)), sendmax(EUR(100)), path(~USD));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(100));
-            BEAST_EXPECT(env.balance(alice, USD) == USD(0));
-            BEAST_EXPECT(env.balance(alice, EUR) == EUR(100));
-            BEAST_EXPECT(env.balance(carol, USD) == USD(100));
+                if constexpr (std::is_same_v<tUSD, MPT>)
+                    BEAST_EXPECT(env.balance(gw, USD) == USD(100));
+                BEAST_EXPECT(env.balance(alice, USD) == USD(0));
+                BEAST_EXPECT(env.balance(alice, EUR) == EUR(100));
+                BEAST_EXPECT(env.balance(carol, USD) == USD(100));
+            };
+            testHelper2TokensMix(test);
         }
 
         // Cross-currency payment holder to holder. Offer is owned
@@ -1596,43 +1604,77 @@ struct FlowMPT_test : public beast::unit_test::suite
         // Cross-currency payment holder to holder. Multiple offers
         // with different owners - some holders, some issuer.
         {
-            Env env(*this);
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
 
-            env.fund(XRP(1'000), gw, alice, carol, bob);
+                env.fund(XRP(1'000), gw, alice, carol, bob);
+                env.close();
 
-            MPT const USD = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, carol, bob},
-                 .maxAmt = 1'000});
-            MPT const EUR = MPTTester(
-                {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, carol, bob},
-                 .maxAmt = 1'000});
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw,
+                     .holders = {alice, carol, bob},
+                     .limit = 1'000});
+                using tUSD = std::decay_t<decltype(USD)>;
+                auto const EUR = issue2(
+                    {.env = env,
+                     .token = "EUR",
+                     .issuer = gw,
+                     .holders = {alice, carol, bob},
+                     .limit = 1'000});
+                using tEUR = std::decay_t<decltype(EUR)>;
 
-            env(pay(gw, alice, USD(600)));
-            env(pay(gw, carol, EUR(700)));
+                env(pay(gw, alice, USD(600)));
+                env(pay(gw, carol, EUR(700)));
 
-            env(offer(alice, EUR(100), USD(105)));
-            env(offer(gw, EUR(100), USD(104)));
-            env(offer(gw, EUR(100), USD(103)));
-            env(offer(gw, EUR(100), USD(102)));
-            env(offer(gw, EUR(100), USD(101)));
-            env(offer(gw, EUR(100), USD(100)));
+                env(offer(alice, EUR(100), USD(105)));
+                env(offer(gw, EUR(100), USD(104)));
+                env(offer(gw, EUR(100), USD(103)));
+                env(offer(gw, EUR(100), USD(102)));
+                env(offer(gw, EUR(100), USD(101)));
+                env(offer(gw, EUR(100), USD(100)));
 
-            env(pay(carol, bob, USD(2000)),
-                sendmax(EUR(2000)),
-                path(~USD),
-                txflags(tfPartialPayment));
+                env(pay(carol, bob, USD(2'000)),
+                    sendmax(EUR(2'000)),
+                    path(~USD),
+                    txflags(tfPartialPayment));
 
-            BEAST_EXPECT(env.balance(gw, USD) == USD(1'000));
-            BEAST_EXPECT(env.balance(alice, USD) == USD(495));
-            BEAST_EXPECT(env.balance(bob, USD) == USD(505));
-            BEAST_EXPECT(env.balance(carol, EUR) == EUR(210));
-            // 100/101 is partially crossed (90/91) and 100/100 is
-            // unfunded
-            env.require(offers(gw, 0));
+                if constexpr (std::is_same_v<tUSD, MPT>)
+                {
+                    BEAST_EXPECT(env.balance(gw, USD) == USD(1'000));
+                    BEAST_EXPECT(env.balance(alice, USD) == USD(495));
+                    BEAST_EXPECT(env.balance(bob, USD) == USD(505));
+                }
+                else
+                {
+                    BEAST_EXPECT(env.balance(gw, USD) == USD(0));
+                    BEAST_EXPECT(env.balance(alice, USD) == USD(495));
+                    // all offers are consumed since the limit is different
+                    // for the holders
+                    BEAST_EXPECT(env.balance(bob, USD) == USD(615));
+                }
+                if constexpr (std::is_same_v<tEUR, MPT>)
+                {
+                    if constexpr (std::is_same_v<tUSD, MPT>)
+                        BEAST_EXPECT(env.balance(carol, EUR) == EUR(210));
+                    else
+                        // carol sells 600USD since all offers are consumed
+                        BEAST_EXPECT(env.balance(carol, EUR) == EUR(100));
+                }
+                else
+                {
+                    BEAST_EXPECT(
+                        env.balance(carol, EUR) ==
+                        STAmount(EUR, UINT64_C(209'9009900990099), -13));
+                }
+                // 100/101 is partially crossed (90/91) and 100/100 is
+                // unfunded when MPT. All offers are consumed if IOU.
+                env.require(offers(gw, 0));
+                // alice's offer is consumed.
+                env.require(offers(alice, 0));
+            };
+            testHelper2TokensMix(test);
         }
 
         // Cross-currency payment holder to holder. Multiple offers
@@ -1755,6 +1797,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                     ed,
                     sam,
                     bill);
+                env.close();
 
                 MPT const USD = MPTTester(
                     {.env = env,
@@ -1920,6 +1963,7 @@ struct FlowMPT_test : public beast::unit_test::suite
             auto test = [&](TestData const& d) {
                 Env env(*this);
                 env.fund(XRP(1'000), gw, alice, carol, bob, ed);
+                env.close();
 
                 MPT const USD = MPTTester(
                     {.env = env,
@@ -2030,6 +2074,7 @@ struct FlowMPT_test : public beast::unit_test::suite
             auto test = [&](TestData const& d) {
                 Env env(*this);
                 env.fund(XRP(1'000), gw, alice, carol, bob, ed);
+                env.close();
 
                 MPT const USD = MPTTester(
                     {.env = env,
