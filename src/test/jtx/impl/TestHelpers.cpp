@@ -177,7 +177,8 @@ find_paths_request(
     STAmount const& saDstAmount,
     std::optional<STAmount> const& saSendMax,
     std::optional<PathAsset> const& srcAsset,
-    std::optional<AccountID> const& srcIssuer)
+    std::optional<AccountID> const& srcIssuer,
+    std::optional<uint256> const& domain)
 {
     using namespace jtx;
 
@@ -215,6 +216,9 @@ find_paths_request(
         sc.append(j);
     }
 
+    if (domain)
+        params[jss::domain] = to_string(*domain);
+
     Json::Value result;
     gate g;
     app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
@@ -238,10 +242,11 @@ find_paths(
     STAmount const& saDstAmount,
     std::optional<STAmount> const& saSendMax,
     std::optional<PathAsset> const& srcAsset,
-    std::optional<AccountID> const& srcIssuer)
+    std::optional<AccountID> const& srcIssuer,
+    std::optional<uint256> const& domain)
 {
     Json::Value result = find_paths_request(
-        env, src, dst, saDstAmount, saSendMax, srcAsset, srcIssuer);
+        env, src, dst, saDstAmount, saSendMax, srcAsset, srcIssuer, domain);
     if (result.isMember(jss::error))
         return std::make_tuple(STPathSet{}, STAmount{}, STAmount{});
 

@@ -230,7 +230,8 @@ find_paths_request(
     STAmount const& saDstAmount,
     std::optional<STAmount> const& saSendMax = std::nullopt,
     std::optional<PathAsset> const& srcAsset = std::nullopt,
-    std::optional<AccountID> const& srcIssuer = std::nullopt);
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
 
 std::tuple<STPathSet, STAmount, STAmount>
 find_paths(
@@ -240,7 +241,8 @@ find_paths(
     STAmount const& saDstAmount,
     std::optional<STAmount> const& saSendMax = std::nullopt,
     std::optional<PathAsset> const& srcAsset = std::nullopt,
-    std::optional<AccountID> const& srcIssuer = std::nullopt);
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
 
 /******************************************************************************/
 

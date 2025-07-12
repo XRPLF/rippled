@@ -238,9 +238,11 @@ public:
     }
 
     void
-    path_find()
+    path_find(bool const domainEnabled)
     {
-        testcase("path find");
+        testcase(
+            std::string("path find") + (domainEnabled ? " w/ " : " w/o ") +
+            "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -250,10 +252,22 @@ public:
         env(pay(gw, "alice", USD(70)));
         env(pay(gw, "bob", USD(50)));
 
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+            domainID = setupDomain(env, {"alice", "bob", gw});
+
         STPathSet st;
         STAmount sa;
         STAmount da;
-        std::tie(st, sa, da) = find_paths(env, "alice", "bob", USD(5));
+        std::tie(st, sa, da) = find_paths(
+            env,
+            "alice",
+            "bob",
+            USD(5),
+            std::nullopt,
+            std::nullopt,
+            std::nullopt,
+            domainID);
         // Note, a direct IOU payment will have "gateway" as alternative path
         // since IOU supports rippling
         BEAST_EXPECT(st.empty());
@@ -262,9 +276,11 @@ public:
     }
 
     void
-    path_find_consume_all()
+    path_find_consume_all(bool const domainEnabled)
     {
-        testcase("path find consume all");
+        testcase(
+            std::string("path find consume all") +
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
 
         {
@@ -275,7 +291,18 @@ public:
                 {.env = env, .issuer = gw, .holders = {"bob", "carol"}});
             MPT const AUD(makeMptID(0, gw));
             env(pay(gw, "carol", USD(100)));
-            env(offer("carol", XRP(100), USD(100)));
+            std::optional<uint256> domainID;
+            if (domainEnabled)
+            {
+                domainID =
+                    setupDomain(env, {"alice", "bob", "carol", "gateway"});
+                env(offer("carol", XRP(100), USD(100)), domain(*domainID));
+            }
+            else
+            {
+                env(offer("carol", XRP(100), USD(100)));
+            }
+            env.close();
 
             STPathSet st;
             STAmount sa;
@@ -285,14 +312,20 @@ public:
                 "alice",
                 "bob",
                 AUD(-1),
-                std::optional<STAmount>(XRP(100'000'000)));
+                std::optional<STAmount>(XRP(100'000'000)),
+                std::nullopt,
+                std::nullopt,
+                domainID);
             BEAST_EXPECT(st.empty());
             std::tie(st, sa, da) = find_paths(
                 env,
                 "alice",
                 "bob",
                 USD(-1),
-                std::optional<STAmount>(XRP(100'000'000)));
+                std::optional<STAmount>(XRP(100'000'000)),
+                std::nullopt,
+                std::nullopt,
+                domainID);
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
                 auto const& pathElem = st[0][0];
@@ -302,13 +335,30 @@ public:
             }
             BEAST_EXPECT(sa == XRP(100));
             BEAST_EXPECT(equal(da, USD(100)));
+
+            // if domain is used, finding path in the open offerbook will return
+            // empty result
+            if (domainEnabled)
+            {
+                std::tie(st, sa, da) = find_paths(
+                    env,
+                    "alice",
+                    "bob",
+                    Account("bob")["USD"](-1),
+                    std::optional<STAmount>(XRP(1000000)),
+                    std::nullopt,
+                    std::nullopt);  // not specifying a domain
+                BEAST_EXPECT(st.empty());
+            }
         }
     }
 
     void
-    alternative_paths_consume_best_transfer()
+    alternative_paths_consume_best_transfer(bool const domainEnabled)
     {
-        testcase("alternative paths consume best transfer");
+        testcase(
+            std::string("alternative path consume best transfer") +
+            (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
@@ -321,9 +371,21 @@ public:
              .issuer = gw2,
              .holders = {"alice", "bob"},
              .transferFee = 1'000});
-        env(pay(gw, "alice", USD(70)));
-        env(pay(gw2, "alice", gw2_USD(70)));
-        env(pay("alice", "bob", USD(70)));
+        std::optional<uint256> domainID;
+        if (domainEnabled)
+        {
+            domainID =
+                setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
+            env(pay(gw, "alice", USD(70)), domain(*domainID));
+            env(pay(gw2, "alice", gw2_USD(70)), domain(*domainID));
+            env(pay("alice", "bob", USD(70)), domain(*domainID));
+        }
+        else
+        {
+            env(pay(gw, "alice", USD(70)));
+            env(pay(gw2, "alice", gw2_USD(70)));
+            env(pay("alice", "bob", USD(70)));
+        }
         env.require(balance("alice", USD(0)));
         env.require(balance("alice", gw2_USD(70)));
         env.require(balance("bob", USD(70)));
@@ -331,16 +393,18 @@ public:
     }
 
     void
-    receive_max()
+    receive_max(bool const domainEnabled)
     {
-        testcase("Receive max");
+        testcase(
+            std::string("Receive max") + (domainEnabled ? " w/ " : " w/o ") +
+            "domain");
         using namespace jtx;
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const charlie = Account("charlie");
         auto const gw = Account("gw");
         {
-            // XRP -> IOU receive max
+            // XRP -> MPT receive max
             Env env = pathTestEnv();
             env.fund(XRP(10'000), alice, bob, charlie, gw);
             env.close();
@@ -348,10 +412,26 @@ public:
                 {.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
             env(pay(gw, charlie, USD(10)));
             env.close();
-            env(offer(charlie, XRP(10), USD(10)));
+            std::optional<uint256> domainID;
+            if (domainEnabled)
+            {
+                domainID = setupDomain(env, {alice, bob, charlie, gw});
+                env(offer(charlie, XRP(10), USD(10)), domain(*domainID));
+            }
+            else
+            {
+                env(offer(charlie, XRP(10), USD(10)));
+            }
             env.close();
-            auto [st, sa, da] =
-                find_paths(env, alice, bob, USD(-1), XRP(100).value());
+            auto [st, sa, da] = find_paths(
+                env,
+                alice,
+                bob,
+                USD(-1),
+                XRP(100).value(),
+                std::nullopt,
+                std::nullopt,
+                domainID);
             BEAST_EXPECT(sa == XRP(10));
             BEAST_EXPECT(equal(da, USD(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -363,7 +443,7 @@ public:
             }
         }
         {
-            // IOU -> XRP receive max
+            // MPT -> XRP receive max
             Env env = pathTestEnv();
             env.fund(XRP(10'000), alice, bob, charlie, gw);
             env.close();
@@ -371,10 +451,26 @@ public:
                 {.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
             env(pay(gw, alice, USD(10)));
             env.close();
-            env(offer(charlie, USD(10), XRP(10)));
+            std::optional<uint256> domainID;
+            if (domainEnabled)
+            {
+                domainID = setupDomain(env, {alice, bob, charlie, gw});
+                env(offer(charlie, USD(10), XRP(10)), domain(*domainID));
+            }
+            else
+            {
+                env(offer(charlie, USD(10), XRP(10)));
+            }
             env.close();
-            auto [st, sa, da] =
-                find_paths(env, alice, bob, drops(-1), USD(100).value());
+            auto [st, sa, da] = find_paths(
+                env,
+                alice,
+                bob,
+                drops(-1),
+                USD(100).value(),
+                std::nullopt,
+                std::nullopt,
+                domainID);
             BEAST_EXPECT(sa == USD(10));
             BEAST_EXPECT(equal(da, XRP(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -395,10 +491,13 @@ public:
         no_direct_path_no_intermediary_no_alternatives();
         direct_path_no_intermediary();
         payment_auto_path_find();
-        path_find();
-        path_find_consume_all();
-        alternative_paths_consume_best_transfer();
-        receive_max();
+        for (auto const domainEnabled : {false, true})
+        {
+            path_find(domainEnabled);
+            path_find_consume_all(domainEnabled);
+            alternative_paths_consume_best_transfer(domainEnabled);
+            receive_max(domainEnabled);
+        }
     }
 };
 
