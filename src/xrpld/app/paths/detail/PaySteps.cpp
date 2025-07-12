@@ -746,35 +746,4 @@ StrandContext::StrandContext(
 {
 }
 
-template <class InAmt, class OutAmt>
-bool
-isDirectXrpToXrp(Strand const& strand)
-{
-    return false;
-}
-
-template <>
-bool
-isDirectXrpToXrp<XRPAmount, XRPAmount>(Strand const& strand)
-{
-    return (strand.size() == 2);
-}
-
-template bool
-isDirectXrpToXrp<XRPAmount, IOUAmount>(Strand const& strand);
-template bool
-isDirectXrpToXrp<IOUAmount, XRPAmount>(Strand const& strand);
-template bool
-isDirectXrpToXrp<IOUAmount, IOUAmount>(Strand const& strand);
-template bool
-isDirectXrpToXrp<MPTAmount, MPTAmount>(Strand const& strand);
-template bool
-isDirectXrpToXrp<IOUAmount, MPTAmount>(Strand const& strand);
-template bool
-isDirectXrpToXrp<MPTAmount, IOUAmount>(Strand const& strand);
-template bool
-isDirectXrpToXrp<XRPAmount, MPTAmount>(Strand const& strand);
-template bool
-isDirectXrpToXrp<MPTAmount, XRPAmount>(Strand const& strand);
-
 }  // namespace ripple

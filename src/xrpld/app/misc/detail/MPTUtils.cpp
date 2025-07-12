@@ -38,12 +38,13 @@ isMPTAllowed(
 
     auto const& issuanceID = asset.get<MPTIssue>().getMptID();
     auto const isDEX = txType == ttPAYMENT && destAccount;
-    XRPL_ASSERT(
-        txType == ttAMM_CREATE || txType == ttAMM_DEPOSIT ||
-            txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE ||
-            txType == ttCHECK_CREATE || txType == ttCHECK_CASH ||
-            txType == ttPAYMENT || isDEX,
-        "ripple::isMPTAllowed : all MPT tx or DEX");
+    auto const validTx = txType == ttAMM_CREATE || txType == ttAMM_DEPOSIT ||
+        txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE ||
+        txType == ttCHECK_CREATE || txType == ttCHECK_CASH ||
+        txType == ttPAYMENT || isDEX;
+    XRPL_ASSERT(validTx, "ripple::isMPTAllowed : all MPT tx or DEX");
+    if (!validTx)
+        return tefINTERNAL;
 
     auto const& issuer = asset.getIssuer();
     if (!view.exists(keylet::account(issuer)))
@@ -94,7 +95,7 @@ isMPTTxAllowed(
     std::optional<AccountID> const& destAccount)
 {
     // use isDEXAllowed for payment/offer crossing
-    assert(txType != ttPAYMENT);
+    XRPL_ASSERT(txType != ttPAYMENT, "ripple::isMPTTxAllowed : not payment");
     return isMPTAllowed(view, txType, asset, accountID, destAccount);
 }
 

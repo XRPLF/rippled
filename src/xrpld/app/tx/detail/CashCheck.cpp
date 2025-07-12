@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/misc/MPTUtils.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CashCheck.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
@@ -283,6 +284,14 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 {
                     JLOG(ctx.j.warn()) << "Cashing a check to a frozen MPT.";
                     return tecFROZEN;
+                }
+
+                if (auto const err =
+                        isMPTDEXAllowed(ctx.view, value.asset(), srcId, dstId);
+                    err != tesSUCCESS)
+                {
+                    JLOG(ctx.j.warn()) << "MPT DEX is not allowed.";
+                    return err;
                 }
             }
         }

@@ -244,7 +244,7 @@ private:
 // The rules for handling funds in these two cases are almost, but not
 // quite, the same.
 
-// Payment DirectStep class (not offer crossing).
+// Payment MPTEndpointStep class (not offer crossing).
 class MPTEndpointPaymentStep : public MPTEndpointStep<MPTEndpointPaymentStep>
 {
 public:
@@ -278,7 +278,7 @@ public:
     }
 };
 
-// Offer crossing DirectStep class (not a payment).
+// Offer crossing MPTEndpointStep class (not a payment).
 class MPTEndpointOfferCrossingStep
     : public MPTEndpointStep<MPTEndpointOfferCrossingStep>
 {
@@ -910,7 +910,7 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
     if ((ctx.isFirst && !ctx.seenDirectAssets[0].insert(mptIssue_).second) ||
         (ctx.isLast && !ctx.seenDirectAssets[1].insert(mptIssue_).second))
     {
-        JLOG(j_.debug()) << "DirectStepI: loop detected: Index: "
+        JLOG(j_.debug()) << "MPTEndpointStep: loop detected: Index: "
                          << ctx.strandSize << ' ' << *this;
         return temBAD_PATH_LOOP;
     }

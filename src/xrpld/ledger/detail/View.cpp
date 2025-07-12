@@ -2449,8 +2449,7 @@ requireAuth(
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->isFlag(lsfMPTRequireAuth) &&
-        ((!sleToken && mptokensV2) ||
-         (!(sleToken->getFlags() & lsfMPTAuthorized))))
+        ((!sleToken && mptokensV2) || !sleToken->isFlag(lsfMPTAuthorized)))
         return tecNO_AUTH;
 
     return tesSUCCESS;  // Note: sleToken might be null

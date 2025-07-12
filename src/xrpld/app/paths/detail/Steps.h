@@ -67,6 +67,7 @@ issues(DebtDirection dir)
      BookStepIX is an IOU/XRP offer book
      BookStepXI is an XRP/IOU offer book
      XRPEndpointStep is the source or destination account for XRP
+     MPTEndpointStep is the source or destination account for MPT
 
    Amounts may be transformed through a step in either the forward or the
    reverse direction. In the forward direction, the function `fwd` is used to
@@ -661,9 +662,16 @@ make_BookStepMI(StrandContext const& ctx, MPTIssue const& in, Issue const& out);
 std::pair<TER, std::unique_ptr<Step>>
 make_BookStepIM(StrandContext const& ctx, Issue const& in, MPTIssue const& out);
 
-template <class InAmt, class OutAmt>
+template <StepAmount InAmt, StepAmount OutAmt>
 bool
-isDirectXrpToXrp(Strand const& strand);
+isDirectXrpToXrp(Strand const& strand)
+{
+    if constexpr (
+        std::is_same_v<InAmt, XRPAmount> && std::is_same_v<OutAmt, XRPAmount>)
+        return strand.size() == 2;
+    else
+        return false;
+}
 /// @endcond
 
 }  // namespace ripple
