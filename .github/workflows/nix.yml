@@ -16,6 +16,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# This part of Conan configuration is specific to this workflow only; we do not want
+# to pollute conan/profiles directory with settings which might not work for others
+env:
+  CONAN_GLOBAL_CONF: |
+    core.download:parallel={{os.cpu_count()}}
+    core.upload:parallel={{os.cpu_count()}}
+    tools.build:jobs=24
+    tools.build:verbosity=verbose
+    tools.compilation:verbosity=verbos
+
 # This workflow has multiple job matrixes.
 # They can be considered phases because most of the matrices ("test",
 # "coverage", "conan", ) depend on the first ("dependencies").
@@ -78,9 +88,10 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
+          echo ${CONAN_GLOBAL_CONF} > global.conf
           conan config install conan/profiles/default -tf $(conan config home)/profiles/
-          conan config install conan/global.conf -tf $(conan config home)
-
+          conan config install global.conf -tf $(conan config home)
+          conan profile show
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar.gz -C ~/.conan2 .
@@ -142,7 +153,6 @@ jobs:
           env | sort
           echo ${PATH} | tr ':' '\n'
           conan --version
-          cmake --version
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
@@ -195,7 +205,6 @@ jobs:
           env | sort
           echo ${PATH} | tr ':' '\n'
           conan --version
-          cmake --version
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
@@ -321,7 +330,6 @@ jobs:
           env | sort
           echo ${PATH} | tr ':' '\n'
           conan --version
-          cmake --version
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
@@ -371,8 +379,10 @@ jobs:
 
         - name: configure Conan
           run: |
+            echo ${CONAN_GLOBAL_CONF} > global.conf
             conan config install conan/profiles/default -tf $(conan config home)/profiles/
-            conan config install conan/global.conf -tf $(conan config home)
+            conan config install global.conf -tf $(conan config home)
+            conan profile show
             conan remote add --index 0 ripple ${{ env.CONAN_URL }}
         - name: build dependencies
           run: |
