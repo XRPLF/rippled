@@ -79,9 +79,8 @@ jobs:
       - name: configure Conan
         shell: bash
         run: |
-          mkdir -p $(conan config home)/profiles/
-          touch $(conan config home)/profiles/default
           echo "${CONAN_GLOBAL_CONF}" > global.conf
+          mv conan/profiles/libxrpl conan/profiles/default
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan config install global.conf -tf $(conan config home)
           conan profile show
