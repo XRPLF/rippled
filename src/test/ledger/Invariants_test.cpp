@@ -1743,6 +1743,33 @@ class Invariants_test : public beast::unit_test::suite
                 env(tx);
                 return true;
             });
+
+        doInvariantCheck(
+            {"updated vault must have shares"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsMaximum] = 200;
+                ac.view().update(sleVault);
+
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                ac.view().erase(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
     }
 
 public:
