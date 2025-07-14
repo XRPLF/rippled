@@ -31,38 +31,27 @@ namespace beast {
 
 template <class Generator>
 void
-rngfill(void* buffer, std::size_t bytes, Generator& g)
+rngfill(void* const buffer, std::size_t const bytes, Generator& g)
 {
     using result_type = typename Generator::result_type;
 
-    while (bytes >= sizeof(result_type))
+    std::uint8_t* const buffer_start = static_cast<std::uint8_t*>(buffer);
+    std::size_t const complete_iterations = bytes / sizeof(result_type);
+    std::size_t const bytes_remaining = bytes % sizeof(result_type);
+
+    for (std::size_t count = 0; count < complete_iterations; ++count)
     {
         auto const v = g();
-        std::memcpy(buffer, &v, sizeof(v));
-        buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
-        bytes -= sizeof(v);
+        std::size_t const offset = count * sizeof(result_type);
+        std::memcpy(buffer_start + offset, &v, sizeof(result_type));
     }
 
-    XRPL_ASSERT(
-        bytes < sizeof(result_type), "beast::rngfill(void*) : maximum bytes");
-
-#ifdef __GNUC__
-    // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.
-    // gcc 12.1 (also falsely) warns about an string overflow in release mode.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-
-    if (bytes > 0)
+    if (bytes_remaining > 0)
     {
         auto const v = g();
-        std::memcpy(buffer, &v, bytes);
+        std::size_t const offset = complete_iterations * sizeof(result_type);
+        std::memcpy(buffer_start + offset, &v, bytes_remaining);
     }
-
-#ifdef __GNUC__
-#pragma GCC diagnostic pop
-#endif
 }
 
 template <
