@@ -795,7 +795,7 @@ WamrEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
     if (trap)
     {
         ret.f = true;
-        print_wasm_error("failed to call func", trap, j_);
+        print_wasm_error("failure to call func", trap, j_);
     }
 
     // assert(results[0].kind == WASM_I32);
@@ -924,7 +924,7 @@ WamrEngine::runHlp(
     auto const res = call<1>(f, p);
 
     if (res.f)
-        throw std::runtime_error("<" + std::string(funcName) + "> failed");
+        throw std::runtime_error("<" + std::string(funcName) + "> failure");
     else if (!res.r.num_elems)
         throw std::runtime_error(
             "<" + std::string(funcName) + "> return nothing");

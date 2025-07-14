@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <test/app/TestHostFunctions.h>
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
@@ -33,6 +34,9 @@
 
 namespace ripple {
 namespace test {
+
+bool
+testGetDataIncrement();
 
 using Add_proto = int32_t(int32_t, int32_t);
 static wasm_trap_t*
@@ -54,7 +58,7 @@ public:
     {
     }
 
-    int32_t
+    Expected<int32_t, HostFunctionError>
     get_ledger_sqn()
     {
         return (int32_t)env->current()->seq();
@@ -67,893 +71,21 @@ getLedgerSqn_wrap(void* env, wasm_val_vec_t const*, wasm_val_vec_t* results)
 {
     auto sqn = reinterpret_cast<TestLedgerDataProvider*>(env)->get_ledger_sqn();
 
-    results->data[0] = WASM_I32_VAL(sqn);
+    results->data[0] = WASM_I32_VAL(sqn.value());
     results->num_elems = 1;
 
     return nullptr;
 }
 
-struct TestHostFunctions : public HostFunctions
-{
-    test::jtx::Env& env_;
-    AccountID accountID_;
-    Bytes data_;
-    int clock_drift_ = 0;
-    void const* rt_ = nullptr;
-
-public:
-    TestHostFunctions(test::jtx::Env& env, int cd = 0)
-        : env_(env), clock_drift_(cd)
-    {
-        auto opt = parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-        if (opt)
-            accountID_ = *opt;
-        std::string t = "10000";
-        data_ = Bytes{t.begin(), t.end()};
-    }
-
-    virtual void
-    setRT(void const* rt) override
-    {
-        rt_ = rt;
-    }
-
-    virtual void const*
-    getRT() const override
-    {
-        return rt_;
-    }
-
-    beast::Journal
-    getJournal() override
-    {
-        return env_.journal;
-    }
-
-    int32_t
-    getLedgerSqn() override
-    {
-        return static_cast<int32_t>(env_.current()->seq());
-    }
-
-    int32_t
-    getParentLedgerTime() override
-    {
-        return env_.current()->parentCloseTime().time_since_epoch().count() +
-            clock_drift_;
-    }
-
-    Hash
-    getParentLedgerHash() override
-    {
-        return env_.current()->info().parentHash;
-    }
-
-    virtual int32_t
-    cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx) override
-    {
-        return 1;
-    }
-
-    Expected<Bytes, int32_t>
-    getTxField(SField const& fname) override
-    {
-        if (fname == sfAccount)
-            return Bytes(accountID_.begin(), accountID_.end());
-        else if (fname == sfFee)
-        {
-            int64_t x = 235;
-            uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
-            return Bytes{p, p + sizeof(x)};
-        }
-        else if (fname == sfSequence)
-        {
-            int32_t x = getLedgerSqn();
-            uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
-            return Bytes{p, p + sizeof(x)};
-        }
-        return Bytes();
-    }
-
-    Expected<Bytes, int32_t>
-    getCurrentLedgerObjField(SField const& fname) override
-    {
-        auto const& sn = fname.getName();
-        if (sn == "Destination" || sn == "Account")
-            return Bytes(accountID_.begin(), accountID_.end());
-        else if (sn == "Data")
-            return data_;
-        else if (sn == "FinishAfter")
-        {
-            auto t =
-                env_.current()->parentCloseTime().time_since_epoch().count();
-            std::string s = std::to_string(t);
-            return Bytes{s.begin(), s.end()};
-        }
-
-        return Unexpected(-1);
-    }
-
-    Expected<Bytes, int32_t>
-    getLedgerObjField(int32_t cacheIdx, SField const& fname) override
-    {
-        // auto const& sn = fname.getName();
-        if (fname == sfBalance)
-        {
-            int64_t x = 10'000;
-            uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
-            return Bytes{p, p + sizeof(x)};
-        }
-        return data_;
-    }
-
-    Expected<Bytes, int32_t>
-    getTxNestedField(Slice const& locator) override
-    {
-        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
-                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
-                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
-                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
-        return Bytes(&a[0], &a[sizeof(a)]);
-    }
-
-    Expected<Bytes, int32_t>
-    getCurrentLedgerObjNestedField(Slice const& locator) override
-    {
-        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
-                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
-                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
-                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
-        return Bytes(&a[0], &a[sizeof(a)]);
-    }
-
-    Expected<Bytes, int32_t>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
-    {
-        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
-                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
-                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
-                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
-        return Bytes(&a[0], &a[sizeof(a)]);
-    }
-
-    int32_t
-    getTxArrayLen(SField const& fname) override
-    {
-        return 32;
-    }
-
-    int32_t
-    getCurrentLedgerObjArrayLen(SField const& fname) override
-    {
-        return 32;
-    }
-
-    int32_t
-    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override
-    {
-        return 32;
-    }
-
-    int32_t
-    getTxNestedArrayLen(Slice const& locator) override
-    {
-        return 32;
-    }
-
-    int32_t
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
-    {
-        return 32;
-    }
-
-    int32_t
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
-    {
-        return 32;
-    }
-
-    int32_t
-    updateData(Bytes const& data) override
-    {
-        return 0;
-    }
-
-    Hash
-    computeSha512HalfHash(Bytes const& data) override
-    {
-        return env_.current()->info().parentHash;
-    }
-
-    Expected<Bytes, int32_t>
-    accountKeylet(AccountID const& account) override
-    {
-        if (!account)
-            return Unexpected(HF_ERR_INVALID_ACCOUNT);
-        auto const keylet = keylet::account(account);
-        return Bytes{keylet.key.begin(), keylet.key.end()};
-    }
-
-    Expected<Bytes, int32_t>
-    credentialKeylet(
-        AccountID const& subject,
-        AccountID const& issuer,
-        Bytes const& credentialType) override
-    {
-        if (!subject || !issuer || credentialType.empty())
-            return Unexpected(HF_ERR_INVALID_ACCOUNT);
-        auto const keylet =
-            keylet::credential(subject, issuer, makeSlice(credentialType));
-        return Bytes{keylet.key.begin(), keylet.key.end()};
-    }
-
-    Expected<Bytes, int32_t>
-    escrowKeylet(AccountID const& account, std::uint32_t seq) override
-    {
-        if (!account)
-            return Unexpected(HF_ERR_INVALID_ACCOUNT);
-        auto const keylet = keylet::escrow(account, seq);
-        return Bytes{keylet.key.begin(), keylet.key.end()};
-    }
-
-    Expected<Bytes, int32_t>
-    oracleKeylet(AccountID const& account, std::uint32_t documentId) override
-    {
-        if (!account)
-            return Unexpected(HF_ERR_INVALID_ACCOUNT);
-        auto const keylet = keylet::oracle(account, documentId);
-        return Bytes{keylet.key.begin(), keylet.key.end()};
-    }
-
-    Expected<Bytes, int32_t>
-    getNFT(AccountID const& account, uint256 const& nftId) override
-    {
-        if (!account || !nftId)
-        {
-            return Unexpected(HF_ERR_INVALID_PARAMS);
-        }
-
-        std::string s = "https://ripple.com";
-        return Bytes(s.begin(), s.end());
-    }
-
-    int32_t
-    trace(std::string const& msg, Bytes const& data, bool asHex) override
-    {
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        auto j = getJournal().trace();
-#endif
-        j << msg;
-        if (!asHex)
-            j << std::string_view(
-                reinterpret_cast<char const*>(data.data()), data.size());
-        else
-        {
-            auto const hex =
-                boost::algorithm::hex(std::string(data.begin(), data.end()));
-            j << hex;
-        }
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-
-        return msg.size() + data.size() * (asHex ? 2 : 1);
-    }
-
-    int32_t
-    traceNum(std::string const& msg, int64_t data) override
-    {
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        auto j = getJournal().trace();
-#endif
-        j << msg << data;
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-        return msg.size() + sizeof(data);
-    }
-};
-
-struct TestHostFunctionsSink : public TestHostFunctions
-{
-    test::StreamSink sink_;
-    beast::Journal jlog_;
-    void const* rt_ = nullptr;
-
-public:
-    explicit TestHostFunctionsSink(test::jtx::Env& env, int cd = 0)
-        : TestHostFunctions(env, cd)
-        , sink_(beast::severities::kDebug)
-        , jlog_(sink_)
-    {
-    }
-
-    test::StreamSink&
-    getSink()
-    {
-        return sink_;
-    }
-
-    beast::Journal
-    getJournal() override
-    {
-        return jlog_;
-    }
-};
-
-struct PerfHostFunctions : public HostFunctions
-{
-    test::jtx::Env& env_;
-
-    Keylet leKey;
-    static int constexpr MAX_CACHE = 256;
-    std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
-    std::shared_ptr<STTx const> tx_;
-
-    void const* rt_ = nullptr;
-
-public:
-    PerfHostFunctions(
-        test::jtx::Env& env,
-        Keylet const& k,
-        std::shared_ptr<STTx const>&& tx)
-        : env_(env), leKey(k), tx_(std::move(tx))
-    {
-    }
-
-    virtual void
-    setRT(void const* rt) override
-    {
-        rt_ = rt;
-    }
-
-    virtual void const*
-    getRT() const override
-    {
-        return rt_;
-    }
-
-    beast::Journal
-    getJournal() override
-    {
-        return env_.journal;
-    }
-
-    int32_t
-    getLedgerSqn() override
-    {
-        return static_cast<int32_t>(env_.current()->seq());
-    }
-
-    int32_t
-    getParentLedgerTime() override
-    {
-        return env_.current()->parentCloseTime().time_since_epoch().count();
-    }
-
-    Hash
-    getParentLedgerHash() override
-    {
-        return env_.current()->info().parentHash;
-    }
-
-    virtual int32_t
-    cacheLedgerObj(Keylet const&, int32_t cacheIdx) override
-    {
-        static int32_t intIdx = 0;
-
-        if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
-            return HF_ERR_SLOT_OUT_RANGE;
-
-        if (!cacheIdx)
-        {
-            for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
-                if (!cache[cacheIdx])
-                    break;
-            if (cacheIdx >= MAX_CACHE)
-                cacheIdx = intIdx++ % MAX_CACHE;
-        }
-        else
-            --cacheIdx;
-
-        if (cacheIdx >= MAX_CACHE)
-            return HF_ERR_SLOTS_FULL;
-
-        cache[cacheIdx] = env_.le(leKey);
-        return cache[cacheIdx] ? cacheIdx + 1 : HF_ERR_LEDGER_OBJ_NOT_FOUND;
-    }
-
-    static Bytes
-    getAnyFieldData(STBase const& obj)
-    {
-        // auto const& fname = obj.getFName();
-        auto const stype = obj.getSType();
-        switch (stype)
-        {
-            case STI_UNKNOWN:
-            case STI_NOTPRESENT:
-                return {};
-                break;
-            case STI_ACCOUNT: {
-                auto const& super(static_cast<STAccount const&>(obj));
-                auto const& data = super.value();
-                return {data.begin(), data.end()};
-            }
-            break;
-            case STI_AMOUNT: {
-                auto const& super(static_cast<STAmount const&>(obj));
-                int64_t const data = super.xrp().drops();
-                auto const* b = reinterpret_cast<uint8_t const*>(&data);
-                auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-                return {b, e};
-            }
-            break;
-            case STI_VL: {
-                auto const& super(static_cast<STBlob const&>(obj));
-                auto const& data = super.value();
-                return {data.begin(), data.end()};
-            }
-            break;
-            case STI_UINT256: {
-                auto const& super(static_cast<STBitString<256> const&>(obj));
-                auto const& data = super.value();
-                return {data.begin(), data.end()};
-            }
-            break;
-            case STI_UINT32: {
-                auto const& super(
-                    static_cast<STInteger<std::uint32_t> const&>(obj));
-                std::uint32_t const data = super.value();
-                auto const* b = reinterpret_cast<uint8_t const*>(&data);
-                auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-                return {b, e};
-            }
-            break;
-            default:
-                break;
-        }
-
-        Serializer msg;
-        obj.add(msg);
-
-        return msg.getData();
-    }
-
-    Expected<Bytes, int32_t>
-    getTxField(SField const& fname) override
-    {
-        auto const* field = tx_->peekAtPField(fname);
-        if (!field)
-            return Unexpected(HF_ERR_FIELD_NOT_FOUND);
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
-    }
-
-    Expected<Bytes, int32_t>
-    getCurrentLedgerObjField(SField const& fname) override
-    {
-        auto const sle = env_.le(leKey);
-        if (!sle)
-            return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
-
-        auto const* field = sle->peekAtPField(fname);
-        if (!field)
-            return Unexpected(HF_ERR_FIELD_NOT_FOUND);
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
-    }
-
-    Expected<Bytes, int32_t>
-    getLedgerObjField(int32_t cacheIdx, SField const& fname) override
-    {
-        --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return Unexpected(HF_ERR_SLOT_OUT_RANGE);
-
-        if (!cache[cacheIdx])
-        {
-            // return Unexpected(HF_ERR_INVALID_SLOT);
-            cache[cacheIdx] = env_.le(leKey);
-        }
-
-        auto const* field = cache[cacheIdx]->peekAtPField(fname);
-        if (!field)
-            return Unexpected(HF_ERR_FIELD_NOT_FOUND);
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
-    }
-
-    static Expected<STBase const*, int32_t>
-    locateField(STObject const& obj, Slice const& loc)
-    {
-        if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
-            return Unexpected(HF_ERR_LOCATOR_MALFORMED);
-
-        int32_t const* l = reinterpret_cast<int32_t const*>(loc.data());
-        int32_t const sz = loc.size() / 4;
-        STBase const* field = nullptr;
-        auto const& m = SField::getKnownCodeToField();
-
-        {
-            int32_t const c = l[0];
-            auto const it = m.find(c);
-            if (it == m.end())
-                return Unexpected(HF_ERR_LOCATOR_MALFORMED);
-            auto const& fname(*it->second);
-
-            field = obj.peekAtPField(fname);
-            if (!field || (STI_NOTPRESENT == field->getSType()))
-                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
-        }
-
-        for (int i = 1; i < sz; ++i)
-        {
-            int32_t const c = l[i];
-
-            if (STI_ARRAY == field->getSType())
-            {
-                auto const* arr = static_cast<STArray const*>(field);
-                if (c >= arr->size())
-                    return Unexpected(HF_ERR_LOCATOR_MALFORMED);
-                field = &(arr->operator[](c));
-            }
-            else if (STI_OBJECT == field->getSType())
-            {
-                auto const* o = static_cast<STObject const*>(field);
-
-                auto const it = m.find(c);
-                if (it == m.end())
-                    return Unexpected(HF_ERR_LOCATOR_MALFORMED);
-                auto const& fname(*it->second);
-
-                field = o->peekAtPField(fname);
-            }
-            else  // simple field must be the last one
-            {
-                return Unexpected(HF_ERR_LOCATOR_MALFORMED);
-            }
-
-            if (!field || (STI_NOTPRESENT == field->getSType()))
-                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
-        }
-
-        return field;
-    }
-
-    Expected<Bytes, int32_t>
-    getTxNestedField(Slice const& locator) override
-    {
-        // std::cout << tx_->getJson(JsonOptions::none).toStyledString() <<
-        // std::endl;
-        auto const r = locateField(*tx_, locator);
-        if (!r)
-            return Unexpected(r.error());
-
-        auto const* field = r.value();
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
-    }
-
-    Expected<Bytes, int32_t>
-    getCurrentLedgerObjNestedField(Slice const& locator) override
-    {
-        auto const sle = env_.le(leKey);
-        if (!sle)
-            return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
-
-        auto const r = locateField(*sle, locator);
-        if (!r)
-            return Unexpected(r.error());
-
-        auto const* field = r.value();
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
-    }
-
-    Expected<Bytes, int32_t>
-    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
-    {
-        --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return Unexpected(HF_ERR_SLOT_OUT_RANGE);
-
-        if (!cache[cacheIdx])
-        {
-            // return Unexpected(HF_ERR_INVALID_SLOT);
-            cache[cacheIdx] = env_.le(leKey);
-        }
-
-        auto const r = locateField(*cache[cacheIdx], locator);
-        if (!r)
-            return Unexpected(r.error());
-
-        auto const* field = r.value();
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HF_ERR_NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
-    }
-
-    int32_t
-    getTxArrayLen(SField const& fname) override
-    {
-        if (fname.fieldType != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-
-        auto const* field = tx_->peekAtPField(fname);
-        if (!field)
-            return HF_ERR_FIELD_NOT_FOUND;
-
-        if (field->getSType() != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-        int32_t const sz = static_cast<STArray const*>(field)->size();
-
-        return sz;
-    }
-
-    int32_t
-    getCurrentLedgerObjArrayLen(SField const& fname) override
-    {
-        if (fname.fieldType != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-
-        auto const sle = env_.le(leKey);
-        if (!sle)
-            return HF_ERR_LEDGER_OBJ_NOT_FOUND;
-
-        auto const* field = sle->peekAtPField(fname);
-        if (!field)
-            return HF_ERR_FIELD_NOT_FOUND;
-
-        if (field->getSType() != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-        int32_t const sz = static_cast<STArray const*>(field)->size();
-
-        return sz;
-    }
-
-    int32_t
-    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override
-    {
-        if (fname.fieldType != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return HF_ERR_SLOT_OUT_RANGE;
-
-        if (!cache[cacheIdx])
-        {
-            // return Unexpected(HF_ERR_INVALID_SLOT);
-            cache[cacheIdx] = env_.le(leKey);
-        }
-
-        auto const* field = cache[cacheIdx]->peekAtPField(fname);
-        if (!field)
-            return HF_ERR_FIELD_NOT_FOUND;
-
-        if (field->getSType() != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-        int32_t const sz = static_cast<STArray const*>(field)->size();
-
-        return sz;
-    }
-
-    int32_t
-    getTxNestedArrayLen(Slice const& locator) override
-    {
-        auto const r = locateField(*tx_, locator);
-        if (!r)
-            return r.error();
-        auto const* field = r.value();
-
-        if (field->getSType() != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-        int32_t const sz = static_cast<STArray const*>(field)->size();
-
-        return sz;
-    }
-
-    int32_t
-    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
-    {
-        auto const sle = env_.le(leKey);
-        if (!sle)
-            return HF_ERR_LEDGER_OBJ_NOT_FOUND;
-        auto const r = locateField(*sle, locator);
-        if (!r)
-            return r.error();
-        auto const* field = r.value();
-
-        if (field->getSType() != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-        int32_t const sz = static_cast<STArray const*>(field)->size();
-
-        return sz;
-    }
-
-    int32_t
-    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
-    {
-        --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return HF_ERR_SLOT_OUT_RANGE;
-
-        if (!cache[cacheIdx])
-        {
-            // return Unexpected(HF_ERR_INVALID_SLOT);
-            cache[cacheIdx] = env_.le(leKey);
-        }
-
-        auto const r = locateField(*cache[cacheIdx], locator);
-        if (!r)
-            return r.error();
-
-        auto const* field = r.value();
-
-        if (field->getSType() != STI_ARRAY)
-            return HF_ERR_NO_ARRAY;
-        int32_t const sz = static_cast<STArray const*>(field)->size();
-
-        return sz;
-    }
-
-    int32_t
-    updateData(Bytes const& data) override
-    {
-        ripple::detail::ApplyViewBase v(
-            env_.app().openLedger().current().get(), tapNONE);
-
-        auto sle = v.peek(leKey);
-        if (!sle)
-            return HF_ERR_LEDGER_OBJ_NOT_FOUND;
-
-        sle->setFieldVL(sfData, data);
-        v.update(sle);
-
-        return data.size();
-    }
-
-    Hash
-    computeSha512HalfHash(Bytes const& data) override
-    {
-        auto const hash = sha512Half(data);
-        return hash;
-    }
-
-    Expected<Bytes, int32_t>
-    accountKeylet(AccountID const& account) override
-    {
-        if (!account)
-            return Unexpected(HF_ERR_INVALID_ACCOUNT);
-        auto const keylet = keylet::account(account);
-        return Bytes{keylet.key.begin(), keylet.key.end()};
-    }
-
-    Expected<Bytes, int32_t>
-    credentialKeylet(
-        AccountID const& subject,
-        AccountID const& issuer,
-        Bytes const& credentialType) override
-    {
-        if (!subject || !issuer || credentialType.empty() ||
-            credentialType.size() > maxCredentialTypeLength)
-            return Unexpected(HF_ERR_INVALID_PARAMS);
-
-        auto const keylet =
-            keylet::credential(subject, issuer, makeSlice(credentialType));
-
-        return Bytes{keylet.key.begin(), keylet.key.end()};
-    }
-
-    Expected<Bytes, int32_t>
-    escrowKeylet(AccountID const& account, std::uint32_t seq) override
-    {
-        if (!account)
-            return Unexpected(HF_ERR_INVALID_ACCOUNT);
-        auto const keylet = keylet::escrow(account, seq);
-        return Bytes{keylet.key.begin(), keylet.key.end()};
-    }
-
-    Expected<Bytes, int32_t>
-    oracleKeylet(AccountID const& account, std::uint32_t documentId) override
-    {
-        if (!account)
-            return Unexpected(HF_ERR_INVALID_ACCOUNT);
-        auto const keylet = keylet::oracle(account, documentId);
-        return Bytes{keylet.key.begin(), keylet.key.end()};
-    }
-
-    Expected<Bytes, int32_t>
-    getNFT(AccountID const& account, uint256 const& nftId) override
-    {
-        if (!account || !nftId)
-        {
-            getJournal().trace() << "WAMR getNFT: Invalid account or NFT ID";
-            return Unexpected(HF_ERR_INVALID_PARAMS);
-        }
-
-        auto obj = nft::findToken(*env_.current(), account, nftId);
-        if (!obj)
-        {
-            getJournal().trace() << "WAMR getNFT: NFT not found";
-            return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
-        }
-
-        auto ouri = obj->at(~sfURI);
-        if (!ouri)
-            return Bytes();
-
-        Slice const s = ouri->value();
-        return Bytes(s.begin(), s.end());
-    }
-
-    int32_t
-    trace(std::string const& msg, Bytes const& data, bool asHex) override
-    {
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        auto j = getJournal().error();
-#endif
-        if (!asHex)
-            j << msg
-              << std::string_view(
-                     reinterpret_cast<char const*>(data.data()), data.size());
-        else
-        {
-            auto const hex =
-                boost::algorithm::hex(std::string(data.begin(), data.end()));
-            j << msg << hex;
-        }
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-
-        return msg.size() + data.size() * (asHex ? 2 : 1);
-    }
-
-    int32_t
-    traceNum(std::string const& msg, int64_t data) override
-    {
-#ifdef DEBUG_OUTPUT
-        auto& j = std::cerr;
-#else
-        auto j = getJournal().error();
-#endif
-        j << msg << data;
-
-#ifdef DEBUG_OUTPUT
-        j << std::endl;
-#endif
-        return msg.size() + sizeof(data);
-    }
-};
-
 struct Wasm_test : public beast::unit_test::suite
 {
+    void
+    testGetDataHelperFunctions()
+    {
+        testcase("getData helper functions");
+        BEAST_EXPECT(testGetDataIncrement());
+    }
+
     void
     testWasmFib()
     {
@@ -1300,10 +432,10 @@ struct Wasm_test : public beast::unit_test::suite
                 explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                Expected<Bytes, int32_t>
+                Expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) override
                 {
-                    return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+                    return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
                 }
             };
             BadTestHostFunctions nfs(env);
@@ -1320,7 +452,7 @@ struct Wasm_test : public beast::unit_test::suite
                 explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
                 {
                 }
-                Expected<Bytes, int32_t>
+                Expected<Bytes, HostFunctionError>
                 getTxField(SField const& fname) override
                 {
                     return Bytes((MAX_PAGES + 1) * 64 * 1024, 1);
@@ -1361,7 +493,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto const s = sink.messages().str();
             BEAST_EXPECT(
-                countSubstr(s, "WAMR Error: failed to call func") == 1);
+                countSubstr(s, "WAMR Error: failure to call func") == 1);
             BEAST_EXPECT(
                 countSubstr(s, "Exception: wasm operand stack overflow") > 0);
         }
@@ -1387,7 +519,7 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testEscrowWasmDN2()
+    testEscrowWasmDN3()
     {
         testcase("wasm devnet 3 test");
 
@@ -1602,6 +734,7 @@ struct Wasm_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
+        testGetDataHelperFunctions();
         testWasmLib();
         testBadWasm();
         testWasmCheckJson();
@@ -1620,7 +753,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         // TODO: fix result
         testEscrowWasmDN1();
-        testEscrowWasmDN2();
+        testEscrowWasmDN3();
 
         // perfTest();
     }
