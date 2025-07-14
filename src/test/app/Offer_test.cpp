@@ -4229,12 +4229,6 @@ public:
         };
 
         // clang-format off
-        TestData const takerTests[]{
-            //      btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-            {0, 0, 1, BTC(5), {{"deb", 0, drops(3900000'000000 - 4 * baseFee), BTC(5), USD(3000)}, {"dan", 0, drops(4100000'000000 - 3 * baseFee), BTC(0), USD(750)}}}, // no BTC xfer fee
-            {0, 0, 0, BTC(5), {{"flo", 0, drops(4000000'000000 - 5 * baseFee), BTC(5), USD(2000)}                                                    }}  // no xfer fee
-        };
-
         TestData const flowTests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
             {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - 4 * baseFee), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - 3 * baseFee), BTC(0), USD(1375)}}}, // no BTC xfer fee
