@@ -50,12 +50,6 @@ CreateOffer::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featurePermissionedDEX))
         return temDISABLED;
 
-    // Permissioned offers should use the PE (which must be enabled by
-    // featureFlowCross amendment)
-    if (ctx.rules.enabled(featurePermissionedDEX) &&
-        !ctx.rules.enabled(featureFlowCross))
-        return temDISABLED;
-
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -944,22 +938,11 @@ CreateOffer::cross(
     Amounts const& takerAmount,
     std::optional<uint256> const& domainID)
 {
-    if (sb.rules().enabled(featureFlowCross))
-    {
-        PaymentSandbox psbFlow{&sb};
-        PaymentSandbox psbCancelFlow{&sbCancel};
-        auto const ret =
-            flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
-        psbFlow.apply(sb);
-        psbCancelFlow.apply(sbCancel);
-        return ret;
-    }
-
-    Sandbox sbTaker{&sb};
-    Sandbox sbCancelTaker{&sbCancel};
-    auto const ret = takerCross(sbTaker, sbCancelTaker, takerAmount);
-    sbTaker.apply(sb);
-    sbCancelTaker.apply(sbCancel);
+    PaymentSandbox psbFlow{&sb};
+    PaymentSandbox psbCancelFlow{&sbCancel};
+    auto const ret = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
+    psbFlow.apply(sb);
+    psbCancelFlow.apply(sbCancel);
     return ret;
 }
 
