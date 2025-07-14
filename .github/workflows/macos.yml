@@ -23,7 +23,7 @@ env:
     core.upload:parallel={{os.cpu_count()}}
     tools.build:jobs=24
     tools.build:verbosity=verbose
-    tools.compilation:verbosity=verbos
+    tools.compilation:verbosity=verbose
 
 jobs:
 
@@ -84,7 +84,7 @@ jobs:
           clang --version
       - name: configure Conan
         run : |
-          echo ${CONAN_GLOBAL_CONF} > global.conf
+          echo "${CONAN_GLOBAL_CONF}" > global.conf
           conan config install conan/profiles/default -tf $(conan config home)/profiles/
           conan config install global.conf -tf $(conan config home)
           conan profile show
