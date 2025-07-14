@@ -1,4 +1,6 @@
+{% if os == "Linux" %}
 include(default)
+{% endif %}
 
 {% set os = detect_api.detect_os() %}
 {% set arch = detect_api.detect_arch() %}
