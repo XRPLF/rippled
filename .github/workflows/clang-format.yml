@@ -18,6 +18,7 @@ jobs:
           find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
       - name: Check for differences
         id: assert
+        shell: bash
         run: |
           set -o pipefail
           git diff --exit-code | tee "clang-format.patch"
