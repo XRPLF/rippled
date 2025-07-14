@@ -26,6 +26,8 @@
 
 namespace ripple {
 
+using SFieldCRef = std::reference_wrapper<SField const>;
+
 static int32_t
 setData(
     InstanceWrapper const* rt,
@@ -173,14 +175,14 @@ returnResult(
     InstanceWrapper const* rt,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results,
-    Expected<T, HostFunctionError> const& result,
+    Expected<T, HostFunctionError> const& res,
     int32_t index)
 {
-    if (!result)
+    if (!res)
     {
-        return hfResult(results, result.error());
+        return hfResult(results, res.error());
     }
-    if constexpr (std::is_same_v<std::decay_t<decltype(*result)>, Bytes>)
+    if constexpr (std::is_same_v<std::decay_t<decltype(*res)>, Bytes>)
     {
         return hfResult(
             results,
@@ -188,10 +190,10 @@ returnResult(
                 rt,
                 params->data[index].of.i32,
                 params->data[index + 1].of.i32,
-                result->data(),
-                result->size()));
+                res->data(),
+                res->size()));
     }
-    else if constexpr (std::is_same_v<std::decay_t<decltype(*result)>, Hash>)
+    else if constexpr (std::is_same_v<std::decay_t<decltype(*res)>, Hash>)
     {
         return hfResult(
             results,
@@ -199,18 +201,18 @@ returnResult(
                 rt,
                 params->data[index].of.i32,
                 params->data[index + 1].of.i32,
-                result->data(),
-                result->size()));
+                res->data(),
+                res->size()));
     }
-    else if constexpr (std::is_same_v<std::decay_t<decltype(*result)>, int32_t>)
+    else if constexpr (std::is_same_v<std::decay_t<decltype(*res)>, int32_t>)
     {
-        return hfResult(results, result.value());
+        return hfResult(results, res.value());
     }
     else if constexpr (std::is_same_v<
-                           std::decay_t<decltype(*result)>,
+                           std::decay_t<decltype(*res)>,
                            std::uint32_t>)
     {
-        auto const resultValue = result.value();
+        auto const resultValue = res.value();
         return hfResult(
             results,
             setData(
@@ -796,4 +798,133 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         rt, params, results, hf->traceNum(*msg, *number), index);
 }
 
+class MockInstanceWrapper
+{
+    wmem mem_;
+
+public:
+    MockInstanceWrapper(wmem mem) : mem_(mem)
+    {
+    }
+
+    // Mock methods to simulate the behavior of InstanceWrapper
+    wmem
+    getMem() const
+    {
+        return mem_;
+    }
+};
+
+namespace test {
+bool
+testGetDataIncrement()
+{
+    wasm_val_t values[4];
+
+    std::array<std::uint8_t, 128> buffer = {
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+    MockInstanceWrapper rt(wmem{buffer.data(), buffer.size()});
+
+    {
+        // test int32_t
+        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(42);
+
+        int index = 0;
+        auto const result = getDataInt32(&rt, &params, index);
+        if (!result || result.value() != 42 || index != 1)
+            return false;
+    }
+
+    {
+        // test int64_t
+        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I64_VAL(1234);
+
+        int index = 0;
+        auto const result = getDataInt64(&rt, &params, index);
+        if (!result || result.value() != 1234 || index != 1)
+            return false;
+    }
+
+    {
+        // test SFieldCRef
+        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(sfAccount.fieldCode);
+
+        int index = 0;
+        auto const result = getDataSField(&rt, &params, index);
+        if (!result || result.value().get() != sfAccount || index != 1)
+            return false;
+    }
+
+    {
+        // test Slice
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(3);
+
+        int index = 0;
+        auto const result = getDataSlice(&rt, &params, index);
+        if (!result || result.value() != Slice(buffer.data(), 3))
+            return false;
+    }
+
+    {
+        // test string
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(5);
+
+        int index = 0;
+        auto const result = getDataString(&rt, &params, index);
+        if (!result ||
+            result.value() !=
+                std::string_view(
+                    reinterpret_cast<char const*>(buffer.data()), 5))
+            return false;
+    }
+
+    {
+        // test account
+        AccountID const id(calcAccountID(
+            generateKeyPair(KeyType::secp256k1, generateSeed("alice")).first));
+
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(id.bytes);
+        memcpy(&buffer[0], id.data(), id.bytes);
+
+        int index = 0;
+        auto const result = getDataAccountID(&rt, &params, index);
+        if (!result || result.value() != id)
+            return false;
+    }
+
+    {
+        // test uint256
+
+        Hash h1 = sha512Half(Slice(buffer.data(), 8));
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(h1.bytes);
+        memcpy(&buffer[0], h1.data(), h1.bytes);
+
+        int index = 0;
+        auto const result = getDataUInt256(&rt, &params, index);
+        if (!result || result.value() != h1)
+            return false;
+    }
+
+    return true;
+}
+
+}  // namespace test
 }  // namespace ripple

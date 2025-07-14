@@ -21,9 +21,7 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/WamrVM.h>
 #include <xrpld/app/misc/WasmHostFunc.h>
-#include <xrpld/app/misc/WasmHostFuncWrapper.h>
 #include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
@@ -36,6 +34,9 @@
 
 namespace ripple {
 namespace test {
+
+bool
+testGetDataIncrement();
 
 using Add_proto = int32_t(int32_t, int32_t);
 static wasm_trap_t*
@@ -76,104 +77,13 @@ getLedgerSqn_wrap(void* env, wasm_val_vec_t const*, wasm_val_vec_t* results)
     return nullptr;
 }
 
-class MockInstanceWrapper
-{
-    wmem mem_;
-
-public:
-    MockInstanceWrapper(wmem mem) : mem_(mem)
-    {
-    }
-
-    // Mock methods to simulate the behavior of InstanceWrapper
-    wmem
-    getMem() const
-    {
-        return mem_;
-    }
-};
-
 struct Wasm_test : public beast::unit_test::suite
 {
     void
     testGetDataHelperFunctions()
     {
         testcase("getData helper functions");
-
-        [[maybe_unused]] auto& engine = WasmEngine::instance();
-
-        InstanceWrapper const emptyWrapper;
-
-        {
-            // test int32_t
-            wasm_val_vec_t params;
-            wasm_val_t values[1];
-
-            values[0].kind = WASM_I32;
-            values[0].of.i32 = 42;
-
-            wasm_val_vec_new(&params, 1, values);
-            int index = 0;
-            auto const result = getDataInt32(&emptyWrapper, &params, index);
-            BEAST_EXPECT(result && result.value() == 42);
-            BEAST_EXPECT(index == 1);
-        }
-
-        {
-            // test int64_t
-            wasm_val_vec_t params;
-            wasm_val_t values[1];
-
-            values[0].kind = WASM_I64;
-            values[0].of.i64 = 1234;
-
-            wasm_val_vec_new(&params, 1, values);
-            int index = 0;
-            auto const result = getDataInt64(&emptyWrapper, &params, index);
-            BEAST_EXPECT(result && result.value() == 1234);
-            BEAST_EXPECT(index == 1);
-        }
-
-        {
-            // test SFieldCRef
-            wasm_val_vec_t params;
-            wasm_val_t values[1];
-
-            values[0].kind = WASM_I32;
-            values[0].of.i32 = sfAccount.fieldCode;
-
-            wasm_val_vec_new(&params, 1, values);
-            int index = 0;
-            auto const result = getDataSField(&emptyWrapper, &params, index);
-            BEAST_EXPECT(result && result.value().get() == sfAccount);
-            BEAST_EXPECT(index == 1);
-        }
-
-        {
-            // test Slice
-            wasm_val_vec_t params;
-            wasm_val_t values[2];
-
-            values[0].kind = WASM_I32;
-            values[0].of.i32 = 0;
-
-            values[0].kind = WASM_I32;
-            values[0].of.i32 = 2;
-
-            wasm_val_vec_new(&params, 2, values);
-
-            std::vector<std::uint8_t> buffer = {'a', 'b', 'c'};
-
-            wmem m;
-            m.p = buffer.data();
-            m.s = buffer.size();
-            MockInstanceWrapper const wrapper(m);
-
-            int index = 0;
-            auto const result = getDataSlice(&wrapper, &params, index);
-            BEAST_EXPECT(result && result.value() == Slice(buffer.data(), 3));
-            BEAST_EXPECT(index == 2);
-        }
+        BEAST_EXPECT(testGetDataIncrement());
     }
 
     void
