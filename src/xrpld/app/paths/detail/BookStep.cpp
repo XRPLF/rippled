@@ -759,8 +759,8 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
         // Make sure offer owner has authorization to own IOUs from issuer.
         // An account can always own XRP or their own IOUs.
-        if ((!isXRP(offer.issueIn().currency)) &&
-            (offer.owner() != offer.issueIn().account))
+        if (!isXRP(offer.issueIn().currency) &&
+            offer.owner() != offer.issueIn().account)
         {
             auto const& issuerID = offer.issueIn().account;
             auto const issuer = afView.read(keylet::account(issuerID));
