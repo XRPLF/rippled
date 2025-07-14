@@ -210,6 +210,9 @@ class Feature_test : public beast::unit_test::suite
         BEAST_EXPECT(jrr.size() == 1);
         auto const expected =
             to_string(sha512Half(Slice(name.data(), name.size())));
+        char const sha[] =
+            "586480873651E106F1D6339B0C4A8945BA705A777F3F4524626FF1FC07EFE41D";
+        BEAST_EXPECT(expected == sha);
         BEAST_EXPECT(jrr.isMember(expected));
         auto feature = *(jrr.begin());
 
