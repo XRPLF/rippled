@@ -85,7 +85,7 @@ jobs:
       - name: configure Conan
         run : |
           echo "${CONAN_GLOBAL_CONF}" > global.conf
-          conan config install conan/profiles/default -tf $(conan config home)/profiles/
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan config install global.conf -tf $(conan config home)
           conan profile show
       - name: build dependencies
