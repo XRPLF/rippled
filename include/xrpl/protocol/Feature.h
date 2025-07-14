@@ -84,7 +84,11 @@
 
 namespace ripple {
 
-static constexpr std::size_t maxFeatureNameSize = 31;
+// We do not want feature names to exceed this size.
+static constexpr std::size_t maxFeatureNameSize = 63;
+// We not want feature names of this length (and + 1), to enable the use of
+// 32-long byte string for selection of feature as uint256, in WASM
+static constexpr std::size_t reservedFeatureNameSize = 32;
 
 enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
 enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };

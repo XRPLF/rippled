@@ -447,6 +447,8 @@ template <std::size_t N>
 constexpr auto
 enforceMaxFeatureNameSize(char const (&n)[N]) -> char const*
 {
+    static_assert(N != reservedFeatureNameSize);
+    static_assert(N != reservedFeatureNameSize + 1);
     static_assert(N <= maxFeatureNameSize);
     return n;
 }
