@@ -15,6 +15,15 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+# This part of Conan configuration is specific to this workflow only; we do not want
+# to pollute conan/profiles directory with settings which might not work for others
+env:
+  CONAN_GLOBAL_CONF: |
+    core.download:parallel={{os.cpu_count()}}
+    core.upload:parallel={{os.cpu_count()}}
+    tools.build:jobs=24
+    tools.build:verbosity=verbose
+    tools.compilation:verbosity=verbose
 
 jobs:
 
@@ -75,8 +84,10 @@ jobs:
           clang --version
       - name: configure Conan
         run : |
-          conan config install conan/profiles/default -tf $(conan config home)/profiles/
-          conan config install conan/global.conf -tf $(conan config home)
+          echo "${CONAN_GLOBAL_CONF}" > global.conf
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
+          conan config install global.conf -tf $(conan config home)
+          conan profile show
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
