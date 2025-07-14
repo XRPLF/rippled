@@ -10,12 +10,12 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-24.04
     container: ghcr.io/xrplf/ci/tools-rippled-clang-format
-    env:
-      CLANG_VERSION: 18
     steps:
       - uses: actions/checkout@v4
       - name: Format first-party sources
-        run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format-${CLANG_VERSION} -i {} +
+        run: |
+          clang-format --version
+          find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
       - name: Check for differences
         id: assert
         run: |
@@ -49,6 +49,6 @@ jobs:
                in your repo, commit, and push.
         run: |
           echo "${PREAMBLE}"
-          clang-format-${CLANG_VERSION} --version
+          clang-format --version
           echo "${SUGGESTION}"
           exit 1
