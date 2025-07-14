@@ -88,7 +88,6 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          conan profile detect || true
           echo "${CONAN_GLOBAL_CONF}" > global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan config install global.conf -tf $(conan config home)
