@@ -101,6 +101,11 @@ getDataSlice(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
     if (src < 0 || ssz <= 0)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
+    if (ssz > maxWasmDataLength)
+    {
+        return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
     auto mem = rt ? rt->getMem() : wmem();
     if (!mem.s)
         return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
@@ -753,6 +758,11 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
+    if (params->data[1].of.i32 + params->data[3].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
     auto const msg = getDataString(rt, params, index);
     if (!msg)
     {
@@ -781,6 +791,10 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
 
     auto const msg = getDataString(rt, params, index);
     if (!msg)

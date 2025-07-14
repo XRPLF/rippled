@@ -130,6 +130,9 @@ std::uint8_t constexpr maxAssetCheckDepth = 5;
  * Wasm code */
 std::size_t constexpr maxWasmDataLength = 4 * 1024;
 
+/** The maximum length of a parameters passed from Wasm code*/
+std::size_t constexpr maxWasmParamLength = 1024;
+
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 
