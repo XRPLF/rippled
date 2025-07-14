@@ -435,6 +435,14 @@ public:
         PublicKey const& validator,
         Peer::id_t peer);
 
+    /** Handle a squelch message for an untrusted validator. The method
+     * squelches a given validator and removes it from untrusted slots and
+     * consideration list if majority of peers have squelched the validator.
+     * @param validator Validator's public key that was squelched
+     */
+    void
+    handleUntrustedSquelch(PublicKey const& validator);
+
     /** Called when the peer is deleted. If the peer was selected to be the
      * source of messages from the validator then squelched peers have to be
      * unsquelched.
@@ -501,7 +509,7 @@ private:
 
     /** Handles validator list requests.
         Using a /vl/<hex-encoded public key> URL, will retrieve the
-        latest valdiator list (or UNL) that this node has for that
+        latest validator list (or UNL) that this node has for that
         public key, if the node trusts that public key.
 
         @return true if the request was handled.

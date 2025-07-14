@@ -44,6 +44,8 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
 
+#include "xrpld/overlay/Peer.h"
+
 #include <algorithm>
 #include <chrono>
 #include <memory>
@@ -249,7 +251,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         return;
 
     auto const validator = m->getValidatorKey();
-    if (validator && squelchStore_.expireAndIsSquelched(*validator))
+    if (validator && expireAndIsSquelched(*validator))
     {
         overlay_.reportOutboundTraffic(
             TrafficCount::category::squelch_suppressed,
@@ -570,6 +572,12 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
     std::lock_guard sl(recentLock_);
     return (tracking_ != Tracking::diverged) && (uMin >= minLedger_) &&
         (uMax <= maxLedger_);
+}
+
+bool
+PeerImp::expireAndIsSquelched(PublicKey const& validator)
+{
+    return squelchStore_.expireAndIsSquelched(validator);
 }
 
 //------------------------------------------------------------------------------
@@ -2726,15 +2734,27 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         return;
     }
 
-    std::uint32_t duration =
-        m->has_squelchduration() ? m->squelchduration() : 0;
-    if (!m->squelch())
-        squelch_.removeSquelch(key);
-    else if (!squelch_.addSquelch(key, std::chrono::seconds{duration}))
+    auto duration = std::chrono::seconds{
+        m->has_squelchduration() ? m->squelchduration() : 0};
+
+    if (m->squelch() &&
+        (duration < reduce_relay::MIN_UNSQUELCH_EXPIRE ||
+         duration > reduce_relay::MAX_UNSQUELCH_EXPIRE_PEERS))
+    {
         fee_.update(Resource::feeInvalidData, "squelch duration");
+        return;
+    }
 
     JLOG(p_journal_.debug())
-        << "onMessage: TMSquelch " << slice << " " << id() << " " << duration;
+        << "onMessage: TMSquelch " << (!m->squelch() ? "un" : "")
+        << "squelch message; validator: " << slice << "peer: " << id()
+        << " duration: " << duration.count();
+
+    squelchStore_.handleSquelch(key, m->squelch(), duration);
+
+    // if the squelch is for an untrusted validator
+    if (m->squelch() && !app_.validators().trusted(key))
+        overlay_.handleUntrustedSquelch(key);
 }
 
 //--------------------------------------------------------------------------
