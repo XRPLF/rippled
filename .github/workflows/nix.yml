@@ -20,9 +20,9 @@ concurrency:
 # to pollute conan/profiles directory with settings which might not work for others
 env:
   CONAN_GLOBAL_CONF: |
-    core.download:parallel={{os.cpu_count()}}
-    core.upload:parallel={{os.cpu_count()}}
-    tools.build:jobs=24
+    core.download:parallel={{ os.cpu_count() }}
+    core.upload:parallel={{ os.cpu_count() }}
+    tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
     tools.build:verbosity=verbose
     tools.compilation:verbosity=verbose
 
@@ -88,9 +88,7 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          echo "${CONAN_GLOBAL_CONF}" > global.conf
-          conan config install conan/profiles/ -tf $(conan config home)/profiles/
-          conan config install global.conf -tf $(conan config home)
+          echo "${CONAN_GLOBAL_CONF}" >> global.conf
           conan profile show
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
@@ -377,16 +375,11 @@ jobs:
             mkdir ${GITHUB_WORKSPACE}/.build
             echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
-            # echo "CC=/usr/bin/clang" >> $GITHUB_ENV
-            # echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
 
         - name: configure Conan
           run: |
-            printf "%s\n" "${CONAN_GLOBAL_CONF}" > global.conf
-            conan config install conan/profiles/ -tf $(conan config home)/profiles/
-            conan config install global.conf -tf $(conan config home)
+            cat "${CONAN_GLOBAL_CONF}" >> global.conf
             conan profile show
-            conan remote add --index 0 ripple ${{ env.CONAN_URL }}
         - name: build dependencies
           run: |
             cd ${BUILD_DIR}
