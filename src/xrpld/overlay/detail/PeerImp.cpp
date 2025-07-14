@@ -45,6 +45,7 @@
 #include <boost/beast/core/ostream.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -96,7 +97,7 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
-    , squelch_(app_.journal("Squelch"), stopwatch())
+    , squelchStore_(app_.journal("SquelchStore"), stopwatch())
     , usage_(consumer)
     , fee_{Resource::feeTrivialPeer, ""}
     , slot_(slot)
@@ -247,8 +248,8 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (detaching_)
         return;
 
-    auto validator = m->getValidatorKey();
-    if (validator && !squelch_.expireSquelch(*validator))
+    auto const validator = m->getValidatorKey();
+    if (validator && squelchStore_.expireAndIsSquelched(*validator))
     {
         overlay_.reportOutboundTraffic(
             TrafficCount::category::squelch_suppressed,
@@ -266,7 +267,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         TrafficCount::category::total,
         static_cast<int>(m->getBuffer(compressionEnabled_).size()));
 
-    auto sendq_size = send_queue_.size();
+    auto const sendq_size = send_queue_.size();
 
     if (sendq_size < Tuning::targetSendQueue)
     {

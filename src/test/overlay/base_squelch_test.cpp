@@ -23,7 +23,7 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/Slot.h>
-#include <xrpld/overlay/Squelch.h>
+#include <xrpld/overlay/SquelchStore.h>
 #include <xrpld/overlay/detail/Handshake.h>
 
 #include <xrpl/basics/random.h>
@@ -458,7 +458,7 @@ class PeerSim : public PeerPartial, public std::enable_shared_from_this<PeerSim>
 {
 public:
     PeerSim(Overlay& overlay, beast::Journal journal)
-        : overlay_(overlay), squelch_(journal, overlay_.clock())
+        : overlay_(overlay), squelchStore_(journal, overlay_.clock())
     {
         id_ = sid_++;
     }
@@ -483,7 +483,7 @@ public:
     {
         auto validator = m->getValidatorKey();
         assert(validator);
-        if (!squelch_.expireSquelch(*validator))
+        if (squelchStore_.expireAndIsSquelched(*validator))
             return;
 
         overlay_.updateSlotAndSquelch({}, *validator, id(), f);
@@ -495,18 +495,17 @@ public:
     {
         auto validator = squelch.validatorpubkey();
         PublicKey key(Slice(validator.data(), validator.size()));
-        if (squelch.squelch())
-            squelch_.addSquelch(
-                key, std::chrono::seconds{squelch.squelchduration()});
-        else
-            squelch_.removeSquelch(key);
+        squelchStore_.handleSquelch(
+            key,
+            squelch.squelch(),
+            std::chrono::seconds{squelch.squelchduration()});
     }
 
 private:
     inline static Peer::id_t sid_ = 0;
     Peer::id_t id_;
     Overlay& overlay_;
-    reduce_relay::Squelch squelch_;
+    reduce_relay::SquelchStore squelchStore_;
 };
 
 class OverlaySim : public Overlay, public reduce_relay::SquelchHandler
@@ -1159,7 +1158,6 @@ protected:
     checkCounting(PublicKey const& validator, bool isCountingState)
     {
         auto countingState = network_.overlay().isCountingState(validator);
-        BEAST_EXPECT(countingState == isCountingState);
         return countingState == isCountingState;
     }
 
@@ -1210,7 +1208,7 @@ protected:
     bool
     propagateAndSquelch(bool log, bool purge = true)
     {
-        int n = 0;
+        int squelchEvents = 0;
         network_.propagate(
             [&](Link& link, MessageSPtr message) {
                 std::uint16_t squelched = 0;
@@ -1230,7 +1228,7 @@ protected:
                             env_.app()
                                 .config()
                                 .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
-                    n++;
+                    squelchEvents++;
                 }
             },
             1,
@@ -1240,10 +1238,11 @@ protected:
         BEAST_EXPECT(
             selected.size() ==
             env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
-        BEAST_EXPECT(n == 1);  // only one selection round
+
+        BEAST_EXPECT(squelchEvents == 1);  // only one selection round
         auto res = checkCounting(network_.validator(0), false);
         BEAST_EXPECT(res);
-        return n == 1 && res;
+        return squelchEvents == 1 && res;
     }
 
     /** Send fewer message so that squelch event is not generated */
@@ -1270,6 +1269,7 @@ protected:
             nMessages,
             purge);
         auto res = checkCounting(network_.validator(0), countingState);
+        BEAST_EXPECT(res);
         return !squelched && res;
     }
 

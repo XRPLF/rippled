@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include "xrpld/overlay/detail/OverlayImpl.h"
+
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -41,6 +43,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include "xrpld/overlay/Peer.h"
 #include "xrpld/overlay/detail/TrafficCount.h"
 
 #include <functional>

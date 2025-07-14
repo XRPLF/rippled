@@ -17,61 +17,83 @@
 */
 //==============================================================================
 
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/ReduceRelayCommon.h>
-#include <xrpld/overlay/Squelch.h>
+#include <xrpld/overlay/SquelchStore.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 
 #include <chrono>
+#include <unordered_map>
+#include <utility>
 
 namespace ripple {
 
 namespace reduce_relay {
 
-bool
-Squelch::addSquelch(
+void
+SquelchStore::handleSquelch(
     PublicKey const& validator,
-    std::chrono::seconds const& squelchDuration)
+    bool squelch,
+    std::chrono::seconds duration)
 {
-    if (squelchDuration >= MIN_UNSQUELCH_EXPIRE &&
-        squelchDuration <= MAX_UNSQUELCH_EXPIRE_PEERS)
+    if (squelch)
     {
-        squelched_[validator] = clock_.now() + squelchDuration;
-        return true;
+        // This should never trigger. The squelh duration is validated in
+        // PeerImp.onMessage(TMSquelch). However, if somehow invalid duration is
+        // passed, log is as an error
+        if ((duration < reduce_relay::MIN_UNSQUELCH_EXPIRE ||
+             duration > reduce_relay::MAX_UNSQUELCH_EXPIRE_PEERS))
+        {
+            JLOG(journal_.error())
+                << "SquelchStore: invalid squelch duration validator: "
+                << Slice(validator) << " duration: " << duration.count();
+            return;
+        }
+
+        add(validator, duration);
+        return;
     }
 
-    JLOG(journal_.error()) << "squelch: invalid squelch duration "
-                           << squelchDuration.count();
+    remove(validator);
+}
 
-    // unsquelch if invalid duration
-    removeSquelch(validator);
+bool
+SquelchStore::expireAndIsSquelched(PublicKey const& validator)
+{
+    auto const now = clock_.now();
+
+    auto const it = squelched_.find(validator);
+    if (it == squelched_.end())
+        return false;
+
+    if (it->second > now)
+        return true;
+
+    // erase the entry if the squelch expired
+    squelched_.erase(it);
 
     return false;
 }
 
 void
-Squelch::removeSquelch(PublicKey const& validator)
+SquelchStore::add(
+    PublicKey const& validator,
+    std::chrono::seconds const& duration)
 {
-    squelched_.erase(validator);
+    squelched_[validator] = clock_.now() + duration;
 }
 
-bool
-Squelch::expireSquelch(PublicKey const& validator)
+void
+SquelchStore::remove(PublicKey const& validator)
 {
-    auto const now = clock_.now();
-
-    auto const& it = squelched_.find(validator);
+    auto const it = squelched_.find(validator);
     if (it == squelched_.end())
-        return true;
-    else if (it->second > now)
-        return false;
+        return;
 
-    // squelch expired
     squelched_.erase(it);
-
-    return true;
 }
 
 }  // namespace reduce_relay
