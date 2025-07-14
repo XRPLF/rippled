@@ -94,7 +94,7 @@ jobs:
           conan profile show
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
-        run: tar -czf conan.tar.gz -C ~/.conan2 .
+        run: tar -czf conan.tar.gz -C ${CONAN_HOME} .
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
@@ -146,8 +146,8 @@ jobs:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan2
-          tar -xzf conan.tar.gz -C ~/.conan2
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
       - name: check environment
         run: |
           env | sort
@@ -198,8 +198,8 @@ jobs:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan2
-          tar -xzf conan.tar.gz -C ~/.conan2
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
       - name: check environment
         run: |
           env | sort
@@ -246,8 +246,8 @@ jobs:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan2
-          tar -xzf conan.tar.gz -C ~/.conan2
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -255,7 +255,7 @@ jobs:
           cmake --version
           gcovr --version
           env | sort
-          ls ~/.conan2
+          ls ${CONAN_HOME}
       - name: checkout
         uses: actions/checkout@v4
       - name: dependencies
@@ -323,8 +323,8 @@ jobs:
 
       - name: extract cache
         run: |
-          mkdir -p ~/.conan2
-          tar -xzf conan.tar.gz -C ~/.conan2
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
       - name: check environment
         run: |
           env | sort
