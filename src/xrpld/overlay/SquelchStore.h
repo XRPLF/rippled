@@ -20,6 +20,8 @@
 #ifndef RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 #define RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 
+#include <xrpld/overlay/Peer.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -30,45 +32,57 @@ namespace ripple {
 
 namespace reduce_relay {
 
-/** Maintains squelching of relaying messages from validators */
-class Squelch
+/** Tracks which validators were squelched.
+ */
+class SquelchStore
 {
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
     using time_point = typename clock_type::time_point;
 
 public:
-    explicit Squelch(beast::Journal journal, clock_type& clock)
+    explicit SquelchStore(beast::Journal journal, clock_type& clock)
         : journal_(journal), clock_(clock)
     {
     }
-    virtual ~Squelch() = default;
+    virtual ~SquelchStore() = default;
 
+    /** Handle a squelch request.
+     * @param validator The validator's public key.
+     * @param squelch Indicate if the validator should be squelched.
+     * @param duration Duration in seconds for how long to squelch the
+     * validator. Duration can be zero when squelch is false.
+     */
+    void
+    handleSquelch(
+        PublicKey const& validator,
+        bool squelch,
+        std::chrono::seconds duration);
+
+    /** Check if a given validator is squelched. If the validator is no longer
+     * squelched, clear the squelch entry.
+     * @param validator Validator's public key
+     * @return true if squelch exists and it is not expired. False otherwise.
+     */
+    bool
+    expireAndIsSquelched(PublicKey const& validator);
+
+private:
     /** Squelch validation/proposal relaying for the validator
      * @param validator The validator's public key
      * @param squelchDuration Squelch duration in seconds
      * @return false if invalid squelch duration
      */
-    bool
-    addSquelch(
-        PublicKey const& validator,
+    void
+    add(PublicKey const& validator,
         std::chrono::seconds const& squelchDuration);
 
-    /** Remove the squelch
+    /** Remove the squelch for a validator
      * @param validator The validator's public key
      */
     void
-    removeSquelch(PublicKey const& validator);
+    remove(PublicKey const& validator);
 
-    /** Remove expired squelch
-     * @param validator Validator's public key
-     * @return true if removed or doesn't exist, false if still active
-     */
-    bool
-    expireSquelch(PublicKey const& validator);
-
-private:
-    /** Maintains the list of squelched relaying to downstream peers.
-     * Expiration time is included in the TMSquelch message. */
+    // holds a squelch expiration time_point for each validator
     hash_map<PublicKey, time_point> squelched_;
     beast::Journal const journal_;
     clock_type& clock_;
