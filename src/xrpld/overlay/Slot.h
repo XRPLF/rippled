@@ -416,6 +416,13 @@ public:
         typename Slot::ignored_squelch_callback callback,
         bool isTrusted);
 
+    /** Squelch untrusted validator for all peers, and if it has an assigned
+     * slot, release it.
+     * @param validatorKey Validator public key
+     */
+    void
+    squelchUntrustedValidator(PublicKey const& validatorKey);
+
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator.
      */

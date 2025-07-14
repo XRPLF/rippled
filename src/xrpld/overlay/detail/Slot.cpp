@@ -540,6 +540,27 @@ Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
 }
 
 void
+Slots::squelchUntrustedValidator(PublicKey const& validator)
+{
+    // to prevent the validator from being reinserted squelch the validator
+    // before removing the validator from consideration and slots
+    handler_.squelchAll(
+        validator, MAX_UNSQUELCH_EXPIRE_DEFAULT.count(), [&](Peer::id_t id) {
+            registerSquelchedValidator(validator, id);
+        });
+
+    // if we are considering the validator, remove it
+    auto itC = consideredValidators_.find(validator);
+    if (itC != consideredValidators_.end())
+        consideredValidators_.erase(itC);
+
+    // if we have assigned an untrusted slot for the validator, remove it
+    auto itS = untrustedSlots_.find(validator);
+    if (itS != untrustedSlots_.end())
+        untrustedSlots_.erase(itS);
+}
+
+void
 Slots::deletePeer(Peer::id_t id, bool erase)
 {
     auto const f = [&](slots_map& slots) {
@@ -618,21 +639,7 @@ Slots::cleanConsideredValidators()
     for (auto it = consideredValidators_.begin();
          it != consideredValidators_.end();)
     {
-        // this is a safety check for validators that have
-        // sent a lot of validations via limited number of peers
-        if (it->second.count > 2 * reduce_relay::MAX_MESSAGE_THRESHOLD &&
-            it->second.peers.size() < maxSelectedPeers_)
-        {
-            JLOG(journal_.warn())
-                << "cleanConsideredValidators: removing "
-                   "validator "
-                << Slice(it->first) << " with insufficient peers";
-
-            keys.push_back(it->first);
-            it = consideredValidators_.erase(it);
-        }
-        else if (
-            now - it->second.lastMessage >
+        if (now - it->second.lastMessage >
             reduce_relay::MAX_UNTRUSTED_VALIDATOR_IDLE)
         {
             keys.push_back(it->first);

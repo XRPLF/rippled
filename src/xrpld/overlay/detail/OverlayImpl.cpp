@@ -1506,6 +1506,30 @@ OverlayImpl::updateUntrustedValidatorSlot(
 }
 
 void
+OverlayImpl::handleUntrustedSquelch(PublicKey const& validator)
+{
+    if (!strand_.running_in_this_thread())
+        return post(
+            strand_,
+            std::bind(&OverlayImpl::handleUntrustedSquelch, this, validator));
+
+    auto count = 0;
+    // we can get the total number of peers with size(), however that would have
+    // to acquire another lock on peers. Instead, count the number of peers in
+    // the same loop, as we're already iterating all peers.
+    auto total = 0;
+    for_each([&](std::shared_ptr<PeerImp>&& p) {
+        ++total;
+        if (p->expireAndIsSquelched(validator))
+            ++count;
+    });
+
+    // if majority of peers squelched the validator
+    if (count >= total - 1)
+        slots_.squelchUntrustedValidator(validator);
+}
+
+void
 OverlayImpl::deletePeer(Peer::id_t id)
 {
     if (!strand_.running_in_this_thread())
