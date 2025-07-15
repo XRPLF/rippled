@@ -80,7 +80,7 @@ isMPTAllowed(
 
         if ((mptSle->getFlags() & lsfMPTLocked) &&
             (!destAccount || destAccount != issuer))
-            return tecNO_PERMISSION;
+            return tecLOCKED;
     }
 
     return tesSUCCESS;

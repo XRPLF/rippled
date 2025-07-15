@@ -2256,6 +2256,9 @@ class MPToken_test : public beast::unit_test::suite
                 // Global lock
                 if (lockMPTIssue)
                     return tecFROZEN;
+                // Local lock
+                else if (lockMPToken)
+                    return tecLOCKED;
                 // MPToken doesn't exist
                 else if (requireAuth)
                     return tecUNFUNDED_OFFER;
