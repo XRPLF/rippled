@@ -48,8 +48,10 @@ rngfill(void* buffer, std::size_t bytes, Generator& g)
 
 #ifdef __GNUC__
     // gcc 11.1 (falsely) warns about an array-bounds overflow in release mode.
+    // gcc 12.1 (also falsely) warns about an string overflow in release mode.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Warray-bounds"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
 #endif
 
     if (bytes > 0)

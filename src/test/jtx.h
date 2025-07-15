@@ -22,6 +22,7 @@
 
 // Convenience header that includes everything
 
+#include <test/jtx/AMM.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/Env_ss.h>

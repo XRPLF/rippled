@@ -37,10 +37,8 @@
 #include <boost/container/flat_map.hpp>
 
 #include <chrono>
-#include <condition_variable>
 #include <functional>
 #include <memory>
-#include <mutex>
 
 namespace ripple {
 
