@@ -510,6 +510,35 @@ protected:
                 .paymentInterval = loan->at(sfPaymentInterval),
                 .interestRate = TenthBips32{loan->at(sfInterestRate)},
             };
+            BEAST_EXPECT(state.previousPaymentDate == 0);
+            BEAST_EXPECT(
+                tp{d{state.nextPaymentDate}} == state.startDate + 600s);
+            BEAST_EXPECT(state.paymentRemaining == 12);
+            BEAST_EXPECT(
+                state.principalOutstanding == broker.asset(loanAmount).value());
+            BEAST_EXPECT(
+                state.loanScale ==
+                (broker.asset.integral()
+                     ? 0
+                     : state.principalOutstanding.exponent()));
+            BEAST_EXPECT(state.paymentInterval == 600);
+            BEAST_EXPECT(
+                state.totalValue ==
+                roundToAsset(
+                    broker.asset,
+                    state.periodicPayment * state.paymentRemaining,
+                    state.loanScale));
+            BEAST_EXPECT(
+                state.managementFeeOutstanding ==
+                computeFee(
+                    broker.asset,
+                    state.totalValue - state.principalOutstanding,
+                    managementFeeRateParameter,
+                    state.loanScale));
+
+            verifyLoanStatus(state);
+
+            return state;
         }
         return LoanState{};
     }
@@ -521,6 +550,7 @@ protected:
         jtx::Env const& env,
         BrokerInfo const& broker,
         Keylet const& loanKeylet,
+        Number const& loanAmount,
         VerifyLoanStatus const& verifyLoanStatus)
     {
         using namespace std::chrono_literals;
@@ -1308,10 +1338,10 @@ protected:
             .counterpartyExplicit = false,
             .principalRequest = loanAmount,
             .setFee = loanSetFee,
-            .originationFee = 1,
-            .serviceFee = 2,
-            .lateFee = 3,
-            .closeFee = 4,
+            .originationFee = loanAmount * Number(1, -3),
+            .serviceFee = loanAmount * Number(2, -3),
+            .lateFee = loanAmount * Number(3, -3),
+            .closeFee = loanAmount * Number(4, -3),
             .overFee = applyExponent(percentageToTenthBips(5) / 10),
             .interest = applyExponent(percentageToTenthBips(12)),
             // 2.4%
@@ -1434,7 +1464,8 @@ protected:
                 loan->at(sfPrincipalOutstanding) == principalRequestAmount);
         }
 
-        auto state = getCurrentState(env, broker, keylet, verifyLoanStatus);
+        auto state =
+            getCurrentState(env, broker, keylet, loanAmount, verifyLoanStatus);
 
         auto const loanProperties = computeLoanProperties(
             broker.asset.raw(),
@@ -1607,8 +1638,8 @@ protected:
         auto const currencyLabel = getCurrencyLabel(asset);
         auto const caseLabel = [&]() {
             std::stringstream ss;
-            ss << "Lifecycle: " << loanAmount << " " << currencyLabel
-               << " Scale interest to: " << interestExponent << " ";
+            ss << "Lifecycle: " << " " << currencyLabel << " Interest scale: "
+               << Number(1, interestExponent) " Amount: " << loanAmount;
             return ss.str();
         }();
         testcase << caseLabel;
@@ -2109,8 +2140,8 @@ protected:
                 // Default the loan
 
                 // Initialize values with the current state
-                auto state =
-                    getCurrentState(env, broker, loanKeylet, verifyLoanStatus);
+                auto state = getCurrentState(
+                    env, broker, loanKeylet, loanAmount, verifyLoanStatus);
                 BEAST_EXPECT(state.flags == baseFlag);
 
                 auto const& broker = verifyLoanStatus.broker;
@@ -2321,8 +2352,9 @@ protected:
                        VerifyLoanStatus const& verifyLoanStatus) {
                 // toEndOfLife
                 //
-                auto state =
-                    getCurrentState(env, broker, loanKeylet, verifyLoanStatus);
+                auto state = getCurrentState(
+                    env, broker, loanKeylet, loanAmount, verifyLoanStatus);
+                BEAST_EXPECT(state.flags == baseFlag);
                 env.close(state.startDate + 20s);
                 auto const loanAge = (env.now() - state.startDate).count();
                 BEAST_EXPECT(loanAge == 30);
@@ -2349,21 +2381,37 @@ protected:
                         interval};
                 BEAST_EXPECT(
                     accruedInterest ==
-                    broker.asset(Number(1141552511415525, -19)));
+                    broker.asset(loanAmount * Number(1141552511415525, -22)));
                 STAmount const prepaymentPenalty{
-                    broker.asset, state.principalOutstanding * Number(36, -3)};
-                BEAST_EXPECT(prepaymentPenalty == broker.asset(36));
-                STAmount const closePaymentFee = broker.asset(4);
+                    broker.asset,
+                    state.principalOutstanding *
+                        Number(36, interestExponent - 3)};
+                BEAST_EXPECT(
+                    prepaymentPenalty ==
+                    broker.asset(
+                        loanAmount * Number(36, interestExponent - 3)));
+                STAmount const closePaymentFee =
+                    broker.asset(loanAmount * Number(4, -3));
                 auto const payoffAmount = roundToScale(
                     principalOutstanding + accruedInterest + prepaymentPenalty +
                         closePaymentFee,
                     state.loanScale);
+                // TODO: Figure out what's wrong with this calculation
+                // STAmount{broker.asset, state.principalOutstanding} +
+                // accruedInterest + prepaymentPenalty + closePaymentFee;
                 BEAST_EXPECT(
                     payoffAmount ==
                     roundToAsset(
                         broker.asset,
-                        broker.asset(Number(1040000114155251, -12)).number(),
+                        broker.asset(loanAmount * Number(1040000114155251, -15))
+                            .number(),
                         state.loanScale));
+
+                // Try to pay a little extra to show that it's _not_
+                // taken
+                auto const transactionAmount =
+                    payoffAmount + broker.asset(loanAmount * Number(1, -2));
+                env(pay(borrower, loanKeylet.key, transactionAmount));
 
                 // The terms of this loan actually make the early payoff
                 // more expensive than just making payments
@@ -2548,8 +2596,8 @@ protected:
                 // toEndOfLife
                 //
                 // Draw and make multiple payments
-                auto state =
-                    getCurrentState(env, broker, loanKeylet, verifyLoanStatus);
+                auto state = getCurrentState(
+                    env, broker, loanKeylet, loanAmount, verifyLoanStatus);
                 BEAST_EXPECT(state.flags == 0);
                 env.close();
 
@@ -2661,6 +2709,21 @@ protected:
 
                 while (state.paymentRemaining > 0)
                 {
+                    // Try to pay a little extra to show that it's _not_
+                    // taken
+                    STAmount const transactionAmount =
+                        STAmount{broker.asset, totalDue} +
+                        broker.asset(loanAmount * Number(1, -2));
+                    // Only check the first payment since the rounding may
+                    // drift as payments are made
+                    BEAST_EXPECT(
+                        transactionAmount ==
+                        roundToScale(
+                            broker.asset(
+                                Number(9533457001162141, -14), Number::upward),
+                            state.loanScale,
+                            Number::upward));
+
                     // Compute the expected principal amount
                     auto const paymentComponents =
                         detail::computePaymentComponents(
@@ -2744,7 +2807,7 @@ protected:
                             Number::upward) ==
                             roundToScale(
                                 broker.asset(
-                                    Number(8333228695260180, -14),
+                                    loanAmount * Number(8333228695260180, -17),
                                     Number::upward),
                                 state.loanScale,
                                 Number::upward));
@@ -2855,6 +2918,10 @@ protected:
                     ter(tecNO_PERMISSION));
                 env(manage(lender, loanKeylet.key, tfLoanDefault),
                     ter(tecNO_PERMISSION));
+
+                // Can't make a payment on it either
+                env(pay(borrower, loanKeylet.key, broker.asset(loanAmount)),
+                    ter(tecKILLED));
             });
 
 #if LOANTODO
@@ -3597,19 +3664,23 @@ protected:
         // Create and update Loans
         for (auto const& broker : brokers)
         {
-            for (int amountExponent = 3; amountExponent >= 3; --amountExponent)
+            for (int amountMantissa : {1, 3, 7})
             {
-                Number const loanAmount{1, amountExponent};
-                for (int interestExponent = 0; interestExponent >= 0;
-                     --interestExponent)
+                for (int amountExponent = 3; amountExponent >= -5;
+                     amountExponent -= 4)
                 {
-                    testCaseWrapper(
-                        env,
-                        mptt,
-                        assets,
-                        broker,
-                        loanAmount,
-                        interestExponent);
+                    Number const loanAmount{amountMantissa, amountExponent};
+                    for (int interestExponent = 1 - 1; interestExponent >= -2;
+                         --interestExponent)
+                    {
+                        testCaseWrapper(
+                            env,
+                            mptt,
+                            assets,
+                            broker,
+                            loanAmount,
+                            interestExponent);
+                    }
                 }
             }
 
