@@ -1343,16 +1343,10 @@ public:
 
         // NOTE :
         // At this point, all offers are expected to be consumed.
-        // Alas, they are not - because of a bug in the Taker auto-bridging
-        // implementation which is addressed by fixTakerDryOfferRemoval.
-        // The pre-fixTakerDryOfferRemoval implementation (incorrect) leaves
-        // an empty offer in the second leg of the bridge. Validate both the
-        // old and the new behavior.
         {
             auto acctOffers = offersOnAccount(env, account_to_test);
-            bool const noStaleOffers{features[fixTakerDryOfferRemoval]};
 
-            BEAST_EXPECT(acctOffers.size() == (noStaleOffers ? 0 : 1));
+            BEAST_EXPECT(acctOffers.size() == 0);
             for (auto const& offerPtr : acctOffers)
             {
                 auto const& offer = *offerPtr;
@@ -2040,12 +2034,9 @@ public:
 
         env.require(balance(carol, USD(0)));
         env.require(balance(carol, EUR(none)));
-        // If fixTakerDryOfferRemoval is not defined
-        // then carol's offer will be left on the books, but with zero value.
-        int const emptyOfferCount{features[fixTakerDryOfferRemoval] ? 0 : 1};
 
-        env.require(offers(carol, 0 + emptyOfferCount));
-        env.require(owners(carol, 1 + emptyOfferCount));
+        env.require(offers(carol, 0));
+        env.require(owners(carol, 1));
     }
 
     void
