@@ -378,7 +378,7 @@ jobs:
 
         - name: configure Conan
           run: |
-            cat "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
+            echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
             conan profile show
         - name: build dependencies
           run: |
