@@ -20,6 +20,7 @@
 #include <xrpld/app/tx/detail/LoanBrokerCoverWithdraw.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
+#include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 
@@ -57,6 +58,14 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
+    if (auto const destination = ctx.tx[~sfDestination];
+        destination && *destination == beast::zero)
+    {
+        JLOG(ctx.j.debug())
+            << "LoanBrokerCoverWithdraw: zero/empty destination account.";
+        return temMALFORMED;
+    }
+
     return tesSUCCESS;
 }
 
@@ -68,6 +77,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const account = tx[sfAccount];
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
+
+    auto const dstAcct = [&]() -> AccountID {
+        if (auto const dst = tx[~sfDestination])
+            return *dst;
+        return account;
+    }();
 
     auto const sleBroker = ctx.view.read(keylet::loanbroker(brokerID));
     if (!sleBroker)
@@ -86,15 +101,45 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    // Cannot transfer a frozen Asset
+    // Withdrawal to a 3rd party destination account is essentially a transfer.
+    // Enforce all the usual asset transfer checks.
+    AuthType authType = AuthType::Legacy;
+    if (account != dstAcct)
+    {
+        auto const sleDst = ctx.view.read(keylet::account(dstAcct));
+        if (sleDst == nullptr)
+            return tecNO_DST;
+
+        if (sleDst->isFlag(lsfRequireDestTag) &&
+            !tx.isFieldPresent(sfDestinationTag))
+            return tecDST_TAG_NEEDED;  // Cannot send without a tag
+
+        if (sleDst->isFlag(lsfDepositAuth))
+        {
+            if (!ctx.view.exists(keylet::depositPreauth(dstAcct, account)))
+                return tecNO_PERMISSION;
+        }
+        // The destination account must have consented to receive the asset by
+        // creating a RippleState or MPToken
+        authType = AuthType::StrongAuth;
+    }
+
+    // Destination MPToken must exist (if asset is an MPT)
+    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct))
+        return ter;
+
+    // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
 
-    // Cannot transfer a frozen Asset
+    // Cannot send a frozen Asset
     if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
         return ret;
-    // Account cannot receive if asset is deep frozen
-    if (auto const ret = checkDeepFrozen(ctx.view, account, vaultAsset))
-        return ret;
+    if (dstAcct != vaultAsset.getIssuer())
+    {
+        // Destination account cannot receive if asset is deep frozen
+        if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
+            return ret;
+    }
 
     auto const coverAvail = sleBroker->at(sfCoverAvailable);
     // Cover Rate is in 1/10 bips units
@@ -128,28 +173,56 @@ LoanBrokerCoverWithdraw::doApply()
 
     auto const brokerID = tx[sfLoanBrokerID];
     auto const amount = tx[sfAmount];
+    auto const dstAcct = [&]() -> AccountID {
+        if (auto const dst = tx[~sfDestination])
+            return *dst;
+        return account_;
+    }();
 
     auto broker = view().peek(keylet::loanbroker(brokerID));
     if (!broker)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const brokerPseudoID = broker->at(sfAccount);
 
-    // Transfer assets from pseudo-account to depositor.
-    if (auto ter = accountSend(
-            view(),
-            brokerPseudoID,
-            account_,
-            amount,
-            j_,
-            WaiveTransferFee::Yes))
-        return ter;
-
-    // Increase the LoanBroker's CoverAvailable by Amount
+    // Decrease the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) -= amount;
     view().update(broker);
 
-    return tesSUCCESS;
+    if (dstAcct != account_ && !amount.native() && !amount.holds<MPTIssue>())
+    {
+        STAmount const maxSourceAmount(
+            Issue{amount.get<Issue>().currency, brokerPseudoID},
+            amount.mantissa(),
+            amount.exponent(),
+            amount < beast::zero);
+        SLE::pointer sleDst = view().peek(keylet::account(dstAcct));
+
+        auto ret = Payment::makeRipplePayment(Payment::RipplePaymentParams{
+            .ctx = ctx_,
+            .maxSourceAmount = maxSourceAmount,
+            .srcAccountID = account_,
+            .dstAccountID = dstAcct,
+            .sleDst = sleDst,
+            .dstAmount = amount,
+            .deliverMin = std::nullopt,
+            .j = j_});
+
+        // Always claim a fee
+        if (!isTesSuccess(ret) && !isTecClaim(ret))
+        {
+            JLOG(j_.info())
+                << "LoanBrokerCoverWithdraw: changing result from "
+                << transToken(ret)
+                << " to tecPATH_DRY for IOU payment with Destination";
+            ret = tecPATH_DRY;
+        }
+        return ret;
+    }
+
+    // Transfer assets from pseudo-account to depositor.
+    return accountSend(
+        view(), brokerPseudoID, dstAcct, amount, j_, WaiveTransferFee::Yes);
 }
 
 //------------------------------------------------------------------------------

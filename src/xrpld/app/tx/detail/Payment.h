@@ -59,6 +59,25 @@ public:
 
     TER
     doApply() override;
+
+    // Helpers for this class and other transactors that make "Payments"
+    struct RipplePaymentParams
+    {
+        ApplyContext& ctx;
+        STAmount const& maxSourceAmount;
+        AccountID const& srcAccountID;
+        AccountID const& dstAccountID;
+        SLE::pointer sleDst;
+        STAmount const& dstAmount;
+        std::optional<STAmount> const& deliverMin;
+        bool partialPaymentAllowed = false;
+        bool defaultPathsAllowed = true;
+        bool limitQuality = false;
+        beast::Journal j;
+    };
+
+    static TER
+    makeRipplePayment(RipplePaymentParams const& p);
 };
 
 }  // namespace ripple

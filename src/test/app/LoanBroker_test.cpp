@@ -107,6 +107,7 @@ class LoanBroker_test : public beast::unit_test::suite
         jtx::Env& env,
         jtx::Account const& alice,
         jtx::Account const& evan,
+        jtx::Account const& bystander,
         VaultInfo const& vault,
         std::function<jtx::JTx(jtx::JTx const&)> modifyJTx,
         std::function<void(SLE::const_ref)> checkBroker,
@@ -240,6 +241,11 @@ class LoanBroker_test : public beast::unit_test::suite
             env(coverWithdraw(alice, keylet.key, vault.asset(900)),
                 ter(tecINSUFFICIENT_FUNDS));
 
+            env(coverWithdraw(alice, keylet.key, vault.asset(1)),
+                destination(bystander),
+                ter(tecNO_LINE));
+            verifyCoverAmount(10);
+
             // Withdraw some of the cover amount
             env(coverWithdraw(alice, keylet.key, vault.asset(7)));
             if (BEAST_EXPECT(broker = env.le(keylet)))
@@ -254,8 +260,10 @@ class LoanBroker_test : public beast::unit_test::suite
                 verifyCoverAmount(8);
             }
 
-            // Withdraw some more
-            env(coverWithdraw(alice, keylet.key, vault.asset(2)));
+            // Withdraw some more. Send it to Evan. Very generous, considering
+            // how much trouble he's been.
+            env(coverWithdraw(alice, keylet.key, vault.asset(2)),
+                destination(evan));
             if (BEAST_EXPECT(broker = env.le(keylet)))
             {
                 verifyCoverAmount(6);
@@ -348,11 +356,14 @@ class LoanBroker_test : public beast::unit_test::suite
         Account alice{"alice"};
         // Evan will attempt to be naughty
         Account evan{"evan"};
+        // Bystander doesn't have anything to do with the SAV or Broker, or any
+        // of the relevant tokens
+        Account bystander{"bystander"};
         Vault vault{env};
 
         // Fund the accounts and trust lines with the same amount so that tests
         // can use the same values regardless of the asset.
-        env.fund(XRP(100'000), issuer, noripple(alice, evan));
+        env.fund(XRP(100'000), issuer, noripple(alice, evan, bystander));
         env.close();
 
         // Create assets
@@ -459,6 +470,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 env,
                 alice,
                 evan,
+                bystander,
                 vault,
                 // No modifications
                 {},
@@ -543,6 +555,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 env,
                 alice,
                 evan,
+                bystander,
                 vault,
                 [&](jtx::JTx const& jv) {
                     testData = "spam spam spam spam";

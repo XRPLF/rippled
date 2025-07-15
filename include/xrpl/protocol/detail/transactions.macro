@@ -802,6 +802,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfDestination, soeOPTIONAL},
+    {sfDestinationTag, soeOPTIONAL},
 }))
 
 /** This transaction claws back tokens from a vault. */
@@ -875,6 +876,8 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfDestination, soeOPTIONAL},
+    {sfDestinationTag, soeOPTIONAL},
 }))
 
 /** This transaction creates a Loan */

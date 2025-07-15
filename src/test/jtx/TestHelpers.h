@@ -752,6 +752,8 @@ auto const coverRateMinimum =
 auto const coverRateLiquidation =
     valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
 
+auto const destination = JTxFieldWrapper<accountIDField>(sfDestination);
+
 }  // namespace loanBroker
 
 /* Loan */
