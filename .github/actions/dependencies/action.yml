@@ -14,24 +14,25 @@ runs:
         conan export --version 4.0.3 external/soci
         conan export --version 2.0.8 external/nudb
     - name: add Ripple Conan remote
+      if: env.CONAN_URL != ''
       shell: bash
       run: |
-        conan remote list
-        conan remote remove ripple || true
-        # Do not quote the URL. An empty string will be accepted (with
-        # a non-fatal warning), but a missing argument will not.
-        conan remote add --index 0 ripple ${{ env.CONAN_URL }}
+        if conan remote list | grep -q "ripple"; then
+            conan remote remove ripple
+            echo "Removed conan remote ripple"
+        fi
+        conan remote add --index 0 ripple "${CONAN_URL}"
+        echo "Added conan remote ripple at ${CONAN_URL}"
+
     - name: try to authenticate to Ripple Conan remote
+      if: env.CONAN_PASSWORD != '' || env.CONAN_PASSWORD_RIPPLE != ''
       id: remote
       shell: bash
       run: |
-        # `conan user` implicitly uses the environment variables
-        # CONAN_LOGIN_USERNAME_<REMOTE> and CONAN_PASSWORD_<REMOTE>.
-        # https://docs.conan.io/1/reference/commands/misc/user.html#using-environment-variables
-        # https://docs.conan.io/1/reference/env_vars.html#conan-login-username-conan-login-username-remote-name
-        # https://docs.conan.io/1/reference/env_vars.html#conan-password-conan-password-remote-name
-        echo outcome=$(conan user --remote ripple --password >&2 \
-          && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+        echo "Authenticating to ripple remote..."
+        conan remote auth ripple --force
+        conan remote list-users
+
     - name: list missing binaries
       id: binaries
       shell: bash
