@@ -487,7 +487,7 @@ loanComputePaymentParts(
         Number::upward);
 
     std::optional<NumberRoundModeGuard> mg(Number::downward);
-    std::int64_t const fullPeriodicPayments = [&]() {
+    std::int64_t fullPeriodicPayments = [&]() {
         std::int64_t const full{amount / totalDue};
         return full < paymentRemainingField ? full : paymentRemainingField;
     }();
@@ -535,8 +535,17 @@ loanComputePaymentParts(
 
         totalPrincipalPaid += future->principal;
         totalInterestPaid += future->interest;
-        paymentRemainingField -= 1;
         principalOutstandingField -= future->principal;
+        // Edge case: Small loans can have payments large enough to pay off the
+        // entire principal early
+        if (paymentRemainingField > 1 && principalOutstandingField == 0)
+        {
+            paymentRemainingField = 0;
+            fullPeriodicPayments = i + 1;
+            break;
+        }
+        else
+            paymentRemainingField -= 1;
 
         future.reset();
     }
