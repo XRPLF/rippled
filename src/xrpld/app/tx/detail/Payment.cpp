@@ -472,35 +472,37 @@ Payment::doApply()
 
     if (ripple)
     {
-        return makeRipplePayment(RipplePaymentParams{
-            .ctx = ctx_,
-            .maxSourceAmount = maxSourceAmount,
-            .srcAccountID = account_,
-            .dstAccountID = dstAccountID,
-            .sleDst = sleDst,
-            .dstAmount = dstAmount,
-            .paths = ctx_.tx.getFieldPathSet(sfPaths),
-            .deliverMin = deliverMin,
-            .partialPaymentAllowed = partialPaymentAllowed,
-            .defaultPathsAllowed = defaultPathsAllowed,
-            .limitQuality = limitQuality,
-            .j = j_});
+        return makeRipplePayment(
+            RipplePaymentParams{
+                .ctx = ctx_,
+                .maxSourceAmount = maxSourceAmount,
+                .srcAccountID = account_,
+                .dstAccountID = dstAccountID,
+                .sleDst = sleDst,
+                .dstAmount = dstAmount,
+                .paths = ctx_.tx.getFieldPathSet(sfPaths),
+                .deliverMin = deliverMin,
+                .partialPaymentAllowed = partialPaymentAllowed,
+                .defaultPathsAllowed = defaultPathsAllowed,
+                .limitQuality = limitQuality,
+                .j = j_});
     }
     else if (mptDirect)
     {
-        return makeMPTDirectPayment(RipplePaymentParams{
-            .ctx = ctx_,
-            .maxSourceAmount = maxSourceAmount,
-            .srcAccountID = account_,
-            .dstAccountID = dstAccountID,
-            .sleDst = sleDst,
-            .dstAmount = dstAmount,
-            .paths = ctx_.tx.getFieldPathSet(sfPaths),
-            .deliverMin = deliverMin,
-            .partialPaymentAllowed = partialPaymentAllowed,
-            .defaultPathsAllowed = defaultPathsAllowed,
-            .limitQuality = limitQuality,
-            .j = j_});
+        return makeMPTDirectPayment(
+            RipplePaymentParams{
+                .ctx = ctx_,
+                .maxSourceAmount = maxSourceAmount,
+                .srcAccountID = account_,
+                .dstAccountID = dstAccountID,
+                .sleDst = sleDst,
+                .dstAmount = dstAmount,
+                .paths = ctx_.tx.getFieldPathSet(sfPaths),
+                .deliverMin = deliverMin,
+                .partialPaymentAllowed = partialPaymentAllowed,
+                .defaultPathsAllowed = defaultPathsAllowed,
+                .limitQuality = limitQuality,
+                .j = j_});
     }
 
     XRPL_ASSERT(dstAmount.native(), "ripple::Payment::doApply : amount is XRP");

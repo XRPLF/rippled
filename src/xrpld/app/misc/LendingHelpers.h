@@ -650,7 +650,7 @@ loanMakePayment(
     auto const totalDue = periodic.interest + periodic.principal + periodic.fee;
 
     std::optional<NumberRoundModeGuard> mg(Number::downward);
-    std::int64_t const fullPeriodicPayments = [&]() {
+    std::int64_t fullPeriodicPayments = [&]() {
         std::int64_t const full{amount / totalDue};
         return full < paymentRemainingProxy ? full : paymentRemainingProxy;
     }();
@@ -699,8 +699,17 @@ loanMakePayment(
 
         totalPrincipalPaid += future->principal;
         totalInterestPaid += future->interest;
-        paymentRemainingProxy -= 1;
         principalOutstandingProxy -= future->principal;
+        // Edge case: Small loans can have payments large enough to pay off the
+        // entire principal early
+        if (paymentRemainingProxy > 1 && principalOutstandingProxy == 0)
+        {
+            paymentRemainingProxy = 0;
+            fullPeriodicPayments = i + 1;
+            break;
+        }
+        else
+            paymentRemainingProxy -= 1;
 
         future.reset();
     }
