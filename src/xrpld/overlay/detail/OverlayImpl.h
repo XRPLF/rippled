@@ -24,6 +24,7 @@
 #include <xrpld/core/Job.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Slot.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
@@ -43,8 +44,6 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/container/flat_map.hpp>
-
-#include "xrpld/overlay/Peer.h"
 
 #include <atomic>
 #include <chrono>

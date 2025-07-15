@@ -109,7 +109,7 @@ Slot::update(
     if (peer.state == PeerState::Squelched)
         callback();
 
-    if (state_ != SlotState::Counting || peer.state == PeerState::Squelched)
+    if (getState() != SlotState::Counting || peer.state == PeerState::Squelched)
         return;
 
     if (++peer.count > reduce_relay::MIN_MESSAGE_THRESHOLD)
@@ -269,7 +269,7 @@ void
 Slot::onWrite(beast::PropertyStream::Map& stream) const
 {
     auto const now = clock_.now();
-    stream["state"] = to_string(state_);
+    stream["state"] = to_string(getState());
     stream["reachedThreshold"] = reachedThreshold_;
     stream["considered"] = considered_.size();
     stream["lastSelected"] =
@@ -549,15 +549,8 @@ Slots::squelchUntrustedValidator(PublicKey const& validator)
             registerSquelchedValidator(validator, id);
         });
 
-    // if we are considering the validator, remove it
-    auto itC = consideredValidators_.find(validator);
-    if (itC != consideredValidators_.end())
-        consideredValidators_.erase(itC);
-
-    // if we have assigned an untrusted slot for the validator, remove it
-    auto itS = untrustedSlots_.find(validator);
-    if (itS != untrustedSlots_.end())
-        untrustedSlots_.erase(itS);
+    consideredValidators_.erase(validator);
+    untrustedSlots_.erase(validator);
 }
 
 void
