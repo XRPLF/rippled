@@ -4220,15 +4220,12 @@ public:
         };
 
         // clang-format off
-        TestData const flowTests[]{
+        TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
             {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - 4 * baseFee), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - 3 * baseFee), BTC(0), USD(1375)}}}, // no BTC xfer fee
             {0, 0, 0, BTC(5), {{"hye", 2, drops(4000000'000000 - 5 * baseFee), BTC(5), USD(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
-
-        // Pick the right tests.
-        auto const& tests = flowTests;
 
         for (auto const& t : tests)
         {
