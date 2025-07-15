@@ -90,18 +90,11 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     auto const pseudoAccountID = sleBroker->at(sfAccount);
 
     // Cannot transfer a frozen Asset
-    /*
-    if (isFrozen(ctx.view, account, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
-    */
-    if (isFrozen(ctx.view, pseudoAccountID, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
-    if (vaultAsset.holds<Issue>())
-    {
-        auto const issue = vaultAsset.get<Issue>();
-        if (isDeepFrozen(ctx.view, account, issue.currency, issue.account))
-            return tecFROZEN;
-    }
+    if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
+        return ret;
+    // Account cannot receive if asset is deep frozen
+    if (auto const ret = checkDeepFrozen(ctx.view, account, vaultAsset))
+        return ret;
 
     auto const coverAvail = sleBroker->at(sfCoverAvailable);
     // Cover Rate is in 1/10 bips units

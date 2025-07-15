@@ -204,19 +204,25 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (auto const ter = canAddHolding(ctx.view, asset))
         return ter;
 
-    if (isFrozen(ctx.view, brokerOwner, asset) ||
-        isFrozen(ctx.view, brokerPseudo, asset))
+    if (auto const ret = checkFrozen(ctx.view, brokerOwner, asset))
     {
-        JLOG(ctx.j.warn()) << "One of the affected accounts is frozen.";
-        return asset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+        JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
+        return ret;
     }
-    if (asset.holds<Issue>())
+    if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
     {
-        auto const issue = asset.get<Issue>();
-        if (isDeepFrozen(ctx.view, borrower, issue.currency, issue.account))
-            return tecFROZEN;
-        if (isDeepFrozen(ctx.view, brokerPseudo, issue.currency, issue.account))
-            return tecFROZEN;
+        JLOG(ctx.j.warn()) << "Broker pseudo-account account is frozen.";
+        return ret;
+    }
+    if (auto const ret = checkDeepFrozen(ctx.view, borrower, asset))
+    {
+        JLOG(ctx.j.warn()) << "Borrower account is deep frozen.";
+        return ret;
+    }
+    if (auto const ret = checkDeepFrozen(ctx.view, brokerPseudo, asset))
+    {
+        JLOG(ctx.j.warn()) << "Broker pseudo-account account is deep frozen.";
+        return ret;
     }
 
     auto const principalRequested = tx[sfPrincipalRequested];

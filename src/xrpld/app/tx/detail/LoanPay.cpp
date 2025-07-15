@@ -131,19 +131,16 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
     }
 
-    if (isFrozen(ctx.view, brokerPseudoAccount, asset))
+    if (auto const ret = checkFrozen(ctx.view, account, asset))
     {
-        JLOG(ctx.j.warn()) << "Loan Broker pseudo-account is frozen.";
-        return asset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+        JLOG(ctx.j.warn()) << "Borrower account is frozen.";
+        return ret;
     }
-    if (asset.holds<Issue>())
+    if (auto const ret = checkDeepFrozen(ctx.view, brokerPseudoAccount, asset))
     {
-        auto const issue = asset.get<Issue>();
-        if (isDeepFrozen(ctx.view, account, issue.currency, issue.account))
-        {
-            JLOG(ctx.j.warn()) << "Borrower account is frozen.";
-            return tecFROZEN;
-        }
+        JLOG(ctx.j.warn()) << "Loan Broker pseudo-account can not receive "
+                              "funds (deep frozen).";
+        return ret;
     }
 
     return tesSUCCESS;

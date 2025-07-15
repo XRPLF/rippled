@@ -89,15 +89,11 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     auto const pseudoAccountID = sleBroker->at(sfAccount);
 
     // Cannot transfer a frozen Asset
-    if (isFrozen(ctx.view, account, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
-    if (vaultAsset.holds<Issue>())
-    {
-        auto const issue = vaultAsset.get<Issue>();
-        if (isDeepFrozen(
-                ctx.view, pseudoAccountID, issue.currency, issue.account))
-            return tecFROZEN;
-    }
+    if (auto const ret = checkFrozen(ctx.view, account, vaultAsset))
+        return ret;
+    // Pseudo-account cannot receive if asset is deep frozen
+    if (auto const ret = checkDeepFrozen(ctx.view, pseudoAccountID, vaultAsset))
+        return ret;
 
     if (accountHolds(
             ctx.view,

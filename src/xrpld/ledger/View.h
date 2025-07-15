@@ -175,6 +175,29 @@ isFrozen(
         asset.value());
 }
 
+[[nodiscard]] inline TER
+checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return isFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue)
+{
+    return isFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) { return checkFrozen(view, account, issue); },
+        asset.value());
+}
+
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
@@ -219,6 +242,80 @@ isDeepFrozen(
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    int = 0 /*ignored*/)
+{
+    return isDeepFrozen(view, account, issue.currency, issue.account);
+}
+
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    int depth = 0)
+{
+    // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
+    // funds, so checking "deep frozen" is the same as checking "frozen".
+    return isFrozen(view, account, mptIssue, depth);
+}
+
+/**
+ *   isFrozen check is recursive for MPT shares in a vault, descending to
+ *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ *   purely defensive, as we currently do not allow such vaults to be created.
+ */
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    int depth = 0)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return isDeepFrozen(view, account, issue, depth);
+        },
+        asset.value());
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue)
+{
+    return isDeepFrozen(view, account, issue) ? (TER)tecFROZEN
+                                              : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue)
+{
+    return isDeepFrozen(view, account, mptIssue) ? (TER)tecLOCKED
+                                                 : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return checkDeepFrozen(view, account, issue);
+        },
+        asset.value());
+}
 
 [[nodiscard]] bool
 isLPTokenFrozen(
