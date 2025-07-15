@@ -89,9 +89,11 @@ class WSClientImpl : public WSClient
         return s;
     }
 
-    boost::asio::io_service ios_;
-    std::optional<boost::asio::io_service::work> work_;
-    boost::asio::io_service::strand strand_;
+    boost::asio::io_context ios_;
+    std::optional<boost::asio::executor_work_guard<
+        boost::asio::io_context::executor_type>>
+        work_;
+    boost::asio::io_context::strand strand_;
     std::thread thread_;
     boost::asio::ip::tcp::socket stream_;
     boost::beast::websocket::stream<boost::asio::ip::tcp::socket&> ws_;
@@ -114,12 +116,11 @@ class WSClientImpl : public WSClient
     void
     cleanup()
     {
-        ios_.post(strand_.wrap([this] {
+        boost::asio::post(ios_, strand_.wrap([this] {
             if (!peerClosed_)
             {
-                ws_.async_close({}, strand_.wrap([&](error_code ec) {
-                    stream_.cancel(ec);
-                }));
+                ws_.async_close(
+                    {}, strand_.wrap([&](error_code) { stream_.cancel(); }));
             }
         }));
         work_ = std::nullopt;

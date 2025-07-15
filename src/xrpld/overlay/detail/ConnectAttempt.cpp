@@ -28,7 +28,7 @@ namespace ripple {
 
 ConnectAttempt::ConnectAttempt(
     Application& app,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     endpoint_type const& remote_endpoint,
     Resource::Consumer usage,
     shared_context const& context,
@@ -46,7 +46,7 @@ ConnectAttempt::ConnectAttempt(
     , strand_(io_service)
     , timer_(io_service)
     , stream_ptr_(std::make_unique<stream_type>(
-          socket_type(std::forward<boost::asio::io_service&>(io_service)),
+          socket_type(std::forward<boost::asio::io_context&>(io_service)),
           *context))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
@@ -66,8 +66,8 @@ void
 ConnectAttempt::stop()
 {
     if (!strand_.running_in_this_thread())
-        return strand_.post(
-            std::bind(&ConnectAttempt::stop, shared_from_this()));
+        return boost::asio::post(
+            strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
     if (socket_.is_open())
     {
         JLOG(journal_.debug()) << "Stop";
@@ -96,9 +96,9 @@ ConnectAttempt::close()
         "ripple::ConnectAttempt::close : strand in this thread");
     if (socket_.is_open())
     {
-        error_code ec;
-        timer_.cancel(ec);
-        socket_.close(ec);
+        // TODO: ec completely gone here now
+        timer_.cancel();
+        socket_.close();
         JLOG(journal_.debug()) << "Closed";
     }
 }
@@ -120,11 +120,10 @@ ConnectAttempt::fail(std::string const& name, error_code ec)
 void
 ConnectAttempt::setTimer()
 {
-    error_code ec;
-    timer_.expires_from_now(std::chrono::seconds(15), ec);
-    if (ec)
+    if (auto const cancelled = timer_.expires_after(std::chrono::seconds(15));
+        cancelled)
     {
-        JLOG(journal_.error()) << "setTimer: " << ec.message();
+        JLOG(journal_.error()) << "setTimer: cancelled";
         return;
     }
 
@@ -135,8 +134,7 @@ ConnectAttempt::setTimer()
 void
 ConnectAttempt::cancelTimer()
 {
-    error_code ec;
-    timer_.cancel(ec);
+    timer_.cancel();
 }
 
 void
@@ -299,7 +297,7 @@ ConnectAttempt::processResponse()
         s.reserve(boost::asio::buffer_size(response_.body().data()));
         for (auto const buffer : response_.body().data())
             s.append(
-                boost::asio::buffer_cast<char const*>(buffer),
+                static_cast<char const*>(buffer.data()),
                 boost::asio::buffer_size(buffer));
         auto const success = r.parse(s, json);
         if (success)

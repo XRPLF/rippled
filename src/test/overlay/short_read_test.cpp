@@ -185,7 +185,7 @@ private:
                 , acceptor_(
                       test_.io_context_,
                       endpoint_type(
-                          beast::IP::Address::from_string(
+                          boost::asio::ip::make_address(
                               test::getEnvLocalhostAddr()),
                           0))
                 , socket_(test_.io_context_)
@@ -287,7 +287,7 @@ private:
             void
             run()
             {
-                timer_.expires_from_now(std::chrono::seconds(3));
+                timer_.expires_after(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
                     strand_,
                     std::bind(
@@ -473,7 +473,7 @@ private:
             void
             run(endpoint_type const& ep)
             {
-                timer_.expires_from_now(std::chrono::seconds(3));
+                timer_.expires_after(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
                     strand_,
                     std::bind(

@@ -52,8 +52,10 @@ public:
     class TestThread
     {
     private:
-        boost::asio::io_service io_service_;
-        std::optional<boost::asio::io_service::work> work_;
+        boost::asio::io_context io_service_;
+        std::optional<boost::asio::executor_work_guard<
+            boost::asio::io_context::executor_type>>
+            work_;
         std::thread thread_;
 
     public:
@@ -69,7 +71,7 @@ public:
             thread_.join();
         }
 
-        boost::asio::io_service&
+        boost::asio::io_context&
         get_io_service()
         {
             return io_service_;
@@ -234,7 +236,7 @@ public:
     void
     test_request(boost::asio::ip::tcp::endpoint const& ep)
     {
-        boost::asio::io_service ios;
+        boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
         socket s(ios);
 
@@ -260,7 +262,7 @@ public:
     void
     test_keepalive(boost::asio::ip::tcp::endpoint const& ep)
     {
-        boost::asio::io_service ios;
+        boost::asio::io_context ios;
         using socket = boost::asio::ip::tcp::socket;
         socket s(ios);
 
@@ -303,7 +305,7 @@ public:
         auto s = make_Server(handler, thread.get_io_service(), journal);
         std::vector<Port> serverPort(1);
         serverPort.back().ip =
-            beast::IP::Address::from_string(getEnvLocalhostAddr()),
+            boost::asio::ip::make_address(getEnvLocalhostAddr()),
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
@@ -378,7 +380,7 @@ public:
             auto s = make_Server(h, thread.get_io_service(), journal);
             std::vector<Port> serverPort(1);
             serverPort.back().ip =
-                beast::IP::Address::from_string(getEnvLocalhostAddr()),
+                boost::asio::ip::make_address(getEnvLocalhostAddr()),
             serverPort.back().port = 0;
             serverPort.back().protocol.insert("http");
             s->ports(serverPort);

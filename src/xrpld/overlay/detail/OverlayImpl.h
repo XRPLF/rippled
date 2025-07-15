@@ -100,9 +100,11 @@ private:
     };
 
     Application& app_;
-    boost::asio::io_service& io_service_;
-    std::optional<boost::asio::io_service::work> work_;
-    boost::asio::io_service::strand strand_;
+    boost::asio::io_context& io_service_;
+    std::optional<boost::asio::executor_work_guard<
+        boost::asio::io_context::executor_type>>
+        work_;
+    boost::asio::io_context::strand strand_;
     mutable std::recursive_mutex mutex_;  // VFALCO use std::mutex
     std::condition_variable_any cond_;
     std::weak_ptr<Timer> timer_;
@@ -143,7 +145,7 @@ public:
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
-        boost::asio::io_service& io_service,
+        boost::asio::io_context& io_service,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 
@@ -212,7 +214,8 @@ public:
         std::size_t& disabled,
         std::size_t& enabledInSkip) const;
 
-    void checkTracking(std::uint32_t) override;
+    void
+    checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const override;

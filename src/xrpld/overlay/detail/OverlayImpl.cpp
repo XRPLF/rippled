@@ -40,6 +40,7 @@
 #include <xrpl/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/executor_work_guard.hpp>
 
 #include "xrpld/overlay/detail/TrafficCount.h"
 
@@ -122,12 +123,12 @@ OverlayImpl::OverlayImpl(
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
     : app_(app)
     , io_service_(io_service)
-    , work_(std::in_place, std::ref(io_service_))
+    , work_(std::in_place, boost::asio::make_work_guard(io_service_))
     , strand_(io_service_)
     , setup_(setup)
     , journal_(app_.journal("Overlay"))
@@ -561,7 +562,7 @@ OverlayImpl::start()
 void
 OverlayImpl::stop()
 {
-    strand_.dispatch(std::bind(&OverlayImpl::stopChildren, this));
+    boost::asio::dispatch(strand_, std::bind(&OverlayImpl::stopChildren, this));
     {
         std::unique_lock<decltype(mutex_)> lock(mutex_);
         cond_.wait(lock, [this] { return list_.empty(); });
@@ -1491,7 +1492,7 @@ setup_Overlay(BasicConfig const& config)
         if (!ip.empty())
         {
             boost::system::error_code ec;
-            setup.public_ip = beast::IP::Address::from_string(ip, ec);
+            setup.public_ip = boost::asio::ip::make_address(ip, ec);
             if (ec || beast::IP::is_private(setup.public_ip))
                 Throw<std::runtime_error>("Configured public IP is invalid");
         }
@@ -1585,7 +1586,7 @@ make_Overlay(
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {

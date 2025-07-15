@@ -8,7 +8,8 @@
 #ifndef BEAST_TEST_YIELD_TO_HPP
 #define BEAST_TEST_YIELD_TO_HPP
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/optional.hpp>
 
@@ -29,10 +30,12 @@ namespace test {
 class enable_yield_to
 {
 protected:
-    boost::asio::io_service ios_;
+    boost::asio::io_context ios_;
 
 private:
-    boost::optional<boost::asio::io_service::work> work_;
+    boost::optional<boost::asio::executor_work_guard<
+        boost::asio::io_context::executor_type>>
+        work_;
     std::vector<std::thread> threads_;
     std::mutex m_;
     std::condition_variable cv_;
@@ -57,7 +60,7 @@ public:
     }
 
     /// Return the `io_service` associated with the object
-    boost::asio::io_service&
+    boost::asio::io_context&
     get_io_service()
     {
         return ios_;

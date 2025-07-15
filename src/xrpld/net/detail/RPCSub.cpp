@@ -35,7 +35,7 @@ class RPCSubImp : public RPCSub
 public:
     RPCSubImp(
         InfoSub::Source& source,
-        boost::asio::io_service& io_service,
+        boost::asio::io_context& io_service,
         JobQueue& jobQueue,
         std::string const& strUrl,
         std::string const& strUsername,
@@ -177,7 +177,7 @@ private:
     }
 
 private:
-    boost::asio::io_service& m_io_service;
+    boost::asio::io_context& m_io_service;
     JobQueue& m_jobQueue;
 
     std::string mUrl;
@@ -207,7 +207,7 @@ RPCSub::RPCSub(InfoSub::Source& source) : InfoSub(source, Consumer())
 std::shared_ptr<RPCSub>
 make_RPCSub(
     InfoSub::Source& source,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,

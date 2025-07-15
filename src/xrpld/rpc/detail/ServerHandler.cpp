@@ -104,7 +104,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
 ServerHandler::ServerHandler(
     ServerHandlerCreator const&,
     Application& app,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
@@ -282,14 +282,13 @@ template <class ConstBufferSequence>
 static std::string
 buffers_to_string(ConstBufferSequence const& bs)
 {
-    using boost::asio::buffer_cast;
     using boost::asio::buffer_size;
     std::string s;
     s.reserve(buffer_size(bs));
     // Use auto&& so the right thing happens whether bs returns a copy or
     // a reference
     for (auto&& b : bs)
-        s.append(buffer_cast<char const*>(b), buffer_size(b));
+        s.append(static_cast<char const*>(b.data()), buffer_size(b));
     return s;
 }
 
@@ -1267,7 +1266,7 @@ setup_ServerHandler(Config const& config, std::ostream&& log)
 std::unique_ptr<ServerHandler>
 make_ServerHandler(
     Application& app,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,

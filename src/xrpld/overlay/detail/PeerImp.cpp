@@ -581,9 +581,9 @@ PeerImp::close()
     if (socket_.is_open())
     {
         detaching_ = true;  // DEPRECATED
-        error_code ec;
-        timer_.cancel(ec);
-        socket_.close(ec);
+        // TODO: ec is gone here
+        timer_.cancel();
+        socket_.close();
         overlay_.incPeerDisconnect();
         if (inbound_)
         {
@@ -654,12 +654,10 @@ PeerImp::gracefulClose()
 void
 PeerImp::setTimer()
 {
-    error_code ec;
-    timer_.expires_from_now(peerTimerInterval, ec);
-
-    if (ec)
+    if (auto const cancelled = timer_.expires_after(peerTimerInterval);
+        cancelled)
     {
-        JLOG(journal_.error()) << "setTimer: " << ec.message();
+        JLOG(journal_.error()) << "setTimer: cancelled";
         return;
     }
     timer_.async_wait(bind_executor(
@@ -672,8 +670,7 @@ PeerImp::setTimer()
 void
 PeerImp::cancelTimer()
 {
-    error_code ec;
-    timer_.cancel(ec);
+    timer_.cancel();
 }
 
 //------------------------------------------------------------------------------

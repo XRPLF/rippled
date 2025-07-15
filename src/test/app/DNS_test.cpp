@@ -82,8 +82,9 @@ public:
         using boost::asio::ip::tcp;
         tcp::resolver resolver(env_.app().getIOService());
         std::string port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
-        tcp::resolver::iterator it = resolver.resolve(pUrl_.domain, port);
-        tcp::resolver::iterator end;
+        auto results = resolver.resolve(pUrl_.domain, port);
+        auto it = results.begin();
+        auto end = results.end();
         int n = 0;
         for (; it != end; ++it)
             ++n;

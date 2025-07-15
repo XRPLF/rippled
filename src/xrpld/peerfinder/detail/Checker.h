@@ -22,7 +22,7 @@
 
 #include <xrpl/beast/net/IPAddressConversion.h>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/intrusive/list.hpp>
 
@@ -65,7 +65,7 @@ private:
 
         async_op(
             Checker& owner,
-            boost::asio::io_service& io_service,
+            boost::asio::io_context& io_service,
             Handler&& handler);
 
         ~async_op();
@@ -85,12 +85,12 @@ private:
 
     std::mutex mutex_;
     std::condition_variable cond_;
-    boost::asio::io_service& io_service_;
+    boost::asio::io_context& io_service_;
     list_type list_;
     bool stop_ = false;
 
 public:
-    explicit Checker(boost::asio::io_service& io_service);
+    explicit Checker(boost::asio::io_context& io_service);
 
     /** Destroy the service.
         Any pending I/O operations will be canceled. This call blocks until
@@ -132,7 +132,7 @@ template <class Protocol>
 template <class Handler>
 Checker<Protocol>::async_op<Handler>::async_op(
     Checker& owner,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     Handler&& handler)
     : checker_(owner)
     , socket_(io_service)
@@ -167,7 +167,7 @@ Checker<Protocol>::async_op<Handler>::operator()(error_code const& ec)
 //------------------------------------------------------------------------------
 
 template <class Protocol>
-Checker<Protocol>::Checker(boost::asio::io_service& io_service)
+Checker<Protocol>::Checker(boost::asio::io_context& io_service)
     : io_service_(io_service)
 {
 }

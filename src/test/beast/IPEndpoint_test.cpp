@@ -45,13 +45,13 @@ public:
         std::string const& normal = "")
     {
         boost::system::error_code ec;
-        Address const result{Address::from_string(s, ec)};
+        Address const result{boost::asio::ip::make_address(s, ec)};
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         if (!BEAST_EXPECTS(result.is_v4(), s + " not v4"))
             return;
         if (!BEAST_EXPECTS(
-                result.to_v4().to_ulong() == value, s + " value mismatch"))
+                result.to_v4().to_uint() == value, s + " value mismatch"))
             return;
         BEAST_EXPECTS(
             result.to_string() == (normal.empty() ? s : normal),
@@ -62,7 +62,7 @@ public:
     failParseAddr(std::string const& s)
     {
         boost::system::error_code ec;
-        auto a = Address::from_string(s, ec);
+        auto a = boost::asio::ip::make_address(s, ec);
         BEAST_EXPECTS(ec, s + " parses as " + a.to_string());
     }
 
@@ -71,24 +71,24 @@ public:
     {
         testcase("AddressV4");
 
-        BEAST_EXPECT(AddressV4{}.to_ulong() == 0);
+        BEAST_EXPECT(AddressV4{}.to_uint() == 0);
         BEAST_EXPECT(is_unspecified(AddressV4{}));
-        BEAST_EXPECT(AddressV4{0x01020304}.to_ulong() == 0x01020304);
+        BEAST_EXPECT(AddressV4{0x01020304}.to_uint() == 0x01020304);
 
         {
             AddressV4::bytes_type d = {{1, 2, 3, 4}};
-            BEAST_EXPECT(AddressV4{d}.to_ulong() == 0x01020304);
+            BEAST_EXPECT(AddressV4{d}.to_uint() == 0x01020304);
 
             unexpected(is_unspecified(AddressV4{d}));
         }
 
         AddressV4 const v1{1};
-        BEAST_EXPECT(AddressV4{v1}.to_ulong() == 1);
+        BEAST_EXPECT(AddressV4{v1}.to_uint() == 1);
 
         {
             AddressV4 v;
             v = v1;
-            BEAST_EXPECT(v.to_ulong() == v1.to_ulong());
+            BEAST_EXPECT(v.to_uint() == v1.to_uint());
         }
 
         {
@@ -99,7 +99,7 @@ public:
             d[2] = 3;
             d[3] = 4;
             v = AddressV4{d};
-            BEAST_EXPECT(v.to_ulong() == 0x01020304);
+            BEAST_EXPECT(v.to_uint() == 0x01020304);
         }
 
         BEAST_EXPECT(AddressV4(0x01020304).to_string() == "1.2.3.4");
@@ -161,7 +161,7 @@ public:
         testcase("Address");
 
         boost::system::error_code ec;
-        Address result{Address::from_string("1.2.3.4", ec)};
+        Address result{boost::asio::ip::make_address("1.2.3.4", ec)};
         AddressV4::bytes_type d = {{1, 2, 3, 4}};
         BEAST_EXPECT(!ec);
         BEAST_EXPECT(result.is_v4() && result.to_v4() == AddressV4{d});
@@ -366,9 +366,9 @@ public:
 
 #if BOOST_OS_WINDOWS
         // windows asio bugs...false positives
-        shouldParseEPV4("255", {{ 0, 0, 0, 255 }}, 0, "0.0.0.255");
-        shouldParseEPV4("512", {{ 0, 0, 2, 0 }}, 0, "0.0.2.0");
-        shouldParseEPV4("1.2.3:80", {{ 1, 2, 0, 3 }}, 80, "1.2.0.3:80");
+        shouldParseEPV4("255", {{0, 0, 0, 255}}, 0, "0.0.0.255");
+        shouldParseEPV4("512", {{0, 0, 2, 0}}, 0, "0.0.2.0");
+        shouldParseEPV4("1.2.3:80", {{1, 2, 0, 3}}, 80, "1.2.0.3:80");
 #else
         failParseEP("255");
         failParseEP("512");
