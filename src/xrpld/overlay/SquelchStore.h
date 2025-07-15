@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2020 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -32,7 +32,15 @@ namespace ripple {
 
 namespace reduce_relay {
 
-/** Tracks which validators were squelched.
+/**
+ * @brief Manages the temporary suppression ("squelching") of validators.
+ *
+ * @details This class provides a mechanism to temporarily ignore messages from
+ * specific validators for a defined duration. It tracks which
+ * validators are currently squelched and handles the
+ * expiration of the squelch period. The use of an
+ * abstract clock allows for deterministic testing of time-based
+ * squelch logic.
  */
 class SquelchStore
 {
@@ -46,11 +54,19 @@ public:
     }
     virtual ~SquelchStore() = default;
 
-    /** Handle a squelch request.
-     * @param validator The validator's public key.
-     * @param squelch Indicate if the validator should be squelched.
-     * @param duration Duration in seconds for how long to squelch the
-     * validator. Duration can be zero when squelch is false.
+    /**
+     * @brief Manages the squelch status of a validator.
+     *
+     * @details This function acts as the primary public interface for
+     * controlling a validator's squelch state. Based on the `squelch` flag, it
+     * either adds a new squelch entry for the specified duration or removes an
+     * existing one.
+     *
+     * @param validator The public key of the validator to manage.
+     * @param squelch If `true`, the validator will be squelched. If `false`,
+     * any existing squelch will be removed.
+     * @param duration The duration in seconds for the squelch. This value is
+     * only used when `squelch` is `true`.
      */
     void
     handleSquelch(
@@ -58,33 +74,66 @@ public:
         bool squelch,
         std::chrono::seconds duration);
 
-    /** Check if a given validator is squelched. If the validator is no longer
-     * squelched, clear the squelch entry.
-     * @param validator Validator's public key
-     * @return true if squelch exists and it is not expired. False otherwise.
+    /**
+     * @brief Checks if a validator is currently squelched, cleaning up expired
+     * entries.
+     *
+     * @details This function performs two roles: it first checks if the
+     * validator's squelch period has expired and, if so, removes the entry from
+     * the store. It then returns the current squelch status.
+     *
+     * @note Because this function has the side effect of removing expired
+     * entries, its result reflects the state *after* the potential cleanup.
+     *
+     * @param validator The public key of the validator to check.
+     * @return `true` if a non-expired squelch entry exists for the
+     * validator, `false` otherwise.
      */
     bool
     expireAndIsSquelched(PublicKey const& validator);
 
 private:
-    /** Squelch validation/proposal relaying for the validator
-     * @param validator The validator's public key
-     * @param squelchDuration Squelch duration in seconds
-     * @return false if invalid squelch duration
+    /**
+     * @brief Internal implementation to add or update a squelch entry.
+     *
+     * @details Calculates the expiration time point by adding the duration to
+     * the current time and inserts or overwrites the entry for the validator in
+     * the `squelched_` map.
+     *
+     * @param validator The public key of the validator to squelch.
+     * @param squelchDuration The duration for which the validator should be
+     * squelched.
      */
     void
     add(PublicKey const& validator,
         std::chrono::seconds const& squelchDuration);
 
-    /** Remove the squelch for a validator
-     * @param validator The validator's public key
+    /**
+     * @brief Internal implementation to remove a squelch entry.
+     *
+     * @details Erases the squelch entry for the given validator from the
+     * `squelched_` map, effectively unsquelching it.
+     *
+     * @param validator The public key of the validator to unsquelch.
      */
     void
     remove(PublicKey const& validator);
 
-    // holds a squelch expiration time_point for each validator
+    /**
+     * @brief The core data structure mapping a validator's public key to the
+     * time point when their squelch expires.
+     */
     hash_map<PublicKey, time_point> squelched_;
+
+    /**
+     * @brief The logging interface used by this store.
+     */
     beast::Journal const journal_;
+
+    /**
+     * @brief A reference to the clock used for all time-based operations,
+     * allowing for deterministic testing via dependency injection.
+     */
     clock_type& clock_;
 };
 
