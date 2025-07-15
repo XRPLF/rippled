@@ -58,7 +58,7 @@ isMPTAllowed(
     auto const flags = issuanceSle->getFlags();
 
     if (flags & lsfMPTLocked)
-        return tecNO_PERMISSION;
+        return tecLOCKED;
     // Offer crossing and Payment
     if ((flags & lsfMPTCanTrade) == 0 && isDEX)
         return tecNO_PERMISSION;
