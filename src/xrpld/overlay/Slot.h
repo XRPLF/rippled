@@ -119,14 +119,22 @@ public:
 };
 
 /**
- * Slot is associated with a specific validator via validator's public key.
- * Slot counts messages from a validator, selects peers to be the source
- * of the messages, and communicates the peers to be squelched. Slot can be
- * in the following states: 1) Counting. This is the peer selection state
- * when Slot counts the messages and selects the peers; 2) Selected. Slot
- * doesn't count messages in Selected state. A message received from
- * unsquelched, disconnected peer, or idling peer may transition Slot to
- * Counting state.
+ * @brief Manages the set of peers relaying messages for a single validator.
+ *
+ * @details A Slot represents a single validator and tracks all peers that
+ * forward messages from that validator. It implements a state machine to
+ * observe peer behavior, with the goal of selecting a small, optimal set of
+ * peers to serve as the primary source for that validator's messages.
+ *
+ * The class operates in two main states:
+ * - **Counting**: It gathers statistics on message delivery from all peers.
+ * - **Selected**: After sufficient data is gathered, it selects a small
+ * number of the best-performing peers and "squelches" (temporarily
+ * suppresses) the rest to reduce redundant traffic.
+ *
+ * The Slot dynamically handles peer disconnections and idleness, resetting
+ * its state as needed to maintain a reliable set of message sources.
+ * Instances of this class are created and managed by the `Slots` class.
  */
 class Slot final
 {
@@ -148,8 +156,7 @@ public:
         std::size_t timesSelected;  // number of times the peer was selected
     };
 
-    /** Get all peers of the slot.
-     */
+    /** Get all peers of the slot. */
     std::unordered_map<Peer::id_t, PeerInfo> const&
     getPeers() const
     {
@@ -189,22 +196,39 @@ private:
     {
     }
 
-    /** Update peer info. If the message is from a new
-     * peer or from a previously expired squelched peer then switch
-     * the peer's and slot's state to Counting. If time of last
-     * selection round is > 2 * MAX_UNSQUELCH_EXPIRE_DEFAULT then switch the
-     * slot's state to Counting. If the number of messages for the peer is >
-     * MIN_MESSAGE_THRESHOLD then add peer to considered peers pool. If the
-     * number of considered peers who reached MAX_MESSAGE_THRESHOLD is
-     * maxSelectedPeers_ then randomly select maxSelectedPeers_ from
-     * considered peers, and call squelch handler for each peer, which is
-     * not selected and not already in Squelched state. Set the state for
-     * those peers to Squelched and reset the count of all peers. Set slot's
-     * state to Selected. Message count is not updated when the slot is in
-     * Selected state.
-     * @param validator Public key of the source validator
-     * @param id Peer id which received the message
-     * @param callback A callback to report ignored squelches
+    /**
+     * @brief Processes a message from a peer and updates the slot's state.
+     *
+     * @details This is the core logic method for the Slot. It is called each
+     * time a message from the validator is received via a peer. The function
+     * manages the lifecycle of the slot and its peers, transitioning between
+     * counting messages and selecting the best peers.
+     *
+     * The logic proceeds as follows:
+     * 1. Peer Initialization: If the message is from a new peer, or a peer
+     * whose squelch has expired, the peer is initialized in the `Counting`
+     * state. If this action occurs, the entire slot may be reset to
+     * `Counting`.
+     * 2. Message Counting: If the slot is in the `Counting` state, the
+     * message count for the reporting peer is incremented.
+     * 3. Peer Consideration: Once a peer's message count exceeds
+     * `MIN_MESSAGE_THRESHOLD`, it is added to a pool of `considered` peers.
+     * 4. Selection Trigger: When the number of peers reaching
+     * `MAX_MESSAGE_THRESHOLD` equals `maxSelectedPeers_`, the selection
+     * process is triggered:
+     * - A random subset of `maxSelectedPeers_` is chosen from the
+     * `considered` pool.
+     * - All other `considered` peers that were not selected are squelched
+     * via the `SquelchHandler`.
+     * - The slot's state transitions to `Selected`.
+     * - All peer message counts are reset for the next counting round.
+     * 5. Selected State: While the slot is in the `Selected` state,
+     * message counts are not updated.
+     *
+     * @param validator The public key of the validator this slot represents.
+     * @param id The ID of the peer that relayed the message.
+     * @param callback A function to call if a squelch action is intentionally
+     * ignored during the process.
      */
     void
     update(
@@ -212,16 +236,28 @@ private:
         Peer::id_t id,
         ignored_squelch_callback callback);
 
-    /** Handle peer deletion when a peer disconnects.
-     * If the peer is in Selected state then
-     * call unsquelch handler for every peer in squelched state and reset
-     * every peer's state to Counting. Switch Slot's state to Counting.
-     * @param validator Public key of the source validator
-     * @param id Deleted peer id
-     * @param erase If true then erase the peer. The peer is not erased
-     *      when the peer when is idled. The peer is deleted when it
-     *      disconnects
+    /**
+     * @brief Handles the removal of a peer from the slot.
+     *
+     * @details This function is called when a peer disconnects or is
+     * temporarily idled. Its primary role is to clean up the peer's state and
+     * ensure the slot remains in a consistent state.
+     *
+     * A critical side-effect occurs if the slot is in the `Selected` state
+     * when a peer is removed: the disconnection invalidates the previous
+     * selection round. In this case, the function will:
+     * 1. Unsquelch all currently squelched peers in the slot.
+     * 2. Reset the state of all remaining peers to `Counting`.
+     * 3. Switch the slot's overall state back to `Counting` to begin a
+     * new evaluation round.
+     *
+     * @param validator The public key of the validator this slot represents.
+     * @param id The ID of the peer to be removed.
+     * @param erase If `true`, the peer's data is permanently erased from the
+     * slot (on disconnect). If `false`, the peer is simply marked
+     * as inactive and its data is reset.
      */
+
     void
     deletePeer(PublicKey const& validator, Peer::id_t id, bool erase);
 
@@ -232,19 +268,50 @@ private:
         return lastSelected_;
     }
 
-    /** Check if peers stopped relaying messages. If a peer is
-     * selected peer then call unsquelch handler for all
-     * currently squelched peers and switch the slot to
-     * Counting state.
-     * @param validator Public key of the source validator
+    /**
+     * @brief Scans for and handles peers that have stopped relaying messages.
+     *
+     * @details This function is a maintenance routine that identifies inactive
+     * peers by checking if they have been silent for a significant period.
+     *
+     * The most critical case this function handles is when one of the currently
+     * `Selected` peers becomes idle. This indicates a potential interruption in
+     * message flow from the validator. To ensure reliability, this condition
+     * triggers a full reset of the slot:
+     * 1. The `unsquelch` handler is called for all currently squelched peers.
+     * 2. The slot's state is switched back to `Counting` to start a new
+     * peer evaluation and selection round.
+     *
+     * The idle peer itself is then removed from the slot's tracking.
+     *
+     * @param validator The public key of the validator this slot represents,
+     * used for logging and context.
      */
     void
     deleteIdlePeer(PublicKey const& validator);
 
-    /** Get random squelch duration between MIN_UNSQUELCH_EXPIRE and
-     * min(max(MAX_UNSQUELCH_EXPIRE_DEFAULT, SQUELCH_PER_PEER * npeers),
-     *     MAX_UNSQUELCH_EXPIRE_PEERS)
-     * @param npeers number of peers that can be squelched in the Slot
+    /**
+     * @brief Calculates an appropriate, randomized squelch duration.
+     *
+     * @details The squelch duration is designed to prevent message
+     * flood that could occur if many peers were unsquelched simultaneously.
+     * The duration is a random value calculated within a dynamic range:
+     *
+     * - Lower Bound: A fixed minimum (`MIN_UNSQUELCH_EXPIRE`).
+     * - Upper Bound: This is calculated adaptively:
+     * - It starts at a default value (`MAX_UNSQUELCH_EXPIRE_DEFAULT`).
+     * - It increases proportionally with the number of peers being
+     * squelched (`SQUELCH_PER_PEER * npeers`).
+     * - It is capped by an absolute maximum (`MAX_UNSQUELCH_EXPIRE_PEERS`)
+     * to prevent excessively long squelch times.
+     *
+     * This ensures that squelch times are longer when more peers are involved,
+     * staggering their return to an active state.
+     *
+     * @param npeers The number of peers that are candidates for being
+     * squelched.
+     * @return A randomized `std::chrono::seconds` duration within the
+     * calculated range.
      */
     std::chrono::seconds
     getSquelchDuration(std::size_t npeers) const;
@@ -260,36 +327,60 @@ private:
     void
     onWrite(beast::PropertyStream::Map& stream) const;
 
-    std::unordered_map<Peer::id_t, PeerInfo> peers_;  // peer's data
+    // Holds state information for each peer tracked by this slot.
+    std::unordered_map<Peer::id_t, PeerInfo> peers_;
 
-    // pool of peers considered as the source of messages
-    // from validator - peers that reached MIN_MESSAGE_THRESHOLD
+    // A pool of peers that have passed the minimum message threshold and are
+    // candidates for selection.
     std::unordered_set<Peer::id_t> considered_;
 
-    // number of peers that reached MAX_MESSAGE_THRESHOLD
+    // A counter of peers that have reached the max message threshold.
     std::uint16_t reachedThreshold_;
 
-    // last time peers were selected, used to age the slot
+    // The timestamp of the last peer selection, used to determine when the
+    // current selection has become stale.
     time_point lastSelected_;
 
-    SlotState state_;                // slot's state
-    SquelchHandler const& handler_;  // squelch/unsquelch handler
-    beast::Journal const journal_;   // logging
+    // The current state of the slot.
+    SlotState state_;
 
-    // the maximum number of peers that should be selected as a validator
-    // message source
+    // A reference to an external handler that executes squelch/unsquelch
+    // operations on peers.
+    SquelchHandler const& handler_;
+
+    // The logging interface used by this slot.
+    beast::Journal const journal_;
+
+    // The number of peers to select as a message sources during a selection
+    // round.
     uint16_t const maxSelectedPeers_;
 
-    // indicate if the slot is for a trusted validator
+    // A flag indicating if the validator for this slot is trusted.
     bool const isTrusted_;
 
+    // A reference to the clock used for all time-based operations, allowing
+    // for deterministic testing.
     clock_type& clock_;
 };
 
-/** Slots is a container for validator's Slot and handles Slot update
- * when a message is received from a validator. It also handles Slot aging
- * and checks for peers which are disconnected or stopped relaying the
- * messages.
+/**
+ * @brief A container that manages `Slot` instances for all validators.
+ *
+ * @details This class acts as the central orchestrator for the validator
+ * message squelching feature. It maintains two distinct collections of
+ * `Slot` objects: one for trusted validators and one for untrusted
+ * validators.
+ *
+ * Its primary responsibilities include:
+ * - Slot Lifecycle: Creating, updating, and destroying `Slot` instances
+ * as validators become active or inactive.
+ * - Message Dispatching: Receiving notifications of new messages and
+ * dispatching them to the appropriate `Slot` for processing.
+ * - Peer Management: Handling peer connection and disconnection events
+ * at a global level and propagating these changes to all relevant slots.
+ * - Maintenance: Clean up of idle peers and stale slots.
+ * - Feature Toggling: Checking if the base and enhanced squelching
+ * features are enabled and ready for use.
  */
 class Slots
 {
@@ -310,10 +401,18 @@ public:
     using slots_map = hash_map<PublicKey, Slot>;
 
     /**
-     * @param logs reference to the logger
-     * @param handler Squelch/unsquelch implementation
-     * @param config reference to the global config
-     * @param clock a reference to a steady clock
+     * @brief Constructor.
+     *
+     * @param logs A reference to the logger, used to create a dedicated journal
+     * for this class.
+     * @param handler A reference to the squelch handler implementation that
+     * will be used to squelch or unsquelch peers.
+     * @param config A reference to the configuration, used to
+     * determine if squelching features are enabled and to set
+     * operational parameters like the number of selected peers.
+     * @param clock A reference to a clock, used for all time-sensitive
+     * operations, including aging out old data and managing
+     * squelch durations.
      */
     Slots(
         Logs& logs,
@@ -335,29 +434,63 @@ public:
 
     ~Slots() = default;
 
-    /** Check if base squelching feature is enabled and ready */
+    /**
+     * @brief Checks if the base message relay reduction feature is active.
+     *
+     * @details The feature is considered active only if it is both enabled in
+     * the configuration and the initial boot-up delay (`reduceRelayReady`) has
+     * passed.
+     *
+     * @return `true` if base squelching can be performed.
+     */
     bool
     baseSquelchReady()
     {
         return baseSquelchEnabled_ && reduceRelayReady();
     }
 
-    /** Check if enhanced squelching feature is enabled and ready */
+    /**
+     * @brief Checks if the enhanced message relay reduction feature is active.
+     *
+     * @details The feature is considered active only if it is both enabled in
+     * the configuration and the initial boot-up delay (`reduceRelayReady`) has
+     * passed.
+     *
+     * @return `true` if enhanced squelching can be performed.
+     */
     bool
     enhancedSquelchReady()
     {
         return enhancedSquelchEnabled_ && reduceRelayReady();
     }
 
-    /** Check if reduce_relay::WAIT_ON_BOOTUP time passed since startup */
+    /**
+     * @brief Determines if the initial boot-up delay for relay reduction has
+     * passed.
+     *
+     * @details This function acts as a safety mechanism to prevent squelching
+     * peers immediately on server startup, allowing time for the node to
+     * establish a stable view of the network.
+     *
+     * @return `true` if the `reduce_relay::WAIT_ON_BOOTUP` duration has
+     * elapsed.
+     */
     bool
     reduceRelayReady();
 
-    /** Updates untrusted validator slot. Do not call for trusted
-     * validators. The caller must ensure passed messages are unique.
-     * @param key Message hash
-     * @param validator Validator public key
-     * @param id The ID of the peer that sent the message
+    /**
+     * @brief Processes a message from an untrusted validator with a no-op
+     * callback.
+     *
+     * @details This is a convenience overload that calls the main
+     * `updateUntrustedValidatorSlot` function with a default, empty callback.
+     *
+     * @note This should only be called for untrusted validators. The caller is
+     * responsible for ensuring message uniqueness.
+     *
+     * @param key The unique hash of the message.
+     * @param validator The public key of the untrusted validator.
+     * @param id The ID of the peer that relayed the message.
      */
     void
     updateUntrustedValidatorSlot(
@@ -368,12 +501,37 @@ public:
         updateUntrustedValidatorSlot(key, validator, id, []() {});
     }
 
-    /** Updates untrusted validator slot. Do not call for trusted
-     * validators. The caller must ensure passed messages are unique.
-     * @param key Message hash
-     * @param validator Validator public key
-     * @param id The ID of the peer that sent the message
-     * @param callback A callback to report ignored validations
+    /**
+     * @brief Manages slot admission and squelching for untrusted validators.
+     *
+     * @details This function acts as the gatekeeper for untrusted validators,
+     * deciding whether to grant them one of the limited available monitoring
+     * slots, squelch them, or ignore their messages. The logic proceeds
+     * through a series of checks:
+     *
+     * 1. Ignore if Already Selected: If the validator already has an
+     * active slot, it's in the `Selected` state, and this message is ignored.
+     * 2. Re-Squelch if Globally Squelched: If the validator is known to be
+     * squelched but a message is received from a peer, it implies the
+     * peer may have missed the original request. The function re-sends a
+     * squelch command to that specific peer.
+     * 3. Squelch if at Capacity: If all untrusted slots are full, the
+     * function squelches the new validator across all peers to prevent it
+     * from propagating further.
+     * 4. Consider for a New Slot: If the validator passes all checks and
+     * there is capacity, it is added to a pool of "considered"
+     * validators. Once it meets certain criteria (managed by
+     * `updateConsideredValidator`), a new slot is created for it, and it
+     * begins the standard counting/selection process.
+     *
+     * @note This should only be called for untrusted validators. The caller is
+     * responsible for ensuring that each message is unique per peer.
+     *
+     * @param key The unique hash of the message.
+     * @param validator The public key of the untrusted validator.
+     * @param id The ID of the peer that relayed the message.
+     * @param callback A function to call if the slot intentionally ignores a
+     * squelch action (not used in this specific logic path).
      */
     void
     updateUntrustedValidatorSlot(
@@ -400,13 +558,33 @@ public:
         updateSlotAndSquelch(key, validator, id, []() {}, isTrusted);
     }
 
-    /** Calls Slot::update of Slot associated with the validator.
-     * @param key Message's hash
-     * @param validator Validator's public key
-     * @param id Peer's id which received the message
-     * @param callback A callback to report ignored validations
-     * @param isTrusted Boolean to indicate if the message is from a trusted
-     * validator
+    /**
+     * @brief Processes a message and updates the corresponding validator slot.
+     *
+     * @details This function acts as a dispatcher, routing a received message
+     * to the appropriate validator slot for processing. It first ensures the
+     * message is not a duplicate from the same peer. The subsequent logic
+     * depends on the validator's trust status and the currently enabled
+     * squelching mode.
+     *
+     * - For Trusted Validators (or when Enhanced Squelching is disabled):
+     * The function will find or create a slot for the validator in the
+     * appropriate map (`trustedSlots_` or `untrustedSlots_`). It then calls
+     * the slot's `update` method to count the message, which contributes to
+     * the peer selection process.
+     *
+     * - For Untrusted Validators (when Enhanced Squelching is enabled):
+     * The function only acts if a slot has already been explicitly allocated
+     * for the validator. If no slot exists (i.e., the validator is not one
+     * of the actively monitored untrusted validators), the message is ignored,
+     * as another process is responsible for managing and squelching it.
+     *
+     * @param key The unique hash of the message, used for deduplication.
+     * @param validator The public key of the validator.
+     * @param id The ID of the peer that relayed the message.
+     * @param callback A function to call if the slot intentionally ignores a
+     * squelch action.
+     * @param isTrusted `true` if the message is from a trusted validator.
      */
     void
     updateSlotAndSquelch(
@@ -416,23 +594,66 @@ public:
         typename Slot::ignored_squelch_callback callback,
         bool isTrusted);
 
-    /** Squelch untrusted validator for all peers, and if it has an assigned
-     * slot, release it.
-     * @param validatorKey Validator public key
+    /**
+     * @brief Forcefully squelches an untrusted validator and removes it from
+     * active monitoring.
+     *
+     * @details This function takes immediate action to stop all message flow
+     * from a specific untrusted validator. It performs two key operations in
+     * order:
+     * 1. It first broadcasts a squelch command to all connected peers via the
+     * `SquelchHandler`, ensuring suppression before altering internal state.
+     * 2. It then removes the validator from any internal tracking, both from
+     * the pool of candidates (`consideredValidators_`) and from the map of
+     * active monitoring slots (`untrustedSlots_`), if present.
+     *
+     * This ensures the validator is completely silenced and will not be
+     * reconsidered for a slot until it expires from the various squelch lists.
+     *
+     * @param validator The public key of the untrusted validator to squelch.
      */
     void
     squelchUntrustedValidator(PublicKey const& validatorKey);
 
-    /** Check if peers stopped relaying messages
-     * and if slots stopped receiving messages from the validator.
+    /**
+     * @brief Performs cleanup of idle peers, stale slots, and unviable
+     * validator candidates.
+     *
+     * @details This function is responsible for the health of the entire slot
+     * system. It executes three distinct cleanup phases:
+     *
+     * 1. Delegated Peer Cleanup: It iterates through every active slot
+     * (both trusted and untrusted) and calls `Slot::deleteIdlePeer`. This
+     * allows each slot to manage its own set of peers that have stopped
+     * relaying messages.
+     *
+     * 2. Stale Slot Removal: It then identifies and removes entire slots
+     * that have become stale. A slot is considered stale if it has been too
+     * long since its last peer selection, or if it's an untrusted slot that no
+     * longer has enough participating peers. When an untrusted validator's
+     * slot is removed for staleness, the validator is globally squelched to
+     * prevent it from immediately re-entering the selection process.
+     *
+     * 3. Candidate Pool Pruning: Finally, it cleans the pool of untrusted
+     * validators being considered for new slots. Any validator that no
+     * longer meets the criteria to be a candidate is removed and globally
+     * squelched.
      */
     void
     deleteIdlePeers();
-    /** Called when a peer is deleted. If the peer was selected to be the
-     * source of messages from the validator then squelched peers have to be
-     * unsquelched.
-     * @param id Peer's id
-     * @param erase If true then erase the peer
+
+    /**
+     * @brief Propagates a peer deletion event to all active slots.
+     *
+     * @details The function iterates through both the trusted and untrusted
+     * slot collections and delegates the actual cleanup logic to the
+     * `deletePeer` method of each individual slot. This allows each slot to
+     * correctly update its internal state, which is especially critical if the
+     * removed peer was one of its selected message sources.
+     *
+     * @param id The ID of the peer that has been deleted.
+     * @param erase If `true`, instructs the slot to permanently erase the
+     * peer's data.
      */
     void
     deletePeer(Peer::id_t id, bool erase);
@@ -441,98 +662,213 @@ public:
     onWrite(beast::PropertyStream::Map& stream) const;
 
 protected:
-    /** Add message/peer if have not seen this message
-     * from the peer. A message is aged after IDLED seconds.
-     * Return true if added */
+    /**
+     * @brief Records a message from a peer and checks for duplicates.
+     *
+     * @details This function serves as a deduplication filter to prevent
+     * processing the same message from the same peer multiple times. It
+     * maintains an aged map (`peersWithMessage_`) that tracks which peers have
+     * relayed which messages.
+     *
+     * Before performing its check, it first expires any old message records
+     * from its cache. It then determines if the given message `key` has already
+     * been recorded from the specific peer `id`.
+     *
+     * @param key The unique hash of the message.
+     * @param id The ID of the peer that relayed the message.
+     * @return `false` if this exact message has already been received from this
+     * exact peer. Returns `true` in all other cases (e.g., a new
+     * message, or a new peer for an existing message), indicating the
+     * message should be processed further.
+     */
     bool
     addPeerMessage(uint256 const& key, Peer::id_t id);
 
     /**
-     * Updates the last message sent from a validator.
-     * @param validator The validator public key
-     * @param peer The peer ID sending the message
-     * @return true if the validator was updated, false otherwise
+     * @brief Tracks and evaluates an untrusted validator to see if it qualifies
+     * for a slot.
+     *
+     * @details This function manages a pool of untrusted validators that are
+     * candidates for being assigned a full slot. When a message from a new
+     * validator is seen, it's added to the pool. For existing candidates, it
+     * increments their message count and tracks the peers relaying their
+     * messages.
+     *
+     * A validator "graduates" from this consideration pool once its message
+     * count reaches `reduce_relay::MAX_MESSAGE_THRESHOLD`. Upon graduation,
+     * it is removed from the pool and its public key is returned to the
+     * caller, signaling that it is now eligible to be assigned a `Slot`.
+     *
+     * @param validator The public key of the validator being considered.
+     * @param peer The ID of the peer that relayed the message from the
+     * validator.
+     * @return The validator's public key if it has met the selection criteria,
+     * otherwise `std::nullopt`.
      */
     std::optional<PublicKey>
     updateConsideredValidator(PublicKey const& validator, Peer::id_t peer);
 
-    /** Remove all validators that have become invalid due to selection
-     * criteria
-     * @return zero or more validators that have been removed.
+    /**
+     * @brief Prunes the pool of untrusted validators being considered for
+     * slots.
+     *
+     * @details This function iterates through the candidates in the
+     * `consideredValidators_` pool and performs cleanup based on how long
+     * they have been inactive.
+     *
+     * - If a validator has been idle for a short duration (greater than
+     * `PEER_IDLED`), its progress is reset, giving it a chance to be
+     * reconsidered without being fully removed.
+     *
+     * - If a validator has been idle for a prolonged duration (greater than
+     * `MAX_UNTRUSTED_VALIDATOR_IDLE`), it is deemed stale, removed from the
+     * consideration pool, and its public key is returned.
+     *
+     * @return A vector of public keys for validators that were removed due to
+     * prolonged inactivity and should now be globally squelched.
      */
     std::vector<PublicKey>
     cleanConsideredValidators();
 
-    /** Expires old validators and checks whether a given validator is
-     * squelched.
-     * @param validatorKey Validator public key
-     * @return true if a given validator was squelched
+    /**
+     * @brief Checks if a validator is currently squelched for any peer.
+     *
+     * @details This function first purges any squelch records that have aged
+     * past the default expiration time. It then checks if there are any
+     * remaining squelch records associated with the given validator.
+     *
+     * @param validatorKey The public key of the validator to check.
+     * @return `true` if the validator is still squelched for at least one
+     * peer, `false` otherwise.
      */
     bool
     expireAndIsValidatorSquelched(PublicKey const& validatorKey);
 
-    /** Expires old validators and checks whether a given peer was recently
-     * squelched for a given validator.
-     * @param validatorKey Validator public key
-     * @param peerID Peer id
-     * @return true if a given validator was squelched for a given peer
+    /**
+     * @brief Checks if a specific peer is currently squelched for a validator.
+     *
+     * @details This function first purges any squelch records that have aged
+     * past the default expiration time. It then performs a targeted check to
+     * see if a squelch record exists for the specific validator/peer pair.
+     *
+     * @param validatorKey The public key of the validator.
+     * @param peerID The ID of the peer to check.
+     * @return `true` if the specified peer is currently squelched for the
+     * given validator, `false` otherwise.
      */
     bool
     expireAndIsPeerSquelched(PublicKey const& validatorKey, Peer::id_t peerID);
 
-    /** Called to register that a given validator was squelched for a given
-     * peer. It is expected that this method is called by SquelchHandler.
+    /**
+     * @brief Records that a specific peer has been squelched for a validator.
      *
-     * @param validatorKey Validator public key
-     * @param peerID peer ID
+     * @details This function is typically called by the `SquelchHandler` to
+     * update the central tracking map (`peersWithSquelchedValidators_`). It
+     * creates a record indicating that a particular peer should not relay
+     * messages from the specified validator.
+     *
+     * @param validatorKey The public key of the validator being squelched.
+     * @param peerID The ID of the peer for which the squelch applies.
      */
     void
     registerSquelchedValidator(
         PublicKey const& validatorKey,
         Peer::id_t peerID);
 
+    /**
+     * @brief A flag indicating if the initial boot-up delay has passed.
+     * @details This is used as a safety mechanism to prevent squelching peers
+     * immediately on server startup, allowing time for the node to
+     * establish a stable view of the network.
+     */
     std::atomic_bool reduceRelayReady_{false};
 
-    // Maintain an open number of slots for trusted validators to reduce
-    // duplicate traffic from trusted validators.
+    /**
+     * @brief A map holding the active monitoring slots for trusted validators.
+     * @details Each `Slot` in this map manages the peers for a single trusted
+     * validator. There is no limit to the number of trusted slots.
+     */
     slots_map trustedSlots_;
 
-    // Maintain slots for untrusted validators to reduce duplicate traffic from
-    // untrusted validators. If enhanced squelching is enabled, the number of
-    // untrustedSlots_ is capped at reduce_relay::MAX_UNTRUSTED_SLOTS.
-    // Otherwise, there is no limit.
+    /**
+     * @brief A map holding the active monitoring slots for untrusted
+     * validators.
+     * @details When enhanced squelching is enabled, this map is capped at a
+     * fixed size (`reduce_relay::MAX_UNTRUSTED_SLOTS`). Validators must
+     * qualify through the `consideredValidators_` pool to be granted a slot.
+     */
     slots_map untrustedSlots_;
 
-    SquelchHandler& handler_;  // squelch/unsquelch handler
+    /**
+     * @brief A reference to the handler that executes squelch/unsquelch
+     * commands.
+     */
+    SquelchHandler& handler_;
+
+    /**
+     * @brief A reference to the application's logging infrastructure.
+     */
     Logs& logs_;
+
+    /**
+     * @brief A dedicated journal for logging events specific to the Slots
+     * class.
+     */
     beast::Journal const journal_;
 
+    /**
+     * @brief A configuration flag that enables the base message squelching
+     * feature.
+     */
     bool const baseSquelchEnabled_;
+
+    /**
+     * @brief The target number of peers to select as primary sources in each
+     * slot.
+     */
     uint16_t const maxSelectedPeers_;
+
+    /**
+     * @brief A configuration flag that enables the enhanced squelching feature,
+     * which includes limiting the number of untrusted slots.
+     */
     bool const enhancedSquelchEnabled_;
 
+    /**
+     * @brief A reference to the clock used for all time-based operations.
+     */
     clock_type& clock_;
 
-    // Maintain aged container of message/peers. This is required
-    // to discard duplicate message from the same peer. A message
-    // is aged after IDLED seconds. A message received IDLED seconds
-    // after it was relayed is ignored by PeerImp.
+    /**
+     * @brief An aged cache to track recently seen messages for deduplication.
+     * @details This prevents processing the same message from the same peer
+     * more than once within a short time frame.
+     */
     messages peersWithMessage_;
 
-    // Maintain aged container of validator/peers. This is used to track
-    // which validator/peer were squelced. A peer that whose squelch
-    // has expired is removed.
+    /**
+     * @brief An aged cache that tracks which peers are actively squelched for
+     * which validators.
+     * @details This serves as the central record for active squelches, which is
+     * checked before processing messages and cleaned periodically.
+     */
     validators peersWithSquelchedValidators_;
 
+    /**
+     * @brief A temporary data structure holding statistics for a validator
+     * being considered for an untrusted slot.
+     */
     struct ValidatorInfo
     {
-        // the number of messages sent from this validator
+        // The number of messages received from this validator.
         size_t count;
-        // timestamp of the last message
+        // The timestamp of the last message received.
         time_point lastMessage;
-        // a list of peer IDs that sent a message for this validator
+        // The set of unique peers that have relayed messages for this
+        // validator.
         std::unordered_set<Peer::id_t> peers;
 
+        // Resets the validator's progress.
         void
         reset()
         {
@@ -541,7 +877,13 @@ protected:
         }
     };
 
-    // Untrusted validators considered for open untrusted slots
+    /**
+     * @brief A pool of untrusted validators that are candidates for a full
+     * slot.
+     * @details Before an untrusted validator is allocated one of the limited
+     * `untrustedSlots_`, it is monitored here until it meets the criteria
+     * for graduation (e.g., message count).
+     */
     hash_map<PublicKey, ValidatorInfo> consideredValidators_;
 };
 
