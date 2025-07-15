@@ -175,6 +175,29 @@ isFrozen(
         asset.value());
 }
 
+[[nodiscard]] inline TER
+checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return isFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue)
+{
+    return isFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) { return checkFrozen(view, account, issue); },
+        asset.value());
+}
+
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
