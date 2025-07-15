@@ -2348,17 +2348,6 @@ struct Escrow_test : public beast::unit_test::suite
 
         // TODO: create wasm module for all host functions
         static auto wasmHex = keyletHostFunctions;
-        //        let sender = get_tx_account_id();
-        //        let owner = get_current_escrow_account_id();
-        //        let dest = get_current_escrow_destination();
-        //        let dest_balance = get_account_balance(dest);
-        //        let escrow_data = get_current_escrow_data();
-        //        let ed_str = String::from_utf8(escrow_data).unwrap();
-        //        let threshold_balance = ed_str.parse::<u64>().unwrap();
-        //        let pl_time = host_lib::getParentLedgerTime();
-        //        let e_time = get_current_escrow_finish_after();
-        //        sender == owner && dest_balance <= threshold_balance &&
-        //        pl_time >= e_time
 
         Account const alice{"alice"};
         Account const carol{"carol"};

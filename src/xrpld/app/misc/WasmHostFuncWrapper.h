@@ -162,17 +162,6 @@ computeSha512HalfHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-#define ACCOUNT_PARAM uint8_t const*, int32_t
-#define UINT32_PARAM int32_t
-#define CURRENCY_PARAM uint8_t const*, int32_t
-#define BLOB_PARAM uint8_t const*, int32_t
-#define RETURN_PARAM uint8_t*, int32_t
-
-#define FUNCTION_DEF(FUNC, ...)                              \
-    using FUNC##_proto = int32_t(__VA_ARGS__, RETURN_PARAM); \
-    wasm_trap_t* FUNC##_wrap(                                \
-        void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-
 using accountKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 accountKeylet_wrap(
