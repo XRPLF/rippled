@@ -29,86 +29,59 @@
 
 namespace ripple {
 
-static std::vector<WasmImportFunc>
-createImports(HostFunctions* hfs)
+std::vector<WasmImportFunc>
+createWasmImport(HostFunctions* hfs)
 {
-    std::vector<WasmImportFunc> imports;
+    std::vector<WasmImportFunc> i;
 
     if (hfs)
     {
-        // TODO: remove after escrow_test wasm module will be updated
-        WASM_IMPORT_FUNC2(imports, getLedgerSqnOld, "getLedgerSqn", hfs);
+        // clang-format off
 
-        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", hfs);
-        WASM_IMPORT_FUNC2(
-            imports, getParentLedgerTime, "get_parent_ledger_time", hfs);
-        WASM_IMPORT_FUNC2(
-            imports, getParentLedgerHash, "get_parent_ledger_hash", hfs);
-        WASM_IMPORT_FUNC2(imports, cacheLedgerObj, "cache_ledger_obj", hfs);
-        WASM_IMPORT_FUNC2(imports, getTxField, "get_tx_field", hfs);
-        WASM_IMPORT_FUNC2(
-            imports,
-            getCurrentLedgerObjField,
-            "get_current_ledger_obj_field",
-            hfs);
-        WASM_IMPORT_FUNC2(
-            imports, getLedgerObjField, "get_ledger_obj_field", hfs);
-        WASM_IMPORT_FUNC2(
-            imports, getTxNestedField, "get_tx_nested_field", hfs);
-        WASM_IMPORT_FUNC2(
-            imports,
-            getCurrentLedgerObjNestedField,
-            "get_current_ledger_obj_nested_field",
-            hfs);
-        WASM_IMPORT_FUNC2(
-            imports,
-            getLedgerObjNestedField,
-            "get_ledger_obj_nested_field",
-            hfs);
-        WASM_IMPORT_FUNC2(imports, getTxArrayLen, "get_tx_array_len", hfs);
-        WASM_IMPORT_FUNC2(
-            imports,
-            getCurrentLedgerObjArrayLen,
-            "get_current_ledger_obj_array_len",
-            hfs);
-        WASM_IMPORT_FUNC2(
-            imports, getLedgerObjArrayLen, "get_ledger_obj_array_len", hfs);
-        WASM_IMPORT_FUNC2(
-            imports, getTxNestedArrayLen, "get_tx_nested_array_len", hfs);
-        WASM_IMPORT_FUNC2(
-            imports,
-            getCurrentLedgerObjNestedArrayLen,
-            "get_current_ledger_obj_nested_array_len",
-            hfs);
-        WASM_IMPORT_FUNC2(
-            imports,
-            getLedgerObjNestedArrayLen,
-            "get_ledger_obj_nested_array_len",
-            hfs);
-        WASM_IMPORT_FUNC2(imports, updateData, "update_data", hfs);
-        WASM_IMPORT_FUNC2(
-            imports, computeSha512HalfHash, "compute_sha512_half", hfs);
-        WASM_IMPORT_FUNC2(imports, accountKeylet, "account_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, checkKeylet, "check_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, credentialKeylet, "credential_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, delegateKeylet, "delegate_keylet", hfs);
-        WASM_IMPORT_FUNC2(
-            imports, depositPreauthKeylet, "deposit_preauth_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, didKeylet, "did_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, escrowKeylet, "escrow_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, lineKeylet, "line_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, nftOfferKeylet, "nft_offer_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, offerKeylet, "offer_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, oracleKeylet, "oracle_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, paychanKeylet, "paychan_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, signersKeylet, "signers_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, ticketKeylet, "ticket_keylet", hfs);
-        WASM_IMPORT_FUNC2(imports, getNFT, "get_NFT", hfs);
-        WASM_IMPORT_FUNC(imports, trace, hfs);
-        WASM_IMPORT_FUNC2(imports, traceNum, "trace_num", hfs);
+        // TODO: remove after escrow_test wasm module will be updated
+        WASM_IMPORT_FUNC2(i, getLedgerSqnOld, "getLedgerSqn", hfs,                                                  60);
+
+
+        WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
+        WASM_IMPORT_FUNC2(i, getParentLedgerTime, "get_parent_ledger_time", hfs,                                    60);
+        WASM_IMPORT_FUNC2(i, getParentLedgerHash, "get_parent_ledger_hash", hfs,                                    60);
+        WASM_IMPORT_FUNC2(i, cacheLedgerObj, "cache_ledger_obj", hfs,                                             5000);
+        WASM_IMPORT_FUNC2(i, getTxField, "get_tx_field", hfs,                                                       70);
+        WASM_IMPORT_FUNC2(i, getCurrentLedgerObjField, "get_current_ledger_obj_field", hfs,                         70);
+        WASM_IMPORT_FUNC2(i, getLedgerObjField, "get_ledger_obj_field", hfs,                                        70);
+        WASM_IMPORT_FUNC2(i, getTxNestedField, "get_tx_nested_field", hfs,                                         110);
+        WASM_IMPORT_FUNC2(i, getCurrentLedgerObjNestedField, "get_current_ledger_obj_nested_field", hfs,           110);
+        WASM_IMPORT_FUNC2(i, getLedgerObjNestedField, "get_ledger_obj_nested_field", hfs,                          110);
+        WASM_IMPORT_FUNC2(i, getTxArrayLen, "get_tx_array_len", hfs,                                                40);
+        WASM_IMPORT_FUNC2(i, getCurrentLedgerObjArrayLen, "get_current_ledger_obj_array_len", hfs,                  40);
+        WASM_IMPORT_FUNC2(i, getLedgerObjArrayLen, "get_ledger_obj_array_len", hfs,                                 40);
+        WASM_IMPORT_FUNC2(i, getTxNestedArrayLen, "get_tx_nested_array_len", hfs,                                   70);
+        WASM_IMPORT_FUNC2(i, getCurrentLedgerObjNestedArrayLen, "get_current_ledger_obj_nested_array_len",  hfs,    70);
+        WASM_IMPORT_FUNC2(i, getLedgerObjNestedArrayLen, "get_ledger_obj_nested_array_len", hfs,                    70);
+        WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs,                                                      1000);
+        WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                   2000);
+        WASM_IMPORT_FUNC2(i, accountKeylet, "account_keylet", hfs,                                                 350);
+        WASM_IMPORT_FUNC2(i, checkKeylet, "check_keylet", hfs,                                                     350);
+        WASM_IMPORT_FUNC2(i, credentialKeylet, "credential_keylet", hfs,                                           350);
+        WASM_IMPORT_FUNC2(i, delegateKeylet, "delegate_keylet", hfs,                                               350);
+        WASM_IMPORT_FUNC2(i, depositPreauthKeylet, "deposit_preauth_keylet", hfs,                                  350);
+        WASM_IMPORT_FUNC2(i, didKeylet, "did_keylet", hfs,                                                         350);
+        WASM_IMPORT_FUNC2(i, escrowKeylet, "escrow_keylet", hfs,                                                   350);
+        WASM_IMPORT_FUNC2(i, lineKeylet, "line_keylet", hfs,                                                       350);
+        WASM_IMPORT_FUNC2(i, nftOfferKeylet, "nft_offer_keylet", hfs,                                              350);
+        WASM_IMPORT_FUNC2(i, offerKeylet, "offer_keylet", hfs,                                                     350);
+        WASM_IMPORT_FUNC2(i, oracleKeylet, "oracle_keylet", hfs,                                                   350);
+        WASM_IMPORT_FUNC2(i, paychanKeylet, "paychan_keylet", hfs,                                                 350);
+        WASM_IMPORT_FUNC2(i, signersKeylet, "signers_keylet", hfs,                                                 350);
+        WASM_IMPORT_FUNC2(i, ticketKeylet, "ticket_keylet", hfs,                                                   350);
+        WASM_IMPORT_FUNC2(i, getNFT, "get_NFT", hfs,                                                              1000);
+        WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
+        WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
+
+        // clang-format on
     }
 
-    return imports;
+    return i;
 }
 
 Expected<EscrowResult, TER>
@@ -128,7 +101,7 @@ runEscrowWasm(
         wasmCode,
         funcName,
         params,
-        createImports(hfs),
+        createWasmImport(hfs),
         hfs,
         gasLimit,
         hfs ? hfs->getJournal() : j);
@@ -136,14 +109,14 @@ runEscrowWasm(
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
 
-    if (!ret.has_value())
+    if (!ret)
     {
         // std::cout << ", error: " << ret.error() << std::endl;
         return Unexpected<TER>(ret.error());
     }
 
-    // std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
-    //           << std::endl;
+    // std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost <<
+    // std::endl;
     return EscrowResult{ret->result > 0, ret->cost};
 }
 
@@ -163,7 +136,7 @@ preflightEscrowWasm(
         wasmCode,
         funcName,
         params,
-        createImports(hfs),
+        createWasmImport(hfs),
         hfs ? hfs->getJournal() : j);
 
     return ret;

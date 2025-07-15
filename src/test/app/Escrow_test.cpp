@@ -2032,8 +2032,8 @@ struct Escrow_test : public beast::unit_test::suite
         // pub fn finish() -> bool {
         //     unsafe { host_lib::getLedgerSqn() >= 5}
         // }
-        static auto wasmHex = ledgerSqnHex;
-        std::uint32_t constexpr allowance = 4;
+        auto const& wasmHex = ledgerSqnHex;
+        std::uint32_t const allowance = 64;
 
         {
             // basic FinishFunction situation
@@ -2179,19 +2179,19 @@ struct Escrow_test : public beast::unit_test::suite
 
                 // finish time hasn't passed, function fails
                 env(escrow::finish(carol, alice, seq),
-                    escrow::comp_allowance(4),
+                    escrow::comp_allowance(allowance),
                     fee(txnFees + 1),
                     ter(tecNO_PERMISSION));
                 env.close();
                 // finish time hasn't passed, function succeeds
                 for (; env.now() < ts; env.close())
                     env(escrow::finish(carol, alice, seq),
-                        escrow::comp_allowance(4),
+                        escrow::comp_allowance(allowance),
                         fee(txnFees + 2),
                         ter(tecNO_PERMISSION));
 
                 env(escrow::finish(carol, alice, seq),
-                    escrow::comp_allowance(4),
+                    escrow::comp_allowance(allowance),
                     fee(txnFees + 1),
                     ter(tesSUCCESS));
 
@@ -2288,8 +2288,7 @@ struct Escrow_test : public beast::unit_test::suite
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
 
-                // TODO: figure out why this can't be 2412
-                auto const allowance = 3'600;
+                auto const allowance = 20'000;
 
                 // FinishAfter time hasn't passed
                 env(escrow::finish(carol, alice, seq),
@@ -2331,7 +2330,7 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 487);
+                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 10817);
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2415,7 +2414,7 @@ struct Escrow_test : public beast::unit_test::suite
                 env.close();
                 env.close();
 
-                auto const allowance = 3'600;
+                auto const allowance = 1'000'000;
 
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),

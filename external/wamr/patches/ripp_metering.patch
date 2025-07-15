@@ -102,31 +102,28 @@ index 49a17a96..19a85980 100644
       * an index in both functions runtime instance lists
       * of interpreter mode and aot mode
 diff --git a/core/iwasm/common/wasm_exec_env.c b/core/iwasm/common/wasm_exec_env.c
-index 47752950..d5821c4f 100644
+index 47752950..5f26d886 100644
 --- a/core/iwasm/common/wasm_exec_env.c
 +++ b/core/iwasm/common/wasm_exec_env.c
-@@ -86,7 +86,9 @@ wasm_exec_env_create_internal(struct WASMModuleInstanceCommon *module_inst,
+@@ -86,7 +86,7 @@ wasm_exec_env_create_internal(struct WASMModuleInstanceCommon *module_inst,
  #endif
  
  #if WASM_ENABLE_INSTRUCTION_METERING != 0
 -    exec_env->instructions_to_execute = -1;
 +    exec_env->instructions_to_execute = INT64_MAX;
-+    for(int i = 0; i < 256; ++i)
-+        exec_env->instructions_schedule[i] = 1;
  #endif
  
      return exec_env;
 diff --git a/core/iwasm/common/wasm_exec_env.h b/core/iwasm/common/wasm_exec_env.h
-index 5d80312f..2713a092 100644
+index 5d80312f..b2ecce2e 100644
 --- a/core/iwasm/common/wasm_exec_env.h
 +++ b/core/iwasm/common/wasm_exec_env.h
-@@ -89,7 +89,8 @@ typedef struct WASMExecEnv {
+@@ -89,7 +89,7 @@ typedef struct WASMExecEnv {
  
  #if WASM_ENABLE_INSTRUCTION_METERING != 0
      /* instructions to execute */
 -    int instructions_to_execute;
 +    int64 instructions_to_execute;
-+    int64 instructions_schedule[256];
  #endif
  
  #if WASM_ENABLE_FAST_JIT != 0
@@ -214,10 +211,10 @@ index 9a6afee1..0fe4739f 100644
  
  bool
 diff --git a/core/iwasm/common/wasm_runtime_common.c b/core/iwasm/common/wasm_runtime_common.c
-index dcee0aea..10c516d6 100644
+index dcee0aea..a1f7866e 100644
 --- a/core/iwasm/common/wasm_runtime_common.c
 +++ b/core/iwasm/common/wasm_runtime_common.c
-@@ -2288,10 +2288,26 @@ wasm_runtime_access_exce_check_guard_page()
+@@ -2288,10 +2288,18 @@ wasm_runtime_access_exce_check_guard_page()
  #if WASM_ENABLE_INSTRUCTION_METERING != 0
  void
  wasm_runtime_set_instruction_count_limit(WASMExecEnv *exec_env,
@@ -234,18 +231,10 @@ index dcee0aea..10c516d6 100644
 +{
 +    return exec_env->instructions_to_execute;
 +}
-+
-+void
-+wasm_runtime_set_instruction_schedule(WASMExecEnv *exec_env,
-+                                         int64 const *instructions_schedule)
-+{
-+    for(int i = 0; i < 256; ++i)
-+        exec_env->instructions_schedule[i] = instructions_schedule[i];
-+}
  #endif
  
  WASMFuncType *
-@@ -7348,7 +7364,7 @@ wasm_runtime_is_import_func_linked(const char *module_name,
+@@ -7348,7 +7356,7 @@ wasm_runtime_is_import_func_linked(const char *module_name,
                                     const char *func_name)
  {
      return wasm_native_resolve_symbol(module_name, func_name, NULL, NULL, NULL,
@@ -254,7 +243,7 @@ index dcee0aea..10c516d6 100644
  }
  
  bool
-@@ -7805,13 +7821,14 @@ wasm_runtime_get_module_name(wasm_module_t module)
+@@ -7805,13 +7813,14 @@ wasm_runtime_get_module_name(wasm_module_t module)
  bool
  wasm_runtime_detect_native_stack_overflow(WASMExecEnv *exec_env)
  {
@@ -270,7 +259,7 @@ index dcee0aea..10c516d6 100644
      uint32 page_size = os_getpagesize();
      uint32 guard_page_count = STACK_OVERFLOW_CHECK_GUARD_PAGE_COUNT;
      boundary = boundary + page_size * guard_page_count;
-@@ -7821,6 +7838,7 @@ wasm_runtime_detect_native_stack_overflow(WASMExecEnv *exec_env)
+@@ -7821,6 +7830,7 @@ wasm_runtime_detect_native_stack_overflow(WASMExecEnv *exec_env)
                                     "native stack overflow");
          return false;
      }
@@ -278,7 +267,7 @@ index dcee0aea..10c516d6 100644
      return true;
  }
  
-@@ -7843,7 +7861,7 @@ wasm_runtime_detect_native_stack_overflow_size(WASMExecEnv *exec_env,
+@@ -7843,7 +7853,7 @@ wasm_runtime_detect_native_stack_overflow_size(WASMExecEnv *exec_env,
      boundary = boundary - WASM_STACK_GUARD_SIZE + requested_size;
      if ((uint8 *)&boundary < boundary) {
          wasm_runtime_set_exception(wasm_runtime_get_module_inst(exec_env),
@@ -288,10 +277,10 @@ index dcee0aea..10c516d6 100644
      }
      return true;
 diff --git a/core/iwasm/common/wasm_runtime_common.h b/core/iwasm/common/wasm_runtime_common.h
-index 64a6cd79..f4c55e2f 100644
+index 64a6cd79..cb674edc 100644
 --- a/core/iwasm/common/wasm_runtime_common.h
 +++ b/core/iwasm/common/wasm_runtime_common.h
-@@ -795,7 +795,14 @@ wasm_runtime_set_native_stack_boundary(WASMExecEnv *exec_env,
+@@ -795,7 +795,10 @@ wasm_runtime_set_native_stack_boundary(WASMExecEnv *exec_env,
  /* See wasm_export.h for description */
  WASM_RUNTIME_API_EXTERN void
  wasm_runtime_set_instruction_count_limit(WASMExecEnv *exec_env,
@@ -299,10 +288,6 @@ index 64a6cd79..f4c55e2f 100644
 +                                         int64 instructions_to_execute);
 +WASM_RUNTIME_API_EXTERN int64
 +wasm_runtime_get_instruction_count_limit(WASMExecEnv *exec_env);
-+
-+WASM_RUNTIME_API_EXTERN void
-+wasm_runtime_set_instruction_schedule(WASMExecEnv *exec_env,
-+                                      int64 const *instructions_schedule);
 +
  #endif
  
@@ -404,7 +389,7 @@ index ddc0b15b..3a707878 100644
  
  #if WASM_ENABLE_TAGS != 0
 diff --git a/core/iwasm/interpreter/wasm_interp_classic.c b/core/iwasm/interpreter/wasm_interp_classic.c
-index 1e98b0fa..ae24ff8b 100644
+index 1e98b0fa..db6278c5 100644
 --- a/core/iwasm/interpreter/wasm_interp_classic.c
 +++ b/core/iwasm/interpreter/wasm_interp_classic.c
 @@ -1569,13 +1569,14 @@ get_global_addr(uint8 *global_data, WASMGlobalInstance *global)
@@ -420,8 +405,8 @@ index 1e98b0fa..ae24ff8b 100644
 -        instructions_left--;
 +#define CHECK_INSTRUCTION_LIMIT()                                     \
 +    do {                                                              \
-+        instructions_left -= instructions_schedule[opcode];           \
-+        if (instructions_left < 0) {                                  \
++        --instructions_left;                                          \
++        if (instructions_left <= 0) {                                 \
 +            wasm_set_exception(module, "instruction limit exceeded"); \
 +            goto got_exception;                                       \
 +        }                                                             \
@@ -429,20 +414,20 @@ index 1e98b0fa..ae24ff8b 100644
  #else
  #define CHECK_INSTRUCTION_LIMIT() (void)0
  #endif
-@@ -1625,9 +1626,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -1625,10 +1626,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
      uint32 cache_index, type_index, param_cell_num, cell_num;
  
  #if WASM_ENABLE_INSTRUCTION_METERING != 0
 -    int instructions_left = -1;
+-    if (exec_env) {
 +    int64 instructions_left = INT64_MAX;
-+    int64 const *instructions_schedule = NULL;
-     if (exec_env) {
++    if (exec_env)
          instructions_left = exec_env->instructions_to_execute;
-+        instructions_schedule = exec_env->instructions_schedule;
-     }
+-    }
  #endif
  
-@@ -6885,6 +6888,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+ #if WASM_ENABLE_EXCE_HANDLING != 0
+@@ -6885,6 +6885,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
          FREE_FRAME(exec_env, frame);
          wasm_exec_env_set_cur_frame(exec_env, prev_frame);
  
@@ -454,7 +439,7 @@ index 1e98b0fa..ae24ff8b 100644
          if (!prev_frame->ip) {
              /* Called from native. */
              return;
-@@ -6925,6 +6933,12 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -6925,6 +6930,12 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
          }
  #endif
          SYNC_ALL_TO_FRAME();
@@ -468,7 +453,7 @@ index 1e98b0fa..ae24ff8b 100644
  
  #if WASM_ENABLE_LABELS_AS_VALUES == 0
 diff --git a/core/iwasm/interpreter/wasm_interp_fast.c b/core/iwasm/interpreter/wasm_interp_fast.c
-index 4e5edf41..04c39e1f 100644
+index 4e5edf41..37b36c17 100644
 --- a/core/iwasm/interpreter/wasm_interp_fast.c
 +++ b/core/iwasm/interpreter/wasm_interp_fast.c
 @@ -106,14 +106,14 @@ typedef float64 CellType_F64;
@@ -485,7 +470,7 @@ index 4e5edf41..04c39e1f 100644
 -
 +#define CHECK_INSTRUCTION_LIMIT()                                     \
 +    do {                                                              \
-+        instructions_left -= instructions_schedule[opcode];           \
++        --instructions_left;                                          \
 +        if (instructions_left < 0) {                                  \
 +            wasm_set_exception(module, "instruction limit exceeded"); \
 +            goto got_exception;                                       \
@@ -532,46 +517,20 @@ index 4e5edf41..04c39e1f 100644
  
  #endif /* end of WASM_ENABLE_LABELS_AS_VALUES */
  
-@@ -1508,6 +1507,25 @@ get_global_addr(uint8 *global_data, WASMGlobalInstance *global)
- #endif
- }
- 
-+static int64 const def_instructions_schedule[256] = {
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
-+    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-+};
-+
- static void
- wasm_interp_call_func_bytecode(WASMModuleInstance *module,
-                                WASMExecEnv *exec_env,
-@@ -1556,9 +1574,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -1556,10 +1555,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
      uint8 opcode = 0, local_type, *global_addr;
  
  #if WASM_ENABLE_INSTRUCTION_METERING != 0
 -    int instructions_left = -1;
+-    if (exec_env) {
 +    int64 instructions_left = INT64_MAX;
-+    int64 const *instructions_schedule = def_instructions_schedule;
-     if (exec_env) {
++    if (exec_env)
          instructions_left = exec_env->instructions_to_execute;
-+        instructions_schedule = exec_env->instructions_schedule;
-     }
+-    }
  #endif
  #if !defined(OS_ENABLE_HW_BOUND_CHECK) \
-@@ -7694,6 +7714,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+     || WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS == 0
+@@ -7694,6 +7692,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
              {
                  wasm_interp_call_func_native(module, exec_env, cur_func,
                                               prev_frame);
@@ -579,7 +538,7 @@ index 4e5edf41..04c39e1f 100644
              }
  
  #if WASM_ENABLE_TAIL_CALL != 0 || WASM_ENABLE_GC != 0
-@@ -7806,6 +7827,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7806,6 +7805,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
          FREE_FRAME(exec_env, frame);
          wasm_exec_env_set_cur_frame(exec_env, (WASMRuntimeFrame *)prev_frame);
  
@@ -591,7 +550,7 @@ index 4e5edf41..04c39e1f 100644
          if (!prev_frame->ip)
              /* Called from native. */
              return;
-@@ -7834,6 +7860,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7834,6 +7838,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
  
      got_exception:
          SYNC_ALL_TO_FRAME();
