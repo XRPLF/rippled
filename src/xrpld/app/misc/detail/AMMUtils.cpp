@@ -516,7 +516,8 @@ verifyAndAdjustLPTokenBalance(
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account)
 {
-    if (auto const res = isOnlyLiquidityProvider(sb, lpTokens.issue(), account);
+    if (auto const res =
+            isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);
         !res)
         return Unexpected<TER>(res.error());
     else if (res.value())

@@ -325,6 +325,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             tokensAdj,
             0,
             FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
             WithdrawAll::No,
             mPriorBalance,
             ctx_.journal);
