@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include "xrpld/overlay/detail/OverlayImpl.h"
-
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -26,8 +24,11 @@
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
+#include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/peerfinder/make_Manager.h>
@@ -42,9 +43,6 @@
 #include <xrpl/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-
-#include "xrpld/overlay/Peer.h"
-#include "xrpld/overlay/detail/TrafficCount.h"
 
 #include <functional>
 

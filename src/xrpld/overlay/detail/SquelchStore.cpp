@@ -89,11 +89,7 @@ SquelchStore::add(
 void
 SquelchStore::remove(PublicKey const& validator)
 {
-    auto const it = squelched_.find(validator);
-    if (it == squelched_.end())
-        return;
-
-    squelched_.erase(it);
+    squelched_.erase(validator);
 }
 
 }  // namespace reduce_relay
