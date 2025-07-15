@@ -156,6 +156,20 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!accountSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    if (sb.rules().enabled(fixAMMClawbackRounding))
+    {
+        // retrieve LP token balance inside the amendment gate to avoid
+        // inconsistent error behavior
+        auto const lpTokenBalance = ammLPHolds(sb, *ammSle, holder, j_);
+        if (lpTokenBalance == beast::zero)
+            return tecAMM_BALANCE;
+
+        if (auto const res = verifyAndAdjustLPTokenBalance(
+                sb, lpTokenBalance, ammSle, holder);
+            !res)
+            return res.error();  // LCOV_EXCL_LINE
+    }
+
     auto const expected = ammHolds(
         sb,
         *ammSle,
@@ -255,7 +269,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& amount)
 {
     auto frac = Number{amount} / amountBalance;
-    auto const amount2Withdraw = amount2Balance * frac;
+    auto amount2Withdraw = amount2Balance * frac;
 
     auto const lpTokensWithdraw =
         toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
@@ -279,6 +293,42 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             WithdrawAll::Yes,
             mPriorBalance,
             ctx_.journal);
+
+    auto const& rules = sb.rules();
+    if (rules.enabled(fixAMMClawbackRounding))
+    {
+        auto tokensAdj =
+            getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
+
+        // LCOV_EXCL_START
+        if (tokensAdj == beast::zero)
+            return {
+                tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
+        // LCOV_EXCL_STOP
+
+        frac = adjustFracByTokens(rules, lptAMMBalance, tokensAdj, frac);
+        auto amount2Rounded =
+            getRoundedAsset(rules, amount2Balance, frac, IsDeposit::No);
+
+        auto amountRounded =
+            getRoundedAsset(rules, amountBalance, frac, IsDeposit::No);
+
+        return AMMWithdraw::withdraw(
+            sb,
+            ammSle,
+            ammAccount,
+            holder,
+            amountBalance,
+            amountRounded,
+            amount2Rounded,
+            lptAMMBalance,
+            tokensAdj,
+            0,
+            FreezeHandling::fhIGNORE_FREEZE,
+            WithdrawAll::No,
+            mPriorBalance,
+            ctx_.journal);
+    }
 
     // Because we are doing a two-asset withdrawal,
     // tfee is actually not used, so pass tfee as 0.
