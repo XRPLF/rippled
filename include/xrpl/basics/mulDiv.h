@@ -23,7 +23,6 @@
 #include <cstdint>
 #include <limits>
 #include <optional>
-#include <utility>
 
 namespace ripple {
 auto constexpr muldiv_max = std::numeric_limits<std::uint64_t>::max();

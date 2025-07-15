@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <test/jtx/mpt.h>
+#include <test/jtx.h>
 
 #include <xrpl/protocol/jss.h>
 

@@ -164,7 +164,17 @@ class Xrpl(ConanFile):
         # `include/`, not `include/ripple/proto/`.
         libxrpl.includedirs = ['include', 'include/ripple/proto']
         libxrpl.requires = [
-            'boost::boost',
+            'boost::headers',
+            'boost::chrono',
+            'boost::container',
+            'boost::coroutine',
+            'boost::date_time',
+            'boost::filesystem',
+            'boost::json',
+            'boost::program_options',
+            'boost::regex',
+            'boost::system',
+            'boost::thread',
             'date::date',
             'grpc::grpc++',
             'libarchive::libarchive',

@@ -13,7 +13,6 @@
 #include <boost/assert.hpp>
 
 #include <mutex>
-#include <ostream>
 #include <string>
 
 namespace beast {
