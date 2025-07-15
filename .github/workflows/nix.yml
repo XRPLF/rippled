@@ -19,6 +19,9 @@ concurrency:
 # This part of Conan configuration is specific to this workflow only; we do not want
 # to pollute conan/profiles directory with settings which might not work for others
 env:
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+  CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+  CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{ os.cpu_count() }}
     core.upload:parallel={{ os.cpu_count() }}
@@ -77,7 +80,7 @@ jobs:
       build_dir: .build
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -95,14 +98,11 @@ jobs:
         run: tar -czf conan.tar.gz -C ${CONAN_HOME} .
       - name: build dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
-          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
-          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+
         with:
           configuration: ${{ matrix.configuration }}
       - name: upload archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: conan.tar.gz
@@ -139,7 +139,7 @@ jobs:
       build_dir: .build
     steps:
       - name: download cache
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
@@ -153,11 +153,9 @@ jobs:
           conan --version
           cmake --version
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -192,7 +190,7 @@ jobs:
       build_dir: .build
     steps:
       - name: download cache
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
@@ -206,11 +204,9 @@ jobs:
           conan --version
           cmake --version
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -241,7 +237,7 @@ jobs:
       build_dir: .build
     steps:
       - name: download cache
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
@@ -257,11 +253,9 @@ jobs:
           env | sort
           ls ${CONAN_HOME}
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -283,7 +277,7 @@ jobs:
         run: |
           mv "${build_dir}/coverage.xml" ./
       - name: archive coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: coverage.xml
           path: coverage.xml
@@ -309,7 +303,6 @@ jobs:
     container:
       image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
-      CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
       build_dir: .build
       platform: linux
       compiler: gcc
@@ -332,7 +325,7 @@ jobs:
           conan --version
           cmake --version
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: dependencies
         uses: ./.github/actions/dependencies
         with:
@@ -362,13 +355,12 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
       CLANG_RELEASE: 16
-      CONAN_URL:  http://18.143.149.228:8081/artifactory/api/conan/dev
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
 
     steps:
         - name: checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
         - name: prepare environment
           run: |
