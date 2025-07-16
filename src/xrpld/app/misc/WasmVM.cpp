@@ -41,7 +41,6 @@ createWasmImport(HostFunctions* hfs)
         // TODO: remove after escrow_test wasm module will be updated
         WASM_IMPORT_FUNC2(i, getLedgerSqnOld, "getLedgerSqn", hfs,                                                  60);
 
-
         WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
         WASM_IMPORT_FUNC2(i, getParentLedgerTime, "get_parent_ledger_time", hfs,                                    60);
         WASM_IMPORT_FUNC2(i, getParentLedgerHash, "get_parent_ledger_hash", hfs,                                    60);

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/misc/WasmHostFuncImpl.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
@@ -65,6 +66,20 @@ WasmHostFunctionsImpl::getBaseFee()
 {
     // relatively safe to assume the tx base fee won't be > 2^31-1 drops
     return static_cast<int32_t>(ctx.view().fees().base.drops());
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId)
+{
+    return ctx.view().rules().enabled(amendmentId);
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName)
+{
+    auto& table = ctx.app.getAmendmentTable();
+    auto amendment = table.find(std::string(amendmentName));
+    return ctx.view().rules().enabled(amendment);
 }
 
 Expected<int32_t, HostFunctionError>
