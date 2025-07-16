@@ -43,7 +43,7 @@ class LoanBroker_test : public beast::unit_test::suite
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
     FeatureBitset const all{
-        jtx::supported_amendments() | featureMPTokensV1 |
+        jtx::testable_amendments() | featureMPTokensV1 |
         featureSingleAssetVault | featureLendingProtocol};
 
     void
