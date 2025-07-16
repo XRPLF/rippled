@@ -455,7 +455,7 @@ $(function() {
 <div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Feature Not Enabled&quot;</span>);</div>
 <div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span> </div>
 <div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>        Env env{*<span class="keyword">this</span>, supported_amendments() - featureTicketBatch};</div>
+<div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>        Env env{*<span class="keyword">this</span>, testable_amendments() - featureTicketBatch};</div>
 <div class="line"><a id="l00389" name="l00389"></a><span class="lineno">  389</span> </div>
 <div class="line"><a id="l00390" name="l00390"></a><span class="lineno">  390</span>        env(ticket::create(env.master, 1), ter(<a class="code hl_enumvalue" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46ac3482079467d517ea82aa9c8fa693d21">temDISABLED</a>));</div>
 <div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>        env.close();</div>
@@ -1003,7 +1003,7 @@ $(function() {
 <div class="line"><a id="l00933" name="l00933"></a><span class="lineno">  933</span>        <span class="comment">// Try the test without featureTicketBatch enabled.</span></div>
 <div class="line"><a id="l00934" name="l00934"></a><span class="lineno">  934</span>        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span>        {</div>
-<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span>            Env env{*<span class="keyword">this</span>, supported_amendments() - featureTicketBatch};</div>
+<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span>            Env env{*<span class="keyword">this</span>, testable_amendments() - featureTicketBatch};</div>
 <div class="line"><a id="l00937" name="l00937"></a><span class="lineno">  937</span>            Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a id="l00938" name="l00938"></a><span class="lineno">  938</span> </div>
 <div class="line"><a id="l00939" name="l00939"></a><span class="lineno">  939</span>            env.fund(XRP(10000), alice);</div>
@@ -1027,7 +1027,7 @@ $(function() {
 <div class="line"><a id="l00957" name="l00957"></a><span class="lineno">  957</span>        }</div>
 <div class="line"><a id="l00958" name="l00958"></a><span class="lineno">  958</span>        <span class="comment">// Try the test with featureTicketBatch enabled.</span></div>
 <div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>        {</div>
-<div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span>            Env env{*<span class="keyword">this</span>, supported_amendments()};</div>
+<div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span>            Env env{*<span class="keyword">this</span>, testable_amendments()};</div>
 <div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span>            Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span> </div>
 <div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span>            env.fund(XRP(10000), alice);</div>

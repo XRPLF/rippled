@@ -131,7 +131,7 @@ $(function() {
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <span class="comment">// Test without DepositAuth enabled initially.</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        Env env(*<span class="keyword">this</span>, supported_amendments() - featureDepositAuth);</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        Env env(*<span class="keyword">this</span>, testable_amendments() - featureDepositAuth);</div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        env.fund(XRP(10000), noripple(alice));</div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        <span class="comment">// Give alice a regular key so she can legally set and clear</span></div>
@@ -435,7 +435,7 @@ $(function() {
 <div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        };</div>
 <div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span> </div>
 <div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>        doTests(</div>
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>            supported_amendments(),</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>            testable_amendments(),</div>
 <div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>            {{1.0, <a class="code hl_enumvalue" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, 1.0},</div>
 <div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>             {1.1, <a class="code hl_enumvalue" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, 1.1},</div>
 <div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>             {2.0, <a class="code hl_enumvalue" href="namespaceripple.html#aabc7f150d5082c73116a1cd5962b434da28c7d8b3ed759d363503a05fcd59f151">tesSUCCESS</a>, 2.0},</div>
