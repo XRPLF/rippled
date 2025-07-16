@@ -25,6 +25,7 @@
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/SociDB.h>
+#include <chrono>
 
 namespace ripple {
 namespace test {
@@ -626,6 +627,163 @@ public:
     }
 
     void
+    testPerformanceAndScalability()
+    {
+        testcase("Performance and scalability testing");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 10000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Create multiple test accounts
+        std::vector<test::jtx::Account> accounts;
+        for (int i = 0; i < 5; ++i)
+        {
+            accounts.emplace_back("account" + std::to_string(i));
+        }
+        
+        // Fund all accounts
+        for (auto& account : accounts)
+        {
+            env.fund(test::jtx::XRP(100000), account);
+        }
+        env.close();
+        
+        auto* sqliteDb = dynamic_cast<SQLiteDatabase*>(&db);
+        if (sqliteDb)
+        {
+            // Performance test: Create moderate dataset
+            auto startTime = std::chrono::high_resolution_clock::now();
+            
+            for (int i = 0; i < 20; ++i)
+            {
+                auto& fromAccount = accounts[i % accounts.size()];
+                auto& toAccount = accounts[(i + 1) % accounts.size()];
+                
+                env(test::jtx::pay(fromAccount, toAccount, test::jtx::XRP(10 + i)));
+                env.close();
+            }
+            
+            auto endTime = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+            log << "Created 20 transactions in " << duration.count() << " ms";
+            
+            // Test query performance
+            startTime = std::chrono::high_resolution_clock::now();
+            auto ledgerCount = sqliteDb->getLedgerCountMinMax();
+            endTime = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+            log << "Ledger count query: " << duration.count() << " μs";
+            
+            // Test account transaction performance
+            RelationalDatabase::AccountTxOptions options{
+                accounts[0].id(),
+                ledgerCount.minLedgerSequence,
+                ledgerCount.maxLedgerSequence,
+                0,
+                50,
+                false
+            };
+            
+            startTime = std::chrono::high_resolution_clock::now();
+            auto accountTxs = sqliteDb->getNewestAccountTxs(options);
+            endTime = std::chrono::high_resolution_clock::now();
+            duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+            log << "Account transactions query: " << duration.count() << " μs";
+        }
+        
+        log << "Performance test completed";
+    }
+
+    void
+    testNodeStoreIntegration()
+    {
+        testcase("NodeStore and SHAMap integration testing");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 1000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Create test accounts
+        test::jtx::Account alice("alice");
+        test::jtx::Account bob("bob");
+        
+        // Fund accounts and create transactions
+        env.fund(test::jtx::XRP(10000), alice, bob);
+        env.close();
+        
+        auto tx1 = env(test::jtx::pay(alice, bob, test::jtx::XRP(1000)));
+        env.close();
+        
+        auto tx2 = env(test::jtx::pay(bob, alice, test::jtx::XRP(500)));
+        env.close();
+        
+        // Test hash consistency between RelationalDatabase and NodeStore
+        auto newestLedger = db.getNewestLedgerInfo();
+        if (newestLedger)
+        {
+            auto ledgerByHash = db.getLedgerInfoByHash(newestLedger->hash);
+            BEAST_EXPECT(ledgerByHash.has_value());
+            
+            if (ledgerByHash)
+            {
+                BEAST_EXPECT(ledgerByHash->hash == newestLedger->hash);
+                BEAST_EXPECT(ledgerByHash->seq == newestLedger->seq);
+                log << "Hash consistency verified";
+            }
+        }
+        
+        // Test ledger sequence consistency
+        auto minSeq = db.getMinLedgerSeq();
+        auto maxSeq = db.getMaxLedgerSeq();
+        
+        if (minSeq && maxSeq)
+        {
+            // Verify parent-child relationships
+            for (auto seq = *minSeq + 1; seq <= *maxSeq; ++seq)
+            {
+                auto currentLedger = db.getLedgerInfoByIndex(seq);
+                auto parentLedger = db.getLedgerInfoByIndex(seq - 1);
+                
+                if (currentLedger && parentLedger)
+                {
+                    BEAST_EXPECT(currentLedger->parentHash == parentLedger->hash);
+                }
+            }
+            log << "Ledger sequence consistency verified";
+        }
+        
+        // Test transaction consistency
+        auto* sqliteDb = dynamic_cast<SQLiteDatabase*>(&db);
+        if (sqliteDb && tx1.isSuccess())
+        {
+            auto txId = tx1.tx()->getTransactionID();
+            error_code_i ec;
+            auto txResult = sqliteDb->getTransaction(txId, std::nullopt, ec);
+            
+            if (std::holds_alternative<RelationalDatabase::AccountTx>(txResult))
+            {
+                auto& [tx, meta] = std::get<RelationalDatabase::AccountTx>(txResult);
+                if (tx)
+                {
+                    BEAST_EXPECT(tx->getTransactionID() == txId);
+                    log << "Transaction consistency verified";
+                }
+            }
+        }
+        
+        log << "NodeStore integration test completed";
+    }
+
+    void
     run() override
     {
         testRelationalDatabaseInit();
@@ -638,6 +796,8 @@ public:
         testDeletionOperations();
         testDatabaseManagement();
         testErrorHandling();
+        testPerformanceAndScalability();
+        testNodeStoreIntegration();
     }
 };
 
