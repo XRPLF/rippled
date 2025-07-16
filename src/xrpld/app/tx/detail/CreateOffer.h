@@ -115,13 +115,6 @@ private:
     bool
     reachedOfferCrossingLimit(Taker const& taker) const;
 
-    // Fill offer as much as possible by consuming offers already on the books,
-    // and adjusting account balances accordingly.
-    //
-    // Charges fees on top to taker.
-    std::pair<TER, Amounts>
-    takerCross(Sandbox& sb, Sandbox& sbCancel, Amounts const& takerAmount);
-
     // Use the payment flow code to perform offer crossing.
     std::pair<TER, Amounts>
     flowCross(

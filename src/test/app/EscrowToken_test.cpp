@@ -3875,7 +3875,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testIOUWithFeats(all);
         testMPTWithFeats(all);
     }
