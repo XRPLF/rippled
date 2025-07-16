@@ -2285,6 +2285,40 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
         }
 
+        // Holders are locked
+        {
+            Account const bob = Account("bob");
+            Account const dan = Account("dan");
+            Env env(*this);
+            env.fund(XRP(1'000), gw, alice, carol, bob, dan);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob, dan},
+                 .pay = 100,
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob, dan},
+                 .pay = 100,
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+
+            env(offer(bob, ETH(10), BTC(10)), txflags(tfPassive));
+            env(offer(dan, BTC(10), ETH(10)), txflags(tfPassive));
+
+            auto test = [&](auto const& flag, auto const& err) {
+                BTC.set({.holder = carol, .flags = flag});
+                BTC.set({.holder = alice, .flags = flag});
+
+                env(offer(alice, ETH(1), BTC(1)), err);
+                env(offer(carol, BTC(1), ETH(1)), err);
+            };
+
+            test(tfMPTLock, ter(tecLOCKED));
+            test(tfMPTUnlock, ter(tesSUCCESS));
+        }
+
         // XRP/MPT
         {
             Env env{*this, features};
@@ -2519,6 +2553,49 @@ class MPToken_test : public beast::unit_test::suite
                 sendmax(XRP(100)),
                 txflags(tfPartialPayment),
                 ter(temMALFORMED));
+        }
+
+        // Holders are locked
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), gw, alice, carol, bob);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .pay = 100,
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .pay = 100,
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+
+            env(offer(bob, ETH(10), BTC(10)), txflags(tfPassive));
+            env(offer(bob, BTC(10), ETH(10)), txflags(tfPassive));
+
+            auto test = [&](auto const& flag, auto const& err) {
+                BTC.set({.holder = carol, .flags = flag});
+                BTC.set({.holder = alice, .flags = flag});
+                ETH.set({.holder = carol, .flags = flag});
+                ETH.set({.holder = alice, .flags = flag});
+
+                env(pay(alice, carol, ETH(1)),
+                    path(~(MPT)ETH),
+                    txflags(tfNoRippleDirect),
+                    sendmax(BTC(1)),
+                    err);
+
+                env(pay(alice, carol, BTC(1)),
+                    path(~(MPT)BTC),
+                    txflags(tfNoRippleDirect),
+                    sendmax(ETH(1)),
+                    err);
+            };
+
+            test(tfMPTLock, ter(tecLOCKED));
+            test(tfMPTUnlock, ter(tesSUCCESS));
         }
 
         // MPT/XRP

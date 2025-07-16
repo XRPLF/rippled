@@ -366,11 +366,22 @@ MPTEndpointPaymentStep::check(
     // Cross-token MPT payment via DEX
     else
     {
-        auto const account = ctx.isFirst ? src_ : dst_;
-        if (auto const ter = isMPTDEXAllowed(
-                ctx.view, mptIssue_, account, mptIssue_.getIssuer());
-            ter != tesSUCCESS)
-            return ter;
+        if (ctx.isFirst && src_ != mptIssue_.getIssuer())
+        {
+            if (auto const ter =
+                    isMPTDEXAllowed(ctx.view, mptIssue_, src_, std::nullopt);
+                ter != tesSUCCESS)
+                return ter;
+        }
+        else if (
+            ctx.prevStep && ctx.prevStep->bookStepBook() &&
+            dst_ != mptIssue_.getIssuer())
+        {
+            if (auto const ter =
+                    isMPTDEXAllowed(ctx.view, mptIssue_, dst_, std::nullopt);
+                ter != tesSUCCESS)
+                return ter;
+        }
     }
 
     // Can't check for creditBalance/Limit unless it's the first step.

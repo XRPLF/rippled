@@ -104,9 +104,9 @@ isMPTDEXAllowed(
     ReadView const& view,
     Asset const& asset,
     AccountID const& accountID,
-    AccountID const& dest)
+    std::optional<AccountID> const& dest)
 {
-    // use ttPAYMENT for both offer crossing and payment
+    // use ttPAYMENT for any DEX transaction
     return isMPTAllowed(view, ttPAYMENT, asset, accountID, dest);
 }
 
