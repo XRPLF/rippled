@@ -17,12 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/JobQueue.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+
+#include <xrpld/core/JobQueue.h>
+
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -89,8 +90,7 @@ public:
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tefPAST_SEQ");
 
-            // Submit future sequence transaction -- this transaction should be
-            // held until the sequence gap is closed.
+            // Submit future sequence transaction
             payment[jss::tx_json][sfSequence.fieldName] = env.seq("alice") + 1;
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
@@ -116,8 +116,6 @@ public:
             }
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tesSUCCESS");
 
-            // Apply held transactions.
-            env.app().getOPs().transactionBatch(true);
             // Wait for the jobqueue to process everything
             env.app().getJobQueue().rendezvous();
 
@@ -462,7 +460,8 @@ public:
             Json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = fset("alice", 0);
-            jv[jss::tx_json][jss::Fee] = 10;
+            jv[jss::tx_json][jss::Fee] =
+                static_cast<int>(env.current()->fees().base.drops());
             jv = wsc->invoke("submit", jv);
             if (wsc->version() == 2)
             {

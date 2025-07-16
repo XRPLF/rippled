@@ -16,14 +16,16 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_EVENTS_H_INCLUDED
 #define RIPPLE_TEST_CSF_EVENTS_H_INCLUDED
 
-#include <chrono>
 #include <test/csf/Proposal.h>
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
 #include <test/csf/ledgers.h>
+
+#include <chrono>
 
 namespace ripple {
 namespace test {

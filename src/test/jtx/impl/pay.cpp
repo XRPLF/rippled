@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx/pay.h>
+
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -34,7 +35,7 @@ pay(AccountID const& account, AccountID const& to, AnyAmount amount)
     jv[jss::Amount] = amount.value.getJson(JsonOptions::none);
     jv[jss::Destination] = to_string(to);
     jv[jss::TransactionType] = jss::Payment;
-    jv[jss::Flags] = tfUniversal;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 Json::Value

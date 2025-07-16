@@ -17,15 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/utility/temp_dir.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/jss.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+
 #include <fstream>
 
 namespace ripple {
@@ -36,10 +40,12 @@ class LedgerLoad_test : public beast::unit_test::suite
         std::unique_ptr<Config> cfg,
         std::string const& dbPath,
         std::string const& ledger,
-        Config::StartUpType type)
+        Config::StartUpType type,
+        std::optional<uint256> trapTxHash)
     {
         cfg->START_LEDGER = ledger;
         cfg->START_UP = type;
+        cfg->TRAP_TX_HASH = trapTxHash;
         assert(!dbPath.empty());
         cfg->legacy("database_path", dbPath);
         return cfg;
@@ -52,6 +58,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         std::string ledgerFile{};
         Json::Value ledger{};
         Json::Value hashes{};
+        uint256 trapTxHash{};
     };
 
     SetupData
@@ -63,21 +70,21 @@ class LedgerLoad_test : public beast::unit_test::suite
         retval.ledgerFile = td.file("ledgerdata.json");
 
         Env env{*this};
-        Account prev;
+        std::optional<Account> prev;
 
         for (auto i = 0; i < 20; ++i)
         {
             Account acct{"A" + std::to_string(i)};
             env.fund(XRP(10000), acct);
             env.close();
-            if (i > 0)
+            if (i > 0 && BEAST_EXPECT(prev))
             {
-                env.trust(acct["USD"](1000), prev);
-                env(pay(acct, prev, acct["USD"](5)));
+                env.trust(acct["USD"](1000), *prev);
+                env(pay(acct, *prev, acct["USD"](5)));
             }
             env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();
-            prev = std::move(acct);
+            prev.emplace(std::move(acct));
         }
 
         retval.ledger = env.rpc("ledger", "current", "full")[jss::result];
@@ -94,6 +101,16 @@ class LedgerLoad_test : public beast::unit_test::suite
         }();
 
         BEAST_EXPECT(retval.hashes.size() == 41);
+        retval.trapTxHash = [&]() {
+            auto const txs = env.rpc(
+                "ledger",
+                std::to_string(41),
+                "tx")[jss::result][jss::ledger][jss::transactions];
+            BEAST_EXPECT(txs.isArray() && txs.size() > 0);
+            uint256 tmp;
+            BEAST_EXPECT(tmp.parseHex(txs[0u][jss::hash].asString()));
+            return tmp;
+        }();
 
         // write this ledger data to a file.
         std::ofstream o(retval.ledgerFile, std::ios::out | std::ios::trunc);
@@ -112,7 +129,11 @@ class LedgerLoad_test : public beast::unit_test::suite
         Env env(
             *this,
             envconfig(
-                ledgerConfig, sd.dbPath, sd.ledgerFile, Config::LOAD_FILE),
+                ledgerConfig,
+                sd.dbPath,
+                sd.ledgerFile,
+                Config::LOAD_FILE,
+                std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -132,7 +153,12 @@ class LedgerLoad_test : public beast::unit_test::suite
         except([&] {
             Env env(
                 *this,
-                envconfig(ledgerConfig, sd.dbPath, "", Config::LOAD_FILE),
+                envconfig(
+                    ledgerConfig,
+                    sd.dbPath,
+                    "",
+                    Config::LOAD_FILE,
+                    std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -142,7 +168,11 @@ class LedgerLoad_test : public beast::unit_test::suite
             Env env(
                 *this,
                 envconfig(
-                    ledgerConfig, sd.dbPath, "badfile.json", Config::LOAD_FILE),
+                    ledgerConfig,
+                    sd.dbPath,
+                    "badfile.json",
+                    Config::LOAD_FILE,
+                    std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -172,7 +202,8 @@ class LedgerLoad_test : public beast::unit_test::suite
                     ledgerConfig,
                     sd.dbPath,
                     ledgerFileCorrupt.string(),
-                    Config::LOAD_FILE),
+                    Config::LOAD_FILE,
+                    std::nullopt),
                 nullptr,
                 beast::severities::kDisabled);
         });
@@ -189,7 +220,12 @@ class LedgerLoad_test : public beast::unit_test::suite
         boost::erase_all(ledgerHash, "\"");
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, ledgerHash, Config::LOAD),
+            envconfig(
+                ledgerConfig,
+                sd.dbPath,
+                ledgerHash,
+                Config::LOAD,
+                std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -197,6 +233,103 @@ class LedgerLoad_test : public beast::unit_test::suite
         BEAST_EXPECT(
             jrb[jss::ledger][jss::accountState].size() <=
             sd.ledger[jss::ledger][jss::accountState].size());
+    }
+
+    void
+    testReplay(SetupData const& sd)
+    {
+        testcase("Load and replay by hash");
+        using namespace test::jtx;
+
+        // create a new env with the ledger hash specified for startup
+        auto ledgerHash = to_string(sd.hashes[sd.hashes.size() - 1]);
+        boost::erase_all(ledgerHash, "\"");
+        Env env(
+            *this,
+            envconfig(
+                ledgerConfig,
+                sd.dbPath,
+                ledgerHash,
+                Config::REPLAY,
+                std::nullopt),
+            nullptr,
+            beast::severities::kDisabled);
+        auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
+        BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 97);
+        // in replace mode do not automatically accept the ledger being replayed
+
+        env.close();
+        auto const closed = env.rpc("ledger", "current", "full")[jss::result];
+        BEAST_EXPECT(closed[jss::ledger][jss::accountState].size() == 98);
+        BEAST_EXPECT(
+            closed[jss::ledger][jss::accountState].size() <=
+            sd.ledger[jss::ledger][jss::accountState].size());
+    }
+
+    void
+    testReplayTx(SetupData const& sd)
+    {
+        testcase("Load and replay transaction by hash");
+        using namespace test::jtx;
+
+        // create a new env with the ledger hash specified for startup
+        auto ledgerHash = to_string(sd.hashes[sd.hashes.size() - 1]);
+        boost::erase_all(ledgerHash, "\"");
+        Env env(
+            *this,
+            envconfig(
+                ledgerConfig,
+                sd.dbPath,
+                ledgerHash,
+                Config::REPLAY,
+                sd.trapTxHash),
+            nullptr,
+            beast::severities::kDisabled);
+        auto const jrb = env.rpc("ledger", "current", "full")[jss::result];
+        BEAST_EXPECT(jrb[jss::ledger][jss::accountState].size() == 97);
+        // in replace mode do not automatically accept the ledger being replayed
+
+        env.close();
+        auto const closed = env.rpc("ledger", "current", "full")[jss::result];
+        BEAST_EXPECT(closed[jss::ledger][jss::accountState].size() == 98);
+        BEAST_EXPECT(
+            closed[jss::ledger][jss::accountState].size() <=
+            sd.ledger[jss::ledger][jss::accountState].size());
+    }
+
+    void
+    testReplayTxFail(SetupData const& sd)
+    {
+        testcase("Load and replay transaction by hash failure");
+        using namespace test::jtx;
+
+        // create a new env with the ledger hash specified for startup
+        auto ledgerHash = to_string(sd.hashes[sd.hashes.size() - 1]);
+        boost::erase_all(ledgerHash, "\"");
+        try
+        {
+            // will throw an exception, because we cannot load a ledger for
+            // replay when trapTxHash is set to an invalid transaction
+            Env env(
+                *this,
+                envconfig(
+                    ledgerConfig,
+                    sd.dbPath,
+                    ledgerHash,
+                    Config::REPLAY,
+                    ~sd.trapTxHash),
+                nullptr,
+                beast::severities::kDisabled);
+            BEAST_EXPECT(false);
+        }
+        catch (std::runtime_error const&)
+        {
+            BEAST_EXPECT(true);
+        }
+        catch (...)
+        {
+            BEAST_EXPECT(false);
+        }
     }
 
     void
@@ -208,7 +341,8 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with the ledger "latest" specified for startup
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, "latest", Config::LOAD),
+            envconfig(
+                ledgerConfig, sd.dbPath, "latest", Config::LOAD, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -226,7 +360,8 @@ class LedgerLoad_test : public beast::unit_test::suite
         // create a new env with specific ledger index at startup
         Env env(
             *this,
-            envconfig(ledgerConfig, sd.dbPath, "43", Config::LOAD),
+            envconfig(
+                ledgerConfig, sd.dbPath, "43", Config::LOAD, std::nullopt),
             nullptr,
             beast::severities::kDisabled);
         auto jrb = env.rpc("ledger", "current", "full")[jss::result];
@@ -246,6 +381,9 @@ public:
         testLoad(sd);
         testBadFiles(sd);
         testLoadByHash(sd);
+        testReplay(sd);
+        testReplayTx(sd);
+        testReplayTxFail(sd);
         testLoadLatest(sd);
         testLoadIndex(sd);
     }

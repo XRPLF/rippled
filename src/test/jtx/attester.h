@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_ATTESTER_H_INCLUDED
 #define RIPPLE_TEST_JTX_ATTESTER_H_INCLUDED
 
-#include <ripple/basics/Buffer.h>
-#include <ripple/protocol/AccountID.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/protocol/AccountID.h>
 
 #include <cstdint>
 #include <optional>

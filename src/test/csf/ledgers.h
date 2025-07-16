@@ -16,19 +16,24 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_LEDGERS_H_INCLUDED
 #define RIPPLE_TEST_CSF_LEDGERS_H_INCLUDED
 
-#include <ripple/basics/UnorderedContainers.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/basics/comparators.h>
-#include <ripple/basics/tagged_integer.h>
-#include <ripple/consensus/LedgerTiming.h>
-#include <ripple/json/json_value.h>
+#include <test/csf/Tx.h>
+
+#include <xrpld/consensus/LedgerTiming.h>
+
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/comparators.h>
+#include <xrpl/basics/tagged_integer.h>
+#include <xrpl/json/json_value.h>
+
 #include <boost/bimap/bimap.hpp>
+
 #include <optional>
 #include <set>
-#include <test/csf/Tx.h>
 
 namespace ripple {
 namespace test {
@@ -146,7 +151,7 @@ private:
     };
 
     // Single common genesis instance
-    static const Instance genesis;
+    static Instance const genesis;
 
     Ledger(ID id, Instance const* i) : id_{id}, instance_{i}
     {

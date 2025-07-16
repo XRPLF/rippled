@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/jss.h>
 #include <test/jtx/tag.h>
 
 namespace ripple {

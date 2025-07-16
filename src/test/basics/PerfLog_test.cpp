@@ -17,20 +17,21 @@
 */
 //==============================================================================
 
-#include <ripple/basics/PerfLog.h>
-#include <ripple/basics/random.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/json/json_reader.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/Handler.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
+
+#include <xrpld/perflog/PerfLog.h>
+#include <xrpld/rpc/detail/Handler.h>
+
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_reader.h>
+#include <xrpl/protocol/jss.h>
 
 #include <atomic>
 #include <chrono>
 #include <cmath>
-#include <random>
 #include <string>
 #include <thread>
 
@@ -775,7 +776,7 @@ public:
 
             // Verify values in jss::total are what we expect.
             Json::Value const& total{jobQueue[jss::total]};
-            const int finished = jobs.size() * 2;
+            int const finished = jobs.size() * 2;
             BEAST_EXPECT(jsonToUint64(total[jss::queued]) == jobs.size());
             BEAST_EXPECT(jsonToUint64(total[jss::started]) == finished);
             BEAST_EXPECT(jsonToUint64(total[jss::finished]) == finished);

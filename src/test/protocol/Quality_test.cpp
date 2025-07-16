@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Quality.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Quality.h>
+
 #include <type_traits>
 
 namespace ripple {
@@ -29,7 +30,7 @@ public:
     // Create a raw, non-integral amount from mantissa and exponent
     STAmount static raw(std::uint64_t mantissa, int exponent)
     {
-        return STAmount({Currency(3), AccountID(3)}, mantissa, exponent);
+        return STAmount(Issue{Currency(3), AccountID(3)}, mantissa, exponent);
     }
 
     template <class Integer>

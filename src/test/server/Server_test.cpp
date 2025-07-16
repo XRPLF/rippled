@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
-#include <ripple/basics/make_SSLContext.h>
-#include <ripple/beast/rfc2616.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/server/Server.h>
-#include <ripple/server/Session.h>
-
 #include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
+
+#include <xrpld/core/ConfigSections.h>
+
+#include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/server/Server.h>
+#include <xrpl/server/Session.h>
 
 #include <boost/asio.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
@@ -94,6 +95,13 @@ public:
             if (level < threshold())
                 return;
 
+            suite_.log << text << std::endl;
+        }
+
+        void
+        writeAlways(beast::severities::Severity level, std::string const& text)
+            override
+        {
             suite_.log << text << std::endl;
         }
     };
@@ -299,8 +307,8 @@ public:
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
-        test_request(eps[0]);
-        test_keepalive(eps[0]);
+        test_request(eps.begin()->second);
+        test_keepalive(eps.begin()->second);
         // s->close();
         s = nullptr;
         pass();
@@ -423,7 +431,20 @@ public:
                 std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
-            messages.find("Invalid value '0' for key 'port' in [port_rpc]") !=
+            messages.find("Invalid value '0' for key 'port' in [port_rpc]") ==
+            std::string::npos);
+
+        except([&] {
+            Env env{
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg)["server"].set("port", "0");
+                    return cfg;
+                }),
+                std::make_unique<CaptureLogs>(&messages)};
+        });
+        BEAST_EXPECT(
+            messages.find("Invalid value '0' for key 'port' in [server]") !=
             std::string::npos);
 
         except([&] {

@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Log.h>
+#ifndef RIPPLE_TEST_JTX_CAPTURELOGS_H_INCLUDED
+#define RIPPLE_TEST_JTX_CAPTURELOGS_H_INCLUDED
+
+#include <xrpl/basics/Log.h>
 
 namespace ripple {
 namespace test {
@@ -60,6 +63,14 @@ class CaptureLogs : public Logs
             std::lock_guard lock(strmMutex_);
             strm_ << text;
         }
+
+        void
+        writeAlways(beast::severities::Severity level, std::string const& text)
+            override
+        {
+            std::lock_guard lock(strmMutex_);
+            strm_ << text;
+        }
     };
 
 public:
@@ -84,3 +95,5 @@ public:
 
 }  // namespace test
 }  // namespace ripple
+
+#endif

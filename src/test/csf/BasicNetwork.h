@@ -51,7 +51,7 @@ namespace csf {
     at either end of the connection will not be delivered.
 
     When creating the Peer set, the caller needs to provide a
-    Scheduler object for managing the the timing and delivery
+    Scheduler object for managing the timing and delivery
     of messages. After constructing the network, and establishing
     connections, the caller uses the scheduler's step_* functions
     to drive messages through the network.

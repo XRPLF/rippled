@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -193,7 +193,9 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         for (bool const afterSwitchTime : {true, false})
         {
-            Env env{*this};
+            auto cfg = envconfig();
+            cfg->FEES.reference_fee = 10;
+            Env env(*this, std::move(cfg));
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
             if (afterSwitchTime)
@@ -282,7 +284,9 @@ class DeliveredAmount_test : public beast::unit_test::suite
 
         for (bool const afterSwitchTime : {true, false})
         {
-            Env env{*this};
+            auto cfg = envconfig();
+            cfg->FEES.reference_fee = 10;
+            Env env(*this, std::move(cfg));
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
             if (afterSwitchTime)

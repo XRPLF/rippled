@@ -17,21 +17,23 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/AmendmentTable.h>
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/Log.h>
-#include <ripple/basics/chrono.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/STValidation.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx/Env.h>
 #include <test/unit_test/SuiteJournal.h>
+
+#include <xrpld/app/misc/AmendmentTable.h>
+#include <xrpld/core/ConfigSections.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -288,7 +290,7 @@ public:
         uint256 const unsupportedID = amendmentId(unsupported_[0]);
         {
             Json::Value const unsupp =
-                table->getJson(unsupportedID)[to_string(unsupportedID)];
+                table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp.size() == 0);
         }
 
@@ -296,7 +298,7 @@ public:
         table->veto(unsupportedID);
         {
             Json::Value const unsupp =
-                table->getJson(unsupportedID)[to_string(unsupportedID)];
+                table->getJson(unsupportedID, true)[to_string(unsupportedID)];
             BEAST_EXPECT(unsupp[jss::vetoed].asBool());
         }
     }
@@ -637,6 +639,22 @@ public:
         BEAST_EXPECT(ourVotes.empty());
         BEAST_EXPECT(enabled.empty());
         BEAST_EXPECT(majority.empty());
+
+        uint256 const unsupportedID = amendmentId(unsupported_[0]);
+        {
+            Json::Value const unsupp =
+                table->getJson(unsupportedID, false)[to_string(unsupportedID)];
+            BEAST_EXPECT(unsupp.size() == 0);
+        }
+
+        table->veto(unsupportedID);
+        {
+            Json::Value const unsupp =
+                table->getJson(unsupportedID, false)[to_string(unsupportedID)];
+            BEAST_EXPECT(!unsupp[jss::vetoed].asBool());
+        }
+
+        votes.emplace_back(testAmendment, validators.size());
 
         votes.emplace_back(testAmendment, validators.size());
 

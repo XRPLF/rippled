@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#include <test/jtx/xchain_bridge.h>
-
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STBase.h>
-#include <ripple/protocol/STInteger.h>
-#include <ripple/protocol/STObject.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/protocol/XChainAttestations.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/attester.h>
+#include <test/jtx/xchain_bridge.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XChainAttestations.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -84,7 +84,6 @@ bridge_create(
             minAccountCreate->getJson(JsonOptions::none);
 
     jv[jss::TransactionType] = jss::XChainCreateBridge;
-    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 
@@ -107,7 +106,6 @@ bridge_modify(
             minAccountCreate->getJson(JsonOptions::none);
 
     jv[jss::TransactionType] = jss::XChainModifyBridge;
-    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 
@@ -126,7 +124,6 @@ xchain_create_claim_id(
     jv[sfOtherChainSource.getJsonName()] = otherChainSource.human();
 
     jv[jss::TransactionType] = jss::XChainCreateClaimID;
-    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 
@@ -148,7 +145,6 @@ xchain_commit(
         jv[sfOtherChainDestination.getJsonName()] = dst->human();
 
     jv[jss::TransactionType] = jss::XChainCommit;
-    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 
@@ -169,7 +165,6 @@ xchain_claim(
     jv[sfAmount.getJsonName()] = amt.value.getJson(JsonOptions::none);
 
     jv[jss::TransactionType] = jss::XChainClaim;
-    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 
@@ -191,7 +186,6 @@ sidechain_xchain_account_create(
         reward.value.getJson(JsonOptions::none);
 
     jv[jss::TransactionType] = jss::XChainAccountCreateCommit;
-    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 
@@ -242,7 +236,6 @@ claim_attestation(
         result[sfDestination.getJsonName()] = toBase58(*dst);
 
     result[jss::TransactionType] = jss::XChainAddClaimAttestation;
-    result[jss::Flags] = tfUniversal;
 
     return result;
 }
@@ -297,7 +290,6 @@ create_account_attestation(
         rewardAmount.value.getJson(JsonOptions::none);
 
     result[jss::TransactionType] = jss::XChainAddAccountCreateAttestation;
-    result[jss::Flags] = tfUniversal;
 
     return result;
 }

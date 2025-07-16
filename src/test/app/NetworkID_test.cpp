@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
+
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

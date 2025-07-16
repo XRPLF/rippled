@@ -44,18 +44,26 @@ DerivePointerAlignment: false
 DisableFormat:   false
 ExperimentalAutoDetectBinPacking: false
 ForEachMacros:   [ Q_FOREACH,  BOOST_FOREACH ]
+IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^<(BeastConfig)'
+  - Regex:           '^<(test)/'
     Priority:        0
-  - Regex:           '^<(ripple)/'
+  - Regex:           '^<(xrpld)/'
+    Priority:        1
+  - Regex:           '^<(xrpl)/'
     Priority:        2
   - Regex:           '^<(boost)/'
     Priority:        3
-  - Regex:           '.*'
+  - Regex:           '^.*/'
     Priority:        4
+  - Regex:           '^.*\.h'
+    Priority:        5
+  - Regex:           '.*'
+    Priority:        6
 IncludeIsMainRegex: '$'
 IndentCaseLabels: true
 IndentFunctionDeclarationAfterType: false
+IndentRequiresClause: true
 IndentWidth:     4
 IndentWrappedFunctionNames: false
 KeepEmptyLinesAtTheStartOfBlocks: false
@@ -71,6 +79,7 @@ PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 200
 PointerAlignment: Left
 ReflowComments:  true
+RequiresClausePosition: OwnLine
 SortIncludes:    true
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
@@ -85,3 +94,4 @@ SpacesInSquareBrackets: false
 Standard:        Cpp11
 TabWidth:        8
 UseTab:          Never
+QualifierAlignment: Right

@@ -8,39 +8,138 @@ The API version controls the API behavior you see. This includes what properties
 
 For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
 
+## API Version 2
+
+API version 2 is available in `rippled` version 2.0.0 and later. To use this API, clients specify `"api_version" : 2` in each request.
+
+#### Removed methods
+
+In API version 2, the following deprecated methods are no longer available: (https://github.com/XRPLF/rippled/pull/4759)
+
+- `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
+- `ledger_header` - Instead, use the `ledger` method.
+
+#### Modifications to JSON transaction element in V2
+
+In API version 2, JSON elements for transaction output have been changed and made consistent for all methods which output transactions. (https://github.com/XRPLF/rippled/pull/4775)
+This helps to unify the JSON serialization format of transactions. (https://github.com/XRPLF/clio/issues/722, https://github.com/XRPLF/rippled/issues/4727)
+
+- JSON transaction element is named `tx_json`
+- Binary transaction element is named `tx_blob`
+- JSON transaction metadata element is named `meta`
+- Binary transaction metadata element is named `meta_blob`
+
+Additionally, these elements are now consistently available next to `tx_json` (i.e. sibling elements), where possible:
+
+- `hash` - Transaction ID. This data was stored inside transaction output in API version 1, but in API version 2 is a sibling element.
+- `ledger_index` - Ledger index (only set on validated ledgers)
+- `ledger_hash` - Ledger hash (only set on closed or validated ledgers)
+- `close_time_iso` - Ledger close time expressed in ISO 8601 time format (only set on validated ledgers)
+- `validated` - Bool element set to `true` if the transaction is in a validated ledger, otherwise `false`
+
+This change affects the following methods:
+
+- `tx` - Transaction data moved into element `tx_json` (was inline inside `result`) or, if binary output was requested, moved from `tx` to `tx_blob`. Renamed binary transaction metadata element (if it was requested) from `meta` to `meta_blob`. Changed location of `hash` and added new elements
+- `account_tx` - Renamed transaction element from `tx` to `tx_json`. Renamed binary transaction metadata element (if it was requested) from `meta` to `meta_blob`. Changed location of `hash` and added new elements
+- `transaction_entry` - Renamed transaction metadata element from `metadata` to `meta`. Changed location of `hash` and added new elements
+- `subscribe` - Renamed transaction element from `transaction` to `tx_json`. Changed location of `hash` and added new elements
+- `sign`, `sign_for`, `submit` and `submit_multisigned` - Changed location of `hash` element.
+
+#### Modification to `Payment` transaction JSON schema
+
+When reading Payments, the `Amount` field should generally **not** be used. Instead, use [delivered_amount](https://xrpl.org/partial-payments.html#the-delivered_amount-field) to see the amount that the Payment delivered. To clarify its meaning, the `Amount` field is being renamed to `DeliverMax`. (https://github.com/XRPLF/rippled/pull/4733)
+
+- In `Payment` transaction type, JSON RPC field `Amount` is renamed to `DeliverMax`. To enable smooth client transition, `Amount` is still handled, as described below: (https://github.com/XRPLF/rippled/pull/4733)
+  - On JSON RPC input (e.g. `submit_multisigned` etc. methods), `Amount` is recognized as an alias to `DeliverMax` for both API version 1 and version 2 clients.
+  - On JSON RPC input, submitting both `Amount` and `DeliverMax` fields is allowed _only_ if they are identical; otherwise such input is rejected with `rpcINVALID_PARAMS` error.
+  - On JSON RPC output (e.g. `subscribe`, `account_tx` etc. methods), `DeliverMax` is present in both API version 1 and version 2.
+  - On JSON RPC output, `Amount` is only present in API version 1 and _not_ in version 2.
+
+#### Modifications to account_info response
+
+- `signer_lists` is returned in the root of the response. (In API version 1, it was nested under `account_data`.) (https://github.com/XRPLF/rippled/pull/3770)
+- When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
+  - (`signer_lists` must be a boolean. In API version 1, strings were accepted and may return a normal response - i.e. as if `signer_lists` were `true`.)
+
+#### Modifications to [account_tx](https://xrpl.org/account_tx.html#account_tx) response
+
+- Using `ledger_index_min`, `ledger_index_max`, and `ledger_index` returns `invalidParams` because if you use `ledger_index_min` or `ledger_index_max`, then it does not make sense to also specify `ledger_index`. In API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4571)
+  - The same applies for `ledger_index_min`, `ledger_index_max`, and `ledger_hash`. (https://github.com/XRPLF/rippled/issues/4545#issuecomment-1565065579)
+- Using a `ledger_index_min` or `ledger_index_max` beyond the range of ledgers that the server has:
+  - returns `lgrIdxMalformed` in API version 2. Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/issues/4288)
+- Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+
+#### Modifications to [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response
+
+- Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
+
 ## API Version 1
 
-This version is supported by all `rippled` versions. At time of writing, it is the default API version, used when no `api_version` is specified. When a new API version is introduced, the command line interface will default to the latest API version. The command line is intended for ad-hoc usage by humans, not programs or automated scripts. The command line is not meant for use in production code.
+This version is supported by all `rippled` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
-### Idiosyncrasies
+The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/request-formatting/#commandline-format) always uses the latest API version. The command line is intended for ad-hoc usage by humans, not programs or automated scripts. The command line is not meant for use in production code.
 
-#### V1 account_info response
+### Inconsistency: server_info - network_id
 
-In [the response to the `account_info` command](https://xrpl.org/account_info.html#response-format), there is `account_data` - which is supposed to be an `AccountRoot` object - and `signer_lists` is returned in this object. However, the docs say that `signer_lists` should be at the root level of the reponse.
+The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode). However, use of reporting mode is now discouraged, in favor of using [Clio](https://github.com/XRPLF/clio) instead.
 
-It makes sense for `signer_lists` to be at the root level because signer lists are not part of the AccountRoot object. (First reported in [xrpl-dev-portal#938](https://github.com/XRPLF/xrpl-dev-portal/issues/938).)
+## XRP Ledger server version 2.5.0
 
-In `api_version: 2`, the `signer_lists` field [will be moved](#modifications-to-account_info-response-in-v2) to the root level of the account_info response. (https://github.com/XRPLF/rippled/pull/3770)
+As of 2025-04-04, version 2.5.0 is in development. You can use a pre-release version by building from source or [using the `nightly` package](https://xrpl.org/docs/infrastructure/installation/install-rippled-on-ubuntu).
 
-#### server_info - network_id
+### Additions and bugfixes in 2.5.0
 
-The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it was not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode).
+- `channel_authorize`: If `signing_support` is not enabled in the config, the RPC is disabled.
 
-## Unreleased
+## XRP Ledger server version 2.4.0
 
-### Additions
+[Version 2.4.0](https://github.com/XRPLF/rippled/releases/tag/2.4.0) was released on March 4, 2025.
 
-Additions are intended to be non-breaking (because they are purely additive).
+### Additions and bugfixes in 2.4.0
+
+- `ledger_entry`: `state` is added an alias for `ripple_state`.
+- `ledger_entry`: Enables case-insensitive filtering by canonical name in addition to case-sensitive filtering by RPC name.
+- `validators`: Added new field `validator_list_threshold` in response.
+- `simulate`: A new RPC that executes a [dry run of a transaction submission](https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0069d-simulate#2-rpc-simulate)
+- Signing methods autofill fees better and properly handle transactions that don't have a base fee, and will also autofill the `NetworkID` field.
+
+## XRP Ledger server version 2.3.0
+
+[Version 2.3.0](https://github.com/XRPLF/rippled/releases/tag/2.3.0) was released on Nov 25, 2024.
+
+### Breaking changes in 2.3.0
+
+- `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs).
+
+Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
+
+### Additions and bugfixes in 2.3.0
+
+- `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
+
+## XRP Ledger server version 2.2.0
+
+[Version 2.2.0](https://github.com/XRPLF/rippled/releases/tag/2.2.0) was released on Jun 5, 2024. The following additions are non-breaking (because they are purely additive):
+
+- The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
+
+## XRP Ledger server version 2.0.0
+
+[Version 2.0.0](https://github.com/XRPLF/rippled/releases/tag/2.0.0) was released on Jan 9, 2024. The following additions are non-breaking (because they are purely additive):
 
 - `server_definitions`: A new RPC that generates a `definitions.json`-like output that can be used in XRPL libraries.
+- In `Payment` transactions, `DeliverMax` has been added. This is a replacement for the `Amount` field, which should not be used. Typically, the `delivered_amount` (in transaction metadata) should be used. To ease the transition, `DeliverMax` is present regardless of API version, since adding a field is non-breaking.
+- API version 2 has been moved from beta to supported, meaning that it is generally available (regardless of the `beta_rpc_api` setting).
 
-## XRP Ledger version 1.12.0
+## XRP Ledger server version 2.2.0
 
-[Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023.
+The following is a non-breaking addition to the API.
 
-### Additions in 1.12
+- The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
 
-Additions are intended to be non-breaking (because they are purely additive).
+## XRP Ledger server version 1.12.0
+
+[Version 1.12.0](https://github.com/XRPLF/rippled/releases/tag/1.12.0) was released on Sep 6, 2023. The following additions are non-breaking (because they are purely additive).
 
 - `server_info`: Added `ports`, an array which advertises the RPC and WebSocket ports. This information is also included in the `/crawl` endpoint (which calls `server_info` internally). `grpc` and `peer` ports are also included. (https://github.com/XRPLF/rippled/pull/4427)
   - `ports` contains objects, each containing a `port` for the listening port (a number string), and a `protocol` array listing the supported protocols on that port.
@@ -71,12 +170,12 @@ Additions are intended to be non-breaking (because they are purely additive).
     - tecAMM_BALANCE: AMM has invalid balance. Calculated balances greater than the current pool balances.
     - tecAMM_FAILED: AMM transaction failed. Fails due to a processing failure.
     - tecAMM_INVALID_TOKENS: AMM invalid LP tokens. Invalid input values, format, or calculated values.
-    - tecAMM_EMPTY: AMM is in empty state. Transaction expects AMM in non-empty state (LP tokens > 0).
-    - tecAMM_NOT_EMPTY: AMM is not in empty state. Transaction expects AMM in empty state (LP tokens == 0).
+    - tecAMM_EMPTY: AMM is in empty state. Transaction requires AMM in non-empty state (LP tokens > 0).
+    - tecAMM_NOT_EMPTY: AMM is not in empty state. Transaction requires AMM in empty state (LP tokens == 0).
     - tecAMM_ACCOUNT: AMM account. Clawback of AMM account.
     - tecINCOMPLETE: Some work was completed, but more submissions required to finish. AMMDelete partially deletes the trustlines.
 
-## XRP Ledger version 1.11.0
+## XRP Ledger server version 1.11.0
 
 [Version 1.11.0](https://github.com/XRPLF/rippled/releases/tag/1.11.0) was released on Jun 20, 2023.
 
@@ -106,7 +205,7 @@ Additions are intended to be non-breaking (because they are purely additive).
 - Added `NFTokenPages` to the `account_objects` RPC. (https://github.com/XRPLF/rippled/pull/4352)
 - Fixed: `marker` returned from the `account_lines` command would not work on subsequent commands. (https://github.com/XRPLF/rippled/pull/4361)
 
-## XRP Ledger version 1.10.0
+## XRP Ledger server version 1.10.0
 
 [Version 1.10.0](https://github.com/XRPLF/rippled/releases/tag/1.10.0)
 was released on Mar 14, 2023.
@@ -116,63 +215,6 @@ was released on Mar 14, 2023.
 - If the `XRPFees` feature is enabled, the `fee_ref` field will be
   removed from the [ledger subscription stream](https://xrpl.org/subscribe.html#ledger-stream), because it will no longer
   have any meaning.
-
-# In development
-
-Changes below this point are in development.
-
-## API Version 2
-
-At the time of writing, this version is expected to be introduced in `rippled` version 2.0.
-
-Currently (prior to the release of 2.0), it is available as a "beta" version, meaning it can be enabled with a config setting in `rippled.cfg`:
-
-```
-[beta_rpc_api]
-1
-```
-
-Since `api_version` 2 is in "beta", breaking changes to V2 can currently be made at any time.
-
-#### Removed methods
-
-In API version 2, the following methods are no longer available:
-
-- `tx_history` - Instead, use other methods such as `account_tx` or `ledger` with the `transactions` field set to `true`.
-- `ledger_header` - Instead, use the `ledger` method.
-
-#### Modifications to account_info response in V2
-
-- `signer_lists` is returned in the root of the response. Previously, in API version 1, it was nested under `account_data`. (https://github.com/XRPLF/rippled/pull/3770)
-- When using an invalid `signer_lists` value, the API now returns an "invalidParams" error. (https://github.com/XRPLF/rippled/pull/4585)
-  - (`signer_lists` must be a boolean. In API version 1, strings are accepted and may return a normal response - as if `signer_lists` were `true`.)
-
-#### Modifications to [account_tx](https://xrpl.org/account_tx.html#account_tx) response in V2
-
-- Using `ledger_index_min`, `ledger_index_max`, and `ledger_index` returns `invalidParams` because if you use `ledger_index_min` or `ledger_index_max`, then it does not make sense to also specify `ledger_index`. Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4571)
-  - The same applies for `ledger_index_min`, `ledger_index_max`, and `ledger_hash`. (https://github.com/XRPLF/rippled/issues/4545#issuecomment-1565065579)
-- Using a `ledger_index_min` or `ledger_index_max` beyond the range of ledgers that the server has:
-  - returns `lgrIdxMalformed` in API version 2. (https://github.com/XRPLF/rippled/issues/4288)
-  - Previously, in API version 1, no error was returned.
-
-##### In progress
-
-- Attempting to use a non-boolean value (such as a string) for the `binary` or `forward` parameters returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
-
-#### Modifications to [noripple_check](https://xrpl.org/noripple_check.html#noripple_check) response in V2
-
-##### In progress
-
-- Attempting to use a non-boolean value (such as a string) for the `transactions` parameter returns `invalidParams` (`rpcINVALID_PARAMS`). Previously, in API version 1, no error was returned. (https://github.com/XRPLF/rippled/pull/4620)
-
-##### In progress
-
-- In `Payment` transaction type, JSON RPC field `Amount` is renamed to `DeliverMax`. To enable smooth client transition, `Amount` is still handled, as described below:
-  - On JSON RPC input (e.g. `submit_multisigned` etc. methods), `Amount` is recognized as an alias to `DeliverMax` for both API version 1 and version 2 clients.
-  - On JSON RPC input, submitting both `Amount` and `DeliverMax` fields is allowed _only_ if they are identical; otherwise such input is rejected with `rpcINVALID_PARAMS` error.
-  - On JSON RPC output (e.g. `subscribe`, `account_tx` etc. methods), `DeliverMax` is present in both API version 1 and version 2.
-  - On JSON RPC output, `Amount` is only present in API version 1 and _not_ in version 2.
-
 
 # Unit tests for API changes
 

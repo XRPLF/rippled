@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/jss.h>
 #include <test/jtx/seq.h>
+
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

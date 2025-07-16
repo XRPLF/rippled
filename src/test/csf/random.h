@@ -121,7 +121,7 @@ makeSelector(Iter first, Iter last, std::vector<double> const& w, Generator& g)
 }
 
 //------------------------------------------------------------------------------
-// Additional distributions of interest not defined in in <random>
+// Additional distributions of interest not defined in <random>
 
 /** Constant "distribution" that always returns the same value
  */

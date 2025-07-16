@@ -17,19 +17,17 @@
 */
 //==============================================================================
 
-#include <ripple/basics/make_SSLContext.h>
-#include <ripple/beast/core/CurrentThreadName.h>
-#include <ripple/beast/unit_test.h>
 #include <test/jtx/envconfig.h>
+
+#include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/unit_test.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
-#include <cassert>
-#include <condition_variable>
 #include <functional>
-#include <memory>
 #include <optional>
 #include <thread>
 #include <utility>

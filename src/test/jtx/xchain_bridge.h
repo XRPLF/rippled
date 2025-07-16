@@ -20,12 +20,13 @@
 #ifndef RIPPLE_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
 #define RIPPLE_TEST_JTX_XCHAINBRIDGE_H_INCLUDED
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/XChainAttestations.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/multisign.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/XChainAttestations.h>
 
 namespace ripple {
 namespace test {
@@ -195,12 +196,12 @@ struct XChainBridgeObjects
     STAmount const split_reward_quorum;    // 250,000 drops
     STAmount const split_reward_everyone;  // 200,000 drops
 
-    const STAmount tiny_reward;            // 37 drops
-    const STAmount tiny_reward_split;      // 9 drops
-    const STAmount tiny_reward_remainder;  // 1 drops
+    STAmount const tiny_reward;            // 37 drops
+    STAmount const tiny_reward_split;      // 9 drops
+    STAmount const tiny_reward_remainder;  // 1 drops
 
-    const STAmount one_xrp;
-    const STAmount xrp_dust;
+    STAmount const one_xrp;
+    STAmount const xrp_dust;
 
     static constexpr int drop_per_xrp = 1000000;
 

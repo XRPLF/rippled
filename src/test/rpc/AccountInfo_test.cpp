@@ -17,15 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
-
-#include <ripple/resource/Charge.h>
-#include <ripple/resource/Fees.h>
-#include <ripple/rpc/GRPCHandlers.h>
 #include <test/jtx/WSClient.h>
 #include <test/rpc/GRPCTestClientBase.h>
+
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -36,6 +33,7 @@ public:
     void
     testErrors()
     {
+        testcase("Errors");
         using namespace jtx;
         Env env(*this);
         {
@@ -78,12 +76,53 @@ public:
             BEAST_EXPECT(
                 info[jss::result][jss::error_message] == "Account malformed.");
         }
+        {
+            // Cannot pass a non-string into the `account` param
+
+            auto testInvalidAccountParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::account] = param;
+                auto jrr = env.rpc(
+                    "json", "account_info", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'account'.");
+            };
+
+            testInvalidAccountParam(1);
+            testInvalidAccountParam(1.1);
+            testInvalidAccountParam(true);
+            testInvalidAccountParam(Json::Value(Json::nullValue));
+            testInvalidAccountParam(Json::Value(Json::objectValue));
+            testInvalidAccountParam(Json::Value(Json::arrayValue));
+        }
+        {
+            // Cannot pass a non-string into the `ident` param
+
+            auto testInvalidIdentParam = [&](auto const& param) {
+                Json::Value params;
+                params[jss::ident] = param;
+                auto jrr = env.rpc(
+                    "json", "account_info", to_string(params))[jss::result];
+                BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+                BEAST_EXPECT(
+                    jrr[jss::error_message] == "Invalid field 'ident'.");
+            };
+
+            testInvalidIdentParam(1);
+            testInvalidIdentParam(1.1);
+            testInvalidIdentParam(true);
+            testInvalidIdentParam(Json::Value(Json::nullValue));
+            testInvalidIdentParam(Json::Value(Json::objectValue));
+            testInvalidIdentParam(Json::Value(Json::arrayValue));
+        }
     }
 
     // Test the "signer_lists" argument in account_info.
     void
     testSignerLists()
     {
+        testcase("Signer lists");
         using namespace jtx;
         Env env(*this);
         Account const alice{"alice"};
@@ -205,6 +244,7 @@ public:
     void
     testSignerListsApiVersion2()
     {
+        testcase("Signer lists APIv2");
         using namespace jtx;
         Env env{*this};
         Account const alice{"alice"};
@@ -326,6 +366,7 @@ public:
     void
     testSignerListsV2()
     {
+        testcase("Signer lists v2");
         using namespace jtx;
         Env env(*this);
         Account const alice{"alice"};
@@ -515,6 +556,7 @@ public:
     void
     testAccountFlags(FeatureBitset const& features)
     {
+        testcase("Account flags");
         using namespace jtx;
 
         Env env(*this, features);
@@ -633,6 +675,30 @@ public:
             BEAST_EXPECT(
                 !getAccountFlag(allowTrustLineClawbackFlag.first, bob));
         }
+
+        static constexpr std::pair<std::string_view, std::uint32_t>
+            allowTrustLineLockingFlag{
+                "allowTrustLineLocking", asfAllowTrustLineLocking};
+
+        if (features[featureTokenEscrow])
+        {
+            auto const f1 =
+                getAccountFlag(allowTrustLineLockingFlag.first, bob);
+            BEAST_EXPECT(f1.has_value());
+            BEAST_EXPECT(!f1.value());
+
+            // Set allowTrustLineLocking
+            env(fset(bob, allowTrustLineLockingFlag.second));
+            env.close();
+            auto const f2 =
+                getAccountFlag(allowTrustLineLockingFlag.first, bob);
+            BEAST_EXPECT(f2.has_value());
+            BEAST_EXPECT(f2.value());
+        }
+        else
+        {
+            BEAST_EXPECT(!getAccountFlag(allowTrustLineLockingFlag.first, bob));
+        }
     }
 
     void
@@ -649,10 +715,13 @@ public:
         testAccountFlags(allFeatures - featureDisallowIncoming);
         testAccountFlags(
             allFeatures - featureDisallowIncoming - featureClawback);
+        testAccountFlags(
+            allFeatures - featureDisallowIncoming - featureClawback -
+            featureTokenEscrow);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AccountInfo, app, ripple);
+BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

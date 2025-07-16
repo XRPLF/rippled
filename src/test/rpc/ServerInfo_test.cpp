@@ -17,10 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/NetworkOPs.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+
+#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/ConfigSections.h>
+
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/format.hpp>
 
@@ -85,35 +88,56 @@ admin = 127.0.0.1
 
         {
             Env env(*this);
-            auto const result = env.rpc("server_info");
-            BEAST_EXPECT(!result[jss::result].isMember(jss::error));
-            BEAST_EXPECT(result[jss::result][jss::status] == "success");
-            BEAST_EXPECT(result[jss::result].isMember(jss::info));
+            auto const serverinfo = env.rpc("server_info");
+            BEAST_EXPECT(serverinfo.isMember(jss::result));
+            auto const& result = serverinfo[jss::result];
+            BEAST_EXPECT(!result.isMember(jss::error));
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(result.isMember(jss::info));
+            auto const& info = result[jss::info];
+            BEAST_EXPECT(info.isMember(jss::build_version));
+            // Git info is not guaranteed to be present
+            if (info.isMember(jss::git))
+            {
+                auto const& git = info[jss::git];
+                BEAST_EXPECT(
+                    git.isMember(jss::hash) || git.isMember(jss::branch));
+                BEAST_EXPECT(
+                    !git.isMember(jss::hash) ||
+                    (git[jss::hash].isString() &&
+                     git[jss::hash].asString().size() == 40));
+                BEAST_EXPECT(
+                    !git.isMember(jss::branch) ||
+                    (git[jss::branch].isString() &&
+                     git[jss::branch].asString().size() != 0));
+            }
         }
 
         {
             Env env(*this);
 
             // Call NetworkOPs directly and set the admin flag to false.
-            // Expect that the admin ports are not included in the result.
             auto const result =
                 env.app().getOPs().getServerInfo(true, false, 0);
+            // Expect that the admin ports are not included in the result.
             auto const& ports = result[jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 0);
+            // Expect that git info is absent
+            BEAST_EXPECT(!result.isMember(jss::git));
         }
 
         {
-            auto config = makeValidatorConfig();
-            auto const rpc_port =
-                (*config)["port_rpc"].get<unsigned int>("port");
+            Env env(*this, makeValidatorConfig());
+            auto const& config = env.app().config();
+
+            auto const rpc_port = config["port_rpc"].get<unsigned int>("port");
             auto const grpc_port =
-                (*config)["port_grpc"].get<unsigned int>("port");
-            auto const ws_port = (*config)["port_ws"].get<unsigned int>("port");
+                config[SECTION_PORT_GRPC].get<unsigned int>("port");
+            auto const ws_port = config["port_ws"].get<unsigned int>("port");
             BEAST_EXPECT(grpc_port);
             BEAST_EXPECT(rpc_port);
             BEAST_EXPECT(ws_port);
 
-            Env env(*this, std::move(config));
             auto const result = env.rpc("server_info");
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
@@ -196,6 +220,39 @@ admin = 127.0.0.1
                     .asUInt() == 0);
             BEAST_EXPECT(
                 result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
+
+            // check exception SFields
+            {
+                auto const fieldExists = [&](std::string name) {
+                    for (auto& field : result[jss::result][jss::FIELDS])
+                    {
+                        if (field[0u].asString() == name)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                BEAST_EXPECT(fieldExists("Generic"));
+                BEAST_EXPECT(fieldExists("Invalid"));
+                BEAST_EXPECT(fieldExists("ObjectEndMarker"));
+                BEAST_EXPECT(fieldExists("ArrayEndMarker"));
+                BEAST_EXPECT(fieldExists("taker_gets_funded"));
+                BEAST_EXPECT(fieldExists("taker_pays_funded"));
+                BEAST_EXPECT(fieldExists("hash"));
+                BEAST_EXPECT(fieldExists("index"));
+            }
+
+            // test that base_uint types are replaced with "Hash" prefix
+            {
+                auto const types = result[jss::result][jss::TYPES];
+                BEAST_EXPECT(types["Hash128"].asUInt() == 4);
+                BEAST_EXPECT(types["Hash160"].asUInt() == 17);
+                BEAST_EXPECT(types["Hash192"].asUInt() == 21);
+                BEAST_EXPECT(types["Hash256"].asUInt() == 5);
+                BEAST_EXPECT(types["Hash384"].asUInt() == 22);
+                BEAST_EXPECT(types["Hash512"].asUInt() == 23);
+            }
         }
 
         // test providing the same hash

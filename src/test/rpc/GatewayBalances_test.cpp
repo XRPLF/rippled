@@ -15,12 +15,14 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/rpc/impl/RPCHelpers.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+
+#include <xrpld/rpc/detail/RPCHelpers.h>
+
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -46,6 +48,7 @@ public:
             // Create a hotwallet
             Account const hw{"hw"};
             env.fund(XRP(10000), "hw");
+            env.close();
             env(trust(hw, USD(10000)));
             env(trust(hw, JPY(10000)));
             env(pay(alice, hw, USD(5000)));
@@ -54,12 +57,14 @@ public:
             // Create some clients
             Account const bob{"bob"};
             env.fund(XRP(10000), "bob");
+            env.close();
             env(trust(bob, USD(100)));
             env(trust(bob, CNY(100)));
             env(pay(alice, bob, USD(50)));
 
             Account const charley{"charley"};
             env.fund(XRP(10000), "charley");
+            env.close();
             env(trust(charley, CNY(500)));
             env(trust(charley, JPY(500)));
             env(pay(alice, charley, CNY(250)));
@@ -67,6 +72,7 @@ public:
 
             Account const dave{"dave"};
             env.fund(XRP(10000), "dave");
+            env.close();
             env(trust(dave, CNY(100)));
             env(pay(alice, dave, CNY(30)));
 
@@ -172,10 +178,7 @@ public:
         qry2[jss::account] = alice.human();
         qry2[jss::hotwallet] = "asdf";
 
-        for (auto apiVersion = RPC::apiMinimumSupportedVersion;
-             apiVersion <= RPC::apiBetaVersion;
-             ++apiVersion)
-        {
+        forAllApiVersions([&, this](unsigned apiVersion) {
             qry2[jss::api_version] = apiVersion;
             auto jv = wsc->invoke("gateway_balances", qry2);
             expect(jv[jss::status] == "error");
@@ -184,7 +187,7 @@ public:
             auto const error =
                 apiVersion < 2u ? "invalidHotWallet" : "invalidParams";
             BEAST_EXPECT(response[jss::error] == error);
-        }
+        });
     }
 
     void
@@ -207,6 +210,7 @@ public:
         // Create a hotwallet
         Account const hw{"hw"};
         env.fund(XRP(10000), hw);
+        env.close();
         env(trust(hw, maxUSD));
         env.close();
         env(pay(alice, hw, maxUSD));
@@ -214,12 +218,14 @@ public:
         // Create some clients
         Account const bob{"bob"};
         env.fund(XRP(10000), bob);
+        env.close();
         env(trust(bob, maxUSD));
         env.close();
         env(pay(alice, bob, maxUSD));
 
         Account const charley{"charley"};
         env.fund(XRP(10000), charley);
+        env.close();
         env(trust(charley, maxUSD));
         env.close();
         env(pay(alice, charley, maxUSD));
@@ -246,7 +252,10 @@ public:
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        for (auto feature : {sa - featureFlowCross, sa})
+        for (auto feature :
+             {sa - featureFlowCross - featurePermissionedDEX,
+              sa - featurePermissionedDEX,
+              sa})
         {
             testGWB(feature);
             testGWBApiVersions(feature);

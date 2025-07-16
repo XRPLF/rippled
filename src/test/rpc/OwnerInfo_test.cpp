@@ -16,12 +16,13 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <test/jtx.h>
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/AccountID.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/jss.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -93,6 +94,7 @@ class OwnerInfo_test : public beast::unit_test::suite
         auto const alice = Account{"alice"};
         auto const gw = Account{"gateway"};
         env.fund(XRP(10000), alice, gw);
+        env.close();
         auto const USD = gw["USD"];
         auto const CNY = gw["CNY"];
         env(trust(alice, USD(1000)));

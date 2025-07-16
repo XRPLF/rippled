@@ -17,21 +17,21 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test/suite.hpp>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Indexes.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/Serializer.h>
-#include <ripple/protocol/TER.h>
-#include <ripple/protocol/XChainAttestations.h>
-
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/attester.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XChainAttestations.h>
 
 #include <functional>
 #include <limits>
@@ -41,9 +41,6 @@
 #include <tuple>
 #include <variant>
 #include <vector>
-
-#include <fstream>
-#include <iostream>
 
 namespace ripple::test {
 
@@ -201,11 +198,7 @@ struct SEnv
 template <class T>
 struct XEnv : public jtx::XChainBridgeObjects, public SEnv<T>
 {
-    XEnv(T& s, bool side = false)
-        : SEnv<T>(
-              s,
-              jtx::envconfig(jtx::port_increment, side ? 3 : 0),
-              features)
+    XEnv(T& s, bool side = false) : SEnv<T>(s, jtx::envconfig(), features)
     {
         using namespace jtx;
         STAmount xrp_funds{XRP(10000)};
@@ -323,7 +316,7 @@ struct BalanceTransfer
         return std::all_of(
             reward_accounts.begin(),
             reward_accounts.end(),
-            [&](const balance& b) { return b.diff() == reward; });
+            [&](balance const& b) { return b.diff() == reward; });
     }
 
     bool
@@ -728,7 +721,7 @@ struct XChain_test : public beast::unit_test::suite,
         //   Locking chain is XRP,
         // - Issuing chain is XRP with issuing chain is the root account.
         // ---------------------------------------------------------------------
-        Account a, b;
+        Account a("a"), b("b");
         Issue ia, ib;
 
         std::tuple lcs{
@@ -2561,7 +2554,8 @@ struct XChain_test : public beast::unit_test::suite,
             }
             {
                 // B1: disabled master key
-                scEnv.tx(fset(alt_signers[2].account, asfDisableMaster, 0));
+                scEnv.tx(fset(alt_signers[2].account, asfDisableMaster, 0))
+                    .close();
                 auto att = claim_attestation(
                     scAttester,
                     jvb,
@@ -4588,8 +4582,8 @@ private:
     {
     public:
         SmBase(
-            const std::shared_ptr<ChainStateTracker>& chainstate,
-            const BridgeDef& bridge)
+            std::shared_ptr<ChainStateTracker> const& chainstate,
+            BridgeDef const& bridge)
             : bridge_(bridge), st_(chainstate)
         {
         }
@@ -4619,7 +4613,7 @@ private:
         }
 
     protected:
-        const BridgeDef& bridge_;
+        BridgeDef const& bridge_;
         std::shared_ptr<ChainStateTracker> st_;
     };
 
@@ -4630,8 +4624,8 @@ private:
         using Base = SmBase<SmCreateAccount>;
 
         SmCreateAccount(
-            const std::shared_ptr<ChainStateTracker>& chainstate,
-            const BridgeDef& bridge,
+            std::shared_ptr<ChainStateTracker> const& chainstate,
+            BridgeDef const& bridge,
             AccountCreate create)
             : Base(chainstate, bridge)
             , sm_state(st_initial)
@@ -4762,8 +4756,8 @@ private:
         using Base = SmBase<SmTransfer>;
 
         SmTransfer(
-            const std::shared_ptr<ChainStateTracker>& chainstate,
-            const BridgeDef& bridge,
+            std::shared_ptr<ChainStateTracker> const& chainstate,
+            BridgeDef const& bridge,
             Transfer xfer)
             : Base(chainstate, bridge)
             , xfer(std::move(xfer))
@@ -4932,7 +4926,7 @@ private:
     void
     xfer(
         uint64_t time,
-        const std::shared_ptr<ChainStateTracker>& chainstate,
+        std::shared_ptr<ChainStateTracker> const& chainstate,
         BridgeDef const& bridge,
         Transfer transfer)
     {
@@ -4942,7 +4936,7 @@ private:
 
     void
     ac(uint64_t time,
-       const std::shared_ptr<ChainStateTracker>& chainstate,
+       std::shared_ptr<ChainStateTracker> const& chainstate,
        BridgeDef const& bridge,
        AccountCreate ac)
     {
@@ -5005,7 +4999,8 @@ public:
 
         // create 10 accounts + door funded on both chains, and store
         // in ChainStateTracker the initial amount of these accounts
-        Account doorXRPLocking, doorUSDLocking, doorUSDIssuing;
+        Account doorXRPLocking("doorXRPLocking"),
+            doorUSDLocking("doorUSDLocking"), doorUSDIssuing("doorUSDIssuing");
 
         constexpr size_t num_acct = 10;
         auto a = [&doorXRPLocking, &doorUSDLocking, &doorUSDIssuing]() {

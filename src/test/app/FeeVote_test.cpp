@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/FeeVote.h>
-#include <ripple/basics/BasicConfig.h>
 #include <test/jtx.h>
+
+#include <xrpl/basics/BasicConfig.h>
 
 namespace ripple {
 namespace test {
@@ -76,7 +76,7 @@ class FeeVote_test : public beast::unit_test::suite
                 setup.owner_reserve == static_cast<std::uint32_t>(-1234));
         }
         {
-            const auto big64 = std::to_string(
+            auto const big64 = std::to_string(
                 static_cast<std::uint64_t>(
                     std::numeric_limits<XRPAmount::value_type>::max()) +
                 1);

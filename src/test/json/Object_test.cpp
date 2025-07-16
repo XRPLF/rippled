@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/json/Object.h>
 #include <test/json/TestOutputSuite.h>
+
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/json/Object.h>
 
 namespace Json {
 

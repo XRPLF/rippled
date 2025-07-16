@@ -20,16 +20,17 @@
 #ifndef RIPPLE_TEST_JTX_AMOUNT_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMOUNT_H_INCLUDED
 
-#include <ripple/basics/FeeUnits.h>
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/Issue.h>
-#include <ripple/protocol/STAmount.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/tags.h>
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/STAmount.h>
+
 #include <cstdint>
 #include <ostream>
 #include <string>
-#include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/tags.h>
 #include <type_traits>
 
 namespace ripple {
@@ -126,12 +127,23 @@ public:
         return amount_;
     }
 
-    operator STAmount const &() const
+    Number
+    number() const
+    {
+        return amount_;
+    }
+
+    operator STAmount const&() const
     {
         return amount_;
     }
 
     operator AnyAmount() const;
+
+    operator Json::Value() const
+    {
+        return to_json(value());
+    }
 };
 
 inline bool
@@ -149,6 +161,49 @@ operator!=(PrettyAmount const& lhs, PrettyAmount const& rhs)
 std::ostream&
 operator<<(std::ostream& os, PrettyAmount const& amount);
 
+struct PrettyAsset
+{
+private:
+    Asset asset_;
+    unsigned int scale_;
+
+public:
+    template <typename A>
+        requires std::convertible_to<A, Asset>
+    PrettyAsset(A const& asset, unsigned int scale = 1)
+        : PrettyAsset{Asset{asset}, scale}
+    {
+    }
+
+    PrettyAsset(Asset const& asset, unsigned int scale = 1)
+        : asset_(asset), scale_(scale)
+    {
+    }
+
+    Asset const&
+    raw() const
+    {
+        return asset_;
+    }
+
+    operator Asset const&() const
+    {
+        return asset_;
+    }
+
+    operator Json::Value() const
+    {
+        return to_json(asset_);
+    }
+
+    template <std::integral T>
+    PrettyAmount
+    operator()(T v) const
+    {
+        STAmount amount{asset_, v * scale_};
+        return {amount, ""};
+    }
+};
 //------------------------------------------------------------------------------
 
 // Specifies an order book
@@ -211,7 +266,8 @@ struct XRP_t
     /** @} */
 
     /** Returns None-of-XRP */
-    None operator()(none_t) const
+    None
+    operator()(none_t) const
     {
         return {xrpIssue()};
     }
@@ -305,12 +361,16 @@ public:
         return {currency, account.id()};
     }
 
-    /** Implicit conversion to Issue.
+    /** Implicit conversion to Issue or Asset.
 
         This allows passing an IOU
-        value where an Issue is expected.
+        value where an Issue or Asset is expected.
     */
     operator Issue() const
+    {
+        return issue();
+    }
+    operator Asset() const
     {
         return issue();
     }
@@ -327,14 +387,17 @@ public:
         return {amountFromString(issue(), std::to_string(v)), account.name()};
     }
 
-    PrettyAmount operator()(epsilon_t) const;
-    PrettyAmount operator()(detail::epsilon_multiple) const;
+    PrettyAmount
+    operator()(epsilon_t) const;
+    PrettyAmount
+    operator()(detail::epsilon_multiple) const;
 
     // VFALCO TODO
     // STAmount operator()(char const* s) const;
 
     /** Returns None-of-Issue */
-    None operator()(none_t) const
+    None
+    operator()(none_t) const
     {
         return {issue()};
     }
@@ -348,6 +411,67 @@ public:
 
 std::ostream&
 operator<<(std::ostream& os, IOU const& iou);
+
+//------------------------------------------------------------------------------
+
+/** Converts to MPT Issue or STAmount.
+
+    Examples:
+        MPT         Converts to the underlying Issue
+        MPT(10)     Returns STAmount of 10 of
+                        the underlying MPT
+*/
+class MPT
+{
+public:
+    std::string name;
+    ripple::MPTID issuanceID;
+
+    MPT(std::string const& n, ripple::MPTID const& issuanceID_)
+        : name(n), issuanceID(issuanceID_)
+    {
+    }
+
+    ripple::MPTID const&
+    mpt() const
+    {
+        return issuanceID;
+    }
+
+    /** Implicit conversion to MPTIssue.
+
+        This allows passing an MPT
+        value where an MPTIssue is expected.
+    */
+    operator ripple::MPTIssue() const
+    {
+        return MPTIssue{issuanceID};
+    }
+
+    template <class T>
+        requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>)
+    PrettyAmount
+    operator()(T v) const
+    {
+        return {amountFromString(mpt(), std::to_string(v)), name};
+    }
+
+    PrettyAmount
+    operator()(epsilon_t) const;
+    PrettyAmount
+    operator()(detail::epsilon_multiple) const;
+
+    friend BookSpec
+    operator~(MPT const& mpt)
+    {
+        assert(false);
+        Throw<std::logic_error>("MPT is not supported");
+        return BookSpec{beast::zero, noCurrency()};
+    }
+};
+
+std::ostream&
+operator<<(std::ostream& os, MPT const& mpt);
 
 //------------------------------------------------------------------------------
 

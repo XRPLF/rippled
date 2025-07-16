@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+
+#include <xrpld/core/ConfigSections.h>
+
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/jss.h>
 
 #include <string>
 #include <vector>
@@ -50,6 +52,7 @@ public:
     {
         using namespace test::jtx;
         Env env{*this, envconfig(no_admin)};
+        env.set_retries(0);
         auto const info = env.rpc("validator_info")[jss::result];
         BEAST_EXPECT(info.isNull());
     }
@@ -60,7 +63,7 @@ public:
         testcase("Lookup");
 
         using namespace jtx;
-        const std::vector<std::string> tokenBlob = {
+        std::vector<std::string> const tokenBlob = {
             "    "
             "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT"
             "\n",

@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <ripple/basics/StringUtilities.h>
-#include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/Quality.h>
-#include <ripple/protocol/Rate.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -41,7 +41,7 @@ public:
         env.fund(XRP(10000), noripple(alice));
         // ask for the ledger entry - account root, to check its flags
         auto const jrr = env.le(alice);
-        BEAST_EXPECT((*env.le(alice))[sfFlags] == 0u);
+        BEAST_EXPECT(jrr && jrr->at(sfFlags) == 0u);
     }
 
     void
@@ -97,6 +97,12 @@ public:
                 {
                     // The asfAllowTrustLineClawback flag can't be cleared.  It
                     // is tested elsewhere.
+                    continue;
+                }
+                if (flag == asfAllowTrustLineLocking)
+                {
+                    // These flags are part of the AllowTokenLocking amendment
+                    // and are tested elsewhere
                     continue;
                 }
 

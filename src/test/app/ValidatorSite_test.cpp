@@ -17,30 +17,29 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/ValidatorSite.h>
-#include <ripple/basics/Slice.h>
-#include <ripple/basics/base64.h>
-#include <ripple/basics/strHex.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Sign.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
-#include <boost/algorithm/string/join.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <chrono>
-#include <date/date.h>
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
 #include <test/unit_test/FileDirGuard.h>
 
+#include <xrpld/app/misc/ValidatorSite.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/jss.h>
+
+#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+
+#include <date/date.h>
+
+#include <chrono>
+
 namespace ripple {
 namespace test {
 namespace detail {
-constexpr const char*
+constexpr char const*
 realValidatorContents()
 {
     return R"vl({
@@ -78,20 +77,21 @@ private:
         BEAST_EXPECT(trustedSites->load(emptyCfgSites));
 
         // load should accept valid validator site uris
-        std::vector<std::string> cfgSites({
-            "http://ripple.com/", "http://ripple.com/validators",
-                "http://ripple.com:8080/validators",
-                "http://207.261.33.37/validators",
-                "http://207.261.33.37:8080/validators",
-                "https://ripple.com/validators",
-                "https://ripple.com:443/validators",
-                "file:///etc/opt/ripple/validators.txt",
-                "file:///C:/Lib/validators.txt"
+        std::vector<std::string> cfgSites(
+            {"http://ripple.com/",
+             "http://ripple.com/validators",
+             "http://ripple.com:8080/validators",
+             "http://207.261.33.37/validators",
+             "http://207.261.33.37:8080/validators",
+             "https://ripple.com/validators",
+             "https://ripple.com:443/validators",
+             "file:///etc/opt/ripple/validators.txt",
+             "file:///C:/Lib/validators.txt"
 #if !_MSC_VER
-                ,
-                "file:///"
+             ,
+             "file:///"
 #endif
-        });
+            });
         BEAST_EXPECT(trustedSites->load(cfgSites));
 
         // load should reject validator site uris with invalid schemes
@@ -172,7 +172,6 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        PublicKey emptyLocalKey;
         std::vector<std::string> emptyCfgKeys;
         struct publisher
         {
@@ -229,8 +228,7 @@ private:
             item.uri = uri.str();
         }
 
-        BEAST_EXPECT(
-            trustedKeys.load(emptyLocalKey, emptyCfgKeys, cfgPublishers));
+        BEAST_EXPECT(trustedKeys.load({}, emptyCfgKeys, cfgPublishers));
 
         // Normally, tests will only need a fraction of this time,
         // but sometimes DNS resolution takes an inordinate amount
@@ -239,7 +237,10 @@ private:
 
         std::vector<std::string> uris;
         for (auto const& u : servers)
+        {
+            log << "Testing " << u.uri << std::endl;
             uris.push_back(u.uri);
+        }
         sites->load(uris);
         sites->start();
         sites->join();

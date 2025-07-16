@@ -17,13 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/ErrorCodes.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
-#include <boost/asio/ip/address_v4.hpp>
+#include <xrpl/beast/unit_test.h>
 
 #include <string>
 #include <unordered_map>

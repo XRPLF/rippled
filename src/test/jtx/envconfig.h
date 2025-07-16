@@ -20,14 +20,19 @@
 #ifndef RIPPLE_TEST_JTX_ENVCONFIG_H_INCLUDED
 #define RIPPLE_TEST_JTX_ENVCONFIG_H_INCLUDED
 
-#include <ripple/core/Config.h>
+#include <xrpld/core/Config.h>
 
 namespace ripple {
 namespace test {
 
+// frequently used macros defined here for convinience.
+#define PORT_WS "port_ws"
+#define PORT_RPC "port_rpc"
+#define PORT_PEER "port_peer"
+
 extern std::atomic<bool> envUseIPv4;
 
-inline const char*
+inline char const*
 getEnvLocalhostAddr()
 {
     return envUseIPv4 ? "127.0.0.1" : "::1";
@@ -101,19 +106,6 @@ std::unique_ptr<Config> secure_gateway_localnet(std::unique_ptr<Config>);
 std::unique_ptr<Config>
 validator(std::unique_ptr<Config>, std::string const&);
 
-/// @brief adjust the default configured server ports by a specified value
-///
-/// This is intended for use with envconfig, as in
-/// envconfig(port_increment, 5)
-///
-/// @param cfg config instance to be modified
-/// @param int amount by which to increment the existing server port
-/// values in the config
-///
-/// @return unique_ptr to Config instance
-std::unique_ptr<Config>
-port_increment(std::unique_ptr<Config>, int);
-
 /// @brief add a grpc address and port to config
 ///
 /// This is intended for use with envconfig, for tests that require a grpc
@@ -134,6 +126,11 @@ std::unique_ptr<Config>
 addGrpcConfigWithSecureGateway(
     std::unique_ptr<Config>,
     std::string const& secureGateway);
+
+std::unique_ptr<Config>
+makeConfig(
+    std::map<std::string, std::string> extraTxQ = {},
+    std::map<std::string, std::string> extraVoting = {});
 
 }  // namespace jtx
 }  // namespace test

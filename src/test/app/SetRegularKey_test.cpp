@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 

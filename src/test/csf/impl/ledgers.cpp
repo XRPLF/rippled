@@ -16,10 +16,10 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#include <algorithm>
+
 #include <test/csf/ledgers.h>
 
-#include <sstream>
+#include <algorithm>
 
 namespace ripple {
 namespace test {

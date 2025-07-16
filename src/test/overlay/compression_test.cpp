@@ -17,34 +17,37 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/app/misc/Manifest.h>
-#include <ripple/basics/random.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/beast/utility/Journal.h>
-#include <ripple/overlay/Compression.h>
-#include <ripple/overlay/Message.h>
-#include <ripple/overlay/impl/Handshake.h>
-#include <ripple/overlay/impl/ProtocolMessage.h>
-#include <ripple/overlay/impl/ZeroCopyStream.h>
-#include <ripple/protocol/HashPrefix.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/Sign.h>
-#include <ripple/protocol/digest.h>
-#include <ripple/protocol/jss.h>
-#include <ripple/protocol/messages.h>
-#include <ripple/shamap/SHAMapNodeID.h>
-#include <boost/asio/ip/address_v4.hpp>
-#include <boost/beast/core/multi_buffer.hpp>
-#include <boost/endian/conversion.hpp>
-#include <algorithm>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/pay.h>
+
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/overlay/Compression.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpld/overlay/detail/ProtocolMessage.h>
+#include <xrpld/overlay/detail/ZeroCopyStream.h>
+#include <xrpld/shamap/SHAMapNodeID.h>
+
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/messages.h>
+
+#include <boost/asio/ip/address_v4.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/endian/conversion.hpp>
+
+#include <algorithm>
 
 namespace ripple {
 
@@ -470,17 +473,14 @@ public:
             Config c;
             std::stringstream str;
             str << "[reduce_relay]\n"
-                << "vp_enable=1\n"
-                << "vp_squelch=1\n"
+                << "vp_base_squelch_enable=1\n"
                 << "[compression]\n"
                 << enable << "\n";
             c.loadFromString(str.str());
             auto env = std::make_shared<jtx::Env>(*this);
             env->app().config().COMPRESSION = c.COMPRESSION;
-            env->app().config().VP_REDUCE_RELAY_ENABLE =
-                c.VP_REDUCE_RELAY_ENABLE;
-            env->app().config().VP_REDUCE_RELAY_SQUELCH =
-                c.VP_REDUCE_RELAY_SQUELCH;
+            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
@@ -493,7 +493,7 @@ public:
                 env->app().config().COMPRESSION,
                 false,
                 env->app().config().TX_REDUCE_RELAY_ENABLE,
-                env->app().config().VP_REDUCE_RELAY_ENABLE);
+                env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();

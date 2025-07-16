@@ -20,7 +20,8 @@
 #ifndef RIPPLE_TEST_CSF_SIMTIME_H_INCLUDED
 #define RIPPLE_TEST_CSF_SIMTIME_H_INCLUDED
 
-#include <ripple/beast/clock/manual_clock.h>
+#include <xrpl/beast/clock/manual_clock.h>
+
 #include <chrono>
 
 namespace ripple {

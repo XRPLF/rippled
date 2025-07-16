@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_COLLECTOREF_H_INCLUDED
 #define RIPPLE_TEST_CSF_COLLECTOREF_H_INCLUDED
 
@@ -40,7 +41,7 @@ namespace csf {
    level when adding to the simulation.
 
     The example code below demonstrates the reason for storing the collector
-    as a reference.  The collector's lifetime will generally be be longer than
+    as a reference.  The collector's lifetime will generally be longer than
     the simulation; perhaps several simulations are run for a single collector
     instance.  The collector potentially stores lots of data as well, so the
     simulation needs to point to the single instance, rather than requiring

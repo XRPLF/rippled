@@ -19,11 +19,10 @@
 
 #include <test/jtx/attester.h>
 
-#include <ripple/basics/Slice.h>
-#include <ripple/protocol/PublicKey.h>
-#include <ripple/protocol/STXChainBridge.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/XChainAttestations.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/XChainAttestations.h>
 
 namespace ripple {
 namespace test {

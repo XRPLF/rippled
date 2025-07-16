@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/Feature.h>
 #include <test/jtx.h>
+
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 namespace test {
@@ -39,7 +40,9 @@ public:
         {
             Env env(*this, features);
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
+            env.close();
             env.trust(USD(100), "alice", "bob", "carol");
+            env.close();
             env(pay("alice", "bob", USD(10)),
                 delivermin(USD(10)),
                 ter(temBAD_AMOUNT));
@@ -67,14 +70,17 @@ public:
                 txflags(tfPartialPayment),
                 sendmax(XRP(5)),
                 ter(tecPATH_PARTIAL));
-            env.require(balance("alice", XRP(9999.99999)));
+            env.require(balance(
+                "alice", XRP(10000) - drops(env.current()->fees().base)));
             env.require(balance("bob", XRP(10000)));
         }
 
         {
             Env env(*this, features);
             env.fund(XRP(10000), "alice", "bob", gw);
+            env.close();
             env.trust(USD(1000), "alice", "bob");
+            env.close();
             env(pay(gw, "bob", USD(100)));
             env(offer("bob", XRP(100), USD(100)));
             env(pay("alice", "alice", USD(10000)),
@@ -88,7 +94,9 @@ public:
         {
             Env env(*this, features);
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
+            env.close();
             env.trust(USD(1000), "bob", "carol");
+            env.close();
             env(pay(gw, "bob", USD(200)));
             env(offer("bob", XRP(100), USD(100)));
             env(offer("bob", XRP(1000), USD(100)));
@@ -111,7 +119,9 @@ public:
         {
             Env env(*this, features);
             env.fund(XRP(10000), "alice", "bob", "carol", "dan", gw);
+            env.close();
             env.trust(USD(1000), "bob", "carol", "dan");
+            env.close();
             env(pay(gw, "bob", USD(100)));
             env(pay(gw, "dan", USD(100)));
             env(offer("bob", XRP(100), USD(100)));
@@ -133,7 +143,9 @@ public:
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        test_convert_all_of_an_asset(sa - featureFlowCross);
+        test_convert_all_of_an_asset(
+            sa - featureFlowCross - featurePermissionedDEX);
+        test_convert_all_of_an_asset(sa - featurePermissionedDEX);
         test_convert_all_of_an_asset(sa);
     }
 };

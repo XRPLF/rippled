@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/rpc/Status.h>
-#include <algorithm>
+#include <xrpld/rpc/Status.h>
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace RPC {
@@ -76,7 +76,7 @@ private:
 
         {
             auto s = codeString(temBAD_AMOUNT);
-            expect(s == "temBAD_AMOUNT: Can only send positive amounts.", s);
+            expect(s == "temBAD_AMOUNT: Malformed: Bad amount.", s);
         }
 
         {
@@ -176,7 +176,7 @@ private:
             "temBAD_AMOUNT",
             temBAD_AMOUNT,
             {},
-            "temBAD_AMOUNT: Can only send positive amounts.");
+            "temBAD_AMOUNT: Malformed: Bad amount.");
 
         expectFill(
             "rpcBAD_SYNTAX",

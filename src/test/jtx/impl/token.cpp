@@ -20,9 +20,10 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/token.h>
 
-#include <ripple/app/tx/impl/NFTokenMint.h>
-#include <ripple/protocol/SField.h>
-#include <ripple/protocol/jss.h>
+#include <xrpld/app/tx/detail/NFTokenMint.h>
+
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -55,6 +56,12 @@ void
 uri::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfURI.jsonName] = uri_;
+}
+
+void
+amount::operator()(Env& env, JTx& jt) const
+{
+    jt.jv[sfAmount.jsonName] = amount_.getJson(JsonOptions::none);
 }
 
 uint256
@@ -224,6 +231,16 @@ Json::Value
 clearMinter(jtx::Account const& account)
 {
     return fclear(account, asfAuthorizedNFTokenMinter);
+}
+
+Json::Value
+modify(jtx::Account const& account, uint256 const& nftokenID)
+{
+    Json::Value jv;
+    jv[sfAccount.jsonName] = account.human();
+    jv[sfNFTokenID.jsonName] = to_string(nftokenID);
+    jv[jss::TransactionType] = jss::NFTokenModify;
+    return jv;
 }
 
 }  // namespace token

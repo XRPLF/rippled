@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/STAccount.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/STAccount.h>
 
 namespace ripple {
 
@@ -91,7 +91,7 @@ struct STAccount_test : public beast::unit_test::suite
             {
                 // Construct from a VL that is not exactly 160 bits.
                 Serializer s;
-                const std::uint8_t bits128[]{
+                std::uint8_t const bits128[]{
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
                 s.addVL(bits128, sizeof(bits128));
                 SerialIter sit(s.slice());

@@ -17,11 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/core/JobQueue.h>
-#include <chrono>
-#include <condition_variable>
-#include <mutex>
 #include <test/jtx.h>
+
+#include <xrpld/core/JobQueue.h>
+
+#include <chrono>
+#include <mutex>
 
 namespace ripple {
 namespace test {
