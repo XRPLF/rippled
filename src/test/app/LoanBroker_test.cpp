@@ -244,9 +244,16 @@ class LoanBroker_test : public beast::unit_test::suite
             env(coverWithdraw(alice, keylet.key, vault.asset(900)),
                 ter(tecINSUFFICIENT_FUNDS));
 
-            env(coverWithdraw(alice, keylet.key, vault.asset(1)),
-                destination(bystander),
-                ter(tecNO_LINE));
+            // Skip this test for XRP, because that can always be sent
+            if (!vault.asset.raw().native())
+            {
+                TER const expected = vault.asset.raw().holds<MPTIssue>()
+                    ? tecNO_AUTH
+                    : tecNO_LINE;
+                env(coverWithdraw(alice, keylet.key, vault.asset(1)),
+                    destination(bystander),
+                    ter(expected));
+            }
             verifyCoverAmount(10);
 
             // Withdraw some of the cover amount

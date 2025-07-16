@@ -69,6 +69,9 @@ public:
         AccountID const& dstAccountID;
         SLE::pointer sleDst;
         STAmount const& dstAmount;
+        // Paths need to be explicitly included because other transactions don't
+        // have them defined
+        STPathSet const& paths;
         std::optional<STAmount> const& deliverMin;
         bool partialPaymentAllowed = false;
         bool defaultPathsAllowed = true;
@@ -76,8 +79,17 @@ public:
         beast::Journal j;
     };
 
+    static STAmount
+    getMaxSourceAmount(
+        AccountID const& senderAccount,
+        STAmount const& dstAmount,
+        std::optional<STAmount> const& sendMax = {});
+
     static TER
     makeRipplePayment(RipplePaymentParams const& p);
+
+    static TER
+    makeMPTDirectPayment(RipplePaymentParams const& p);
 };
 
 }  // namespace ripple
