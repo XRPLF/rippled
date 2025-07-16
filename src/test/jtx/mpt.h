@@ -20,7 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_MPT_H_INCLUDED
 #define RIPPLE_TEST_JTX_MPT_H_INCLUDED
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 
