@@ -92,33 +92,50 @@ getAnyFieldData(STBase const* obj)
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
             break;
         case STI_ACCOUNT: {
-            auto const& account(static_cast<STAccount const*>(obj));
+            auto const* account(static_cast<STAccount const*>(obj));
             auto const& data = account->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
         case STI_AMOUNT: {
             auto const& amount(static_cast<STAmount const*>(obj));
-            int64_t const data = amount->xrp().drops();
-            auto const* b = reinterpret_cast<uint8_t const*>(&data);
-            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-            return Bytes{b, e};
+            // IOU and MTP will be processed by serializer
+            if (amount->native())
+            {
+                int64_t const data = amount->xrp().drops();
+                auto const* b = reinterpret_cast<uint8_t const*>(&data);
+                auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+                return Bytes{b, e};
+            }
+        }
+        break;
+        case STI_ISSUE: {
+            auto const* issue(static_cast<STIssue const*>(obj));
+            Asset const& asset(issue->value());
+            // XRP and IOU will be processed by serializer
+            if (!asset.holds<Issue>())
+            {
+                // MPT
+                auto const& mptIssue = asset.get<MPTIssue>();
+                auto const& mptID = mptIssue.getMptID();
+                return Bytes{mptID.cbegin(), mptID.cend()};
+            }
         }
         break;
         case STI_VL: {
-            auto const& vl(static_cast<STBlob const*>(obj));
+            auto const* vl(static_cast<STBlob const*>(obj));
             auto const& data = vl->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
         case STI_UINT256: {
-            auto const& num(static_cast<STBitString<256> const*>(obj));
+            auto const* num(static_cast<STBitString<256> const*>(obj));
             auto const& data = num->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
         case STI_UINT32: {
-            auto const& num(static_cast<STInteger<std::uint32_t> const*>(obj));
+            auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
             std::uint32_t const data = num->value();
             auto const* b = reinterpret_cast<uint8_t const*>(&data);
             auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
@@ -614,7 +631,8 @@ WasmHostFunctionsImpl::trace(
     {
         std::string hex;
         hex.reserve(data.size() * 2);
-        boost::algorithm::hex(data.begin(), data.end(), hex.begin());
+        boost::algorithm::hex(
+            data.begin(), data.end(), std::back_inserter(hex));
         j << "WAMR DEV TRACE (" << leKey.key << "): " << msg << " - " << hex;
     }
 
@@ -630,7 +648,7 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
     auto j = ctx.journal.trace();
 #endif
 
-    j << "WAMR DEV TRACE (" << leKey.key << "): " << msg << " - " << data;
+    j << "WAMR TRACE NUM(" << leKey.key << "): " << msg << " - " << data;
 
     return msg.size() + sizeof(data);
 }

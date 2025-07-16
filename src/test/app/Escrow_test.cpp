@@ -2329,7 +2329,7 @@ struct Escrow_test : public beast::unit_test::suite
                     ter(tesSUCCESS));
 
                 auto const txMeta = env.meta();
-                if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
+                if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 10817);
 
                 env.close();
