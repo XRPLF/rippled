@@ -20,9 +20,6 @@
 #ifndef BEAST_CHRONO_ABSTRACT_CLOCK_H_INCLUDED
 #define BEAST_CHRONO_ABSTRACT_CLOCK_H_INCLUDED
 
-#include <chrono>
-#include <string>
-
 namespace beast {
 
 /** Abstract interface to a clock.

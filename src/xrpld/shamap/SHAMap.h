@@ -36,6 +36,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <set>
 #include <stack>
 #include <vector>
 
