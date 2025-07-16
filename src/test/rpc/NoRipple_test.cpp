@@ -294,7 +294,6 @@ public:
         };
         using namespace jtx;
         auto const sa = testable_amendments();
-        withFeatsTests(sa - featureFlowCross - featurePermissionedDEX);
         withFeatsTests(sa - featurePermissionedDEX);
         withFeatsTests(sa);
     }

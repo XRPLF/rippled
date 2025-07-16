@@ -481,7 +481,6 @@ public:
 
         using namespace test::jtx;
         auto const sa = testable_amendments();
-        testWithFeatures(sa - featureFlowCross - featurePermissionedDEX);
         testWithFeatures(sa - featurePermissionedDEX);
         testWithFeatures(sa);
     }

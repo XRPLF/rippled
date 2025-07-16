@@ -252,10 +252,7 @@ public:
     {
         using namespace jtx;
         auto const sa = testable_amendments();
-        for (auto feature :
-             {sa - featureFlowCross - featurePermissionedDEX,
-              sa - featurePermissionedDEX,
-              sa})
+        for (auto feature : {sa - featurePermissionedDEX, sa})
         {
             testGWB(feature);
             testGWBApiVersions(feature);

@@ -1333,7 +1333,6 @@ struct Flow_test : public beast::unit_test::suite
 
         using namespace jtx;
         auto const sa = testable_amendments();
-        testWithFeats(sa - featureFlowCross - featurePermissionedDEX);
         testWithFeats(sa - featurePermissionedDEX);
         testWithFeats(sa);
         testEmptyStrand(sa);
@@ -1347,12 +1346,9 @@ struct Flow_manual_test : public Flow_test
     {
         using namespace jtx;
         auto const all = testable_amendments();
-        FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const permDex{featurePermissionedDEX};
 
-        testWithFeats(all - flowCross - f1513 - permDex);
-        testWithFeats(all - flowCross - permDex);
         testWithFeats(all - f1513 - permDex);
         testWithFeats(all - permDex);
         testWithFeats(all);
