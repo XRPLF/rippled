@@ -33,6 +33,8 @@
 
 #include <functional>
 #include <optional>
+#include <sstream>
+#include <string>
 
 namespace ripple {
 namespace reduce_relay {
@@ -196,6 +198,19 @@ private:
     {
     }
 
+    std::string
+    formatLogMessage(PublicKey const& validator, std::optional<Peer::id_t> id)
+        const
+    {
+        std::stringstream ss;
+        ss << "validator: " << toBase58(TokenType::NodePublic, validator);
+        if (id)
+            ss << " peer: " << *id;
+        ss << " trusted: " << isTrusted_;
+        ss << " slot_state: " << to_string(getState());
+        return ss.str();
+    }
+
     /**
      * @brief Processes a message from a peer and updates the slot's state.
      *
@@ -315,10 +330,6 @@ private:
      */
     std::chrono::seconds
     getSquelchDuration(std::size_t npeers) const;
-
-    /** Reset counts of peers in Selected or Counting state */
-    void
-    resetCounts();
 
     /** Initialize slot to Counting state */
     void
@@ -682,7 +693,7 @@ protected:
      * message should be processed further.
      */
     bool
-    addPeerMessage(uint256 const& key, Peer::id_t id);
+    expireAndIsPeerMessageCached(uint256 const& key, Peer::id_t id);
 
     /**
      * @brief Tracks and evaluates an untrusted validator to see if it qualifies
