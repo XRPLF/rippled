@@ -125,7 +125,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     // Destination MPToken must exist (if asset is an MPT)
-    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct))
+    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType))
         return ter;
 
     // The broker's pseudo-account is the source of funds.
