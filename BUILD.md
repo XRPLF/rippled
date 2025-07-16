@@ -179,6 +179,14 @@ It does not override paths to dependencies when building with Visual Studio.
    conan export --version 9.7.3 external/rocksdb
    ```
 
+Export our [Conan recipe for SOCI](./external/soci).
+It patches their CMake to correctly import its dependencies.
+
+   ```
+   # Conan 2.x
+   conan export --version 4.0.3 external/soci
+   ```
+
 ### Build and Test
 
 1. Create a build directory and move into it.
