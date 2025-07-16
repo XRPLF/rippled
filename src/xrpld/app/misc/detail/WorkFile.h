@@ -45,7 +45,7 @@ public:
 public:
     WorkFile(
         std::string const& path,
-        boost::asio::io_service& ios,
+        boost::asio::io_context& ios,
         callback_type cb);
     ~WorkFile();
 
@@ -58,15 +58,15 @@ public:
 private:
     std::string path_;
     callback_type cb_;
-    boost::asio::io_service& ios_;
-    boost::asio::io_service::strand strand_;
+    boost::asio::io_context& ios_;
+    boost::asio::io_context::strand strand_;
 };
 
 //------------------------------------------------------------------------------
 
 WorkFile::WorkFile(
     std::string const& path,
-    boost::asio::io_service& ios,
+    boost::asio::io_context& ios,
     callback_type cb)
     : path_(path), cb_(std::move(cb)), ios_(ios), strand_(ios)
 {
@@ -82,8 +82,8 @@ void
 WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
-        return ios_.post(
-            strand_.wrap(std::bind(&WorkFile::run, shared_from_this())));
+        return boost::asio::post(
+            ios_, strand_.wrap(std::bind(&WorkFile::run, shared_from_this())));
 
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));

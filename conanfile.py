@@ -26,7 +26,7 @@ class Xrpl(ConanFile):
     requires = [
         'grpc/1.50.1',
         'libarchive/3.7.6',
-        'nudb/2.0.8',
+        'nudb/2.0.9',
         'openssl/1.1.1v',
         'soci/4.0.3',
         'zlib/1.3.1',
@@ -104,7 +104,7 @@ class Xrpl(ConanFile):
     def requirements(self):
         # Conan 2 requires transitive headers to be specified
         transitive_headers_opt = {'transitive_headers': True} if conan_version.split('.')[0] == '2' else {}
-        self.requires('boost/1.83.0', force=True, **transitive_headers_opt)
+        self.requires('boost/1.88.0', force=True, **transitive_headers_opt)
         self.requires('date/3.0.3', **transitive_headers_opt)
         self.requires('lz4/1.10.0', force=True)
         self.requires('protobuf/3.21.9', force=True)
@@ -178,6 +178,7 @@ class Xrpl(ConanFile):
             'boost::filesystem',
             'boost::json',
             'boost::program_options',
+            'boost::process',
             'boost::regex',
             'boost::system',
             'boost::thread',

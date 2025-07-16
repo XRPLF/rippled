@@ -23,7 +23,7 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <algorithm>
 #include <mutex>
@@ -60,8 +60,10 @@ class io_latency_probe_test : public beast::unit_test::suite,
         measure_asio_timers(duration interval = 100ms, size_t num_samples = 50)
         {
             using namespace std::chrono;
-            boost::asio::io_service ios;
-            std::optional<boost::asio::io_service::work> work{ios};
+            boost::asio::io_context ios;
+            std::optional<boost::asio::executor_work_guard<
+                boost::asio::io_context::executor_type>>
+                work{ios};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
             elapsed_times_.reserve(num_samples);
@@ -135,7 +137,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
 
         test_sampler(
             std::chrono::milliseconds interval,
-            boost::asio::io_service& ios)
+            boost::asio::io_context& ios)
             : probe_(interval, ios)
         {
         }
@@ -212,7 +214,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         io_probe.probe_.cancel_async();
         // wait again in order to flush the remaining
         // probes from the work queue
-        timer.expires_from_now(1s);
+        timer.expires_after(1s);
         timer.async_wait(yield[ec]);
     }
 

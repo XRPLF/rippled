@@ -28,6 +28,7 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
@@ -169,7 +170,8 @@ Door<Handler>::Detector::run()
         std::bind(
             &Detector::do_detect,
             this->shared_from_this(),
-            std::placeholders::_1));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 template <class Handler>
@@ -269,7 +271,7 @@ Door<Handler>::reOpen()
         Throw<std::exception>();
     }
 
-    acceptor_.listen(boost::asio::socket_base::max_connections, ec);
+    acceptor_.listen(boost::asio::socket_base::max_listen_connections, ec);
     if (ec)
     {
         JLOG(j_.error()) << "Listen on port '" << port_.name
@@ -312,7 +314,8 @@ Door<Handler>::run()
         std::bind(
             &Door<Handler>::do_accept,
             this->shared_from_this(),
-            std::placeholders::_1));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 template <class Handler>
@@ -320,7 +323,8 @@ void
 Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
-        return strand_.post(
+        return boost::asio::post(
+            strand_,
             std::bind(&Door<Handler>::close, this->shared_from_this()));
     error_code ec;
     acceptor_.close(ec);

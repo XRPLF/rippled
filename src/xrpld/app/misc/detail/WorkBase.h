@@ -57,8 +57,8 @@ protected:
     std::string path_;
     std::string port_;
     callback_type cb_;
-    boost::asio::io_service& ios_;
-    boost::asio::io_service::strand strand_;
+    boost::asio::io_context& ios_;
+    boost::asio::io_context::strand strand_;
     resolver_type resolver_;
     socket_type socket_;
     request_type req_;
@@ -72,7 +72,7 @@ public:
         std::string const& host,
         std::string const& path,
         std::string const& port,
-        boost::asio::io_service& ios,
+        boost::asio::io_context& ios,
         endpoint_type const& lastEndpoint,
         bool lastStatus,
         callback_type cb);
@@ -120,7 +120,7 @@ WorkBase<Impl>::WorkBase(
     std::string const& host,
     std::string const& path,
     std::string const& port,
-    boost::asio::io_service& ios,
+    boost::asio::io_context& ios,
     endpoint_type const& lastEndpoint,
     bool lastStatus,
     callback_type cb)
@@ -152,7 +152,8 @@ void
 WorkBase<Impl>::run()
 {
     if (!strand_.running_in_this_thread())
-        return ios_.post(
+        return boost::asio::post(
+            ios_,
             strand_.wrap(std::bind(&WorkBase::run, impl().shared_from_this())));
 
     resolver_.async_resolve(
@@ -171,8 +172,10 @@ WorkBase<Impl>::cancel()
 {
     if (!strand_.running_in_this_thread())
     {
-        return ios_.post(strand_.wrap(
-            std::bind(&WorkBase::cancel, impl().shared_from_this())));
+        return boost::asio::post(
+            ios_,
+            strand_.wrap(
+                std::bind(&WorkBase::cancel, impl().shared_from_this())));
     }
 
     error_code ec;

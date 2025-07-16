@@ -233,7 +233,7 @@ public:
         JobQueue& job_queue,
         LedgerMaster& ledgerMaster,
         ValidatorKeys const& validatorKeys,
-        boost::asio::io_service& io_svc,
+        boost::asio::io_context& io_svc,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
         : app_(app)
@@ -588,31 +588,26 @@ public:
     stop() override
     {
         {
-            boost::system::error_code ec;
-            heartbeatTimer_.cancel(ec);
-            if (ec)
+            if (auto const cancelled = heartbeatTimer_.cancel(); not cancelled)
             {
                 JLOG(m_journal.error())
-                    << "NetworkOPs: heartbeatTimer cancel error: "
-                    << ec.message();
+                    << "NetworkOPs: heartbeatTimer cancel error. No handlers "
+                       "to cancel were found";
             }
 
-            ec.clear();
-            clusterTimer_.cancel(ec);
-            if (ec)
+            if (auto const cancelled = clusterTimer_.cancel(); not cancelled)
             {
                 JLOG(m_journal.error())
-                    << "NetworkOPs: clusterTimer cancel error: "
-                    << ec.message();
+                    << "NetworkOPs: clusterTimer cancel "
+                       "error. No handlers to cancel were found";
             }
 
-            ec.clear();
-            accountHistoryTxTimer_.cancel(ec);
-            if (ec)
+            if (auto const cancelled = accountHistoryTxTimer_.cancel();
+                not cancelled)
             {
                 JLOG(m_journal.error())
-                    << "NetworkOPs: accountHistoryTxTimer cancel error: "
-                    << ec.message();
+                    << "NetworkOPs: accountHistoryTxTimer cancel "
+                       "error. No handlers to cancel were found";
             }
         }
         // Make sure that any waitHandlers pending in our timers are done.
@@ -984,7 +979,7 @@ NetworkOPsImp::setTimer(
                 }
             }))
     {
-        timer.expires_from_now(expiry_time);
+        timer.expires_after(expiry_time);
         timer.async_wait(std::move(*optionalCountedHandler));
     }
 }
@@ -4846,7 +4841,7 @@ make_NetworkOPs(
     JobQueue& job_queue,
     LedgerMaster& ledgerMaster,
     ValidatorKeys const& validatorKeys,
-    boost::asio::io_service& io_svc,
+    boost::asio::io_context& io_svc,
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector)
 {

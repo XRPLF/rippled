@@ -24,6 +24,7 @@
 #include <xrpl/beast/unit_test.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
@@ -72,7 +73,7 @@ private:
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
         using boost::asio::buffer_size;
-        boost::asio::const_buffers_1 buf(s.data(), s.size());
+        boost::asio::const_buffer buf(s.data(), s.size());
         sb.commit(buffer_copy(sb.prepare(buffer_size(buf)), buf));
     }
 
@@ -185,7 +186,7 @@ private:
                 , acceptor_(
                       test_.io_context_,
                       endpoint_type(
-                          beast::IP::Address::from_string(
+                          boost::asio::ip::make_address(
                               test::getEnvLocalhostAddr()),
                           0))
                 , socket_(test_.io_context_)
@@ -287,7 +288,7 @@ private:
             void
             run()
             {
-                timer_.expires_from_now(std::chrono::seconds(3));
+                timer_.expires_after(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
                     strand_,
                     std::bind(
@@ -473,7 +474,7 @@ private:
             void
             run(endpoint_type const& ep)
             {
-                timer_.expires_from_now(std::chrono::seconds(3));
+                timer_.expires_after(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
                     strand_,
                     std::bind(

@@ -24,6 +24,7 @@
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/PlainWSPeer.h>
 
+#include <boost/asio/detached.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 
 #include <memory>
@@ -107,7 +108,8 @@ PlainHTTPPeer<Handler>::run()
     {
         boost::asio::spawn(
             this->strand_,
-            std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
+            std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()),
+            boost::asio::detached);
         return;
     }
 
@@ -119,7 +121,8 @@ PlainHTTPPeer<Handler>::run()
         std::bind(
             &PlainHTTPPeer::do_read,
             this->shared_from_this(),
-            std::placeholders::_1));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 template <class Handler>

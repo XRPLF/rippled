@@ -26,6 +26,7 @@
 #include <xrpl/server/Session.h>
 #include <xrpl/server/detail/io_list.h>
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -361,7 +362,8 @@ BaseHTTPPeer<Handler, Impl>::on_write(
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
             impl().shared_from_this(),
-            std::placeholders::_1));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 template <class Handler, class Impl>
@@ -382,7 +384,8 @@ BaseHTTPPeer<Handler, Impl>::do_writer(
                     p,
                     writer,
                     keep_alive,
-                    std::placeholders::_1));
+                    std::placeholders::_1),
+                boost::asio::detached);
         });
     }
 
@@ -411,7 +414,8 @@ BaseHTTPPeer<Handler, Impl>::do_writer(
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
             impl().shared_from_this(),
-            std::placeholders::_1));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 //------------------------------------------------------------------------------
@@ -448,14 +452,15 @@ BaseHTTPPeer<Handler, Impl>::write(
     std::shared_ptr<Writer> const& writer,
     bool keep_alive)
 {
-    boost::asio::spawn(bind_executor(
+    boost::asio::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_writer,
             impl().shared_from_this(),
             writer,
             keep_alive,
-            std::placeholders::_1)));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 // DEPRECATED
@@ -490,12 +495,13 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    boost::asio::spawn(bind_executor(
+    boost::asio::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
             impl().shared_from_this(),
-            std::placeholders::_1)));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 // DEPRECATED
