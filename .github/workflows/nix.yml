@@ -164,15 +164,21 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+      - name: check linking
+        run: |
+          cd ${build_dir}
+          ldd ./rippled
+          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+            exit 1
+          fi
       - name: test
         run: |
           cd ${build_dir}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure
-      - name: check linking
-        run: |
-          cd ${build_dir}
-          ldd ./rippled
 
   reference-fee-test:
     strategy:
