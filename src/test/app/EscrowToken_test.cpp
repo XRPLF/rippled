@@ -3501,6 +3501,10 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 125);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 125);
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(20'000));
+
             // bob can finish escrow
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
@@ -3510,6 +3514,15 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.balance(alice, MPT) == preAlice - delta);
             BEAST_EXPECT(env.balance(bob, MPT) == MPT(10'100));
+
+            auto const escrowedWithFix =
+                env.current()->rules().enabled(fixTokenEscrowV1) ? 0 : 25;
+            auto const outstandingWithFix =
+                env.current()->rules().enabled(fixTokenEscrowV1) ? MPT(19'975)
+                                                                 : MPT(20'000);
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == escrowedWithFix);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == escrowedWithFix);
+            BEAST_EXPECT(env.balance(gw, MPT) == outstandingWithFix);
         }
 
         // test locked rate: cancel
@@ -3554,6 +3567,9 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.balance(alice, MPT) == preAlice);
             BEAST_EXPECT(env.balance(bob, MPT) == preBob);
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(20'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
         }
     }
 
@@ -3878,6 +3894,7 @@ public:
         FeatureBitset const all{supported_amendments()};
         testIOUWithFeats(all);
         testMPTWithFeats(all);
+        testMPTWithFeats(all - fixTokenEscrowV1);
     }
 };
 
