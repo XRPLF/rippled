@@ -173,6 +173,12 @@ jobs:
         run: |
           cd ${build_dir}
           ldd ./rippled
+          if [ "$(ldd ./rippled | wc -l)" -eq 4 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+            exit 1
+          fi
 
   reference-fee-test:
     strategy:
