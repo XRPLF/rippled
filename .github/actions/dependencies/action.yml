@@ -6,36 +6,33 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: unlock Conan
-      shell: bash
-      run: conan remove --locks
     - name: export custom recipes
       shell: bash
       run: |
-        conan config set general.revisions_enabled=1
-        conan export external/snappy snappy/1.1.10@
-        conan export external/rocksdb rocksdb/9.7.3@
-        conan export external/soci soci/4.0.3@
-        conan export external/nudb nudb/2.0.8@
+        conan export --version 1.1.10 external/snappy
+        conan export --version 9.7.3 external/rocksdb
+        conan export --version 4.0.3 external/soci
+        conan export --version 2.0.8 external/nudb
     - name: add Ripple Conan remote
+      if: env.CONAN_URL != ''
       shell: bash
       run: |
-        conan remote list
-        conan remote remove ripple || true
-        # Do not quote the URL. An empty string will be accepted (with
-        # a non-fatal warning), but a missing argument will not.
-        conan remote add ripple ${{ env.CONAN_URL }} --insert 0
+        if conan remote list | grep -q "ripple"; then
+            conan remote remove ripple
+            echo "Removed conan remote ripple"
+        fi
+        conan remote add --index 0 ripple "${CONAN_URL}"
+        echo "Added conan remote ripple at ${CONAN_URL}"
+
     - name: try to authenticate to Ripple Conan remote
+      if: env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
       id: remote
       shell: bash
       run: |
-        # `conan user` implicitly uses the environment variables
-        # CONAN_LOGIN_USERNAME_<REMOTE> and CONAN_PASSWORD_<REMOTE>.
-        # https://docs.conan.io/1/reference/commands/misc/user.html#using-environment-variables
-        # https://docs.conan.io/1/reference/env_vars.html#conan-login-username-conan-login-username-remote-name
-        # https://docs.conan.io/1/reference/env_vars.html#conan-password-conan-password-remote-name
-        echo outcome=$(conan user --remote ripple --password >&2 \
-          && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+        echo "Authenticating to ripple remote..."
+        conan remote auth ripple --force
+        conan remote list-users
+
     - name: list missing binaries
       id: binaries
       shell: bash
@@ -51,7 +48,7 @@ runs:
         conan install \
           --output-folder . \
           --build missing \
-          --options tests=True \
-          --options xrpld=True \
-          --settings build_type=${{ inputs.configuration }} \
+          --options:host "&:tests=True" \
+          --options:host "&:xrpld=True" \
+          --settings:all build_type=${{ inputs.configuration }} \
           ..

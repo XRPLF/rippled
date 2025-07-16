@@ -1428,7 +1428,7 @@ class MPToken_test : public beast::unit_test::suite
 
         testcase("DepositPreauth disabled featureCredentials");
         {
-            Env env(*this, supported_amendments() - featureCredentials);
+            Env env(*this, testable_amendments() - featureCredentials);
 
             std::string const credIdx =
                 "D007AE4B6E1274B4AF872588267B810C2F82716726351D1C7D38D3E5499FC6"
@@ -2293,7 +2293,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
 
         // MPTokenIssuanceCreate
         testCreateValidation(all - featureSingleAssetVault);
