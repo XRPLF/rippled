@@ -54,7 +54,6 @@ public:
         BEAST_EXPECT(db.getMaxLedgerSeq() == std::nullopt);
         BEAST_EXPECT(db.getNewestLedgerInfo() == std::nullopt);
         
-        log << "RelationalDatabase initialized successfully";
     }
 
     void
@@ -89,10 +88,7 @@ public:
         
         if (minSeq && maxSeq)
         {
-            log << "Min ledger seq: " << *minSeq << ", Max ledger seq: " << *maxSeq;
         }
-        
-        log << "Schema creation test completed successfully";
     }
 
     void
@@ -128,7 +124,6 @@ public:
         
         if (newestLedger)
         {
-            log << "Newest ledger seq: " << newestLedger->seq << ", hash: " << newestLedger->hash;
         }
         
         // Test 2: Account transactions (if available)
@@ -145,21 +140,12 @@ public:
             };
             
             auto accountTxs = sqliteDb->getNewestAccountTxs(options);
-            log << "Account transactions for alice: " << accountTxs.size();
             
             // Test 3: Transaction counts
             auto txnCount = sqliteDb->getTransactionCount();
             auto acctTxnCount = sqliteDb->getAccountTransactionCount();
             auto ledgerCount = sqliteDb->getLedgerCountMinMax();
-            
-            log << "Transaction count: " << txnCount;
-            log << "Account transaction count: " << acctTxnCount;
-            log << "Ledger count: " << ledgerCount.numberOfRows 
-                << " (min: " << ledgerCount.minLedgerSequence 
-                << ", max: " << ledgerCount.maxLedgerSequence << ")";
         }
-        
-        log << "Three key queries test completed successfully";
     }
 
     void
@@ -199,13 +185,11 @@ public:
         if (sqliteDb)
         {
             auto txnCount = sqliteDb->getTransactionCount();
-            log << "Total transactions stored: " << txnCount;
             
             // Test transaction retrieval by checking if we have transactions
             if (txnCount > 0)
             {
                 // Just verify we can query transactions - detailed testing would need proper tx tracking
-                log << "Transactions successfully stored and queryable";
                 
                 // Transaction retrieval test would require proper tracking
             }
@@ -215,11 +199,8 @@ public:
             if (newestLedger)
             {
                 auto txHistory = db.getTxHistory(newestLedger->seq);
-                log << "Transaction history entries: " << txHistory.size();
             }
         }
-        
-        log << "Transaction insertion test completed successfully";
     }
 
     void
@@ -241,12 +222,9 @@ public:
             bool ledgerSpace = db.ledgerDbHasSpace(app.config());
             bool txSpace = db.transactionDbHasSpace(app.config());
             
-            log << "Ledger DB has space: " << (ledgerSpace ? "true" : "false");
-            log << "Transaction DB has space: " << (txSpace ? "true" : "false");
         }
         catch (std::exception const& e)
         {
-            log << "Space check failed (expected in test mode): " << e.what();
         }
         
         // Test database size reporting
@@ -259,17 +237,17 @@ public:
                 auto ledgerDbKB = sqliteDb->getKBUsedLedger();
                 auto txDbKB = sqliteDb->getKBUsedTransaction();
                 
-                log << "All DB space used: " << allDbKB << " KB";
-                log << "Ledger DB space used: " << ledgerDbKB << " KB";
-                log << "Transaction DB space used: " << txDbKB << " KB";
+                // log << "All DB space used: " << allDbKB << " KB";
+                // log << "Ledger DB space used: " << ledgerDbKB << " KB";
+                // log << "Transaction DB space used: " << txDbKB << " KB";
             }
             catch (std::exception const& e)
             {
-                log << "Database size query failed: " << e.what();
+                // log << "Database size query failed: " << e.what();
             }
         }
         
-        log << "Database space checks completed";
+        // log << "Database space checks completed";
     }
 
     void
@@ -297,8 +275,8 @@ public:
         auto newestLedger = db.getNewestLedgerInfo();
         if (newestLedger)
         {
-            log << "Ledger hash: " << newestLedger->hash;
-            log << "Parent hash: " << newestLedger->parentHash;
+            // log << "Ledger hash: " << newestLedger->hash;
+            // log << "Parent hash: " << newestLedger->parentHash;
             
             // Test hash-based ledger retrieval
             auto ledgerByHash = db.getLedgerInfoByHash(newestLedger->hash);
@@ -323,7 +301,7 @@ public:
             }
         }
         
-        log << "Hash queries test completed";
+        // log << "Hash queries test completed";
     }
 
     void
@@ -363,8 +341,8 @@ public:
             auto txnCount = sqliteDb->getTransactionCount();
             auto acctTxnCount = sqliteDb->getAccountTransactionCount();
             
-            log << "Transaction count: " << txnCount;
-            log << "Account transaction count: " << acctTxnCount;
+            // log << "Transaction count: " << txnCount;
+            // log << "Account transaction count: " << acctTxnCount;
             
             // Test account transaction queries
             RelationalDatabase::AccountTxOptions options{
@@ -379,18 +357,18 @@ public:
             auto aliceOldestTxs = sqliteDb->getOldestAccountTxs(options);
             auto aliceNewestTxs = sqliteDb->getNewestAccountTxs(options);
             
-            log << "Alice oldest transactions: " << aliceOldestTxs.size();
-            log << "Alice newest transactions: " << aliceNewestTxs.size();
+            // log << "Alice oldest transactions: " << aliceOldestTxs.size();
+            // log << "Alice newest transactions: " << aliceNewestTxs.size();
             
             // Test binary format queries
             auto aliceOldestBinary = sqliteDb->getOldestAccountTxsB(options);
             auto aliceNewestBinary = sqliteDb->getNewestAccountTxsB(options);
             
-            log << "Alice oldest binary txs: " << aliceOldestBinary.size();
-            log << "Alice newest binary txs: " << aliceNewestBinary.size();
+            // log << "Alice oldest binary txs: " << aliceOldestBinary.size();
+            // log << "Alice newest binary txs: " << aliceNewestBinary.size();
         }
         
-        log << "Transaction tables test completed";
+        // log << "Transaction tables test completed";
     }
 
     void
@@ -428,9 +406,9 @@ public:
             auto initialAcctTxnCount = sqliteDb->getAccountTransactionCount();
             auto initialLedgerCount = sqliteDb->getLedgerCountMinMax();
             
-            log << "Initial transaction count: " << initialTxnCount;
-            log << "Initial account transaction count: " << initialAcctTxnCount;
-            log << "Initial ledger count: " << initialLedgerCount.numberOfRows;
+            // log << "Initial transaction count: " << initialTxnCount;
+            // log << "Initial account transaction count: " << initialAcctTxnCount;
+            // log << "Initial ledger count: " << initialLedgerCount.numberOfRows;
             
             // Test deletion operations
             auto maxSeq = db.getMaxLedgerSeq();
@@ -453,13 +431,13 @@ public:
                 auto finalAcctTxnCount = sqliteDb->getAccountTransactionCount();
                 auto finalLedgerCount = sqliteDb->getLedgerCountMinMax();
                 
-                log << "Final transaction count: " << finalTxnCount;
-                log << "Final account transaction count: " << finalAcctTxnCount;
-                log << "Final ledger count: " << finalLedgerCount.numberOfRows;
+                // log << "Final transaction count: " << finalTxnCount;
+                // log << "Final account transaction count: " << finalAcctTxnCount;
+                // log << "Final ledger count: " << finalLedgerCount.numberOfRows;
             }
         }
         
-        log << "Deletion operations test completed";
+        // log << "Deletion operations test completed";
     }
 
     void
@@ -487,8 +465,8 @@ public:
             bool ledgerHasSpace = sqliteDb->ledgerDbHasSpace(app.config());
             bool txnHasSpace = sqliteDb->transactionDbHasSpace(app.config());
             
-            log << "Ledger DB has space: " << (ledgerHasSpace ? "true" : "false");
-            log << "Transaction DB has space: " << (txnHasSpace ? "true" : "false");
+            // log << "Ledger DB has space: " << (ledgerHasSpace ? "true" : "false");
+            // log << "Transaction DB has space: " << (txnHasSpace ? "true" : "false");
             
             // Test database size queries
             try
@@ -497,13 +475,13 @@ public:
                 auto ledgerKB = sqliteDb->getKBUsedLedger();
                 auto txnKB = sqliteDb->getKBUsedTransaction();
                 
-                log << "Total KB used: " << allKB;
-                log << "Ledger KB used: " << ledgerKB;
-                log << "Transaction KB used: " << txnKB;
+                // log << "Total KB used: " << allKB;
+                // log << "Ledger KB used: " << ledgerKB;
+                // log << "Transaction KB used: " << txnKB;
             }
             catch (std::exception const& e)
             {
-                log << "Database size query failed: " << e.what();
+                // log << "Database size query failed: " << e.what();
             }
             
             // Test database closure (cleanup)
@@ -511,15 +489,15 @@ public:
             {
                 sqliteDb->closeLedgerDB();
                 sqliteDb->closeTransactionDB();
-                log << "Database connections closed successfully";
+                // log << "Database connections closed successfully";
             }
             catch (std::exception const& e)
             {
-                log << "Database closure failed: " << e.what();
+                // log << "Database closure failed: " << e.what();
             }
         }
         
-        log << "Database management test completed";
+        // log << "Database management test completed";
     }
 
     void
@@ -614,7 +592,7 @@ public:
             BEAST_EXPECT(ledgerByHash.has_value());
         }
         
-        log << "Error handling test completed";
+        // log << "Error handling test completed";
     }
 
     void
@@ -661,14 +639,14 @@ public:
             
             auto endTime = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
-            log << "Created 20 transactions in " << duration.count() << " ms";
+            // log << "Created 20 transactions in " << duration.count() << " ms";
             
             // Test query performance
             startTime = std::chrono::high_resolution_clock::now();
             auto ledgerCount = sqliteDb->getLedgerCountMinMax();
             endTime = std::chrono::high_resolution_clock::now();
             auto durationMicros = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
-            log << "Ledger count query: " << durationMicros.count() << " μs";
+            // log << "Ledger count query: " << durationMicros.count() << " μs";
             
             // Test account transaction performance
             RelationalDatabase::AccountTxOptions options{
@@ -684,10 +662,10 @@ public:
             auto accountTxs = sqliteDb->getNewestAccountTxs(options);
             endTime = std::chrono::high_resolution_clock::now();
             auto durationMicros2 = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
-            log << "Account transactions query: " << durationMicros2.count() << " μs";
+            // log << "Account transactions query: " << durationMicros2.count() << " μs";
         }
         
-        log << "Performance test completed";
+        // log << "Performance test completed";
     }
 
     void
@@ -728,7 +706,7 @@ public:
             {
                 BEAST_EXPECT(ledgerByHash->hash == newestLedger->hash);
                 BEAST_EXPECT(ledgerByHash->seq == newestLedger->seq);
-                log << "Hash consistency verified";
+                // log << "Hash consistency verified";
             }
         }
         
@@ -749,7 +727,7 @@ public:
                     BEAST_EXPECT(currentLedger->parentHash == parentLedger->hash);
                 }
             }
-            log << "Ledger sequence consistency verified";
+            // log << "Ledger sequence consistency verified";
         }
         
         // Test transaction consistency
@@ -760,15 +738,15 @@ public:
             auto txnCount = sqliteDb->getTransactionCount();
             if (txnCount > 0)
             {
-                log << "Transaction consistency test passed - found " << txnCount << " transactions";
+                // log << "Transaction consistency test passed - found " << txnCount << " transactions";
             }
             else
             {
-                log << "Warning: No transactions found in database";
+                // log << "Warning: No transactions found in database";
             }
         }
         
-        log << "NodeStore integration test completed";
+        // log << "NodeStore integration test completed";
     }
 
     void
