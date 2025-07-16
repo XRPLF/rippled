@@ -204,37 +204,41 @@ LoanBrokerCoverWithdraw::doApply()
         if (!sleDst)
             return tecINTERNAL;
 
-        if (!mptDirect)
+        Payment::RipplePaymentParams paymentParams{
+            .ctx = ctx_,
+            .maxSourceAmount = maxSourceAmount,
+            .srcAccountID = brokerPseudoID,
+            .dstAccountID = dstAcct,
+            .sleDst = sleDst,
+            .dstAmount = amount,
+            .paths = STPathSet{},
+            .deliverMin = std::nullopt,
+            .j = j_};
+
+        // If sending the Cover to a different account, then this is
+        // effectively a payment. Use the Payment transaction code to call
+        // the payment engine, though only a subset of the functionality is
+        // supported in this transaction. e.g. No paths, no partial
+        // payments.
+        TER ret;
+        if (mptDirect)
         {
-            // If sending the Cover to a different account, then this is
-            // effectively a payment. Use the Payment transaction code to call
-            // the payment engine, though only a subset of the functionality is
-            // supported in this transaction. e.g. No paths, no partial
-            // payments.
-
-            auto const ret =
-                Payment::makeRipplePayment(Payment::RipplePaymentParams{
-                    .ctx = ctx_,
-                    .maxSourceAmount = maxSourceAmount,
-                    .srcAccountID = brokerPseudoID,
-                    .dstAccountID = dstAcct,
-                    .sleDst = sleDst,
-                    .dstAmount = amount,
-                    .paths = STPathSet{},
-                    .deliverMin = std::nullopt,
-                    .j = j_});
-
-            // Always claim a fee
-            if (!isTesSuccess(ret) && !isTecClaim(ret))
-            {
-                JLOG(j_.info())
-                    << "LoanBrokerCoverWithdraw: changing result from "
-                    << transToken(ret)
-                    << " to tecPATH_DRY for IOU payment with Destination";
-                return tecPATH_DRY;
-            }
-            return ret;
+            ret = Payment::makeMPTDirectPayment(paymentParams);
         }
+        else
+        {
+            ret = Payment::makeRipplePayment(paymentParams);
+        }
+        // Always claim a fee
+        if (!isTesSuccess(ret) && !isTecClaim(ret))
+        {
+            JLOG(j_.info())
+                << "LoanBrokerCoverWithdraw: changing result from "
+                << transToken(ret)
+                << " to tecPATH_DRY for IOU payment with Destination";
+            return tecPATH_DRY;
+        }
+        return ret;
     }
 
     // Transfer assets from pseudo-account to depositor.
