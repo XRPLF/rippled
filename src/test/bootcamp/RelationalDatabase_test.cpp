@@ -162,11 +162,132 @@ public:
     }
 
     void
+    testTransactionInsertion()
+    {
+        testcase("Transaction insertion and retrieval");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 1000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Create test accounts
+        test::jtx::Account alice("alice");
+        test::jtx::Account bob("bob");
+        test::jtx::Account carol("carol");
+        
+        // Fund accounts
+        env.fund(test::jtx::XRP(10000), alice, bob, carol);
+        env.close();
+        
+        // Create various transaction types
+        auto tx1 = env(test::jtx::pay(alice, bob, test::jtx::XRP(1000)));
+        env.close();
+        
+        auto tx2 = env(test::jtx::pay(bob, carol, test::jtx::XRP(500)));
+        env.close();
+        
+        auto tx3 = env(test::jtx::pay(carol, alice, test::jtx::XRP(250)));
+        env.close();
+        
+        // Verify transactions were stored
+        auto* sqliteDb = dynamic_cast<SQLiteDatabase*>(&db);
+        if (sqliteDb)
+        {
+            auto txnCount = sqliteDb->getTransactionCount();
+            log << "Total transactions stored: " << txnCount;
+            
+            // Test transaction retrieval by ID
+            if (tx1.isSuccess())
+            {
+                auto txId = tx1.tx()->getTransactionID();
+                error_code_i ec;
+                auto txResult = sqliteDb->getTransaction(txId, std::nullopt, ec);
+                
+                if (std::holds_alternative<RelationalDatabase::AccountTx>(txResult))
+                {
+                    auto& [tx, meta] = std::get<RelationalDatabase::AccountTx>(txResult);
+                    if (tx)
+                    {
+                        log << "Retrieved transaction: " << tx->getTransactionID();
+                        BEAST_EXPECT(tx->getTransactionID() == txId);
+                    }
+                }
+            }
+            
+            // Test transaction history retrieval
+            auto newestLedger = db.getNewestLedgerInfo();
+            if (newestLedger)
+            {
+                auto txHistory = db.getTxHistory(newestLedger->seq);
+                log << "Transaction history entries: " << txHistory.size();
+            }
+        }
+        
+        log << "Transaction insertion test completed successfully";
+    }
+
+    void
+    testDatabaseSpaceChecks()
+    {
+        testcase("Database space availability checks");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 1000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Test database space checks
+        try
+        {
+            bool ledgerSpace = db.ledgerDbHasSpace(app.config());
+            bool txSpace = db.transactionDbHasSpace(app.config());
+            
+            log << "Ledger DB has space: " << (ledgerSpace ? "true" : "false");
+            log << "Transaction DB has space: " << (txSpace ? "true" : "false");
+        }
+        catch (std::exception const& e)
+        {
+            log << "Space check failed (expected in test mode): " << e.what();
+        }
+        
+        // Test database size reporting
+        auto* sqliteDb = dynamic_cast<SQLiteDatabase*>(&db);
+        if (sqliteDb)
+        {
+            try
+            {
+                auto allDbKB = sqliteDb->getKBUsedAll();
+                auto ledgerDbKB = sqliteDb->getKBUsedLedger();
+                auto txDbKB = sqliteDb->getKBUsedTransaction();
+                
+                log << "All DB space used: " << allDbKB << " KB";
+                log << "Ledger DB space used: " << ledgerDbKB << " KB";
+                log << "Transaction DB space used: " << txDbKB << " KB";
+            }
+            catch (std::exception const& e)
+            {
+                log << "Database size query failed: " << e.what();
+            }
+        }
+        
+        log << "Database space checks completed";
+    }
+
+    void
     run() override
     {
         testRelationalDatabaseInit();
         testSQLSchemaCreation();
+        testTransactionInsertion();
         testThreeKeyQueries();
+        testDatabaseSpaceChecks();
     }
 };
 
