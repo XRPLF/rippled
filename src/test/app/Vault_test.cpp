@@ -1338,6 +1338,7 @@ class Vault_test : public beast::unit_test::suite
         struct CaseArgs
         {
             bool enableClawback = true;
+            bool requireAuth = true;
         };
 
         auto testCase = [this](
@@ -1359,16 +1360,19 @@ class Vault_test : public beast::unit_test::suite
             Vault vault{env};
 
             MPTTester mptt{env, issuer, mptInitNoFund};
+            auto const none = LedgerSpecificFlags(0);
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock |
-                     (args.enableClawback ? lsfMPTCanClawback
-                                          : LedgerSpecificFlags(0)) |
-                     tfMPTRequireAuth});
+                     (args.enableClawback ? tfMPTCanClawback : none) |
+                     (args.requireAuth ? tfMPTRequireAuth : none)});
             PrettyAsset asset = mptt.issuanceID();
             mptt.authorize({.account = owner});
-            mptt.authorize({.account = issuer, .holder = owner});
             mptt.authorize({.account = depositor});
-            mptt.authorize({.account = issuer, .holder = depositor});
+            if (args.requireAuth) {
+                mptt.authorize({.account = issuer, .holder = owner});
+                mptt.authorize({.account = issuer, .holder = depositor});
+            }
+
             env(pay(issuer, depositor, asset(1000)));
             env.close();
 
@@ -1516,6 +1520,44 @@ class Vault_test : public beast::unit_test::suite
                 env(tx, ter(tecNO_PERMISSION));
             }
         });
+
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     PrettyAsset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("MPT 3rd party without MPToken cannot be withdrawal destination");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
+            env.close();
+
+            {
+                // Set destination to 3rd party without MPToken
+                Account charlie{"charlie"};
+                env.fund(XRP(1000), charlie);
+                env.close();
+
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                    .id = keylet.key,
+                    .amount = asset(100)});
+                tx[sfDestination] = charlie.human();
+                env(tx, ter(tecNO_AUTH));
+            }
+        },
+    {.requireAuth = false});
 
         testCase([this](
                      Env& env,
