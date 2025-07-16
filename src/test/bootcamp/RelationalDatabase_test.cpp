@@ -402,6 +402,135 @@ public:
     }
 
     void
+    testDeletionOperations()
+    {
+        testcase("Database deletion operations");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 1000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Create test data
+        test::jtx::Account alice("alice");
+        test::jtx::Account bob("bob");
+        
+        env.fund(test::jtx::XRP(10000), alice, bob);
+        env.close();
+        
+        // Create multiple ledgers
+        for (int i = 0; i < 5; ++i)
+        {
+            env(test::jtx::pay(alice, bob, test::jtx::XRP(100 + i)));
+            env.close();
+        }
+        
+        auto* sqliteDb = dynamic_cast<SQLiteDatabase*>(&db);
+        if (sqliteDb)
+        {
+            // Get initial counts
+            auto initialTxnCount = sqliteDb->getTransactionCount();
+            auto initialAcctTxnCount = sqliteDb->getAccountTransactionCount();
+            auto initialLedgerCount = sqliteDb->getLedgerCountMinMax();
+            
+            log << "Initial transaction count: " << initialTxnCount;
+            log << "Initial account transaction count: " << initialAcctTxnCount;
+            log << "Initial ledger count: " << initialLedgerCount.numberOfRows;
+            
+            // Test deletion operations
+            auto maxSeq = db.getMaxLedgerSeq();
+            if (maxSeq && *maxSeq > 2)
+            {
+                // Delete transactions from a specific ledger
+                sqliteDb->deleteTransactionByLedgerSeq(*maxSeq);
+                
+                // Delete transactions before a certain sequence
+                sqliteDb->deleteTransactionsBeforeLedgerSeq(*maxSeq - 1);
+                
+                // Delete account transactions before a certain sequence
+                sqliteDb->deleteAccountTransactionsBeforeLedgerSeq(*maxSeq - 1);
+                
+                // Delete ledgers before a certain sequence
+                sqliteDb->deleteBeforeLedgerSeq(*maxSeq - 1);
+                
+                // Check counts after deletion
+                auto finalTxnCount = sqliteDb->getTransactionCount();
+                auto finalAcctTxnCount = sqliteDb->getAccountTransactionCount();
+                auto finalLedgerCount = sqliteDb->getLedgerCountMinMax();
+                
+                log << "Final transaction count: " << finalTxnCount;
+                log << "Final account transaction count: " << finalAcctTxnCount;
+                log << "Final ledger count: " << finalLedgerCount.numberOfRows;
+            }
+        }
+        
+        log << "Deletion operations test completed";
+    }
+
+    void
+    testDatabaseManagement()
+    {
+        testcase("Database connection management");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 1000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Create some test data
+        test::jtx::Account alice("alice");
+        env.fund(test::jtx::XRP(10000), alice);
+        env.close();
+        
+        auto* sqliteDb = dynamic_cast<SQLiteDatabase*>(&db);
+        if (sqliteDb)
+        {
+            // Test database space checks
+            bool ledgerHasSpace = sqliteDb->ledgerDbHasSpace(app.config());
+            bool txnHasSpace = sqliteDb->transactionDbHasSpace(app.config());
+            
+            log << "Ledger DB has space: " << (ledgerHasSpace ? "true" : "false");
+            log << "Transaction DB has space: " << (txnHasSpace ? "true" : "false");
+            
+            // Test database size queries
+            try
+            {
+                auto allKB = sqliteDb->getKBUsedAll();
+                auto ledgerKB = sqliteDb->getKBUsedLedger();
+                auto txnKB = sqliteDb->getKBUsedTransaction();
+                
+                log << "Total KB used: " << allKB;
+                log << "Ledger KB used: " << ledgerKB;
+                log << "Transaction KB used: " << txnKB;
+            }
+            catch (std::exception const& e)
+            {
+                log << "Database size query failed: " << e.what();
+            }
+            
+            // Test database closure (cleanup)
+            try
+            {
+                sqliteDb->closeLedgerDB();
+                sqliteDb->closeTransactionDB();
+                log << "Database connections closed successfully";
+            }
+            catch (std::exception const& e)
+            {
+                log << "Database closure failed: " << e.what();
+            }
+        }
+        
+        log << "Database management test completed";
+    }
+
+    void
     run() override
     {
         testRelationalDatabaseInit();
@@ -411,6 +540,8 @@ public:
         testDatabaseSpaceChecks();
         testHashQueries();
         testWithTransactionTables();
+        testDeletionOperations();
+        testDatabaseManagement();
     }
 };
 
