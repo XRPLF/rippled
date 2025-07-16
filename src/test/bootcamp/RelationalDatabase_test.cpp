@@ -281,6 +281,127 @@ public:
     }
 
     void
+    testHashQueries()
+    {
+        testcase("Hash-based ledger queries");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 1000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Create some ledgers
+        test::jtx::Account alice("alice");
+        env.fund(test::jtx::XRP(10000), alice);
+        env.close();
+        
+        env(test::jtx::pay(alice, test::jtx::Account("bob"), test::jtx::XRP(1000)));
+        env.close();
+        
+        // Test hash-based queries
+        auto newestLedger = db.getNewestLedgerInfo();
+        if (newestLedger)
+        {
+            log << "Ledger hash: " << newestLedger->hash;
+            log << "Parent hash: " << newestLedger->parentHash;
+            
+            // Test hash-based ledger retrieval
+            auto ledgerByHash = db.getLedgerInfoByHash(newestLedger->hash);
+            BEAST_EXPECT(ledgerByHash.has_value());
+            
+            if (ledgerByHash)
+            {
+                BEAST_EXPECT(ledgerByHash->hash == newestLedger->hash);
+                BEAST_EXPECT(ledgerByHash->seq == newestLedger->seq);
+            }
+            
+            // Test hash by index
+            auto hashByIndex = db.getHashByIndex(newestLedger->seq);
+            BEAST_EXPECT(hashByIndex == newestLedger->hash);
+            
+            // Test hash pairs
+            auto hashPair = db.getHashesByIndex(newestLedger->seq);
+            if (hashPair)
+            {
+                BEAST_EXPECT(hashPair->ledgerHash == newestLedger->hash);
+                BEAST_EXPECT(hashPair->parentHash == newestLedger->parentHash);
+            }
+        }
+        
+        log << "Hash queries test completed";
+    }
+
+    void
+    testWithTransactionTables()
+    {
+        testcase("RelationalDatabase with transaction tables enabled");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 1000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Create test data
+        test::jtx::Account alice("alice");
+        test::jtx::Account bob("bob");
+        test::jtx::Account carol("carol");
+        
+        env.fund(test::jtx::XRP(10000), alice, bob, carol);
+        env.close();
+        
+        // Create multiple transactions
+        for (int i = 0; i < 5; ++i)
+        {
+            env(test::jtx::pay(alice, bob, test::jtx::XRP(100 + i)));
+            env.close();
+            env(test::jtx::pay(bob, carol, test::jtx::XRP(50 + i)));
+            env.close();
+        }
+        
+        auto* sqliteDb = dynamic_cast<SQLiteDatabase*>(&db);
+        if (sqliteDb)
+        {
+            // Test transaction table operations
+            auto txnCount = sqliteDb->getTransactionCount();
+            auto acctTxnCount = sqliteDb->getAccountTransactionCount();
+            
+            log << "Transaction count: " << txnCount;
+            log << "Account transaction count: " << acctTxnCount;
+            
+            // Test account transaction queries
+            RelationalDatabase::AccountTxOptions options{
+                alice.id(),
+                1,
+                1000000,
+                0,
+                50,
+                true
+            };
+            
+            auto aliceOldestTxs = sqliteDb->getOldestAccountTxs(options);
+            auto aliceNewestTxs = sqliteDb->getNewestAccountTxs(options);
+            
+            log << "Alice oldest transactions: " << aliceOldestTxs.size();
+            log << "Alice newest transactions: " << aliceNewestTxs.size();
+            
+            // Test binary format queries
+            auto aliceOldestBinary = sqliteDb->getOldestAccountTxsB(options);
+            auto aliceNewestBinary = sqliteDb->getNewestAccountTxsB(options);
+            
+            log << "Alice oldest binary txs: " << aliceOldestBinary.size();
+            log << "Alice newest binary txs: " << aliceNewestBinary.size();
+        }
+        
+        log << "Transaction tables test completed";
+    }
+
+    void
     run() override
     {
         testRelationalDatabaseInit();
@@ -288,6 +409,8 @@ public:
         testTransactionInsertion();
         testThreeKeyQueries();
         testDatabaseSpaceChecks();
+        testHashQueries();
+        testWithTransactionTables();
     }
 };
 
