@@ -531,6 +531,101 @@ public:
     }
 
     void
+    testErrorHandling()
+    {
+        testcase("Error handling and edge cases");
+        
+        auto config = test::jtx::envconfig();
+        config->overwrite(SECTION_RELATIONAL_DB, "backend", "sqlite");
+        config->LEDGER_HISTORY = 1000;
+        
+        test::jtx::Env env(*this, std::move(config));
+        auto& app = env.app();
+        auto& db = app.getRelationalDatabase();
+        
+        // Test queries on empty database
+        BEAST_EXPECT(db.getMinLedgerSeq() == std::nullopt);
+        BEAST_EXPECT(db.getMaxLedgerSeq() == std::nullopt);
+        BEAST_EXPECT(db.getNewestLedgerInfo() == std::nullopt);
+        
+        // Test hash queries with invalid data
+        uint256 invalidHash;
+        BEAST_EXPECT(db.getLedgerInfoByHash(invalidHash) == std::nullopt);
+        BEAST_EXPECT(db.getHashByIndex(999999) == uint256());
+        BEAST_EXPECT(db.getHashesByIndex(999999) == std::nullopt);
+        
+        // Test hash range queries with invalid ranges
+        auto hashRange = db.getHashesByIndex(999999, 999998); // max < min
+        BEAST_EXPECT(hashRange.empty());
+        
+        // Test transaction history with invalid index
+        auto txHistory = db.getTxHistory(999999);
+        BEAST_EXPECT(txHistory.empty());
+        
+        auto* sqliteDb = dynamic_cast<SQLiteDatabase*>(&db);
+        if (sqliteDb)
+        {
+            // Test empty database counts
+            BEAST_EXPECT(sqliteDb->getTransactionCount() == 0);
+            BEAST_EXPECT(sqliteDb->getAccountTransactionCount() == 0);
+            
+            auto ledgerCount = sqliteDb->getLedgerCountMinMax();
+            BEAST_EXPECT(ledgerCount.numberOfRows == 0);
+            
+            // Test invalid transaction lookup
+            uint256 invalidTxId;
+            error_code_i ec;
+            auto txResult = sqliteDb->getTransaction(invalidTxId, std::nullopt, ec);
+            BEAST_EXPECT(std::holds_alternative<TxSearched>(txResult));
+            
+            // Test account queries with invalid account
+            test::jtx::Account invalidAccount("invalid");
+            RelationalDatabase::AccountTxOptions options{
+                invalidAccount.id(),
+                1,
+                1000,
+                0,
+                10,
+                false
+            };
+            
+            auto accountTxs = sqliteDb->getOldestAccountTxs(options);
+            BEAST_EXPECT(accountTxs.empty());
+            
+            accountTxs = sqliteDb->getNewestAccountTxs(options);
+            BEAST_EXPECT(accountTxs.empty());
+        }
+        
+        // Now create some data and test edge cases
+        test::jtx::Account alice("alice");
+        env.fund(test::jtx::XRP(10000), alice);
+        env.close();
+        
+        // Test with valid data
+        auto minSeq = db.getMinLedgerSeq();
+        auto maxSeq = db.getMaxLedgerSeq();
+        
+        BEAST_EXPECT(minSeq.has_value());
+        BEAST_EXPECT(maxSeq.has_value());
+        
+        if (minSeq && maxSeq)
+        {
+            // Test boundary conditions
+            BEAST_EXPECT(db.getHashByIndex(*minSeq - 1) == uint256());
+            BEAST_EXPECT(db.getHashByIndex(*maxSeq + 1) == uint256());
+            
+            // Test valid hash retrieval
+            auto validHash = db.getHashByIndex(*maxSeq);
+            BEAST_EXPECT(validHash != uint256());
+            
+            auto ledgerByHash = db.getLedgerInfoByHash(validHash);
+            BEAST_EXPECT(ledgerByHash.has_value());
+        }
+        
+        log << "Error handling test completed";
+    }
+
+    void
     run() override
     {
         testRelationalDatabaseInit();
@@ -542,6 +637,7 @@ public:
         testWithTransactionTables();
         testDeletionOperations();
         testDatabaseManagement();
+        testErrorHandling();
     }
 };
 
