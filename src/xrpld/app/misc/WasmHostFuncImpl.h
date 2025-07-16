@@ -76,6 +76,12 @@ public:
     getBaseFee() override;
 
     Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(uint256 const& amendmentId) override;
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(std::string_view const& amendmentName) override;
+
+    Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override;
 
     Expected<Bytes, HostFunctionError>

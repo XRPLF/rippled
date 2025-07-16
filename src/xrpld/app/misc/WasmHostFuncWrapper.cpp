@@ -326,6 +326,38 @@ getBaseFee_wrap(
 }
 
 wasm_trap_t*
+isAmendmentEnabled_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const slice = getDataSlice(rt, params, index);
+    if (!slice)
+    {
+        return hfResult(results, slice.error());
+    }
+
+    if (slice->size() == uint256::bytes)
+    {
+        return returnResult(
+            rt,
+            params,
+            results,
+            hf->isAmendmentEnabled(uint256::fromVoid(slice->data())),
+            index);
+    }
+
+    auto const str = std::string_view(
+        reinterpret_cast<char const*>(slice->data()), slice->size());
+    return returnResult(
+        rt, params, results, hf->isAmendmentEnabled(str), index);
+}
+
+wasm_trap_t*
 cacheLedgerObj_wrap(
     void* env,
     wasm_val_vec_t const* params,
