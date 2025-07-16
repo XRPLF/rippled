@@ -263,7 +263,10 @@ public:
         BEAST_EXPECT(is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "127.0.0.1:80");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}), 80);
+        ep = Endpoint(
+            boost::asio::ip::make_address_v6(
+                boost::asio::ip::v4_mapped, AddressV4{d}),
+            80);
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -281,8 +284,11 @@ public:
         BEAST_EXPECT(!is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "10.0.0.1");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}));
-        BEAST_EXPECT(get_class(ep.to_v6().to_v4()) == 'A');
+        ep = Endpoint(boost::asio::ip::make_address_v6(
+            boost::asio::ip::v4_mapped, AddressV4{d}));
+        BEAST_EXPECT(
+            get_class(boost::asio::ip::make_address_v4(
+                boost::asio::ip::v4_mapped, ep.to_v6())) == 'A');
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
         BEAST_EXPECT(is_private(ep));
@@ -299,7 +305,8 @@ public:
         BEAST_EXPECT(!is_loopback(ep));
         BEAST_EXPECT(to_string(ep) == "166.78.151.147");
         // same address as v4 mapped in ipv6
-        ep = Endpoint(AddressV6::v4_mapped(AddressV4{d}));
+        ep = Endpoint(boost::asio::ip::make_address_v6(
+            boost::asio::ip::v4_mapped, AddressV4{d}));
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(is_public(ep));
         BEAST_EXPECT(!is_private(ep));

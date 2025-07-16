@@ -28,6 +28,7 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
@@ -169,7 +170,8 @@ Door<Handler>::Detector::run()
         std::bind(
             &Detector::do_detect,
             this->shared_from_this(),
-            std::placeholders::_1));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 template <class Handler>
@@ -312,7 +314,8 @@ Door<Handler>::run()
         std::bind(
             &Door<Handler>::do_accept,
             this->shared_from_this(),
-            std::placeholders::_1));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 template <class Handler>

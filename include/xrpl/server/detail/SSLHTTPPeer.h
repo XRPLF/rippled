@@ -23,6 +23,7 @@
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/SSLWSPeer.h>
 
+#include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -117,7 +118,8 @@ SSLHTTPPeer<Handler>::run()
     {
         boost::asio::spawn(
             this->strand_,
-            std::bind(&SSLHTTPPeer::do_close, this->shared_from_this()));
+            std::bind(&SSLHTTPPeer::do_close, this->shared_from_this()),
+            boost::asio::detached);
         return;
     }
     if (!socket_.is_open())
@@ -127,7 +129,8 @@ SSLHTTPPeer<Handler>::run()
         std::bind(
             &SSLHTTPPeer::do_handshake,
             this->shared_from_this(),
-            std::placeholders::_1));
+            std::placeholders::_1),
+        boost::asio::detached);
 }
 
 template <class Handler>
@@ -169,7 +172,8 @@ SSLHTTPPeer<Handler>::do_handshake(yield_context do_yield)
             std::bind(
                 &SSLHTTPPeer::do_read,
                 this->shared_from_this(),
-                std::placeholders::_1));
+                std::placeholders::_1),
+            boost::asio::detached);
         return;
     }
     // `this` will be destroyed

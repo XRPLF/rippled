@@ -24,6 +24,7 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/post.hpp>
 
 #include <chrono>
 #include <condition_variable>

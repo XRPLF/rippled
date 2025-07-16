@@ -31,6 +31,7 @@
 #include <xrpl/server/Session.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/executor_work_guard.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -60,7 +61,7 @@ public:
 
     public:
         TestThread()
-            : work_(std::in_place, std::ref(io_service_))
+            : work_(std::in_place, boost::asio::make_work_guard(io_service_))
             , thread_([&]() { this->io_service_.run(); })
         {
         }

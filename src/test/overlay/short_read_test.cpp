@@ -24,6 +24,7 @@
 #include <xrpl/beast/unit_test.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
@@ -72,7 +73,7 @@ private:
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
         using boost::asio::buffer_size;
-        boost::asio::const_buffers_1 buf(s.data(), s.size());
+        boost::asio::const_buffer buf(s.data(), s.size());
         sb.commit(buffer_copy(sb.prepare(buffer_size(buf)), buf));
     }
 

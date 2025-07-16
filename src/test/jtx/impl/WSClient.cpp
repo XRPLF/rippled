@@ -25,6 +25,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
 
+#include <boost/asio/executor_work_guard.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/websocket.hpp>
 
@@ -133,7 +134,7 @@ public:
         bool v2,
         unsigned rpc_version,
         std::unordered_map<std::string, std::string> const& headers = {})
-        : work_(ios_)
+        : work_(boost::asio::make_work_guard(ios_))
         , strand_(ios_)
         , thread_([&] { ios_.run(); })
         , stream_(ios_)
