@@ -173,7 +173,7 @@ jobs:
         run: |
           cd ${build_dir}
           ldd ./rippled
-          if [ "$(ldd ./rippled | wc -l)" -eq 4 ]; then
+          if [ "$(ldd ./rippled | grep -E "(libstdc\+\+|libgcc)" | wc -l)" -eq 0 ]; then
             echo 'The binary is statically linked.'
           else
             echo 'The binary is dynamically linked.'
