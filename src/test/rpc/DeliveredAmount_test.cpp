@@ -345,10 +345,10 @@ class DeliveredAmount_test : public beast::unit_test::suite
             env, alice, {.holders = {bob, carol}, .close = false});
 
         mptAlice.create(
-            {.ownerCount = 1,
+            {.transferFee = 25000,
+             .ownerCount = 1,
              .holderCount = 0,
-             .flags = tfMPTCanTransfer,
-             .transferFee = 25000});
+             .flags = tfMPTCanTransfer});
         auto const MPT = mptAlice["MPT"];
 
         mptAlice.authorize({.account = bob});
