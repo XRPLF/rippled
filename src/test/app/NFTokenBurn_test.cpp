@@ -1385,7 +1385,7 @@ protected:
     run(std::uint32_t instance, bool last = false)
     {
         using namespace test::jtx;
-        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const all{testable_amendments()};
         static FeatureBitset const fixNFTV1_2{fixNonFungibleTokensV1_2};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
         static FeatureBitset const fixNFTRemint{fixNFTokenRemint};

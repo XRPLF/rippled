@@ -1267,7 +1267,7 @@ struct PayStrand_test : public beast::unit_test::suite
     run() override
     {
         using namespace jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testToStrand(sa - featurePermissionedDEX);
         testToStrand(sa);
 

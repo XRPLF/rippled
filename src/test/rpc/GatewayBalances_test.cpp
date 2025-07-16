@@ -251,7 +251,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         for (auto feature : {sa - featurePermissionedDEX, sa})
         {
             testGWB(feature);
