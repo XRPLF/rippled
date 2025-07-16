@@ -21,8 +21,8 @@
 #include <test/jtx/WSClient.h>
 
 #include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/jss.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -335,77 +335,75 @@ class DeliveredAmount_test : public beast::unit_test::suite
     {
         testcase("MPT DeliveredAmount");
 
+        using namespace jtx;
+        Account const alice("alice");
+        Account const carol("carol");
+        Account const bob("bob");
+        Env env{*this, features};
+
+        MPTTester mptAlice(
+            env, alice, {.holders = {bob, carol}, .close = false});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer,
+             .transferFee = 25000});
+        auto const MPT = mptAlice["MPT"];
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        // issuer to holder
+        mptAlice.pay(alice, bob, 10000);
+
+        // holder to holder
+        env(pay(bob, carol, mptAlice.mpt(1000)), txflags(tfPartialPayment));
+        env.close();
+
+        // Get the hash for the most recent transaction.
+        std::string txHash{
+            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        Json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
+
+        if (features[fixMPTDeliveredAmount])
         {
-            using namespace jtx;
-            Account const alice("alice");
-            Account const carol("carol");
-            Account const bob("bob");
-            Env env{*this, features};
+            BEAST_EXPECT(
+                meta[sfDeliveredAmount.jsonName] ==
+                STAmount{MPT(800)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] ==
+                STAmount{MPT(800)}.getJson(JsonOptions::none));
+        }
+        else
+        {
+            BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] = Json::Value("unavailable"));
+        }
 
-            MPTTester mptAlice(
-                env, alice, {.holders = {bob, carol}, .close = false});
+        env(pay(bob, carol, MPT(1000)),
+            sendmax(MPT(1200)),
+            txflags(tfPartialPayment));
+        env.close();
 
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .holderCount = 0,
-                 .flags = tfMPTCanTransfer,
-                 .transferFee = 25000});
-            auto const MPT = mptAlice["MPT"];
+        txHash = env.tx()->getJson(JsonOptions::none)[jss::hash].asString();
+        meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
-            mptAlice.authorize({.account = bob});
-            mptAlice.authorize({.account = carol});
-
-            // issuer to holder
-            mptAlice.pay(alice, bob, 10000);
-
-            // holder to holder
-            env(pay(bob, carol, mptAlice.mpt(1000)), txflags(tfPartialPayment));
-            env.close();
-
-            // Get the hash for the most recent transaction.
-            std::string txHash{
-                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
-            Json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
-
-            if (features[fixMPTDeliveredAmount])
-            {
-                BEAST_EXPECT(
-                    meta[sfDeliveredAmount.jsonName] ==
-                    STAmount{MPT(800)}.getJson(JsonOptions::none));
-                BEAST_EXPECT(
-                    meta[jss::delivered_amount] ==
-                    STAmount{MPT(800)}.getJson(JsonOptions::none));
-            }
-            else
-            {
-                BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
-                BEAST_EXPECT(
-                    meta[jss::delivered_amount] = Json::Value("unavailable"));
-            }
-
-            env(pay(bob, carol, MPT(1000)),
-                sendmax(MPT(1200)),
-                txflags(tfPartialPayment));
-            env.close();
-
-            txHash = env.tx()->getJson(JsonOptions::none)[jss::hash].asString();
-            meta = env.rpc("tx", txHash)[jss::result][jss::meta];
-
-            if (features[fixMPTDeliveredAmount])
-            {
-                BEAST_EXPECT(
-                    meta[sfDeliveredAmount.jsonName] ==
-                    STAmount{MPT(960)}.getJson(JsonOptions::none));
-                BEAST_EXPECT(
-                    meta[jss::delivered_amount] ==
-                    STAmount{MPT(960)}.getJson(JsonOptions::none));
-            }
-            else
-            {
-                BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
-                BEAST_EXPECT(
-                    meta[jss::delivered_amount] = Json::Value("unavailable"));
-            }
+        if (features[fixMPTDeliveredAmount])
+        {
+            BEAST_EXPECT(
+                meta[sfDeliveredAmount.jsonName] ==
+                STAmount{MPT(960)}.getJson(JsonOptions::none));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] ==
+                STAmount{MPT(960)}.getJson(JsonOptions::none));
+        }
+        else
+        {
+            BEAST_EXPECT(!meta.isMember(sfDeliveredAmount.jsonName));
+            BEAST_EXPECT(
+                meta[jss::delivered_amount] = Json::Value("unavailable"));
         }
     }
 

@@ -590,7 +590,6 @@ Payment::doApply()
                 amountDeliver != dstAmount)
                 ctx_.deliver(amountDeliver);
         }
-
         else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
             res = tecPATH_PARTIAL;
 
