@@ -270,6 +270,15 @@ keypairForSignature(
     Json::Value& error,
     unsigned int apiVersion = apiVersionIfUnspecified);
 
+/** Parse subscribe/unsubscribe parameters
+ */
+error_code_i
+parseSubUnsubJson(
+    Asset& asset,
+    Json::Value const& jv,
+    Json::StaticString const& name,
+    beast::Journal j);
+
 }  // namespace RPC
 
 }  // namespace ripple

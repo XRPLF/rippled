@@ -398,7 +398,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
             env.require(balance(
                 alice,
                 STAmount(
-                    carol["USD"].issue(),
+                    carol["USD"],
                     6500000000000000ull,
                     -14,
                     true,
@@ -481,7 +481,6 @@ public:
 
         using namespace test::jtx;
         auto const sa = supported_amendments();
-        testWithFeatures(sa - featureFlowCross - featurePermissionedDEX);
         testWithFeatures(sa - featurePermissionedDEX);
         testWithFeatures(sa);
     }

@@ -204,8 +204,7 @@ public:
         auto USD = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(
-            USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(USD, STAmount::cMaxValue, STAmount::cMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
@@ -252,10 +251,7 @@ public:
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        for (auto feature :
-             {sa - featureFlowCross - featurePermissionedDEX,
-              sa - featurePermissionedDEX,
-              sa})
+        for (auto feature : {sa - featurePermissionedDEX, sa})
         {
             testGWB(feature);
             testGWBApiVersions(feature);

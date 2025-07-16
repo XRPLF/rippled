@@ -35,6 +35,7 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
+XRPL_FEATURE(MPTokensV2,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMClawbackRounding,        Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo)
@@ -88,9 +89,7 @@ XRPL_FIX    (TrustLinesToSelf,           Supported::yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(NonFungibleTokensV1_1,      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(ExpandedSignerList,         Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(CheckCashMakesTrustLine,    Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (RmSmallIncreasedQOffers,    Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (STAmountCanonicalize,       Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(FlowSortStrands,            Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(TicketBatch,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(NegativeUNL,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (AmendmentMajorityCalc,      Supported::yes, VoteBehavior::DefaultYes)
@@ -98,8 +97,6 @@ XRPL_FEATURE(HardenedValidations,        Supported::yes, VoteBehavior::DefaultYe
 // fix1781: XRPEndpointSteps should be included in the circular payment check
 XRPL_FIX    (1781,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
-// fixQualityUpperBound should be activated before FlowCross
-XRPL_FIX    (QualityUpperBound,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (PayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (CheckThreading,             Supported::yes, VoteBehavior::DefaultYes)
@@ -107,8 +104,6 @@ XRPL_FIX    (MasterKeyAsRegularKey,      Supported::yes, VoteBehavior::DefaultYe
 XRPL_FIX    (TakerDryOfferRemoval,       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(MultiSignReserve,           Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1578,                       Supported::yes, VoteBehavior::DefaultYes)
-// fix1515: Use liquidity from strands that consume max offers, but mark as dry
-XRPL_FIX    (1515,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositPreauth,             Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1623,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1543,                       Supported::yes, VoteBehavior::DefaultYes)
@@ -116,7 +111,6 @@ XRPL_FIX    (1571,                       Supported::yes, VoteBehavior::DefaultYe
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1513,                       Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(FlowCross,                  Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -159,3 +153,8 @@ XRPL_RETIRE(fix1201)
 XRPL_RETIRE(fix1512)
 XRPL_RETIRE(fix1523)
 XRPL_RETIRE(fix1528)
+XRPL_RETIRE(FlowCross)
+XRPL_RETIRE(FlowSortStrands)
+XRPL_RETIRE(fixQualityUpperBound)
+XRPL_RETIRE(fix1515)
+XRPL_RETIRE(fixRmSmallIncreasedQOffers)

@@ -47,7 +47,7 @@ creditLimit(
         result.getIssuer() == account,
         "ripple::creditLimit : result issuer match");
     XRPL_ASSERT(
-        result.getCurrency() == currency,
+        result.get<Issue>().currency == currency,
         "ripple::creditLimit : result currency match");
     return result;
 }
@@ -85,7 +85,7 @@ creditBalance(
         result.getIssuer() == account,
         "ripple::creditBalance : result issuer match");
     XRPL_ASSERT(
-        result.getCurrency() == currency,
+        result.get<Issue>().currency == currency,
         "ripple::creditBalance : result currency match");
     return result;
 }

@@ -32,111 +32,124 @@ struct AmountSpec
 {
     explicit AmountSpec() = default;
 
-    bool native;
-    union
-    {
-        XRPAmount xrp;
-        IOUAmount iou = {};
-    };
-    std::optional<AccountID> issuer;
-    std::optional<Currency> currency;
+    std::variant<XRPAmount, IOUAmount, MPTAmount> amount;
 
-    friend std::ostream&
-    operator<<(std::ostream& stream, AmountSpec const& amt)
+    bool
+    native() const
     {
-        if (amt.native)
-            stream << to_string(amt.xrp);
-        else
-            stream << to_string(amt.iou);
-        if (amt.currency)
-            stream << "/(" << *amt.currency << ")";
-        if (amt.issuer)
-            stream << "/" << *amt.issuer << "";
-        return stream;
+        return std::holds_alternative<XRPAmount>(amount);
+    }
+    bool
+    isIOU() const
+    {
+        return std::holds_alternative<IOUAmount>(amount);
+    }
+    template <typename T>
+    void
+    check() const
+    {
+        if (!std::holds_alternative<T>(amount))
+            Throw<std::logic_error>("AmountSpec doesn't hold requested amount");
+    }
+    XRPAmount const&
+    xrp() const
+    {
+        check<XRPAmount>();
+        return std::get<XRPAmount>(amount);
+    }
+    IOUAmount const&
+    iou() const
+    {
+        check<XRPAmount>();
+        return std::get<IOUAmount>(amount);
+    }
+    MPTAmount const&
+    mpt() const
+    {
+        check<XRPAmount>();
+        return std::get<MPTAmount>(amount);
     }
 };
 
 struct EitherAmount
 {
-#ifndef NDEBUG
-    bool native = false;
-#endif
-
-    union
-    {
-        IOUAmount iou = {};
-        XRPAmount xrp;
-    };
+    std::variant<XRPAmount, IOUAmount, MPTAmount> amount;
 
     EitherAmount() = default;
 
-    explicit EitherAmount(IOUAmount const& a) : iou(a)
+    explicit EitherAmount(IOUAmount const& a) : amount(a)
     {
     }
 
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic push
-    // ignore warning about half of iou amount being uninitialized
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-#endif
-    explicit EitherAmount(XRPAmount const& a) : xrp(a)
+    explicit EitherAmount(XRPAmount const& a) : amount(a)
     {
-#ifndef NDEBUG
-        native = true;
-#endif
     }
-#if defined(__GNUC__) && !defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
+
+    explicit EitherAmount(MPTAmount const& a) : amount(a)
+    {
+    }
 
     explicit EitherAmount(AmountSpec const& a)
     {
-#ifndef NDEBUG
-        native = a.native;
-#endif
-        if (a.native)
-            xrp = a.xrp;
-        else
-            iou = a.iou;
+        amount = a.amount;
+    }
+
+    bool
+    native() const
+    {
+        return std::holds_alternative<XRPAmount>(amount);
+    }
+    bool
+    isIOU() const
+    {
+        return std::holds_alternative<IOUAmount>(amount);
+    }
+    bool
+    isMPT() const
+    {
+        return std::holds_alternative<MPTAmount>(amount);
+    }
+    template <typename T>
+    void
+    check() const
+    {
+        if (!std::holds_alternative<T>(amount))
+            Throw<std::logic_error>(
+                "EitherAmount doesn't hold requested amount");
+    }
+    XRPAmount const&
+    xrp() const
+    {
+        check<XRPAmount>();
+        return std::get<XRPAmount>(amount);
+    }
+    IOUAmount const&
+    iou() const
+    {
+        check<IOUAmount>();
+        return std::get<IOUAmount>(amount);
+    }
+    MPTAmount const&
+    mpt() const
+    {
+        check<MPTAmount>();
+        return std::get<MPTAmount>(amount);
     }
 
 #ifndef NDEBUG
     friend std::ostream&
     operator<<(std::ostream& stream, EitherAmount const& amt)
     {
-        if (amt.native)
-            stream << to_string(amt.xrp);
+        if (amt.native())
+            stream << to_string(amt.xrp());
+        else if (amt.isIOU())
+            stream << to_string(amt.iou());
         else
-            stream << to_string(amt.iou);
+            stream << to_string(amt.mpt());
         return stream;
     }
 #endif
 };
-
-template <class T>
-T&
-get(EitherAmount& amt)
-{
-    static_assert(sizeof(T) == -1, "Must used specialized function");
-    return T(0);
-}
-
-template <>
-inline IOUAmount&
-get<IOUAmount>(EitherAmount& amt)
-{
-    XRPL_ASSERT(
-        !amt.native, "ripple::get<IOUAmount>(EitherAmount&) : is not XRP");
-    return amt.iou;
-}
-
-template <>
-inline XRPAmount&
-get<XRPAmount>(EitherAmount& amt)
-{
-    XRPL_ASSERT(amt.native, "ripple::get<XRPAmount>(EitherAmount&) : is XRP");
-    return amt.xrp;
-}
 
 template <class T>
 T const&
@@ -151,9 +164,9 @@ inline IOUAmount const&
 get<IOUAmount>(EitherAmount const& amt)
 {
     XRPL_ASSERT(
-        !amt.native,
+        !amt.native(),
         "ripple::get<IOUAmount>(EitherAmount const&) : is not XRP");
-    return amt.iou;
+    return amt.iou();
 }
 
 template <>
@@ -161,63 +174,17 @@ inline XRPAmount const&
 get<XRPAmount>(EitherAmount const& amt)
 {
     XRPL_ASSERT(
-        amt.native, "ripple::get<XRPAmount>(EitherAmount const&) : is XRP");
-    return amt.xrp;
+        amt.native(), "ripple::get<XRPAmount>(EitherAmount const&) : is XRP");
+    return amt.xrp();
 }
 
-inline AmountSpec
-toAmountSpec(STAmount const& amt)
+template <>
+inline MPTAmount const&
+get<MPTAmount>(EitherAmount const& amt)
 {
     XRPL_ASSERT(
-        amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
-        "ripple::toAmountSpec(STAmount const&) : maximum mantissa");
-    bool const isNeg = amt.negative();
-    std::int64_t const sMant =
-        isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
-    AmountSpec result;
-
-    result.native = isXRP(amt);
-    if (result.native)
-    {
-        result.xrp = XRPAmount(sMant);
-    }
-    else
-    {
-        result.iou = IOUAmount(sMant, amt.exponent());
-        result.issuer = amt.issue().account;
-        result.currency = amt.issue().currency;
-    }
-
-    return result;
-}
-
-inline EitherAmount
-toEitherAmount(STAmount const& amt)
-{
-    if (isXRP(amt))
-        return EitherAmount{amt.xrp()};
-    return EitherAmount{amt.iou()};
-}
-
-inline AmountSpec
-toAmountSpec(EitherAmount const& ea, std::optional<Currency> const& c)
-{
-    AmountSpec r;
-    r.native = (!c || isXRP(*c));
-    r.currency = c;
-    XRPL_ASSERT(
-        ea.native == r.native,
-        "ripple::toAmountSpec(EitherAmount const&&, std::optional<Currency>) : "
-        "matching native");
-    if (r.native)
-    {
-        r.xrp = ea.xrp;
-    }
-    else
-    {
-        r.iou = ea.iou;
-    }
-    return r;
+        amt.isMPT(), "ripple::get<MPTAmount>(EitherAmount const&) : is MPT");
+    return amt.mpt();
 }
 
 }  // namespace ripple

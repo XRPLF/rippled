@@ -106,7 +106,7 @@ SetTrust::preflight(PreflightContext const& ctx)
         return temBAD_LIMIT;
     }
 
-    if (badCurrency() == saLimitAmount.getCurrency())
+    if (badCurrency() == saLimitAmount.get<Issue>().currency)
     {
         JLOG(j.trace()) << "Malformed transaction: specifies XRP as IOU";
         return temBAD_CURRENCY;
@@ -159,7 +159,9 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
     auto const sleRippleState = view.read(keylet::line(
-        tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
+        tx[sfAccount],
+        saLimitAmount.getIssuer(),
+        saLimitAmount.get<Issue>().currency));
 
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
@@ -214,7 +216,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     auto const saLimitAmount = ctx.tx[sfLimitAmount];
 
-    auto const currency = saLimitAmount.getCurrency();
+    auto const currency = saLimitAmount.get<Issue>().currency;
     auto const uDstAccountID = saLimitAmount.getIssuer();
 
     if (ctx.view.rules().enabled(fixTrustLinesToSelf))
@@ -292,7 +294,9 @@ SetTrust::preclaim(PreclaimContext const& ctx)
                         ammSle->getFieldAmount(sfLPTokenBalance);
                     lpTokens == beast::zero)
                     return tecAMM_EMPTY;
-                else if (lpTokens.getCurrency() != saLimitAmount.getCurrency())
+                else if (
+                    lpTokens.get<Issue>().currency !=
+                    saLimitAmount.get<Issue>().currency)
                     return tecNO_PERMISSION;
             }
             else
@@ -372,7 +376,7 @@ SetTrust::doApply()
     bool const bQualityIn(ctx_.tx.isFieldPresent(sfQualityIn));
     bool const bQualityOut(ctx_.tx.isFieldPresent(sfQualityOut));
 
-    Currency const currency(saLimitAmount.getCurrency());
+    Currency const currency(saLimitAmount.get<Issue>().currency);
     AccountID uDstAccountID(saLimitAmount.getIssuer());
 
     // true, if current is high account.

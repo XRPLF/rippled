@@ -80,6 +80,58 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
             env_.require(owners(it.second, 0));
         }
     }
+    if (arg.create)
+        create(*arg.create);
+}
+
+MPTTester::MPTTester(
+    Env& env,
+    Account const& issuer,
+    MPTID const& id,
+    std::vector<Account> const& holders,
+    bool close)
+    : env_(env)
+    , issuer_(issuer)
+    , holders_(makeHolders(holders))
+    , id_(id)
+    , close_(close)
+{
+}
+
+static MPTCreate
+makeMPTCreate(MPTInitDef const& arg)
+{
+    if (arg.pay)
+        return {
+            .maxAmt = arg.maxAmt,
+            .transferFee = arg.transferFee,
+            .pay = {{arg.holders, *arg.pay}},
+            .flags = arg.flags,
+            .authHolder = arg.authHolder};
+    return {
+        .maxAmt = arg.maxAmt,
+        .transferFee = arg.transferFee,
+        .authorize = arg.holders,
+        .flags = arg.flags,
+        .authHolder = arg.authHolder};
+}
+
+MPTTester::MPTTester(MPTInitDef const& arg)
+    : MPTTester{
+          arg.env,
+          arg.issuer,
+          MPTInit{
+              .fund = arg.fund,
+              .close = arg.close,
+              .create = makeMPTCreate(arg)}}
+{
+}
+
+MPTTester::operator MPT() const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+    return MPT("", *id_);
 }
 
 void
@@ -109,7 +161,39 @@ MPTTester::create(MPTCreate const& arg)
         id_.reset();
     }
     else
+    {
         env_.require(mptflags(*this, arg.flags.value_or(0)));
+        auto authAndPay = [&](auto const& accts, auto const&& getAcct) {
+            for (auto const& it : accts)
+            {
+                authorize({.account = getAcct(it)});
+                if ((arg.flags.value_or(0) & tfMPTRequireAuth) &&
+                    arg.authHolder)
+                    authorize({.account = issuer_, .holder = getAcct(it)});
+                if (arg.pay && arg.pay->first.empty())
+                    pay(issuer_, getAcct(it), arg.pay->second);
+            }
+            if (arg.pay)
+            {
+                for (auto const& p : arg.pay->first)
+                    pay(issuer_, p, arg.pay->second);
+            }
+        };
+        if (arg.authorize)
+        {
+            if (arg.authorize->empty())
+                authAndPay(holders_, [](auto const& it) { return it.second; });
+            else
+                authAndPay(*arg.authorize, [](auto const& it) { return it; });
+        }
+        else if (arg.pay)
+        {
+            if (arg.pay->first.empty())
+                authAndPay(holders_, [](auto const& it) { return it.second; });
+            else
+                authAndPay(arg.pay->first, [](auto const& it) { return it; });
+        }
+    }
 }
 
 void
@@ -211,6 +295,15 @@ MPTTester::authorize(MPTAuthorize const& arg)
                     nullptr;
             }));
         }
+    }
+}
+
+void
+MPTTester::authorizeHolders(Holders const& holders)
+{
+    for (auto const& holder : holders)
+    {
+        authorize({.account = holder});
     }
 }
 
@@ -416,6 +509,12 @@ MPT
 MPTTester::operator[](std::string const& name)
 {
     return MPT(name, issuanceID());
+}
+
+PrettyAmount
+MPTTester::operator()(std::uint64_t amount) const
+{
+    return MPT("", issuanceID())(amount);
 }
 
 }  // namespace jtx
