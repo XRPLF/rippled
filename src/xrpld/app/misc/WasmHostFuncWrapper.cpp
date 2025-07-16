@@ -682,19 +682,19 @@ checkSignature_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const message = getData<Slice>(rt, params, index);
+    auto const message = getDataSlice(rt, params, index);
     if (!message)
     {
         return hfResult(results, message.error());
     }
 
-    auto const signature = getData<Slice>(rt, params, index);
+    auto const signature = getDataSlice(rt, params, index);
     if (!signature)
     {
         return hfResult(results, signature.error());
     }
 
-    auto const pubkey = getData<Slice>(rt, params, index);
+    auto const pubkey = getDataSlice(rt, params, index);
     if (!pubkey)
     {
         return hfResult(results, pubkey.error());
@@ -1142,7 +1142,7 @@ getNFTIssuer_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getData<uint256>(rt, params, index);
+    auto const nftId = getDataUInt256(rt, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
@@ -1161,7 +1161,7 @@ getNFTTaxon_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getData<uint256>(rt, params, index);
+    auto const nftId = getDataUInt256(rt, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
@@ -1180,7 +1180,7 @@ getNFTFlags_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getData<uint256>(rt, params, index);
+    auto const nftId = getDataUInt256(rt, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
@@ -1199,7 +1199,7 @@ getNFTTransferFee_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getData<uint256>(rt, params, index);
+    auto const nftId = getDataUInt256(rt, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
@@ -1219,7 +1219,7 @@ getNFTSerial_wrap(
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getData<uint256>(rt, params, index);
+    auto const nftId = getDataUInt256(rt, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());

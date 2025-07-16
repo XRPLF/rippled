@@ -27,6 +27,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
 #include <memory>

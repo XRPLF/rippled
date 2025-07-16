@@ -453,7 +453,7 @@ WasmHostFunctionsImpl::checkSignature(
     Slice const& pubkey)
 {
     if (!publicKeyType(pubkey))
-        return Unexpected(HF_ERR_INVALID_PARAMS);
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     PublicKey const pk(pubkey);
     return verify(pk, message, signature, /*canonical*/ true);
@@ -654,7 +654,7 @@ WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId)
 {
     auto const issuer = nft::getIssuer(nftId);
     if (!issuer)
-        return Unexpected(HF_ERR_INVALID_PARAMS);
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     return Bytes{issuer.begin(), issuer.end()};
 }

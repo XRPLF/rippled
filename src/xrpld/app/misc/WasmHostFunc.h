@@ -91,31 +91,31 @@ struct HostFunctions
     virtual Expected<Hash, HostFunctionError>
     getLedgerAccountHash()
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<Hash, HostFunctionError>
     getLedgerTransactionHash()
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getBaseFee()
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     isAmendmentEnabled(uint256 const& amendmentId)
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     isAmendmentEnabled(std::string_view const& amendmentName)
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
@@ -208,7 +208,7 @@ struct HostFunctions
         Slice const& signature,
         Slice const& pubkey)
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<Hash, HostFunctionError>
@@ -319,31 +319,31 @@ struct HostFunctions
     virtual Expected<Bytes, HostFunctionError>
     getNFTIssuer(uint256 const& nftId)
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<std::uint32_t, HostFunctionError>
     getNFTTaxon(uint256 const& nftId)
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getNFTFlags(uint256 const& nftId)
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
     getNFTTransferFee(uint256 const& nftId)
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<std::uint32_t, HostFunctionError>
     getNFTSerial(uint256 const& nftId)
     {
-        return Unexpected(HF_ERR_INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
