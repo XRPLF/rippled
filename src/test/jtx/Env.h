@@ -84,7 +84,7 @@ testable_amendments()
                 feats.push_back(*f);
             else
                 Throw<std::runtime_error>(
-                    "Unknown feature: " + s + "  in supportedAmendments.");
+                    "Unknown feature: " + s + "  in allAmendments.");
         }
         return FeatureBitset(feats);
     }();
