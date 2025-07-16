@@ -207,24 +207,6 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
-        // test preflight: permissioned dex cannot be used without enable
-        // flowcross
-        {
-            Env env(*this, features - featureFlowCross);
-            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-                PermissionedDEX(env);
-
-            env(offer(bob, XRP(10), USD(10)),
-                domain(domainID),
-                ter(temDISABLED));
-            env.close();
-
-            env.enableFeature(featureFlowCross);
-            env.close();
-            env(offer(bob, XRP(10), USD(10)), domain(domainID));
-            env.close();
-        }
-
         // preclaim - someone outside of the domain cannot create domain offer
         {
             Env env(*this, features);

@@ -1268,15 +1268,12 @@ struct PayStrand_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        testToStrand(sa - featureFlowCross - featurePermissionedDEX);
         testToStrand(sa - featurePermissionedDEX);
         testToStrand(sa);
 
-        testRIPD1373(sa - featureFlowCross - featurePermissionedDEX);
         testRIPD1373(sa - featurePermissionedDEX);
         testRIPD1373(sa);
 
-        testLoop(sa - featureFlowCross - featurePermissionedDEX);
         testLoop(sa - featurePermissionedDEX);
         testLoop(sa);
 
