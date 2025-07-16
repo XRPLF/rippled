@@ -684,8 +684,8 @@ private:
             // Should be same order as creation
             Env env(
                 *this,
-                withFixOrder ? supported_amendments()
-                             : supported_amendments() - fixPriceOracleOrder);
+                withFixOrder ? testable_amendments()
+                             : testable_amendments() - fixPriceOracleOrder);
             auto const baseFee =
                 static_cast<int>(env.current()->fees().base.drops());
 
