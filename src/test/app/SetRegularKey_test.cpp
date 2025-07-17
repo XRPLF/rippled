@@ -32,7 +32,7 @@ public:
         using namespace test::jtx;
 
         testcase("Set regular key");
-        Env env{*this, supported_amendments() - fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments() - fixMasterKeyAsRegularKey};
         Account const alice("alice");
         Account const bob("bob");
         env.fund(XRP(10000), alice, bob);
@@ -72,7 +72,7 @@ public:
         using namespace test::jtx;
 
         testcase("Set regular key");
-        Env env{*this, supported_amendments() | fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
         Account const alice("alice");
         Account const bob("bob");
         env.fund(XRP(10000), alice, bob);
@@ -109,7 +109,7 @@ public:
         // See https://ripplelabs.atlassian.net/browse/RIPD-1721.
         testcase(
             "Set regular key to master key (before fixMasterKeyAsRegularKey)");
-        Env env{*this, supported_amendments() - fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments() - fixMasterKeyAsRegularKey};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
@@ -139,7 +139,7 @@ public:
 
         testcase(
             "Set regular key to master key (after fixMasterKeyAsRegularKey)");
-        Env env{*this, supported_amendments() | fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
         Account const alice("alice");
         env.fund(XRP(10000), alice);
 
