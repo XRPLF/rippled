@@ -151,7 +151,7 @@ static Expected<Currency, HostFunctionError>
 getDataCurrency(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const r = getDataSlice(rt, params, i);
-    if (!r || (r->size() < Currency::bytes))
+    if (!r || (r->size() != Currency::bytes))
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     return Currency::fromVoid(r->data());
