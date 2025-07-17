@@ -2597,6 +2597,49 @@ class MPToken_test : public beast::unit_test::suite
             test(tfMPTLock, ter(tecLOCKED));
             test(tfMPTUnlock, ter(tesSUCCESS));
         }
+        {
+            Env env(*this);
+            auto const USD = gw["USD"];
+            env.fund(XRP(1'000), gw, alice, carol, bob);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .pay = 100,
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .pay = 100,
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+
+            env(trust(alice, USD(100)));
+            env(pay(gw, alice, USD(100)));
+            env(trust(carol, USD(100)));
+
+            env(offer(alice, XRP(10), ETH(10)));
+            env(offer(bob, ETH(10), BTC(10)));
+            env(offer(alice, BTC(10), USD(10)));
+
+            BTC.set({.holder = bob, .flags = tfMPTLock});
+
+            // Bob's offer is unfunded
+            env(pay(alice, carol, USD(1)),
+                path(~(MPT)ETH, ~(MPT)BTC, ~USD),
+                txflags(tfNoRippleDirect | tfPartialPayment),
+                sendmax(XRP(1)),
+                ter(tecPATH_DRY));
+
+            BTC.set({.holder = bob, .flags = tfMPTUnlock});
+            ETH.set({.holder = bob, .flags = tfMPTLock});
+
+            env(pay(alice, carol, USD(1)),
+                path(~(MPT)ETH, ~(MPT)BTC, ~USD),
+                txflags(tfNoRippleDirect | tfPartialPayment),
+                sendmax(XRP(1)),
+                ter(tecPATH_DRY));
+        }
 
         // MPT/XRP
         {

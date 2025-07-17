@@ -747,7 +747,11 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 strandSrc_, strandDst_, offer, ofrQ, offers, offerAttempted))
             return true;
 
-        bool const isAssetInMPT = offer.assetIn().template holds<MPTIssue>();
+        Asset const& assetIn = offer.assetIn();
+        Asset const& assetOut = offer.assetOut();
+        bool const isAssetInMPT = assetIn.holds<MPTIssue>();
+        bool const isAssetOutMPT = assetOut.holds<MPTIssue>();
+        auto const& owner = offer.owner();
 
         if (isAssetInMPT)
         {
@@ -755,10 +759,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
             // for the reserve since the offer is removed if it is consumed.
             // Therefore, the owner count remains the same.
             if (auto const err = MPTokenAuthorize::checkCreateMPT(
-                    sb,
-                    offer.assetIn().template get<MPTIssue>(),
-                    offer.owner(),
-                    j_);
+                    sb, assetIn.get<MPTIssue>(), owner, j_);
                 err != tesSUCCESS)
                 return true;
         }
@@ -766,10 +767,16 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         // It shouldn't matter from auth point of view whether it's sb
         // or afView. Amendment guard this change just in case.
         auto& applyView = sb.rules().enabled(featureMPTokensV2) ? sb : afView;
-        // Make sure offer owner has authorization to own Assets from issuer.
-        // An account can always own XRP or their own Assets.
-        if (requireAuth(applyView, offer.assetIn(), offer.owner()) !=
-            tesSUCCESS)
+        // Make sure offer owner has authorization to own Assets from issuer
+        // if IOU. An account can always own XRP or their own Assets.
+        // If MPT then MPTDEX should be allowed.
+        if (requireAuth(applyView, assetIn, owner) != tesSUCCESS ||
+            (isAssetInMPT &&
+             isMPTDEXAllowed(applyView, assetIn, owner, std::nullopt) !=
+                 tesSUCCESS) ||
+            (isAssetOutMPT &&
+             isMPTDEXAllowed(applyView, assetOut, owner, std::nullopt) !=
+                 tesSUCCESS))
         {
             // Offer owner not authorized to hold IOU/MPT from issuer.
             // Remove this offer even if no crossing occurs.
@@ -788,9 +795,9 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
         auto const [ofrInRate, ofrOutRate] = offer.adjustRates(
             static_cast<TDerived const*>(this)->getOfrInRate(
-                prevStep_, offer.owner(), trIn),
+                prevStep_, owner, trIn),
             static_cast<TDerived const*>(this)->getOfrOutRate(
-                prevStep_, offer.owner(), strandDst_, trOut));
+                prevStep_, owner, strandDst_, trOut));
 
         auto ofrAmt = offer.amount();
         TAmounts stpAmt{
@@ -825,15 +832,14 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         // Limit offer's input if MPT, BookStep is the first step (an issuer
         // is making a cross-currency payment), and this offer is not owned
         // by the issuer. Otherwise, OutstandingAmount may overflow.
-        auto const& asset = offer.assetIn();
-        auto const& issuer = asset.getIssuer();
+        auto const& issuer = assetIn.getIssuer();
         if (isAssetInMPT && !prevStep_ && offer.owner() != issuer)
         {
             // Funds available to issue
             auto const available = toAmount<TIn>(accountHolds(
                 sb,
                 issuer,
-                asset,
+                assetIn,
                 FreezeHandling::fhIGNORE_FREEZE,
                 ahIGNORE_AUTH,
                 j_));
