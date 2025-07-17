@@ -43,19 +43,10 @@ public:
         updateHash();
     }
 
-    SHAMapTxPlusMetaLeafNode(
-        boost::intrusive_ptr<SHAMapItem const> item,
-        std::uint32_t cowid,
-        SHAMapHash const& hash)
-        : SHAMapLeafNode(std::move(item), cowid, hash)
-    {
-    }
-
     intr_ptr::SharedPtr<SHAMapTreeNode>
     clone(std::uint32_t cowid) const override
     {
-        return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(
-            item_, cowid, hash_);
+        return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(item_, cowid);
     }
 
     SHAMapNodeType
@@ -67,8 +58,8 @@ public:
     void
     updateHash() final override
     {
-        hash_ = SHAMapHash{
-            sha512Half(HashPrefix::txNode, item_->slice(), item_->key())};
+        // hash_ = SHAMapHash{
+        //     sha512Half(HashPrefix::txNode, item_->slice(), item_->key())};
     }
 
     void
