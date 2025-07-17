@@ -509,6 +509,10 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
+                uint32_t netID = env.app().config().NETWORK_ID;
+                if (!jv.isMember(jss::network_id) || jv[jss::network_id] != netID)
+                    return false;
+
                 // Certain fields are only added on a flag ledger.
                 bool const isFlagLedger =
                     (env.closed()->info().seq + 1) % 256 == 0;
