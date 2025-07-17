@@ -37,6 +37,7 @@
 #include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/core/LexicalCast.h>
@@ -48,6 +49,8 @@
 #include <algorithm>
 #include <iomanip>
 #include <mutex>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -140,11 +143,17 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
             app_.getJobQueue().addJob(
                 jtADVANCE,
                 "getConsensusLedger1",
-                [id = hash, &app = app_, this]() {
-                    JLOG(j_.debug())
-                        << "JOB advanceLedger getConsensusLedger1 started";
-                    app.getInboundLedgers().acquireAsync(
-                        id, 0, InboundLedger::Reason::CONSENSUS);
+                [id = hash, &app = app_, this, journal = j_]() {
+                    perf::measureDurationAndLog(
+                        [&]() {
+                            JLOG(j_.debug()) << "JOB advanceLedger "
+                                                "getConsensusLedger1 started";
+                            app.getInboundLedgers().acquireAsync(
+                                id, 0, InboundLedger::Reason::CONSENSUS);
+                        },
+                        "getConsensusLedger1",
+                        1s,
+                        journal);
                 });
         }
         return std::nullopt;
@@ -442,21 +451,27 @@ RCLConsensus::Adaptor::onAccept(
     app_.getJobQueue().addJob(
         jtACCEPT,
         "acceptLedger",
-        [=, this, cj = std::move(consensusJson)]() mutable {
-            // Note that no lock is held or acquired during this job.
-            // This is because generic Consensus guarantees that once a ledger
-            // is accepted, the consensus results and capture by reference state
-            // will not change until startRound is called (which happens via
-            // endConsensus).
-            RclConsensusLogger clog("onAccept", validating, j_);
-            this->doAccept(
-                result,
-                prevLedger,
-                closeResolution,
-                rawCloseTimes,
-                mode,
-                std::move(cj));
-            this->app_.getOPs().endConsensus(clog.ss());
+        [=, this, cj = std::move(consensusJson), journal = j_]() mutable {
+            perf::measureDurationAndLog(
+                [&]() {
+                    // Note that no lock is held or acquired during this job.
+                    // This is because generic Consensus guarantees that once a
+                    // ledger is accepted, the consensus results and capture by
+                    // reference state will not change until startRound is
+                    // called (which happens via endConsensus).
+                    RclConsensusLogger clog("onAccept", validating, j_);
+                    this->doAccept(
+                        result,
+                        prevLedger,
+                        closeResolution,
+                        rawCloseTimes,
+                        mode,
+                        std::move(cj));
+                    this->app_.getOPs().endConsensus(clog.ss());
+                },
+                "acceptLedger",
+                1s,
+                journal);
         });
 }
 

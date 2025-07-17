@@ -35,6 +35,8 @@
 #include <mutex>
 #include <vector>
 
+using namespace std::chrono_literals;
+
 namespace ripple {
 
 class InboundLedgersImp : public InboundLedgers
@@ -212,8 +214,14 @@ public:
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
                 app_.getJobQueue().addJob(
-                    jtLEDGER_DATA, "processLedgerData", [ledger]() {
-                        ledger->runData();
+                    jtLEDGER_DATA,
+                    "processLedgerData",
+                    [ledger, journal = j_]() {
+                        perf::measureDurationAndLog(
+                            [&]() { ledger->runData(); },
+                            "processLedgerData",
+                            1s,
+                            journal);
                     });
 
             return true;
@@ -227,8 +235,12 @@ public:
         if (packet->type() == protocol::liAS_NODE)
         {
             app_.getJobQueue().addJob(
-                jtLEDGER_DATA, "gotStaleData", [this, packet]() {
-                    gotStaleData(packet);
+                jtLEDGER_DATA, "gotStaleData", [this, packet, journal = j_]() {
+                    perf::measureDurationAndLog(
+                        [&]() { gotStaleData(packet); },
+                        "gotStaleData",
+                        1s,
+                        journal);
                 });
         }
 
