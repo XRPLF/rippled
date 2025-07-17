@@ -1,0 +1,11 @@
+[workspace]
+resolver = "3"
+members = ["kyc", "xrpl_std_example"]
+
+[profile.release]
+lto = true
+opt-level = 's'
+panic = "abort"
+
+[profile.dev]
+panic = "abort"
