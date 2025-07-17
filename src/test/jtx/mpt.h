@@ -135,6 +135,7 @@ struct MPTSet
     std::optional<Account> account = std::nullopt;
     std::optional<Account> holder = std::nullopt;
     std::optional<MPTID> id = std::nullopt;
+    std::optional<std::string> metadata = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;

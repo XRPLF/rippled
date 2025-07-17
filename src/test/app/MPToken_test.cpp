@@ -22,6 +22,7 @@
 #include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -86,6 +87,14 @@ class MPToken_test : public beast::unit_test::suite
                  .metadata = "",
                  .err = temMALFORMED});
 
+            // oversized metadata returns error
+            mptAlice.create(
+                {.maxAmt = 100,
+                 .assetScale = 0,
+                 .transferFee = 0,
+                 .metadata = std::string(2050, 'B'),
+                 .err = temMALFORMED});
+
             // MaximumAmout of 0 returns error
             mptAlice.create(
                 {.maxAmt = 0,
@@ -107,6 +116,29 @@ class MPToken_test : public beast::unit_test::suite
                  .transferFee = 0,
                  .metadata = "test",
                  .err = temMALFORMED});
+        }
+
+        // test preflight tfMPTMutableMeta when feature is disabled
+        {
+            Env env{*this, features - featureMPTMutableMeta};
+            MPTTester mptAlice(env, alice);
+
+            mptAlice.create(
+                {.maxAmt = 100,
+                 .assetScale = 0,
+                 .transferFee = 0,
+                 .flags = tfMPTMutableMeta,
+                 .err = temDISABLED}
+            );
+
+                        mptAlice.create(
+                {.maxAmt = 100,
+                 .assetScale = 0,
+                 .transferFee = 0,
+                 .metadata = "abc",
+                 .flags = tfMPTMutableMeta,
+                 .err = temDISABLED}
+            );
         }
     }
 
@@ -510,6 +542,14 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.set(
                 {.account = alice,
                  .holder = alice,
+                 .flags = tfMPTLock,
+                 .err = temMALFORMED});
+
+            // Oversized metadata
+            mptAlice.set(
+                {.account = alice,
+                 .holder = alice,
+                 .metadata = std::string(2050, 'B'),
                  .flags = tfMPTLock,
                  .err = temMALFORMED});
         }

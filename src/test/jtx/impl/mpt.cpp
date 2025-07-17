@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -231,6 +232,8 @@ MPTTester::set(MPTSet const& arg)
             Throw<std::runtime_error>("MPT has not been created");
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
+    if (arg.metadata)
+        jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.holder)
         jv[sfHolder] = arg.holder->human();
     if (arg.delegate)

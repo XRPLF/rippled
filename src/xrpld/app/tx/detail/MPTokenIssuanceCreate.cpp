@@ -30,6 +30,8 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
+    if (ctx.tx.isFlag(tfMPTMutableMeta) && !ctx.rules.enabled(featureMPTMutableMeta))
+        return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;

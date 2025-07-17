@@ -187,6 +187,7 @@ enum LedgerSpecificFlags {
     lsfMPTCanTrade = 0x00000010,
     lsfMPTCanTransfer = 0x00000020,
     lsfMPTCanClawback = 0x00000040,
+    lsfMPTMutableMeta = 0x00000080,
 
     // ltMPTOKEN
     lsfMPTAuthorized = 0x00000002,

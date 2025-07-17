@@ -21,6 +21,9 @@
 #include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -29,6 +32,8 @@ NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureMPTokensV1))
+        return temDISABLED;
+    if (ctx.tx.isFieldPresent(sfMPTokenMetadata) && !ctx.rules.enabled(featureMPTMutableMeta))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
@@ -42,6 +47,13 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     // fails if both flags are set
     else if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
         return temINVALID_FLAG;
+
+    if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
+    {
+        // Note: metadata->length() == 0 is valid here, will erase metatdata
+        if (metadata->length() > maxMPTokenMetadataLength)
+            return temMALFORMED;
+    }
 
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
@@ -96,6 +108,11 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
+
+    if (ctx.tx.isFieldPresent(sfMPTokenMetadata)  && !sleMptIssuance->isFlag(lsfMPTMutableMeta))
+        return tecNO_PERMISSION;
+
+    // TODO check below is invalid if we are trying to update metadata
 
     // if the mpt has disabled locking
     if (!((*sleMptIssuance)[sfFlags] & lsfMPTCanLock))

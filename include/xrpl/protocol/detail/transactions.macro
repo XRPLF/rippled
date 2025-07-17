@@ -420,6 +420,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy, Delegation::
 TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet, Delegation::delegatable, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
+    {sfMPTokenMetadata, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */

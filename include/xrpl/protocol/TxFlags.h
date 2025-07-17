@@ -148,8 +148,9 @@ constexpr std::uint32_t const tfMPTCanEscrow               = lsfMPTCanEscrow;
 constexpr std::uint32_t const tfMPTCanTrade                = lsfMPTCanTrade;
 constexpr std::uint32_t const tfMPTCanTransfer             = lsfMPTCanTransfer;
 constexpr std::uint32_t const tfMPTCanClawback             = lsfMPTCanClawback;
+constexpr std::uint32_t const tfMPTMutableMeta             = lsfMPTMutableMeta;
 constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
-  ~(tfUniversal | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback);
+  ~(tfUniversal | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback | tfMPTMutableMeta);
 
 // MPTokenAuthorize flags:
 constexpr std::uint32_t const tfMPTUnauthorize             = 0x00000001;
