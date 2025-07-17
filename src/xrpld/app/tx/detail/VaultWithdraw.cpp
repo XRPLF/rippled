@@ -139,7 +139,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // Destination MPToken or trustline must exist (if asset is an MPT)
+    // Destination MPToken (for an MPT) or trust line (for an IOU) must exist.
     if (auto const ter =
             requireAuth(ctx.view, vaultAsset, dstAcct, AuthType::StrongAuth);
         !isTesSuccess(ter))
