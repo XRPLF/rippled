@@ -253,6 +253,11 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                                     << to_string(amount->asset());
                 return tecFROZEN;
             }
+
+            if (auto const ter = isMPTTxAllowed(
+                    ctx.view, ttAMM_WITHDRAW, amount->asset(), accountID);
+                ter != tesSUCCESS)
+                return ter;
         }
         return tesSUCCESS;
     };
@@ -300,15 +305,6 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         if (auto const ter = checkAmount(amount2Balance, amount2Balance))
             return ter;
     }
-
-    if (auto const ter = isMPTTxAllowed(
-            ctx.view, ttAMM_WITHDRAW, ctx.tx[sfAsset], accountID);
-        ter != tesSUCCESS)
-        return ter;
-    if (auto const ter = isMPTTxAllowed(
-            ctx.view, ttAMM_WITHDRAW, ctx.tx[sfAsset2], accountID);
-        ter != tesSUCCESS)
-        return ter;
 
     return tesSUCCESS;
 }

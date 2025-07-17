@@ -4255,44 +4255,208 @@ class MPToken_test : public beast::unit_test::suite
         Account const carol{"carol"};
         Account const bob{"bob"};
         auto const USD = gw["USD"];
-        Env env{*this};
 
-        fund(env, gw, {alice, carol, bob}, XRP(1'000), {USD(1'000)});
-
-        MPTTester mpt(env, gw, {.fund = false});
-        mpt.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
-        auto const MPT = mpt["MPT"];
-        mpt.authorize({.account = alice});
-        mpt.authorize({.account = carol});
-        mpt.pay(gw, alice, 1'000);
-        mpt.pay(gw, carol, 1'000);
-
-        MPTTester mpt1(env, gw, {.fund = false});
-        mpt1.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
-        auto const MPT1 = mpt1["MPT1"];
-        mpt1.authorize({.account = alice});
-        mpt1.authorize({.account = carol});
-        mpt1.pay(gw, alice, 1'000);
-        mpt1.pay(gw, carol, 1'000);
-
-        std::vector<std::tuple<PrettyAmount, PrettyAmount, IOUAmount>> pools = {
-            {XRP(100), MPT(100), IOUAmount{100'000}},
-            {USD(100), MPT(100), IOUAmount{100}},
-            {MPT(100), MPT1(100), IOUAmount{100}}};
-        for (auto& pool : pools)
+        // Create/deposit/withdraw
         {
-            AMM amm(env, gw, std::get<0>(pool), std::get<1>(pool));
-            amm.deposit(alice, std::get<2>(pool));
-            amm.deposit(carol, std::get<2>(pool));
-            // bob doesn't own MPT
+            Env env{*this};
+
+            fund(env, gw, {alice, carol, bob}, XRP(1'000), {USD(1'000)});
+
+            MPTTester mpt(env, gw, {.fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            auto const MPT = mpt["MPT"];
+            mpt.authorize({.account = alice});
+            mpt.authorize({.account = carol});
+            mpt.pay(gw, alice, 1'000);
+            mpt.pay(gw, carol, 1'000);
+
+            MPTTester mpt1(env, gw, {.fund = false});
+            mpt1.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            auto const MPT1 = mpt1["MPT1"];
+            mpt1.authorize({.account = alice});
+            mpt1.authorize({.account = carol});
+            mpt1.pay(gw, alice, 1'000);
+            mpt1.pay(gw, carol, 1'000);
+
+            std::vector<std::tuple<PrettyAmount, PrettyAmount, IOUAmount>>
+                pools = {
+                    {XRP(100), MPT(100), IOUAmount{100'000}},
+                    {USD(100), MPT(100), IOUAmount{100}},
+                    {MPT(100), MPT1(100), IOUAmount{100}}};
+            for (auto& pool : pools)
+            {
+                AMM amm(env, gw, std::get<0>(pool), std::get<1>(pool));
+                amm.deposit(alice, std::get<2>(pool));
+                amm.deposit(carol, std::get<2>(pool));
+                // bob doesn't own MPT
+                amm.deposit(DepositArg{
+                    .account = bob,
+                    .tokens = std::get<2>(pool),
+                    .err = ter(tecNO_AUTH)});
+                amm.withdrawAll(alice);
+                amm.withdrawAll(carol);
+                amm.withdrawAll(gw);
+                BEAST_EXPECT(!amm.ammExists());
+            }
+        }
+
+        // Payment, one step
+        {
+            Env env(*this);
+
+            env.fund(XRP(1'000), gw, alice, carol);
+            env.close();
+
+            MPT const USD = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, carol}});
+            MPT const EUR = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, carol}});
+
+            env(pay(gw, alice, EUR(100)));
+
+            AMM amm(env, gw, USD(1'100), EUR(1'000));
+
+            env(pay(alice, carol, USD(100)), sendmax(EUR(100)));
+
+            BEAST_EXPECT(
+                amm.expectBalances(USD(1'000), EUR(1'100), amm.tokens()));
+            BEAST_EXPECT(env.balance(carol, USD) == USD(100));
+            BEAST_EXPECT(env.balance(alice, EUR) == EUR(0));
+        }
+
+        // Payment, two steps
+        {
+            Env env(*this);
+
+            env.fund(XRP(1'000), gw, alice, carol);
+            env.close();
+
+            MPT const USD = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, carol}});
+            MPT const EUR = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, carol}});
+            MPT const BTC = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, carol}});
+            env(pay(gw, alice, EUR(100)));
+
+            AMM ammEUR_USD(env, gw, EUR(1'000), USD(1'100));
+            AMM ammUSD_BTC(env, gw, USD(1'000), BTC(1'100));
+
+            env(pay(alice, carol, BTC(100)),
+                sendmax(EUR(100)),
+                path(~USD, ~BTC),
+                txflags(tfNoRippleDirect));
+
+            BEAST_EXPECT(ammEUR_USD.expectBalances(
+                USD(1'000), EUR(1'100), ammEUR_USD.tokens()));
+            BEAST_EXPECT(ammUSD_BTC.expectBalances(
+                USD(1'100), BTC(1'000), ammUSD_BTC.tokens()));
+            BEAST_EXPECT(env.balance(carol, BTC) == BTC(100));
+            BEAST_EXPECT(env.balance(alice, EUR) == EUR(0));
+        }
+
+        // Offer crossing
+        {
+            Env env(*this);
+
+            env.fund(XRP(1'000), gw, alice);
+            env.close();
+
+            MPT const USD =
+                MPTTester({.env = env, .issuer = gw, .holders = {alice}});
+            MPT const EUR =
+                MPTTester({.env = env, .issuer = gw, .holders = {alice}});
+
+            env(pay(gw, alice, EUR(1'000)));
+
+            AMM amm(env, gw, EUR(1'000'000), USD(1'001'000));
+
+            env(offer(alice, USD(1'000), EUR(1'000)));
+
+            BEAST_EXPECT(amm.expectBalances(
+                USD(1'000'000), EUR(1'001'000), amm.tokens()));
+            BEAST_EXPECT(env.balance(alice, USD) == USD(1'000));
+            BEAST_EXPECT(env.balance(alice, EUR) == EUR(0));
+        }
+
+        // Create, asset is locked
+        {
+            Env env(*this);
+
+            env.fund(XRP(1'000), gw, alice);
+            env.close();
+
+            auto USDM = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+            MPT const USD = USDM;
+            MPT const EUR =
+                MPTTester({.env = env, .issuer = gw, .holders = {alice}});
+
+            env(pay(gw, alice, EUR(1'000)));
+            env(pay(gw, alice, USD(1'000)));
+
+            USDM.set({.flags = tfMPTLock});
+
+            AMM amm(env, gw, EUR(1'000), USD(1'000), ter(tecFROZEN));
+        }
+
+        // Single deposit, another asset is locked
+        {
+            Env env(*this);
+
+            env.fund(XRP(1'000), gw, alice);
+            env.close();
+
+            auto USDM = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+            MPT const USD = USDM;
+            MPT const EUR =
+                MPTTester({.env = env, .issuer = gw, .holders = {alice}});
+
+            env(pay(gw, alice, EUR(100)));
+
+            AMM amm(env, gw, EUR(1'000), USD(1'000));
+
+            USDM.set({.flags = tfMPTLock});
+
             amm.deposit(DepositArg{
-                .account = bob,
-                .tokens = std::get<2>(pool),
-                .err = ter(tecNO_AUTH)});
-            amm.withdrawAll(alice);
-            amm.withdrawAll(carol);
-            amm.withdrawAll(gw);
-            BEAST_EXPECT(!amm.ammExists());
+                .account = alice, .asset1In = EUR(100), .err = ter(tecFROZEN)});
+        }
+
+        // Single withdraw, another asset is locked
+        {
+            Env env(*this);
+
+            env.fund(XRP(1'000), gw, alice);
+            env.close();
+
+            auto USDM = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+            MPT const USD = USDM;
+            MPT const EUR =
+                MPTTester({.env = env, .issuer = gw, .holders = {alice}});
+
+            env(pay(gw, alice, EUR(1'000)));
+            env(pay(gw, alice, USD(1'000)));
+
+            AMM amm(env, alice, EUR(1'000), USD(1'000));
+
+            USDM.set({.flags = tfMPTLock});
+
+            amm.withdraw(WithdrawArg{.account = alice, .asset1Out = EUR(100)});
+
+            BEAST_EXPECT(amm.expectBalances(
+                EUR(901), USD(1'000), IOUAmount{948'683298050514, -12}));
+            BEAST_EXPECT(env.balance(alice, EUR) == EUR(99));
         }
     }
 
