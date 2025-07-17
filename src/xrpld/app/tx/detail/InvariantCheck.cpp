@@ -29,8 +29,10 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/nftPageMask.h>
 
@@ -1331,7 +1333,13 @@ ValidClawback::finalize(
             STAmount const& amount = tx.getFieldAmount(sfAmount);
             AccountID const& holder = amount.getIssuer();
             STAmount const holderBalance = accountHolds(
-                view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+                view,
+                holder,
+                amount.getCurrency(),
+                issuer,
+                fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
+                j);
 
             if (holderBalance.signum() < 0)
             {
@@ -1842,6 +1850,7 @@ ValidAMM::finalizeCreate(
             tx[sfAmount].get<Issue>(),
             tx[sfAmount2].get<Issue>(),
             fhIGNORE_FREEZE,
+            ahIGNORE_AUTH,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
@@ -1907,6 +1916,7 @@ ValidAMM::generalInvariant(
         tx[sfAsset].get<Issue>(),
         tx[sfAsset2].get<Issue>(),
         fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
         j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens
@@ -2017,6 +2027,66 @@ ValidAMM::finalize(
             return finalizeDEX(enforce, j);
         default:
             break;
+    }
+
+    return true;
+}
+
+void
+ValidAuth::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (before && after && after->getType() == ltRIPPLE_STATE &&
+        before->getFieldAmount(sfBalance) != after->getFieldAmount(sfBalance))
+    {
+        auto const highIssuer = (*after)[sfHighLimit].getIssuer();
+        auto const lowIssuer = (*after)[sfLowLimit].getIssuer();
+        auto const currency = (*after)[sfBalance].getCurrency();
+        if (highIssuer == lowIssuer)
+            bad_ = true;
+
+        lines_.emplace(std::make_tuple(lowIssuer, highIssuer, currency));
+    }
+}
+
+bool
+ValidAuth::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (!view.rules().enabled(fixEnforceTrustlineAuth))
+        return true;
+
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: account trustline to itself";
+        return false;
+    }
+
+    for (auto const& [low, high, cur] : lines_)
+    {
+        auto const sleHigh = view.read(keylet::account(high));
+        auto const sleLow = view.read(keylet::account(low));
+
+        if (isPseudoAccount(sleHigh) || isPseudoAccount(sleLow))
+            continue;
+
+        if (requireAuth(view, Issue{cur, low}, high) != tesSUCCESS)
+        {
+            JLOG(j.fatal()) << "Invariant failed: high account has no auth";
+            return false;
+        }
+
+        if (requireAuth(view, Issue{cur, high}, low) != tesSUCCESS)
+        {
+            JLOG(j.fatal()) << "Invariant failed: low account has no auth";
+            return false;
+        }
     }
 
     return true;

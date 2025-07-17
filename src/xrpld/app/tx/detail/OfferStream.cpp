@@ -103,9 +103,10 @@ accountFundsHelper(
     STAmount const& saDefault,
     Issue const&,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j)
 {
-    return accountFunds(view, id, saDefault, freezeHandling, j);
+    return accountFunds(view, id, saDefault, freezeHandling, authHandling, j);
 }
 
 static IOUAmount
@@ -115,6 +116,7 @@ accountFundsHelper(
     IOUAmount const& amtDefault,
     Issue const& issue,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j)
 {
     if (issue.account == id)
@@ -122,7 +124,13 @@ accountFundsHelper(
         return amtDefault;
 
     return toAmount<IOUAmount>(accountHolds(
-        view, id, issue.currency, issue.account, freezeHandling, j));
+        view,
+        id,
+        issue.currency,
+        issue.account,
+        freezeHandling,
+        authHandling,
+        j));
 }
 
 static XRPAmount
@@ -132,10 +140,17 @@ accountFundsHelper(
     XRPAmount const& amtDefault,
     Issue const& issue,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j)
 {
     return toAmount<XRPAmount>(accountHolds(
-        view, id, issue.currency, issue.account, freezeHandling, j));
+        view,
+        id,
+        issue.currency,
+        issue.account,
+        freezeHandling,
+        authHandling,
+        j));
 }
 
 template <class TIn, class TOut>
@@ -309,6 +324,7 @@ TOfferStreamBase<TIn, TOut>::step()
             amount.out,
             offer_.issueOut(),
             fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
             j_);
 
         // Check for unfunded offer
@@ -323,6 +339,7 @@ TOfferStreamBase<TIn, TOut>::step()
                 amount.out,
                 offer_.issueOut(),
                 fhZERO_IF_FROZEN,
+                ahZERO_IF_UNAUTHORIZED,
                 j_);
 
             if (original_funds == *ownerFunds_)
@@ -383,6 +400,7 @@ TOfferStreamBase<TIn, TOut>::step()
                 amount.out,
                 offer_.issueOut(),
                 fhZERO_IF_FROZEN,
+                ahZERO_IF_UNAUTHORIZED,
                 j_);
 
             if (original_funds == *ownerFunds_)

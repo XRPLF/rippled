@@ -21,6 +21,7 @@
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
 #include <xrpld/ledger/Sandbox.h>
+#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -186,6 +187,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
         amount ? amount->issue() : std::optional<Issue>{},
         amount2 ? amount2->issue() : std::optional<Issue>{},
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         ctx.j);
     if (!expected)
         return expected.error();
@@ -324,6 +326,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         amount ? amount->issue() : std::optional<Issue>{},
         amount2 ? amount2->issue() : std::optional<Issue>{},
         FreezeHandling::fhZERO_IF_FROZEN,
+        AuthHandling::ahZERO_IF_UNAUTHORIZED,
         ctx_.journal);
     if (!expected)
         return {expected.error(), false};
@@ -458,6 +461,7 @@ AMMWithdraw::withdraw(
         lpTokensWithdraw,
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
+        AuthHandling::ahZERO_IF_UNAUTHORIZED,
         isWithdrawAll(ctx_.tx),
         mPriorBalance,
         j_);
@@ -477,6 +481,7 @@ AMMWithdraw::withdraw(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -488,6 +493,7 @@ AMMWithdraw::withdraw(
         amountWithdraw.issue(),
         std::nullopt,
         freezeHandling,
+        authHandling,
         journal);
     // LCOV_EXCL_START
     if (!expected)
@@ -709,6 +715,7 @@ AMMWithdraw::equalWithdrawTokens(
             lpTokensWithdraw,
             tfee,
             FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
             isWithdrawAll(ctx_.tx),
             mPriorBalance,
             ctx_.journal);
@@ -759,6 +766,7 @@ AMMWithdraw::equalWithdrawTokens(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee,
     FreezeHandling freezeHanding,
+    AuthHandling authHandling,
     WithdrawAll withdrawAll,
     XRPAmount const& priorBalance,
     beast::Journal const& journal)
@@ -780,6 +788,7 @@ AMMWithdraw::equalWithdrawTokens(
                 lpTokensWithdraw,
                 tfee,
                 freezeHanding,
+                authHandling,
                 WithdrawAll::Yes,
                 priorBalance,
                 journal);
@@ -815,6 +824,7 @@ AMMWithdraw::equalWithdrawTokens(
             tokensAdj,
             tfee,
             freezeHanding,
+            authHandling,
             withdrawAll,
             priorBalance,
             journal);

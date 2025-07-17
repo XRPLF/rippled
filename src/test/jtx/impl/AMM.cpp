@@ -22,6 +22,7 @@
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/ledger/View.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/protocol/AMMCore.h>
@@ -46,8 +47,8 @@ AMM::initialTokens()
     if (!env_.enabled(fixAMMv1_3))
     {
         auto const product = number(asset1_) * number(asset2_);
-        return (IOUAmount)(product.mantissa() >= 0 ? root2(product)
-                                                   : root2(-product));
+        return (
+            IOUAmount)(product.mantissa() >= 0 ? root2(product) : root2(-product));
     }
     return getLPTokensBalance();
 }
@@ -224,6 +225,7 @@ AMM::balances(
             issue1,
             issue2,
             FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
             env_.journal);
         auto const lptAMMBalance = account
             ? ammLPHolds(*env_.current(), *amm, *account, env_.journal)
@@ -255,6 +257,7 @@ AMM::getLPTokensBalance(std::optional<AccountID> const& account) const
                    *account,
                    lptIssue_,
                    FreezeHandling::fhZERO_IF_FROZEN,
+                   AuthHandling::ahZERO_IF_UNAUTHORIZED,
                    env_.journal)
             .iou();
     if (auto const amm =

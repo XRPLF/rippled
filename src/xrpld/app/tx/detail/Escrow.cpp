@@ -260,6 +260,7 @@ escrowCreatePreclaimHelper<Issue>(
         amount.getCurrency(),
         issuer,
         fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
         ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS

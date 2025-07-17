@@ -20,10 +20,12 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/ledger/Sandbox.h>
+#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
+
 
 namespace ripple {
 
@@ -34,12 +36,13 @@ ammPoolHolds(
     Issue const& issue1,
     Issue const& issue2,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal const j)
 {
-    auto const assetInBalance =
-        accountHolds(view, ammAccountID, issue1, freezeHandling, j);
-    auto const assetOutBalance =
-        accountHolds(view, ammAccountID, issue2, freezeHandling, j);
+    auto const assetInBalance = accountHolds(
+        view, ammAccountID, issue1, freezeHandling, authHandling, j);
+    auto const assetOutBalance = accountHolds(
+        view, ammAccountID, issue2, freezeHandling, authHandling, j);
     return std::make_pair(assetInBalance, assetOutBalance);
 }
 
@@ -50,6 +53,7 @@ ammHolds(
     std::optional<Issue> const& optIssue1,
     std::optional<Issue> const& optIssue2,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal const j)
 {
     auto const issues = [&]() -> std::optional<std::pair<Issue, Issue>> {
@@ -105,6 +109,7 @@ ammHolds(
         issues->first,
         issues->second,
         freezeHandling,
+        authHandling,
         j);
     return std::make_tuple(asset1, asset2, ammSle[sfLPTokenBalance]);
 }

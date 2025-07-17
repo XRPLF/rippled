@@ -152,6 +152,7 @@ preclaimHelper<Issue>(
             clawAmount.getCurrency(),
             issuer,
             fhIGNORE_FREEZE,
+            ahIGNORE_AUTH,
             ctx.j) <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
@@ -247,6 +248,7 @@ applyHelper<Issue>(ApplyContext& ctx)
         clawAmount.getCurrency(),
         clawAmount.getIssuer(),
         fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
         ctx.journal);
 
     return rippleCredit(

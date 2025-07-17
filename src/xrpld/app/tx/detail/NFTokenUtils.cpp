@@ -951,7 +951,12 @@ tokenOfferCreatePreclaim(
         if (view.rules().enabled(fixNonFungibleTokensV1_2))
         {
             if (accountFunds(
-                    view, acctID, amount, FreezeHandling::fhZERO_IF_FROZEN, j)
+                    view,
+                    acctID,
+                    amount,
+                    FreezeHandling::fhZERO_IF_FROZEN,
+                    AuthHandling::ahZERO_IF_UNAUTHORIZED,
+                    j)
                     .signum() <= 0)
                 return tecUNFUNDED_OFFER;
         }
@@ -962,6 +967,7 @@ tokenOfferCreatePreclaim(
                 amount.getCurrency(),
                 amount.getIssuer(),
                 FreezeHandling::fhZERO_IF_FROZEN,
+                AuthHandling::ahZERO_IF_UNAUTHORIZED,
                 j)
                 .signum() <= 0)
             return tecUNFUNDED_OFFER;
