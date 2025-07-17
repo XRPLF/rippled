@@ -136,7 +136,8 @@ private:
         bool failFetch = false;
         bool failApply = false;
         int serverVersion = 1;
-        std::chrono::seconds expiresFromNow = ripple::test::detail::default_expires;
+        std::chrono::seconds expiresFromNow =
+            ripple::test::detail::default_expires;
         std::chrono::seconds effectiveOverlap =
             ripple::test::detail::default_effective_overlap;
         int expectedRefreshMin = 0;

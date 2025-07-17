@@ -26,7 +26,6 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
 
-
 namespace ripple {
 
 std::pair<STAmount, STAmount>

@@ -2937,7 +2937,7 @@ rippleUnlockEscrowMPT(
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: MPToken not found for " << receiver;
             return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-        }                                // LCOV_EXCL_STOP
+        }  // LCOV_EXCL_STOP
 
         auto current = sle->getFieldU64(sfMPTAmount);
         auto delta = amount.mpt().value();
