@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/misc/WasmHostFuncImpl.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
@@ -46,6 +47,39 @@ Expected<Hash, HostFunctionError>
 WasmHostFunctionsImpl::getParentLedgerHash()
 {
     return ctx.view().info().parentHash;
+}
+
+Expected<Hash, HostFunctionError>
+WasmHostFunctionsImpl::getLedgerAccountHash()
+{
+    return ctx.view().info().accountHash;
+}
+
+Expected<Hash, HostFunctionError>
+WasmHostFunctionsImpl::getLedgerTransactionHash()
+{
+    return ctx.view().info().txHash;
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::getBaseFee()
+{
+    // relatively safe to assume the tx base fee won't be > 2^31-1 drops
+    return static_cast<int32_t>(ctx.view().fees().base.drops());
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::isAmendmentEnabled(uint256 const& amendmentId)
+{
+    return ctx.view().rules().enabled(amendmentId);
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName)
+{
+    auto& table = ctx.app.getAmendmentTable();
+    auto amendment = table.find(std::string(amendmentName));
+    return ctx.view().rules().enabled(amendment);
 }
 
 Expected<int32_t, HostFunctionError>
@@ -403,6 +437,19 @@ WasmHostFunctionsImpl::updateData(Slice const& data)
     return 0;
 }
 
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::checkSignature(
+    Slice const& message,
+    Slice const& signature,
+    Slice const& pubkey)
+{
+    if (!publicKeyType(pubkey))
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    PublicKey const pk(pubkey);
+    return verify(pk, message, signature, /*canonical*/ true);
+}
+
 Expected<Hash, HostFunctionError>
 WasmHostFunctionsImpl::computeSha512HalfHash(Slice const& data)
 {
@@ -591,6 +638,40 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
 
     Slice const s = ouri->value();
     return Bytes(s.begin(), s.end());
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::getNFTIssuer(uint256 const& nftId)
+{
+    auto const issuer = nft::getIssuer(nftId);
+    if (!issuer)
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    return Bytes{issuer.begin(), issuer.end()};
+}
+
+Expected<std::uint32_t, HostFunctionError>
+WasmHostFunctionsImpl::getNFTTaxon(uint256 const& nftId)
+{
+    return nft::toUInt32(nft::getTaxon(nftId));
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::getNFTFlags(uint256 const& nftId)
+{
+    return nft::getFlags(nftId);
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::getNFTTransferFee(uint256 const& nftId)
+{
+    return nft::getTransferFee(nftId);
+}
+
+Expected<std::uint32_t, HostFunctionError>
+WasmHostFunctionsImpl::getNFTSerial(uint256 const& nftId)
+{
+    return nft::getSerial(nftId);
 }
 
 Expected<int32_t, HostFunctionError>
