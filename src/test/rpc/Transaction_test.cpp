@@ -941,7 +941,7 @@ public:
         forAllApiVersions(
             std::bind_front(&Transaction_test::testBinaryRequest, this));
 
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testWithFeats(all);
     }
 

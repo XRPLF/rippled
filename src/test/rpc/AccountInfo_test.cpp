@@ -710,7 +710,7 @@ public:
         testSignerListsV2();
 
         FeatureBitset const allFeatures{
-            ripple::test::jtx::supported_amendments()};
+            ripple::test::jtx::testable_amendments()};
         testAccountFlags(allFeatures);
         testAccountFlags(allFeatures - featureDisallowIncoming);
         testAccountFlags(
