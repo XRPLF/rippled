@@ -60,3 +60,5 @@ extern std::string const reqNonexistentField;
 extern std::string const hfPerfTest;
 
 extern std::string const opcCallPerfTest;
+
+extern std::string const keyletHostFunctions;

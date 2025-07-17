@@ -61,10 +61,20 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs,                                                      1000);
         WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                   2000);
         WASM_IMPORT_FUNC2(i, accountKeylet, "account_keylet", hfs,                                                 350);
+        WASM_IMPORT_FUNC2(i, checkKeylet, "check_keylet", hfs,                                                     350);
         WASM_IMPORT_FUNC2(i, credentialKeylet, "credential_keylet", hfs,                                           350);
+        WASM_IMPORT_FUNC2(i, delegateKeylet, "delegate_keylet", hfs,                                               350);
+        WASM_IMPORT_FUNC2(i, depositPreauthKeylet, "deposit_preauth_keylet", hfs,                                  350);
+        WASM_IMPORT_FUNC2(i, didKeylet, "did_keylet", hfs,                                                         350);
         WASM_IMPORT_FUNC2(i, escrowKeylet, "escrow_keylet", hfs,                                                   350);
+        WASM_IMPORT_FUNC2(i, lineKeylet, "line_keylet", hfs,                                                       350);
+        WASM_IMPORT_FUNC2(i, nftOfferKeylet, "nft_offer_keylet", hfs,                                              350);
+        WASM_IMPORT_FUNC2(i, offerKeylet, "offer_keylet", hfs,                                                     350);
         WASM_IMPORT_FUNC2(i, oracleKeylet, "oracle_keylet", hfs,                                                   350);
-        WASM_IMPORT_FUNC2(i, getNFT, "get_NFT", hfs,                                                              1000);
+        WASM_IMPORT_FUNC2(i, paychanKeylet, "paychan_keylet", hfs,                                                 350);
+        WASM_IMPORT_FUNC2(i, signersKeylet, "signers_keylet", hfs,                                                 350);
+        WASM_IMPORT_FUNC2(i, ticketKeylet, "ticket_keylet", hfs,                                                   350);
+        WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
         WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
         WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
 

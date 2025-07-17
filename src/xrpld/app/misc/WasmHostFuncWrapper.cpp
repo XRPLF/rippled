@@ -147,6 +147,17 @@ getDataAccountID(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
+static Expected<Currency, HostFunctionError>
+getDataCurrency(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
+{
+    auto const r = getDataSlice(rt, params, i);
+    if (!r || (r->size() != Currency::bytes))
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    return Currency::fromVoid(r->data());
+}
+
+template <class IW>
 Expected<std::string_view, HostFunctionError>
 getDataString(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
@@ -643,6 +654,32 @@ accountKeylet_wrap(
 }
 
 wasm_trap_t*
+checkKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const seq = getDataInt32(rt, params, index);
+    if (!seq)
+    {
+        return hfResult(results, seq.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->checkKeylet(acc.value(), *seq), index);
+}
+
+wasm_trap_t*
 credentialKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -679,6 +716,82 @@ credentialKeylet_wrap(
 }
 
 wasm_trap_t*
+delegateKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const authorize = getDataAccountID(rt, params, index);
+    if (!authorize)
+    {
+        return hfResult(results, authorize.error());
+    }
+
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->delegateKeylet(acc.value(), authorize.value()),
+        index);
+}
+
+wasm_trap_t*
+depositPreauthKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const authorize = getDataAccountID(rt, params, index);
+    if (!authorize)
+    {
+        return hfResult(results, authorize.error());
+    }
+
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->depositPreauthKeylet(acc.value(), authorize.value()),
+        index);
+}
+
+wasm_trap_t*
+didKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    return returnResult(rt, params, results, hf->didKeylet(acc.value()), index);
+}
+
+wasm_trap_t*
 escrowKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -705,7 +818,43 @@ escrowKeylet_wrap(
 }
 
 wasm_trap_t*
-oracleKeylet_wrap(
+lineKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc1 = getDataAccountID(rt, params, index);
+    if (!acc1)
+    {
+        return hfResult(results, acc1.error());
+    }
+
+    auto const acc2 = getDataAccountID(rt, params, index);
+    if (!acc2)
+    {
+        return hfResult(results, acc2.error());
+    }
+
+    auto const currency = getDataCurrency(rt, params, index);
+    if (!currency)
+    {
+        return hfResult(results, currency.error());
+    }
+
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->lineKeylet(acc1.value(), acc2.value(), currency.value()),
+        index);
+}
+
+wasm_trap_t*
+nftOfferKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
@@ -725,8 +874,147 @@ oracleKeylet_wrap(
     {
         return hfResult(results, seq.error());
     }
+
     return returnResult(
-        rt, params, results, hf->oracleKeylet(*acc, *seq), index);
+        rt,
+        params,
+        results,
+        hf->nftOfferKeylet(acc.value(), seq.value()),
+        index);
+}
+
+wasm_trap_t*
+offerKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const seq = getDataInt32(rt, params, index);
+    if (!seq)
+    {
+        return hfResult(results, seq.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->offerKeylet(acc.value(), seq.value()), index);
+}
+
+wasm_trap_t*
+oracleKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const documentId = getDataInt32(rt, params, index);
+    if (!documentId)
+    {
+        return hfResult(results, documentId.error());
+    }
+    return returnResult(
+        rt, params, results, hf->oracleKeylet(*acc, *documentId), index);
+}
+
+wasm_trap_t*
+paychanKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const dest = getDataAccountID(rt, params, index);
+    if (!dest)
+    {
+        return hfResult(results, dest.error());
+    }
+
+    auto const seq = getDataInt32(rt, params, index);
+    if (!seq)
+    {
+        return hfResult(results, seq.error());
+    }
+
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->paychanKeylet(acc.value(), dest.value(), seq.value()),
+        index);
+}
+
+wasm_trap_t*
+signersKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->signersKeylet(acc.value()), index);
+}
+
+wasm_trap_t*
+ticketKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const seq = getDataInt32(rt, params, index);
+    if (!seq)
+    {
+        return hfResult(results, seq.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->ticketKeylet(acc.value(), seq.value()), index);
+    ;
 }
 
 wasm_trap_t*

@@ -2263,23 +2263,11 @@ struct Escrow_test : public beast::unit_test::suite
 
         // TODO: create wasm module for all host functions
         static auto wasmHex = allHostFunctionsHex;
-        //        let sender = get_tx_account_id();
-        //        let owner = get_current_escrow_account_id();
-        //        let dest = get_current_escrow_destination();
-        //        let dest_balance = get_account_balance(dest);
-        //        let escrow_data = get_current_escrow_data();
-        //        let ed_str = String::from_utf8(escrow_data).unwrap();
-        //        let threshold_balance = ed_str.parse::<u64>().unwrap();
-        //        let pl_time = host_lib::getParentLedgerTime();
-        //        let e_time = get_current_escrow_finish_after();
-        //        sender == owner && dest_balance <= threshold_balance &&
-        //        pl_time >= e_time
 
         Account const alice{"alice"};
         Account const carol{"carol"};
 
         {
-            // basic FinishFunction situation
             Env env(*this);
             // create escrow
             env.fund(XRP(5000), alice, carol);
@@ -2351,6 +2339,81 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
+    testKeyletHostFunctions()
+    {
+        testcase("Test all keylet host functions");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        // TODO: create wasm module for all host functions
+        static auto wasmHex = keyletHostFunctions;
+
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+
+        {
+            Env env(*this);
+            env.fund(XRP(5000), alice, carol);
+        }
+
+        {
+            Env env{*this};
+            env.fund(XRP(5000), alice, carol);
+
+            BEAST_EXPECT(env.seq(alice) == 4);
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+
+            // base objects that need to be created first
+            auto const tokenId =
+                token::getNextID(env, alice, 0, tfTransferable);
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env(trust(alice, carol["USD"](1'000'000)));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == 6);
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2);
+
+            // set up a bunch of objects to check their keylets
+            env(check::create(alice, carol, XRP(100)));
+            env(credentials::create(alice, alice, "termsandconditions"));
+            env(delegate::set(alice, carol, {"TrustSet"}));
+            env(deposit::auth(alice, carol));
+            env(did::set(alice), did::data("alice_did"));
+            env(escrow::create(alice, carol, XRP(100)),
+                escrow::finish_time(env.now() + 100s));
+            env(token::createOffer(carol, tokenId, XRP(100)),
+                token::owner(alice));
+            env(create(alice, carol, XRP(1000), 100s, alice.pk()));
+            env(signers(alice, 1, {{carol, 1}}));
+            env(ticket::create(alice, 1));
+            env.close();
+
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 11);
+            if (BEAST_EXPECTS(
+                    env.seq(alice) == 16, std::to_string(env.seq(alice))))
+            {
+                auto const seq = env.seq(alice);
+                XRPAmount txnFees = env.current()->fees().base + 1000;
+                env(escrow::create(alice, carol, XRP(1000)),
+                    escrow::finish_function(wasmHex),
+                    escrow::finish_time(env.now() + 2s),
+                    escrow::cancel_time(env.now() + 100s),
+                    fee(txnFees));
+                env.close();
+                env.close();
+                env.close();
+
+                auto const allowance = 1'000'000;
+
+                env(escrow::finish(carol, alice, seq),
+                    escrow::comp_allowance(allowance),
+                    fee(txnFees));
+                env.close();
+            }
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnablement(features);
@@ -2371,6 +2434,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // TODO: Update module with new host functions
         testAllHostFunctions();
+        testKeyletHostFunctions();
     }
 
 public:

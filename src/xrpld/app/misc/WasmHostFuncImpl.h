@@ -115,16 +115,54 @@ public:
     accountKeylet(AccountID const& account) override;
 
     Expected<Bytes, HostFunctionError>
+    checkKeylet(AccountID const& account, std::uint32_t seq) override;
+
+    Expected<Bytes, HostFunctionError>
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
         Slice const& credentialType) override;
 
     Expected<Bytes, HostFunctionError>
+    didKeylet(AccountID const& account) override;
+
+    Expected<Bytes, HostFunctionError>
+    delegateKeylet(AccountID const& account, AccountID const& authorize)
+        override;
+
+    Expected<Bytes, HostFunctionError>
+    depositPreauthKeylet(AccountID const& account, AccountID const& authorize)
+        override;
+
+    Expected<Bytes, HostFunctionError>
     escrowKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
-    oracleKeylet(AccountID const& account, std::uint32_t documentId) override;
+    lineKeylet(
+        AccountID const& account1,
+        AccountID const& account2,
+        Currency const& currency) override;
+
+    Expected<Bytes, HostFunctionError>
+    nftOfferKeylet(AccountID const& account, std::uint32_t seq) override;
+
+    Expected<Bytes, HostFunctionError>
+    offerKeylet(AccountID const& account, std::uint32_t seq) override;
+
+    Expected<Bytes, HostFunctionError>
+    oracleKeylet(AccountID const& account, std::uint32_t docId) override;
+
+    Expected<Bytes, HostFunctionError>
+    paychanKeylet(
+        AccountID const& account,
+        AccountID const& destination,
+        std::uint32_t seq) override;
+
+    Expected<Bytes, HostFunctionError>
+    signersKeylet(AccountID const& account) override;
+
+    Expected<Bytes, HostFunctionError>
+    ticketKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) override;

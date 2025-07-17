@@ -169,6 +169,14 @@ accountKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using checkKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+checkKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using credentialKeylet_proto = int32_t(
     uint8_t const*,
     int32_t,
@@ -184,6 +192,39 @@ credentialKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using delegateKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+delegateKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using depositPreauthKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+depositPreauthKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using didKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+didKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using escrowKeylet_proto =
     int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
@@ -192,10 +233,70 @@ escrowKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using lineKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+lineKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using nftOfferKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+nftOfferKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using offerKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+offerKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using oracleKeylet_proto =
     int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 oracleKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using paychanKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+paychanKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using signersKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+signersKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using ticketKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+ticketKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
