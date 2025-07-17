@@ -20,8 +20,9 @@
 #ifndef RIPPLE_TX_CREATEOFFER_H_INCLUDED
 #define RIPPLE_TX_CREATEOFFER_H_INCLUDED
 
-#include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/app/tx/detail/Transactor.h>
+
+#include <xrpl/protocol/Quality.h>
 
 namespace ripple {
 
@@ -35,8 +36,7 @@ public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
     /** Construct a Transactor subclass that creates an offer in the ledger. */
-    explicit CreateOffer(ApplyContext& ctx)
-        : Transactor(ctx), stepCounter_(1000, j_)
+    explicit CreateOffer(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -91,10 +91,6 @@ private:
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
         std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
-
-private:
-    // The number of steps to take through order books while crossing
-    OfferStream::StepCounter stepCounter_;
 };
 
 using OfferCreate = CreateOffer;
