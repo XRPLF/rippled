@@ -152,6 +152,7 @@ class LoanBroker_test : public beast::unit_test::suite
             badMptt.create(
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
             return badMptt["BAD"];
+            env.close();
         }();
         static PrettyAsset const badIouAsset = evan["BAD"];
         static Account const nonExistent{"NonExistent"};
@@ -160,6 +161,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         auto const badKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
         env(set(alice, badVault.vaultID));
+        env.close();
         auto const badBrokerPseudo = [&]() {
             if (auto const le = env.le(badKeylet); BEAST_EXPECT(le))
             {
@@ -305,18 +307,19 @@ class LoanBroker_test : public beast::unit_test::suite
                     env(coverClawback(alice),
                         amount(badIouAsset(1)),
                         ter(tecOBJECT_NOT_FOUND));
+                    // Pseudo-account is not for a broker
                     env(coverClawback(alice),
                         amount(vaultPseudoIouAsset(1)),
-                        ter(tecNO_ENTRY));
+                        ter(tecOBJECT_NOT_FOUND));
                     // If we specify a pseudo-account as the IOU amount, it
                     // needs to match the loan broker
-                    env(coverClawback(alice),
+                    env(coverClawback(issuer),
                         loanBrokerID(keylet.key),
                         amount(badBrokerPseudoIouAsset(10)),
                         ter(tecWRONG_ASSET));
                     PrettyAsset const brokerWrongCurrencyAsset =
                         pseudoAccount["WAT"];
-                    env(coverClawback(alice),
+                    env(coverClawback(issuer),
                         loanBrokerID(keylet.key),
                         amount(brokerWrongCurrencyAsset(10)),
                         ter(tecWRONG_ASSET));
@@ -337,9 +340,11 @@ class LoanBroker_test : public beast::unit_test::suite
                     amount(vault.asset(10)),
                     ter(tecINSUFFICIENT_FUNDS));
             }
+            env.close();
 
             // Fund the cover deposit
             env(coverDeposit(alice, keylet.key, vault.asset(10)));
+            env.close();
             verifyCoverAmount(10);
 
             // Test withdrawal failure cases
@@ -370,19 +375,20 @@ class LoanBroker_test : public beast::unit_test::suite
 
             // Withdraw some of the cover amount
             env(coverWithdraw(alice, keylet.key, vault.asset(7)));
+            env.close();
             verifyCoverAmount(3);
 
             // Add some more cover
             env(coverDeposit(alice, keylet.key, vault.asset(5)));
+            env.close();
             verifyCoverAmount(8);
 
             // Withdraw some more. Send it to Evan. Very generous, considering
             // how much trouble he's been.
             env(coverWithdraw(alice, keylet.key, vault.asset(2)),
                 destination(evan));
-            verifyCoverAmount(6);
-
             env.close();
+            verifyCoverAmount(6);
 
             if (!vault.asset.raw().native())
             {
@@ -390,43 +396,62 @@ class LoanBroker_test : public beast::unit_test::suite
                 env(coverClawback(issuer),
                     loanBrokerID(keylet.key),
                     amount(vault.asset(2)));
+                env.close();
                 verifyCoverAmount(4);
 
                 // Deposit some back
                 env(coverDeposit(alice, keylet.key, vault.asset(5)));
+                env.close();
                 verifyCoverAmount(9);
 
                 // Issuer claws it all back in various different ways
-                for (auto const& jt : {
-                         env.jt(
-                             coverClawback(issuer), loanBrokerID(keylet.key)),
-                         env.jt(
+                for (auto const& tx : {
+                         // defer autofills until submission time
+                         env.json(
                              coverClawback(issuer),
                              loanBrokerID(keylet.key),
-                             amount(vault.asset(0))),
-                         env.jt(
+                             fee(none),
+                             seq(none),
+                             sig(none)),
+                         env.json(
                              coverClawback(issuer),
                              loanBrokerID(keylet.key),
-                             amount(vault.asset(6))),
+                             amount(vault.asset(0)),
+                             fee(none),
+                             seq(none),
+                             sig(none)),
+                         env.json(
+                             coverClawback(issuer),
+                             loanBrokerID(keylet.key),
+                             amount(vault.asset(6)),
+                             fee(none),
+                             seq(none),
+                             sig(none)),
                          // amount will be truncated to what's available
-                         env.jt(
+                         env.json(
                              coverClawback(issuer),
                              loanBrokerID(keylet.key),
-                             amount(vault.asset(100))),
+                             amount(vault.asset(100)),
+                             fee(none),
+                             seq(none),
+                             sig(none)),
                      })
                 {
                     // Issuer claws it all back
-                    env(jt);
+                    env(tx);
+                    env.close();
                     verifyCoverAmount(0);
 
                     // Deposit some back
                     env(coverDeposit(alice, keylet.key, vault.asset(6)));
+                    env.close();
                     verifyCoverAmount(6);
                 }
             }
 
             // no-op
             env(set(alice, vault.vaultID), loanBrokerID(keylet.key));
+            env.close();
 
             // Make modifications to the broker
             if (changeBroker)
@@ -445,6 +470,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 loanBrokerID(broker->key()),
                 debtMaximum(Number(0)),
                 data(""));
+            env.close();
 
             // Check the updated fields
             if (BEAST_EXPECT(broker = env.le(keylet)))
@@ -458,6 +484,10 @@ class LoanBroker_test : public beast::unit_test::suite
             env(del(alice, vault.vaultID), ter(tecNO_ENTRY));
             // evan tries to delete the broker
             env(del(evan, keylet.key), ter(tecNO_PERMISSION));
+
+            // Get the "bad" broker out of the way
+            env(del(alice, badKeylet.key));
+            env.close();
 
             // Note alice's balance of the asset and the broker account's cover
             // funds
@@ -479,7 +509,6 @@ class LoanBroker_test : public beast::unit_test::suite
             //}
 
             env(del(alice, keylet.key));
-            env(del(alice, badKeylet.key));
             env.close();
             {
                 broker = env.le(keylet);
@@ -521,11 +550,15 @@ class LoanBroker_test : public beast::unit_test::suite
         env.fund(XRP(100'000), issuer, noripple(alice, evan, bystander));
         env.close();
 
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
         // Create assets
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
         PrettyAsset const iouAsset = issuer["IOU"];
         env(trust(alice, iouAsset(1'000'000)));
         env(trust(evan, iouAsset(1'000'000)));
+        env.close();
         env(pay(issuer, evan, iouAsset(100'000)));
         env(pay(issuer, alice, iouAsset(100'000)));
         env.close();
@@ -533,9 +566,11 @@ class LoanBroker_test : public beast::unit_test::suite
         MPTTester mptt{env, issuer, mptInitNoFund};
         mptt.create(
             {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+        env.close();
         PrettyAsset const mptAsset = mptt["MPT"];
         mptt.authorize({.account = alice});
         mptt.authorize({.account = evan});
+        env.close();
         env(pay(issuer, alice, mptAsset(100'000)));
         env(pay(issuer, evan, mptAsset(100'000)));
         env.close();
