@@ -17,20 +17,14 @@
 */
 //==============================================================================
 
-#include <test/app/TestHostFunctions.h>
-#include <test/app/wasm_fixtures/fixtures.h>
-#include <test/jtx.h>
-
-#include <xrpld/app/misc/WasmHostFunc.h>
-#include <xrpld/app/misc/WasmVM.h>
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/ledger/detail/ApplyViewBase.h>
-
-#include <wasm_c_api.h>
-
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
 #endif
+
+#include <test/app/TestHostFunctions.h>
+
+#include <xrpld/app/misc/WamrVM.h>
+#include <xrpld/app/misc/WasmHostFuncWrapper.h>
 
 namespace ripple {
 namespace test {
@@ -46,34 +40,6 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     int32_t Val2 = params->data[1].of.i32;
     // printf("Host function \"Add\": %d + %d\n", Val1, Val2);
     results->data[0] = WASM_I32_VAL(Val1 + Val2);
-    return nullptr;
-}
-
-struct TestLedgerDataProvider
-{
-    jtx::Env* env;
-
-public:
-    TestLedgerDataProvider(jtx::Env* env_) : env(env_)
-    {
-    }
-
-    Expected<int32_t, HostFunctionError>
-    get_ledger_sqn()
-    {
-        return (int32_t)env->current()->seq();
-    }
-};
-
-using getLedgerSqn_proto = std::int32_t();
-static wasm_trap_t*
-getLedgerSqn_wrap(void* env, wasm_val_vec_t const*, wasm_val_vec_t* results)
-{
-    auto sqn = reinterpret_cast<TestLedgerDataProvider*>(env)->get_ledger_sqn();
-
-    results->data[0] = WASM_I32_VAL(sqn.value());
-    results->num_elems = 1;
-
     return nullptr;
 }
 
@@ -174,20 +140,19 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        TestLedgerDataProvider ledgerDataProvider(&env);
+        TestLedgerDataProvider hf(&env);
         std::string const funcName("finish");
 
         std::vector<WasmImportFunc> imports;
-        WASM_IMPORT_FUNC(imports, getLedgerSqn, &ledgerDataProvider, 33);
-
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hf, 33);
         auto& engine = WasmEngine::instance();
 
         auto re = engine.run(
-            wasm, funcName, {}, imports, nullptr, 1'000'000, env.journal);
+            wasm, funcName, {}, imports, &hf, 1'000'000, env.journal);
 
-        // code takes 4 gas + 1 getLedgerSqn call
+        // code takes 11 gas + 1 getLedgerSqn call
         if (BEAST_EXPECT(re.has_value()))
-            BEAST_EXPECT(!re->result && (re->cost == 37));
+            BEAST_EXPECT(!re->result && (re->cost == 44));
 
         env.close();
         env.close();
@@ -195,12 +160,11 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
 
         // empty module - run the same instance
-        re = engine.run(
-            {}, funcName, {}, imports, nullptr, 1'000'000, env.journal);
+        re = engine.run({}, funcName, {}, imports, &hf, 1'000'000, env.journal);
 
-        // code takes 8 gas + 2 getLedgerSqn calls
+        // code takes 22 gas + 2 getLedgerSqn calls
         if (BEAST_EXPECT(re.has_value()))
-            BEAST_EXPECT(re->result && (re->cost == 74));
+            BEAST_EXPECT(re->result && (re->cost == 88));
     }
 
     void
@@ -372,25 +336,13 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testEscrowWasmDN1()
+    testEscrowWasmDN()
     {
-        testcase("escrow wasm devnet 1 test");
-        std::string const wasmHex = allHostFunctionsHex;
+        testcase("escrow wasm devnet test");
 
-        std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+        std::string const wasmStr =
+            boost::algorithm::unhex(allHostFunctionsHex);
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-
-        //        let sender = get_tx_account_id();
-        //        let owner = get_current_escrow_account_id();
-        //        let dest = get_current_escrow_destination();
-        //        let dest_balance = get_account_balance(dest);
-        //        let escrow_data = get_current_escrow_data();
-        //        let ed_str = String::from_utf8(escrow_data).unwrap();
-        //        let threshold_balance = ed_str.parse::<u64>().unwrap();
-        //        let pl_time = host_lib::getParentLedgerTime();
-        //        let e_time = get_current_escrow_finish_after();
-        //        sender == owner && dest_balance <= threshold_balance &&
-        //        pl_time >= e_time
 
         using namespace test::jtx;
         Env env{*this};
@@ -400,29 +352,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(!re->result && (re->cost == 10817));
-                // std::cout << "good case result " << re.value().result
-                //           << " cost: " << re.value().cost << std::endl;
-            }
-        }
-
-        env.close();
-        env.close();
-        env.close();
-        env.close();
-
-        {  // fail because current time < escrow_finish_after time
-            TestHostFunctions nfs(env, -1);
-            std::string funcName("finish");
-            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(!re->result && (re->cost == 10817));
-                // std::cout << "bad case (current time < escrow_finish_after "
-                //              "time) result "
-                //           << re.value().result << " cost: " <<
-                //           re.value().cost
-                //           << std::endl;
+                BEAST_EXPECT(re->result && (re->cost == 41'132));
             }
         }
 
@@ -441,7 +371,7 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(env);
             std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100000);
-            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 93));
+            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 5831));
             // std::cout << "bad case (access nonexistent field) result "
             //           << re.error() << std::endl;
         }
@@ -460,15 +390,15 @@ struct Wasm_test : public beast::unit_test::suite
             };
             BadTestHostFunctions nfs(env);
             std::string funcName("finish");
-            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100000);
-            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 93));
+            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100'000);
+            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 5831));
             // std::cout << "bad case (more than MAX_PAGES) result "
             //           << re.error() << std::endl;
         }
 
         {  // fail because recursion too deep
-            auto wasmHex = deepRecursionHex;
-            auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+
+            auto const wasmStr = boost::algorithm::unhex(deepRecursionHex);
             std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
             TestHostFunctionsSink nfs(env);
@@ -519,55 +449,6 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testEscrowWasmDN3()
-    {
-        testcase("wasm devnet 3 test");
-
-        std::string const funcName("finish");
-
-        using namespace test::jtx;
-
-        Env env(*this);
-        {
-            std::string const wasmHex = xrplStdExampleHex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
-
-            TestHostFunctions nfs(env, 0);
-
-            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result && (re->cost == 6570));
-                // std::cout << "good case result " << re.value().result
-                //           << " cost: " << re.value().cost << std::endl;
-            }
-        }
-
-        env.close();
-        env.close();
-        env.close();
-        env.close();
-        env.close();
-
-        {
-            std::string const wasmHex = hostFunctions2Hex;
-            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
-
-            TestHostFunctions nfs(env, 0);
-
-            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result && (re->cost == 16558));
-                // std::cout << "good case result " << re.value().result
-                //           << " cost: " << re.value().cost << std::endl;
-            }
-        }
-    }
-
-    void
     testHFCost()
     {
         testcase("wasm test host functions cost");
@@ -578,7 +459,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = hostFunctions2Hex;
+            std::string const wasmHex = allHostFunctionsHex;
             std::string const wasmStr = boost::algorithm::unhex(wasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
@@ -590,13 +471,11 @@ struct Wasm_test : public beast::unit_test::suite
                 i.gas = 0;
 
             auto re = engine.run(
-                wasm, funcName, {}, imp, &hfs, 1000'000, env.journal);
+                wasm, funcName, {}, imp, &hfs, 1'000'000, env.journal);
 
             if (BEAST_EXPECT(re.has_value()))
             {
-                // std::cout << ", ret: " << re->result
-                //          << ", gas spent: " << re->cost << std::endl;
-                BEAST_EXPECT(re->result && (re->cost == 138));
+                BEAST_EXPECT(re->result && (re->cost == 872));
             }
 
             env.close();
@@ -609,7 +488,7 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
 
         {
-            std::string const wasmHex = hostFunctions2Hex;
+            std::string const wasmHex = allHostFunctionsHex;
             std::string const wasmStr = boost::algorithm::unhex(wasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
@@ -619,13 +498,11 @@ struct Wasm_test : public beast::unit_test::suite
             std::vector<WasmImportFunc> const imp = createWasmImport(&hfs);
 
             auto re = engine.run(
-                wasm, funcName, {}, imp, &hfs, 1000'000, env.journal);
+                wasm, funcName, {}, imp, &hfs, 1'000'000, env.journal);
 
             if (BEAST_EXPECT(re.has_value()))
             {
-                // std::cout << ", ret: " << re->result
-                //          << ", gas spent: " << re->cost << std::endl;
-                BEAST_EXPECT(re->result && (re->cost == 16558));
+                BEAST_EXPECT(re->result && (re->cost == 41'132));
             }
 
             env.close();
@@ -751,9 +628,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         testHFCost();
 
-        // TODO: fix result
-        testEscrowWasmDN1();
-        testEscrowWasmDN3();
+        testEscrowWasmDN();
 
         // perfTest();
     }

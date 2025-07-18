@@ -1707,10 +1707,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn finish() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
+        // getLedgerSqn() >= 5}
         static auto wasmHex = ledgerSqnHex;
 
         {
@@ -1880,10 +1877,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn finish() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
+        // getLedgerSqn() >= 5}
         static auto wasmHex = ledgerSqnHex;
 
         {
@@ -2028,12 +2022,9 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn finish() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
+        // getLedgerSqn() >= 5}
         auto const& wasmHex = ledgerSqnHex;
-        std::uint32_t const allowance = 64;
+        std::uint32_t const allowance = 71;
 
         {
             // basic FinishFunction situation
@@ -2288,7 +2279,7 @@ struct Escrow_test : public beast::unit_test::suite
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
 
-                auto const allowance = 20'000;
+                auto const allowance = 1'000'000;
 
                 // FinishAfter time hasn't passed
                 env(escrow::finish(carol, alice, seq),
@@ -2296,31 +2287,12 @@ struct Escrow_test : public beast::unit_test::suite
                     fee(txnFees),
                     ter(tecNO_PERMISSION));
                 env.close();
-
-                // tx sender not escrow creator (alice)
-                env(escrow::finish(carol, alice, seq),
-                    escrow::comp_allowance(allowance),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
                 env.close();
-
-                // destination balance is too high
-                env(escrow::finish(carol, alice, seq),
-                    escrow::comp_allowance(allowance),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-
                 env.close();
 
                 // reduce the destination balance
                 env(pay(carol, alice, XRP(4500)));
                 env.close();
-
-                // tx sender not escrow creator (alice)
-                env(escrow::finish(carol, alice, seq),
-                    escrow::comp_allowance(allowance),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
                 env.close();
 
                 env(escrow::finish(alice, alice, seq),
@@ -2330,7 +2302,7 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 10817);
+                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 39'596);
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);

@@ -98,13 +98,14 @@ getDataSlice(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const src = params->data[i].of.i32;
     auto const ssz = params->data[i + 1].of.i32;
-    if (src < 0 || ssz <= 0)
+    if (src < 0 || ssz < 0)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
+    if (!ssz)
+        return Slice();
+
     if (ssz > maxWasmDataLength)
-    {
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
-    }
 
     auto mem = rt ? rt->getMem() : wmem();
     if (!mem.s)
@@ -243,22 +244,6 @@ returnResult(
         static_assert(
             [] { return false; }(), "Unhandled return type in returnResult");
     }
-}
-
-wasm_trap_t*
-getLedgerSqnOld_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
-{
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    auto const sqn = hf->getLedgerSqn();
-    if (!sqn)
-    {
-        return hfResult(results, sqn.error());
-    }
-    return hfResult(results, static_cast<int32_t>(sqn.value()));
 }
 
 wasm_trap_t*
