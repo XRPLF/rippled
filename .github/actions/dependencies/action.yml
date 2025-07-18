@@ -20,7 +20,6 @@ runs:
         fi
         conan remote add --index 0 ripple "${CONAN_URL}"
         echo "Added conan remote ripple at ${CONAN_URL}"
-
     - name: try to authenticate to Ripple Conan remote
       if: env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
       id: remote
@@ -29,7 +28,6 @@ runs:
         echo "Authenticating to ripple remote..."
         conan remote auth ripple --force
         conan remote list-users
-
     - name: list missing binaries
       id: binaries
       shell: bash
