@@ -580,7 +580,16 @@ Payment::doApply()
         auto res = accountSend(
             pv, account_, dstAccountID, amountDeliver, ctx_.journal);
         if (res == tesSUCCESS)
+        {
             pv.apply(ctx_.rawView());
+
+            // If the actual amount delivered is different from the original
+            // amount due to partial payment or transfer fee, we need to update
+            // DelieveredAmount using the actual delivered amount
+            if (view().rules().enabled(fixMPTDeliveredAmount) &&
+                amountDeliver != dstAmount)
+                ctx_.deliver(amountDeliver);
+        }
         else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
             res = tecPATH_PARTIAL;
 
