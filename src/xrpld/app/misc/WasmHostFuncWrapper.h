@@ -23,13 +23,6 @@
 
 namespace ripple {
 
-using getLedgerSqnOld_proto = int32_t();
-wasm_trap_t*
-getLedgerSqnOld_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results);
-
 using getLedgerSqn_proto = int32_t(uint8_t*, int32_t);
 wasm_trap_t*
 getLedgerSqn_wrap(

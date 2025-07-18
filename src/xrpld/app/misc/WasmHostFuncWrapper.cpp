@@ -246,22 +246,6 @@ returnResult(
 }
 
 wasm_trap_t*
-getLedgerSqnOld_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
-{
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    auto const sqn = hf->getLedgerSqn();
-    if (!sqn)
-    {
-        return hfResult(results, sqn.error());
-    }
-    return hfResult(results, static_cast<int32_t>(sqn.value()));
-}
-
-wasm_trap_t*
 getLedgerSqn_wrap(
     void* env,
     wasm_val_vec_t const* params,
