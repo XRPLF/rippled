@@ -59,27 +59,28 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 hfs.cacheLedgerObj(dummyEscrow.key, 0).error() ==
                 HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+            BEAST_EXPECT(hfs.cacheLedgerObj(accountKeylet.key, 0).value() == 1);
 
-            for (int i = 0; i < 256; ++i)
+            for (int i = 1; i <= 256; ++i)
             {
                 auto const result = hfs.cacheLedgerObj(accountKeylet.key, i);
-                BEAST_EXPECT(result.value() == i);
+                BEAST_EXPECT(result.has_value() && result.value() == i);
             }
             BEAST_EXPECT(
-                hfs.cacheLedgerObj(accountKeylet.key, 256).error() ==
+                hfs.cacheLedgerObj(accountKeylet.key, 0).error() ==
                 HostFunctionError::SLOTS_FULL);
         }
 
         {
             WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-            for (int i = 0; i < 256; ++i)
+            for (int i = 1; i <= 256; ++i)
             {
                 auto const result = hfs.cacheLedgerObj(accountKeylet.key, 0);
-                BEAST_EXPECT(result.value() == i);
+                BEAST_EXPECT(result.has_value() && result.value() == i);
             }
             BEAST_EXPECT(
-                hfs.cacheLedgerObj(accountKeylet.key, 256).error() ==
+                hfs.cacheLedgerObj(accountKeylet.key, 0).error() ==
                 HostFunctionError::SLOTS_FULL);
         }
     }

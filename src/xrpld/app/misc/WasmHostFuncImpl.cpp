@@ -61,6 +61,10 @@ WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
             if (!cache[cacheIdx])
                 break;
     }
+    else
+    {
+        cacheIdx--;  // convert to 0-based index
+    }
 
     if (cacheIdx >= MAX_CACHE)
         return Unexpected(HostFunctionError::SLOTS_FULL);
@@ -68,7 +72,7 @@ WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     cache[cacheIdx] = ctx.view().read(keylet);
     if (!cache[cacheIdx])
         return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    return cacheIdx;
+    return cacheIdx + 1;  // return 1-based index
 }
 
 static Expected<Bytes, HostFunctionError>
