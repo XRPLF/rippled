@@ -21,6 +21,22 @@
 #error "undefined macro: LEDGER_ENTRY"
 #endif
 
+#if !defined(LEDGER_ENTRY_FIELD)
+#error "undefined macro: LEDGER_ENTRY_FIELD"
+#endif
+
+#if !defined(DEFINE_LEDGER_ENTRY_FIELDS)
+#error "undefined macro: DEFINE_LEDGER_ENTRY_FIELDS"
+#endif
+
+#if !defined(LEDGER_ENTRIES_BEGIN)
+#error "undefined macro: LEDGER_ENTRIES_BEGIN"
+#endif
+
+#if !defined(LEDGER_ENTRIES_END)
+#error "undefined macro: LEDGER_ENTRIES_END"
+#endif
+
 #ifndef LEDGER_ENTRY_DUPLICATE
 // The EXPAND macro is needed for Windows
 // https://stackoverflow.com/questions/5134523/msvc-doesnt-expand-va-args-correctly
@@ -32,6 +48,8 @@
 #define LEDGER_ENTRY_DUPLICATE(...) EXPAND(LEDGER_ENTRY(__VA_ARGS__))
 #endif
 
+LEDGER_ENTRIES_BEGIN
+
 /**
  * These objects are listed in order of increasing ledger type ID.
  * There are many gaps between these IDs.
@@ -42,50 +60,50 @@
 
     \sa keylet::nftoffer
  */
-LEDGER_ENTRY(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, nft_offer, ({
-    {sfOwner,                soeREQUIRED},
-    {sfNFTokenID,            soeREQUIRED},
-    {sfAmount,               soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfNFTokenOfferNode,     soeREQUIRED},
-    {sfDestination,          soeOPTIONAL},
-    {sfExpiration,           soeOPTIONAL},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltNFTOKEN_OFFER, 0x0037, NFTokenOffer, nft_offer, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfOwner, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfNFTokenID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAmount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfNFTokenOfferNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDestination, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfExpiration, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which describes a check.
 
     \sa keylet::check
  */
-LEDGER_ENTRY(ltCHECK, 0x0043, Check, check, ({
-    {sfAccount,              soeREQUIRED},
-    {sfDestination,          soeREQUIRED},
-    {sfSendMax,              soeREQUIRED},
-    {sfSequence,             soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfDestinationNode,      soeREQUIRED},
-    {sfExpiration,           soeOPTIONAL},
-    {sfInvoiceID,            soeOPTIONAL},
-    {sfSourceTag,            soeOPTIONAL},
-    {sfDestinationTag,       soeOPTIONAL},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltCHECK, 0x0043, Check, check, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDestination, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSendMax, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSequence, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDestinationNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfExpiration, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfInvoiceID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfSourceTag, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfDestinationTag, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** The ledger object which tracks the DID.
 
    \sa keylet::did
 */
-LEDGER_ENTRY(ltDID, 0x0049, DID, did, ({
-    {sfAccount,              soeREQUIRED},
-    {sfDIDDocument,          soeOPTIONAL},
-    {sfURI,                  soeOPTIONAL},
-    {sfData,                 soeOPTIONAL},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltDID, 0x0049, DID, did, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDIDDocument, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfURI, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfData, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** The ledger object which tracks the current negative UNL state.
 
@@ -93,25 +111,25 @@ LEDGER_ENTRY(ltDID, 0x0049, DID, did, ({
 
     \sa keylet::negativeUNL
  */
-LEDGER_ENTRY(ltNEGATIVE_UNL, 0x004e, NegativeUNL, nunl, ({
-    {sfDisabledValidators,   soeOPTIONAL},
-    {sfValidatorToDisable,   soeOPTIONAL},
-    {sfValidatorToReEnable,  soeOPTIONAL},
-    {sfPreviousTxnID,        soeOPTIONAL},
-    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
-}))
+LEDGER_ENTRY(ltNEGATIVE_UNL, 0x004e, NegativeUNL, nunl, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfDisabledValidators, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfValidatorToDisable, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfValidatorToReEnable, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeOPTIONAL)
+))
 
 /** A ledger object which contains a list of NFTs
 
     \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
  */
-LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
-    {sfPreviousPageMin,      soeOPTIONAL},
-    {sfNextPageMin,          soeOPTIONAL},
-    {sfNFTokens,             soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfPreviousPageMin, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfNextPageMin, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfNFTokens, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which contains a signer list for an account.
 
@@ -119,77 +137,77 @@ LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
  */
 // All fields are soeREQUIRED because there is always a SignerEntries.
 // If there are no SignerEntries the node is deleted.
-LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
-    {sfOwnerNode,            soeREQUIRED},
-    {sfSignerQuorum,         soeREQUIRED},
-    {sfSignerEntries,        soeREQUIRED},
-    {sfSignerListID,         soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSignerQuorum, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSignerEntries, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSignerListID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which describes a ticket.
 
     \sa keylet::ticket
  */
-LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ticket, ({
-    {sfAccount,              soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfTicketSequence,       soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltTICKET, 0x0054, Ticket, ticket, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfTicketSequence, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which describes an account.
 
     \sa keylet::account
  */
-LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
-    {sfAccount,              soeREQUIRED},
-    {sfSequence,             soeREQUIRED},
-    {sfBalance,              soeREQUIRED},
-    {sfOwnerCount,           soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfAccountTxnID,         soeOPTIONAL},
-    {sfRegularKey,           soeOPTIONAL},
-    {sfEmailHash,            soeOPTIONAL},
-    {sfWalletLocator,        soeOPTIONAL},
-    {sfWalletSize,           soeOPTIONAL},
-    {sfMessageKey,           soeOPTIONAL},
-    {sfTransferRate,         soeOPTIONAL},
-    {sfDomain,               soeOPTIONAL},
-    {sfTickSize,             soeOPTIONAL},
-    {sfTicketCount,          soeOPTIONAL},
-    {sfNFTokenMinter,        soeOPTIONAL},
-    {sfMintedNFTokens,       soeDEFAULT},
-    {sfBurnedNFTokens,       soeDEFAULT},
-    {sfFirstNFTokenSequence, soeOPTIONAL},
-    {sfAMMID,                soeOPTIONAL}, // pseudo-account designator
-    {sfVaultID,              soeOPTIONAL}, // pseudo-account designator
-}))
+LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSequence, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfBalance, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerCount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAccountTxnID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfRegularKey, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfEmailHash, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfWalletLocator, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfWalletSize, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfMessageKey, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfTransferRate, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfDomain, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfTickSize, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfTicketCount, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfNFTokenMinter, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfMintedNFTokens, soeDEFAULT)
+    LEDGER_ENTRY_FIELD(sfBurnedNFTokens, soeDEFAULT)
+    LEDGER_ENTRY_FIELD(sfFirstNFTokenSequence, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfAMMID, soeOPTIONAL) // pseudo-account designator
+    LEDGER_ENTRY_FIELD(sfVaultID, soeOPTIONAL) // pseudo-account designator
+))
 
 /** A ledger object which contains a list of object identifiers.
 
     \sa keylet::page, keylet::quality, keylet::book, keylet::next and
         keylet::ownerDir
  */
-LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
-    {sfOwner,                soeOPTIONAL},  // for owner directories
-    {sfTakerPaysCurrency,    soeOPTIONAL},  // order book directories
-    {sfTakerPaysIssuer,      soeOPTIONAL},  // order book directories
-    {sfTakerGetsCurrency,    soeOPTIONAL},  // order book directories
-    {sfTakerGetsIssuer,      soeOPTIONAL},  // order book directories
-    {sfExchangeRate,         soeOPTIONAL},  // order book directories
-    {sfIndexes,              soeREQUIRED},
-    {sfRootIndex,            soeREQUIRED},
-    {sfIndexNext,            soeOPTIONAL},
-    {sfIndexPrevious,        soeOPTIONAL},
-    {sfNFTokenID,            soeOPTIONAL},
-    {sfPreviousTxnID,        soeOPTIONAL},
-    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
-    {sfDomainID,             soeOPTIONAL}
-}))
+LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfOwner, soeOPTIONAL)  // for owner directories
+    LEDGER_ENTRY_FIELD(sfTakerPaysCurrency, soeOPTIONAL)  // order book directories
+    LEDGER_ENTRY_FIELD(sfTakerPaysIssuer, soeOPTIONAL)  // order book directories
+    LEDGER_ENTRY_FIELD(sfTakerGetsCurrency, soeOPTIONAL)  // order book directories
+    LEDGER_ENTRY_FIELD(sfTakerGetsIssuer, soeOPTIONAL)  // order book directories
+    LEDGER_ENTRY_FIELD(sfExchangeRate, soeOPTIONAL)  // order book directories
+    LEDGER_ENTRY_FIELD(sfIndexes, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfRootIndex, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfIndexNext, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfIndexPrevious, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfNFTokenID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfDomainID, soeOPTIONAL)
+))
 
 /** The ledger object which lists details about amendments on the network.
 
@@ -197,12 +215,12 @@ LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
 
     \sa keylet::amendments
  */
-LEDGER_ENTRY(ltAMENDMENTS, 0x0066, Amendments, amendments, ({
-    {sfAmendments,           soeOPTIONAL},  // Enabled
-    {sfMajorities,           soeOPTIONAL},
-    {sfPreviousTxnID,        soeOPTIONAL},
-    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
-}))
+LEDGER_ENTRY(ltAMENDMENTS, 0x0066, Amendments, amendments, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAmendments, soeOPTIONAL)  // Enabled
+    LEDGER_ENTRY_FIELD(sfMajorities, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeOPTIONAL)
+))
 
 /** A ledger object that contains a list of ledger hashes.
 
@@ -212,76 +230,76 @@ LEDGER_ENTRY(ltAMENDMENTS, 0x0066, Amendments, amendments, ({
 
     \sa keylet::skip
  */
-LEDGER_ENTRY(ltLEDGER_HASHES, 0x0068, LedgerHashes, hashes, ({
-    {sfFirstLedgerSequence,  soeOPTIONAL},
-    {sfLastLedgerSequence,   soeOPTIONAL},
-    {sfHashes,               soeREQUIRED},
-}))
+LEDGER_ENTRY(ltLEDGER_HASHES, 0x0068, LedgerHashes, hashes, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfFirstLedgerSequence, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfLastLedgerSequence, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfHashes, soeREQUIRED)
+))
 
 /** The ledger object which lists details about sidechains.
 
     \sa keylet::bridge
 */
-LEDGER_ENTRY(ltBRIDGE, 0x0069, Bridge, bridge, ({
-    {sfAccount,                  soeREQUIRED},
-    {sfSignatureReward,          soeREQUIRED},
-    {sfMinAccountCreateAmount,   soeOPTIONAL},
-    {sfXChainBridge,             soeREQUIRED},
-    {sfXChainClaimID,            soeREQUIRED},
-    {sfXChainAccountCreateCount, soeREQUIRED},
-    {sfXChainAccountClaimCount,  soeREQUIRED},
-    {sfOwnerNode,                soeREQUIRED},
-    {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED},
-}))
+LEDGER_ENTRY(ltBRIDGE, 0x0069, Bridge, bridge, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSignatureReward, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfMinAccountCreateAmount, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfXChainBridge, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainClaimID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainAccountCreateCount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainAccountClaimCount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which describes an offer on the DEX.
 
     \sa keylet::offer
  */
-LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, ({
-    {sfAccount,              soeREQUIRED},
-    {sfSequence,             soeREQUIRED},
-    {sfTakerPays,            soeREQUIRED},
-    {sfTakerGets,            soeREQUIRED},
-    {sfBookDirectory,        soeREQUIRED},
-    {sfBookNode,             soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfExpiration,           soeOPTIONAL},
-    {sfDomainID,             soeOPTIONAL},
-    {sfAdditionalBooks,      soeOPTIONAL},
-}))
+LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSequence, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfTakerPays, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfTakerGets, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfBookDirectory, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfBookNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfExpiration, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfDomainID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfAdditionalBooks, soeOPTIONAL)
+))
 
 /** A ledger object which describes a deposit preauthorization.
 
     \sa keylet::depositPreauth
  */
-LEDGER_ENTRY_DUPLICATE(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, deposit_preauth, ({
-    {sfAccount,              soeREQUIRED},
-    {sfAuthorize,            soeOPTIONAL},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfAuthorizeCredentials, soeOPTIONAL},
-}))
+LEDGER_ENTRY_DUPLICATE(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, deposit_preauth, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAuthorize, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAuthorizeCredentials, soeOPTIONAL)
+))
 
 /** A claim id for a cross chain transaction.
 
     \sa keylet::xChainClaimID
 */
-LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_claim_id, ({
-    {sfAccount,                 soeREQUIRED},
-    {sfXChainBridge,            soeREQUIRED},
-    {sfXChainClaimID,           soeREQUIRED},
-    {sfOtherChainSource,        soeREQUIRED},
-    {sfXChainClaimAttestations, soeREQUIRED},
-    {sfSignatureReward,         soeREQUIRED},
-    {sfOwnerNode,               soeREQUIRED},
-    {sfPreviousTxnID,           soeREQUIRED},
-    {sfPreviousTxnLgrSeq,       soeREQUIRED},
-}))
+LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_claim_id, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainBridge, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainClaimID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOtherChainSource, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainClaimAttestations, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSignatureReward, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which describes a bidirectional trust line.
 
@@ -289,19 +307,19 @@ LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_c
 
     \sa keylet::line
  */
-LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
-    {sfBalance,              soeREQUIRED},
-    {sfLowLimit,             soeREQUIRED},
-    {sfHighLimit,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfLowNode,              soeOPTIONAL},
-    {sfLowQualityIn,         soeOPTIONAL},
-    {sfLowQualityOut,        soeOPTIONAL},
-    {sfHighNode,             soeOPTIONAL},
-    {sfHighQualityIn,        soeOPTIONAL},
-    {sfHighQualityOut,       soeOPTIONAL},
-}))
+LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfBalance, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfLowLimit, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfHighLimit, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfLowNode, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfLowQualityIn, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfLowQualityOut, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfHighNode, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfHighQualityIn, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfHighQualityOut, soeOPTIONAL)
+))
 
 /** The ledger object which lists the network's fee settings.
 
@@ -309,201 +327,202 @@ LEDGER_ENTRY(ltRIPPLE_STATE, 0x0072, RippleState, state, ({
 
     \sa keylet::fees
  */
-LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
+LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, DEFINE_LEDGER_ENTRY_FIELDS(
     // Old version uses raw numbers
-    {sfBaseFee,                soeOPTIONAL},
-    {sfReferenceFeeUnits,      soeOPTIONAL},
-    {sfReserveBase,            soeOPTIONAL},
-    {sfReserveIncrement,       soeOPTIONAL},
+    LEDGER_ENTRY_FIELD(sfBaseFee, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfReferenceFeeUnits, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfReserveBase, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfReserveIncrement, soeOPTIONAL)
     // New version uses Amounts
-    {sfBaseFeeDrops,           soeOPTIONAL},
-    {sfReserveBaseDrops,       soeOPTIONAL},
-    {sfReserveIncrementDrops,  soeOPTIONAL},
-    {sfPreviousTxnID,          soeOPTIONAL},
-    {sfPreviousTxnLgrSeq,      soeOPTIONAL},
-}))
+    LEDGER_ENTRY_FIELD(sfBaseFeeDrops, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfReserveBaseDrops, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfReserveIncrementDrops, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeOPTIONAL)
+))
 
 /** A claim id for a cross chain create account transaction.
 
     \sa keylet::xChainCreateAccountClaimID
 */
-LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, xchain_owned_create_account_claim_id, ({
-    {sfAccount,                         soeREQUIRED},
-    {sfXChainBridge,                    soeREQUIRED},
-    {sfXChainAccountCreateCount,        soeREQUIRED},
-    {sfXChainCreateAccountAttestations, soeREQUIRED},
-    {sfOwnerNode,                       soeREQUIRED},
-    {sfPreviousTxnID,                   soeREQUIRED},
-    {sfPreviousTxnLgrSeq,               soeREQUIRED},
-}))
+LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, xchain_owned_create_account_claim_id, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainBridge, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainAccountCreateCount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfXChainCreateAccountAttestations, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object describing a single escrow.
 
     \sa keylet::escrow
  */
-LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
-    {sfAccount,              soeREQUIRED},
-    {sfDestination,          soeREQUIRED},
-    {sfAmount,               soeREQUIRED},
-    {sfCondition,            soeOPTIONAL},
-    {sfCancelAfter,          soeOPTIONAL},
-    {sfFinishAfter,          soeOPTIONAL},
-    {sfSourceTag,            soeOPTIONAL},
-    {sfDestinationTag,       soeOPTIONAL},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfDestinationNode,      soeOPTIONAL},
-    {sfTransferRate,         soeOPTIONAL},
-    {sfIssuerNode,           soeOPTIONAL},
-}))
+LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDestination, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAmount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfCondition, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfCancelAfter, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfFinishAfter, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfSourceTag, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfDestinationTag, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDestinationNode, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfTransferRate, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfIssuerNode, soeOPTIONAL)
+))
 
 /** A ledger object describing a single unidirectional XRP payment channel.
 
     \sa keylet::payChan
  */
-LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
-    {sfAccount,              soeREQUIRED},
-    {sfDestination,          soeREQUIRED},
-    {sfAmount,               soeREQUIRED},
-    {sfBalance,              soeREQUIRED},
-    {sfPublicKey,            soeREQUIRED},
-    {sfSettleDelay,          soeREQUIRED},
-    {sfExpiration,           soeOPTIONAL},
-    {sfCancelAfter,          soeOPTIONAL},
-    {sfSourceTag,            soeOPTIONAL},
-    {sfDestinationTag,       soeOPTIONAL},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfDestinationNode,      soeOPTIONAL},
-}))
+LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDestination, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAmount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfBalance, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPublicKey, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSettleDelay, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfExpiration, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfCancelAfter, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfSourceTag, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfDestinationTag, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDestinationNode, soeOPTIONAL)
+))
 
 /** The ledger object which tracks the AMM.
 
    \sa keylet::amm
 */
-LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
-    {sfAccount,              soeREQUIRED},
-    {sfTradingFee,           soeDEFAULT},
-    {sfVoteSlots,            soeOPTIONAL},
-    {sfAuctionSlot,          soeOPTIONAL},
-    {sfLPTokenBalance,       soeREQUIRED},
-    {sfAsset,                soeREQUIRED},
-    {sfAsset2,               soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeOPTIONAL},
-    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
-}))
+LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfTradingFee, soeDEFAULT)
+    LEDGER_ENTRY_FIELD(sfVoteSlots, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfAuctionSlot, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfLPTokenBalance, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAsset, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAsset2, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeOPTIONAL)
+))
 
 /** A ledger object which tracks MPTokenIssuance
     \sa keylet::mptIssuance
  */
-LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
-    {sfIssuer,                   soeREQUIRED},
-    {sfSequence,                 soeREQUIRED},
-    {sfTransferFee,              soeDEFAULT},
-    {sfOwnerNode,                soeREQUIRED},
-    {sfAssetScale,               soeDEFAULT},
-    {sfMaximumAmount,            soeOPTIONAL},
-    {sfOutstandingAmount,        soeREQUIRED},
-    {sfLockedAmount,             soeOPTIONAL},
-    {sfMPTokenMetadata,          soeOPTIONAL},
-    {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED},
-    {sfDomainID,                 soeOPTIONAL},
-}))
+LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfIssuer, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSequence, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfTransferFee, soeDEFAULT)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAssetScale, soeDEFAULT)
+    LEDGER_ENTRY_FIELD(sfMaximumAmount, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfOutstandingAmount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfLockedAmount, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfMPTokenMetadata, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfDomainID, soeOPTIONAL)
+))
 
 /** A ledger object which tracks MPToken
     \sa keylet::mptoken
  */
-LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
-    {sfAccount,                  soeREQUIRED},
-    {sfMPTokenIssuanceID,        soeREQUIRED},
-    {sfMPTAmount,                soeDEFAULT},
-    {sfLockedAmount,             soeOPTIONAL},
-    {sfOwnerNode,                soeREQUIRED},
-    {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED},
-}))
+LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfMPTokenIssuanceID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfMPTAmount, soeDEFAULT)
+    LEDGER_ENTRY_FIELD(sfLockedAmount, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which tracks Oracle
     \sa keylet::oracle
  */
-LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, oracle, ({
-    {sfOwner,                soeREQUIRED},
-    {sfProvider,             soeREQUIRED},
-    {sfPriceDataSeries,      soeREQUIRED},
-    {sfAssetClass,           soeREQUIRED},
-    {sfLastUpdateTime,       soeREQUIRED},
-    {sfURI,                  soeOPTIONAL},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, oracle, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfOwner, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfProvider, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPriceDataSeries, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAssetClass, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfLastUpdateTime, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfURI, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which tracks Credential
     \sa keylet::credential
  */
-LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, credential, ({
-    {sfSubject,              soeREQUIRED},
-    {sfIssuer,               soeREQUIRED},
-    {sfCredentialType,       soeREQUIRED},
-    {sfExpiration,           soeOPTIONAL},
-    {sfURI,                  soeOPTIONAL},
-    {sfIssuerNode,           soeREQUIRED},
-    {sfSubjectNode,          soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, credential, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfSubject, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfIssuer, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfCredentialType, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfExpiration, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfURI, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfIssuerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSubjectNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object which tracks PermissionedDomain
     \sa keylet::permissionedDomain
  */
-LEDGER_ENTRY(ltPERMISSIONED_DOMAIN, 0x0082, PermissionedDomain, permissioned_domain, ({
-    {sfOwner,               soeREQUIRED},
-    {sfSequence,            soeREQUIRED},
-    {sfAcceptedCredentials, soeREQUIRED},
-    {sfOwnerNode,           soeREQUIRED},
-    {sfPreviousTxnID,       soeREQUIRED},
-    {sfPreviousTxnLgrSeq,   soeREQUIRED},
-}))
+LEDGER_ENTRY(ltPERMISSIONED_DOMAIN, 0x0082, PermissionedDomain, permissioned_domain, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfOwner, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSequence, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAcceptedCredentials, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object representing permissions an account has delegated to another account.
     \sa keylet::delegate
  */
-LEDGER_ENTRY(ltDELEGATE, 0x0083, Delegate, delegate, ({
-    {sfAccount,              soeREQUIRED},
-    {sfAuthorize,            soeREQUIRED},
-    {sfPermissions,          soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
+LEDGER_ENTRY(ltDELEGATE, 0x0083, Delegate, delegate, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAuthorize, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPermissions, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+))
 
 /** A ledger object representing a single asset vault.
 
     \sa keylet::mptoken
  */
-LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfSequence,             soeREQUIRED},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfOwner,                soeREQUIRED},
-    {sfAccount,              soeREQUIRED},
-    {sfData,                 soeOPTIONAL},
-    {sfAsset,                soeREQUIRED},
-    {sfAssetsTotal,          soeREQUIRED},
-    {sfAssetsAvailable,      soeREQUIRED},
-    {sfAssetsMaximum,        soeDEFAULT},
-    {sfLossUnrealized,       soeREQUIRED},
-    {sfShareMPTID,           soeREQUIRED},
-    {sfWithdrawalPolicy,     soeREQUIRED},
+LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, DEFINE_LEDGER_ENTRY_FIELDS(
+    LEDGER_ENTRY_FIELD(sfPreviousTxnID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfPreviousTxnLgrSeq, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfSequence, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwnerNode, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfOwner, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAccount, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfData, soeOPTIONAL)
+    LEDGER_ENTRY_FIELD(sfAsset, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAssetsTotal, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAssetsAvailable, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfAssetsMaximum, soeDEFAULT)
+    LEDGER_ENTRY_FIELD(sfLossUnrealized, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfShareMPTID, soeREQUIRED)
+    LEDGER_ENTRY_FIELD(sfWithdrawalPolicy, soeREQUIRED)
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
-}))
+))
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE
 
+LEDGER_ENTRIES_END
