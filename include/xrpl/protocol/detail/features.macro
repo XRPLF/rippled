@@ -35,6 +35,7 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
+XRPL_FIX    (AMMClawbackRounding,        Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo)
@@ -97,7 +98,6 @@ XRPL_FEATURE(HardenedValidations,        Supported::yes, VoteBehavior::DefaultYe
 // fix1781: XRPEndpointSteps should be included in the circular payment check
 XRPL_FIX    (1781,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
-// fixQualityUpperBound should be activated before FlowCross
 XRPL_FIX    (QualityUpperBound,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (PayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes)
@@ -115,7 +115,6 @@ XRPL_FIX    (1571,                       Supported::yes, VoteBehavior::DefaultYe
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1513,                       Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(FlowCross,                  Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -158,3 +157,4 @@ XRPL_RETIRE(fix1201)
 XRPL_RETIRE(fix1512)
 XRPL_RETIRE(fix1523)
 XRPL_RETIRE(fix1528)
+XRPL_RETIRE(FlowCross)
