@@ -246,22 +246,6 @@ returnResult(
 }
 
 wasm_trap_t*
-getLedgerSqnOld_wrap(
-    void* env,
-    wasm_val_vec_t const* params,
-    wasm_val_vec_t* results)
-{
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
-    auto const sqn = hf->getLedgerSqn();
-    if (!sqn)
-    {
-        return hfResult(results, sqn.error());
-    }
-    return hfResult(results, static_cast<int32_t>(sqn.value()));
-}
-
-wasm_trap_t*
 getLedgerSqn_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -1172,7 +1156,7 @@ testGetDataIncrement()
 
         int index = 0;
         auto const result = getDataSlice(&rt, &params, index);
-        if (!result || result.value() != Slice(buffer.data(), 3))
+        if (!result || result.value() != Slice(buffer.data(), 3) || index != 2)
             return false;
     }
 
@@ -1188,7 +1172,8 @@ testGetDataIncrement()
         if (!result ||
             result.value() !=
                 std::string_view(
-                    reinterpret_cast<char const*>(buffer.data()), 5))
+                    reinterpret_cast<char const*>(buffer.data()), 5) ||
+            index != 2)
             return false;
     }
 
@@ -1205,7 +1190,7 @@ testGetDataIncrement()
 
         int index = 0;
         auto const result = getDataAccountID(&rt, &params, index);
-        if (!result || result.value() != id)
+        if (!result || result.value() != id || index != 2)
             return false;
     }
 
@@ -1221,7 +1206,23 @@ testGetDataIncrement()
 
         int index = 0;
         auto const result = getDataUInt256(&rt, &params, index);
-        if (!result || result.value() != h1)
+        if (!result || result.value() != h1 || index != 2)
+            return false;
+    }
+
+    {
+        // test Currency
+
+        Currency const c = xrpCurrency();
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(c.bytes);
+        memcpy(&buffer[0], c.data(), c.bytes);
+
+        int index = 0;
+        auto const result = getDataCurrency(&rt, &params, index);
+        if (!result || result.value() != c || index != 2)
             return false;
     }
 

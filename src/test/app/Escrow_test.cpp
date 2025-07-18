@@ -1707,10 +1707,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn finish() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
+        // getLedgerSqn() >= 5}
         static auto wasmHex = ledgerSqnHex;
 
         {
@@ -1880,10 +1877,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn finish() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
+        // getLedgerSqn() >= 5}
         static auto wasmHex = ledgerSqnHex;
 
         {
@@ -2028,12 +2022,9 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn finish() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
+        // getLedgerSqn() >= 5}
         auto const& wasmHex = ledgerSqnHex;
-        std::uint32_t const allowance = 64;
+        std::uint32_t const allowance = 71;
 
         {
             // basic FinishFunction situation
@@ -2329,7 +2320,7 @@ struct Escrow_test : public beast::unit_test::suite
                     ter(tesSUCCESS));
 
                 auto const txMeta = env.meta();
-                if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
+                if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 10817);
 
                 env.close();

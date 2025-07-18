@@ -25,8 +25,6 @@
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
 
-#include <wasm_c_api.h>
-
 namespace ripple {
 namespace test {
 
