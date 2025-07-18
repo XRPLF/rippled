@@ -24,6 +24,7 @@
 #include <xrpld/nodestore/detail/codec.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/filesystem.hpp>
@@ -52,6 +53,7 @@ public:
     size_t const keyBytes_;
     std::size_t const burstSize_;
     std::string const name_;
+    std::size_t const blockSize_;
     nudb::store db_;
     std::atomic<bool> deletePath_;
     Scheduler& scheduler_;
@@ -66,6 +68,7 @@ public:
         , keyBytes_(keyBytes)
         , burstSize_(burstSize)
         , name_(get(keyValues, "path"))
+        , blockSize_(parseBlockSize(keyValues, journal))
         , deletePath_(false)
         , scheduler_(scheduler)
     {
@@ -85,6 +88,7 @@ public:
         , keyBytes_(keyBytes)
         , burstSize_(burstSize)
         , name_(get(keyValues, "path"))
+        , blockSize_(parseBlockSize(keyValues, journal))
         , db_(context)
         , deletePath_(false)
         , scheduler_(scheduler)
@@ -143,7 +147,7 @@ public:
                 uid,
                 salt,
                 keyBytes_,
-                nudb::block_size(kp),
+                blockSize_,
                 0.50,
                 ec);
             if (ec == nudb::errc::file_exists)
@@ -358,6 +362,48 @@ public:
     fdRequired() const override
     {
         return 3;
+    }
+
+private:
+    static std::size_t
+    parseBlockSize(Section const& keyValues, beast::Journal journal)
+    {
+        std::size_t blockSize = 4096;  // Default 4K
+        std::string blockSizeStr;
+
+        if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
+        {
+            return blockSize;  // Early return with default
+        }
+
+        try
+        {
+            std::size_t const parsedBlockSize =
+                beast::lexicalCastThrow<std::size_t>(blockSizeStr);
+
+            // Validate: must be power of 2 between 4K and 32K
+            if (parsedBlockSize < 4096 || parsedBlockSize > 32768 ||
+                (parsedBlockSize & (parsedBlockSize - 1)) != 0)
+            {
+                JLOG(journal.warn())
+                    << "Invalid nudb_block_size: " << parsedBlockSize
+                    << ". Must be power of 2 between 4096 and 32768. Using "
+                       "default 4096.";
+                return 4096;
+            }
+
+            JLOG(journal.info())
+                << "Using custom NuDB block size: " << parsedBlockSize
+                << " bytes";
+            return parsedBlockSize;
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal.warn())
+                << "Invalid nudb_block_size value: " << blockSizeStr
+                << ". Using default 4096. Error: " << e.what();
+            return 4096;
+        }
     }
 };
 
