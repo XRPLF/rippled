@@ -62,26 +62,29 @@ fund(
         }
     }
     env.close();
+
     std::vector<STAmount> amtsOut;
     for (auto const& account : accounts)
     {
+        int i = 0;
         for (auto const& amt : amts)
         {
             auto amt_ = [&]() {
-                if (amt.holds<Issue>())
-                    env.trust(amt + amt, account);
-                else if (mptIssuer)
+                if (amtsOut.size() == amts.size())
+                    return amtsOut[i++];
+                else if (amt.holds<MPTIssue>() && mptIssuer)
                 {
                     MPTTester mpt(
                         {.env = env,
                          .issuer = *mptIssuer,
-                         .holders = {account}});
+                         .holders = accounts});
                     return STAmount{mpt.issuanceID(), amt.mpt().value()};
                 }
                 return amt;
             }();
-            // only add unique amounts
-            if (account == accounts[0])
+            if (amt.holds<Issue>())
+                env.trust(amt_ + amt_, account);
+            if (amtsOut.size() != amts.size())
                 amtsOut.push_back(amt_);
             env(pay(amt_.getIssuer(), account, amt_));
         }
@@ -158,9 +161,9 @@ AMMTestBase::testAMM(
                     return defXRP;
                 return a + XRP(1000);
             }
-            auto const defIOU = STAmount{a.asset(), 30000};
-            if (a <= defIOU)
-                return defIOU;
+            auto const defAmt = STAmount{a.asset(), 30000};
+            if (a <= defAmt)
+                return defAmt;
             return a + STAmount{a.asset(), 1000};
         };
         auto const toFund1 = tofund(asset1);
@@ -232,111 +235,6 @@ AMMTest::pathTestEnv()
         return cfg;
     }));
 }
-
-Json::Value
-AMMTest::find_paths_request(
-    jtx::Env& env,
-    jtx::Account const& src,
-    jtx::Account const& dst,
-    STAmount const& saDstAmount,
-    std::optional<STAmount> const& saSendMax,
-    std::optional<Currency> const& saSrcCurrency)
-{
-    using namespace jtx;
-
-    auto& app = env.app();
-    Resource::Charge loadType = Resource::feeReferenceRPC;
-    Resource::Consumer c;
-
-    RPC::JsonContext context{
-        {env.journal,
-         app,
-         loadType,
-         app.getOPs(),
-         app.getLedgerMaster(),
-         c,
-         Role::USER,
-         {},
-         {},
-         RPC::apiVersionIfUnspecified},
-        {},
-        {}};
-
-    Json::Value params = Json::objectValue;
-    params[jss::command] = "ripple_path_find";
-    params[jss::source_account] = toBase58(src);
-    params[jss::destination_account] = toBase58(dst);
-    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
-    if (saSendMax)
-        params[jss::send_max] = saSendMax->getJson(JsonOptions::none);
-    if (saSrcCurrency)
-    {
-        auto& sc = params[jss::source_currencies] = Json::arrayValue;
-        Json::Value j = Json::objectValue;
-        j[jss::currency] = to_string(saSrcCurrency.value());
-        sc.append(j);
-    }
-
-    Json::Value result;
-    gate g;
-    app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
-        context.params = std::move(params);
-        context.coro = coro;
-        RPC::doCommand(context, result);
-        g.signal();
-    });
-
-    using namespace std::chrono_literals;
-    BEAST_EXPECT(g.wait_for(5s));
-    BEAST_EXPECT(!result.isMember(jss::error));
-    return result;
-}
-
-std::tuple<STPathSet, STAmount, STAmount>
-AMMTest::find_paths(
-    jtx::Env& env,
-    jtx::Account const& src,
-    jtx::Account const& dst,
-    STAmount const& saDstAmount,
-    std::optional<STAmount> const& saSendMax,
-    std::optional<Currency> const& saSrcCurrency)
-{
-    Json::Value result = find_paths_request(
-        env, src, dst, saDstAmount, saSendMax, saSrcCurrency);
-    BEAST_EXPECT(!result.isMember(jss::error));
-
-    STAmount da;
-    if (result.isMember(jss::destination_amount))
-        da = amountFromJson(sfGeneric, result[jss::destination_amount]);
-
-    STAmount sa;
-    STPathSet paths;
-    if (result.isMember(jss::alternatives))
-    {
-        auto const& alts = result[jss::alternatives];
-        if (alts.size() > 0)
-        {
-            auto const& path = alts[0u];
-
-            if (path.isMember(jss::source_amount))
-                sa = amountFromJson(sfGeneric, path[jss::source_amount]);
-
-            if (path.isMember(jss::destination_amount))
-                da = amountFromJson(sfGeneric, path[jss::destination_amount]);
-
-            if (path.isMember(jss::paths_computed))
-            {
-                Json::Value p;
-                p["Paths"] = path[jss::paths_computed];
-                STParsedJSONObject po("generic", p);
-                paths = po.object->getFieldPathSet(sfPaths);
-            }
-        }
-    }
-
-    return std::make_tuple(std::move(paths), std::move(sa), std::move(da));
-}
-
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

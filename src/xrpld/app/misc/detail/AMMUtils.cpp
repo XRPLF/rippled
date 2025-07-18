@@ -220,7 +220,8 @@ ammAccountHolds(
     if (asset.holds<MPTIssue>())
     {
         auto const& issue = asset.get<MPTIssue>();
-        if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID)))
+        if (auto const sle = view.read(keylet::mptoken(issue, ammAccountID));
+            sle && !isFrozen(view, ammAccountID, issue))
             return STAmount{issue, (*sle)[sfMPTAmount]};
     }
     else

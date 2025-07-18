@@ -162,7 +162,7 @@ struct MPTAuthorize
 struct MPTSet
 {
     std::optional<Account> account = std::nullopt;
-    std::optional<Account> holder = std::nullopt;
+    std::optional<std::variant<Account, AccountID>> holder = std::nullopt;
     std::optional<MPTID> id = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;

@@ -325,7 +325,18 @@ MPTTester::set(MPTSet const& arg)
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
     if (arg.holder)
-        jv[sfHolder] = arg.holder->human();
+    {
+        std::visit(
+            [&jv](auto const& holder) {
+                using T = std::decay_t<decltype(holder)>;
+                if constexpr (std::is_same_v<T, Account>)
+                    jv[sfHolder] = holder.human();
+                else if constexpr (std::is_same_v<T, AccountID>)
+                    jv[sfHolder] = toBase58(holder);
+            },
+            *arg.holder);
+    }
+
     if (arg.delegate)
         jv[sfDelegate] = arg.delegate->human();
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
@@ -346,8 +357,9 @@ MPTTester::set(MPTSet const& arg)
         };
         if (arg.account)
             require(std::nullopt, arg.holder.has_value());
-        if (arg.holder)
-            require(*arg.holder, false);
+        if (auto const account =
+                (arg.holder ? std::get_if<Account>(&(*arg.holder)) : nullptr))
+            require(*account, false);
     }
 }
 

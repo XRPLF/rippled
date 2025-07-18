@@ -116,11 +116,41 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     }
 
     std::uint32_t const issuerFlagsIn = sleIssuer->getFieldU32(sfFlags);
+    if (!ctx.view.rules().enabled(featureMPTokensV2))
+    {
+        if (!(issuerFlagsIn & lsfAllowTrustLineClawback) ||
+            (issuerFlagsIn & lsfNoFreeze))
+            return tecNO_PERMISSION;
+        return tesSUCCESS;
+    }
 
-    // If AllowTrustLineClawback is not set or NoFreeze is set, return no
-    // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) ||
-        (issuerFlagsIn & lsfNoFreeze))
+    auto const checkClawAsset = [&](Asset const asset) -> bool {
+        if (asset.native())
+            return false;  // LCOV_EXCL_LINE
+
+        if (asset.holds<Issue>())
+        {
+            if (!(issuerFlagsIn & lsfAllowTrustLineClawback) ||
+                (issuerFlagsIn & lsfNoFreeze))
+                return false;
+        }
+        else if (asset.holds<MPTIssue>())
+        {
+            auto const sleIssuance = ctx.view.read(
+                keylet::mptIssuance(asset.get<MPTIssue>().getMptID()));
+
+            if (!sleIssuance || !sleIssuance->isFlag(lsfMPTCanClawback) ||
+                sleIssuance->getAccountID(sfIssuer) != ctx.tx[sfAccount])
+                return false;
+        }
+
+        return true;
+    };
+
+    if (!checkClawAsset(asset))
+        return tecNO_PERMISSION;
+
+    if (ctx.tx.getFlags() & tfClawTwoAssets && !checkClawAsset(asset2))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;
@@ -238,7 +268,16 @@ AMMClawback::applyGuts(Sandbox& sb)
         << to_string(newLPTokenBalance.iou())
         << " old balance: " << to_string(lptAMMBalance.iou());
 
-    auto const ter = rippleCredit(sb, holder, issuer, amountWithdraw, true, j_);
+    auto sendAmount = [&](STAmount const& saAmount) -> TER {
+        if (saAmount.asset().holds<Issue>())
+            return rippleCredit(sb, holder, issuer, saAmount, true, j_);
+        else if (saAmount.asset().holds<MPTIssue>())
+            return rippleCredit(sb, holder, issuer, saAmount, false, j_);
+        else
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+    };
+
+    auto const ter = sendAmount(amountWithdraw);
     if (ter != tesSUCCESS)
         return ter;  // LCOV_EXCL_LINE
 
@@ -251,7 +290,7 @@ AMMClawback::applyGuts(Sandbox& sb)
 
     auto const flags = ctx_.tx.getFlags();
     if (flags & tfClawTwoAssets)
-        return rippleCredit(sb, holder, issuer, *amount2Withdraw, true, j_);
+        return sendAmount(*amount2Withdraw);
 
     return tesSUCCESS;
 }

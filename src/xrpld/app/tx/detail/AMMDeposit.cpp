@@ -152,13 +152,16 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     // must be amount issue
     if (amount && ePrice)
     {
-        if (auto const res = invalidAMMAmount(
-                *ePrice,
-                std::make_optional(
-                    std::make_pair(amount->asset(), amount->asset()))))
+        if (!ctx.rules.enabled(featureMPTokensV2))
         {
-            JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
-            return res;
+            if (auto const res = invalidAMMAmount(
+                    *ePrice,
+                    std::make_optional(
+                        std::make_pair(amount->asset(), amount->asset()))))
+            {
+                JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
+                return res;
+            }
         }
     }
 

@@ -160,24 +160,6 @@ protected:
 
     jtx::Env
     pathTestEnv();
-
-    Json::Value
-    find_paths_request(
-        jtx::Env& env,
-        jtx::Account const& src,
-        jtx::Account const& dst,
-        STAmount const& saDstAmount,
-        std::optional<STAmount> const& saSendMax = std::nullopt,
-        std::optional<Currency> const& saSrcCurrency = std::nullopt);
-
-    std::tuple<STPathSet, STAmount, STAmount>
-    find_paths(
-        jtx::Env& env,
-        jtx::Account const& src,
-        jtx::Account const& dst,
-        STAmount const& saDstAmount,
-        std::optional<STAmount> const& saSendMax = std::nullopt,
-        std::optional<Currency> const& saSrcCurrency = std::nullopt);
 };
 
 }  // namespace jtx

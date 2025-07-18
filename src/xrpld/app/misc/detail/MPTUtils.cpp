@@ -62,8 +62,6 @@ isMPTAllowed(
     // Offer crossing and Payment
     if ((flags & lsfMPTCanTrade) == 0 && isDEX)
         return tecNO_PERMISSION;
-    if ((flags & lsfMPTCanClawback) && txType == ttAMM_CREATE)
-        return tecNO_PERMISSION;
 
     if (accountID != issuer)
     {

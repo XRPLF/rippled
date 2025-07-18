@@ -244,6 +244,17 @@ find_paths(
     std::optional<AccountID> const& srcIssuer = std::nullopt,
     std::optional<uint256> const& domain = std::nullopt);
 
+std::tuple<STPathSet, STAmount, STAmount>
+find_paths_by_element(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<STPathElement> const& srcElement = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
 /******************************************************************************/
 
 XRPAmount

@@ -282,6 +282,28 @@ find_paths(
     return std::make_tuple(std::move(paths), std::move(sa), std::move(da));
 }
 
+std::tuple<STPathSet, STAmount, STAmount>
+find_paths_by_element(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax,
+    std::optional<STPathElement> const& srcElement,
+    std::optional<AccountID> const& srcIssuer,
+    std::optional<uint256> const& domain)
+{
+    return find_paths(
+        env,
+        src,
+        dst,
+        saDstAmount,
+        saSendMax,
+        srcElement->getPathAsset(),
+        srcIssuer,
+        domain);
+}
+
 /******************************************************************************/
 
 XRPAmount
