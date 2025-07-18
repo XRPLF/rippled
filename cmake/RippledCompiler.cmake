@@ -99,14 +99,7 @@ else ()
   target_compile_options (common
     INTERFACE
       $<$<BOOL:${werr}>:-Werror>
-      $<$<COMPILE_LANGUAGE:CXX>:
-        -frtti
-        -Wnon-virtual-dtor
-      >
       -Wno-sign-compare
-      -Wno-char-subscripts
-      -Wno-format
-      -Wno-unused-local-typedefs
       -fstack-protector
       $<$<BOOL:${is_gcc}>:
         -Wno-unused-but-set-variable
