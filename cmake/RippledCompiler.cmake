@@ -101,11 +101,8 @@ else ()
       $<$<BOOL:${werr}>:-Werror>
       $<$<COMPILE_LANGUAGE:CXX>:
         -frtti
-        -Wnon-virtual-dtor
       >
       -Wno-sign-compare
-      -Wno-format
-      -Wno-unused-local-typedefs
       -fstack-protector
       $<$<BOOL:${is_gcc}>:
         -Wno-unused-but-set-variable
