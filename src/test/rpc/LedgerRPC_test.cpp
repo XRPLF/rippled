@@ -711,7 +711,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.close();
 
         std::string index;
-        int hashes_ledger_entry_index = -1;
+        int hashesLedgerEntryIndex = -1;
         {
             Json::Value jvParams;
             jvParams[jss::ledger_index] = 3u;
@@ -730,7 +730,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 {
                     index = jrr[jss::ledger][jss::accountState][i]["index"]
                                 .asString();
-                    hashes_ledger_entry_index = i;
+                    hashesLedgerEntryIndex = i;
                 }
 
             for (auto const& object : jrr[jss::ledger][jss::accountState])
@@ -755,9 +755,9 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
             BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
             BEAST_EXPECT(
-                hashes_ledger_entry_index > 0 &&
+                hashesLedgerEntryIndex > 0 &&
                 jrr[jss::ledger][jss::accountState]
-                   [hashes_ledger_entry_index] == index);
+                   [hashesLedgerEntryIndex] == index);
 
             // jss::type is a deprecated field
             BEAST_EXPECT(
