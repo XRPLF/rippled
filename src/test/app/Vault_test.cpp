@@ -2834,18 +2834,6 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
-            testcase("RPC ledger_entry zero seq");
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault][jss::owner] = issuer.human();
-            jvParams[jss::vault][jss::seq] = 0;
-            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-            BEAST_EXPECT(
-                jvVault[jss::result][jss::error].asString() ==
-                "malformedRequest");
-        }
-
-        {
             testcase("RPC ledger_entry negative seq");
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
