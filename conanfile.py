@@ -37,7 +37,7 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
-        'protobuf/3.21.9',
+        'protobuf/3.21.12',
     ]
 
     default_options = {
@@ -107,7 +107,7 @@ class Xrpl(ConanFile):
         self.requires('boost/1.83.0', force=True, **transitive_headers_opt)
         self.requires('date/3.0.4', **transitive_headers_opt)
         self.requires('lz4/1.10.0', force=True)
-        self.requires('protobuf/3.21.9', force=True)
+        self.requires('protobuf/3.21.12', force=True)
         self.requires('sqlite3/3.49.1', force=True)
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
