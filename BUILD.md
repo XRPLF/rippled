@@ -162,15 +162,6 @@ Replace `<path>` with paths to the desired compilers:
 - `conan profile update env.CC=<path> default`
 - `conan profile update env.CXX=<path> default`
 
-Export our [Conan recipe for Snappy](./external/snappy).
-It does not explicitly link the C++ standard library,
-which allows you to statically link it with GCC, if you want.
-
-   ```
-   # Conan 2.x
-   conan export --version 1.1.10 external/snappy
-   ```
-
 Export our [Conan recipe for SOCI](./external/soci).
 It patches their CMake to correctly import its dependencies.
 
