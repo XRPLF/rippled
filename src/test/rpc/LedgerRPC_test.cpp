@@ -756,8 +756,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
             BEAST_EXPECT(
                 hashesLedgerEntryIndex > 0 &&
-                jrr[jss::ledger][jss::accountState]
-                   [hashesLedgerEntryIndex] == index);
+                jrr[jss::ledger][jss::accountState][hashesLedgerEntryIndex] ==
+                    index);
 
             // jss::type is a deprecated field
             BEAST_EXPECT(
