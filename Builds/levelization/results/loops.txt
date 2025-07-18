@@ -10,9 +10,6 @@ Loop: xrpld.app xrpld.core
 Loop: xrpld.app xrpld.ledger
   xrpld.app > xrpld.ledger
 
-Loop: xrpld.app xrpld.net
-  xrpld.app > xrpld.net
-
 Loop: xrpld.app xrpld.overlay
   xrpld.overlay > xrpld.app
 
@@ -25,14 +22,8 @@ Loop: xrpld.app xrpld.rpc
 Loop: xrpld.app xrpld.shamap
   xrpld.app > xrpld.shamap
 
-Loop: xrpld.core xrpld.net
-  xrpld.net > xrpld.core
-
 Loop: xrpld.core xrpld.perflog
   xrpld.perflog == xrpld.core
-
-Loop: xrpld.net xrpld.rpc
-  xrpld.rpc ~= xrpld.net
 
 Loop: xrpld.overlay xrpld.rpc
   xrpld.rpc ~= xrpld.overlay
