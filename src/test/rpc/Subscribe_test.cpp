@@ -1307,7 +1307,7 @@ public:
         using namespace jtx;
         using namespace std::chrono_literals;
         FeatureBitset const all{
-            jtx::supported_amendments() | featurePermissionedDomains |
+            jtx::testable_amendments() | featurePermissionedDomains |
             featureCredentials | featurePermissionedDEX};
 
         Env env(*this, all);
@@ -1577,7 +1577,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testServer();
