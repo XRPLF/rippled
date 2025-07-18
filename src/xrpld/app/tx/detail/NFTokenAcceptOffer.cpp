@@ -216,8 +216,12 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixNonFungibleTokensV1_2))
         {
             if (accountFunds(
-                    ctx.view, (*bo)[sfOwner], needed, fhZERO_IF_FROZEN, ctx.j) <
-                needed)
+                    ctx.view,
+                    (*bo)[sfOwner],
+                    needed,
+                    fhZERO_IF_FROZEN,
+                    ahZERO_IF_UNAUTHORIZED,
+                    ctx.j) < needed)
                 return tecINSUFFICIENT_FUNDS;
         }
         else if (
@@ -227,6 +231,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 needed.getCurrency(),
                 needed.getIssuer(),
                 fhZERO_IF_FROZEN,
+                ahZERO_IF_UNAUTHORIZED,
                 ctx.j) < needed)
             return tecINSUFFICIENT_FUNDS;
 
@@ -296,6 +301,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                     needed.getCurrency(),
                     needed.getIssuer(),
                     fhZERO_IF_FROZEN,
+                    ahZERO_IF_UNAUTHORIZED,
                     ctx.j) < needed)
                 return tecINSUFFICIENT_FUNDS;
         }
@@ -318,6 +324,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                     ctx.tx[sfAccount],
                     needed,
                     fhZERO_IF_FROZEN,
+                    ahZERO_IF_UNAUTHORIZED,
                     ctx.j) < needed)
                 return tecINSUFFICIENT_FUNDS;
         }
@@ -415,9 +422,13 @@ NFTokenAcceptOffer::pay(
         return result;
     if (result != tesSUCCESS)
         return result;
-    if (accountFunds(view(), from, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(
+            view(), from, amount, fhZERO_IF_FROZEN, ahZERO_IF_UNAUTHORIZED, j_)
+            .signum() < 0)
         return tecINSUFFICIENT_FUNDS;
-    if (accountFunds(view(), to, amount, fhZERO_IF_FROZEN, j_).signum() < 0)
+    if (accountFunds(
+            view(), to, amount, fhZERO_IF_FROZEN, ahZERO_IF_UNAUTHORIZED, j_)
+            .signum() < 0)
         return tecINSUFFICIENT_FUNDS;
     return tesSUCCESS;
 }

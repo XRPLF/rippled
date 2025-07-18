@@ -43,6 +43,7 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/consensus/Consensus.h>
 #include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/ledger/View.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
@@ -3315,6 +3316,7 @@ NetworkOPsImp::transJson(
                 account,
                 amount,
                 fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
                 app_.journal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
@@ -4531,6 +4533,7 @@ NetworkOPsImp::getBookPage(
                             book.out.currency,
                             book.out.account,
                             fhZERO_IF_FROZEN,
+                            ahZERO_IF_UNAUTHORIZED,
                             viewJ);
 
                         if (saOwnerFunds < beast::zero)
@@ -4681,7 +4684,8 @@ NetworkOPsImp::getBookPage(
                         uOfferOwnerID,
                         book.out.currency,
                         book.out.account,
-                        fhZERO_IF_FROZEN);
+                        fhZERO_IF_FROZEN,
+                        ahZERO_IF_UNAUTHORIZED);
 
                     if (saOwnerFunds.isNegative())
                     {

@@ -237,6 +237,7 @@ accountHolds(
     Currency const& currency,
     AccountID const& issuer,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
 [[nodiscard]] STAmount
@@ -245,6 +246,7 @@ accountHolds(
     AccountID const& account,
     Issue const& issue,
     FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
 [[nodiscard]] STAmount
@@ -276,6 +278,7 @@ accountFunds(
     AccountID const& id,
     STAmount const& saDefault,
     FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j);
 
 // Return the account's liquid (not reserved) XRP.  Generally prefer
@@ -892,6 +895,14 @@ sharesToAssetsWithdraw(
 */
 bool
 after(NetClock::time_point now, std::uint32_t mark);
+
+// Checks the authorizations of an account for the two assets
+// associated with a LP
+TER
+checkLPTokenAuthorization(
+    ReadView const& view,
+    AccountID const& acct,
+    uint256 const& ammID);
 
 }  // namespace ripple
 

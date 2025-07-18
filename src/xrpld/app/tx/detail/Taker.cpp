@@ -636,7 +636,13 @@ Taker::consume_offer(Offer& offer, Amounts const& order)
 STAmount
 Taker::get_funds(AccountID const& account, STAmount const& amount) const
 {
-    return accountFunds(view_, account, amount, fhZERO_IF_FROZEN, journal_);
+    return accountFunds(
+        view_,
+        account,
+        amount,
+        fhZERO_IF_FROZEN,
+        ahZERO_IF_UNAUTHORIZED,
+        journal_);
 }
 
 TER

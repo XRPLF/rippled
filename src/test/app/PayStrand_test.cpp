@@ -27,6 +27,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <optional>
@@ -985,7 +986,14 @@ struct PayStrand_test : public beast::unit_test::suite
             BEAST_EXPECT(getTrustFlag(env, gw, alice, usdC, TrustFlag::auth));
             env(pay(gw, alice, USD(100)));
             env.require(balance(alice, USD(100)));
-            test(env, USD, std::nullopt, STPath(), terNO_AUTH);
+
+            test(
+                env,
+                USD,
+                std::nullopt,
+                STPath(),
+                features[fixEnforceTrustlineAuth] ? TER(tecNO_AUTH)
+                                                  : TER(terNO_AUTH));
 
             // Check pure issue redeem still works
             auto [ter, strand] = toStrand(
@@ -1268,7 +1276,8 @@ struct PayStrand_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const sa = testable_amendments();
-        testToStrand(sa - featurePermissionedDEX);
+        testToStrand(sa - featurePermissionedDEX - fixEnforceTrustlineAuth);
+        testToStrand(sa - fixEnforceTrustlineAuth);
         testToStrand(sa);
 
         testRIPD1373(sa - featurePermissionedDEX);

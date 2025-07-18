@@ -22,6 +22,7 @@
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/WrappedSink.h>
@@ -169,8 +170,13 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
 
-    if (accountFunds(ctx.view, id, saTakerGets, fhZERO_IF_FROZEN, viewJ) <=
-        beast::zero)
+    if (accountFunds(
+            ctx.view,
+            id,
+            saTakerGets,
+            fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
+            viewJ) <= beast::zero)
     {
         JLOG(ctx.j.debug())
             << "delay: Offers must be at least partially funded.";
@@ -321,6 +327,7 @@ CreateOffer::dry_offer(ApplyView& view, Offer const& offer)
         offer.owner(),
         offer.amount().out,
         fhZERO_IF_FROZEN,
+        ahZERO_IF_UNAUTHORIZED,
         ctx_.app.journal("View"));
     return (amount <= beast::zero);
 }
@@ -455,6 +462,7 @@ CreateOffer::bridged_cross(
                               offers_direct.tip().owner(),
                               offers_direct.tip().amount().out,
                               fhIGNORE_FREEZE,
+                              ahIGNORE_AUTH,
                               viewJ);
             }
 
@@ -477,6 +485,7 @@ CreateOffer::bridged_cross(
                     offers_leg1.tip().owner(),
                     offers_leg1.tip().amount().out,
                     fhIGNORE_FREEZE,
+                    ahIGNORE_AUTH,
                     viewJ);
 
                 auto const owner2_funds_before = accountFunds(
@@ -484,6 +493,7 @@ CreateOffer::bridged_cross(
                     offers_leg2.tip().owner(),
                     offers_leg2.tip().amount().out,
                     fhIGNORE_FREEZE,
+                    ahIGNORE_AUTH,
                     viewJ);
 
                 stream << count << " Bridge:";
@@ -611,6 +621,7 @@ CreateOffer::direct_cross(
                           offer.owner(),
                           offer.amount().out,
                           fhIGNORE_FREEZE,
+                          ahIGNORE_AUTH,
                           ctx_.app.journal("View"));
         }
 
@@ -694,8 +705,13 @@ CreateOffer::flowCross(
         // We check this in preclaim, but when selling XRP charged fees can
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
-        STAmount const inStartBalance =
-            accountFunds(psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+        STAmount const inStartBalance = accountFunds(
+            psb,
+            account_,
+            takerAmount.in,
+            fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
+            j_);
         if (inStartBalance <= beast::zero)
         {
             // The account balance can't cover even part of the offer.
@@ -798,7 +814,12 @@ CreateOffer::flowCross(
         if (isTesSuccess(result.result()))
         {
             STAmount const takerInBalance = accountFunds(
-                psb, account_, takerAmount.in, fhZERO_IF_FROZEN, j_);
+                psb,
+                account_,
+                takerAmount.in,
+                fhZERO_IF_FROZEN,
+                ahZERO_IF_UNAUTHORIZED,
+                j_);
 
             if (takerInBalance <= beast::zero)
             {

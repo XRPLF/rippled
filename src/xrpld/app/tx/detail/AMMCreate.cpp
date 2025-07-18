@@ -159,6 +159,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                 accountID,
                 asset.issue(),
                 FreezeHandling::fhZERO_IF_FROZEN,
+                AuthHandling::ahZERO_IF_UNAUTHORIZED,
                 ctx.j) < asset;
     };
 

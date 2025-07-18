@@ -837,6 +837,7 @@ class View_test : public beast::unit_test::suite
                     USD.currency,
                     gw,
                     fhZERO_IF_FROZEN,
+                    ahIGNORE_AUTH,
                     env.journal));
 
             // Thaw gw and try again.
@@ -862,6 +863,7 @@ class View_test : public beast::unit_test::suite
                     USD.currency,
                     gw,
                     fhZERO_IF_FROZEN,
+                    ahIGNORE_AUTH,
                     env.journal));
 
             // gw thaws bob's trust line.  bob gets his money back.
@@ -875,6 +877,7 @@ class View_test : public beast::unit_test::suite
                     USD.currency,
                     gw,
                     fhZERO_IF_FROZEN,
+                    ahIGNORE_AUTH,
                     env.journal));
         }
         {
@@ -891,6 +894,7 @@ class View_test : public beast::unit_test::suite
                     EUR.currency,
                     gw,
                     fhZERO_IF_FROZEN,
+                    ahIGNORE_AUTH,
                     env.journal));
 
             // But carol does have USD.
@@ -902,6 +906,7 @@ class View_test : public beast::unit_test::suite
                     USD.currency,
                     gw,
                     fhZERO_IF_FROZEN,
+                    ahIGNORE_AUTH,
                     env.journal));
 
             // carol's XRP balance should be her holdings minus her reserve.
@@ -911,6 +916,7 @@ class View_test : public beast::unit_test::suite
                 xrpCurrency(),
                 xrpAccount(),
                 fhZERO_IF_FROZEN,
+                ahIGNORE_AUTH,
                 env.journal);
             // carol's XRP balance:              10000
             // base reserve:                      -200
@@ -933,30 +939,51 @@ class View_test : public beast::unit_test::suite
                     xrpCurrency(),
                     gw,
                     fhZERO_IF_FROZEN,
+                    ahIGNORE_AUTH,
                     env.journal));
         }
         {
             // accountFunds().
             // Gateways have whatever funds they claim to have.
             auto const gwUSD = accountFunds(
-                *env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
+                *env.closed(),
+                gw,
+                USD(314159),
+                fhZERO_IF_FROZEN,
+                ahIGNORE_AUTH,
+                env.journal);
             BEAST_EXPECT(gwUSD == USD(314159));
 
             // carol has funds from the gateway.
             auto carolsUSD = accountFunds(
-                *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+                *env.closed(),
+                carol,
+                USD(0),
+                fhZERO_IF_FROZEN,
+                ahIGNORE_AUTH,
+                env.journal);
             BEAST_EXPECT(carolsUSD == USD(50));
 
             // If carol's funds are frozen she has no funds...
             env(fset(gw, asfGlobalFreeze));
             env.close();
             carolsUSD = accountFunds(
-                *env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+                *env.closed(),
+                carol,
+                USD(0),
+                fhZERO_IF_FROZEN,
+                ahIGNORE_AUTH,
+                env.journal);
             BEAST_EXPECT(carolsUSD == USD(0));
 
             // ... unless the query ignores the FROZEN state.
             carolsUSD = accountFunds(
-                *env.closed(), carol, USD(0), fhIGNORE_FREEZE, env.journal);
+                *env.closed(),
+                carol,
+                USD(0),
+                fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
+                env.journal);
             BEAST_EXPECT(carolsUSD == USD(50));
 
             // Just to be tidy, thaw gw.
