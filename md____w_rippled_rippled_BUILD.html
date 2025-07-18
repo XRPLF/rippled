@@ -155,25 +155,14 @@ Multiple compilers</h3>
 <li><code>conan profile update env.CXX=&lt;path&gt; default</code></li>
 </ul>
 <p >Export our <a href="./external/snappy">Conan recipe for Snappy</a>. It does not explicitly link the C++ standard library, which allows you to statically link it with GCC, if you want.</p>
-<div class="fragment"><div class="line"># Conan 1.x</div>
-<div class="line">conan export external/snappy snappy/1.1.10@</div>
-<div class="line"># Conan 2.x</div>
+<div class="fragment"><div class="line"># Conan 2.x</div>
 <div class="line">conan export --version 1.1.10 external/snappy</div>
 </div><!-- fragment --><p >Export our <a href="./external/rocksdb">Conan recipe for RocksDB</a>. It does not override paths to dependencies when building with Visual Studio.</p>
-<div class="fragment"><div class="line"># Conan 1.x</div>
-<div class="line">conan export external/rocksdb rocksdb/9.7.3@</div>
-<div class="line"># Conan 2.x</div>
+<div class="fragment"><div class="line"># Conan 2.x</div>
 <div class="line">conan export --version 9.7.3 external/rocksdb</div>
 </div><!-- fragment --><p >Export our <a href="./external/soci">Conan recipe for SOCI</a>. It patches their CMake to correctly import its dependencies.</p>
-<div class="fragment"><div class="line"># Conan 1.x</div>
-<div class="line">conan export external/soci soci/4.0.3@</div>
-<div class="line"># Conan 2.x</div>
+<div class="fragment"><div class="line"># Conan 2.x</div>
 <div class="line">conan export --version 4.0.3 external/soci</div>
-</div><!-- fragment --><p >Export our <a href="./external/nudb">Conan recipe for NuDB</a>. It fixes some source files to add missing <code>#include</code>s.</p>
-<div class="fragment"><div class="line"># Conan 1.x</div>
-<div class="line">conan export external/nudb nudb/2.0.8@</div>
-<div class="line"># Conan 2.x</div>
-<div class="line">conan export --version 2.0.8 external/nudb</div>
 </div><!-- fragment --><h3><a class="anchor" id="autotoc_md35"></a>
 Build and Test</h3>
 <ol type="1">
