@@ -17,12 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/ledger/ApplyViewImpl.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/ledger/View.h>
-#include <ripple/protocol/AmountConversions.h>
-#include <ripple/protocol/Feature.h>
 #include <test/jtx/PathSet.h>
+
+#include <xrpld/ledger/ApplyViewImpl.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+#include <xrpld/ledger/View.h>
+
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 namespace test {
@@ -316,13 +318,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
             STAmount::cMinValue,
             STAmount::cMinOffset + 1,
             false,
-            false,
             STAmount::unchecked{});
         STAmount hugeAmt(
             issue,
             STAmount::cMaxValue,
             STAmount::cMaxOffset - 1,
-            false,
             false,
             STAmount::unchecked{});
 
@@ -420,8 +420,8 @@ public:
             testBalanceHook(features);
         };
         using namespace jtx;
-        auto const sa = supported_amendments();
-        testAll(sa - featureFlowCross);
+        auto const sa = testable_amendments();
+        testAll(sa - featurePermissionedDEX);
         testAll(sa);
     }
 };

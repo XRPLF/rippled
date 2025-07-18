@@ -17,15 +17,16 @@
 */
 //==============================================================================
 
-#include <ripple/app/consensus/RCLValidations.h>
-#include <ripple/app/ledger/Ledger.h>
-#include <ripple/app/misc/NegativeUNLVote.h>
-#include <ripple/app/misc/ValidatorList.h>
-#include <ripple/app/tx/apply.h>
-#include <ripple/basics/Log.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/ledger/View.h>
 #include <test/jtx.h>
+
+#include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/misc/NegativeUNLVote.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/tx/apply.h>
+#include <xrpld/ledger/View.h>
+
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {
@@ -226,7 +227,7 @@ class NegativeUNL_test : public beast::unit_test::suite
 
         testcase("Create UNLModify Tx and apply to ledgers");
 
-        jtx::Env env(*this, jtx::supported_amendments() | featureNegativeUNL);
+        jtx::Env env(*this, jtx::testable_amendments() | featureNegativeUNL);
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
@@ -525,7 +526,7 @@ class NegativeUNLNoAmendment_test : public beast::unit_test::suite
     {
         testcase("No negative UNL amendment");
 
-        jtx::Env env(*this, jtx::supported_amendments() - featureNegativeUNL);
+        jtx::Env env(*this, jtx::testable_amendments() - featureNegativeUNL);
         std::vector<PublicKey> publicKeys = createPublicKeys(1);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
@@ -581,7 +582,7 @@ struct NetworkHistory
     };
 
     NetworkHistory(beast::unit_test::suite& suite, Parameter const& p)
-        : env(suite, jtx::supported_amendments() | featureNegativeUNL)
+        : env(suite, jtx::testable_amendments() | featureNegativeUNL)
         , param(p)
         , validations(env.app().getValidations())
     {
@@ -778,8 +779,10 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         // one add, one remove
         auto txSet = std::make_shared<SHAMap>(
             SHAMapType::TRANSACTION, env.app().getNodeFamily());
-        PublicKey toDisableKey;
-        PublicKey toReEnableKey;
+        PublicKey toDisableKey(
+            derivePublicKey(KeyType::ed25519, randomSecretKey()));
+        PublicKey toReEnableKey(
+            derivePublicKey(KeyType::ed25519, randomSecretKey()));
         LedgerIndex seq(1234);
         BEAST_EXPECT(countTx(txSet) == 0);
         vote.addTx(seq, toDisableKey, NegativeUNLVote::ToDisable, txSet);
@@ -1920,11 +1923,12 @@ negUnlSizeTest(
 bool
 applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
 {
-    auto res = apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
+    auto const res =
+        apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
     if (pass)
-        return res.first == tesSUCCESS;
+        return res.ter == tesSUCCESS;
     else
-        return res.first == tefFAILURE || res.first == temDISABLED;
+        return res.ter == tefFAILURE || res.ter == temDISABLED;
 }
 
 bool

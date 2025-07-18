@@ -16,10 +16,9 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#include <ripple/basics/FeeUnits.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/SystemParameters.h>
-#include <type_traits>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/SystemParameters.h>
 
 namespace ripple {
 namespace test {

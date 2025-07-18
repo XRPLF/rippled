@@ -17,20 +17,19 @@
 */
 //==============================================================================
 
-#include <ripple/app/paths/Flow.h>
-#include <ripple/app/paths/impl/Steps.h>
-#include <ripple/app/paths/impl/StrandFlow.h>
-#include <ripple/basics/contract.h>
-#include <ripple/basics/random.h>
-#include <ripple/core/Config.h>
-#include <ripple/ledger/ApplyViewImpl.h>
-#include <ripple/ledger/PaymentSandbox.h>
-#include <ripple/ledger/Sandbox.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
-#include "ripple/app/paths/AMMContext.h"
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
+
+#include <xrpld/app/paths/AMMContext.h>
+#include <xrpld/app/paths/Flow.h>
+#include <xrpld/app/paths/detail/Steps.h>
+#include <xrpld/app/paths/detail/StrandFlow.h>
+#include <xrpld/ledger/PaymentSandbox.h>
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -265,9 +264,10 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             sendMaxIssue,
             rcp.paths,
             /*defaultPaths*/ rcp.paths.empty(),
-            sb.rules().enabled(featureOwnerPaysFee),
-            /*offerCrossing*/ false,
+            false,
+            OfferCrossing::no,
             ammContext,
+            std::nullopt,
             dummyJ);
 
         BEAST_EXPECT(sr.first == tesSUCCESS);
@@ -359,7 +359,7 @@ public:
 
         // Tests are sped up by a factor of 2 if a new environment isn't created
         // on every iteration.
-        Env env(*this, supported_amendments());
+        Env env(*this, testable_amendments());
         for (int i = 0; i < numTestIterations; ++i)
         {
             auto const iterAsStr = std::to_string(i);
@@ -434,7 +434,7 @@ public:
 
         // Speed up tests by creating the environment outside the loop
         // (factor of 2 speedup on the DirectStep tests)
-        Env env(*this, supported_amendments());
+        Env env(*this, testable_amendments());
         for (int i = 0; i < numTestIterations; ++i)
         {
             auto const iterAsStr = std::to_string(i);

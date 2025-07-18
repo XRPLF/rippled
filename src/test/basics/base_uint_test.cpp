@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
-#include <ripple/basics/Blob.h>
-#include <ripple/basics/base_uint.h>
-#include <ripple/basics/hardened_hash.h>
-#include <ripple/beast/unit_test.h>
-#include <boost/endian/conversion.hpp>
-#include <complex>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/hardened_hash.h>
+#include <xrpl/beast/unit_test.h>
 
+#include <boost/endian/conversion.hpp>
+
+#include <complex>
 #include <type_traits>
 
 namespace ripple {
@@ -48,7 +49,8 @@ struct nonhash
         memcpy(data_.data(), key, len);
     }
 
-    explicit operator std::size_t() noexcept
+    explicit
+    operator std::size_t() noexcept
     {
         return WIDTH;
     }

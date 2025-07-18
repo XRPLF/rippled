@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/basics/contract.h>
-#include <ripple/protocol/jss.h>
-#include <stdexcept>
 #include <test/jtx/trust.h>
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/jss.h>
+
+#include <stdexcept>
 
 namespace ripple {
 namespace test {
@@ -39,6 +41,10 @@ trust(Account const& account, STAmount const& amount, std::uint32_t flags)
     return jv;
 }
 
+// This function overload is especially useful for modelling Authorised trust
+// lines. account (first function parameter) is the issuing authority, it
+// authorises peer (third function parameter) to hold a certain currency
+// (amount, the second function parameter)
 Json::Value
 trust(
     Account const& account,
@@ -60,12 +66,18 @@ trust(
 }
 
 Json::Value
-claw(Account const& account, STAmount const& amount)
+claw(
+    Account const& account,
+    STAmount const& amount,
+    std::optional<Account> const& mptHolder)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::Amount] = amount.getJson(JsonOptions::none);
     jv[jss::TransactionType] = jss::Clawback;
+
+    if (mptHolder)
+        jv[sfHolder.jsonName] = mptHolder->human();
 
     return jv;
 }

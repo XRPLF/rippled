@@ -15,11 +15,13 @@
 */
 //==============================================================================
 
-#include <ripple/app/tx/apply.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/STAccount.h>
-#include <string>
 #include <test/jtx.h>
+
+#include <xrpld/app/tx/apply.h>
+
+#include <xrpl/protocol/Feature.h>
+
+#include <string>
 #include <vector>
 
 namespace ripple {
@@ -92,8 +94,8 @@ struct PseudoTx_test : public beast::unit_test::suite
                 [&](OpenView& view, beast::Journal j) {
                     auto const result =
                         ripple::apply(env.app(), view, stx, tapNONE, j);
-                    BEAST_EXPECT(!result.second && result.first == temINVALID);
-                    return result.second;
+                    BEAST_EXPECT(!result.applied && result.ter == temINVALID);
+                    return result.applied;
                 });
         }
     }
@@ -113,7 +115,7 @@ struct PseudoTx_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testPrevented(all - featureXRPFees);

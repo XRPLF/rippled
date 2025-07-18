@@ -17,12 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/jss.h>
-#include <boost/container/static_vector.hpp>
-#include <algorithm>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
+
+#include <xrpl/protocol/jss.h>
+
+#include <boost/container/static_vector.hpp>
+
+#include <algorithm>
 
 namespace ripple {
 
@@ -52,6 +55,21 @@ class TransactionHistory_test : public beast::unit_test::suite
             BEAST_EXPECT(result[jss::error] == "noPermission");
             BEAST_EXPECT(result[jss::status] == "error");
         }
+    }
+
+    void
+    testCommandRetired()
+    {
+        testcase("Command retired from API v2");
+        using namespace test::jtx;
+        Env env{*this, envconfig(no_admin)};
+
+        Json::Value params{Json::objectValue};
+        params[jss::api_version] = 2;
+        auto const result =
+            env.client().invoke("tx_history", params)[jss::result];
+        BEAST_EXPECT(result[jss::error] == "unknownCmd");
+        BEAST_EXPECT(result[jss::status] == "error");
     }
 
     void
@@ -148,6 +166,7 @@ public:
     {
         testBadInput();
         testRequest();
+        testCommandRetired();
     }
 };
 

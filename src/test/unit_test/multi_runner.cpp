@@ -19,7 +19,7 @@
 
 #include <test/unit_test/multi_runner.h>
 
-#include <ripple/beast/unit_test/amount.hpp>
+#include <xrpl/beast/unit_test/amount.h>
 
 #include <boost/lexical_cast.hpp>
 
@@ -31,9 +31,6 @@
 
 namespace ripple {
 namespace test {
-
-extern void
-incPorts(int times);
 
 namespace detail {
 
@@ -510,9 +507,6 @@ multi_runner_child::multi_runner_child(
     , quiet_{quiet}
     , print_log_{!quiet || print_log}
 {
-    // incPort twice (2*jobIndex_) because some tests need two envs
-    test::incPorts(2 * job_index_);
-
     if (num_jobs_ > 1)
     {
         keep_alive_thread_ = std::thread([this] {
@@ -583,6 +577,16 @@ multi_runner_child::on_suite_begin(beast::unit_test::suite_info const& info)
 void
 multi_runner_child::on_suite_end()
 {
+    if (print_log_ || suite_results_.failed > 0)
+    {
+        std::stringstream s;
+        if (num_jobs_ > 1)
+            s << job_index_ << "> ";
+        s << (suite_results_.failed > 0 ? "failed: " : "")
+          << suite_results_.name << " had " << suite_results_.failed
+          << " failures." << std::endl;
+        message_queue_send(MessageType::log, s.str());
+    }
     results_.add(suite_results_);
     message_queue_send(MessageType::test_end, suite_results_.name);
 }

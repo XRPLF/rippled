@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/json/json_reader.h>
-#include <ripple/json/json_writer.h>
 #include <test/json/TestOutputSuite.h>
+
+#include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_writer.h>
 
 namespace Json {
 

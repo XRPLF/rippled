@@ -17,13 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/basics/BasicConfig.h>
-#include <ripple/basics/contract.h>
-#include <ripple/core/ConfigSections.h>
-#include <ripple/core/SociDB.h>
+#include <test/jtx/TestSuite.h>
+
+#include <xrpld/core/SociDB.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
-#include <test/jtx/TestSuite.h>
 
 namespace ripple {
 class SociDB_test final : public TestSuite
@@ -318,7 +320,7 @@ public:
         {
             soci::session s;
             sc.open(s);
-            const char* dbInit[] = {
+            char const* dbInit[] = {
                 "BEGIN TRANSACTION;",
                 "CREATE TABLE Ledgers (                     \
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \

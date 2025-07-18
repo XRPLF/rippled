@@ -17,15 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/basics/tagged_integer.h>
-#include <ripple/beast/clock/manual_clock.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/consensus/Validations.h>
-#include <memory>
 #include <test/csf/Validation.h>
 #include <test/unit_test/SuiteJournal.h>
-#include <tuple>
-#include <type_traits>
+
+#include <xrpld/consensus/Validations.h>
+
+#include <xrpl/basics/tagged_integer.h>
+#include <xrpl/beast/clock/manual_clock.h>
+#include <xrpl/beast/unit_test.h>
+
 #include <vector>
 
 namespace ripple {

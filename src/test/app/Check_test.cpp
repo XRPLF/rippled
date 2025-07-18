@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
@@ -108,16 +109,6 @@ class Check_test : public beast::unit_test::suite
         return result;
     }
 
-    // Helper function that returns the owner count on an account.
-    static std::uint32_t
-    ownerCount(test::jtx::Env const& env, test::jtx::Account const& account)
-    {
-        std::uint32_t ret{0};
-        if (auto const sleAccount = env.le(account))
-            ret = sleAccount->getFieldU32(sfOwnerCount);
-        return ret;
-    }
-
     // Helper function that verifies the expected DeliveredAmount is present.
     //
     // NOTE: the function _infers_ the transaction to operate on by calling
@@ -159,6 +150,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, features - featureChecks};
 
             env.fund(XRP(1000), alice);
+            env.close();
 
             uint256 const checkId{
                 getCheckIndex(env.master, env.seq(env.master))};
@@ -177,6 +169,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, features};
 
             env.fund(XRP(1000), alice);
+            env.close();
 
             uint256 const checkId1{
                 getCheckIndex(env.master, env.seq(env.master))};
@@ -213,6 +206,7 @@ class Check_test : public beast::unit_test::suite
 
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
+        env.close();
 
         // Note that no trust line has been set up for alice, but alice can
         // still write a check for USD.  You don't have to have the funds
@@ -323,6 +317,7 @@ class Check_test : public beast::unit_test::suite
 
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
+        env.close();
 
         /*
          * Attempt to create two checks from `from` to `to` and
@@ -407,6 +402,7 @@ class Check_test : public beast::unit_test::suite
 
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw1, gwF, alice, bob);
+        env.close();
 
         // Bad fee.
         env(check::create(alice, bob, USD(50)),
@@ -560,6 +556,7 @@ class Check_test : public beast::unit_test::suite
         // Insufficient reserve.
         Account const cheri{"cheri"};
         env.fund(env.current()->fees().accountReserve(1) - drops(1), cheri);
+        env.close();
 
         env(check::create(cheri, bob, USD(50)),
             fee(drops(env.current()->fees().base)),
@@ -589,6 +586,7 @@ class Check_test : public beast::unit_test::suite
         XRPAmount const baseFeeDrops{env.current()->fees().base};
         STAmount const startBalance{XRP(300).value()};
         env.fund(startBalance, alice, bob);
+        env.close();
         {
             // Basic XRP check.
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
@@ -712,6 +710,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, features};
 
             env.fund(XRP(1000), gw, alice, bob);
+            env.close();
 
             // alice writes the check before she gets the funds.
             uint256 const chkId1{getCheckIndex(alice, env.seq(alice))};
@@ -872,6 +871,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, features};
 
             env.fund(XRP(1000), gw, alice, bob);
+            env.close();
 
             env(trust(alice, USD(20)));
             env(trust(bob, USD(20)));
@@ -1025,6 +1025,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, testFeatures};
 
             env.fund(XRP(1000), gw, alice, bob);
+            env.close();
 
             // alice creates her checks ahead of time.
             uint256 const chkId1{getCheckIndex(alice, env.seq(alice))};
@@ -1098,6 +1099,7 @@ class Check_test : public beast::unit_test::suite
         Env env{*this, features};
 
         env.fund(XRP(1000), gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(1000)));
         env(trust(bob, USD(1000)));
@@ -1168,6 +1170,7 @@ class Check_test : public beast::unit_test::suite
         Env env{*this, features};
 
         env.fund(XRP(1000), gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(1000)));
         env(trust(bob, USD(1000)));
@@ -1376,6 +1379,7 @@ class Check_test : public beast::unit_test::suite
         Env env(*this, features);
 
         env.fund(XRP(1000), gw, alice, bob, zoe);
+        env.close();
 
         // Now set up alice's trustline.
         env(trust(alice, USD(20)));
@@ -1680,6 +1684,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, testFeatures};
 
             env.fund(XRP(1000), gw, alice, bob, zoe);
+            env.close();
 
             // alice creates her checks ahead of time.
             // Three ordinary checks with no expiration.
@@ -1841,6 +1846,7 @@ class Check_test : public beast::unit_test::suite
         Env env{*this, features};
 
         env.fund(XRP(1000), alice, bob);
+        env.close();
 
         // Bad fee.
         env(check::cancel(bob, getCheckIndex(alice, env.seq(alice))),
@@ -2000,12 +2006,10 @@ class Check_test : public beast::unit_test::suite
         BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         env.require(balance(alice, USD(700)));
-        env.require(balance(alice, drops(699'999'940)));
 
         env.require(owners(bob, 6));
         BEAST_EXPECT(env.seq(bob) == bobSeq);
         env.require(balance(bob, USD(200)));
-        env.require(balance(bob, drops(1'299'999'940)));
     }
 
     void
@@ -2716,7 +2720,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testWithFeats(sa - featureCheckCashMakesTrustLine);
         testWithFeats(sa - disallowIncoming);
         testWithFeats(sa);

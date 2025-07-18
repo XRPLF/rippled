@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/Transaction.h>
-#include <ripple/protocol/Feature.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
+
+#include <xrpld/app/misc/Transaction.h>
+
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -383,7 +385,7 @@ class Ticket_test : public beast::unit_test::suite
         testcase("Feature Not Enabled");
 
         using namespace test::jtx;
-        Env env{*this, supported_amendments() - featureTicketBatch};
+        Env env{*this, testable_amendments() - featureTicketBatch};
 
         env(ticket::create(env.master, 1), ter(temDISABLED));
         env.close();
@@ -931,7 +933,7 @@ class Ticket_test : public beast::unit_test::suite
         // Try the test without featureTicketBatch enabled.
         using namespace test::jtx;
         {
-            Env env{*this, supported_amendments() - featureTicketBatch};
+            Env env{*this, testable_amendments() - featureTicketBatch};
             Account alice{"alice"};
 
             env.fund(XRP(10000), alice);
@@ -955,7 +957,7 @@ class Ticket_test : public beast::unit_test::suite
         }
         // Try the test with featureTicketBatch enabled.
         {
-            Env env{*this, supported_amendments()};
+            Env env{*this, testable_amendments()};
             Account alice{"alice"};
 
             env.fund(XRP(10000), alice);

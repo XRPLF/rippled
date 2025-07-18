@@ -16,13 +16,15 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_PROPOSAL_H_INCLUDED
 #define RIPPLE_TEST_CSF_PROPOSAL_H_INCLUDED
 
-#include <ripple/consensus/ConsensusProposal.h>
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
 #include <test/csf/ledgers.h>
+
+#include <xrpld/consensus/ConsensusProposal.h>
 
 namespace ripple {
 namespace test {
@@ -30,7 +32,7 @@ namespace csf {
 /** Proposal is a position taken in the consensus process and is represented
     directly from the generic types.
 */
-using Proposal = ConsensusProposal<PeerID, Ledger::ID, TxSet::ID, Ledger::Seq>;
+using Proposal = ConsensusProposal<PeerID, Ledger::ID, TxSet::ID>;
 
 }  // namespace csf
 }  // namespace test

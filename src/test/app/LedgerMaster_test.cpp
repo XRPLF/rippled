@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <ripple/app/ledger/LedgerMaster.h>
-#include <ripple/protocol/jss.h>
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
+
+#include <xrpld/app/ledger/LedgerMaster.h>
 
 namespace ripple {
 namespace test {
@@ -33,6 +33,8 @@ class LedgerMaster_test : public beast::unit_test::suite
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
             cfg->NETWORK_ID = networkID;
+            // This test relies on ledger hash so must lock it to fee 10.
+            cfg->FEES.reference_fee = 10;
             return cfg;
         });
     }
@@ -122,7 +124,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testWithFeats(all);
     }
 

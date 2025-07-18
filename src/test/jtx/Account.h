@@ -20,10 +20,11 @@
 #ifndef RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 #define RIPPLE_TEST_JTX_ACCOUNT_H_INCLUDED
 
-#include <ripple/beast/hash/uhash.h>
-#include <ripple/protocol/KeyType.h>
-#include <ripple/protocol/SecretKey.h>
-#include <ripple/protocol/UintTypes.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/UintTypes.h>
+
 #include <string>
 #include <unordered_map>
 
@@ -46,7 +47,7 @@ public:
     /** The master account. */
     static Account const master;
 
-    Account() = default;
+    Account() = delete;
     Account(Account&&) = default;
     Account(Account const&) = default;
     Account&
@@ -158,10 +159,10 @@ hash_append(Hasher& h, Account const& v) noexcept
     hash_append(h, v.id());
 }
 
-inline bool
-operator<(Account const& lhs, Account const& rhs) noexcept
+inline auto
+operator<=>(Account const& lhs, Account const& rhs) noexcept
 {
-    return lhs.id() < rhs.id();
+    return lhs.id() <=> rhs.id();
 }
 
 }  // namespace jtx

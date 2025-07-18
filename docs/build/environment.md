@@ -23,7 +23,7 @@ direction.
 
 ```
 apt update
-apt install --yes curl git libssl-dev python3.10-dev python3-pip make g++-11
+apt install --yes curl git libssl-dev pipx python3.10-dev python3-pip make g++-11 libprotobuf-dev protobuf-compiler
 
 curl --location --remote-name \
   "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz"
@@ -35,7 +35,8 @@ make --jobs $(nproc)
 make install
 cd ..
 
-pip3 install 'conan<2'
+pipx install 'conan<2'
+pipx ensurepath
 ```
 
 [1]: https://github.com/thejohnfreeman/rippled-docker/blob/master/ubuntu-22.04/install.sh

@@ -20,15 +20,17 @@
 #ifndef RIPPLE_TEST_JTX_AMM_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMM_H_INCLUDED
 
-#include <ripple/json/json_value.h>
-#include <ripple/protocol/STAmount.h>
-#include <ripple/protocol/TxFlags.h>
-#include <ripple/rpc/GRPCHandlers.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>
+
+#include <xrpld/rpc/GRPCHandlers.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 namespace test {
@@ -57,6 +59,65 @@ public:
     }
 };
 
+struct CreateArg
+{
+    bool log = false;
+    std::uint16_t tfee = 0;
+    std::uint32_t fee = 0;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<jtx::msig> ms = std::nullopt;
+    std::optional<ter> err = std::nullopt;
+    bool close = true;
+};
+
+struct DepositArg
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<LPToken> tokens = std::nullopt;
+    std::optional<STAmount> asset1In = std::nullopt;
+    std::optional<STAmount> asset2In = std::nullopt;
+    std::optional<STAmount> maxEP = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<std::uint16_t> tfee = std::nullopt;
+    std::optional<ter> err = std::nullopt;
+};
+
+struct WithdrawArg
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<LPToken> tokens = std::nullopt;
+    std::optional<STAmount> asset1Out = std::nullopt;
+    std::optional<STAmount> asset2Out = std::nullopt;
+    std::optional<IOUAmount> maxEP = std::nullopt;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<ter> err = std::nullopt;
+};
+
+struct VoteArg
+{
+    std::optional<Account> account = std::nullopt;
+    std::uint32_t tfee = 0;
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+    std::optional<ter> err = std::nullopt;
+};
+
+struct BidArg
+{
+    std::optional<Account> account = std::nullopt;
+    std::optional<std::variant<int, IOUAmount, STAmount>> bidMin = std::nullopt;
+    std::optional<std::variant<int, IOUAmount, STAmount>> bidMax = std::nullopt;
+    std::vector<Account> authAccounts = {};
+    std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+};
+
 /** Convenience class to test AMM functionality.
  */
 class AMM
@@ -66,7 +127,6 @@ class AMM
     STAmount const asset1_;
     STAmount const asset2_;
     uint256 const ammID_;
-    IOUAmount const initialLPTokens_;
     bool log_;
     bool doClose_;
     // Predict next purchase price
@@ -79,6 +139,7 @@ class AMM
     std::uint32_t const fee_;
     AccountID const ammAccount_;
     Issue const lptIssue_;
+    IOUAmount const initialLPTokens_;
 
 public:
     AMM(Env& env,
@@ -91,13 +152,20 @@ public:
         std::optional<std::uint32_t> flags = std::nullopt,
         std::optional<jtx::seq> seq = std::nullopt,
         std::optional<jtx::msig> ms = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        bool close = true);
     AMM(Env& env,
         Account const& account,
         STAmount const& asset1,
         STAmount const& asset2,
         ter const& ter,
-        bool log = false);
+        bool log = false,
+        bool close = true);
+    AMM(Env& env,
+        Account const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        CreateArg const& arg);
 
     /** Send amm_info RPC command
      */
@@ -108,7 +176,8 @@ public:
         std::optional<Issue> issue1 = std::nullopt,
         std::optional<Issue> issue2 = std::nullopt,
         std::optional<AccountID> const& ammAccount = std::nullopt,
-        bool ignoreParams = false) const;
+        bool ignoreParams = false,
+        unsigned apiVersion = RPC::apiInvalidVersion) const;
 
     /** Verify the AMM balances.
      */
@@ -126,6 +195,12 @@ public:
         Issue const& issue1,
         Issue const& issue2,
         std::optional<AccountID> const& account = std::nullopt) const;
+
+    std::tuple<STAmount, STAmount, STAmount>
+    balances(std::optional<AccountID> const& account = std::nullopt) const
+    {
+        return balances(asset1_.get<Issue>(), asset2_.get<Issue>(), account);
+    }
 
     [[nodiscard]] bool
     expectLPTokens(AccountID const& account, IOUAmount const& tokens) const;
@@ -190,6 +265,9 @@ public:
         std::optional<ter> const& ter = std::nullopt);
 
     IOUAmount
+    deposit(DepositArg const& arg);
+
+    IOUAmount
     withdraw(
         std::optional<Account> const& account,
         std::optional<LPToken> const& tokens,
@@ -200,14 +278,15 @@ public:
     IOUAmount
     withdrawAll(
         std::optional<Account> const& account,
-        std::optional<STAmount> const& asset1OutDetails = std::nullopt)
+        std::optional<STAmount> const& asset1OutDetails = std::nullopt,
+        std::optional<ter> const& ter = std::nullopt)
     {
         return withdraw(
             account,
             std::nullopt,
             asset1OutDetails,
             asset1OutDetails ? tfOneAssetWithdrawAll : tfWithdrawAll,
-            std::nullopt);
+            ter);
     }
 
     IOUAmount
@@ -230,6 +309,9 @@ public:
         std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter = std::nullopt);
 
+    IOUAmount
+    withdraw(WithdrawArg const& arg);
+
     void
     vote(
         std::optional<Account> const& account,
@@ -240,16 +322,10 @@ public:
         std::optional<ter> const& ter = std::nullopt);
 
     void
-    bid(std::optional<Account> const& account,
-        std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMin =
-            std::nullopt,
-        std::optional<std::variant<int, IOUAmount, STAmount>> const& bidMax =
-            std::nullopt,
-        std::vector<Account> const& authAccounts = {},
-        std::optional<std::uint32_t> const& flags = std::nullopt,
-        std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+    vote(VoteArg const& arg);
+
+    Json::Value
+    bid(BidArg const& arg);
 
     AccountID const&
     ammAccount() const
@@ -310,12 +386,12 @@ public:
         return ammID_;
     }
 
-private:
     void
     setTokens(
         Json::Value& jv,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt);
 
+private:
     AccountID
     create(
         std::uint32_t tfee = 0,
@@ -360,6 +436,9 @@ private:
 
     [[nodiscard]] bool
     expectAuctionSlot(auto&& cb) const;
+
+    IOUAmount
+    initialTokens();
 };
 
 namespace amm {
@@ -370,6 +449,14 @@ trust(
     std::uint32_t flags = 0);
 Json::Value
 pay(Account const& account, AccountID const& to, STAmount const& amount);
+
+Json::Value
+ammClawback(
+    Account const& issuer,
+    Account const& holder,
+    Issue const& asset,
+    Issue const& asset2,
+    std::optional<STAmount> const& amount);
 }  // namespace amm
 
 }  // namespace jtx

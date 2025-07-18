@@ -37,7 +37,7 @@ Your report should include the following:
 - The steps to reproduce the vulnerability;
 - Any other relevant details or artifacts, including code, scripts or patches.
 
-In your mail, please describe of the issue or the potential threat; if possible, please include a "repro" (code that can reproduce the issue) or describe the best way to reproduce and replicate the issue. Please make your report as extensive as possible.
+In your email, please describe the issue or potential threat. If possible, include a "repro" (code that can reproduce the issue) or describe the best way to reproduce and replicate the issue. Please make your report as detailed and comprehensive as possible.
 
 For more information on responsible disclosure, please read this [Wikipedia article](https://en.wikipedia.org/wiki/Responsible_disclosure).
 
@@ -83,7 +83,7 @@ To report a qualifying bug, please send a detailed report to:
 |Long Key ID  | `0xCD49A0AFC57929BE`                                |
 |Fingerprint  | `24E6 3B02 37E0 FA9C 5E96 8974 CD49 A0AF C579 29BE` |
 
-The full PGP key for this address, which is also available on several key servers (e.g. on [keys.gnupg.net](https://keys.gnupg.net)), is: 
+The full PGP key for this address, which is also available on several key servers (e.g. on [keyserver.ubuntu.com](https://keyserver.ubuntu.com)), is: 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 mQINBFUwGHYBEAC0wpGpBPkd8W1UdQjg9+cEFzeIEJRaoZoeuJD8mofwI5Ejnjdt

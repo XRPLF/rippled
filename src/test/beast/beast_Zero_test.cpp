@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <ripple/beast/utility/Zero.h>
-
-#include <ripple/beast/unit_test.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/Zero.h>
 
 namespace beast {
 
@@ -27,7 +26,8 @@ struct adl_tester
 {
 };
 
-int signum(adl_tester)
+int
+signum(adl_tester)
 {
     return 0;
 }
@@ -38,7 +38,8 @@ struct adl_tester2
 {
 };
 
-int signum(adl_tester2)
+int
+signum(adl_tester2)
 {
     return 0;
 }

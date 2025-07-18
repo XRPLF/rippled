@@ -20,8 +20,8 @@
 #ifndef RIPPLE_TEST_CSF_SCHEDULER_H_INCLUDED
 #define RIPPLE_TEST_CSF_SCHEDULER_H_INCLUDED
 
-#include <ripple/basics/ByteUtilities.h>
-#include <ripple/beast/clock/manual_clock.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/beast/clock/manual_clock.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/intrusive/set.hpp>

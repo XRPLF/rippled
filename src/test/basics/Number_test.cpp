@@ -17,10 +17,11 @@
 */
 //==============================================================================
 
-#include <ripple/basics/IOUAmount.h>
-#include <ripple/basics/Number.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/protocol/STAmount.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/STAmount.h>
+
 #include <sstream>
 #include <tuple>
 

@@ -17,13 +17,15 @@
 */
 //==============================================================================
 
-#include <ripple/app/misc/Manifest.h>
-#include <ripple/app/misc/ValidatorKeys.h>
-#include <ripple/basics/base64.h>
-#include <ripple/beast/unit_test.h>
-#include <ripple/core/Config.h>
-#include <ripple/core/ConfigSections.h>
 #include <test/jtx/Env.h>
+
+#include <xrpld/app/misc/Manifest.h>
+#include <xrpld/app/misc/ValidatorKeys.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
+
+#include <xrpl/basics/base64.h>
+#include <xrpl/beast/unit_test.h>
 
 #include <string>
 
@@ -33,13 +35,13 @@ namespace test {
 class ValidatorKeys_test : public beast::unit_test::suite
 {
     // Used with [validation_seed]
-    const std::string seed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+    std::string const seed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
     // Used with [validation_token]
-    const std::string tokenSecretStr =
+    std::string const tokenSecretStr =
         "paQmjZ37pKKPMrgadBLsuf9ab7Y7EUNzh27LQrZqoexpAs31nJi";
 
-    const std::vector<std::string> tokenBlob = {
+    std::vector<std::string> const tokenBlob = {
         "    "
         "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n",
         " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl "
@@ -54,7 +56,7 @@ class ValidatorKeys_test : public beast::unit_test::suite
         "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n",
         "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n"};
 
-    const std::string tokenManifest =
+    std::string const tokenManifest =
         "JAAAAAFxIe1FtwmimvGtH2iCcMJqC9gVFKilGfw1/vCxHXXLplc2GnMhAkE1agqXxBwD"
         "wDbID6OMSYuM0FDAlpAgNk8SKFn7MO2fdkcwRQIhAOngu9sAKqXYouJ+l2V0W+sAOkVB"
         "+ZRS6PShlJAfUsXfAiBsVJGesaadOJc/aAZokS1vymGmVrlHPKWX3Yywu6in8HASQKPu"
@@ -62,7 +64,7 @@ class ValidatorKeys_test : public beast::unit_test::suite
         "2AiTzSCjIzditQ8=";
 
     // Manifest does not match private key
-    const std::vector<std::string> invalidTokenBlob = {
+    std::vector<std::string> const invalidTokenBlob = {
         "eyJtYW5pZmVzdCI6IkpBQUFBQVZ4SWUyOVVBdzViZFJudHJ1elVkREk4aDNGV1JWZl\n",
         "k3SXVIaUlKQUhJd3MxdzZzM01oQWtsa1VXQWR2RnFRVGRlSEpvS1pNY0hlS0RzOExo\n",
         "b3d3bDlHOEdkVGNJbmFka1l3UkFJZ0h2Q01lQU1aSzlqQnV2aFhlaFRLRzVDQ3BBR1\n",
@@ -107,7 +109,7 @@ public:
             // No config -> no key but valid
             Config c;
             ValidatorKeys k{c, journal};
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
         }
@@ -117,8 +119,11 @@ public:
             c.section(SECTION_VALIDATION_SEED).append(seed);
 
             ValidatorKeys k{c, journal};
-            BEAST_EXPECT(k.publicKey == seedPublicKey);
-            BEAST_EXPECT(k.secretKey == seedSecretKey);
+            if (BEAST_EXPECT(k.keys))
+            {
+                BEAST_EXPECT(k.keys->publicKey == seedPublicKey);
+                BEAST_EXPECT(k.keys->secretKey == seedSecretKey);
+            }
             BEAST_EXPECT(k.nodeID == seedNodeID);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
@@ -131,7 +136,7 @@ public:
 
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -141,8 +146,11 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob);
             ValidatorKeys k{c, journal};
 
-            BEAST_EXPECT(k.publicKey == tokenPublicKey);
-            BEAST_EXPECT(k.secretKey == tokenSecretKey);
+            if (BEAST_EXPECT(k.keys))
+            {
+                BEAST_EXPECT(k.keys->publicKey == tokenPublicKey);
+                BEAST_EXPECT(k.keys->secretKey == tokenSecretKey);
+            }
             BEAST_EXPECT(k.nodeID == tokenNodeID);
             BEAST_EXPECT(k.manifest == tokenManifest);
             BEAST_EXPECT(!k.configInvalid());
@@ -153,7 +161,7 @@ public:
             c.section(SECTION_VALIDATOR_TOKEN).append("badtoken");
             ValidatorKeys k{c, journal};
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -165,7 +173,7 @@ public:
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
 
@@ -176,7 +184,7 @@ public:
             ValidatorKeys k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
-            BEAST_EXPECT(k.publicKey.size() == 0);
+            BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
         }
     }
