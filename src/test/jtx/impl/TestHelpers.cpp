@@ -426,6 +426,16 @@ coverWithdraw(
     return jv;
 }
 
+Json::Value
+coverClawback(AccountID const& account, std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerCoverClawback;
+    jv[sfAccount] = to_string(account);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
 }  // namespace loanBroker
 
 /* Loan */

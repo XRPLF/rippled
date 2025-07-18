@@ -177,6 +177,29 @@ public:
     }
 };
 
+struct stAmountField : public JTxField<SF_AMOUNT, STAmount, Json::Value>
+{
+    using SF = SF_AMOUNT;
+    using SV = STAmount;
+    using OV = Json::Value;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit stAmountField(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
+    {
+    }
+
+    OV
+    value() const override
+    {
+        return value_.getJson(JsonOptions::none);
+    }
+};
+
 struct blobField : public JTxField<SF_VL, std::string>
 {
     using SF = SF_VL;
@@ -291,6 +314,8 @@ using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 /** General field definitions, or fields used in multiple transaction namespaces
  */
 auto const data = JTxFieldWrapper<blobField>(sfData);
+
+auto const amount = JTxFieldWrapper<stAmountField>(sfAmount);
 
 // TODO We only need this long "requires" clause as polyfill, for C++20
 // implementations which are missing <ranges> header. Replace with
@@ -738,6 +763,10 @@ coverWithdraw(
     uint256 const& loanBrokerID,
     STAmount const& amount,
     std::uint32_t flags = 0);
+
+// Must specify at least one of loanBrokerID or amount.
+Json::Value
+coverClawback(AccountID const& account, std::uint32_t flags = 0);
 
 auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
 

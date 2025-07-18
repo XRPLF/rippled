@@ -880,11 +880,23 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     {sfDestinationTag, soeOPTIONAL},
 }))
 
+/** This transaction claws back First Loss Capital from a Loan Broker to
+    the issuer of the capital */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/LoanBrokerCoverClawback.h>
+#endif
+TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
+    Delegation::delegatable,
+    noPriv, ({
+    {sfLoanBrokerID, soeOPTIONAL},
+    {sfAmount, soeOPTIONAL, soeMPTSupported},
+}))
+
 /** This transaction creates a Loan */
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanSet.h>
 #endif
-TRANSACTION(ttLOAN_SET, 78, LoanSet,
+TRANSACTION(ttLOAN_SET, 80, LoanSet,
     Delegation::delegatable,
     noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
@@ -911,7 +923,7 @@ TRANSACTION(ttLOAN_SET, 78, LoanSet,
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanDelete.h>
 #endif
-TRANSACTION(ttLOAN_DELETE, 79, LoanDelete,
+TRANSACTION(ttLOAN_DELETE, 81, LoanDelete,
     Delegation::delegatable,
     noPriv, ({
     {sfLoanID, soeREQUIRED},
@@ -921,7 +933,7 @@ TRANSACTION(ttLOAN_DELETE, 79, LoanDelete,
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanManage.h>
 #endif
-TRANSACTION(ttLOAN_MANAGE, 80, LoanManage,
+TRANSACTION(ttLOAN_MANAGE, 82, LoanManage,
     Delegation::delegatable,
     noPriv, ({
     {sfLoanID, soeREQUIRED},
@@ -931,7 +943,7 @@ TRANSACTION(ttLOAN_MANAGE, 80, LoanManage,
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanDraw.h>
 #endif
-TRANSACTION(ttLOAN_DRAW, 81, LoanDraw,
+TRANSACTION(ttLOAN_DRAW, 83, LoanDraw,
     Delegation::delegatable,
     noPriv, ({
     {sfLoanID, soeREQUIRED},
@@ -942,7 +954,7 @@ TRANSACTION(ttLOAN_DRAW, 81, LoanDraw,
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanPay.h>
 #endif
-TRANSACTION(ttLOAN_PAY, 82, LoanPay,
+TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     Delegation::delegatable,
     noPriv, ({
     {sfLoanID, soeREQUIRED},
