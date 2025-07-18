@@ -1949,6 +1949,7 @@ Enumerations</h2></td></tr>
 <tr class="memitem:a53248e40c0a268c7c59fbe4a6e1179d9"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a53248e40c0a268c7c59fbe4a6e1179d9">warning_code_i</a> { <a class="el" href="namespaceripple.html#a53248e40c0a268c7c59fbe4a6e1179d9a79a88f958ac2f8dad164010cf329c33b">warnRPC_UNSUPPORTED_MAJORITY</a> = 1001
 , <a class="el" href="namespaceripple.html#a53248e40c0a268c7c59fbe4a6e1179d9aacc48aeea6bf2e5a6050dc741d1e37b4">warnRPC_AMENDMENT_BLOCKED</a> = 1002
 , <a class="el" href="namespaceripple.html#a53248e40c0a268c7c59fbe4a6e1179d9a2efcf8a6d04e135dcf594a1d47a930ca">warnRPC_EXPIRED_VALIDATOR_LIST</a> = 1003
+, <a class="el" href="namespaceripple.html#a53248e40c0a268c7c59fbe4a6e1179d9a60e4f4d040e75e1cb8723f9b4c7f22cb">warnRPC_FIELDS_DEPRECATED</a> = 2004
  }</td></tr>
 <tr class="memdesc:a53248e40c0a268c7c59fbe4a6e1179d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Codes returned in the <code>warnings</code> array of certain RPC commands.  <a href="namespaceripple.html#a53248e40c0a268c7c59fbe4a6e1179d9">More...</a><br /></td></tr>
 <tr class="separator:a53248e40c0a268c7c59fbe4a6e1179d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -8410,6 +8411,7 @@ template&lt;class T &gt; </div>
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a53248e40c0a268c7c59fbe4a6e1179d9a79a88f958ac2f8dad164010cf329c33b" name="a53248e40c0a268c7c59fbe4a6e1179d9a79a88f958ac2f8dad164010cf329c33b"></a>warnRPC_UNSUPPORTED_MAJORITY&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a53248e40c0a268c7c59fbe4a6e1179d9aacc48aeea6bf2e5a6050dc741d1e37b4" name="a53248e40c0a268c7c59fbe4a6e1179d9aacc48aeea6bf2e5a6050dc741d1e37b4"></a>warnRPC_AMENDMENT_BLOCKED&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a53248e40c0a268c7c59fbe4a6e1179d9a2efcf8a6d04e135dcf594a1d47a930ca" name="a53248e40c0a268c7c59fbe4a6e1179d9a2efcf8a6d04e135dcf594a1d47a930ca"></a>warnRPC_EXPIRED_VALIDATOR_LIST&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a53248e40c0a268c7c59fbe4a6e1179d9a60e4f4d040e75e1cb8723f9b4c7f22cb" name="a53248e40c0a268c7c59fbe4a6e1179d9a60e4f4d040e75e1cb8723f9b4c7f22cb"></a>warnRPC_FIELDS_DEPRECATED&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="ErrorCodes_8h_source.html#l00167">167</a> of file <a class="el" href="ErrorCodes_8h_source.html">ErrorCodes.h</a>.</p>
@@ -27618,7 +27620,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Given a <a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> and options, fill a <a class="el" href="classJson_1_1Object.html" title="Represents a JSON object being written to a Writer.">Json::Object</a> or <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a> with a description of the ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerToJson_8cpp_source.html#l00350">350</a> of file <a class="el" href="LedgerToJson_8cpp_source.html">LedgerToJson.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerToJson_8cpp_source.html#l00347">347</a> of file <a class="el" href="LedgerToJson_8cpp_source.html">LedgerToJson.cpp</a>.</p>
 
 </div>
 </div>
@@ -27640,7 +27642,7 @@ template&lt;class ApplyTxs &gt; </div>
 
 <p>Return a new <a class="el" href="classJson_1_1Value.html" title="Represents a JSON value.">Json::Value</a> representing the ledger with given options. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerToJson_8cpp_source.html#l00360">360</a> of file <a class="el" href="LedgerToJson_8cpp_source.html">LedgerToJson.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerToJson_8cpp_source.html#l00357">357</a> of file <a class="el" href="LedgerToJson_8cpp_source.html">LedgerToJson.cpp</a>.</p>
 
 </div>
 </div>
@@ -45834,7 +45836,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHandler_8cpp_source.html#l00103">103</a> of file <a class="el" href="LedgerHandler_8cpp_source.html">LedgerHandler.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHandler_8cpp_source.html#l00099">99</a> of file <a class="el" href="LedgerHandler_8cpp_source.html">LedgerHandler.cpp</a>.</p>
 
 </div>
 </div>
