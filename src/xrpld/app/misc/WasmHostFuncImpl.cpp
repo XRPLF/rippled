@@ -127,6 +127,13 @@ getAnyFieldData(STBase const* obj)
             return Bytes{data.begin(), data.end()};
         }
         break;
+        case STI_UINT16: {
+            auto const& num(static_cast<STInteger<std::uint16_t> const*>(obj));
+            std::uint16_t const data = num->value();
+            auto const* b = reinterpret_cast<uint8_t const*>(&data);
+            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+            return Bytes{b, e};
+        }
         case STI_UINT32: {
             auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
             std::uint32_t const data = num->value();
@@ -136,7 +143,7 @@ getAnyFieldData(STBase const* obj)
         }
         break;
         default:
-            break;
+            return Unexpected(HostFunctionError::INTERNAL);
     }
 
     Serializer msg;
