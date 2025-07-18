@@ -99,9 +99,6 @@ else ()
   target_compile_options (common
     INTERFACE
       $<$<BOOL:${werr}>:-Werror>
-      $<$<COMPILE_LANGUAGE:CXX>:
-        -frtti
-      >
       -Wno-sign-compare
       -fstack-protector
       $<$<BOOL:${is_gcc}>:
