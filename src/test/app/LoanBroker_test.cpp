@@ -22,6 +22,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
