@@ -2842,8 +2842,13 @@ rippleUnlockEscrowMPT(
     STAmount const& grossAmount,
     beast::Journal j)
 {
-    auto const issuer = grossAmount.getIssuer();
-    auto const mptIssue = grossAmount.get<MPTIssue>();
+    if (!view.rules().enabled(fixTokenEscrowV1))
+        XRPL_ASSERT(
+            netAmount == grossAmount,
+            "ripple::rippleUnlockEscrowMPT : netAmount == grossAmount");
+
+    auto const& issuer = netAmount.getIssuer();
+    auto const& mptIssue = netAmount.get<MPTIssue>();
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
