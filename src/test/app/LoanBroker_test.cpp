@@ -245,6 +245,30 @@ class LoanBroker_test : public beast::unit_test::suite
                 BEAST_EXPECT(pseudo->at(sfLoanBrokerID) == keylet.key);
             }
 
+            {
+                // Get the AccountInfo RPC result for the broker pseudo-account
+                std::string const pseudoStr = to_string(pseudoAccount.id());
+                auto const accountInfo = env.rpc("account_info", pseudoStr);
+                if (BEAST_EXPECT(accountInfo.isObject()))
+                {
+                    auto const& accountData =
+                        accountInfo[jss::result][jss::account_data];
+                    if (BEAST_EXPECT(accountData.isObject()))
+                    {
+                        BEAST_EXPECT(accountData[jss::Account] == pseudoStr);
+                        BEAST_EXPECT(
+                            accountData[sfLoanBrokerID] ==
+                            to_string(keylet.key));
+                    }
+                    auto const& pseudoInfo =
+                        accountInfo[jss::result][jss::pseudo_account];
+                    if (BEAST_EXPECT(pseudoInfo.isObject()))
+                    {
+                        BEAST_EXPECT(pseudoInfo[jss::type] == "LoanBroker");
+                    }
+                }
+            }
+
             auto verifyCoverAmount =
                 [&env, &vault, &pseudoAccount, &broker, &keylet, this](auto n) {
                     using namespace jtx;
@@ -614,6 +638,30 @@ class LoanBroker_test : public beast::unit_test::suite
         // Create and update Loan Brokers
         for (auto const& vault : vaults)
         {
+            {
+                // Get the AccountInfo RPC result for the vault pseudo-account
+                std::string const pseudoStr =
+                    to_string(vault.pseudoAccount.id());
+                auto const accountInfo = env.rpc("account_info", pseudoStr);
+                if (BEAST_EXPECT(accountInfo.isObject()))
+                {
+                    auto const& accountData =
+                        accountInfo[jss::result][jss::account_data];
+                    if (BEAST_EXPECT(accountData.isObject()))
+                    {
+                        BEAST_EXPECT(accountData[jss::Account] == pseudoStr);
+                        BEAST_EXPECT(
+                            accountData[sfVaultID] == to_string(vault.vaultID));
+                    }
+                    auto const& pseudoInfo =
+                        accountInfo[jss::result][jss::pseudo_account];
+                    if (BEAST_EXPECT(pseudoInfo.isObject()))
+                    {
+                        BEAST_EXPECT(pseudoInfo[jss::type] == "Vault");
+                    }
+                }
+            }
+
             using namespace loanBroker;
 
             auto badKeylet = keylet::vault(alice.id(), env.seq(alice));
