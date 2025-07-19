@@ -175,6 +175,29 @@ isFrozen(
         asset.value());
 }
 
+[[nodiscard]] inline TER
+checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return isFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue)
+{
+    return isFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) { return checkFrozen(view, account, issue); },
+        asset.value());
+}
+
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
@@ -219,6 +242,80 @@ isDeepFrozen(
     AccountID const& account,
     Currency const& currency,
     AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    int = 0 /*ignored*/)
+{
+    return isDeepFrozen(view, account, issue.currency, issue.account);
+}
+
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue,
+    int depth = 0)
+{
+    // Unlike IOUs, frozen / locked MPTs are not allowed to send or receive
+    // funds, so checking "deep frozen" is the same as checking "frozen".
+    return isFrozen(view, account, mptIssue, depth);
+}
+
+/**
+ *   isFrozen check is recursive for MPT shares in a vault, descending to
+ *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ *   purely defensive, as we currently do not allow such vaults to be created.
+ */
+[[nodiscard]] inline bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    int depth = 0)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return isDeepFrozen(view, account, issue, depth);
+        },
+        asset.value());
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue)
+{
+    return isDeepFrozen(view, account, issue) ? (TER)tecFROZEN
+                                              : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue)
+{
+    return isDeepFrozen(view, account, mptIssue) ? (TER)tecLOCKED
+                                                 : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return checkDeepFrozen(view, account, issue);
+        },
+        asset.value());
+}
 
 [[nodiscard]] bool
 isLPTokenFrozen(
@@ -511,7 +608,11 @@ dirNext(
 describeOwnerDir(AccountID const& account);
 
 [[nodiscard]] TER
-dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node = sfOwnerNode);
 
 AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
@@ -539,12 +640,28 @@ createPseudoAccount(
 [[nodiscard]] bool
 isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
 
+// Returns the list of fields that define an ACCOUNT_ROOT as a pseudo-account if
+// set
+// Pseudo-account designator fields MUST be maintained by including the
+// SField::sMD_PseudoAccount flag in the SField definition. (Don't forget to
+// "| SField::sMD_Default"!) The fields do NOT need to be amendment-gated,
+// since a non-active amendment will not set any field, by definition.
+// Specific properties of a pseudo-account are NOT checked here, that's what
+// InvariantCheck is for.
+[[nodiscard]] std::vector<SField const*> const&
+getPseudoAccountFields();
+
 [[nodiscard]] inline bool
 isPseudoAccount(ReadView const& view, AccountID accountId)
 {
     return isPseudoAccount(view.read(keylet::account(accountId)));
 }
 
+[[nodiscard]] TER
+canAddHolding(ReadView const& view, Asset const& asset);
+
+/// Any transactors that call addEmptyHolding() in doApply must call
+/// canAddHolding() in preflight with the same View and Asset
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
@@ -729,15 +846,31 @@ transferXRP(
  * - StrongAuth - before checking lsfMPTRequireAuth is set
  * - WeakAuth - after checking if lsfMPTRequireAuth is set
  */
-enum class MPTAuthType : bool { StrongAuth = true, WeakAuth = false };
+enum class AuthType { StrongAuth, WeakAuth, Legacy };
 
 /** Check if the account lacks required authorization.
  *
- *   Return tecNO_AUTH or tecNO_LINE if it does
- *   and tesSUCCESS otherwise.
+ * Return tecNO_AUTH or tecNO_LINE if it does
+ * and tesSUCCESS otherwise.
+ *
+ * If StrongAuth then return tecNO_LINE if the RippleState doesn't exist. Return
+ * tecNO_AUTH if lsfRequireAuth is set on the issuer's AccountRoot, and the
+ * RippleState does exist, and the RippleState is not authorized.
+ *
+ * If WeakAuth then return tecNO_AUTH if lsfRequireAuth is set, and the
+ * RippleState exists, and is not authorized. Return tecNO_LINE if
+ * lsfRequireAuth is set and the RippleState doesn't exist. Consequently, if
+ * WeakAuth and lsfRequireAuth is *not* set, this function will return
+ * tesSUCCESS even if RippleState does *not* exist.
+ *
+ * The default "Legacy" auth type is equivalent to WeakAuth.
  */
 [[nodiscard]] TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+requireAuth(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& account,
+    AuthType authType = AuthType::Legacy);
 
 /** Check if the account lacks required authorization.
  *
@@ -751,32 +884,33 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  * purely defensive, as we currently do not allow such vaults to be created.
  *
  * If StrongAuth then return tecNO_AUTH if MPToken doesn't exist or
- * lsfMPTRequireAuth is set and MPToken is not authorized. If WeakAuth then
- * return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken doesn't exist or is
- * not authorized (explicitly or via credentials, if DomainID is set in
- * MPTokenIssuance). Consequently, if WeakAuth and lsfMPTRequireAuth is *not*
- * set, this function will return true even if MPToken does *not* exist.
+ * lsfMPTRequireAuth is set and MPToken is not authorized.
+ *
+ * If WeakAuth then return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken
+ * doesn't exist or is not authorized (explicitly or via credentials, if
+ * DomainID is set in MPTokenIssuance). Consequently, if WeakAuth and
+ * lsfMPTRequireAuth is *not* set, this function will return true even if
+ * MPToken does *not* exist.
+ *
+ * The default "Legacy" auth type is equivalent to StrongAuth.
  */
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account,
-    MPTAuthType authType = MPTAuthType::StrongAuth,
+    AuthType authType = AuthType::Legacy,
     int depth = 0);
 
 [[nodiscard]] TER inline requireAuth(
     ReadView const& view,
     Asset const& asset,
     AccountID const& account,
-    MPTAuthType authType = MPTAuthType::StrongAuth)
+    AuthType authType = AuthType::Legacy)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue_) {
-            if constexpr (std::is_same_v<TIss, Issue>)
-                return requireAuth(view, issue_, account);
-            else
-                return requireAuth(view, issue_, account, authType);
+            return requireAuth(view, issue_, account, authType);
         },
         asset.value());
 }

@@ -164,6 +164,18 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     return signerFees + txnFees + batchBase;
 }
 
+bool
+Batch::isEnabled(PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureBatch);
+}
+
+std::uint32_t
+Batch::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfBatchMask;
+}
+
 /**
  * @brief Performs preflight validation checks for a Batch transaction.
  *
@@ -200,22 +212,9 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 NotTEC
 Batch::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureBatch))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const parentBatchId = ctx.tx.getTransactionID();
     auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const flags = ctx.tx.getFlags();
-
-    if (flags & tfBatchMask)
-    {
-        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]:"
-                            << "invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     if (std::popcount(
             flags &
@@ -378,11 +377,6 @@ Batch::preflight(PreflightContext const& ctx)
         if (innerAccount != outerAccount)
             requiredSigners.insert(innerAccount);
     }
-
-    // LCOV_EXCL_START
-    if (auto const ret = preflight2(ctx); !isTesSuccess(ret))
-        return ret;
-    // LCOV_EXCL_STOP
 
     // Validation Batch Signers
     std::unordered_set<AccountID> batchSigners;

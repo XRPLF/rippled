@@ -30,11 +30,12 @@
 #error "undefined macro: XRPL_ABANDON"
 #endif
 
+// clang-format off
+
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
-// If you add an amendment here, then do not forget to increment `numFeatures`
-// in include/xrpl/protocol/Feature.h.
 
+XRPL_FEATURE(LendingProtocol,            Supported::no, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMClawbackRounding,        Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo)
@@ -158,3 +159,5 @@ XRPL_RETIRE(fix1512)
 XRPL_RETIRE(fix1523)
 XRPL_RETIRE(fix1528)
 XRPL_RETIRE(FlowCross)
+
+// clang-format on

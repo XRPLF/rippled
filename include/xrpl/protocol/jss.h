@@ -500,6 +500,7 @@ JSS(propose_seq);             // out: LedgerPropose
 JSS(proposers);               // out: NetworkOPs, LedgerConsensus
 JSS(protocol);                // out: NetworkOPs, PeerImp
 JSS(proxied);                 // out: RPC ping
+JSS(pseudo_account);          // out: AccountInfo
 JSS(pubkey_node);             // out: NetworkOPs
 JSS(pubkey_publisher);        // out: ValidatorList
 JSS(pubkey_validator);        // out: NetworkOPs, ValidatorList
@@ -706,7 +707,7 @@ JSS(write_load);              // out: GetCounts
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) JSS(name);
+#define TRANSACTION(tag, value, name, ...) JSS(name);
 
 #include <xrpl/protocol/detail/transactions.macro>
 

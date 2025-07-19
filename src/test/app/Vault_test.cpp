@@ -1101,7 +1101,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 Vault vault{env};
-                Asset asset = issuer["IOU"];
+                Asset asset = issuer["IOU"].asset();
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
 
@@ -1120,7 +1120,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 Vault vault{env};
-                Asset asset = issuer["IOU"];
+                Asset asset = issuer["IOU"].asset();
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
                 env(tx, ter(terNO_RIPPLE));
@@ -1136,7 +1136,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 Vault vault{env};
-                Asset asset = issuer["IOU"];
+                Asset asset = issuer["IOU"].asset();
                 {
                     auto [tx, keylet] =
                         vault.create({.owner = owner, .asset = asset});
@@ -2624,7 +2624,7 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        testcase("failed pseudo-account allocation");
+        testcase("fail pseudo-account allocation");
         Env env{*this, testable_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Vault vault{env};

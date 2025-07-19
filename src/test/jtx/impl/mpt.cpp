@@ -413,7 +413,7 @@ MPTTester::getFlags(std::optional<Account> const& holder) const
 }
 
 MPT
-MPTTester::operator[](std::string const& name)
+MPTTester::operator[](std::string const& name) const
 {
     return MPT(name, issuanceID());
 }

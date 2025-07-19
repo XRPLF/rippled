@@ -25,6 +25,128 @@
 
 namespace ripple {
 
+namespace directory {
+
+std::uint64_t
+createRoot(
+    ApplyView& view,
+    Keylet const& directory,
+    uint256 const& key,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+{
+    auto newRoot = std::make_shared<SLE>(directory);
+    newRoot->setFieldH256(sfRootIndex, directory.key);
+    describe(newRoot);
+
+    STVector256 v;
+    v.push_back(key);
+    newRoot->setFieldV256(sfIndexes, v);
+
+    view.insert(newRoot);
+    return std::uint64_t{0};
+}
+
+auto
+findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
+{
+    std::uint64_t page = start->getFieldU64(sfIndexPrevious);
+
+    auto node = start;
+
+    if (page)
+    {
+        node = view.peek(keylet::page(directory, page));
+        if (!node)
+            LogicError("Directory chain: root back-pointer broken.");
+    }
+
+    auto indexes = node->getFieldV256(sfIndexes);
+    return std::make_tuple(page, node, indexes);
+}
+
+std::uint64_t
+insertKey(
+    ApplyView& view,
+    SLE::ref node,
+    std::uint64_t page,
+    bool preserveOrder,
+    STVector256& indexes,
+    uint256 const& key)
+{
+    if (preserveOrder)
+    {
+        if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
+            LogicError("dirInsert: double insertion");
+
+        indexes.push_back(key);
+    }
+    else
+    {
+        // We can't be sure if this page is already sorted because
+        // it may be a legacy page we haven't yet touched. Take
+        // the time to sort it.
+        std::sort(indexes.begin(), indexes.end());
+
+        auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
+
+        if (pos != indexes.end() && key == *pos)
+            LogicError("dirInsert: double insertion");
+
+        indexes.insert(pos, key);
+    }
+
+    node->setFieldV256(sfIndexes, indexes);
+    view.update(node);
+    return page;
+}
+
+std::optional<std::uint64_t>
+insertPage(
+    ApplyView& view,
+    std::uint64_t page,
+    SLE::pointer node,
+    std::uint64_t nextPage,
+    SLE::ref next,
+    uint256 const& key,
+    Keylet const& directory,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+{
+    // Check whether we're out of pages.
+    if (++page >= dirNodeMaxPages)
+    {
+        return std::nullopt;
+    }
+
+    // We are about to create a new node; we'll link it to
+    // the chain first:
+    node->setFieldU64(sfIndexNext, page);
+    view.update(node);
+
+    next->setFieldU64(sfIndexPrevious, page);
+    view.update(next);
+
+    // Insert the new key:
+    STVector256 indexes;
+    indexes.push_back(key);
+
+    node = std::make_shared<SLE>(keylet::page(directory, page));
+    node->setFieldH256(sfRootIndex, directory.key);
+    node->setFieldV256(sfIndexes, indexes);
+
+    // Save some space by not specifying the value 0 since
+    // it's the default.
+    if (page != 1)
+        node->setFieldU64(sfIndexPrevious, page - 1);
+    if (nextPage)
+        node->setFieldU64(sfIndexNext, nextPage);
+    describe(node);
+    view.insert(node);
+
+    return page;
+}
+
+}  // namespace directory
+
 std::optional<std::uint64_t>
 ApplyView::dirAdd(
     bool preserveOrder,
@@ -37,89 +159,21 @@ ApplyView::dirAdd(
     if (!root)
     {
         // No root, make it.
-        root = std::make_shared<SLE>(directory);
-        root->setFieldH256(sfRootIndex, directory.key);
-        describe(root);
-
-        STVector256 v;
-        v.push_back(key);
-        root->setFieldV256(sfIndexes, v);
-
-        insert(root);
-        return std::uint64_t{0};
+        return directory::createRoot(*this, directory, key, describe);
     }
 
-    std::uint64_t page = root->getFieldU64(sfIndexPrevious);
-
-    auto node = root;
-
-    if (page)
-    {
-        node = peek(keylet::page(directory, page));
-        if (!node)
-            LogicError("Directory chain: root back-pointer broken.");
-    }
-
-    auto indexes = node->getFieldV256(sfIndexes);
+    auto [page, node, indexes] =
+        directory::findPreviousPage(*this, directory, root);
 
     // If there's space, we use it:
     if (indexes.size() < dirNodeMaxEntries)
     {
-        if (preserveOrder)
-        {
-            if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
-                LogicError("dirInsert: double insertion");
-
-            indexes.push_back(key);
-        }
-        else
-        {
-            // We can't be sure if this page is already sorted because
-            // it may be a legacy page we haven't yet touched. Take
-            // the time to sort it.
-            std::sort(indexes.begin(), indexes.end());
-
-            auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
-
-            if (pos != indexes.end() && key == *pos)
-                LogicError("dirInsert: double insertion");
-
-            indexes.insert(pos, key);
-        }
-
-        node->setFieldV256(sfIndexes, indexes);
-        update(node);
-        return page;
+        return directory::insertKey(
+            *this, node, page, preserveOrder, indexes, key);
     }
 
-    // Check whether we're out of pages.
-    if (++page >= dirNodeMaxPages)
-        return std::nullopt;
-
-    // We are about to create a new node; we'll link it to
-    // the chain first:
-    node->setFieldU64(sfIndexNext, page);
-    update(node);
-
-    root->setFieldU64(sfIndexPrevious, page);
-    update(root);
-
-    // Insert the new key:
-    indexes.clear();
-    indexes.push_back(key);
-
-    node = std::make_shared<SLE>(keylet::page(directory, page));
-    node->setFieldH256(sfRootIndex, directory.key);
-    node->setFieldV256(sfIndexes, indexes);
-
-    // Save some space by not specifying the value 0 since
-    // it's the default.
-    if (page != 1)
-        node->setFieldU64(sfIndexPrevious, page - 1);
-    describe(node);
-    insert(node);
-
-    return page;
+    return directory::insertPage(
+        *this, page, node, 0, root, key, directory, describe);
 }
 
 bool

@@ -81,8 +81,8 @@ namespace ripple {
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{
-        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
+    auto const amount = ctx.tx[sfAmount];
+    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::zero};
 }
 
 template <ValidIssueType T>
@@ -118,15 +118,16 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+std::uint32_t
+EscrowCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
+
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
     {
@@ -189,7 +190,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
             return temDISABLED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
@@ -315,14 +316,14 @@ escrowCreatePreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter =
-            requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
+            requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
     if (auto const ter =
-            requireAuth(ctx.view, mptIssue, dest, MPTAuthType::WeakAuth);
+            requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
@@ -624,19 +625,23 @@ checkCondition(Slice f, Slice c)
     return validate(*fulfillment, *condition);
 }
 
+bool
+EscrowFinish::isEnabled(PreflightContext const& ctx)
+{
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        ctx.rules.enabled(featureCredentials);
+}
+
+std::uint32_t
+EscrowFinish::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
+
 NotTEC
 EscrowFinish::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const cb = ctx.tx[~sfCondition];
     auto const fb = ctx.tx[~sfFulfillment];
 
@@ -644,14 +649,6 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     // a fulfillment.
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
         return temMALFORMED;
-
-    // Verify the transaction signature. If it doesn't work
-    // then don't do any more work.
-    {
-        auto const ret = preflight2(ctx);
-        if (!isTesSuccess(ret))
-            return ret;
-    }
 
     if (cb && fb)
     {
@@ -746,7 +743,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter =
-            requireAuth(ctx.view, mptIssue, dest, MPTAuthType::WeakAuth);
+            requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
@@ -1197,16 +1194,17 @@ EscrowFinish::doApply()
 
 //------------------------------------------------------------------------------
 
+std::uint32_t
+EscrowCancel::getFlagsMask(PreflightContext const& ctx)
+{
+    // 0 means "Allow any flags"
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
+
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>
@@ -1259,7 +1257,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter =
-            requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
+            requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 

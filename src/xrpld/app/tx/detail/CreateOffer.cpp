@@ -43,33 +43,29 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
+bool
+CreateOffer::isEnabled(PreflightContext const& ctx)
+{
+    return (!ctx.tx.isFieldPresent(sfDomainID)) ||
+        ctx.rules.enabled(featurePermissionedDEX);
+}
+
+std::uint32_t
+CreateOffer::getFlagsMask(PreflightContext const& ctx)
+{
+    if (ctx.rules.enabled(featurePermissionedDEX) &&
+        ctx.tx.isFieldPresent(sfDomainID))
+        return tfOfferCreateMask;
+    return tfOfferCreateMask | tfHybrid;
+}
+
 NotTEC
 CreateOffer::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDEX))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfOfferCreateMask)
-    {
-        JLOG(j.debug()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
-
-    if (!ctx.rules.enabled(featurePermissionedDEX) && tx.isFlag(tfHybrid))
-        return temINVALID_FLAG;
-
-    if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
-        return temINVALID_FLAG;
-
     bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
 
@@ -136,7 +132,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
