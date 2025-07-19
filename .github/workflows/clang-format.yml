@@ -25,7 +25,7 @@ jobs:
       - name: Upload patch
         if: failure() && steps.assert.outcome == 'failure'
         uses: actions/upload-artifact@v4
-        continue-on-error: true
+        continue-on-error: 
         with:
           name: clang-format.patch
           if-no-files-found: ignore
