@@ -283,13 +283,12 @@ public:
         beast::Journal j);
 
     ApplyResult
-    replayApply(
+    queueApply(
         Application& app,
         OpenView& view,
         std::shared_ptr<STTx const> const& tx,
         ApplyFlags flags,
         PreflightResult const& pfresult,
-        PreclaimResult const& pcresult,
         beast::Journal j);
 
     /**
@@ -770,7 +769,6 @@ private:
         OpenView& view,
         std::shared_ptr<STTx const> const& tx,
         ApplyFlags flags,
-        PreclaimResult const& pcresult,
         beast::Journal j);
 
     // Helper function that removes a replaced entry in _byFee.
@@ -877,7 +875,7 @@ private:
         AccountMap::iterator const& accountIter,
         TxQAccount::TxMap::iterator,
         FeeLevel64 feeLevelPaid,
-        PreclaimResult const& pcresult,
+        PreflightResult const& pfresult,
         std::size_t const txExtraCount,
         ApplyFlags flags,
         FeeMetrics::Snapshot const& metricsSnapshot,

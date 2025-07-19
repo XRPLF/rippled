@@ -522,7 +522,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     TxQ::AccountMap::iterator const& accountIter,
     TxQAccount::TxMap::iterator beginTxIter,
     FeeLevel64 feeLevelPaid,
-    PreclaimResult const& pcresult,
+    PreflightResult const& pfresult,
     std::size_t const txExtraCount,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
@@ -597,7 +597,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     }
     // Apply the current tx. Because the state of the view has been changed
     // by the queued txs, we also need to preclaim again.
-    auto const txResult = doApply(pcresult, app, view);
+    auto const txResult = doApply(preclaim(pfresult, app, view), app, view);
 
     if (txResult.applied)
     {
@@ -741,13 +741,12 @@ TxQ::preApply(
 }
 
 ApplyResult
-TxQ::replayApply(
+TxQ::queueApply(
     Application& app,
     OpenView& view,
     std::shared_ptr<STTx const> const& tx,
     ApplyFlags flags,
     PreflightResult const& pfresult,
-    PreclaimResult const& pcresult,
     beast::Journal j)
 {
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
@@ -756,15 +755,10 @@ TxQ::replayApply(
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
-    if (pfresult.ter != tesSUCCESS)
-        return {pfresult.ter, false};
-
-    if (!pcresult.likelyToClaimFee)
-        return {pcresult.ter, false};
 
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
-    if (auto directApplied = tryDirectApply(app, view, tx, flags, pcresult, j))
+    if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
         return *directApplied;
 
     // If we get past tryDirectApply() without returning then we expect
@@ -1182,10 +1176,10 @@ TxQ::replayApply(
     // Note that earlier code has already verified that the sequence/ticket
     // is valid.  So we use a special entry point that runs all of the
     // preclaim checks with the exception of the sequence check.
-    auto const pcresultRetry =
+    auto const pcresult =
         preclaim(pfresult, app, multiTxn ? multiTxn->openView : view);
-    if (!pcresultRetry.likelyToClaimFee)
-        return {pcresultRetry.ter, false};
+    if (!pcresult.likelyToClaimFee)
+        return {pcresult.ter, false};
 
     // Too low of a fee should get caught by preclaim
     XRPL_ASSERT(feeLevelPaid >= baseLevel, "ripple::TxQ::apply : minimum fee");
@@ -1226,7 +1220,7 @@ TxQ::replayApply(
             accountIter,
             txIter->first,
             feeLevelPaid,
-            pcresultRetry,
+            pfresult,
             view.txCount(),
             flags,
             metricsSnapshot,
@@ -1383,11 +1377,7 @@ TxQ::apply(
     if (pfresult.ter != tesSUCCESS)
         return {pfresult.ter, false};
 
-    PreclaimResult const& pcresult = preclaim(pfresult, app, view);
-    if (!pcresult.likelyToClaimFee)
-        return {pcresult.ter, false};
-
-    return replayApply(app, view, tx, flags, pfresult, pcresult, j);
+    return queueApply(app, view, tx, flags, pfresult, j);
 }
 
 /*
@@ -1721,7 +1711,6 @@ TxQ::tryDirectApply(
     OpenView& view,
     std::shared_ptr<STTx const> const& tx,
     ApplyFlags flags,
-    PreclaimResult const& pcresult,
     beast::Journal j)
 {
     auto const account = (*tx)[sfAccount];
@@ -1756,14 +1745,15 @@ TxQ::tryDirectApply(
         JLOG(j_.trace()) << "Applying transaction " << transactionID
                          << " to open ledger.";
 
-        auto const applyResult = doApply(pcresult, app, view);
+        auto const [txnResult, didApply, metadata] =
+            ripple::apply(app, view, *tx, flags, j);
 
         JLOG(j_.trace()) << "New transaction " << transactionID
-                         << (applyResult.applied ? " applied successfully with "
-                                                 : " failed with ")
-                         << transToken(applyResult.ter);
+                         << (didApply ? " applied successfully with "
+                                      : " failed with ")
+                         << transToken(txnResult);
 
-        if (applyResult.applied)
+        if (didApply)
         {
             // If the applied transaction replaced a transaction in the
             // queue then remove the replaced transaction.
@@ -1781,7 +1771,7 @@ TxQ::tryDirectApply(
                 }
             }
         }
-        return applyResult;
+        return ApplyResult{txnResult, didApply, metadata};
     }
     return {};
 }

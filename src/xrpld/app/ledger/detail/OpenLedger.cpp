@@ -97,10 +97,60 @@ OpenLedger::accept(
         using empty = std::vector<std::shared_ptr<STTx const>>;
         apply(app, *next, *ledger, empty{}, retries, flags, j_);
     }
+
+    // Pre-apply local transactions and broadcast early if beneficial
+    std::vector<PreApplyResult> localPreApplyResults;
+    // Track which transactions we've already relayed
+    std::set<uint256> earlyRelayedTxs;
+
+    if (!locals.empty())
+    {
+        localPreApplyResults.reserve(locals.size());
+
+        // Use the next view as read-only for preApply (it's not being modified
+        // yet)
+        for (auto const& item : locals)
+        {
+            auto const result =
+                app.getTxQ().preApply(app, *next, item.second, flags, j_);
+            localPreApplyResults.push_back(result);
+
+            // Skip transactions that are not likely to claim fees
+            if (!result.pcresult.likelyToClaimFee)
+                continue;
+
+            auto const txId = item.second->getTransactionID();
+
+            // Skip batch transactions from relaying
+            if (!(item.second->isFlag(tfInnerBatchTxn) &&
+                  rules.enabled(featureBatch)))
+            {
+                if (auto const toSkip = app.getHashRouter().shouldRelay(txId))
+                {
+                    JLOG(j_.debug()) << "Early relaying local tx " << txId;
+                    protocol::TMTransaction msg;
+                    Serializer s;
+
+                    item.second->add(s);
+                    msg.set_rawtransaction(s.data(), s.size());
+                    msg.set_status(protocol::tsCURRENT);
+                    msg.set_receivetimestamp(
+                        app.timeKeeper().now().time_since_epoch().count());
+                    msg.set_deferred(result.pcresult.ter == terQUEUED);
+                    app.overlay().relay(txId, msg, *toSkip);
+
+                    // Track that we've already relayed this transaction
+                    earlyRelayedTxs.insert(txId);
+                }
+            }
+        }
+    }
+
     // Block calls to modify, otherwise
     // new tx going into the open ledger
     // would get lost.
     std::lock_guard lock1(modify_mutex_);
+
     // Apply tx from the current open view
     if (!current_->txs.empty())
     {
@@ -119,18 +169,35 @@ OpenLedger::accept(
             flags,
             j_);
     }
+
     // Call the modifier
     if (f)
         f(*next, j_);
-    // Apply local tx
-    for (auto const& item : locals)
-        app.getTxQ().apply(app, *next, item.second, flags, j_);
 
-    // If we didn't relay this transaction recently, relay it to all peers
+    // Apply local tx using pre-computed results
+    auto localIter = locals.begin();
+    for (size_t i = 0; i < localPreApplyResults.size(); ++i, ++localIter)
+    {
+        app.getTxQ().queueApply(
+            app,
+            *next,
+            localIter->second,
+            flags,
+            localPreApplyResults[i].pfresult,
+            j_);
+    }
+
+    // Relay transactions that weren't already broadcast early
+    // (This handles transactions that weren't likely to claim fees initially
+    //  but succeeded, plus any transactions from current_->txs and retries)
     for (auto const& txpair : next->txs)
     {
         auto const& tx = txpair.first;
         auto const txId = tx->getTransactionID();
+
+        // Skip if we already relayed this transaction early
+        if (earlyRelayedTxs.find(txId) != earlyRelayedTxs.end())
+            continue;
 
         // skip batch txns
         // LCOV_EXCL_START

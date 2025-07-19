@@ -1568,13 +1568,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         flags |= tapFAIL_HARD;
 
                     // Use the pre-computed results from Stage 1
-                    auto const result = app_.getTxQ().replayApply(
+                    auto const result = app_.getTxQ().queueApply(
                         app_,
                         view,
                         e.transaction->getSTransaction(),
                         flags,
                         preResult.pfresult,
-                        preResult.pcresult,
                         j);
 
                     e.result = result.ter;
