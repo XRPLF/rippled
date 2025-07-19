@@ -686,7 +686,8 @@ rippleUnlockEscrowMPT(
     ApplyView& view,
     AccountID const& uGrantorID,
     AccountID const& uGranteeID,
-    STAmount const& saAmount,
+    STAmount const& netAmount,
+    STAmount const& grossAmount,
     beast::Journal j);
 
 /** Calls static accountSendIOU if saAmount represents Issue.
