@@ -54,6 +54,15 @@ OpenLedger::current() const
     return current_;
 }
 
+std::shared_ptr<OpenView const>
+OpenLedger::read() const
+{
+    std::lock_guard lock(current_mutex_);
+    // Create a copy of the current view for read-only access
+    // This snapshot won't change even if current_ is updated
+    return std::make_shared<OpenView const>(*current_);
+}
+
 bool
 OpenLedger::modify(modify_type const& f)
 {

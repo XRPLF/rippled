@@ -114,6 +114,9 @@ public:
     std::shared_ptr<OpenView const>
     current() const;
 
+    std::shared_ptr<OpenView const>
+    read() const;
+
     /** Modify the open ledger
 
         Thread safety:

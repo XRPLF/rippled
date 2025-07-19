@@ -1491,15 +1491,75 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     {
         std::unique_lock masterLock{app_.getMasterMutex(), std::defer_lock};
         bool changed = false;
+
+        // Structure to hold preclaim results
+        std::vector<PreApplyResult> preapplyResults;
+        preapplyResults.reserve(transactions.size());
+
         {
             std::unique_lock ledgerLock{
                 m_ledgerMaster.peekMutex(), std::defer_lock};
             std::lock(masterLock, ledgerLock);
 
-            app_.openLedger().modify([&](OpenView& view, beast::Journal j) {
-                for (TransactionStatus& e : transactions)
+            // Stage 1: Pre-apply and broadcast in single loop
+            auto newOL = app_.openLedger().read();
+
+            for (TransactionStatus& e : transactions)
+            {
+                // Use read-only view for preApply
+                auto const result = app_.getTxQ().preApply(
+                    app_,
+                    *newOL,
+                    e.transaction->getSTransaction(),
+                    e.failType == FailHard::yes ? tapFAIL_HARD : tapNONE,
+                    m_journal);
+                preapplyResults.push_back(result);
+
+                // Immediately broadcast if transaction is likely to claim a fee
+                bool shouldBroadcast = result.pcresult.likelyToClaimFee;
+
+                // Check for hard failure
+                bool enforceFailHard =
+                    (e.failType == FailHard::yes &&
+                     !isTesSuccess(result.pcresult.ter));
+
+                if (shouldBroadcast && !enforceFailHard)
                 {
-                    // we check before adding to the batch
+                    auto const toSkip = app_.getHashRouter().shouldRelay(
+                        e.transaction->getID());
+
+                    if (auto const sttx = *(e.transaction->getSTransaction());
+                        toSkip &&
+                        // Skip relaying if it's an inner batch txn and batch
+                        // feature is enabled
+                        !(sttx.isFlag(tfInnerBatchTxn) &&
+                          newOL->rules().enabled(featureBatch)))
+                    {
+                        protocol::TMTransaction tx;
+                        Serializer s;
+
+                        sttx.add(s);
+                        tx.set_rawtransaction(s.data(), s.size());
+                        tx.set_status(protocol::tsCURRENT);
+                        tx.set_receivetimestamp(
+                            app_.timeKeeper().now().time_since_epoch().count());
+                        tx.set_deferred(result.pcresult.ter == terQUEUED);
+
+                        app_.overlay().relay(
+                            e.transaction->getID(), tx, *toSkip);
+                        e.transaction->setBroadcast();
+                    }
+                }
+            }
+
+            // Stage 2: Actually apply the transactions using pre-computed
+            // results
+            app_.openLedger().modify([&](OpenView& view, beast::Journal j) {
+                for (size_t i = 0; i < transactions.size(); ++i)
+                {
+                    auto& e = transactions[i];
+                    auto const& preResult = preapplyResults[i];
+
                     ApplyFlags flags = tapNONE;
                     if (e.admin)
                         flags |= tapUNLIMITED;
@@ -1507,8 +1567,16 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.failType == FailHard::yes)
                         flags |= tapFAIL_HARD;
 
-                    auto const result = app_.getTxQ().apply(
-                        app_, view, e.transaction->getSTransaction(), flags, j);
+                    // Use the pre-computed results from Stage 1
+                    auto const result = app_.getTxQ().replayApply(
+                        app_,
+                        view,
+                        e.transaction->getSTransaction(),
+                        flags,
+                        preResult.pfresult,
+                        preResult.pcresult,
+                        j);
+
                     e.result = result.ter;
                     e.applied = result.applied;
                     changed = changed || result.applied;
@@ -1516,6 +1584,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 return changed;
             });
         }
+
         if (changed)
             reportFeeChange();
 
@@ -1524,6 +1593,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             validatedLedgerIndex = l->info().seq;
 
         auto newOL = app_.openLedger().current();
+
+        // Process results (rest of the method remains the same)
         for (TransactionStatus& e : transactions)
         {
             e.transaction->clearSubmitResult();
@@ -1670,36 +1741,6 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     m_ledgerMaster.getCurrentLedgerIndex(),
                     e.transaction->getSTransaction());
                 e.transaction->setKept();
-            }
-
-            if ((e.applied ||
-                 ((mMode != OperatingMode::FULL) &&
-                  (e.failType != FailHard::yes) && e.local) ||
-                 (e.result == terQUEUED)) &&
-                !enforceFailHard)
-            {
-                auto const toSkip =
-                    app_.getHashRouter().shouldRelay(e.transaction->getID());
-                if (auto const sttx = *(e.transaction->getSTransaction());
-                    toSkip &&
-                    // Skip relaying if it's an inner batch txn and batch
-                    // feature is enabled
-                    !(sttx.isFlag(tfInnerBatchTxn) &&
-                      newOL->rules().enabled(featureBatch)))
-                {
-                    protocol::TMTransaction tx;
-                    Serializer s;
-
-                    sttx.add(s);
-                    tx.set_rawtransaction(s.data(), s.size());
-                    tx.set_status(protocol::tsCURRENT);
-                    tx.set_receivetimestamp(
-                        app_.timeKeeper().now().time_since_epoch().count());
-                    tx.set_deferred(e.result == terQUEUED);
-                    // FIXME: This should be when we received it
-                    app_.overlay().relay(e.transaction->getID(), tx, *toSkip);
-                    e.transaction->setBroadcast();
-                }
             }
 
             if (validatedLedgerIndex)

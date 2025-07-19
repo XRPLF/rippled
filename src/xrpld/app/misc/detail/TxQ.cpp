@@ -522,7 +522,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     TxQ::AccountMap::iterator const& accountIter,
     TxQAccount::TxMap::iterator beginTxIter,
     FeeLevel64 feeLevelPaid,
-    PreflightResult const& pfresult,
+    PreclaimResult const& pcresult,
     std::size_t const txExtraCount,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
@@ -597,7 +597,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     }
     // Apply the current tx. Because the state of the view has been changed
     // by the queued txs, we also need to preclaim again.
-    auto const txResult = doApply(preclaim(pfresult, app, view), app, view);
+    auto const txResult = doApply(pcresult, app, view);
 
     if (txResult.applied)
     {
@@ -726,12 +726,28 @@ TxQ::tryClearAccountQueueUpThruTx(
 //    b. The entire queue also has a (dynamic) maximum size.  Transactions
 //       beyond that limit are rejected.
 //
+PreApplyResult
+TxQ::preApply(
+    Application& app,
+    OpenView const& view,
+    std::shared_ptr<STTx const> const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
+{
+    PreflightResult const pfresult =
+        preflight(app, view.rules(), *tx, flags, j);
+    PreclaimResult const& pcresult = preclaim(pfresult, app, view);
+    return {pfresult, pcresult};
+}
+
 ApplyResult
-TxQ::apply(
+TxQ::replayApply(
     Application& app,
     OpenView& view,
     std::shared_ptr<STTx const> const& tx,
     ApplyFlags flags,
+    PreflightResult const& pfresult,
+    PreclaimResult const& pcresult,
     beast::Journal j)
 {
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
@@ -740,13 +756,15 @@ TxQ::apply(
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
-    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
     if (pfresult.ter != tesSUCCESS)
         return {pfresult.ter, false};
 
+    if (!pcresult.likelyToClaimFee)
+        return {pcresult.ter, false};
+
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
-    if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
+    if (auto directApplied = tryDirectApply(app, view, tx, flags, pcresult, j))
         return *directApplied;
 
     // If we get past tryDirectApply() without returning then we expect
@@ -1164,10 +1182,10 @@ TxQ::apply(
     // Note that earlier code has already verified that the sequence/ticket
     // is valid.  So we use a special entry point that runs all of the
     // preclaim checks with the exception of the sequence check.
-    auto const pcresult =
+    auto const pcresultRetry =
         preclaim(pfresult, app, multiTxn ? multiTxn->openView : view);
-    if (!pcresult.likelyToClaimFee)
-        return {pcresult.ter, false};
+    if (!pcresultRetry.likelyToClaimFee)
+        return {pcresultRetry.ter, false};
 
     // Too low of a fee should get caught by preclaim
     XRPL_ASSERT(feeLevelPaid >= baseLevel, "ripple::TxQ::apply : minimum fee");
@@ -1208,7 +1226,7 @@ TxQ::apply(
             accountIter,
             txIter->first,
             feeLevelPaid,
-            pfresult,
+            pcresultRetry,
             view.txCount(),
             flags,
             metricsSnapshot,
@@ -1348,6 +1366,28 @@ TxQ::apply(
                      << " Flags: " << flags;
 
     return {terQUEUED, false};
+}
+
+ApplyResult
+TxQ::apply(
+    Application& app,
+    OpenView& view,
+    std::shared_ptr<STTx const> const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
+{
+    // See if the transaction is valid, properly formed,
+    // etc. before doing potentially expensive queue
+    // replace and multi-transaction operations.
+    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
+    if (pfresult.ter != tesSUCCESS)
+        return {pfresult.ter, false};
+
+    PreclaimResult const& pcresult = preclaim(pfresult, app, view);
+    if (!pcresult.likelyToClaimFee)
+        return {pcresult.ter, false};
+
+    return replayApply(app, view, tx, flags, pfresult, pcresult, j);
 }
 
 /*
@@ -1681,6 +1721,7 @@ TxQ::tryDirectApply(
     OpenView& view,
     std::shared_ptr<STTx const> const& tx,
     ApplyFlags flags,
+    PreclaimResult const& pcresult,
     beast::Journal j)
 {
     auto const account = (*tx)[sfAccount];
@@ -1715,15 +1756,14 @@ TxQ::tryDirectApply(
         JLOG(j_.trace()) << "Applying transaction " << transactionID
                          << " to open ledger.";
 
-        auto const [txnResult, didApply, metadata] =
-            ripple::apply(app, view, *tx, flags, j);
+        auto const applyResult = doApply(pcresult, app, view);
 
         JLOG(j_.trace()) << "New transaction " << transactionID
-                         << (didApply ? " applied successfully with "
-                                      : " failed with ")
-                         << transToken(txnResult);
+                         << (applyResult.applied ? " applied successfully with "
+                                                 : " failed with ")
+                         << transToken(applyResult.ter);
 
-        if (didApply)
+        if (applyResult.applied)
         {
             // If the applied transaction replaced a transaction in the
             // queue then remove the replaced transaction.
@@ -1741,7 +1781,7 @@ TxQ::tryDirectApply(
                 }
             }
         }
-        return ApplyResult{txnResult, didApply, metadata};
+        return applyResult;
     }
     return {};
 }

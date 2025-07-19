@@ -36,6 +36,12 @@
 
 namespace ripple {
 
+struct PreApplyResult
+{
+    PreflightResult pfresult;
+    PreclaimResult pcresult;
+};
+
 class Application;
 class Config;
 
@@ -260,6 +266,31 @@ public:
 
     /// Destructor
     virtual ~TxQ();
+
+    /**
+        Prepares the transaction for application to the open ledger.
+        This is a preflight step that checks the transaction and
+        prepares it for application.
+
+         @return A `PreApplyResult` with the result of the preflight.
+     */
+    PreApplyResult
+    preApply(
+        Application& app,
+        OpenView const& view,
+        std::shared_ptr<STTx const> const& tx,
+        ApplyFlags flags,
+        beast::Journal j);
+
+    ApplyResult
+    replayApply(
+        Application& app,
+        OpenView& view,
+        std::shared_ptr<STTx const> const& tx,
+        ApplyFlags flags,
+        PreflightResult const& pfresult,
+        PreclaimResult const& pcresult,
+        beast::Journal j);
 
     /**
         Add a new transaction to the open ledger, hold it in the queue,
@@ -739,6 +770,7 @@ private:
         OpenView& view,
         std::shared_ptr<STTx const> const& tx,
         ApplyFlags flags,
+        PreclaimResult const& pcresult,
         beast::Journal j);
 
     // Helper function that removes a replaced entry in _byFee.
@@ -845,7 +877,7 @@ private:
         AccountMap::iterator const& accountIter,
         TxQAccount::TxMap::iterator,
         FeeLevel64 feeLevelPaid,
-        PreflightResult const& pfresult,
+        PreclaimResult const& pcresult,
         std::size_t const txExtraCount,
         ApplyFlags flags,
         FeeMetrics::Snapshot const& metricsSnapshot,
