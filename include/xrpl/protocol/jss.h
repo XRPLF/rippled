@@ -370,6 +370,11 @@ JSS(ledger_min);              // in, out: AccountTx*
 JSS(ledger_time);             // out: NetworkOPs
 JSS(LEDGER_ENTRY_TYPES);      // out: RPC server_definitions
                               // matches definitions.json format
+JSS(LEDGER_ENTRIES);
+JSS(sfield_Name);
+JSS(optionality);
+JSS(sfields);
+JSS(hexCode);
 JSS(levels);                  // LogLevels
 JSS(limit);                   // in/out: AccountTx*, AccountOffers,
                               //         AccountLines, AccountObjects

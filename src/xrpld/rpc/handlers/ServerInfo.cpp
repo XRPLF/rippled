@@ -32,6 +32,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <regex>
 #include <unordered_map>
 
 namespace ripple {
@@ -61,6 +62,81 @@ public:
     get() const
     {
         return defs_;
+    }
+    static Json::Value
+    parseLedgerEntries()
+    {
+        Json::Value ret;
+
+        std::string const ledger_entry_macros_file =
+            "/Users/ckeshavabs/rippled/cmake-build-debug/modules/"
+            "xrpl.libxrpl.protocol/xrpl/protocol/detail/ledger_entries.macro";
+
+        std::ifstream file(ledger_entry_macros_file);
+
+        if (!file.is_open())
+        {
+            Throw<std::runtime_error>(
+                "Error: Could not open file " + ledger_entry_macros_file);
+            return Json::Value{};
+        }
+
+        // Read entire file into a single string
+        std::string fileContents(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>());
+        file.close();
+
+        std::smatch match;
+        auto begin = fileContents.cbegin();
+
+        auto end = fileContents.cend();
+
+        std::regex macroDefStart(
+            R"(^LEDGER_ENTRY(?:_DUPLICATE)?\((lt[A-Z_]+) *, *(0x[0-9a-f]+) *, *([^,]+) *, *(?:[^,]+) *, *\(\{$)",
+            std::regex_constants::multiline);
+        std::regex macroDefEnd(R"(^\}\)\)$)", std::regex_constants::multiline);
+        std::regex sfieldDef(
+            R"(^ *\{ *sf([^,]+) *, *soe(REQUIRED|OPTIONAL|DEFAULT) *\},?(?: *\/\/[^\n]+)?$)",
+            std::regex_constants::multiline);
+        std::regex commentLine(R"(^ *\/\/[^\n]+$)");
+
+        while (std::regex_search(begin, end, match, macroDefStart))
+        {
+            std::string const ltName = match[3].str();
+            ret[ltName] = Json::objectValue;
+            begin = match.suffix().first;
+            ret[ltName][jss::sfields] = Json::arrayValue;
+            ret[ltName][jss::hexCode] = match[2].str();
+
+            // find all the SFields contained inside this LedgerEntry
+            while (true)
+            {
+                std::smatch sfield_match, macro_end_match;
+                bool const isSFieldDefPresent =
+                    std::regex_search(begin, end, sfield_match, sfieldDef);
+                bool const isMacroEndPresent =
+                    std::regex_search(begin, end, macro_end_match, macroDefEnd);
+
+                // LedgerEntry macro definition is closed
+                if (!isSFieldDefPresent ||
+                    (isMacroEndPresent &&
+                     macro_end_match.suffix().first <
+                         sfield_match.suffix().first))
+                {
+                    begin = macro_end_match.suffix().first;
+                    break;
+                }
+
+                Json::Value sField = Json::objectValue;
+
+                sField[jss::sfield_Name] = sfield_match[1].str();
+                sField[jss::optionality] = sfield_match[2].str();
+                ret[ltName][jss::sfields].append(sField);
+                begin = sfield_match.suffix().first;
+            }
+        }
+        return ret;
     }
 };
 
@@ -143,6 +219,8 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         typeMap[typeValue] = typeName;
     }
 
+    // populate ledger_entry formats
+    defs_[jss::LEDGER_ENTRIES] = parseLedgerEntries();
     // populate LedgerEntryType names and values
     defs_[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
     defs_[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;

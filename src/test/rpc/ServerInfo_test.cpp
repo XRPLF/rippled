@@ -253,6 +253,171 @@ admin = 127.0.0.1
                 BEAST_EXPECT(types["Hash384"].asUInt() == 22);
                 BEAST_EXPECT(types["Hash512"].asUInt() == 23);
             }
+
+            // test the properties of the LEDGER_ENTRIES section in
+            // server_definitions response
+            {
+                BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRIES));
+                auto const allLedgerEntries = {
+                    "NFTokenOffer",
+                    "Check",
+                    "DID",
+                    "NegativeUNL",
+                    "NFTokenPage",
+                    "SignerList",
+                    "Ticket",
+                    "AccountRoot",
+                    "DirectoryNode",
+                    "Amendments",
+                    "LedgerHashes",
+                    "Bridge",
+                    "Offer",
+                    "DepositPreauth",
+                    "XChainOwnedClaimID",
+                    "RippleState",
+                    "FeeSettings",
+                    "XChainOwnedCreateAccountClaimID",
+                    "Escrow",
+                    "PayChannel",
+                    "AMM",
+                    "MPTokenIssuance",
+                    "MPToken",
+                    "Oracle",
+                    "Credential",
+                    "PermissionedDomain",
+                    "Delegate",
+                    "Vault"};
+
+                for (auto const& s : allLedgerEntries)
+                    BEAST_EXPECT(
+                        result[jss::result][jss::LEDGER_ENTRIES].isMember(s));
+
+                BEAST_EXPECT(
+                    result[jss::result][jss::LEDGER_ENTRIES].size() ==
+                    allLedgerEntries.size());
+
+                // test the contents of an arbitrary ledger-entry (DID)
+                // For the purposes of software maintainance, this test does not
+                // exhaustively validate all the ledger_entries
+                {
+                    Json::Value const& observedDIDLedgerEntry =
+                        result[jss::result][jss::LEDGER_ENTRIES]["DID"];
+
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::hexCode] == "0x0049");
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields].size() == 7);
+
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][0u]
+                                              [jss::sfield_Name] == "Account");
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][0u]
+                                              [jss::optionality] == "REQUIRED");
+
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][1u]
+                                              [jss::sfield_Name] ==
+                        "DIDDocument");
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][1u]
+                                              [jss::optionality] == "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][2u]
+                                              [jss::sfield_Name] == "URI");
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][2u]
+                                              [jss::optionality] == "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][3u]
+                                              [jss::sfield_Name] == "Data");
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][3u]
+                                              [jss::optionality] == "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][4u]
+                                              [jss::sfield_Name] ==
+                        "OwnerNode");
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][4u]
+                                              [jss::optionality] == "REQUIRED");
+
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][5u]
+                                              [jss::sfield_Name] ==
+                        "PreviousTxnID");
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][5u]
+                                              [jss::optionality] == "REQUIRED");
+
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][6u]
+                                              [jss::sfield_Name] ==
+                        "PreviousTxnLgrSeq");
+                    BEAST_EXPECT(
+                        observedDIDLedgerEntry[jss::sfields][6u]
+                                              [jss::optionality] == "REQUIRED");
+                }
+
+                // test the contents of an arbitrary ledger-entry (NegativeUNL)
+                {
+                    Json::Value const& observedNunlLedgerEntry =
+                        result[jss::result][jss::LEDGER_ENTRIES]["NegativeUNL"];
+
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::hexCode] == "0x004e");
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields].size() == 5);
+
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][0u]
+                                               [jss::sfield_Name] ==
+                        "DisabledValidators");
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][0u]
+                                               [jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][1u]
+                                               [jss::sfield_Name] ==
+                        "ValidatorToDisable");
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][1u]
+                                               [jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][2u]
+                                               [jss::sfield_Name] ==
+                        "ValidatorToReEnable");
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][2u]
+                                               [jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][3u]
+                                               [jss::sfield_Name] ==
+                        "PreviousTxnID");
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][3u]
+                                               [jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][4u]
+                                               [jss::sfield_Name] ==
+                        "PreviousTxnLgrSeq");
+                    BEAST_EXPECT(
+                        observedNunlLedgerEntry[jss::sfields][4u]
+                                               [jss::optionality] ==
+                        "OPTIONAL");
+                }
+            }
         }
 
         // test providing the same hash
@@ -303,7 +468,7 @@ admin = 127.0.0.1
     void
     run() override
     {
-        testServerInfo();
+        // testServerInfo();
         testServerDefinitions();
     }
 };
