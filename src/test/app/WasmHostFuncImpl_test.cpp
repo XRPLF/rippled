@@ -24,7 +24,7 @@
 namespace ripple {
 namespace test {
 
-std::array<std::uint8_t, 2>
+static std::array<std::uint8_t, 2>
 toBytes(std::uint16_t value)
 {
     std::array<std::uint8_t, 2> bytes = {
@@ -33,7 +33,7 @@ toBytes(std::uint16_t value)
     return bytes;
 }
 
-std::array<std::uint8_t, 4>
+static std::array<std::uint8_t, 4>
 toBytes(std::uint32_t value)
 {
     return {
@@ -41,6 +41,25 @@ toBytes(std::uint32_t value)
         static_cast<std::uint8_t>((value >> 8) & 0xFF),
         static_cast<std::uint8_t>((value >> 16) & 0xFF),
         static_cast<std::uint8_t>((value >> 24) & 0xFF)};
+}
+
+static ApplyContext
+createApplyContext(
+    test::jtx::Env& env,
+    OpenView& ov,
+    STTx const& tx = STTx(ttESCROW_FINISH, [](STObject&) {}))
+{
+    test::StreamSink sink{beast::severities::kWarning};
+    beast::Journal jlog{sink};
+    ApplyContext ac{
+        env.app(),
+        ov,
+        tx,
+        tesSUCCESS,
+        env.current()->fees().base,
+        tapNONE,
+        jlog};
+    return ac;
 }
 
 struct WasmHostFuncImpl_test : public beast::unit_test::suite
@@ -53,17 +72,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         Env env{*this};
         OpenView ov{*env.current()};
-        STTx tx{ttESCROW_FINISH, [](STObject&) {}};
-        test::StreamSink sink{beast::severities::kWarning};
-        beast::Journal jlog{sink};
-        ApplyContext ac{
-            env.app(),
-            ov,
-            tx,
-            tesSUCCESS,
-            env.current()->fees().base,
-            tapNONE,
-            jlog};
+        ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow = keylet::escrow(env.master, 2);
         auto const accountKeylet = keylet::account(env.master);
         {
@@ -119,16 +128,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             obj.setFieldU32(sfComputationAllowance, 1000);
             obj.setFieldArray(sfMemos, STArray{});
         });
-        test::StreamSink sink{beast::severities::kWarning};
-        beast::Journal jlog{sink};
-        ApplyContext ac{
-            env.app(),
-            ov,
-            stx,
-            tesSUCCESS,
-            env.current()->fees().base,
-            tapNONE,
-            jlog};
+        ApplyContext ac = createApplyContext(env, ov, stx);
         auto const dummyEscrow =
             keylet::escrow(env.master, env.seq(env.master));
 
@@ -198,17 +198,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         env.close();
 
         OpenView ov{*env.current()};
-        STTx tx{ttESCROW_FINISH, [](STObject&) {}};
-        test::StreamSink sink{beast::severities::kWarning};
-        beast::Journal jlog{sink};
-        ApplyContext ac{
-            env.app(),
-            ov,
-            tx,
-            tesSUCCESS,
-            env.current()->fees().base,
-            tapNONE,
-            jlog};
+        ApplyContext ac = createApplyContext(env, ov);
 
         // Find the escrow ledger object
         auto const escrowKeylet =
@@ -240,11 +230,74 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testGetLedgerObjField()
+    {
+        testcase("getLedgerObjField");
+        using namespace test::jtx;
+        using namespace std::chrono;
+
+        Env env{*this};
+        // Fund the account and create an escrow so the ledger object exists
+        env(escrow::create(env.master, env.master, XRP(100)),
+            escrow::finish_time(env.now() + 1s));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const accountKeylet = keylet::account(env.master.id());
+        WasmHostFunctionsImpl hfs(ac, accountKeylet);
+
+        // Cache the escrow ledger object in slot 1
+        auto cacheResult = hfs.cacheLedgerObj(accountKeylet.key, 1);
+        BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
+
+        // Should return the Account field from the cached ledger object
+        auto const account = hfs.getLedgerObjField(1, sfAccount);
+        if (BEAST_EXPECTS(
+                account.has_value(),
+                std::to_string(static_cast<int>(account.error()))))
+            BEAST_EXPECT(std::equal(
+                account.value().begin(),
+                account.value().end(),
+                env.master.id().data()));
+
+        // Should return the Balance field from the cached ledger object
+        // TODO: improve this check once there's full issue/amount support
+        auto const balanceField = hfs.getLedgerObjField(1, sfBalance);
+        BEAST_EXPECT(balanceField.has_value());
+
+        // Should return error for slot out of range
+        auto const outOfRange = hfs.getLedgerObjField(0, sfAccount);
+        BEAST_EXPECT(
+            !outOfRange.has_value() &&
+            outOfRange.error() == HostFunctionError::SLOT_OUT_RANGE);
+
+        auto const tooHigh = hfs.getLedgerObjField(257, sfAccount);
+        BEAST_EXPECT(
+            !tooHigh.has_value() &&
+            tooHigh.error() == HostFunctionError::SLOT_OUT_RANGE);
+
+        // Should return error for empty slot
+        auto const emptySlot = hfs.getLedgerObjField(2, sfAccount);
+        BEAST_EXPECT(
+            !emptySlot.has_value() &&
+            emptySlot.error() == HostFunctionError::EMPTY_SLOT);
+
+        // Should return error for field not present
+        auto const notPresent = hfs.getLedgerObjField(1, sfOwner);
+        BEAST_EXPECT(
+            !notPresent.has_value() &&
+            notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
+    }
+
+    void
     run() override
     {
         testCacheLedgerObj();
         testGetTxField();
         testGetCurrentLedgerObjField();
+        testGetLedgerObjField();
     }
 };
 
