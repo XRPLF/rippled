@@ -30,6 +30,8 @@
 
 #include <xrpl/protocol/jss.h>
 
+#include <thread>
+
 namespace ripple {
 namespace test {
 
@@ -704,9 +706,15 @@ public:
 
             if (maxSeq + 1 == lastRotated + deleteInterval)
             {
+                using namespace std::chrono_literals;
+
                 // The next ledger will trigger a rotation. Delete an arbitrary
                 // ledger from LedgerMaster.
                 LedgerIndex const deleteSeq = maxSeq;
+                while (!BEAST_EXPECT(lm.haveLedger(deleteSeq)))
+                {
+                    std::this_thread::sleep_for(100ms);
+                }
                 lm.clearLedger(deleteSeq);
 
                 auto expectedRange =
@@ -749,7 +757,6 @@ public:
                         expectedRange(minSeq, deleteSeq, maxSeq),
                         lm.getCompleteLedgers()));
 
-                using namespace std::chrono_literals;
                 // Close 5 more ledgers, waiting one second in between to
                 // simulate the ledger making progress while online delete waits
                 // for the missing ledger to be filled in.
