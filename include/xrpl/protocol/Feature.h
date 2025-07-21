@@ -54,6 +54,9 @@
  *    then change the macro parameter in features.macro to
  *    `VoteBehavior::DefaultYes`. The communication process is beyond
  *    the scope of these instructions.
+ * 5) A feature marked as Obsolete means it is in the ledger (marked as
+ *      Supported::yes) and it is on its way to become Retired.
+ *
  *
  * When a feature has been enabled for several years, the conditional code
  * may be removed, and the feature "retired". To retire a feature:
