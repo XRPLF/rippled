@@ -24,6 +24,8 @@ env:
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{os.cpu_count()}}
     core.upload:parallel={{os.cpu_count()}}
+    core:default_build_profile=libxrpl
+    core:default_profile=libxrpl
     tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
     tools.build:verbosity=verbose
     tools.compilation:verbosity=verbose
@@ -87,7 +89,7 @@ jobs:
           clang --version
       - name: configure Conan
         run : |
-          echo "${CONAN_GLOBAL_CONF}" > global.conf
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
       - name: export custom recipes
