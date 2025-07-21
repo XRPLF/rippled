@@ -25,6 +25,8 @@ env:
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{ os.cpu_count() }}
     core.upload:parallel={{ os.cpu_count() }}
+    core:default_build_profile=libxrpl
+    core:default_profile=libxrpl
     tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
     tools.build:verbosity=verbose
     tools.compilation:verbosity=verbose
@@ -91,7 +93,8 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
@@ -379,7 +382,8 @@ jobs:
 
         - name: configure Conan
           run: |
-            echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
+            echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+            conan config install conan/profiles/ -tf $(conan config home)/profiles/
             conan profile show
         - name: build dependencies
           run: |
