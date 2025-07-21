@@ -34,6 +34,17 @@ class WasmHostFunctionsImpl : public HostFunctions
 
     void const* rt_ = nullptr;
 
+    Expected<std::shared_ptr<SLE const>, HostFunctionError>
+    getCurrentLedgerObj() const
+    {
+        if (currentLedgerObj)
+            return currentLedgerObj;
+        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getActualCacheIndex(int32_t cacheIdx);
+
 public:
     WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
         : ctx(ctx), leKey(leKey)
@@ -51,14 +62,6 @@ public:
     getRT() const override
     {
         return rt_;
-    }
-
-    Expected<std::shared_ptr<SLE const>, HostFunctionError>
-    getCurrentLedgerObj() const
-    {
-        if (currentLedgerObj)
-            return currentLedgerObj;
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
     }
 
     beast::Journal

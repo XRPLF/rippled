@@ -49,8 +49,6 @@ createApplyContext(
     OpenView& ov,
     STTx const& tx = STTx(ttESCROW_FINISH, [](STObject&) {}))
 {
-    test::StreamSink sink{beast::severities::kWarning};
-    beast::Journal jlog{sink};
     ApplyContext ac{
         env.app(),
         ov,
@@ -58,7 +56,7 @@ createApplyContext(
         tesSUCCESS,
         env.current()->fees().base,
         tapNONE,
-        jlog};
+        env.journal};
     return ac;
 }
 
@@ -755,6 +753,542 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testGetTxArrayLen()
+    {
+        testcase("getTxArrayLen");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+
+        // Transaction with an array field
+        STTx stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
+            STArray memos;
+            STObject memoObj(sfMemo);
+            memoObj.setFieldVL(sfMemoData, Slice("hello", 5));
+            memos.push_back(memoObj);
+            obj.setFieldArray(sfMemos, memos);
+        });
+
+        ApplyContext ac = createApplyContext(env, ov, stx);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Should return 1 for sfMemos
+        auto const memosLen = hfs.getTxArrayLen(sfMemos);
+        if (BEAST_EXPECT(memosLen.has_value()))
+            BEAST_EXPECT(memosLen.value() == 1);
+
+        // Should return error for non-array field
+        auto const notArray = hfs.getTxArrayLen(sfAccount);
+        if (BEAST_EXPECT(!notArray.has_value()))
+            BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+
+        // Should return error for missing array field
+        auto const missingArray = hfs.getTxArrayLen(sfSigners);
+        if (BEAST_EXPECT(!missingArray.has_value()))
+            BEAST_EXPECT(
+                missingArray.error() == HostFunctionError::FIELD_NOT_FOUND);
+    }
+
+    void
+    testGetCurrentLedgerObjArrayLen()
+    {
+        testcase("getCurrentLedgerObjArrayLen");
+        using namespace test::jtx;
+
+        Env env{*this};
+        env(escrow::create(env.master, env.master, XRP(100)),
+            escrow::finish_time(env.now() + std::chrono::seconds(1)));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const escrowKeylet =
+            keylet::escrow(env.master, env.seq(env.master) - 1);
+        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
+
+        // Escrow object does not have array fields, so only error checking
+
+        auto const arrLen = hfs.getCurrentLedgerObjArrayLen(sfMemos);
+        if (BEAST_EXPECT(!arrLen.has_value()))
+            BEAST_EXPECT(arrLen.error() == HostFunctionError::FIELD_NOT_FOUND);
+
+        // Should return NO_ARRAY for non-array field
+        auto const notArray = hfs.getCurrentLedgerObjArrayLen(sfAccount);
+        if (BEAST_EXPECT(!notArray.has_value()))
+            BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+    }
+
+    void
+    testGetLedgerObjArrayLen()
+    {
+        testcase("getLedgerObjArrayLen");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice("alice");
+        Account const becky("becky");
+        // Create a SignerList for env.master
+        env(signers(env.master, 2, {{alice, 1}, {becky, 1}}));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto cacheResult = hfs.cacheLedgerObj(signerListKeylet.key, 1);
+        BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
+
+        {
+            auto const arrLen = hfs.getLedgerObjArrayLen(0, sfSignerEntries);
+            if (BEAST_EXPECT(!arrLen.has_value()))
+                BEAST_EXPECT(
+                    arrLen.error() == HostFunctionError::SLOT_OUT_RANGE);
+        }
+        {
+            auto const arrLen = hfs.getLedgerObjArrayLen(1, sfSignerEntries);
+            if (BEAST_EXPECT(arrLen.has_value()))
+                // Should return 2 for sfSignerEntries
+                BEAST_EXPECT(arrLen.value() == 2);
+        }
+
+        {
+            // Should return error for non-array field
+            auto const notArray = hfs.getLedgerObjArrayLen(1, sfAccount);
+            if (BEAST_EXPECT(!notArray.has_value()))
+                BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+        }
+
+        {
+            // Should return error for empty slot
+            auto const emptySlot = hfs.getLedgerObjArrayLen(2, sfSignerEntries);
+            if (BEAST_EXPECT(!emptySlot.has_value()))
+                BEAST_EXPECT(
+                    emptySlot.error() == HostFunctionError::EMPTY_SLOT);
+        }
+    }
+
+    void
+    testGetTxNestedArrayLen()
+    {
+        testcase("getTxNestedArrayLen");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+
+        STTx stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
+            STArray memos;
+            STObject memoObj(sfMemo);
+            memoObj.setFieldVL(sfMemoData, Slice("hello", 5));
+            memos.push_back(memoObj);
+            obj.setFieldArray(sfMemos, memos);
+        });
+
+        ApplyContext ac = createApplyContext(env, ov, stx);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Locator for sfMemos
+        std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
+        Slice locator(
+            reinterpret_cast<uint8_t const*>(locatorVec.data()),
+            locatorVec.size() * sizeof(int32_t));
+        auto const arrLen = hfs.getTxNestedArrayLen(locator);
+        BEAST_EXPECT(arrLen.has_value() && arrLen.value() == 1);
+
+        // Locator for non-array field
+        std::vector<int32_t> locatorVec2 = {sfAccount.fieldCode};
+        Slice locator2(
+            reinterpret_cast<uint8_t const*>(locatorVec2.data()),
+            locatorVec2.size() * sizeof(int32_t));
+        auto const notArray = hfs.getTxNestedArrayLen(locator2);
+        if (BEAST_EXPECT(!notArray.has_value()))
+            BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+
+        // Locator for missing field
+        std::vector<int32_t> locatorVec3 = {sfSigners.fieldCode};
+        Slice locator3(
+            reinterpret_cast<uint8_t const*>(locatorVec3.data()),
+            locatorVec3.size() * sizeof(int32_t));
+        auto const missing = hfs.getTxNestedArrayLen(locator3);
+        if (BEAST_EXPECT(!missing.has_value()))
+            BEAST_EXPECT(missing.error() == HostFunctionError::FIELD_NOT_FOUND);
+    }
+
+    void
+    testGetCurrentLedgerObjNestedArrayLen()
+    {
+        testcase("getCurrentLedgerObjNestedArrayLen");
+        using namespace test::jtx;
+
+        Env env{*this};
+        env(escrow::create(env.master, env.master, XRP(100)),
+            escrow::finish_time(env.now() + std::chrono::seconds(1)));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const escrowKeylet =
+            keylet::escrow(env.master, env.seq(env.master) - 1);
+        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
+
+        // Escrow object does not have array fields, so expect FIELD_NOT_FOUND
+        std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
+        Slice locator(
+            reinterpret_cast<uint8_t const*>(locatorVec.data()),
+            locatorVec.size() * sizeof(int32_t));
+        auto const arrLen = hfs.getCurrentLedgerObjNestedArrayLen(locator);
+        if (BEAST_EXPECT(!arrLen.has_value()))
+            BEAST_EXPECT(arrLen.error() == HostFunctionError::FIELD_NOT_FOUND);
+    }
+
+    void
+    testGetLedgerObjNestedArrayLen()
+    {
+        testcase("getLedgerObjNestedArrayLen");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice("alice");
+        Account const becky("becky");
+        env(signers(env.master, 2, {{alice, 1}, {becky, 1}}));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto cacheResult = hfs.cacheLedgerObj(signerListKeylet.key, 1);
+        BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
+
+        // Locator for sfSignerEntries
+        std::vector<int32_t> locatorVec = {sfSignerEntries.fieldCode};
+        Slice locator(
+            reinterpret_cast<uint8_t const*>(locatorVec.data()),
+            locatorVec.size() * sizeof(int32_t));
+        auto const arrLen = hfs.getLedgerObjNestedArrayLen(1, locator);
+        if (BEAST_EXPECT(arrLen.has_value()))
+            BEAST_EXPECT(arrLen.value() == 2);
+
+        // Locator for non-array field
+        std::vector<int32_t> locatorVec2 = {sfSignerQuorum.fieldCode};
+        Slice locator2(
+            reinterpret_cast<uint8_t const*>(locatorVec2.data()),
+            locatorVec2.size() * sizeof(int32_t));
+        auto const notArray = hfs.getLedgerObjNestedArrayLen(1, locator2);
+        if (BEAST_EXPECT(!notArray.has_value()))
+            BEAST_EXPECTS(
+                notArray.error() == HostFunctionError::NO_ARRAY,
+                std::to_string(static_cast<int>(notArray.error())));
+
+        // Locator for missing field
+        std::vector<int32_t> locatorVec3 = {sfSigners.fieldCode};
+        Slice locator3(
+            reinterpret_cast<uint8_t const*>(locatorVec3.data()),
+            locatorVec3.size() * sizeof(int32_t));
+        auto const missing = hfs.getLedgerObjNestedArrayLen(1, locator3);
+        if (BEAST_EXPECT(!missing.has_value()))
+            BEAST_EXPECT(missing.error() == HostFunctionError::FIELD_NOT_FOUND);
+
+        // Slot out of range
+        auto const slotOut = hfs.getLedgerObjNestedArrayLen(0, locator);
+        if (BEAST_EXPECT(!slotOut.has_value()))
+            BEAST_EXPECT(slotOut.error() == HostFunctionError::SLOT_OUT_RANGE);
+
+        // Empty slot
+        auto const emptySlot = hfs.getLedgerObjNestedArrayLen(2, locator);
+        if (BEAST_EXPECT(!emptySlot.has_value()))
+            BEAST_EXPECT(emptySlot.error() == HostFunctionError::EMPTY_SLOT);
+    }
+
+    void
+    testUpdateData()
+    {
+        testcase("updateData");
+        using namespace test::jtx;
+
+        Env env{*this};
+        env(escrow::create(env.master, env.master, XRP(100)),
+            escrow::finish_time(env.now() + std::chrono::seconds(1)));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const escrowKeylet =
+            keylet::escrow(env.master, env.seq(env.master) - 1);
+        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
+
+        // Should succeed for small data
+        std::vector<uint8_t> data(10, 0x42);
+        auto result = hfs.updateData(Slice(data.data(), data.size()));
+        BEAST_EXPECT(result.has_value() && result.value() == 0);
+
+        // Should fail for too large data
+        std::vector<uint8_t> bigData(
+            1024 * 1024 + 1, 0x42);  // > maxWasmDataLength
+        auto tooBig = hfs.updateData(Slice(bigData.data(), bigData.size()));
+        if (BEAST_EXPECT(!tooBig.has_value()))
+            BEAST_EXPECT(
+                tooBig.error() == HostFunctionError::DATA_FIELD_TOO_LARGE);
+
+        // Should fail if ledger object not found (use a bogus keylet)
+        auto bogusKeylet = keylet::escrow(env.master, 999999);
+        WasmHostFunctionsImpl hfs2(ac, bogusKeylet);
+        auto notFound = hfs2.updateData(Slice(data.data(), data.size()));
+        if (BEAST_EXPECT(!notFound.has_value()))
+            BEAST_EXPECT(
+                notFound.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    }
+
+    void
+    testComputeSha512HalfHash()
+    {
+        testcase("computeSha512HalfHash");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        std::string data = "hello world";
+        auto result =
+            hfs.computeSha512HalfHash(Slice(data.data(), data.size()));
+        BEAST_EXPECT(result.has_value());
+
+        // Should match direct call to sha512Half
+        auto expected = sha512Half(Slice(data.data(), data.size()));
+        BEAST_EXPECT(result.value() == expected);
+    }
+
+    void
+    testKeyletFunctions()
+    {
+        testcase("keylet functions");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Lambda to compare a Bytes (std::vector<uint8_t>) to a keylet
+        auto compareKeylet = [](std::vector<uint8_t> const& bytes,
+                                Keylet const& kl) {
+            return bytes.size() == kl.key.size() &&
+                std::equal(bytes.begin(), bytes.end(), kl.key.begin());
+        };
+
+        // accountKeylet
+        auto accKey = hfs.accountKeylet(env.master.id());
+        if (BEAST_EXPECT(accKey.has_value()))
+            BEAST_EXPECT(compareKeylet(
+                accKey.value(), keylet::account(env.master.id())));
+
+        // checkKeylet
+        auto checkKey = hfs.checkKeylet(env.master.id(), 1);
+        if (BEAST_EXPECT(checkKey.has_value()))
+            BEAST_EXPECT(compareKeylet(
+                checkKey.value(), keylet::check(env.master.id(), 1)));
+
+        // credentialKeylet
+        std::string credType = "test";
+        auto credKey = hfs.credentialKeylet(
+            env.master.id(),
+            env.master.id(),
+            Slice(credType.data(), credType.size()));
+        if (BEAST_EXPECT(credKey.has_value()))
+            BEAST_EXPECT(compareKeylet(
+                credKey.value(),
+                keylet::credential(
+                    env.master.id(),
+                    env.master.id(),
+                    Slice(credType.data(), credType.size()))));
+
+        Account const alice("alice");
+        constexpr std::string_view longCredType =
+            "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
+            "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
+        static_assert(longCredType.size() > maxCredentialTypeLength);
+        auto credKey2 = hfs.credentialKeylet(
+            env.master.id(),
+            alice.id(),
+            Slice(longCredType.data(), longCredType.size()));
+        if (BEAST_EXPECT(!credKey2.has_value()))
+            BEAST_EXPECT(credKey2.error() == HostFunctionError::INVALID_PARAMS);
+
+        // didKeylet
+        auto didKey = hfs.didKeylet(env.master.id());
+        if (BEAST_EXPECT(didKey.has_value()))
+            BEAST_EXPECT(
+                compareKeylet(didKey.value(), keylet::did(env.master.id())));
+
+        // delegateKeylet
+        auto delKey = hfs.delegateKeylet(env.master.id(), alice.id());
+        BEAST_EXPECT(delKey.has_value());
+        auto delKey2 = hfs.delegateKeylet(env.master.id(), env.master.id());
+        if (BEAST_EXPECT(!delKey2.has_value()))
+            BEAST_EXPECT(delKey2.error() == HostFunctionError::INVALID_PARAMS);
+
+        // depositPreauthKeylet
+        auto preauthKey = hfs.depositPreauthKeylet(env.master.id(), alice.id());
+        BEAST_EXPECT(preauthKey.has_value());
+        auto preauthKey2 =
+            hfs.depositPreauthKeylet(env.master.id(), env.master.id());
+        if (BEAST_EXPECT(!preauthKey2.has_value()))
+            BEAST_EXPECT(
+                preauthKey2.error() == HostFunctionError::INVALID_PARAMS);
+
+        // escrowKeylet
+        auto escKey = hfs.escrowKeylet(env.master.id(), 1);
+        BEAST_EXPECT(escKey.has_value());
+
+        // lineKeylet
+        Currency usd = to_currency("USD");
+        auto lineKey = hfs.lineKeylet(env.master.id(), alice.id(), usd);
+        BEAST_EXPECT(lineKey.has_value());
+        auto lineKey2 = hfs.lineKeylet(env.master.id(), env.master.id(), usd);
+        if (BEAST_EXPECT(!lineKey2.has_value()))
+            BEAST_EXPECT(lineKey2.error() == HostFunctionError::INVALID_PARAMS);
+
+        // nftOfferKeylet
+        auto nftOfferKey = hfs.nftOfferKeylet(env.master.id(), 1);
+        BEAST_EXPECT(nftOfferKey.has_value());
+
+        // offerKeylet
+        auto offerKey = hfs.offerKeylet(env.master.id(), 1);
+        BEAST_EXPECT(offerKey.has_value());
+
+        // oracleKeylet
+        auto oracleKey = hfs.oracleKeylet(env.master.id(), 42);
+        BEAST_EXPECT(oracleKey.has_value());
+
+        // paychanKeylet
+        auto paychanKey = hfs.paychanKeylet(env.master.id(), alice.id(), 1);
+        BEAST_EXPECT(paychanKey.has_value());
+        auto paychanKey2 =
+            hfs.paychanKeylet(env.master.id(), env.master.id(), 1);
+        if (BEAST_EXPECT(!paychanKey2.has_value()))
+            BEAST_EXPECT(
+                paychanKey2.error() == HostFunctionError::INVALID_PARAMS);
+
+        // signersKeylet
+        auto signersKey = hfs.signersKeylet(env.master.id());
+        BEAST_EXPECT(signersKey.has_value());
+
+        // ticketKeylet
+        auto ticketKey = hfs.ticketKeylet(env.master.id(), 1);
+        BEAST_EXPECT(ticketKey.has_value());
+    }
+
+    void
+    testGetNFT()
+    {
+        testcase("getNFT");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice("alice");
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        // Mint NFT for alice
+        uint256 const nftId = token::getNextID(env, alice, 0u, 0u);
+        env(token::mint(alice), token::uri("https://example.com/nft"));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow = keylet::escrow(alice, env.seq(alice));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Should succeed for valid NFT
+        auto nftResult = hfs.getNFT(alice.id(), nftId);
+        BEAST_EXPECT(nftResult.has_value());
+
+        // Should fail for invalid account
+        auto nftResult2 = hfs.getNFT(AccountID(), nftId);
+        if (BEAST_EXPECT(!nftResult2.has_value()))
+            BEAST_EXPECT(
+                nftResult2.error() == HostFunctionError::INVALID_ACCOUNT);
+
+        // Should fail for invalid nftId
+        auto nftResult3 = hfs.getNFT(alice.id(), uint256());
+        if (BEAST_EXPECT(!nftResult3.has_value()))
+            BEAST_EXPECT(
+                nftResult3.error() == HostFunctionError::INVALID_PARAMS);
+    }
+
+    void
+    testTrace()
+    {
+        testcase("trace");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        std::string msg = "test trace";
+        std::string data = "abc";
+        auto const slice = Slice(data.data(), data.size());
+        auto result = hfs.trace(msg, slice, false);
+        BEAST_EXPECT(result.has_value());
+        BEAST_EXPECT(result.value() == msg.size() + data.size());
+
+        auto resultHex = hfs.trace(msg, slice, true);
+        BEAST_EXPECT(resultHex.has_value());
+        BEAST_EXPECT(resultHex.value() == msg.size() + data.size() * 2);
+    }
+
+    void
+    testTraceNum()
+    {
+        testcase("traceNum");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        std::string msg = "trace number";
+        int64_t num = 123456789;
+        auto result = hfs.traceNum(msg, num);
+        BEAST_EXPECT(result.has_value());
+        BEAST_EXPECT(result.value() == msg.size() + sizeof(num));
+    }
+
+    void
     run() override
     {
         testGetLedgerSqn();
@@ -767,6 +1301,18 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         testGetTxNestedField();
         testGetCurrentLedgerObjNestedField();
         testGetLedgerObjNestedField();
+        testGetTxArrayLen();
+        testGetCurrentLedgerObjArrayLen();
+        testGetLedgerObjArrayLen();
+        testGetTxNestedArrayLen();
+        testGetCurrentLedgerObjNestedArrayLen();
+        testGetLedgerObjNestedArrayLen();
+        testUpdateData();
+        testComputeSha512HalfHash();
+        testKeyletFunctions();
+        testGetNFT();
+        testTrace();
+        testTraceNum();
     }
 };
 
