@@ -427,6 +427,90 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testGetCurrentLedgerObjNestedField()
+    {
+        testcase("getCurrentLedgerObjNestedField");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        env(escrow::create(env.master, env.master, XRP(100)),
+            escrow::finish_time(env.now() + std::chrono::seconds(1)));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        // Find the escrow ledger object
+        auto const escrowKeylet =
+            keylet::escrow(env.master, env.seq(env.master) - 1);
+        BEAST_EXPECT(env.le(escrowKeylet));
+
+        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
+
+        // Note: no nested fields on Escrow objects, so just basic tests here
+
+        // Locator for base field
+        std::vector<int32_t> baseLocator = {sfAccount.fieldCode};
+        Slice baseLocatorSlice(
+            reinterpret_cast<uint8_t const*>(baseLocator.data()),
+            baseLocator.size() * sizeof(int32_t));
+        auto const account =
+            hfs.getCurrentLedgerObjNestedField(baseLocatorSlice);
+        if (BEAST_EXPECTS(
+                account.has_value(),
+                std::to_string(static_cast<int>(account.error()))))
+        {
+            BEAST_EXPECT(std::equal(
+                account.value().begin(),
+                account.value().end(),
+                env.master.id().data()));
+        }
+
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError) {
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result = hfs.getCurrentLedgerObjNestedField(locator);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
+        };
+        // Locator for non-existent base field
+        expectError(
+            {sfSigners.fieldCode,  // sfSigners does not exist
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::FIELD_NOT_FOUND);
+        // Locator for nesting into non-array/object field
+        expectError(
+            {sfAccount.fieldCode,  // sfAccount is not an array or object
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::LOCATOR_MALFORMED);
+
+        // Locator for empty locator
+        Slice emptyLocator(nullptr, 0);
+        auto const emptyResult =
+            hfs.getCurrentLedgerObjNestedField(emptyLocator);
+        BEAST_EXPECT(
+            !emptyResult.has_value() &&
+            emptyResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+
+        // Locator for malformed locator (not multiple of 4)
+        std::vector<int32_t> malformedLocatorVec = {sfMemos.fieldCode};
+        Slice malformedLocator(
+            reinterpret_cast<uint8_t const*>(malformedLocatorVec.data()), 3);
+        auto const malformedResult =
+            hfs.getCurrentLedgerObjNestedField(malformedLocator);
+        BEAST_EXPECT(
+            !malformedResult.has_value() &&
+            malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+    }
+
+    void
     run() override
     {
         testCacheLedgerObj();
@@ -434,6 +518,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         testGetCurrentLedgerObjField();
         testGetLedgerObjField();
         testGetTxNestedField();
+        testGetCurrentLedgerObjNestedField();
     }
 };
 
