@@ -32,10 +32,6 @@ class Xrpl(ConanFile):
         'zlib/1.3.1',
     ]
 
-    replace_requires = {
-        'abseil/*': 'abseil/20250127.0',
-    }
-
     test_requires = [
         'doctest/2.4.11',
     ]
