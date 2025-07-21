@@ -144,7 +144,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         authType = AuthType::StrongAuth;
     }
 
-    // Destination MPToken (for an MPT) or trust line (for an IOU) must exist.
+    // Destination MPToken (for an MPT) or trust line (for an IOU) must exist
+    // if not sending to Account.
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType);
         !isTesSuccess(ter))
         return ter;
