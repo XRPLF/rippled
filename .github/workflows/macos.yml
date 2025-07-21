@@ -40,7 +40,7 @@ jobs:
           - Ninja
         configuration:
           - Release
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, mac-runner-m1]
     env:
       # The `build` action requires these variables.
       build_dir: .build
@@ -96,7 +96,6 @@ jobs:
           conan export --version 1.1.10 external/snappy
           conan export --version 9.7.3 external/rocksdb
           conan export --version 4.0.3 external/soci
-          conan export --version 2.0.8 external/nudb
       - name: add Ripple Conan remote
         if: env.CONAN_URL != ''
         shell: bash
