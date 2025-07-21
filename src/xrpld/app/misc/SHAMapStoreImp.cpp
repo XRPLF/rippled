@@ -308,6 +308,9 @@ SHAMapStoreImp::run()
             validatedSeq >= lastRotated + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
 
+        JLOG(journal_.debug())
+            << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
+
         {
             // Note that this is set after the healthWait() check, so that we
             // don't start the rotation until the validated ledger is fully
@@ -685,6 +688,8 @@ SHAMapStoreImp::healthWait()
         lock.lock();
     }
 
+    JLOG(journal_.debug()) << "healthWait: Setting lastGoodValidatedLedger_ to "
+                           << index;
     lastGoodValidatedLedger_ = index;
 
     return stop_ ? stopping : keepGoing;
