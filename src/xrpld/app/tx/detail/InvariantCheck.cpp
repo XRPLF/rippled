@@ -2430,11 +2430,9 @@ ValidVault::finalize(
              tx.getTxnType() == ttVAULT_WITHDRAW ||  //
              tx.getTxnType() == ttVAULT_CLAWBACK))
         {
-            // LCOV_EXCL_START
-            UNREACHABLE(
-                "ripple::ValidVault::finalize : missing old shares state");
-            return false;
-            // LCOV_EXCL_STOP
+            JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
+                               "without updating shares";
+            return false;  // That's all we can do here
         }
 
         bool result = [&]() {
@@ -2512,12 +2510,6 @@ ValidVault::finalize(
                                 << " assets=" << updatedVault->assetsTotal;
                 result = false;
             }
-            if (updatedVault->assetsAvailable <= zero)
-            {
-                JLOG(j.fatal()) << "Invariant failed: assets available must "
-                                   "be greater than zero";
-                result = false;
-            }
             if (updatedVault->assetsAvailable > updatedVault->assetsTotal)
             {
                 JLOG(j.fatal()) << "Invariant failed: assets available must "
@@ -2565,8 +2557,9 @@ ValidVault::finalize(
         if (updatedVault->assetsMaximum != zero &&
             updatedVault->assetsTotal > updatedVault->assetsMaximum)
         {
-            JLOG(j.fatal()) << "Invariant failed: AssetsTotal must not exceed "
-                               "AssetsMaximum";
+            JLOG(j.fatal())
+                << "Invariant failed: assets outstanding must not exceed "
+                   "AssetsMaximum";
             result = false;
         }
 
