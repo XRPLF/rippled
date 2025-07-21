@@ -657,16 +657,7 @@ public:
 
         Env env{*this, envconfig(onlineDelete)};
 
-        auto& ns = env.app().getNodeStore();
         std::map<LedgerIndex, uint256> hashes;
-        auto storeHash = [&]() {
-            hashes.emplace(
-                env.current()->info().seq, env.current()->info().hash);
-
-            auto const& root =
-                ns.fetchNodeObject(hashes[env.current()->info().seq]);
-            BEAST_EXPECT(root);
-        };
 
         auto failureMessage = [&](char const* label,
                                   auto expected,
