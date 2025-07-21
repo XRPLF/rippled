@@ -65,6 +65,63 @@ createApplyContext(
 struct WasmHostFuncImpl_test : public beast::unit_test::suite
 {
     void
+    testGetLedgerSqn()
+    {
+        testcase("getLedgerSqn");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const result = hfs.getLedgerSqn();
+        if (BEAST_EXPECT(result.has_value()))
+            BEAST_EXPECT(result.value() == env.current()->info().seq);
+    }
+
+    void
+    testGetParentLedgerTime()
+    {
+        testcase("getParentLedgerTime");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const result = hfs.getParentLedgerTime();
+        if (BEAST_EXPECT(result.has_value()))
+            BEAST_EXPECT(
+                result.value() ==
+                env.current()->parentCloseTime().time_since_epoch().count());
+    }
+
+    void
+    testGetParentLedgerHash()
+    {
+        testcase("getParentLedgerHash");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const result = hfs.getParentLedgerHash();
+        if (BEAST_EXPECT(result.has_value()))
+            BEAST_EXPECT(result.value() == env.current()->info().parentHash);
+    }
+    void
     testCacheLedgerObj()
     {
         testcase("cacheLedgerObj");
@@ -700,6 +757,9 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     void
     run() override
     {
+        testGetLedgerSqn();
+        testGetParentLedgerTime();
+        testGetParentLedgerHash();
         testCacheLedgerObj();
         testGetTxField();
         testGetCurrentLedgerObjField();
