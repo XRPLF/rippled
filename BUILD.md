@@ -167,8 +167,6 @@ It does not explicitly link the C++ standard library,
 which allows you to statically link it with GCC, if you want.
 
    ```
-   # Conan 1.x
-   conan export external/snappy snappy/1.1.10@
    # Conan 2.x
    conan export --version 1.1.10 external/snappy
    ```
@@ -177,8 +175,6 @@ Export our [Conan recipe for RocksDB](./external/rocksdb).
 It does not override paths to dependencies when building with Visual Studio.
 
    ```
-   # Conan 1.x
-   conan export external/rocksdb rocksdb/9.7.3@
    # Conan 2.x
    conan export --version 9.7.3 external/rocksdb
    ```
@@ -187,21 +183,8 @@ Export our [Conan recipe for SOCI](./external/soci).
 It patches their CMake to correctly import its dependencies.
 
    ```
-   # Conan 1.x
-   conan export external/soci soci/4.0.3@
    # Conan 2.x
    conan export --version 4.0.3 external/soci
-   ```
-
-Export our [Conan recipe for NuDB](./external/nudb).
-It fixes some source files to add missing `#include`s.
-
-
-   ```
-   # Conan 1.x
-   conan export external/nudb nudb/2.0.8@
-   # Conan 2.x
-   conan export --version 2.0.8 external/nudb
    ```
 
 ### Build and Test
@@ -288,7 +271,7 @@ It fixes some source files to add missing `#include`s.
    Single-config generators:
 
    ```
-   cmake --build .
+   cmake --build . -j $(nproc)
    ```
 
    Multi-config generators:

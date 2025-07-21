@@ -256,8 +256,8 @@ public:
         if ((cores == 1) || ((config.NODE_SIZE == 0) && (cores == 2)))
             return 1;
 
-        // Otherwise, prefer two threads.
-        return 2;
+        // Otherwise, prefer six threads.
+        return 6;
 #endif
     }
 
@@ -279,13 +279,14 @@ public:
         , m_journal(logs_->journal("Application"))
 
         // PerfLog must be started before any other threads are launched.
-        , perfLog_(perf::make_PerfLog(
-              perf::setup_PerfLog(
-                  config_->section("perf"),
-                  config_->CONFIG_DIR),
-              *this,
-              logs_->journal("PerfLog"),
-              [this] { signalStop(); }))
+        , perfLog_(
+              perf::make_PerfLog(
+                  perf::setup_PerfLog(
+                      config_->section("perf"),
+                      config_->CONFIG_DIR),
+                  *this,
+                  logs_->journal("PerfLog"),
+                  [this] { signalStop("PerfLog"); }))
 
         , m_txMaster(*this)
 
@@ -293,33 +294,34 @@ public:
               config_->section(SECTION_INSIGHT),
               logs_->journal("Collector")))
 
-        , m_jobQueue(std::make_unique<JobQueue>(
-              [](std::unique_ptr<Config> const& config) {
-                  if (config->standalone() && !config->FORCE_MULTI_THREAD)
-                      return 1;
+        , m_jobQueue(
+              std::make_unique<JobQueue>(
+                  [](std::unique_ptr<Config> const& config) {
+                      if (config->standalone() && !config->FORCE_MULTI_THREAD)
+                          return 1;
 
-                  if (config->WORKERS)
-                      return config->WORKERS;
+                      if (config->WORKERS)
+                          return config->WORKERS;
 
-                  auto count =
-                      static_cast<int>(std::thread::hardware_concurrency());
+                      auto count =
+                          static_cast<int>(std::thread::hardware_concurrency());
 
-                  // Be more aggressive about the number of threads to use
-                  // for the job queue if the server is configured as "large"
-                  // or "huge" if there are enough cores.
-                  if (config->NODE_SIZE >= 4 && count >= 16)
-                      count = 6 + std::min(count, 8);
-                  else if (config->NODE_SIZE >= 3 && count >= 8)
-                      count = 4 + std::min(count, 6);
-                  else
-                      count = 2 + std::min(count, 4);
+                      // Be more aggressive about the number of threads to use
+                      // for the job queue if the server is configured as
+                      // "large" or "huge" if there are enough cores.
+                      if (config->NODE_SIZE >= 4 && count >= 16)
+                          count = 6 + std::min(count, 8);
+                      else if (config->NODE_SIZE >= 3 && count >= 8)
+                          count = 4 + std::min(count, 6);
+                      else
+                          count = 2 + std::min(count, 4);
 
-                  return count;
-              }(config_),
-              m_collectorManager->group("jobq"),
-              logs_->journal("JobQueue"),
-              *logs_,
-              *perfLog_))
+                      return count;
+                  }(config_),
+                  m_collectorManager->group("jobq"),
+                  logs_->journal("JobQueue"),
+                  *logs_,
+                  *perfLog_))
 
         , m_nodeStoreScheduler(*m_jobQueue)
 
@@ -344,9 +346,10 @@ public:
 
         , validatorKeys_(*config_, m_journal)
 
-        , m_resourceManager(Resource::make_Manager(
-              m_collectorManager->collector(),
-              logs_->journal("Resource")))
+        , m_resourceManager(
+              Resource::make_Manager(
+                  m_collectorManager->collector(),
+                  logs_->journal("Resource")))
 
         , m_nodeStore(m_shaMapStore->makeNodeStore(
               config_->PREFETCH_WORKERS > 0 ? config_->PREFETCH_WORKERS : 4))
@@ -355,16 +358,18 @@ public:
 
         , m_orderBookDB(*this)
 
-        , m_pathRequests(std::make_unique<PathRequests>(
-              *this,
-              logs_->journal("PathRequest"),
-              m_collectorManager->collector()))
+        , m_pathRequests(
+              std::make_unique<PathRequests>(
+                  *this,
+                  logs_->journal("PathRequest"),
+                  m_collectorManager->collector()))
 
-        , m_ledgerMaster(std::make_unique<LedgerMaster>(
-              *this,
-              stopwatch(),
-              m_collectorManager->collector(),
-              logs_->journal("LedgerMaster")))
+        , m_ledgerMaster(
+              std::make_unique<LedgerMaster>(
+                  *this,
+                  stopwatch(),
+                  m_collectorManager->collector(),
+                  logs_->journal("LedgerMaster")))
 
         , ledgerCleaner_(
               make_LedgerCleaner(*this, logs_->journal("LedgerCleaner")))
@@ -384,10 +389,11 @@ public:
                   gotTXSet(set, fromAcquire);
               }))
 
-        , m_ledgerReplayer(std::make_unique<LedgerReplayer>(
-              *this,
-              *m_inboundLedgers,
-              make_PeerSetBuilder(*this)))
+        , m_ledgerReplayer(
+              std::make_unique<LedgerReplayer>(
+                  *this,
+                  *m_inboundLedgers,
+                  make_PeerSetBuilder(*this)))
 
         , m_acceptedLedgerCache(
               "AcceptedLedger",
@@ -411,8 +417,9 @@ public:
 
         , cluster_(std::make_unique<Cluster>(logs_->journal("Overlay")))
 
-        , peerReservations_(std::make_unique<PeerReservationTable>(
-              logs_->journal("PeerReservationTable")))
+        , peerReservations_(
+              std::make_unique<PeerReservationTable>(
+                  logs_->journal("PeerReservationTable")))
 
         , validatorManifests_(
               std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
@@ -420,13 +427,14 @@ public:
         , publisherManifests_(
               std::make_unique<ManifestCache>(logs_->journal("ManifestCache")))
 
-        , validators_(std::make_unique<ValidatorList>(
-              *validatorManifests_,
-              *publisherManifests_,
-              *timeKeeper_,
-              config_->legacy("database_path"),
-              logs_->journal("ValidatorList"),
-              config_->VALIDATION_QUORUM))
+        , validators_(
+              std::make_unique<ValidatorList>(
+                  *validatorManifests_,
+                  *publisherManifests_,
+                  *timeKeeper_,
+                  config_->legacy("database_path"),
+                  logs_->journal("ValidatorList"),
+                  config_->VALIDATION_QUORUM))
 
         , validatorSites_(std::make_unique<ValidatorSite>(*this))
 
@@ -441,9 +449,10 @@ public:
         , mFeeTrack(
               std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
-        , hashRouter_(std::make_unique<HashRouter>(
-              setup_HashRouter(*config_),
-              stopwatch()))
+        , hashRouter_(
+              std::make_unique<HashRouter>(
+                  setup_HashRouter(*config_),
+                  stopwatch()))
 
         , mValidations(
               ValidationParms(),
@@ -505,7 +514,7 @@ public:
     void
     run() override;
     void
-    signalStop(std::string msg = "") override;
+    signalStop(std::string msg) override;
     bool
     checkSigs() const override;
     void
@@ -977,7 +986,7 @@ public:
         if (!config_->standalone() &&
             !getRelationalDatabase().transactionDbHasSpace(*config_))
         {
-            signalStop();
+            signalStop("Out of transaction DB space");
         }
 
         // VFALCO NOTE Does the order of calls matter?
@@ -1193,7 +1202,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(m_journal.info()) << "Received signal " << signum;
 
             if (signum == SIGTERM || signum == SIGINT)
-                signalStop();
+                signalStop("Signal: " + to_string(signum));
         });
 
     auto debug_log = config_->getDebugLogFile();

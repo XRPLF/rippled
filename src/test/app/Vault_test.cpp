@@ -17,18 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/AMM.h>
+#include <test/jtx.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/permissioned_domains.h>
-#include <test/jtx/utility.h>
-#include <test/jtx/vault.h>
 
 #include <xrpld/ledger/View.h>
 
@@ -53,10 +43,11 @@
 
 namespace ripple {
 
-using namespace test::jtx;
-
 class Vault_test : public beast::unit_test::suite
 {
+    using PrettyAsset = ripple::test::jtx::PrettyAsset;
+    using PrettyAmount = ripple::test::jtx::PrettyAmount;
+
     static auto constexpr negativeAmount =
         [](PrettyAsset const& asset) -> PrettyAmount {
         return {STAmount{asset.raw(), 1ul, 0, true, STAmount::unchecked{}}, ""};
@@ -349,7 +340,7 @@ class Vault_test : public beast::unit_test::suite
                                  Account const& owner,
                                  Account const& depositor,
                                  Account const& charlie)> setup) {
-            Env env{*this, supported_amendments() | featureSingleAssetVault};
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};
             Account depositor{"depositor"};
@@ -425,7 +416,7 @@ class Vault_test : public beast::unit_test::suite
         struct CaseArgs
         {
             FeatureBitset features =
-                supported_amendments() | featureSingleAssetVault;
+                testable_amendments() | featureSingleAssetVault;
         };
 
         auto testCase = [&, this](
@@ -503,7 +494,7 @@ class Vault_test : public beast::unit_test::suite
                     env(tx, ter{temDISABLED});
                 }
             },
-            {.features = supported_amendments() - featureSingleAssetVault});
+            {.features = testable_amendments() - featureSingleAssetVault});
 
         testCase([&](Env& env,
                      Account const& issuer,
@@ -634,7 +625,7 @@ class Vault_test : public beast::unit_test::suite
                     env(tx, ter{temDISABLED});
                 }
             },
-            {.features = (supported_amendments() | featureSingleAssetVault) -
+            {.features = (testable_amendments() | featureSingleAssetVault) -
                  featurePermissionedDomains});
 
         testCase([&](Env& env,
@@ -952,14 +943,15 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        auto testCase = [this](std::function<void(
-                                   Env & env,
-                                   Account const& issuer,
-                                   Account const& owner,
-                                   Account const& depositor,
-                                   Asset const& asset,
-                                   Vault& vault)> test) {
-            Env env{*this, supported_amendments() | featureSingleAssetVault};
+        auto testCase = [this](
+                            std::function<void(
+                                Env & env,
+                                Account const& issuer,
+                                Account const& owner,
+                                Account const& depositor,
+                                Asset const& asset,
+                                Vault& vault)> test) {
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};
             Account depositor{"depositor"};
@@ -1101,8 +1093,7 @@ class Vault_test : public beast::unit_test::suite
         {
             {
                 testcase("IOU fail create frozen");
-                Env env{
-                    *this, supported_amendments() | featureSingleAssetVault};
+                Env env{*this, testable_amendments() | featureSingleAssetVault};
                 Account issuer{"issuer"};
                 Account owner{"owner"};
                 env.fund(XRP(1000), issuer, owner);
@@ -1121,8 +1112,7 @@ class Vault_test : public beast::unit_test::suite
 
             {
                 testcase("IOU fail create no ripling");
-                Env env{
-                    *this, supported_amendments() | featureSingleAssetVault};
+                Env env{*this, testable_amendments() | featureSingleAssetVault};
                 Account issuer{"issuer"};
                 Account owner{"owner"};
                 env.fund(XRP(1000), issuer, owner);
@@ -1140,8 +1130,7 @@ class Vault_test : public beast::unit_test::suite
 
             {
                 testcase("IOU no issuer");
-                Env env{
-                    *this, supported_amendments() | featureSingleAssetVault};
+                Env env{*this, testable_amendments() | featureSingleAssetVault};
                 Account issuer{"issuer"};
                 Account owner{"owner"};
                 env.fund(XRP(1000), owner);
@@ -1160,7 +1149,7 @@ class Vault_test : public beast::unit_test::suite
 
         {
             testcase("IOU fail create vault for AMM LPToken");
-            Env env{*this, supported_amendments() | featureSingleAssetVault};
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
             Account const gw("gateway");
             Account const alice("alice");
             Account const carol("carol");
@@ -1210,7 +1199,8 @@ class Vault_test : public beast::unit_test::suite
     testCreateFailMPT()
     {
         using namespace test::jtx;
-        Env env{*this, supported_amendments() | featureSingleAssetVault};
+
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
@@ -1231,7 +1221,8 @@ class Vault_test : public beast::unit_test::suite
     testNonTransferableShares()
     {
         using namespace test::jtx;
-        Env env{*this, supported_amendments() | featureSingleAssetVault};
+
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
@@ -1357,7 +1348,7 @@ class Vault_test : public beast::unit_test::suite
                                 Vault& vault,
                                 MPTTester& mptt)> test,
                             CaseArgs args = {}) {
-            Env env{*this, supported_amendments() | featureSingleAssetVault};
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};
             Account depositor{"depositor"};
@@ -1753,7 +1744,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("MPT shares to a vault");
 
-            Env env{*this, supported_amendments() | featureSingleAssetVault};
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
             Account owner{"owner"};
             Account issuer{"issuer"};
             env.fund(XRP(1000000), owner, issuer);
@@ -1787,6 +1778,8 @@ class Vault_test : public beast::unit_test::suite
     void
     testWithIOU()
     {
+        using namespace test::jtx;
+
         auto testCase =
             [&, this](
                 std::function<void(
@@ -1800,8 +1793,7 @@ class Vault_test : public beast::unit_test::suite
                     std::function<MPTID(ripple::Keylet)> issuanceId,
                     std::function<PrettyAmount(ripple::Keylet)> vaultBalance)>
                     test) {
-                Env env{
-                    *this, supported_amendments() | featureSingleAssetVault};
+                Env env{*this, testable_amendments() | featureSingleAssetVault};
                 Account const owner{"owner"};
                 Account const issuer{"issuer"};
                 Account const charlie{"charlie"};
@@ -2242,9 +2234,11 @@ class Vault_test : public beast::unit_test::suite
     void
     testWithDomainCheck()
     {
+        using namespace test::jtx;
+
         testcase("private vault");
 
-        Env env{*this, supported_amendments() | featureSingleAssetVault};
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
@@ -2273,6 +2267,8 @@ class Vault_test : public beast::unit_test::suite
         env(pay(issuer, owner, asset(500)));
         env.trust(asset(1000), depositor);
         env(pay(issuer, depositor, asset(500)));
+        env.trust(asset(1000), charlie);
+        env(pay(issuer, charlie, asset(5)));
         env.close();
 
         auto [tx, keylet] = vault.create(
@@ -2362,7 +2358,7 @@ class Vault_test : public beast::unit_test::suite
             env(credentials::create(depositor, credIssuer1, credType));
             env(credentials::accept(depositor, credIssuer1, credType));
             env(credentials::create(charlie, credIssuer1, credType));
-            env(credentials::accept(charlie, credIssuer1, credType));
+            // charlie's credential not accepted
             env.close();
             auto credSle = env.le(credKeylet);
             BEAST_EXPECT(credSle != nullptr);
@@ -2376,7 +2372,7 @@ class Vault_test : public beast::unit_test::suite
 
             tx = vault.deposit(
                 {.depositor = charlie, .id = keylet.key, .amount = asset(50)});
-            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env(tx, ter{tecNO_AUTH});
             env.close();
         }
 
@@ -2384,6 +2380,8 @@ class Vault_test : public beast::unit_test::suite
             testcase("private vault depositor lost authorization");
             env(credentials::deleteCred(
                 credIssuer1, depositor, credIssuer1, credType));
+            env(credentials::deleteCred(
+                credIssuer1, charlie, credIssuer1, credType));
             env.close();
             auto credSle = env.le(credKeylet);
             BEAST_EXPECT(credSle == nullptr);
@@ -2396,18 +2394,84 @@ class Vault_test : public beast::unit_test::suite
             env.close();
         }
 
-        {
-            testcase("private vault depositor new authorization");
-            env(credentials::create(depositor, credIssuer2, credType));
-            env(credentials::accept(depositor, credIssuer2, credType));
-            env.close();
+        auto const shares = [&env, keylet = keylet, this]() -> Asset {
+            auto const vault = env.le(keylet);
+            BEAST_EXPECT(vault != nullptr);
+            return MPTIssue(vault->at(sfShareMPTID));
+        }();
 
-            auto tx = vault.deposit(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = asset(50)});
-            env(tx);
-            env.close();
+        {
+            testcase("private vault expired authorization");
+            uint32_t const closeTime = env.current()
+                                           ->info()
+                                           .parentCloseTime.time_since_epoch()
+                                           .count();
+            {
+                auto tx0 =
+                    credentials::create(depositor, credIssuer2, credType);
+                tx0[sfExpiration] = closeTime + 20;
+                env(tx0);
+                tx0 = credentials::create(charlie, credIssuer2, credType);
+                tx0[sfExpiration] = closeTime + 20;
+                env(tx0);
+                env.close();
+
+                env(credentials::accept(depositor, credIssuer2, credType));
+                env(credentials::accept(charlie, credIssuer2, credType));
+                env.close();
+            }
+
+            {
+                auto tx1 = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(50)});
+                env(tx1);
+                env.close();
+
+                auto const tokenKeylet = keylet::mptoken(
+                    shares.get<MPTIssue>().getMptID(), depositor.id());
+                BEAST_EXPECT(env.le(tokenKeylet) != nullptr);
+            }
+
+            {
+                // time advance
+                env.close();
+                env.close();
+                env.close();
+
+                auto const credsKeylet =
+                    credentials::keylet(depositor, credIssuer2, credType);
+                BEAST_EXPECT(env.le(credsKeylet) != nullptr);
+
+                auto tx2 = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1)});
+                env(tx2, ter{tecEXPIRED});
+                env.close();
+
+                BEAST_EXPECT(env.le(credsKeylet) == nullptr);
+            }
+
+            {
+                auto const credsKeylet =
+                    credentials::keylet(charlie, credIssuer2, credType);
+                BEAST_EXPECT(env.le(credsKeylet) != nullptr);
+                auto const tokenKeylet = keylet::mptoken(
+                    shares.get<MPTIssue>().getMptID(), charlie.id());
+                BEAST_EXPECT(env.le(tokenKeylet) == nullptr);
+
+                auto tx3 = vault.deposit(
+                    {.depositor = charlie,
+                     .id = keylet.key,
+                     .amount = asset(2)});
+                env(tx3, ter{tecEXPIRED});
+
+                env.close();
+                BEAST_EXPECT(env.le(credsKeylet) == nullptr);
+                BEAST_EXPECT(env.le(tokenKeylet) == nullptr);
+            }
         }
 
         {
@@ -2455,9 +2519,11 @@ class Vault_test : public beast::unit_test::suite
     void
     testWithDomainCheckXRP()
     {
+        using namespace test::jtx;
+
         testcase("private XRP vault");
 
-        Env env{*this, supported_amendments() | featureSingleAssetVault};
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
         Account owner{"owner"};
         Account depositor{"depositor"};
         Account alice{"charlie"};
@@ -2560,7 +2626,7 @@ class Vault_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         testcase("fail pseudo-account allocation");
-        Env env{*this, supported_amendments() | featureSingleAssetVault};
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Vault vault{env};
         env.fund(XRP(1000), owner);
@@ -2586,8 +2652,10 @@ class Vault_test : public beast::unit_test::suite
     void
     testRPC()
     {
+        using namespace test::jtx;
+
         testcase("RPC");
-        Env env{*this, supported_amendments() | featureSingleAssetVault};
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
         Vault vault{env};

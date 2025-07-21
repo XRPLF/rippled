@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,47 +17,27 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
-
-#include <string>
+#pragma once
+#include <xrpld/ledger/View.h>
 
 namespace ripple {
+namespace permissioned_dex {
 
-class contract_test : public beast::unit_test::suite
-{
-public:
-    void
-    run() override
-    {
-        try
-        {
-            Throw<std::runtime_error>("Throw test");
-        }
-        catch (std::runtime_error const& e1)
-        {
-            BEAST_EXPECT(std::string(e1.what()) == "Throw test");
+// Check if an account is in a permissioned domain
+[[nodiscard]] bool
+accountInDomain(
+    ReadView const& view,
+    AccountID const& account,
+    Domain const& domainID);
 
-            try
-            {
-                Rethrow();
-            }
-            catch (std::runtime_error const& e2)
-            {
-                BEAST_EXPECT(std::string(e2.what()) == "Throw test");
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(false);
-            }
-        }
-        catch (...)
-        {
-            BEAST_EXPECT(false);
-        }
-    }
-};
+// Check if an offer is in the permissioned domain
+[[nodiscard]] bool
+offerInDomain(
+    ReadView const& view,
+    uint256 const& offerID,
+    Domain const& domainID,
+    beast::Journal j);
 
-BEAST_DEFINE_TESTSUITE(contract, basics, ripple);
+}  // namespace permissioned_dex
 
 }  // namespace ripple
