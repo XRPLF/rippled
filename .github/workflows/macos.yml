@@ -42,7 +42,7 @@ jobs:
           - Ninja
         configuration:
           - Release
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, mac-runner-m1]
     env:
       # The `build` action requires these variables.
       build_dir: .build
