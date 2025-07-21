@@ -85,8 +85,9 @@ Collaboration diagram for ripple::PeerImp::Metrics:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1PeerImp_1_1Metrics__coll__graph.png" border="0" usemap="#aripple_1_1PeerImp_1_1Metrics_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1PeerImp_1_1Metrics_coll__map" id="aripple_1_1PeerImp_1_1Metrics_coll__map">
-<area shape="rect" title=" " alt="" coords="5,123,183,148"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="43,5,145,31"/>
+<area shape="rect" title=" " alt="" coords="61,123,239,148"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/thread/shared_mutex.html" title=" " alt="" coords="5,5,148,31"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="172,5,275,31"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -111,8 +112,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:ad8de70bc8c28ad444c8705efeafe6e96"><td class="memItemLeft" align="right" valign="top">boost::shared_mutex&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#ad8de70bc8c28ad444c8705efeafe6e96">mutex_</a></td></tr>
-<tr class="separator:ad8de70bc8c28ad444c8705efeafe6e96"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad0cc1f750a4fefb530551d80e03bbf7d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/shared_mutex.html">std::shared_mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#ad0cc1f750a4fefb530551d80e03bbf7d">mutex_</a></td></tr>
+<tr class="separator:ad0cc1f750a4fefb530551d80e03bbf7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a20d50ede95d44871fb04f4b21c4ea8f4"><td class="memItemLeft" align="right" valign="top">boost::circular_buffer&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#a20d50ede95d44871fb04f4b21c4ea8f4">rollingAvg_</a> {30, 0ull}</td></tr>
 <tr class="separator:a20d50ede95d44871fb04f4b21c4ea8f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aebf183b605a08a0a7556098df66a396d"><td class="memItemLeft" align="right" valign="top">clock_type::time_point&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp_1_1Metrics.html#aebf183b605a08a0a7556098df66a396d">intervalStart_</a> {<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock/now.html">clock_type::now</a>()}</td></tr>
@@ -317,8 +318,8 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="ad8de70bc8c28ad444c8705efeafe6e96" name="ad8de70bc8c28ad444c8705efeafe6e96"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad8de70bc8c28ad444c8705efeafe6e96">&#9670;&#160;</a></span>mutex_</h2>
+<a id="ad0cc1f750a4fefb530551d80e03bbf7d" name="ad0cc1f750a4fefb530551d80e03bbf7d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad0cc1f750a4fefb530551d80e03bbf7d">&#9670;&#160;</a></span>mutex_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -327,7 +328,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::shared_mutex ripple::PeerImp::Metrics::mutex_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/shared_mutex.html">std::shared_mutex</a> ripple::PeerImp::Metrics::mutex_</td>
         </tr>
       </table>
   </td>

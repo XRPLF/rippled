@@ -1,4 +1,5 @@
 <map id="ripple::PeerImp::Metrics" name="ripple::PeerImp::Metrics">
-<area shape="rect" id="node1" title=" " alt="" coords="5,123,183,148"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="43,5,145,31"/>
+<area shape="rect" id="node1" title=" " alt="" coords="61,123,239,148"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/shared_mutex.html" title=" " alt="" coords="5,5,148,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="172,5,275,31"/>
 </map>
