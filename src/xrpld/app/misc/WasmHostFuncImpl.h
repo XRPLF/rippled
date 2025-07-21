@@ -27,6 +27,7 @@ class WasmHostFunctionsImpl : public HostFunctions
 {
     ApplyContext& ctx;
     Keylet leKey;
+    std::shared_ptr<SLE const> currentLedgerObj;
 
     static int constexpr MAX_CACHE = 256;
     std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
@@ -37,6 +38,7 @@ public:
     WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
         : ctx(ctx), leKey(leKey)
     {
+        currentLedgerObj = ctx.view().read(leKey);
     }
 
     virtual void
@@ -49,6 +51,14 @@ public:
     getRT() const override
     {
         return rt_;
+    }
+
+    Expected<std::shared_ptr<SLE const>, HostFunctionError>
+    getCurrentLedgerObj() const
+    {
+        if (currentLedgerObj)
+            return currentLedgerObj;
+        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
     }
 
     beast::Journal

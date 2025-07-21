@@ -117,6 +117,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             obj.setAccountID(sfOwner, env.master.id());
             obj.setFieldU32(sfOfferSequence, env.seq(env.master));
             obj.setFieldU32(sfComputationAllowance, 1000);
+            obj.setFieldArray(sfMemos, STArray{});
         });
         test::StreamSink sink{beast::severities::kWarning};
         beast::Journal jlog{sink};
@@ -140,6 +141,13 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     account.value().begin(),
                     account.value().end(),
                     env.master.id().data()));
+            auto const owner = hfs.getTxField(sfOwner);
+            BEAST_EXPECT(
+                owner.has_value() &&
+                std::equal(
+                    owner.value().begin(),
+                    owner.value().end(),
+                    env.master.id().data()));
             auto const txType = hfs.getTxField(sfTransactionType);
             BEAST_EXPECT(
                 txType.has_value() &&
@@ -162,7 +170,73 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     compAllowance.value().begin(),
                     compAllowance.value().end(),
                     toBytes(expectedAllowance).begin()));
+
+            auto const notPresent = hfs.getTxField(sfDestination);
+            if (BEAST_EXPECT(!notPresent.has_value()))
+                BEAST_EXPECT(
+                    notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
+
+            auto const memos = hfs.getTxField(sfMemos);
+            if (BEAST_EXPECT(!memos.has_value()))
+                BEAST_EXPECT(
+                    memos.error() == HostFunctionError::NOT_LEAF_FIELD);
         }
+    }
+
+    void
+    testGetCurrentLedgerObjField()
+    {
+        testcase("getCurrentLedgerObjField");
+        using namespace test::jtx;
+        using namespace std::chrono;
+
+        Env env{*this};
+
+        // Fund the account and create an escrow so the ledger object exists
+        env(escrow::create(env.master, env.master, XRP(100)),
+            escrow::finish_time(env.now() + 1s));
+        env.close();
+
+        OpenView ov{*env.current()};
+        STTx tx{ttESCROW_FINISH, [](STObject&) {}};
+        test::StreamSink sink{beast::severities::kWarning};
+        beast::Journal jlog{sink};
+        ApplyContext ac{
+            env.app(),
+            ov,
+            tx,
+            tesSUCCESS,
+            env.current()->fees().base,
+            tapNONE,
+            jlog};
+
+        // Find the escrow ledger object
+        auto const escrowKeylet =
+            keylet::escrow(env.master, env.seq(env.master) - 1);
+        BEAST_EXPECT(env.le(escrowKeylet));
+
+        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
+
+        // Should return the Account field from the escrow ledger object
+        auto const account = hfs.getCurrentLedgerObjField(sfAccount);
+        if (BEAST_EXPECTS(
+                account.has_value(),
+                std::to_string(static_cast<int>(account.error()))))
+            BEAST_EXPECT(std::equal(
+                account.value().begin(),
+                account.value().end(),
+                env.master.id().data()));
+
+        // Should return the Amount field from the escrow ledger object
+        // TODO: improve this check once there's full issue/amount support
+        auto const amountField = hfs.getCurrentLedgerObjField(sfAmount);
+        BEAST_EXPECT(amountField.has_value());
+
+        // Should return nullopt for a field not present
+        auto const notPresent = hfs.getCurrentLedgerObjField(sfOwner);
+        BEAST_EXPECT(
+            !notPresent.has_value() &&
+            notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
     }
 
     void
@@ -170,6 +244,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     {
         testCacheLedgerObj();
         testGetTxField();
+        testGetCurrentLedgerObjField();
     }
 };
 

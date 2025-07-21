@@ -162,10 +162,10 @@ WasmHostFunctionsImpl::getTxField(SField const& fname)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    return getAnyFieldData(sle->peekAtPField(fname));
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
+    return getAnyFieldData(sle.value()->peekAtPField(fname));
 }
 
 Expected<Bytes, HostFunctionError>
@@ -256,11 +256,11 @@ WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
 
-    auto const r = locateField(*sle, locator);
+    auto const r = locateField(*sle.value(), locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -309,11 +309,11 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
     if (fname.fieldType != STI_ARRAY)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
 
-    auto const* field = sle->peekAtPField(fname);
+    auto const* field = sle.value()->peekAtPField(fname);
     if (noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
@@ -367,10 +367,10 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    auto const r = locateField(*sle, locator);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
+    auto const r = locateField(*sle.value(), locator);
     if (!r)
         return Unexpected(r.error());
 
