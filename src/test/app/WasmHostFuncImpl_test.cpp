@@ -302,6 +302,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         // Create a transaction with a nested array field
         STTx const stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
+            obj.setAccountID(sfAccount, env.master.id());
             STArray memos;
             STObject memoObj(sfMemo);
             memoObj.setFieldVL(sfMemoData, Slice("hello", 5));
@@ -315,44 +316,114 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        // Locator for sfMemos[0].sfMemo.sfMemoData
-        // Locator is a sequence of int32_t codes:
-        // [sfMemos.fieldCode, 0, sfMemoData.fieldCode]
-        std::vector<int32_t> locatorVec = {
-            sfMemos.fieldCode, 0, sfMemoData.fieldCode};
-        Slice locator(
-            reinterpret_cast<uint8_t const*>(locatorVec.data()),
-            locatorVec.size() * sizeof(int32_t));
-
-        auto const result = hfs.getTxNestedField(locator);
-        if (BEAST_EXPECTS(
-                result.has_value(),
-                std::to_string(static_cast<int>(result.error()))))
         {
-            std::string memoData(result.value().begin(), result.value().end());
-            BEAST_EXPECT(memoData == "hello");
+            // Locator for sfMemos[0].sfMemo.sfMemoData
+            // Locator is a sequence of int32_t codes:
+            // [sfMemos.fieldCode, 0, sfMemoData.fieldCode]
+            std::vector<int32_t> locatorVec = {
+                sfMemos.fieldCode, 0, sfMemoData.fieldCode};
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+
+            auto const result = hfs.getTxNestedField(locator);
+            if (BEAST_EXPECTS(
+                    result.has_value(),
+                    std::to_string(static_cast<int>(result.error()))))
+            {
+                std::string memoData(
+                    result.value().begin(), result.value().end());
+                BEAST_EXPECT(memoData == "hello");
+            }
         }
 
+        {
+            // can use the nested locator for base fields too
+            std::vector<int32_t> locatorVec = {sfAccount.fieldCode};
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+
+            auto const account = hfs.getTxNestedField(locator);
+            if (BEAST_EXPECTS(
+                    account.has_value(),
+                    std::to_string(static_cast<int>(account.error()))))
+            {
+                BEAST_EXPECT(std::equal(
+                    account.value().begin(),
+                    account.value().end(),
+                    env.master.id().data()));
+            }
+        }
+
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError) {
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result = hfs.getTxNestedField(locator);
+            BEAST_EXPECT(
+                !result.has_value() && result.error() == expectedError);
+        };
+        // Locator for non-existent base field
+        expectError(
+            {sfSigners.fieldCode,  // sfSigners does not exist
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::FIELD_NOT_FOUND);
+
+        // Locator for non-existent index
+        expectError(
+            {sfMemos.fieldCode,
+             1,  // index 1 does not exist
+             sfMemoData.fieldCode},
+            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+
         // Locator for non-existent nested field
-        std::vector<int32_t> badLocatorVec = {
-            sfMemos.fieldCode,
-            1,
-            sfMemoData.fieldCode};  // index 1 does not exist
-        Slice badLocator(
-            reinterpret_cast<uint8_t const*>(badLocatorVec.data()),
-            badLocatorVec.size() * sizeof(int32_t));
-        auto const badResult = hfs.getTxNestedField(badLocator);
-        BEAST_EXPECT(
-            !badResult.has_value() &&
-            badResult.error() == HostFunctionError::INDEX_OUT_OF_BOUNDS);
+        expectError(
+            {sfMemos.fieldCode,
+             0,
+             sfURI.fieldCode},  // sfURI does not exist in the memo
+            HostFunctionError::FIELD_NOT_FOUND);
+
+        // Locator for non-existent base sfield
+        expectError(
+            {field_code(20000, 20000),  // nonexistent SField code
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::INVALID_FIELD);
+
+        // Locator for non-existent nested sfield
+        expectError(
+            {sfMemos.fieldCode,  // nonexistent SField code
+             0,
+             field_code(20000, 20000)},
+            HostFunctionError::INVALID_FIELD);
+
+        // Locator for STArray
+        expectError({sfMemos.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
+
+        // Locator for nesting into non-array/object field
+        expectError(
+            {sfAccount.fieldCode,  // sfAccount is not an array or object
+             0,
+             sfAccount.fieldCode},
+            HostFunctionError::LOCATOR_MALFORMED);
+
+        // Locator for empty locator
+        expectError({}, HostFunctionError::LOCATOR_MALFORMED);
 
         // Locator for malformed locator (not multiple of 4)
-        Slice malformedLocator(
-            reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
-        auto const malformedResult = hfs.getTxNestedField(malformedLocator);
-        BEAST_EXPECT(
-            !malformedResult.has_value() &&
-            malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+        {
+            std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
+            Slice malformedLocator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
+            auto const malformedResult = hfs.getTxNestedField(malformedLocator);
+            BEAST_EXPECT(
+                !malformedResult.has_value() &&
+                malformedResult.error() ==
+                    HostFunctionError::LOCATOR_MALFORMED);
+        }
     }
 
     void
