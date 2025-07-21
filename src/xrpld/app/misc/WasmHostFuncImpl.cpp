@@ -187,20 +187,20 @@ noField(STBase const* field)
 }
 
 static Expected<STBase const*, HostFunctionError>
-locateField(STObject const& obj, Slice const& loc)
+locateField(STObject const& obj, Slice const& locator)
 {
-    if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
+    if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
         return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
-    int32_t const* l = reinterpret_cast<int32_t const*>(loc.data());
-    int32_t const sz = loc.size() / 4;
+    int32_t const* loc = reinterpret_cast<int32_t const*>(locator.data());
+    int32_t const sz = locator.size() / 4;
     STBase const* field = nullptr;
-    auto const& m = SField::getKnownCodeToField();
+    auto const& allSFields = SField::getKnownCodeToField();
 
     {
-        int32_t const c = l[0];
-        auto const it = m.find(c);
-        if (it == m.end())
+        int32_t const sfield = loc[0];
+        auto const it = allSFields.find(sfield);
+        if (it == allSFields.end())
             return Unexpected(HostFunctionError::INVALID_FIELD);
 
         auto const& fname(*it->second);
@@ -211,21 +211,21 @@ locateField(STObject const& obj, Slice const& loc)
 
     for (int i = 1; i < sz; ++i)
     {
-        int32_t const c = l[i];
+        int32_t const sfield = loc[i];
 
         if (STI_ARRAY == field->getSType())
         {
             auto const* arr = static_cast<STArray const*>(field);
-            if (c >= arr->size())
+            if (sfield >= arr->size())
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-            field = &(arr->operator[](c));
+            field = &(arr->operator[](sfield));
         }
         else if (STI_OBJECT == field->getSType())
         {
             auto const* o = static_cast<STObject const*>(field);
 
-            auto const it = m.find(c);
-            if (it == m.end())
+            auto const it = allSFields.find(sfield);
+            if (it == allSFields.end())
                 return Unexpected(HostFunctionError::INVALID_FIELD);
 
             auto const& fname(*it->second);

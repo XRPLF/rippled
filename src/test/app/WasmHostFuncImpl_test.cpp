@@ -292,12 +292,77 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testGetTxNestedField()
+    {
+        testcase("getTxNestedField");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+
+        // Create a transaction with a nested array field
+        STTx const stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
+            STArray memos;
+            STObject memoObj(sfMemo);
+            memoObj.setFieldVL(sfMemoData, Slice("hello", 5));
+            memos.push_back(memoObj);
+            obj.setFieldArray(sfMemos, memos);
+        });
+
+        ApplyContext ac = createApplyContext(env, ov, stx);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Locator for sfMemos[0].sfMemo.sfMemoData
+        // Locator is a sequence of int32_t codes:
+        // [sfMemos.fieldCode, 0, sfMemoData.fieldCode]
+        std::vector<int32_t> locatorVec = {
+            sfMemos.fieldCode, 0, sfMemoData.fieldCode};
+        Slice locator(
+            reinterpret_cast<uint8_t const*>(locatorVec.data()),
+            locatorVec.size() * sizeof(int32_t));
+
+        auto const result = hfs.getTxNestedField(locator);
+        if (BEAST_EXPECTS(
+                result.has_value(),
+                std::to_string(static_cast<int>(result.error()))))
+        {
+            std::string memoData(result.value().begin(), result.value().end());
+            BEAST_EXPECT(memoData == "hello");
+        }
+
+        // Locator for non-existent nested field
+        std::vector<int32_t> badLocatorVec = {
+            sfMemos.fieldCode,
+            1,
+            sfMemoData.fieldCode};  // index 1 does not exist
+        Slice badLocator(
+            reinterpret_cast<uint8_t const*>(badLocatorVec.data()),
+            badLocatorVec.size() * sizeof(int32_t));
+        auto const badResult = hfs.getTxNestedField(badLocator);
+        BEAST_EXPECT(
+            !badResult.has_value() &&
+            badResult.error() == HostFunctionError::INDEX_OUT_OF_BOUNDS);
+
+        // Locator for malformed locator (not multiple of 4)
+        Slice malformedLocator(
+            reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
+        auto const malformedResult = hfs.getTxNestedField(malformedLocator);
+        BEAST_EXPECT(
+            !malformedResult.has_value() &&
+            malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+    }
+
+    void
     run() override
     {
         testCacheLedgerObj();
         testGetTxField();
         testGetCurrentLedgerObjField();
         testGetLedgerObjField();
+        testGetTxNestedField();
     }
 };
 
