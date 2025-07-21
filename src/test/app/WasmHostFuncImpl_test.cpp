@@ -362,8 +362,10 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                 reinterpret_cast<uint8_t const*>(locatorVec.data()),
                 locatorVec.size() * sizeof(int32_t));
             auto const result = hfs.getTxNestedField(locator);
-            BEAST_EXPECT(
-                !result.has_value() && result.error() == expectedError);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
         };
         // Locator for non-existent base field
         expectError(
@@ -511,6 +513,191 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testGetLedgerObjNestedField()
+    {
+        testcase("getLedgerObjNestedField");
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice("alice");
+        Account const becky("becky");
+        // Create a SignerList for env.master
+        env(signers(env.master, 2, {{alice, 1}, {becky, 1}}));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Cache the SignerList ledger object in slot 1
+        auto const signerListKeylet = keylet::signers(env.master.id());
+        auto cacheResult = hfs.cacheLedgerObj(signerListKeylet.key, 1);
+        BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
+
+        // Locator for sfSignerEntries[0].sfAccount
+        {
+            std::vector<int32_t> const locatorVec = {
+                sfSignerEntries.fieldCode, 0, sfAccount.fieldCode};
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+
+            auto const result = hfs.getLedgerObjNestedField(1, locator);
+            if (BEAST_EXPECTS(
+                    result.has_value(),
+                    std::to_string(static_cast<int>(result.error()))))
+            {
+                BEAST_EXPECT(std::equal(
+                    result.value().begin(),
+                    result.value().end(),
+                    alice.id().data()));
+            }
+        }
+
+        // Locator for sfSignerEntries[1].sfAccount
+        {
+            std::vector<int32_t> const locatorVec = {
+                sfSignerEntries.fieldCode, 1, sfAccount.fieldCode};
+            Slice const locator = Slice(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result2 = hfs.getLedgerObjNestedField(1, locator);
+            if (BEAST_EXPECTS(
+                    result2.has_value(),
+                    std::to_string(static_cast<int>(result2.error()))))
+            {
+                BEAST_EXPECT(std::equal(
+                    result2.value().begin(),
+                    result2.value().end(),
+                    becky.id().data()));
+            }
+        }
+
+        // Locator for sfSignerEntries[0].sfSignerWeight
+        {
+            std::vector<int32_t> const locatorVec = {
+                sfSignerEntries.fieldCode, 0, sfSignerWeight.fieldCode};
+            Slice const locator = Slice(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const weightResult = hfs.getLedgerObjNestedField(1, locator);
+            if (BEAST_EXPECTS(
+                    weightResult.has_value(),
+                    std::to_string(static_cast<int>(weightResult.error()))))
+            {
+                // Should be 1
+                std::array<std::uint8_t, 2> expected =
+                    toBytes(static_cast<std::uint16_t>(1));
+                BEAST_EXPECT(std::equal(
+                    weightResult.value().begin(),
+                    weightResult.value().end(),
+                    expected.begin()));
+            }
+        }
+
+        // Locator for base field sfSignerQuorum
+        {
+            std::vector<int32_t> const locatorVec = {sfSignerQuorum.fieldCode};
+            Slice const locator = Slice(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const quorumResult = hfs.getLedgerObjNestedField(1, locator);
+            if (BEAST_EXPECTS(
+                    quorumResult.has_value(),
+                    std::to_string(static_cast<int>(quorumResult.error()))))
+            {
+                std::array<std::uint8_t, 2> expected =
+                    toBytes(static_cast<std::uint16_t>(2));
+                BEAST_EXPECT(std::equal(
+                    quorumResult.value().begin(),
+                    quorumResult.value().end(),
+                    expected.begin()));
+            }
+        }
+
+        // Helper for error checks
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError,
+                               int slot = 1) {
+            Slice const locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result = hfs.getLedgerObjNestedField(slot, locator);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
+        };
+
+        // Error: base field not found
+        expectError(
+            {sfSigners.fieldCode,
+             0,
+             sfAccount.fieldCode},  // sfSigners does not exist
+            HostFunctionError::FIELD_NOT_FOUND);
+
+        // Error: index out of bounds
+        expectError(
+            {sfSignerEntries.fieldCode,
+             2,  // index 2 does not exist
+             sfAccount.fieldCode},
+            HostFunctionError::INDEX_OUT_OF_BOUNDS);
+
+        // Error: nested field not found
+        expectError(
+            {
+                sfSignerEntries.fieldCode,
+                0,
+                sfDestination.fieldCode  // sfDestination does not exist
+            },
+            HostFunctionError::FIELD_NOT_FOUND);
+
+        // Error: invalid field code
+        expectError(
+            {field_code(99999, 99999), 0, sfAccount.fieldCode},
+            HostFunctionError::INVALID_FIELD);
+
+        // Error: invalid nested field code
+        expectError(
+            {sfSignerEntries.fieldCode, 0, field_code(99999, 99999)},
+            HostFunctionError::INVALID_FIELD);
+
+        // Error: slot out of range
+        expectError(
+            {sfSignerQuorum.fieldCode}, HostFunctionError::SLOT_OUT_RANGE, 0);
+        expectError(
+            {sfSignerQuorum.fieldCode}, HostFunctionError::SLOT_OUT_RANGE, 257);
+
+        // Error: empty slot
+        expectError(
+            {sfSignerQuorum.fieldCode}, HostFunctionError::EMPTY_SLOT, 2);
+
+        // Error: locator for STArray (not leaf field)
+        expectError(
+            {sfSignerEntries.fieldCode}, HostFunctionError::NOT_LEAF_FIELD);
+
+        // Error: nesting into non-array/object field
+        expectError(
+            {sfSignerQuorum.fieldCode, 0, sfAccount.fieldCode},
+            HostFunctionError::LOCATOR_MALFORMED);
+
+        // Error: empty locator
+        expectError({}, HostFunctionError::LOCATOR_MALFORMED);
+
+        // Error: locator malformed (not multiple of 4)
+        std::vector<int32_t> const locatorVec = {sfSignerEntries.fieldCode};
+        Slice const locator =
+            Slice(reinterpret_cast<uint8_t const*>(locatorVec.data()), 3);
+        auto const malformed = hfs.getLedgerObjNestedField(1, locator);
+        BEAST_EXPECT(
+            !malformed.has_value() &&
+            malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
+    }
+
+    void
     run() override
     {
         testCacheLedgerObj();
@@ -519,6 +706,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         testGetLedgerObjField();
         testGetTxNestedField();
         testGetCurrentLedgerObjNestedField();
+        testGetLedgerObjNestedField();
     }
 };
 
