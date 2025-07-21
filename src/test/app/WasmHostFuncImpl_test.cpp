@@ -490,38 +490,35 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-
-        env(escrow::create(env.master, env.master, XRP(100)),
-            escrow::finish_time(env.now() + std::chrono::seconds(1)));
-        env.close();
+        Account const alice("alice");
+        Account const becky("becky");
+        // Create a SignerList for env.master
+        env(signers(env.master, 2, {{alice, 1}, {becky, 1}}));
 
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        // Find the escrow ledger object
-        auto const escrowKeylet =
-            keylet::escrow(env.master, env.seq(env.master) - 1);
-        BEAST_EXPECT(env.le(escrowKeylet));
+        // Find the signer ledger object
+        auto const signerKeylet = keylet::signers(env.master.id());
+        BEAST_EXPECT(env.le(signerKeylet));
 
-        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
-
-        // Note: no nested fields on Escrow objects, so just basic tests here
+        WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
         // Locator for base field
-        std::vector<int32_t> baseLocator = {sfAccount.fieldCode};
+        std::vector<int32_t> baseLocator = {sfSignerQuorum.fieldCode};
         Slice baseLocatorSlice(
             reinterpret_cast<uint8_t const*>(baseLocator.data()),
             baseLocator.size() * sizeof(int32_t));
-        auto const account =
+        auto const signerQuorum =
             hfs.getCurrentLedgerObjNestedField(baseLocatorSlice);
         if (BEAST_EXPECTS(
-                account.has_value(),
-                std::to_string(static_cast<int>(account.error()))))
+                signerQuorum.has_value(),
+                std::to_string(static_cast<int>(signerQuorum.error()))))
         {
             BEAST_EXPECT(std::equal(
-                account.value().begin(),
-                account.value().end(),
-                env.master.id().data()));
+                signerQuorum.value().begin(),
+                signerQuorum.value().end(),
+                toBytes(static_cast<std::uint32_t>(2)).begin()));
         }
 
         auto expectError = [&](std::vector<int32_t> const& locatorVec,
@@ -543,7 +540,8 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             HostFunctionError::FIELD_NOT_FOUND);
         // Locator for nesting into non-array/object field
         expectError(
-            {sfAccount.fieldCode,  // sfAccount is not an array or object
+            {sfSignerQuorum
+                 .fieldCode,  // sfSignerQuorum is not an array or object
              0,
              sfAccount.fieldCode},
             HostFunctionError::LOCATOR_MALFORMED);
@@ -689,9 +687,9 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         // Error: base field not found
         expectError(
-            {sfSigners.fieldCode,
+            {sfSigners.fieldCode,  // sfSigners does not exist
              0,
-             sfAccount.fieldCode},  // sfSigners does not exist
+             sfAccount.fieldCode},
             HostFunctionError::FIELD_NOT_FOUND);
 
         // Error: index out of bounds
@@ -763,10 +761,18 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         // Transaction with an array field
         STTx stx = STTx(ttESCROW_FINISH, [&](auto& obj) {
+            obj.setAccountID(sfAccount, env.master.id());
             STArray memos;
-            STObject memoObj(sfMemo);
-            memoObj.setFieldVL(sfMemoData, Slice("hello", 5));
-            memos.push_back(memoObj);
+            {
+                STObject memoObj(sfMemo);
+                memoObj.setFieldVL(sfMemoData, Slice("hello", 5));
+                memos.push_back(memoObj);
+            }
+            {
+                STObject memoObj(sfMemo);
+                memoObj.setFieldVL(sfMemoData, Slice("world", 5));
+                memos.push_back(memoObj);
+            }
             obj.setFieldArray(sfMemos, memos);
         });
 
@@ -778,7 +784,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         // Should return 1 for sfMemos
         auto const memosLen = hfs.getTxArrayLen(sfMemos);
         if (BEAST_EXPECT(memosLen.has_value()))
-            BEAST_EXPECT(memosLen.value() == 1);
+            BEAST_EXPECT(memosLen.value() == 2);
 
         // Should return error for non-array field
         auto const notArray = hfs.getTxArrayLen(sfAccount);
@@ -799,18 +805,22 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        env(escrow::create(env.master, env.master, XRP(100)),
-            escrow::finish_time(env.now() + std::chrono::seconds(1)));
+        Account const alice("alice");
+        Account const becky("becky");
+        // Create a SignerList for env.master
+        env(signers(env.master, 2, {{alice, 1}, {becky, 1}}));
         env.close();
 
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const escrowKeylet =
-            keylet::escrow(env.master, env.seq(env.master) - 1);
-        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
+        auto const signerKeylet = keylet::signers(env.master.id());
+        WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
-        // Escrow object does not have array fields, so only error checking
+        auto const entriesLen =
+            hfs.getCurrentLedgerObjArrayLen(sfSignerEntries);
+        if (BEAST_EXPECT(entriesLen.has_value()))
+            BEAST_EXPECT(entriesLen.value() == 2);
 
         auto const arrLen = hfs.getCurrentLedgerObjArrayLen(sfMemos);
         if (BEAST_EXPECT(!arrLen.has_value()))
@@ -897,31 +907,35 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
+        // Helper for error checks
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError,
+                               int slot = 1) {
+            Slice const locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result = hfs.getTxNestedArrayLen(locator);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
+        };
+
         // Locator for sfMemos
-        std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
-        Slice locator(
-            reinterpret_cast<uint8_t const*>(locatorVec.data()),
-            locatorVec.size() * sizeof(int32_t));
-        auto const arrLen = hfs.getTxNestedArrayLen(locator);
-        BEAST_EXPECT(arrLen.has_value() && arrLen.value() == 1);
+        {
+            std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const arrLen = hfs.getTxNestedArrayLen(locator);
+            BEAST_EXPECT(arrLen.has_value() && arrLen.value() == 1);
+        }
 
-        // Locator for non-array field
-        std::vector<int32_t> locatorVec2 = {sfAccount.fieldCode};
-        Slice locator2(
-            reinterpret_cast<uint8_t const*>(locatorVec2.data()),
-            locatorVec2.size() * sizeof(int32_t));
-        auto const notArray = hfs.getTxNestedArrayLen(locator2);
-        if (BEAST_EXPECT(!notArray.has_value()))
-            BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+        // Error: non-array field
+        expectError({sfAccount.fieldCode}, HostFunctionError::NO_ARRAY);
 
-        // Locator for missing field
-        std::vector<int32_t> locatorVec3 = {sfSigners.fieldCode};
-        Slice locator3(
-            reinterpret_cast<uint8_t const*>(locatorVec3.data()),
-            locatorVec3.size() * sizeof(int32_t));
-        auto const missing = hfs.getTxNestedArrayLen(locator3);
-        if (BEAST_EXPECT(!missing.has_value()))
-            BEAST_EXPECT(missing.error() == HostFunctionError::FIELD_NOT_FOUND);
+        // Error: missing field
+        expectError({sfSigners.fieldCode}, HostFunctionError::FIELD_NOT_FOUND);
     }
 
     void
@@ -931,25 +945,47 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        env(escrow::create(env.master, env.master, XRP(100)),
-            escrow::finish_time(env.now() + std::chrono::seconds(1)));
+        Account const alice("alice");
+        Account const becky("becky");
+        // Create a SignerList for env.master
+        env(signers(env.master, 2, {{alice, 1}, {becky, 1}}));
         env.close();
 
         OpenView ov{*env.current()};
         ApplyContext ac = createApplyContext(env, ov);
 
-        auto const escrowKeylet =
-            keylet::escrow(env.master, env.seq(env.master) - 1);
-        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
+        auto const signerKeylet = keylet::signers(env.master.id());
+        WasmHostFunctionsImpl hfs(ac, signerKeylet);
 
-        // Escrow object does not have array fields, so expect FIELD_NOT_FOUND
-        std::vector<int32_t> locatorVec = {sfMemos.fieldCode};
-        Slice locator(
-            reinterpret_cast<uint8_t const*>(locatorVec.data()),
-            locatorVec.size() * sizeof(int32_t));
-        auto const arrLen = hfs.getCurrentLedgerObjNestedArrayLen(locator);
-        if (BEAST_EXPECT(!arrLen.has_value()))
-            BEAST_EXPECT(arrLen.error() == HostFunctionError::FIELD_NOT_FOUND);
+        // Helper for error checks
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError,
+                               int slot = 1) {
+            Slice const locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result = hfs.getCurrentLedgerObjNestedArrayLen(locator);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
+        };
+
+        // Locator for sfSignerEntries
+        {
+            std::vector<int32_t> locatorVec = {sfSignerEntries.fieldCode};
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const arrLen = hfs.getCurrentLedgerObjNestedArrayLen(locator);
+            BEAST_EXPECT(arrLen.has_value() && arrLen.value() == 2);
+        }
+
+        // Error: non-array field
+        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::NO_ARRAY);
+
+        // Error: missing field
+        expectError({sfSigners.fieldCode}, HostFunctionError::FIELD_NOT_FOUND);
     }
 
     void
@@ -984,35 +1020,49 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         if (BEAST_EXPECT(arrLen.has_value()))
             BEAST_EXPECT(arrLen.value() == 2);
 
-        // Locator for non-array field
-        std::vector<int32_t> locatorVec2 = {sfSignerQuorum.fieldCode};
-        Slice locator2(
-            reinterpret_cast<uint8_t const*>(locatorVec2.data()),
-            locatorVec2.size() * sizeof(int32_t));
-        auto const notArray = hfs.getLedgerObjNestedArrayLen(1, locator2);
-        if (BEAST_EXPECT(!notArray.has_value()))
-            BEAST_EXPECTS(
-                notArray.error() == HostFunctionError::NO_ARRAY,
-                std::to_string(static_cast<int>(notArray.error())));
+        // Helper for error checks
+        auto expectError = [&](std::vector<int32_t> const& locatorVec,
+                               HostFunctionError expectedError,
+                               int slot = 1) {
+            Slice const locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result = hfs.getLedgerObjNestedArrayLen(slot, locator);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECTS(
+                    result.error() == expectedError,
+                    std::to_string(static_cast<int>(result.error())));
+        };
 
-        // Locator for missing field
-        std::vector<int32_t> locatorVec3 = {sfSigners.fieldCode};
-        Slice locator3(
-            reinterpret_cast<uint8_t const*>(locatorVec3.data()),
-            locatorVec3.size() * sizeof(int32_t));
-        auto const missing = hfs.getLedgerObjNestedArrayLen(1, locator3);
-        if (BEAST_EXPECT(!missing.has_value()))
-            BEAST_EXPECT(missing.error() == HostFunctionError::FIELD_NOT_FOUND);
+        // Error: non-array field
+        expectError({sfSignerQuorum.fieldCode}, HostFunctionError::NO_ARRAY);
+
+        // Error: missing field
+        expectError({sfSigners.fieldCode}, HostFunctionError::FIELD_NOT_FOUND);
 
         // Slot out of range
-        auto const slotOut = hfs.getLedgerObjNestedArrayLen(0, locator);
-        if (BEAST_EXPECT(!slotOut.has_value()))
-            BEAST_EXPECT(slotOut.error() == HostFunctionError::SLOT_OUT_RANGE);
+        expectError(locatorVec, HostFunctionError::SLOT_OUT_RANGE, 0);
+        expectError(locatorVec, HostFunctionError::SLOT_OUT_RANGE, 257);
 
         // Empty slot
-        auto const emptySlot = hfs.getLedgerObjNestedArrayLen(2, locator);
-        if (BEAST_EXPECT(!emptySlot.has_value()))
-            BEAST_EXPECT(emptySlot.error() == HostFunctionError::EMPTY_SLOT);
+        expectError(locatorVec, HostFunctionError::EMPTY_SLOT, 2);
+
+        // Error: empty locator
+        expectError({}, HostFunctionError::LOCATOR_MALFORMED);
+
+        // Error: locator malformed (not multiple of 4)
+        Slice malformedLocator(
+            reinterpret_cast<uint8_t const*>(locator.data()), 3);
+        auto const malformed =
+            hfs.getLedgerObjNestedArrayLen(1, malformedLocator);
+        BEAST_EXPECT(
+            !malformed.has_value() &&
+            malformed.error() == HostFunctionError::LOCATOR_MALFORMED);
+
+        // Error: locator for non-STArray field
+        expectError(
+            {sfSignerQuorum.fieldCode, 0, sfAccount.fieldCode},
+            HostFunctionError::LOCATOR_MALFORMED);
     }
 
     void
@@ -1093,113 +1143,213 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        // Lambda to compare a Bytes (std::vector<uint8_t>) to a keylet
         auto compareKeylet = [](std::vector<uint8_t> const& bytes,
                                 Keylet const& kl) {
             return bytes.size() == kl.key.size() &&
                 std::equal(bytes.begin(), bytes.end(), kl.key.begin());
         };
+// Lambda to compare a Bytes (std::vector<uint8_t>) to a keylet
+#define COMPARE_KEYLET(hfsFunc, keyletFunc, ...)                   \
+    {                                                              \
+        auto actual = hfs.hfsFunc(__VA_ARGS__);                    \
+        auto expected = keyletFunc(__VA_ARGS__);                   \
+        if (BEAST_EXPECT(actual.has_value()))                      \
+        {                                                          \
+            BEAST_EXPECT(compareKeylet(actual.value(), expected)); \
+        }                                                          \
+    }
+#define COMPARE_KEYLET_FAIL(hfsFunc, keyletFunc, expected, ...)        \
+    {                                                                  \
+        auto actual = hfs.hfsFunc(__VA_ARGS__);                        \
+        if (BEAST_EXPECT(!actual.has_value()))                         \
+        {                                                              \
+            BEAST_EXPECTS(                                             \
+                actual.error() == expected,                            \
+                std::to_string(static_cast<int32_t>(actual.error()))); \
+        }                                                              \
+    }
 
         // accountKeylet
-        auto accKey = hfs.accountKeylet(env.master.id());
-        if (BEAST_EXPECT(accKey.has_value()))
-            BEAST_EXPECT(compareKeylet(
-                accKey.value(), keylet::account(env.master.id())));
-
-        // checkKeylet
-        auto checkKey = hfs.checkKeylet(env.master.id(), 1);
-        if (BEAST_EXPECT(checkKey.has_value()))
-            BEAST_EXPECT(compareKeylet(
-                checkKey.value(), keylet::check(env.master.id(), 1)));
-
-        // credentialKeylet
-        std::string credType = "test";
-        auto credKey = hfs.credentialKeylet(
+        COMPARE_KEYLET(accountKeylet, keylet::account, env.master.id());
+        COMPARE_KEYLET_FAIL(
+            accountKeylet,
+            keylet::account,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount());
+        COMPARE_KEYLET(checkKeylet, keylet::check, env.master.id(), 1);
+        std::string const credType = "test";
+        COMPARE_KEYLET(
+            credentialKeylet,
+            keylet::credential,
             env.master.id(),
             env.master.id(),
             Slice(credType.data(), credType.size()));
-        if (BEAST_EXPECT(credKey.has_value()))
-            BEAST_EXPECT(compareKeylet(
-                credKey.value(),
-                keylet::credential(
-                    env.master.id(),
-                    env.master.id(),
-                    Slice(credType.data(), credType.size()))));
 
         Account const alice("alice");
         constexpr std::string_view longCredType =
             "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
             "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
         static_assert(longCredType.size() > maxCredentialTypeLength);
-        auto credKey2 = hfs.credentialKeylet(
+        COMPARE_KEYLET_FAIL(
+            credentialKeylet,
+            keylet::credential,
+            HostFunctionError::INVALID_PARAMS,
             env.master.id(),
             alice.id(),
             Slice(longCredType.data(), longCredType.size()));
-        if (BEAST_EXPECT(!credKey2.has_value()))
-            BEAST_EXPECT(credKey2.error() == HostFunctionError::INVALID_PARAMS);
+        COMPARE_KEYLET_FAIL(
+            credentialKeylet,
+            keylet::credential,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            alice.id(),
+            Slice(credType.data(), credType.size()));
+        COMPARE_KEYLET_FAIL(
+            credentialKeylet,
+            keylet::credential,
+            HostFunctionError::INVALID_ACCOUNT,
+            env.master.id(),
+            xrpAccount(),
+            Slice(credType.data(), credType.size()));
 
-        // didKeylet
-        auto didKey = hfs.didKeylet(env.master.id());
-        if (BEAST_EXPECT(didKey.has_value()))
-            BEAST_EXPECT(
-                compareKeylet(didKey.value(), keylet::did(env.master.id())));
+        COMPARE_KEYLET(didKeylet, keylet::did, env.master.id());
+        COMPARE_KEYLET_FAIL(
+            didKeylet,
+            keylet::did,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount());
+        COMPARE_KEYLET(
+            delegateKeylet, keylet::delegate, env.master.id(), alice.id());
+        COMPARE_KEYLET_FAIL(
+            delegateKeylet,
+            keylet::delegate,
+            HostFunctionError::INVALID_PARAMS,
+            env.master.id(),
+            env.master.id());
+        COMPARE_KEYLET_FAIL(
+            delegateKeylet,
+            keylet::delegate,
+            HostFunctionError::INVALID_ACCOUNT,
+            env.master.id(),
+            xrpAccount());
+        COMPARE_KEYLET_FAIL(
+            delegateKeylet,
+            keylet::delegate,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            env.master.id());
 
-        // delegateKeylet
-        auto delKey = hfs.delegateKeylet(env.master.id(), alice.id());
-        BEAST_EXPECT(delKey.has_value());
-        auto delKey2 = hfs.delegateKeylet(env.master.id(), env.master.id());
-        if (BEAST_EXPECT(!delKey2.has_value()))
-            BEAST_EXPECT(delKey2.error() == HostFunctionError::INVALID_PARAMS);
-
-        // depositPreauthKeylet
-        auto preauthKey = hfs.depositPreauthKeylet(env.master.id(), alice.id());
-        BEAST_EXPECT(preauthKey.has_value());
-        auto preauthKey2 =
-            hfs.depositPreauthKeylet(env.master.id(), env.master.id());
-        if (BEAST_EXPECT(!preauthKey2.has_value()))
-            BEAST_EXPECT(
-                preauthKey2.error() == HostFunctionError::INVALID_PARAMS);
+        COMPARE_KEYLET(
+            depositPreauthKeylet,
+            keylet::depositPreauth,
+            env.master.id(),
+            alice.id());
+        COMPARE_KEYLET_FAIL(
+            depositPreauthKeylet,
+            keylet::depositPreauth,
+            HostFunctionError::INVALID_PARAMS,
+            env.master.id(),
+            env.master.id());
+        COMPARE_KEYLET_FAIL(
+            depositPreauthKeylet,
+            keylet::depositPreauth,
+            HostFunctionError::INVALID_ACCOUNT,
+            env.master.id(),
+            xrpAccount());
+        COMPARE_KEYLET_FAIL(
+            depositPreauthKeylet,
+            keylet::depositPreauth,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            env.master.id());
 
         // escrowKeylet
-        auto escKey = hfs.escrowKeylet(env.master.id(), 1);
-        BEAST_EXPECT(escKey.has_value());
+        COMPARE_KEYLET(escrowKeylet, keylet::escrow, env.master.id(), 1);
 
         // lineKeylet
         Currency usd = to_currency("USD");
-        auto lineKey = hfs.lineKeylet(env.master.id(), alice.id(), usd);
-        BEAST_EXPECT(lineKey.has_value());
-        auto lineKey2 = hfs.lineKeylet(env.master.id(), env.master.id(), usd);
-        if (BEAST_EXPECT(!lineKey2.has_value()))
-            BEAST_EXPECT(lineKey2.error() == HostFunctionError::INVALID_PARAMS);
+        COMPARE_KEYLET(
+            lineKeylet, keylet::line, env.master.id(), alice.id(), usd);
+        COMPARE_KEYLET_FAIL(
+            lineKeylet,
+            keylet::line,
+            HostFunctionError::INVALID_PARAMS,
+            env.master.id(),
+            env.master.id(),
+            usd);
+        COMPARE_KEYLET_FAIL(
+            lineKeylet,
+            keylet::line,
+            HostFunctionError::INVALID_ACCOUNT,
+            env.master.id(),
+            xrpAccount(),
+            usd);
+        COMPARE_KEYLET_FAIL(
+            lineKeylet,
+            keylet::line,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            env.master.id(),
+            usd);
 
-        // nftOfferKeylet
-        auto nftOfferKey = hfs.nftOfferKeylet(env.master.id(), 1);
-        BEAST_EXPECT(nftOfferKey.has_value());
+        COMPARE_KEYLET(nftOfferKeylet, keylet::nftoffer, env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            nftOfferKeylet,
+            keylet::nftoffer,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            1);
+        COMPARE_KEYLET(offerKeylet, keylet::offer, env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            offerKeylet,
+            keylet::offer,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            1);
+        COMPARE_KEYLET(oracleKeylet, keylet::oracle, env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            oracleKeylet,
+            keylet::oracle,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            1);
+        COMPARE_KEYLET(
+            paychanKeylet, keylet::payChan, env.master.id(), alice.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            paychanKeylet,
+            keylet::payChan,
+            HostFunctionError::INVALID_PARAMS,
+            env.master.id(),
+            env.master.id(),
+            1);
+        COMPARE_KEYLET_FAIL(
+            paychanKeylet,
+            keylet::payChan,
+            HostFunctionError::INVALID_ACCOUNT,
+            env.master.id(),
+            xrpAccount(),
+            1);
+        COMPARE_KEYLET_FAIL(
+            paychanKeylet,
+            keylet::payChan,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            env.master.id(),
+            1);
 
-        // offerKeylet
-        auto offerKey = hfs.offerKeylet(env.master.id(), 1);
-        BEAST_EXPECT(offerKey.has_value());
-
-        // oracleKeylet
-        auto oracleKey = hfs.oracleKeylet(env.master.id(), 42);
-        BEAST_EXPECT(oracleKey.has_value());
-
-        // paychanKeylet
-        auto paychanKey = hfs.paychanKeylet(env.master.id(), alice.id(), 1);
-        BEAST_EXPECT(paychanKey.has_value());
-        auto paychanKey2 =
-            hfs.paychanKeylet(env.master.id(), env.master.id(), 1);
-        if (BEAST_EXPECT(!paychanKey2.has_value()))
-            BEAST_EXPECT(
-                paychanKey2.error() == HostFunctionError::INVALID_PARAMS);
-
-        // signersKeylet
-        auto signersKey = hfs.signersKeylet(env.master.id());
-        BEAST_EXPECT(signersKey.has_value());
-
-        // ticketKeylet
-        auto ticketKey = hfs.ticketKeylet(env.master.id(), 1);
-        BEAST_EXPECT(ticketKey.has_value());
+        COMPARE_KEYLET(signersKeylet, keylet::signers, env.master.id());
+        COMPARE_KEYLET_FAIL(
+            signersKeylet,
+            keylet::signers,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount());
+        COMPARE_KEYLET(ticketKeylet, keylet::ticket, env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            ticketKeylet,
+            keylet::ticket,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            1);
     }
 
     void
@@ -1215,7 +1365,11 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         // Mint NFT for alice
         uint256 const nftId = token::getNextID(env, alice, 0u, 0u);
-        env(token::mint(alice), token::uri("https://example.com/nft"));
+        std::string const uri = "https://example.com/nft";
+        env(token::mint(alice), token::uri(uri));
+        env.close();
+        uint256 const nftId2 = token::getNextID(env, alice, 0u, 0u);
+        env(token::mint(alice));
         env.close();
 
         OpenView ov{*env.current()};
@@ -1225,20 +1379,47 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         // Should succeed for valid NFT
-        auto nftResult = hfs.getNFT(alice.id(), nftId);
-        BEAST_EXPECT(nftResult.has_value());
+        {
+            auto nftResult = hfs.getNFT(alice.id(), nftId);
+            if (BEAST_EXPECT(nftResult.has_value()))
+                BEAST_EXPECT(std::equal(
+                    nftResult.value().begin(),
+                    nftResult.value().end(),
+                    uri.data()));
+        }
 
         // Should fail for invalid account
-        auto nftResult2 = hfs.getNFT(AccountID(), nftId);
-        if (BEAST_EXPECT(!nftResult2.has_value()))
-            BEAST_EXPECT(
-                nftResult2.error() == HostFunctionError::INVALID_ACCOUNT);
+        {
+            auto nftResult = hfs.getNFT(xrpAccount(), nftId);
+            if (BEAST_EXPECT(!nftResult.has_value()))
+                BEAST_EXPECT(
+                    nftResult.error() == HostFunctionError::INVALID_ACCOUNT);
+        }
 
         // Should fail for invalid nftId
-        auto nftResult3 = hfs.getNFT(alice.id(), uint256());
-        if (BEAST_EXPECT(!nftResult3.has_value()))
-            BEAST_EXPECT(
-                nftResult3.error() == HostFunctionError::INVALID_PARAMS);
+        {
+            auto nftResult = hfs.getNFT(alice.id(), uint256());
+            if (BEAST_EXPECT(!nftResult.has_value()))
+                BEAST_EXPECT(
+                    nftResult.error() == HostFunctionError::INVALID_PARAMS);
+        }
+
+        // Should fail for invalid nftId
+        {
+            auto const badId = token::getNextID(env, alice, 0u, 1u);
+            auto nftResult = hfs.getNFT(alice.id(), badId);
+            if (BEAST_EXPECT(!nftResult.has_value()))
+                BEAST_EXPECT(
+                    nftResult.error() ==
+                    HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+        }
+
+        {
+            auto nftResult = hfs.getNFT(alice.id(), nftId2);
+            if (BEAST_EXPECT(!nftResult.has_value()))
+                BEAST_EXPECT(
+                    nftResult.error() == HostFunctionError::FIELD_NOT_FOUND);
+        }
     }
 
     void
