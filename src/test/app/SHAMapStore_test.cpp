@@ -716,6 +716,9 @@ public:
                     std::this_thread::sleep_for(100ms);
                 }
                 lm.clearLedger(deleteSeq);
+                log << "Deleting sequence " << deleteSeq
+                    << " from LedgerMaster. Complete ledgers is now: "
+                    << lm.getCompleteLedgers() << std::endl;
 
                 auto expectedRange =
                     [](auto minSeq, auto deleteSeq, auto maxSeq) {
@@ -743,6 +746,9 @@ public:
                 env.close();
                 // DO NOT CALL rendezvous()! You'll end up with a deadlock.
                 ++maxSeq;
+                log << "Closed ledger: " << maxSeq
+                    << "Complete ledgers is now: " << lm.getCompleteLedgers()
+                    << std::endl;
 
                 // Nothing has changed
                 BEAST_EXPECTS(
