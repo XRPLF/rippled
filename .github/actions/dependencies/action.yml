@@ -13,7 +13,7 @@ runs:
         conan export --version 9.7.3 external/rocksdb
         conan export --version 4.0.3 external/soci
     - name: add Ripple Conan remote
-      if: env.CONAN_URL != '' && env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
+      if: env.CONAN_URL != ''
       shell: bash
       run: |
         if conan remote list | grep -q "ripple"; then
