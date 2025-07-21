@@ -664,8 +664,8 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     quorumResult.has_value(),
                     std::to_string(static_cast<int>(quorumResult.error()))))
             {
-                std::array<std::uint8_t, 2> expected =
-                    toBytes(static_cast<std::uint16_t>(2));
+                std::array<std::uint8_t, 4> expected =
+                    toBytes(static_cast<std::uint32_t>(2));
                 BEAST_EXPECT(std::equal(
                     quorumResult.value().begin(),
                     quorumResult.value().end(),
