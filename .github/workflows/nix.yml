@@ -74,7 +74,7 @@ jobs:
             compiler_version: 16
             distro: debian
             codename: bookworm
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
