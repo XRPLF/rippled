@@ -91,7 +91,8 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
@@ -379,7 +380,8 @@ jobs:
 
         - name: configure Conan
           run: |
-            echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
+            echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+            conan config install conan/profiles/ -tf $(conan config home)/profiles/
             conan profile show
         - name: build dependencies
           run: |
