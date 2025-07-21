@@ -145,6 +145,7 @@ class LedgerMaster_test : public beast::unit_test::suite
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->info().seq;
         auto& store = env.app().getSHAMapStore();
+        store.rendezvous();
         LedgerIndex lastRotated = store.getLastRotated();
         BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
         BEAST_EXPECTS(
