@@ -677,6 +677,7 @@ public:
         LedgerIndex minSeq = 2;
         LedgerIndex maxSeq = env.closed()->info().seq;
         auto& store = env.app().getSHAMapStore();
+        store.rendezvous();
         LedgerIndex lastRotated = store.getLastRotated();
         BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
         BEAST_EXPECTS(
@@ -708,8 +709,9 @@ public:
             {
                 using namespace std::chrono_literals;
 
-                // The next ledger will trigger a rotation. Delete an arbitrary
-                // ledger from LedgerMaster.
+                // The next ledger will trigger a rotation. Delete the
+                // current ledger from LedgerMaster.
+                std::this_thread::sleep_for(100ms);
                 LedgerIndex const deleteSeq = maxSeq;
                 while (!BEAST_EXPECT(lm.haveLedger(deleteSeq)))
                 {
