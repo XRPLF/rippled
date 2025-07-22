@@ -73,7 +73,7 @@ jobs:
             distro: ubuntu
             codename: jammy
           - compiler: clang
-            compiler_version: 16
+            compiler_version: 17
             distro: debian
             codename: bookworm
     runs-on: [self-hosted, heavy]
