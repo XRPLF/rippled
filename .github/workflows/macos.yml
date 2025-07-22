@@ -116,7 +116,8 @@ jobs:
       - name: get_mac_pkgs
         id: get_conan_home
         run: |
-          echo "conan_home=$(conan config home)" >> $GITHUB_OUTPUT
+          conan_home=$(conan config home)
+          echo "conan_home=${conan_home}" >> $GITHUB_OUTPUT
           echo "conan_home: $conan_home"
           ls -lh "${conan_home}"
           ls -lash /Users/ec2-user/github-runner/actions-runner/_work/
