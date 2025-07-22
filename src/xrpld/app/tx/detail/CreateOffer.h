@@ -51,10 +51,6 @@ public:
     static TER
     preclaim(PreclaimContext const& ctx);
 
-    /** Gather information beyond what the Transactor base class gathers. */
-    void
-    preCompute() override;
-
     /** Precondition: fee collection is likely.  Attempt to create the offer. */
     TER
     doApply() override;

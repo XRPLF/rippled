@@ -524,12 +524,6 @@ CreateOffer::format_amount(STAmount const& amount)
     return txt;
 }
 
-void
-CreateOffer::preCompute()
-{
-    Transactor::preCompute();
-}
-
 TER
 CreateOffer::applyHybrid(
     Sandbox& sb,
