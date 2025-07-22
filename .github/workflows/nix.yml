@@ -19,6 +19,7 @@ concurrency:
 # This part of Conan configuration is specific to this workflow only; we do not want
 # to pollute conan/profiles directory with settings which might not work for others
 env:
+  build_dir: .build
   CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
   CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
   CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
@@ -78,8 +79,6 @@ jobs:
             codename: bookworm
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
-    env:
-      build_dir: .build
     steps:
       - name: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -138,8 +137,6 @@ jobs:
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
-    env:
-      build_dir: .build
     steps:
       - name: download cache
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -199,8 +196,6 @@ jobs:
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
-    env:
-      build_dir: .build
     steps:
       - name: download cache
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -247,8 +242,6 @@ jobs:
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
-    env:
-      build_dir: .build
     steps:
       - name: download cache
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -316,7 +309,6 @@ jobs:
     container:
       image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
-      build_dir: .build
       platform: linux
       compiler: gcc
       compiler_version: 12
@@ -366,7 +358,10 @@ jobs:
   instrumentation-build:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
-      CLANG_RELEASE: 16
+      COMPILER: clang
+      COMPILER_VERSION: 16
+      CONFIG: Debug
+      CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
 
@@ -376,7 +371,7 @@ jobs:
 
         - name: prepare environment
           run: |
-            mkdir ${GITHUB_WORKSPACE}/.build
+            # mkdir ${GITHUB_WORKSPACE}/.build
             echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
 
@@ -385,16 +380,15 @@ jobs:
             echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
             conan config install conan/profiles/ -tf $(conan config home)/profiles/
             conan profile show
-        - name: build dependencies
-          run: |
-            cd ${BUILD_DIR}
-            conan install ${SOURCE_DIR} \
-              --output-folder ${BUILD_DIR} \
-              --build missing \
-              --settings:all build_type=Debug
-
+            # conan remote add ripple --index 0 $CONAN_URL
+            # conan remote list
+        - name: dependencies
+          uses: ./.github/actions/dependencies
+          with:
+            configuration: Debug
         - name: build with instrumentation
           run: |
+            conan remote list
             cd ${BUILD_DIR}
             cmake -S ${SOURCE_DIR} -B ${BUILD_DIR} \
               -Dvoidstar=ON \
