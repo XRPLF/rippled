@@ -38,14 +38,38 @@ public:
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
+    std::optional<uint256 const> parentBatchId;
     beast::Journal const j;
+
+    PreflightContext(
+        Application& app_,
+        STTx const& tx_,
+        uint256 parentBatchId_,
+        Rules const& rules_,
+        ApplyFlags flags_,
+        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
+        : app(app_)
+        , tx(tx_)
+        , rules(rules_)
+        , flags(flags_)
+        , parentBatchId(parentBatchId_)
+        , j(j_)
+    {
+        XRPL_ASSERT(
+            (flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
+    }
 
     PreflightContext(
         Application& app_,
         STTx const& tx_,
         Rules const& rules_,
         ApplyFlags flags_,
-        beast::Journal j_);
+        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
+        : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+    {
+        XRPL_ASSERT(
+            (flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+    }
 
     PreflightContext&
     operator=(PreflightContext const&) = delete;
@@ -58,8 +82,9 @@ public:
     Application& app;
     ReadView const& view;
     TER preflightResult;
-    STTx const& tx;
     ApplyFlags flags;
+    STTx const& tx;
+    std::optional<uint256 const> const parentBatchId;
     beast::Journal const j;
 
     PreclaimContext(
@@ -68,14 +93,39 @@ public:
         TER preflightResult_,
         STTx const& tx_,
         ApplyFlags flags_,
+        std::optional<uint256> parentBatchId_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)
-        , tx(tx_)
         , flags(flags_)
+        , tx(tx_)
+        , parentBatchId(parentBatchId_)
         , j(j_)
     {
+        XRPL_ASSERT(
+            parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
+            "Parent Batch ID should be set if batch apply flag is set");
+    }
+
+    PreclaimContext(
+        Application& app_,
+        ReadView const& view_,
+        TER preflightResult_,
+        STTx const& tx_,
+        ApplyFlags flags_,
+        beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
+        : PreclaimContext(
+              app_,
+              view_,
+              preflightResult_,
+              tx_,
+              flags_,
+              std::nullopt,
+              j_)
+    {
+        XRPL_ASSERT(
+            (flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
     }
 
     PreclaimContext&
@@ -143,12 +193,15 @@ public:
     static NotTEC
     checkSign(PreclaimContext const& ctx);
 
+    static NotTEC
+    checkBatchSign(PreclaimContext const& ctx);
+
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
-    /* Do NOT define a preflight function in a derived class.
-       Instead, define
+    /* Do NOT define an invokePreflight function in a derived class.
+       Instead, define:
 
         // Optional if the transaction is gated on an amendment
         static bool
@@ -158,12 +211,18 @@ public:
         static std::uint32_t
         getFlagsMask(PreflightContext const& ctx);
 
+        // Required, even if it just returns tesSUCCESS.
         static NotTEC
-        doPreflight(PreflightContext const& ctx);
+        preflight(PreflightContext const& ctx);
+
+       * Do not try to call preflight1 or preflight2 directly.
+       * Do not check whether relevant amendments are enabled in preflight.
+         Instead, define isEnabled.
+       * Do not check flags in preflight. Instead, define getFlagsMask.
     */
     template <class T>
     static NotTEC
-    preflight(PreflightContext const& ctx);
+    invokePreflight(PreflightContext const& ctx);
 
     static TER
     preclaim(PreclaimContext const& ctx)
@@ -256,8 +315,9 @@ private:
     static NotTEC
     checkSingleSign(
         PreclaimContext const& ctx,
-        AccountID const& id,
-        STObject const& sigObject);
+        AccountID const& idSigner,
+        AccountID const& idAccount,
+        std::shared_ptr<SLE const> sleAccount);
     static NotTEC
     checkMultiSign(
         PreclaimContext const& ctx,
@@ -265,6 +325,24 @@ private:
         STObject const& sigObject);
 
     void trapTransaction(uint256) const;
+
+    /** Performs early sanity checks on the account and fee fields.
+
+        (And passes flagMask to preflight0)
+
+        Do not try to call preflight1 from preflight() in derived classes. See
+        the description of invokePreflight for details.
+    */
+    static NotTEC
+    preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
+
+    /** Checks whether the signature appears valid
+
+        Do not try to call preflight2 from preflight() in derived classes. See
+        the description of invokePreflight for details.
+    */
+    static NotTEC
+    preflight2(PreflightContext const& ctx);
 };
 
 inline bool
@@ -286,13 +364,6 @@ namespace detail {
 NotTEC
 preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
 
-/** Performs early sanity checks on the account and fee fields.
-
-    (And passes flagMask to preflight0)
-*/
-NotTEC
-preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
-
 /** Checks the special signing key state needed for simulation
  *
  * Normally called from preflight2 with ctx.tx.
@@ -302,31 +373,27 @@ preflightCheckSimulateKeys(
     ApplyFlags flags,
     STObject const& sigObject,
     beast::Journal j);
-
-/** Checks whether the signature appears valid */
-NotTEC
-preflight2(PreflightContext const& ctx);
 }  // namespace detail
 
 // Defined in Change.cpp
 template <>
 NotTEC
-Transactor::preflight<Change>(PreflightContext const& ctx);
+Transactor::invokePreflight<Change>(PreflightContext const& ctx);
 
 template <class T>
 NotTEC
-Transactor::preflight(PreflightContext const& ctx)
+Transactor::invokePreflight(PreflightContext const& ctx)
 {
     if (!T::isEnabled(ctx))
         return temDISABLED;
 
-    if (auto const ret = ripple::detail::preflight1(ctx, T::getFlagsMask(ctx)))
+    if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))
         return ret;
 
-    if (auto const ret = T::doPreflight(ctx))
+    if (auto const ret = T::preflight(ctx))
         return ret;
 
-    return ripple::detail::preflight2(ctx);
+    return preflight2(ctx);
 }
 
 template <class T>

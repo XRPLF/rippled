@@ -34,7 +34,7 @@ AMMVote::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-AMMVote::doPreflight(PreflightContext const& ctx)
+AMMVote::preflight(PreflightContext const& ctx)
 {
     if (auto const res = invalidAMMAssetPair(
             ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))

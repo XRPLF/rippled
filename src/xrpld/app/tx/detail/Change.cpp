@@ -35,7 +35,7 @@ namespace ripple {
 
 template <>
 NotTEC
-Transactor::preflight<Change>(PreflightContext const& ctx)
+Transactor::invokePreflight<Change>(PreflightContext const& ctx)
 {
     // 0 means "Allow any flags"
     if (auto const ret = preflight0(ctx, 0))

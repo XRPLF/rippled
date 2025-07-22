@@ -85,7 +85,7 @@ SetSignerList::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-SetSignerList::doPreflight(PreflightContext const& ctx)
+SetSignerList::preflight(PreflightContext const& ctx)
 {
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 

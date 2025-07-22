@@ -38,7 +38,7 @@ MPTokenIssuanceDestroy::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-MPTokenIssuanceDestroy::doPreflight(PreflightContext const& ctx)
+MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }
@@ -59,6 +59,9 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
     // ensure it has no outstanding balances
     if ((*sleMPT)[sfOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
+
+    if ((*sleMPT)[~sfLockedAmount].value_or(0) != 0)
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
 }

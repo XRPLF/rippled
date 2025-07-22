@@ -38,7 +38,7 @@ MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-MPTokenIssuanceCreate::doPreflight(PreflightContext const& ctx)
+MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
     if (auto const fee = ctx.tx[~sfTransferFee])
     {

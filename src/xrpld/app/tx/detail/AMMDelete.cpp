@@ -34,7 +34,7 @@ AMMDelete::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-AMMDelete::doPreflight(PreflightContext const& ctx)
+AMMDelete::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }

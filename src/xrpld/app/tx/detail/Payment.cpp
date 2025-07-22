@@ -19,6 +19,7 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/DelegateUtils.h>
+#include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/ledger/View.h>
@@ -67,8 +68,14 @@ getMaxSourceAmount(
 bool
 Payment::isEnabled(PreflightContext const& ctx)
 {
-    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
-        ctx.rules.enabled(featureCredentials);
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return false;
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
+        return false;
+
+    return true;
 }
 
 std::uint32_t
@@ -83,7 +90,7 @@ Payment::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-Payment::doPreflight(PreflightContext const& ctx)
+Payment::preflight(PreflightContext const& ctx)
 {
     auto& tx = ctx.tx;
     auto& j = ctx.j;
@@ -236,7 +243,8 @@ Payment::doPreflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j);
+        !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;
@@ -253,7 +261,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -272,7 +280,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
         amountIssue.account == tx[sfDestination])
         return tesSUCCESS;
 
-    return tecNO_PERMISSION;
+    return tecNO_DELEGATE_PERMISSION;
 }
 
 TER
@@ -356,9 +364,21 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+    if (auto const err =
+            credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
         !isTesSuccess(err))
         return err;
+
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        if (!permissioned_dex::accountInDomain(
+                ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+
+        if (!permissioned_dex::accountInDomain(
+                ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+    }
 
     return tesSUCCESS;
 }
@@ -437,8 +457,13 @@ Payment::doApply()
             //  1. If Account == Destination, or
             //  2. If Account is deposit preauthorized by destination.
 
-            if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+            if (auto err = verifyDepositPreauth(
+                    ctx_.tx,
+                    ctx_.view(),
+                    account_,
+                    dstAccountID,
+                    sleDst,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -461,6 +486,7 @@ Payment::doApply()
                 dstAccountID,
                 account_,
                 ctx_.tx.getFieldPathSet(sfPaths),
+                ctx_.tx[~sfDomainID],
                 ctx_.app.logs(),
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
@@ -507,8 +533,13 @@ Payment::doApply()
             ter != tesSUCCESS)
             return ter;
 
-        if (auto err =
-                verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -630,8 +661,13 @@ Payment::doApply()
         if (dstAmount > dstReserve ||
             sleDst->getFieldAmount(sfBalance) > dstReserve)
         {
-            if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+            if (auto err = verifyDepositPreauth(
+                    ctx_.tx,
+                    ctx_.view(),
+                    account_,
+                    dstAccountID,
+                    sleDst,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }

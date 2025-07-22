@@ -25,7 +25,6 @@
 #include <xrpl/beast/net/IPAddress.h>
 
 #include <cstdint>
-#include <ios>
 #include <optional>
 #include <string>
 
@@ -215,7 +214,7 @@ namespace std {
 template <>
 struct hash<::beast::IP::Endpoint>
 {
-    explicit hash() = default;
+    hash() = default;
 
     std::size_t
     operator()(::beast::IP::Endpoint const& endpoint) const
@@ -230,7 +229,7 @@ namespace boost {
 template <>
 struct hash<::beast::IP::Endpoint>
 {
-    explicit hash() = default;
+    hash() = default;
 
     std::size_t
     operator()(::beast::IP::Endpoint const& endpoint) const

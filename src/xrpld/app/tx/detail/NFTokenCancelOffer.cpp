@@ -41,7 +41,7 @@ NFTokenCancelOffer::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-NFTokenCancelOffer::doPreflight(PreflightContext const& ctx)
+NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
     if (auto const& ids = ctx.tx[sfNFTokenOffers];
         ids.empty() || (ids.size() > maxTokenOfferCancelCount))

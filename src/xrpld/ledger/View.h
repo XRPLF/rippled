@@ -357,6 +357,13 @@ transferRate(ReadView const& view, AccountID const& issuer);
 [[nodiscard]] Rate
 transferRate(ReadView const& view, MPTID const& issuanceID);
 
+/** Returns the transfer fee as Rate based on the type of token
+ * @param view The ledger view
+ * @param amount The amount to transfer
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, STAmount const& amount);
+
 /** Returns `true` if the directory is empty
     @param key The key of the directory
 */
@@ -681,6 +688,21 @@ rippleCredit(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
+    beast::Journal j);
+
+TER
+rippleLockEscrowMPT(
+    ApplyView& view,
+    AccountID const& uGrantorID,
+    STAmount const& saAmount,
+    beast::Journal j);
+
+TER
+rippleUnlockEscrowMPT(
+    ApplyView& view,
+    AccountID const& uGrantorID,
+    AccountID const& uGranteeID,
+    STAmount const& saAmount,
     beast::Journal j);
 
 /** Calls static accountSendIOU if saAmount represents Issue.

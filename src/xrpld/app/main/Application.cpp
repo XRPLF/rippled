@@ -256,8 +256,8 @@ public:
         if ((cores == 1) || ((config.NODE_SIZE == 0) && (cores == 2)))
             return 1;
 
-        // Otherwise, prefer two threads.
-        return 2;
+        // Otherwise, prefer six threads.
+        return 6;
 #endif
     }
 
@@ -285,7 +285,7 @@ public:
                   config_->CONFIG_DIR),
               *this,
               logs_->journal("PerfLog"),
-              [this] { signalStop(); }))
+              [this] { signalStop("PerfLog"); }))
 
         , m_txMaster(*this)
 
@@ -305,8 +305,8 @@ public:
                       static_cast<int>(std::thread::hardware_concurrency());
 
                   // Be more aggressive about the number of threads to use
-                  // for the job queue if the server is configured as "large"
-                  // or "huge" if there are enough cores.
+                  // for the job queue if the server is configured as
+                  // "large" or "huge" if there are enough cores.
                   if (config->NODE_SIZE >= 4 && count >= 16)
                       count = 6 + std::min(count, 8);
                   else if (config->NODE_SIZE >= 3 && count >= 8)
@@ -505,7 +505,7 @@ public:
     void
     run() override;
     void
-    signalStop(std::string msg = "") override;
+    signalStop(std::string msg) override;
     bool
     checkSigs() const override;
     void
@@ -977,7 +977,7 @@ public:
         if (!config_->standalone() &&
             !getRelationalDatabase().transactionDbHasSpace(*config_))
         {
-            signalStop();
+            signalStop("Out of transaction DB space");
         }
 
         // VFALCO NOTE Does the order of calls matter?
@@ -1193,7 +1193,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(m_journal.info()) << "Received signal " << signum;
 
             if (signum == SIGTERM || signum == SIGINT)
-                signalStop();
+                signalStop("Signal: " + to_string(signum));
         });
 
     auto debug_log = config_->getDebugLogFile();

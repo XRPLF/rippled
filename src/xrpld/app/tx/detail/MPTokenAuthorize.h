@@ -49,7 +49,7 @@ public:
     getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
-    doPreflight(PreflightContext const& ctx);
+    preflight(PreflightContext const& ctx);
 
     static TER
     preclaim(PreclaimContext const& ctx);
@@ -59,6 +59,13 @@ public:
         ApplyView& view,
         beast::Journal journal,
         MPTAuthorizeArgs const& args);
+
+    static TER
+    createMPToken(
+        ApplyView& view,
+        MPTID const& mptIssuanceID,
+        AccountID const& account,
+        std::uint32_t const flags);
 
     TER
     doApply() override;

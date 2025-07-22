@@ -51,7 +51,7 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-VaultCreate::doPreflight(PreflightContext const& ctx)
+VaultCreate::preflight(PreflightContext const& ctx)
 {
     if (!validDataLength(ctx.tx[~sfData], maxDataPayloadLength))
         return temMALFORMED;

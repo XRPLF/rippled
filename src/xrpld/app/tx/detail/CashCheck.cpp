@@ -39,7 +39,7 @@ CashCheck::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-CashCheck::doPreflight(PreflightContext const& ctx)
+CashCheck::preflight(PreflightContext const& ctx)
 {
     // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];
@@ -443,6 +443,7 @@ CashCheck::doApply()
                 OfferCrossing::no,
                 std::nullopt,
                 sleCheck->getFieldAmount(sfSendMax),
+                std::nullopt,  // check does not support domain
                 viewJ);
 
             if (result.result() != tesSUCCESS)

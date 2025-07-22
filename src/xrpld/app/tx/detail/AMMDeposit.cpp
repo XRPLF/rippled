@@ -43,7 +43,7 @@ AMMDeposit::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-AMMDeposit::doPreflight(PreflightContext const& ctx)
+AMMDeposit::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
 
@@ -544,7 +544,7 @@ AMMDeposit::deposit(
                 lptAMMBalance,
                 lpTokensDeposit,
                 tfee,
-                true);
+                IsDeposit::Yes);
 
     if (lpTokensDepositActual <= beast::zero)
     {
@@ -627,6 +627,17 @@ AMMDeposit::deposit(
     return {tesSUCCESS, lptAMMBalance + lpTokensDepositActual};
 }
 
+static STAmount
+adjustLPTokensOut(
+    Rules const& rules,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokensDeposit)
+{
+    if (!rules.enabled(fixAMMv1_3))
+        return lpTokensDeposit;
+    return adjustLPTokens(lptAMMBalance, lpTokensDeposit, IsDeposit::Yes);
+}
+
 /** Proportional deposit of pools assets in exchange for the specified
  * amount of LPTokens.
  */
@@ -644,16 +655,25 @@ AMMDeposit::equalDepositTokens(
 {
     try
     {
+        auto const tokensAdj =
+            adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
+        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
         auto const frac =
-            divide(lpTokensDeposit, lptAMMBalance, lptAMMBalance.issue());
+            divide(tokensAdj, lptAMMBalance, lptAMMBalance.issue());
+        // amounts factor in the adjusted tokens
+        auto const amountDeposit =
+            getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
+        auto const amount2Deposit =
+            getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
         return deposit(
             view,
             ammAccount,
             amountBalance,
-            multiply(amountBalance, frac, amountBalance.issue()),
-            multiply(amount2Balance, frac, amount2Balance.issue()),
+            amountDeposit,
+            amount2Deposit,
             lptAMMBalance,
-            lpTokensDeposit,
+            tokensAdj,
             depositMin,
             deposit2Min,
             std::nullopt,
@@ -710,37 +730,55 @@ AMMDeposit::equalDepositLimit(
     std::uint16_t tfee)
 {
     auto frac = Number{amount} / amountBalance;
-    auto tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
-    if (tokens == beast::zero)
-        return {tecAMM_FAILED, STAmount{}};
-    auto const amount2Deposit = amount2Balance * frac;
+    auto tokensAdj =
+        getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
+    if (tokensAdj == beast::zero)
+    {
+        if (!view.rules().enabled(fixAMMv1_3))
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+        else
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+    }
+    // factor in the adjusted tokens
+    frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
+    auto const amount2Deposit =
+        getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::Yes);
     if (amount2Deposit <= amount2)
         return deposit(
             view,
             ammAccount,
             amountBalance,
             amount,
-            toSTAmount(amount2Balance.issue(), amount2Deposit),
+            amount2Deposit,
             lptAMMBalance,
-            tokens,
+            tokensAdj,
             std::nullopt,
             std::nullopt,
             lpTokensDepositMin,
             tfee);
     frac = Number{amount2} / amount2Balance;
-    tokens = toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
-    if (tokens == beast::zero)
-        return {tecAMM_FAILED, STAmount{}};
-    auto const amountDeposit = amountBalance * frac;
+    tokensAdj =
+        getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::Yes);
+    if (tokensAdj == beast::zero)
+    {
+        if (!view.rules().enabled(fixAMMv1_3))
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+        else
+            return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
+    }
+    // factor in the adjusted tokens
+    frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
+    auto const amountDeposit =
+        getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::Yes);
     if (amountDeposit <= amount)
         return deposit(
             view,
             ammAccount,
             amountBalance,
-            toSTAmount(amountBalance.issue(), amountDeposit),
+            amountDeposit,
             amount2,
             lptAMMBalance,
-            tokens,
+            tokensAdj,
             std::nullopt,
             std::nullopt,
             lpTokensDepositMin,
@@ -766,17 +804,30 @@ AMMDeposit::singleDeposit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
-    auto const tokens = lpTokensIn(amountBalance, amount, lptAMMBalance, tfee);
+    auto const tokens = adjustLPTokensOut(
+        view.rules(),
+        lptAMMBalance,
+        lpTokensOut(amountBalance, amount, lptAMMBalance, tfee));
     if (tokens == beast::zero)
-        return {tecAMM_FAILED, STAmount{}};
+    {
+        if (!view.rules().enabled(fixAMMv1_3))
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+        else
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+    }
+    // factor in the adjusted tokens
+    auto const [tokensAdj, amountDepositAdj] = adjustAssetInByTokens(
+        view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     return deposit(
         view,
         ammAccount,
         amountBalance,
-        amount,
+        amountDepositAdj,
         std::nullopt,
         lptAMMBalance,
-        tokens,
+        tokensAdj,
         std::nullopt,
         std::nullopt,
         lpTokensDepositMin,
@@ -800,8 +851,13 @@ AMMDeposit::singleDepositTokens(
     STAmount const& lpTokensDeposit,
     std::uint16_t tfee)
 {
+    auto const tokensAdj =
+        adjustLPTokensOut(view.rules(), lptAMMBalance, lpTokensDeposit);
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
+    // the adjusted tokens are factored in
     auto const amountDeposit =
-        ammAssetIn(amountBalance, lptAMMBalance, lpTokensDeposit, tfee);
+        ammAssetIn(amountBalance, lptAMMBalance, tokensAdj, tfee);
     if (amountDeposit > amount)
         return {tecAMM_FAILED, STAmount{}};
     return deposit(
@@ -811,7 +867,7 @@ AMMDeposit::singleDepositTokens(
         amountDeposit,
         std::nullopt,
         lptAMMBalance,
-        lpTokensDeposit,
+        tokensAdj,
         std::nullopt,
         std::nullopt,
         std::nullopt,
@@ -855,20 +911,32 @@ AMMDeposit::singleDepositEPrice(
 {
     if (amount != beast::zero)
     {
-        auto const tokens =
-            lpTokensIn(amountBalance, amount, lptAMMBalance, tfee);
+        auto const tokens = adjustLPTokensOut(
+            view.rules(),
+            lptAMMBalance,
+            lpTokensOut(amountBalance, amount, lptAMMBalance, tfee));
         if (tokens <= beast::zero)
-            return {tecAMM_FAILED, STAmount{}};
-        auto const ep = Number{amount} / tokens;
+        {
+            if (!view.rules().enabled(fixAMMv1_3))
+                return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+            else
+                return {tecAMM_INVALID_TOKENS, STAmount{}};
+        }
+        // factor in the adjusted tokens
+        auto const [tokensAdj, amountDepositAdj] = adjustAssetInByTokens(
+            view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
+        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+            return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
+        auto const ep = Number{amountDepositAdj} / tokensAdj;
         if (ep <= ePrice)
             return deposit(
                 view,
                 ammAccount,
                 amountBalance,
-                amount,
+                amountDepositAdj,
                 std::nullopt,
                 lptAMMBalance,
-                tokens,
+                tokensAdj,
                 std::nullopt,
                 std::nullopt,
                 std::nullopt,
@@ -899,21 +967,37 @@ AMMDeposit::singleDepositEPrice(
     auto const a1 = c * c;
     auto const b1 = c * c * f2 * f2 + 2 * c - d * d;
     auto const c1 = 2 * c * f2 * f2 + 1 - 2 * d * f2;
-    auto const amountDeposit = toSTAmount(
-        amountBalance.issue(),
-        f1 * amountBalance * solveQuadraticEq(a1, b1, c1));
+    auto amtNoRoundCb = [&] {
+        return f1 * amountBalance * solveQuadraticEq(a1, b1, c1);
+    };
+    auto amtProdCb = [&] { return f1 * solveQuadraticEq(a1, b1, c1); };
+    auto const amountDeposit = getRoundedAsset(
+        view.rules(), amtNoRoundCb, amountBalance, amtProdCb, IsDeposit::Yes);
     if (amountDeposit <= beast::zero)
         return {tecAMM_FAILED, STAmount{}};
-    auto const tokens =
-        toSTAmount(lptAMMBalance.issue(), amountDeposit / ePrice);
+    auto tokNoRoundCb = [&] { return amountDeposit / ePrice; };
+    auto tokProdCb = [&] { return amountDeposit / ePrice; };
+    auto const tokens = getRoundedLPTokens(
+        view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::Yes);
+    // factor in the adjusted tokens
+    auto const [tokensAdj, amountDepositAdj] = adjustAssetInByTokens(
+        view.rules(),
+        amountBalance,
+        amountDeposit,
+        lptAMMBalance,
+        tokens,
+        tfee);
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
+
     return deposit(
         view,
         ammAccount,
         amountBalance,
-        amountDeposit,
+        amountDepositAdj,
         std::nullopt,
         lptAMMBalance,
-        tokens,
+        tokensAdj,
         std::nullopt,
         std::nullopt,
         std::nullopt,

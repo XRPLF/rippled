@@ -83,6 +83,8 @@ JSS(PriceDataSeries);                    // field.
 JSS(PriceData);                          // field.
 JSS(Provider);                           // field.
 JSS(QuoteAsset);                         // in: Oracle.
+JSS(RawTransaction);                     // in: Batch
+JSS(RawTransactions);                    // in: Batch
 JSS(SLE_hit_rate);                       // out: GetCounts.
 JSS(Scale);                              // field.
 JSS(SettleDelay);                        // in: TransactionSign
@@ -389,6 +391,7 @@ JSS(load_fee);                // out: LoadFeeTrackImp, NetworkOPs
 JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
+JSS(locked);                  // out: GatewayBalances
 JSS(low);                     // out: BookChanges
 JSS(lowest_sequence);         // out: AccountInfo
 JSS(lowest_ticket);           // out: AccountInfo

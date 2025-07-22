@@ -43,7 +43,7 @@ SetOracle::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-SetOracle::doPreflight(PreflightContext const& ctx)
+SetOracle::preflight(PreflightContext const& ctx)
 {
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())

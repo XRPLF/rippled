@@ -41,7 +41,7 @@ VaultSet::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-VaultSet::doPreflight(PreflightContext const& ctx)
+VaultSet::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfVaultID] == beast::zero)
     {

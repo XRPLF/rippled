@@ -35,7 +35,7 @@ CreateCheck::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-CreateCheck::doPreflight(PreflightContext const& ctx)
+CreateCheck::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {

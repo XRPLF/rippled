@@ -28,8 +28,6 @@
 #include <xrpl/protocol/Units.h>
 
 #include <cstdint>
-#include <functional>
-#include <memory>
 #include <optional>
 #include <sstream>
 

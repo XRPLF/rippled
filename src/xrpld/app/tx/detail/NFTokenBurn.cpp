@@ -33,7 +33,7 @@ NFTokenBurn::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-NFTokenBurn::doPreflight(PreflightContext const& ctx)
+NFTokenBurn::preflight(PreflightContext const& ctx)
 {
     return tesSUCCESS;
 }

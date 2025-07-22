@@ -34,7 +34,7 @@ LedgerStateFix::isEnabled(PreflightContext const& ctx)
 }
 
 NotTEC
-LedgerStateFix::doPreflight(PreflightContext const& ctx)
+LedgerStateFix::preflight(PreflightContext const& ctx)
 {
     switch (ctx.tx[sfLedgerFixType])
     {

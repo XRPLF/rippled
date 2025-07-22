@@ -62,7 +62,7 @@ CredentialCreate::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-CredentialCreate::doPreflight(PreflightContext const& ctx)
+CredentialCreate::preflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
     auto& j = ctx.j;
@@ -213,7 +213,7 @@ CredentialDelete::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-CredentialDelete::doPreflight(PreflightContext const& ctx)
+CredentialDelete::preflight(PreflightContext const& ctx)
 {
     auto const subject = ctx.tx[~sfSubject];
     auto const issuer = ctx.tx[~sfIssuer];
@@ -297,7 +297,7 @@ CredentialAccept::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-CredentialAccept::doPreflight(PreflightContext const& ctx)
+CredentialAccept::preflight(PreflightContext const& ctx)
 {
     if (!ctx.tx[sfIssuer])
     {

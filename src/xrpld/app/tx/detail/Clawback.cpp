@@ -88,7 +88,7 @@ Clawback::getFlagsMask(PreflightContext const& ctx)
 }
 
 NotTEC
-Clawback::doPreflight(PreflightContext const& ctx)
+Clawback::preflight(PreflightContext const& ctx)
 {
     if (auto const ret = std::visit(
             [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
