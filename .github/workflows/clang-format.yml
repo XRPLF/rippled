@@ -22,7 +22,8 @@ jobs:
         run: |
           set -o pipefail
           pwd
-          ls -la
+          whoami
+          ls -la .git
           git branch
           git diff --exit-code | tee "clang-format.patch"
       - name: Upload patch
