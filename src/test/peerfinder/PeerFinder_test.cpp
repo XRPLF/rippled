@@ -367,7 +367,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PeerFinder, PeerFinder, ripple);
+BEAST_DEFINE_TESTSUITE(PeerFinder, peerfinder, ripple);
 
 }  // namespace PeerFinder
 }  // namespace ripple
