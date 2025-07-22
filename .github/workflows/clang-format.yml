@@ -23,7 +23,6 @@ jobs:
           set -o pipefail
           pwd
           whoami
-          chown root:root $(pwd)
           ls -la .git
           git branch
           git diff --exit-code | tee "clang-format.patch"
