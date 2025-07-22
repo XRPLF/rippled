@@ -18,6 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/WSClient.h>
+
+#include "xrpl/beast/unit_test/suite.h"
+#include "xrpl/protocol/jss.h"
 
 namespace ripple {
 namespace test {
@@ -84,13 +88,58 @@ public:
     }
 
     void
+    testDomainOffer()
+    {
+        testcase("Domain Offer");
+        using namespace jtx;
+
+        FeatureBitset const all{
+            jtx::testable_amendments() | featurePermissionedDomains |
+            featureCredentials | featurePermissionedDEX};
+
+        Env env(*this, all);
+        PermissionedDEX permDex(env);
+        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+            permDex;
+
+        auto wsc = makeWSClient(env.app().config());
+
+        env(offer(alice, XRP(10), USD(10)), domain(domainID));
+        env.close();
+
+        env(pay(bob, carol, USD(10)),
+            path(~USD),
+            sendmax(XRP(10)),
+            domain(domainID));
+        env.close();
+
+        std::string const txHash{
+            env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+
+        Json::Value const txResult = env.rpc("tx", txHash)[jss::result];
+        auto const ledgerIndex = txResult[jss::ledger_index].asInt();
+
+        Json::Value jvParams;
+        jvParams[jss::ledger_index] = ledgerIndex;
+
+        auto jv = wsc->invoke("book_changes", jvParams);
+        auto jrr = jv[jss::result];
+
+        BEAST_EXPECT(jrr[jss::changes].size() == 1);
+        BEAST_EXPECT(
+            jrr[jss::changes][0u][jss::domain].asString() ==
+            to_string(domainID));
+    }
+
+    void
     run() override
     {
         testConventionalLedgerInputStrings();
         testLedgerInputDefaultBehavior();
 
-        // Note: Other aspects of the book_changes rpc are fertile grounds for
-        // unit-testing purposes. It can be included in future work
+        testDomainOffer();
+        // Note: Other aspects of the book_changes rpc are fertile grounds
+        // for unit-testing purposes. It can be included in future work
     }
 };
 

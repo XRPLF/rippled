@@ -96,7 +96,7 @@ Env::AppBundle::~AppBundle()
     if (app)
     {
         app->getJobQueue().rendezvous();
-        app->signalStop();
+        app->signalStop("~AppBundle");
     }
     if (thread.joinable())
         thread.join();
@@ -202,13 +202,31 @@ Env::balance(Account const& account, Issue const& issue) const
 PrettyAmount
 Env::balance(Account const& account, MPTIssue const& mptIssue) const
 {
-    auto const sle = le(keylet::mptoken(mptIssue.getMptID(), account));
-    if (!sle)
-    {
+    MPTID const id = mptIssue.getMptID();
+    if (!id)
         return {STAmount(mptIssue, 0), account.name()};
+
+    AccountID const issuer = mptIssue.getIssuer();
+    if (account.id() == issuer)
+    {
+        // Issuer balance
+        auto const sle = le(keylet::mptIssuance(id));
+        if (!sle)
+            return {STAmount(mptIssue, 0), account.name()};
+
+        STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount)};
+        return {amount, lookup(issuer).name()};
     }
-    STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-    return {amount, lookup(mptIssue.getIssuer()).name()};
+    else
+    {
+        // Holder balance
+        auto const sle = le(keylet::mptoken(id, account));
+        if (!sle)
+            return {STAmount(mptIssue, 0), account.name()};
+
+        STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+        return {amount, lookup(issuer).name()};
+    }
 }
 
 PrettyAmount
@@ -217,6 +235,18 @@ Env::balance(Account const& account, Asset const& asset) const
     return std::visit(
         [&](auto const& issue) { return balance(account, issue); },
         asset.value());
+}
+
+PrettyAmount
+Env::limit(Account const& account, Issue const& issue) const
+{
+    auto const sle = le(keylet::line(account.id(), issue));
+    if (!sle)
+        return {STAmount(issue, 0), account.name()};
+    auto const aHigh = account.id() > issue.account;
+    if (sle && sle->isFieldPresent(aHigh ? sfLowLimit : sfHighLimit))
+        return {(*sle)[aHigh ? sfLowLimit : sfHighLimit], account.name()};
+    return {STAmount(issue, 0), account.name()};
 }
 
 std::uint32_t
@@ -466,7 +496,12 @@ Env::postconditions(
 std::shared_ptr<STObject const>
 Env::meta()
 {
-    close();
+    if (current()->txCount() != 0)
+    {
+        // close the ledger if it has not already been closed
+        // (metadata is not finalized until the ledger is closed)
+        close();
+    }
     auto const item = closed()->txRead(txid_);
     return item.second;
 }

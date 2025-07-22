@@ -323,7 +323,7 @@ applyCreate(
                      << amount2;
     auto addOrderBook =
         [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {
-            Book const book{issueIn, issueOut};
+            Book const book{issueIn, issueOut, std::nullopt};
             auto const dir = keylet::quality(keylet::book(book), uRate);
             if (auto const bookExisted = static_cast<bool>(sb.read(dir));
                 !bookExisted)
