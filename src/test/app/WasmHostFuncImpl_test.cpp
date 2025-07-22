@@ -439,7 +439,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                 env.master.id().data()));
 
         // Should return the Balance field from the cached ledger object
-        // TODO: improve this check once there's full issue/amount support
         auto const balanceField = hfs.getLedgerObjField(1, sfBalance);
         if (BEAST_EXPECT(balanceField.has_value()))
         {
