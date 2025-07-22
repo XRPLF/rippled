@@ -20,6 +20,8 @@ jobs:
         id: assert
         shell: bash
         run: |
+          pwd
+          ls
           set -o pipefail
           git diff --exit-code | tee "clang-format.patch"
       - name: Upload patch
