@@ -121,9 +121,10 @@ jobs:
           echo "HOME: $HOME"
           echo "CONAN_HOME: $CONAN_HOME"
           echo "ls -l .."
+          conan list
           ls -la ../
-          ls -la ../.conan2/p/
           ls -lash $conan_home
+          conan list "*/*:*#*"
       - name: save deps
         uses: actions/upload-artifact@v4
         with:
