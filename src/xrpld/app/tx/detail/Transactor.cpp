@@ -118,22 +118,23 @@ preflightCheckSimulateKeys(
     STObject const& sigObject,
     beast::Journal j)
 {
-    if (ctx.flags & tapDRY_RUN)  // simulation
+    if (flags & tapDRY_RUN)  // simulation
     {
-        if (!ctx.tx.getSignature().empty())
+        std::optional<Slice> const signature = sigObject[~sfTxnSignature];
+        if (signature && !signature->empty())
         {
             // NOTE: This code should never be hit because it's checked in the
             // `simulate` RPC
             return temINVALID;  // LCOV_EXCL_LINE
         }
 
-        if (!ctx.tx.isFieldPresent(sfSigners))
+        if (!sigObject.isFieldPresent(sfSigners))
         {
             // no signers, no signature - a valid simulation
             return tesSUCCESS;
         }
 
-        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+        for (auto const& signer : sigObject.getFieldArray(sfSigners))
         {
             if (signer.isFieldPresent(sfTxnSignature) &&
                 !signer[sfTxnSignature].empty())
@@ -144,7 +145,8 @@ preflightCheckSimulateKeys(
             }
         }
 
-        if (!ctx.tx.getSigningPubKey().empty())
+        Slice const signingPubKey = sigObject[sfSigningPubKey];
+        if (!signingPubKey.empty())
         {
             // trying to single-sign _and_ multi-sign a transaction
             return temINVALID;
