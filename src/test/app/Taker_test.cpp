@@ -1389,6 +1389,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Taker, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Taker, app, ripple);
 
 }  // namespace ripple
