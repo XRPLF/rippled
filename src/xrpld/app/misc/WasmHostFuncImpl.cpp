@@ -153,8 +153,10 @@ getAnyFieldData(STBase const* obj)
             return Bytes{b, e};
         }
         break;
+        // LCOV_EXCL_START
         default:
             return Unexpected(HostFunctionError::INTERNAL);
+            // LCOV_EXCL_STOP
     }
 
     Serializer msg;
@@ -303,7 +305,7 @@ WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -324,7 +326,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -347,7 +349,8 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
+
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -566,8 +569,6 @@ WasmHostFunctionsImpl::paychanKeylet(
     if (!account || !destination)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
     if (account == destination)
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
-    if (seq == 0)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
     auto const keylet = keylet::payChan(account, destination, seq);
     return Bytes{keylet.key.begin(), keylet.key.end()};

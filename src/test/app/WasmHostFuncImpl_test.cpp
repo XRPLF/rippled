@@ -235,6 +235,11 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(!memos.has_value()))
                 BEAST_EXPECT(
                     memos.error() == HostFunctionError::NOT_LEAF_FIELD);
+
+            auto const nonField = hfs.getTxField(sfInvalid);
+            if (BEAST_EXPECT(!nonField.has_value()))
+                BEAST_EXPECT(
+                    nonField.error() == HostFunctionError::FIELD_NOT_FOUND);
         }
     }
 
@@ -282,6 +287,18 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         BEAST_EXPECT(
             !notPresent.has_value() &&
             notPresent.error() == HostFunctionError::FIELD_NOT_FOUND);
+
+        {
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master) + 5);
+            WasmHostFunctionsImpl hfs2(ac, dummyEscrow);
+            auto const account = hfs2.getCurrentLedgerObjField(sfAccount);
+            if (BEAST_EXPECT(!account.has_value()))
+            {
+                BEAST_EXPECT(
+                    account.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+            }
+        }
     }
 
     void
@@ -563,6 +580,22 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         BEAST_EXPECT(
             !malformedResult.has_value() &&
             malformedResult.error() == HostFunctionError::LOCATOR_MALFORMED);
+
+        {
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master) + 5);
+            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+            std::vector<int32_t> const locatorVec = {sfAccount.fieldCode};
+            Slice locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result =
+                dummyHfs.getCurrentLedgerObjNestedField(locator);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECTS(
+                    result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND,
+                    std::to_string(static_cast<int>(result.error())));
+        }
     }
 
     void
@@ -830,6 +863,16 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         auto const notArray = hfs.getCurrentLedgerObjArrayLen(sfAccount);
         if (BEAST_EXPECT(!notArray.has_value()))
             BEAST_EXPECT(notArray.error() == HostFunctionError::NO_ARRAY);
+
+        {
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master) + 5);
+            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+            auto const len = dummyHfs.getCurrentLedgerObjArrayLen(sfMemos);
+            if (BEAST_EXPECT(!len.has_value()))
+                BEAST_EXPECT(
+                    len.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+        }
     }
 
     void
@@ -857,16 +900,16 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         BEAST_EXPECT(cacheResult.has_value() && cacheResult.value() == 1);
 
         {
-            auto const arrLen = hfs.getLedgerObjArrayLen(0, sfSignerEntries);
-            if (BEAST_EXPECT(!arrLen.has_value()))
-                BEAST_EXPECT(
-                    arrLen.error() == HostFunctionError::SLOT_OUT_RANGE);
-        }
-        {
             auto const arrLen = hfs.getLedgerObjArrayLen(1, sfSignerEntries);
             if (BEAST_EXPECT(arrLen.has_value()))
                 // Should return 2 for sfSignerEntries
                 BEAST_EXPECT(arrLen.value() == 2);
+        }
+        {
+            auto const arrLen = hfs.getLedgerObjArrayLen(0, sfSignerEntries);
+            if (BEAST_EXPECT(!arrLen.has_value()))
+                BEAST_EXPECT(
+                    arrLen.error() == HostFunctionError::SLOT_OUT_RANGE);
         }
 
         {
@@ -882,6 +925,14 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(!emptySlot.has_value()))
                 BEAST_EXPECT(
                     emptySlot.error() == HostFunctionError::EMPTY_SLOT);
+        }
+
+        {
+            // Should return error for missing array field
+            auto const missingArray = hfs.getLedgerObjArrayLen(1, sfMemos);
+            if (BEAST_EXPECT(!missingArray.has_value()))
+                BEAST_EXPECT(
+                    missingArray.error() == HostFunctionError::FIELD_NOT_FOUND);
         }
     }
 
@@ -986,6 +1037,22 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         // Error: missing field
         expectError({sfSigners.fieldCode}, HostFunctionError::FIELD_NOT_FOUND);
+
+        {
+            auto const dummyEscrow =
+                keylet::escrow(env.master, env.seq(env.master) + 5);
+            WasmHostFunctionsImpl dummyHfs(ac, dummyEscrow);
+            std::vector<int32_t> locatorVec = {sfAccount.fieldCode};
+            Slice const locator(
+                reinterpret_cast<uint8_t const*>(locatorVec.data()),
+                locatorVec.size() * sizeof(int32_t));
+            auto const result =
+                dummyHfs.getCurrentLedgerObjNestedArrayLen(locator);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECTS(
+                    result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND,
+                    std::to_string(static_cast<int>(result.error())));
+        }
     }
 
     void
@@ -1177,6 +1244,12 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             HostFunctionError::INVALID_ACCOUNT,
             xrpAccount());
         COMPARE_KEYLET(checkKeylet, keylet::check, env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            checkKeylet,
+            keylet::check,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            1);
         std::string const credType = "test";
         COMPARE_KEYLET(
             credentialKeylet,
@@ -1265,6 +1338,12 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         // escrowKeylet
         COMPARE_KEYLET(escrowKeylet, keylet::escrow, env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            escrowKeylet,
+            keylet::escrow,
+            HostFunctionError::INVALID_ACCOUNT,
+            xrpAccount(),
+            1);
 
         // lineKeylet
         Currency usd = to_currency("USD");
@@ -1291,6 +1370,13 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             xrpAccount(),
             env.master.id(),
             usd);
+        COMPARE_KEYLET_FAIL(
+            lineKeylet,
+            keylet::line,
+            HostFunctionError::INVALID_PARAMS,
+            env.master.id(),
+            alice.id(),
+            to_currency(""));
 
         COMPARE_KEYLET(nftOfferKeylet, keylet::nftoffer, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
