@@ -96,10 +96,12 @@ getAnyFieldData(STBase const* obj)
     auto const stype = obj->getSType();
     switch (stype)
     {
+        // LCOV_EXCL_START
         case STI_UNKNOWN:
         case STI_NOTPRESENT:
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
             break;
+        // LCOV_EXCL_STOP
         case STI_OBJECT:
         case STI_ARRAY:
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
