@@ -663,6 +663,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, tx, ripple);
+BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, app, ripple);
 
 }  // namespace ripple
