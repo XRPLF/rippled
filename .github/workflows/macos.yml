@@ -129,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: macos_conan_home
-          path: ${{ steps.get_conan_home.outputs.conan_home}}
+          path: ${{ steps.get_conan_home.outputs.conan_home}}/**
       # - name: build
       #   uses: ./.github/actions/build
       #   with:
