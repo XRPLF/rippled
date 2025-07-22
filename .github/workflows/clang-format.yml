@@ -12,12 +12,17 @@ jobs:
     container: ghcr.io/xrplf/ci/tools-rippled-clang-format
     steps:
       - uses: actions/checkout@v4
+      - name: Format first-party sources
+        run: |
+          clang-format --version
+          find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
       - name: Check for differences
         id: assert
         shell: bash
         run: |
           pwd
           ls -a
+          git config --global --add safe.directory $(pwd)
           set -o pipefail
           git diff --exit-code | tee "clang-format.patch"
       - name: Upload patch
@@ -28,10 +33,6 @@ jobs:
           name: clang-format.patch
           if-no-files-found: ignore
           path: clang-format.patch
-      - name: Format first-party sources
-        run: |
-          clang-format --version
-          find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
       - name: What happened?
         if: failure() && steps.assert.outcome == 'failure'
         env:
