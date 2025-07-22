@@ -308,7 +308,7 @@ SHAMapStoreImp::run()
             validatedSeq >= lastRotated + deleteInterval_ &&
             canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
 
-        JLOG(journal_.fatal())
+        JLOG(journal_.debug())
             << "run: Setting lastGoodValidatedLedger_ to " << validatedSeq;
 
         {
@@ -323,7 +323,7 @@ SHAMapStoreImp::run()
         // will delete up to (not including) lastRotated
         if (readyToRotate)
         {
-            JLOG(journal_.fatal())
+            JLOG(journal_.warn())
                 << "rotating  validatedSeq " << validatedSeq << " lastRotated "
                 << lastRotated << " deleteInterval " << deleteInterval_
                 << " canDelete_ " << canDelete_ << " state "
@@ -393,7 +393,7 @@ SHAMapStoreImp::run()
                     clearCaches(validatedSeq);
                 });
 
-            JLOG(journal_.fatal())
+            JLOG(journal_.warn())
                 << "finished rotation. validatedSeq: " << validatedSeq
                 << ", lastRotated: " << lastRotated << ". Complete ledgers: "
                 << ledgerMaster_->getCompleteLedgers();
@@ -669,8 +669,8 @@ SHAMapStoreImp::healthWait()
         lock.unlock();
 
         auto const stream = mode != OperatingMode::FULL || age > ageThreshold_
-            ? journal_.fatal()
-            : journal_.fatal();
+            ? journal_.warn()
+            : journal_.info();
         JLOG(stream) << "Waiting " << recoveryWaitTime_.count()
                      << "s for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age "
@@ -688,7 +688,7 @@ SHAMapStoreImp::healthWait()
         lock.lock();
     }
 
-    JLOG(journal_.fatal()) << "healthWait: Setting lastGoodValidatedLedger_ to "
+    JLOG(journal_.debug()) << "healthWait: Setting lastGoodValidatedLedger_ to "
                            << index;
     lastGoodValidatedLedger_ = index;
 
