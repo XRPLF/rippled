@@ -59,7 +59,6 @@ runs:
         echo "conan_home=$(conan config home)" >> $GITHUB_OUTPUT
 
     - name: save deps
-      if: ${{ matrix.platform == "macos"}}
       uses: actions/upload-artifact@v4
       with:
         name: macos_conan_home
