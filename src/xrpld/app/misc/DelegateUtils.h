@@ -31,7 +31,8 @@ namespace ripple {
  * Check if the delegate account has permission to execute the transaction.
  * @param delegate The delegate account.
  * @param tx The transaction that the delegate account intends to execute.
- * @return tesSUCCESS if the transaction is allowed, tecNO_PERMISSION if not.
+ * @return tesSUCCESS if the transaction is allowed, tecNO_DELEGATE_PERMISSION
+ * if not.
  */
 TER
 checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx);

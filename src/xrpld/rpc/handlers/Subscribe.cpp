@@ -305,6 +305,20 @@ doSubscribe(RPC::JsonContext& context)
                     return rpcError(rpcBAD_ISSUER);
             }
 
+            if (j.isMember(jss::domain))
+            {
+                uint256 domain;
+                if (!j[jss::domain].isString() ||
+                    !domain.parseHex(j[jss::domain].asString()))
+                {
+                    return rpcError(rpcDOMAIN_MALFORMED);
+                }
+                else
+                {
+                    book.domain = domain;
+                }
+            }
+
             if (!isConsistent(book))
             {
                 JLOG(context.j.warn()) << "Bad market: " << book;

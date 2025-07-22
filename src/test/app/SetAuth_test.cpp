@@ -74,8 +74,8 @@ struct SetAuth_test : public beast::unit_test::suite
     run() override
     {
         using namespace jtx;
-        auto const sa = supported_amendments();
-        testAuth(sa - featureFlowCross);
+        auto const sa = testable_amendments();
+        testAuth(sa - featurePermissionedDEX);
         testAuth(sa);
     }
 };

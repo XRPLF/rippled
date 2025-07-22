@@ -142,8 +142,8 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const sa = supported_amendments();
-        test_convert_all_of_an_asset(sa - featureFlowCross);
+        auto const sa = testable_amendments();
+        test_convert_all_of_an_asset(sa - featurePermissionedDEX);
         test_convert_all_of_an_asset(sa);
     }
 };

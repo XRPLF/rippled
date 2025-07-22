@@ -29,7 +29,6 @@
 #include <xrpl/protocol/json_get_or_throw.h>
 
 #include <cstddef>
-#include <mutex>
 #include <optional>
 #include <string>
 
@@ -149,7 +148,7 @@ namespace std {
 template <>
 struct hash<ripple::AccountID> : ripple::AccountID::hasher
 {
-    explicit hash() = default;
+    hash() = default;
 };
 
 }  // namespace std

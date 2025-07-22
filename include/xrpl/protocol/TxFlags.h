@@ -58,7 +58,8 @@ namespace ripple {
 // clang-format off
 // Universal Transaction flags:
 constexpr std::uint32_t tfFullyCanonicalSig                = 0x80000000;
-constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig;
+constexpr std::uint32_t tfInnerBatchTxn                    = 0x40000000;
+constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig | tfInnerBatchTxn;
 constexpr std::uint32_t tfUniversalMask                    = ~tfUniversal;
 
 // AccountSet flags:
@@ -91,14 +92,16 @@ constexpr std::uint32_t asfDisallowIncomingCheck           = 13;
 constexpr std::uint32_t asfDisallowIncomingPayChan         = 14;
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 constexpr std::uint32_t asfAllowTrustLineClawback          = 16;
+constexpr std::uint32_t asfAllowTrustLineLocking           = 17;
 
 // OfferCreate flags:
 constexpr std::uint32_t tfPassive                          = 0x00010000;
 constexpr std::uint32_t tfImmediateOrCancel                = 0x00020000;
 constexpr std::uint32_t tfFillOrKill                       = 0x00040000;
 constexpr std::uint32_t tfSell                             = 0x00080000;
+constexpr std::uint32_t tfHybrid                           = 0x00100000;
 constexpr std::uint32_t tfOfferCreateMask =
-    ~(tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
+    ~(tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell | tfHybrid);
 
 // Payment flags:
 constexpr std::uint32_t tfNoRippleDirect                   = 0x00010000;
@@ -119,13 +122,7 @@ constexpr std::uint32_t tfClearDeepFreeze                  = 0x00800000;
 constexpr std::uint32_t tfTrustSetMask =
     ~(tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple | tfSetFreeze |
       tfClearFreeze | tfSetDeepFreeze | tfClearDeepFreeze);
-
-// valid flags for granular permission
-constexpr std::uint32_t tfTrustSetGranularMask = tfSetfAuth | tfSetFreeze | tfClearFreeze;
-
-// bits representing supportedGranularMask are set to 0 and the bits
-// representing other flags are set to 1 in tfPermissionMask.
-constexpr std::uint32_t tfTrustSetPermissionMask = (~tfTrustSetMask) & (~tfTrustSetGranularMask);
+constexpr std::uint32_t tfTrustSetPermissionMask = ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
 
 // EnableAmendment flags:
 constexpr std::uint32_t tfGotMajority                      = 0x00010000;
@@ -165,8 +162,7 @@ constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfUniversal | tfMPTUna
 constexpr std::uint32_t const tfMPTLock                   = 0x00000001;
 constexpr std::uint32_t const tfMPTUnlock                 = 0x00000002;
 constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
-constexpr std::uint32_t const tfMPTokenIssuanceSetGranularMask = tfMPTLock | tfMPTUnlock;
-constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask = (~tfMPTokenIssuanceSetMask) & (~tfMPTokenIssuanceSetGranularMask);
+constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
 
 // MPTokenIssuanceDestroy flags:
 constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;
@@ -242,6 +238,20 @@ constexpr std::uint32_t const tfVaultPrivate               = 0x00010000;
 static_assert(tfVaultPrivate == lsfVaultPrivate);
 constexpr std::uint32_t const tfVaultShareNonTransferable  = 0x00020000;
 constexpr std::uint32_t const tfVaultCreateMask = ~(tfUniversal | tfVaultPrivate | tfVaultShareNonTransferable);
+
+// Batch Flags:
+constexpr std::uint32_t tfAllOrNothing                 = 0x00010000;
+constexpr std::uint32_t tfOnlyOne                      = 0x00020000;
+constexpr std::uint32_t tfUntilFailure                 = 0x00040000;
+constexpr std::uint32_t tfIndependent                  = 0x00080000;
+/**
+ * @note If nested Batch transactions are supported in the future, the tfInnerBatchTxn flag
+ *  will need to be removed from this mask to allow Batch transaction to be inside 
+ *  the sfRawTransactions array.
+ */
+constexpr std::uint32_t const tfBatchMask =
+    ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
+
 // clang-format on
 
 }  // namespace ripple
