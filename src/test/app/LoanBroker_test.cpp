@@ -155,8 +155,8 @@ class LoanBroker_test : public beast::unit_test::suite
             MPTTester badMptt{env, evan, mptInitNoFund};
             badMptt.create(
                 {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-            return badMptt["BAD"];
             env.close();
+            return badMptt["BAD"];
         }();
         static PrettyAsset const badIouAsset = evan["BAD"];
         static Account const nonExistent{"NonExistent"};
