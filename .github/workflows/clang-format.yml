@@ -20,10 +20,10 @@ jobs:
         id: assert
         shell: bash
         run: |
+          set -o pipefail
           pwd
           ls -la
-          git config --global --add safe.directory $(pwd)
-          set -o pipefail
+          git branch
           git diff --exit-code | tee "clang-format.patch"
       - name: Upload patch
         if: failure() && steps.assert.outcome == 'failure'
