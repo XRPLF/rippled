@@ -18,7 +18,6 @@ jobs:
         run: |
           pwd
           ls -a
-          git branch
           set -o pipefail
           git diff --exit-code | tee "clang-format.patch"
       - name: Upload patch
