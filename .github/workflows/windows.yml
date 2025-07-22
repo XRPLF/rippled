@@ -36,12 +36,14 @@ env:
 jobs:
 
   test:
+    name: ${{ matrix.version.name }} ${{ matrix.configuration.type }}
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:
         version:
           - generator: Visual Studio 17 2022
+            name: VS2022
             runs-on: windows-2022
         configuration:
           - type: Release

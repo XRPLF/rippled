@@ -113,7 +113,17 @@ jobs:
         with:
           configuration: ${{ matrix.configuration }}
 
-
+      - name: get_mac_pkgs
+        id: get_conan_home
+        run: |
+          echo "conan_home=$(conan config home)" >> $GITHUB_OUTPUT
+          echo $(conan profile path default)
+          ls -lash $conan_home
+      - name: save deps
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos_conan_home
+          path: ${{ steps.get_conan_home.outputs.conan_home}}
       # - name: build
       #   uses: ./.github/actions/build
       #   with:
