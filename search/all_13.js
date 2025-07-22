@@ -549,7 +549,7 @@ var searchData=
   ['rmsubdir_5f_546',['rmSubDir_',['../classripple_1_1test_1_1detail_1_1DirGuard.html#a5991dd29cda0a39a140e86e93017b93f',1,'ripple::test::detail::DirGuard']]],
   ['rng_547',['rng',['../classripple_1_1test_1_1csf_1_1Sim.html#acfa93cc12338759338e20bcbde50d0e3',1,'ripple::test::csf::Sim']]],
   ['rngcpy_548',['rngcpy',['../namespaceripple_1_1NodeStore.html#a7d4a8031401dc30a5634fc01033275e1',1,'ripple::NodeStore']]],
-  ['rngfill_549',['rngfill',['../namespacebeast.html#a6894f6dcd09bceda3986ebb1ea7a3eed',1,'beast::rngfill(void *buffer, std::size_t bytes, Generator &amp;g)'],['../namespacebeast.html#a3c2683b0fd77fcae6b6ef91fb90e5cbc',1,'beast::rngfill(std::array&lt; std::uint8_t, N &gt; &amp;a, Generator &amp;g)']]],
+  ['rngfill_549',['rngfill',['../namespacebeast.html#ad4d3145468ad564a92ac41b9812274a0',1,'beast::rngfill(void *const buffer, std::size_t const bytes, Generator &amp;g)'],['../namespacebeast.html#a3c2683b0fd77fcae6b6ef91fb90e5cbc',1,'beast::rngfill(std::array&lt; std::uint8_t, N &gt; &amp;a, Generator &amp;g)']]],
   ['robusttransaction_5ftest_550',['RobustTransaction_test',['../classripple_1_1test_1_1RobustTransaction__test.html',1,'ripple::test']]],
   ['role_551',['role',['../classripple_1_1RPC_1_1VersionHandler.html#a29ce336996af62efeb47b429e3124080',1,'ripple::RPC::VersionHandler::role()'],['../structripple_1_1RPC_1_1Context.html#a20ec6d6aa84f8c76eeb90ad92fe25e20',1,'ripple::RPC::Context::role()'],['../classripple_1_1RPC_1_1LedgerHandler.html#acd0e3619810c4b6e344e012854130329',1,'ripple::RPC::LedgerHandler::role()']]],
   ['role_552',['Role',['../namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c',1,'ripple']]],

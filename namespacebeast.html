@@ -341,9 +341,9 @@ Functions</h2></td></tr>
 <tr class="memitem:abf01fe67ed898eb4f56606edaf01b459"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:abf01fe67ed898eb4f56606edaf01b459"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#abf01fe67ed898eb4f56606edaf01b459">type_name</a> ()</td></tr>
 <tr class="separator:abf01fe67ed898eb4f56606edaf01b459"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6894f6dcd09bceda3986ebb1ea7a3eed"><td class="memTemplParams" colspan="2">template&lt;class Generator &gt; </td></tr>
-<tr class="memitem:a6894f6dcd09bceda3986ebb1ea7a3eed"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#a6894f6dcd09bceda3986ebb1ea7a3eed">rngfill</a> (void *buffer, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes, Generator &amp;g)</td></tr>
-<tr class="separator:a6894f6dcd09bceda3986ebb1ea7a3eed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4d3145468ad564a92ac41b9812274a0"><td class="memTemplParams" colspan="2">template&lt;class Generator &gt; </td></tr>
+<tr class="memitem:ad4d3145468ad564a92ac41b9812274a0"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#ad4d3145468ad564a92ac41b9812274a0">rngfill</a> (void *const buffer, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const bytes, Generator &amp;g)</td></tr>
+<tr class="separator:ad4d3145468ad564a92ac41b9812274a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3c2683b0fd77fcae6b6ef91fb90e5cbc"><td class="memTemplParams" colspan="2">template&lt;class Generator , <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> N, class  = std::enable_if_t&lt;N % sizeof(typename Generator::result_type) == 0&gt;&gt; </td></tr>
 <tr class="memitem:a3c2683b0fd77fcae6b6ef91fb90e5cbc"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespacebeast.html#a3c2683b0fd77fcae6b6ef91fb90e5cbc">rngfill</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a>, N &gt; &amp;a, Generator &amp;g)</td></tr>
 <tr class="separator:a3c2683b0fd77fcae6b6ef91fb90e5cbc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2374,8 +2374,8 @@ template&lt;typename T &gt; </div>
 
 </div>
 </div>
-<a id="a6894f6dcd09bceda3986ebb1ea7a3eed" name="a6894f6dcd09bceda3986ebb1ea7a3eed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6894f6dcd09bceda3986ebb1ea7a3eed">&#9670;&#160;</a></span>rngfill() <span class="overload">[1/2]</span></h2>
+<a id="ad4d3145468ad564a92ac41b9812274a0" name="ad4d3145468ad564a92ac41b9812274a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad4d3145468ad564a92ac41b9812274a0">&#9670;&#160;</a></span>rngfill() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2385,13 +2385,13 @@ template&lt;class Generator &gt; </div>
         <tr>
           <td class="memname">void beast::rngfill </td>
           <td>(</td>
-          <td class="paramtype">void *&#160;</td>
+          <td class="paramtype">void *const&#160;</td>
           <td class="paramname"><em>buffer</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td>
           <td class="paramname"><em>bytes</em>, </td>
         </tr>
         <tr>
@@ -2440,7 +2440,7 @@ template&lt;class Generator , <a class="elRef" href="http://en.cppreference.com/
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="rngfill_8h_source.html#l00073">73</a> of file <a class="el" href="rngfill_8h_source.html">rngfill.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="rngfill_8h_source.html#l00063">63</a> of file <a class="el" href="rngfill_8h_source.html">rngfill.h</a>.</p>
 
 </div>
 </div>
