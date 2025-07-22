@@ -92,12 +92,12 @@ jobs:
           echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
-      - name: export custom recipes
-        shell: bash
-        run: |
-          conan export --version 1.1.10 external/snappy
-          conan export --version 9.7.3 external/rocksdb
-          conan export --version 4.0.3 external/soci
+      # - name: export custom recipes
+      #   shell: bash
+      #   run: |
+      #     conan export --version 1.1.10 external/snappy
+      #     conan export --version 9.7.3 external/rocksdb
+      #     conan export --version 4.0.3 external/soci
       - name: add Ripple Conan remote
         if: env.CONAN_URL != ''
         shell: bash
@@ -118,6 +118,11 @@ jobs:
         run: |
           echo "conan_home=$(conan config home)" >> $GITHUB_OUTPUT
           echo $(conan profile path default)
+          echo "HOME: $HOME"
+          echo "CONAN_HOME: $CONAN_HOME"
+          echo "ls -l .."
+          ls -la ../
+          ls -la ../.conan2/p/
           ls -lash $conan_home
       - name: save deps
         uses: actions/upload-artifact@v4
