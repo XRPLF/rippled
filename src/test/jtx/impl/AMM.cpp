@@ -78,11 +78,10 @@ AMM::AMM(
     , msig_(ms)
     , fee_(fee)
     , ammAccount_(create(tfee, flags, seq, ter))
-    , lptIssue_(
-          ripple::ammLPTIssue(
-              asset1_.issue().currency,
-              asset2_.issue().currency,
-              ammAccount_))
+    , lptIssue_(ripple::ammLPTIssue(
+          asset1_.issue().currency,
+          asset2_.issue().currency,
+          ammAccount_))
     , initialLPTokens_(initialTokens())
 {
 }
