@@ -240,6 +240,11 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(!nonField.has_value()))
                 BEAST_EXPECT(
                     nonField.error() == HostFunctionError::FIELD_NOT_FOUND);
+
+            auto const nonField2 = hfs.getTxField(sfGeneric);
+            if (BEAST_EXPECT(!nonField2.has_value()))
+                BEAST_EXPECT(
+                    nonField2.error() == HostFunctionError::FIELD_NOT_FOUND);
         }
     }
 
