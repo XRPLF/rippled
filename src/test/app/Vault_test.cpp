@@ -1560,6 +1560,59 @@ class Vault_test : public beast::unit_test::suite
             },
             {.requireAuth = false});
 
+        testCase(
+            [this](
+                Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Account const& depositor,
+                PrettyAsset const& asset,
+                Vault& vault,
+                MPTTester& mptt) {
+                testcase("MPT depositor without MPToken cannot withdraw");
+
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
+
+                tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1000)});
+                env(tx);
+                env.close();
+
+                {
+                    // Remove depositor's MPToken and withdraw will fail
+                    mptt.authorize(
+                        {.account = depositor, .flags = tfMPTUnauthorize});
+                    env.close();
+                    auto const mptoken =
+                        env.le(keylet::mptoken(mptt.issuanceID(), depositor));
+                    BEAST_EXPECT(mptoken == nullptr);
+
+                    tx = vault.withdraw(
+                        {.depositor = depositor,
+                         .id = keylet.key,
+                         .amount = asset(100)});
+                    env(tx, ter(tecNO_AUTH));
+                }
+
+                {
+                    // Restore depositor's MPToken and withdraw will succeed
+                    mptt.authorize({.account = depositor});
+                    env.close();
+
+                    tx = vault.withdraw(
+                        {.depositor = depositor,
+                         .id = keylet.key,
+                         .amount = asset(100)});
+                    env(tx);
+                }
+            },
+            {.requireAuth = false});
+
         testCase([this](
                      Env& env,
                      Account const& issuer,
@@ -2198,6 +2251,44 @@ class Vault_test : public beast::unit_test::suite
                 return tx;
             }(keylet);
             env(tx1, ter{tecNO_LINE});
+        });
+
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto&&...) {
+            testcase("IOU no trust line to depositor");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            // reset limit, so deposit of all funds will delete the trust line
+            env.trust(asset(0), owner);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(200)}));
+            env.close();
+
+            auto trustline =
+                env.le(keylet::line(owner, asset.raw().get<Issue>()));
+            BEAST_EXPECT(trustline == nullptr);
+
+            // Withdraw without trust line, will succeed
+            auto const tx1 = [&](ripple::Keylet keylet) {
+                auto tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                return tx;
+            }(keylet);
+            env(tx1);
         });
 
         testCase([&, this](
