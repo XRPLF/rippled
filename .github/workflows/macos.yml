@@ -124,7 +124,7 @@ jobs:
           conan list
           ls -la ../
           ls -lash $conan_home
-          conan list "*/*:*#*"
+          find / -name ".conan2"
       - name: save deps
         uses: actions/upload-artifact@v4
         with:
