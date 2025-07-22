@@ -25,10 +25,37 @@
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
 
-#include <wasm_c_api.h>
-
 namespace ripple {
 namespace test {
+
+struct TestLedgerDataProvider : public HostFunctions
+{
+    jtx::Env* env_;
+    void const* rt_ = nullptr;
+
+public:
+    TestLedgerDataProvider(jtx::Env* env) : env_(env)
+    {
+    }
+
+    virtual void
+    setRT(void const* rt) override
+    {
+        rt_ = rt;
+    }
+
+    virtual void const*
+    getRT() const override
+    {
+        return rt_;
+    }
+
+    Expected<std::uint32_t, HostFunctionError>
+    getLedgerSqn() override
+    {
+        return static_cast<std::uint32_t>(env_->current()->seq());
+    }
+};
 
 struct TestHostFunctions : public HostFunctions
 {
@@ -286,16 +313,19 @@ public:
 #else
         auto j = getJournal().trace();
 #endif
-        j << "WASM TRACE: " << msg;
         if (!asHex)
-            j << std::string_view(
-                reinterpret_cast<char const*>(data.data()), data.size());
+        {
+            j << "WAMR TRACE: " << msg << " "
+              << std::string_view(
+                     reinterpret_cast<char const*>(data.data()), data.size());
+        }
         else
         {
             std::string hex;
             hex.reserve(data.size() * 2);
-            boost::algorithm::hex(data.begin(), data.end(), hex.begin());
-            j << hex;
+            boost::algorithm::hex(
+                data.begin(), data.end(), std::back_inserter(hex));
+            j << "WAMR DEV TRACE: " << msg << " " << hex;
         }
 
 #ifdef DEBUG_OUTPUT
@@ -313,7 +343,7 @@ public:
 #else
         auto j = getJournal().trace();
 #endif
-        j << "WASM TRACE NUM: " << msg << data;
+        j << "WAMR TRACE NUM: " << msg << " " << data;
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;

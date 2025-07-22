@@ -92,33 +92,41 @@ getAnyFieldData(STBase const* obj)
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
             break;
         case STI_ACCOUNT: {
-            auto const& account(static_cast<STAccount const*>(obj));
+            auto const* account(static_cast<STAccount const*>(obj));
             auto const& data = account->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
-        case STI_AMOUNT: {
-            auto const& amount(static_cast<STAmount const*>(obj));
-            int64_t const data = amount->xrp().drops();
-            auto const* b = reinterpret_cast<uint8_t const*>(&data);
-            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-            return Bytes{b, e};
+        case STI_AMOUNT:
+            // will be processed by serializer
+            break;
+        case STI_ISSUE: {
+            auto const* issue(static_cast<STIssue const*>(obj));
+            Asset const& asset(issue->value());
+            // XRP and IOU will be processed by serializer
+            if (!asset.holds<Issue>())
+            {
+                // MPT
+                auto const& mptIssue = asset.get<MPTIssue>();
+                auto const& mptID = mptIssue.getMptID();
+                return Bytes{mptID.cbegin(), mptID.cend()};
+            }
         }
         break;
         case STI_VL: {
-            auto const& vl(static_cast<STBlob const*>(obj));
+            auto const* vl(static_cast<STBlob const*>(obj));
             auto const& data = vl->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
         case STI_UINT256: {
-            auto const& num(static_cast<STBitString<256> const*>(obj));
+            auto const* num(static_cast<STBitString<256> const*>(obj));
             auto const& data = num->value();
             return Bytes{data.begin(), data.end()};
         }
         break;
         case STI_UINT32: {
-            auto const& num(static_cast<STInteger<std::uint32_t> const*>(obj));
+            auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
             std::uint32_t const data = num->value();
             auto const* b = reinterpret_cast<uint8_t const*>(&data);
             auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
@@ -131,8 +139,9 @@ getAnyFieldData(STBase const* obj)
 
     Serializer msg;
     obj->add(msg);
+    auto const data = msg.getData();
 
-    return msg.getData();
+    return data;
 }
 
 Expected<Bytes, HostFunctionError>
@@ -600,13 +609,13 @@ WasmHostFunctionsImpl::trace(
     bool asHex)
 {
 #ifdef DEBUG_OUTPUT
-    auto j = ctx.journal.error();
+    auto j = getJournal().error();
 #else
-    auto j = ctx.journal.trace();
+    auto j = getJournal().trace();
 #endif
     if (!asHex)
     {
-        j << "WAMR TRACE (" << leKey.key << "): " << msg << " - "
+        j << "WAMR TRACE (" << leKey.key << "): " << msg << " "
           << std::string_view(
                  reinterpret_cast<char const*>(data.data()), data.size());
     }
@@ -614,8 +623,9 @@ WasmHostFunctionsImpl::trace(
     {
         std::string hex;
         hex.reserve(data.size() * 2);
-        boost::algorithm::hex(data.begin(), data.end(), hex.begin());
-        j << "WAMR DEV TRACE (" << leKey.key << "): " << msg << " - " << hex;
+        boost::algorithm::hex(
+            data.begin(), data.end(), std::back_inserter(hex));
+        j << "WAMR DEV TRACE (" << leKey.key << "): " << msg << " " << hex;
     }
 
     return msg.size() + data.size() * (asHex ? 2 : 1);
@@ -625,13 +635,11 @@ Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 {
 #ifdef DEBUG_OUTPUT
-    auto j = ctx.journal.error();
+    auto j = getJournal().error();
 #else
-    auto j = ctx.journal.trace();
+    auto j = getJournal().trace();
 #endif
-
-    j << "WAMR DEV TRACE (" << leKey.key << "): " << msg << " - " << data;
-
+    j << "WAMR TRACE NUM(" << leKey.key << "): " << msg << " " << data;
     return msg.size() + sizeof(data);
 }
 

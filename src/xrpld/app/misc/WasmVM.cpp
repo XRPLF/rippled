@@ -17,6 +17,10 @@
 */
 //==============================================================================
 
+#ifdef _DEBUG
+// #define DEBUG_OUTPUT 1
+#endif
+
 #include <xrpld/app/misc/WamrVM.h>
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
@@ -37,10 +41,6 @@ createWasmImport(HostFunctions* hfs)
     if (hfs)
     {
         // clang-format off
-
-        // TODO: remove after escrow_test wasm module will be updated
-        WASM_IMPORT_FUNC2(i, getLedgerSqnOld, "getLedgerSqn", hfs,                                                  60);
-
 
         WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
         WASM_IMPORT_FUNC2(i, getParentLedgerTime, "get_parent_ledger_time", hfs,                                    60);
@@ -111,12 +111,16 @@ runEscrowWasm(
 
     if (!ret)
     {
-        // std::cout << ", error: " << ret.error() << std::endl;
+#ifdef DEBUG_OUTPUT
+        std::cout << ", error: " << ret.error() << std::endl;
+#endif
         return Unexpected<TER>(ret.error());
     }
 
-    // std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost <<
-    // std::endl;
+#ifdef DEBUG_OUTPUT
+    std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
+              << std::endl;
+#endif
     return EscrowResult{ret->result > 0, ret->cost};
 }
 
