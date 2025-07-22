@@ -117,7 +117,7 @@ getAnyFieldData(STBase const* obj)
             auto const* issue(static_cast<STIssue const*>(obj));
             Asset const& asset(issue->value());
             // XRP and IOU will be processed by serializer
-            if (!asset.holds<Issue>())
+            if (asset.holds<MPTIssue>())
             {
                 // MPT
                 auto const& mptIssue = asset.get<MPTIssue>();

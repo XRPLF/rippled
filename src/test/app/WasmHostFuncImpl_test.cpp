@@ -43,6 +43,35 @@ toBytes(std::uint32_t value)
         static_cast<std::uint8_t>((value >> 24) & 0xFF)};
 }
 
+static Bytes
+toBytes(Asset const& asset)
+{
+    if (asset.holds<Issue>())
+    {
+        Serializer s;
+        auto const& issue = asset.get<Issue>();
+        s.addBitString(issue.currency);
+        if (!isXRP(issue.currency))
+            s.addBitString(issue.account);
+        auto const data = s.getData();
+        return data;
+    }
+
+    auto const& mptIssue = asset.get<MPTIssue>();
+    auto const& mptID = mptIssue.getMptID();
+    return Bytes{mptID.cbegin(), mptID.cend()};
+}
+
+static Bytes
+toBytes(STAmount const& amount)
+{
+    Serializer msg;
+    amount.add(msg);
+    auto const data = msg.getData();
+
+    return data;
+}
+
 static ApplyContext
 createApplyContext(
     test::jtx::Env& env,
@@ -196,6 +225,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     account.value().begin(),
                     account.value().end(),
                     env.master.id().data()));
+
             auto const owner = hfs.getTxField(sfOwner);
             BEAST_EXPECT(
                 owner.has_value() &&
@@ -203,6 +233,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     owner.value().begin(),
                     owner.value().end(),
                     env.master.id().data()));
+
             auto const txType = hfs.getTxField(sfTransactionType);
             BEAST_EXPECT(
                 txType.has_value() &&
@@ -210,6 +241,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     txType.value().begin(),
                     txType.value().end(),
                     toBytes(ttESCROW_FINISH).begin()));
+
             auto const offerSeq = hfs.getTxField(sfOfferSequence);
             BEAST_EXPECT(
                 offerSeq.has_value() &&
@@ -217,6 +249,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     offerSeq.value().begin(),
                     offerSeq.value().end(),
                     toBytes(env.seq(env.master)).begin()));
+
             auto const compAllowance = hfs.getTxField(sfComputationAllowance);
             std::uint32_t const expectedAllowance = 1000;
             BEAST_EXPECT(
@@ -245,6 +278,65 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(!nonField2.has_value()))
                 BEAST_EXPECT(
                     nonField2.error() == HostFunctionError::FIELD_NOT_FOUND);
+        }
+
+        {
+            auto const iouAsset = env.master["USD"];
+            STTx const stx2 = STTx(ttAMM_DEPOSIT, [&](auto& obj) {
+                obj.setAccountID(sfAccount, env.master.id());
+                obj.setFieldIssue(sfAsset, STIssue{sfAsset, xrpIssue()});
+                obj.setFieldIssue(
+                    sfAsset2, STIssue{sfAsset2, iouAsset.issue()});
+            });
+            ApplyContext ac2 = createApplyContext(env, ov, stx2);
+            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
+
+            auto const asset = hfs.getTxField(sfAsset);
+            std::vector<std::uint8_t> expectedAsset(20, 0);
+            BEAST_EXPECT(
+                asset.has_value() &&
+                std::equal(
+                    asset.value().begin(),
+                    asset.value().end(),
+                    expectedAsset.begin()));
+
+            auto const asset2 = hfs.getTxField(sfAsset2);
+            BEAST_EXPECT(
+                asset2.has_value() &&
+                std::equal(
+                    asset2.value().begin(),
+                    asset2.value().end(),
+                    toBytes(Asset(iouAsset)).begin()));
+        }
+
+        {
+            auto const iouAsset = env.master["GBP"];
+            auto const mptId = makeMptID(1, env.master);
+            STTx const stx2 = STTx(ttAMM_DEPOSIT, [&](auto& obj) {
+                obj.setAccountID(sfAccount, env.master.id());
+                obj.setFieldIssue(sfAsset, STIssue{sfAsset, iouAsset.issue()});
+                obj.setFieldIssue(sfAsset2, STIssue{sfAsset2, MPTIssue{mptId}});
+            });
+            ApplyContext ac2 = createApplyContext(env, ov, stx2);
+            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
+
+            auto const asset = hfs.getTxField(sfAsset);
+            if (BEAST_EXPECT(asset.has_value()))
+            {
+                BEAST_EXPECT(std::equal(
+                    asset.value().begin(),
+                    asset.value().end(),
+                    toBytes(Asset(iouAsset)).begin()));
+            }
+
+            auto const asset2 = hfs.getTxField(sfAsset2);
+            if (BEAST_EXPECT(asset2.has_value()))
+            {
+                BEAST_EXPECT(std::equal(
+                    asset2.value().begin(),
+                    asset2.value().end(),
+                    toBytes(Asset(mptId)).begin()));
+            }
         }
     }
 
@@ -283,9 +375,14 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                 env.master.id().data()));
 
         // Should return the Amount field from the escrow ledger object
-        // TODO: improve this check once there's full issue/amount support
         auto const amountField = hfs.getCurrentLedgerObjField(sfAmount);
-        BEAST_EXPECT(amountField.has_value());
+        if (BEAST_EXPECT(amountField.has_value()))
+        {
+            BEAST_EXPECT(std::equal(
+                amountField.value().begin(),
+                amountField.value().end(),
+                toBytes(XRP(100)).begin()));
+        }
 
         // Should return nullopt for a field not present
         auto const notPresent = hfs.getCurrentLedgerObjField(sfOwner);
@@ -323,7 +420,9 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         ApplyContext ac = createApplyContext(env, ov);
 
         auto const accountKeylet = keylet::account(env.master.id());
-        WasmHostFunctionsImpl hfs(ac, accountKeylet);
+        auto const escrowKeylet =
+            keylet::escrow(env.master.id(), env.seq(env.master) - 1);
+        WasmHostFunctionsImpl hfs(ac, escrowKeylet);
 
         // Cache the escrow ledger object in slot 1
         auto cacheResult = hfs.cacheLedgerObj(accountKeylet.key, 1);
@@ -342,7 +441,13 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         // Should return the Balance field from the cached ledger object
         // TODO: improve this check once there's full issue/amount support
         auto const balanceField = hfs.getLedgerObjField(1, sfBalance);
-        BEAST_EXPECT(balanceField.has_value());
+        if (BEAST_EXPECT(balanceField.has_value()))
+        {
+            BEAST_EXPECT(std::equal(
+                balanceField.value().begin(),
+                balanceField.value().end(),
+                toBytes(env.balance(env.master)).begin()));
+        }
 
         // Should return error for slot out of range
         auto const outOfRange = hfs.getLedgerObjField(0, sfAccount);
