@@ -1,0 +1,27 @@
+name: Test pip install error
+
+on:
+  push:
+
+jobs:
+  test_pip_install:
+    name: Test ${{ matrix.name }} Python install
+    strategy:
+      matrix:
+        include:
+          - name: Ripple
+            runner: [self-hosted, heavy]
+          - name: GitHub
+            runner: ubuntu-latest
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: test python version
+        run: |
+          python3 --version
+
+      - name: test pypi
+        run: pip install claudia
+
+      - name: test test pypi
+        run: pip install -i https://test.pypi.org/simple/ --extra-index https://pypi.org/simple mpremote-path
