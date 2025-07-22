@@ -22,6 +22,7 @@ jobs:
         run: |
           pwd
           ls -a
+          git config --global --add safe.directory $(pwd)
           git branch
           set -o pipefail
           git diff --exit-code | tee "clang-format.patch"
