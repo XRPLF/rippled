@@ -6,12 +6,12 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: export custom recipes
-      shell: bash
-      run: |
-        conan export --version 1.1.10 external/snappy
-        conan export --version 9.7.3 external/rocksdb
-        conan export --version 4.0.3 external/soci
+    # - name: export custom recipes
+    #   shell: bash
+    #   run: |
+    #     conan export --version 1.1.10 external/snappy
+    #     conan export --version 9.7.3 external/rocksdb
+    #     conan export --version 4.0.3 external/soci
     - name: add Ripple Conan remote
       if: env.CONAN_URL != ''
       shell: bash
@@ -51,3 +51,16 @@ runs:
           --options:host "&:xrpld=True" \
           --settings:all build_type=${{ inputs.configuration }} \
           ..
+
+    - name: get_mac_pkgs
+      id: get_conan_home
+      shell: bash
+      run: |
+        echo "conan_home=$(conan config home)" >> $GITHUB_OUTPUT
+
+    - name: save deps
+      if: ${{ matrix.platform == "macos"}}
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos_conan_home
+        path: ${{ steps.get_conan_home.outputs.conan_home}}
