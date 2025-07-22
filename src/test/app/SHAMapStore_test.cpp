@@ -713,7 +713,7 @@ public:
                 // current ledger from LedgerMaster.
                 std::this_thread::sleep_for(100ms);
                 LedgerIndex const deleteSeq = maxSeq;
-                while (!BEAST_EXPECT(lm.haveLedger(deleteSeq)))
+                while (!lm.haveLedger(deleteSeq))
                 {
                     std::this_thread::sleep_for(100ms);
                 }
