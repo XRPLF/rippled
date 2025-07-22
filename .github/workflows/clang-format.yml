@@ -8,7 +8,7 @@ on:
 jobs:
   check:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    runs-on: ubuntu-24.04
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/tools-rippled-clang-format
     steps:
       # For jobs running in containers, $GITHUB_WORKSPACE and ${{ github.workspace }} might not be the

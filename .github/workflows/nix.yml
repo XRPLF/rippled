@@ -74,7 +74,7 @@ jobs:
             compiler_version: 16
             distro: debian
             codename: bookworm
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
@@ -134,7 +134,7 @@ jobs:
           -
           - "-Dunity=ON"
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
@@ -195,7 +195,7 @@ jobs:
           - "-DUNIT_TEST_REFERENCE_FEE=200"
           - "-DUNIT_TEST_REFERENCE_FEE=1000"
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
@@ -243,7 +243,7 @@ jobs:
         configuration:
           - Debug
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
@@ -310,7 +310,7 @@ jobs:
 
   conan:
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container:
       image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
@@ -365,9 +365,8 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
       CLANG_RELEASE: 16
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
-
     steps:
         - name: checkout
           uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
