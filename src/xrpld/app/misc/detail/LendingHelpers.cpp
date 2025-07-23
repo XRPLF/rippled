@@ -48,6 +48,13 @@ loanPeriodicPayment(
     Number periodicRate,
     std::uint32_t paymentsRemaining)
 {
+    if (principalOutstanding == 0 || paymentsRemaining == 0)
+        return 0;
+
+    // Special case for interest free loans - equal payments of the principal.
+    if (periodicRate == beast::zero)
+        return principalOutstanding / paymentsRemaining;
+
     // TODO: Need a better name
     Number const timeFactor = power(1 + periodicRate, paymentsRemaining);
 

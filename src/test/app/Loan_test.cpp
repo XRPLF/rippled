@@ -331,6 +331,53 @@ class Loan_test : public beast::unit_test::suite
         };
     };
 
+    BrokerInfo
+    createVaultAndBroker(
+        jtx::Env& env,
+        jtx::PrettyAsset const& asset,
+        jtx::Account const& lender)
+    {
+        using namespace jtx;
+
+        Vault vault{env};
+
+        auto const deposit = asset(vaultDeposit);
+        auto const debtMaximumValue = asset(debtMaximumParameter).value();
+        auto const coverDepositValue = asset(coverDepositParameter).value();
+
+        auto [tx, vaultKeylet] =
+            vault.create({.owner = lender, .asset = asset});
+        env(tx);
+        env.close();
+        BEAST_EXPECT(env.le(vaultKeylet));
+
+        env(vault.deposit(
+            {.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
+        env.close();
+        if (auto const vault = env.le(keylet::vault(vaultKeylet.key));
+            BEAST_EXPECT(vault))
+        {
+            BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
+        }
+
+        auto const keylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        auto const testData = "spam spam spam spam";
+
+        using namespace loanBroker;
+        env(set(lender, vaultKeylet.key),
+            data(testData),
+            managementFeeRate(TenthBips16(100)),
+            debtMaximum(debtMaximumValue),
+            coverRateMinimum(TenthBips32(coverRateMinParameter)),
+            coverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
+
+        env(coverDeposit(lender, keylet.key, coverDepositValue));
+
+        env.close();
+
+        return {asset, keylet.key};
+    }
+
     void
     lifecycle(
         std::string const& caseLabel,
@@ -814,11 +861,6 @@ class Loan_test : public beast::unit_test::suite
         env(set(evan, broker.brokerID, principalRequest, startDate),
             counterparty(borrower),
             sig(sfCounterpartySignature, borrower),
-            loanSetFee,
-            ter(tecNO_PERMISSION));
-        // can not lend money to yourself
-        env(set(lender, broker.brokerID, principalRequest, startDate),
-            sig(sfCounterpartySignature, lender),
             loanSetFee,
             ter(tecNO_PERMISSION));
         // not a LoanBroker object, no counterparty
@@ -1646,7 +1688,6 @@ class Loan_test : public beast::unit_test::suite
         Account const evan{"evan"};
         // Do not fund alice
         Account const alice{"alice"};
-        Vault vault{env};
 
         // Fund the accounts and trust lines with the same amount so that tests
         // can use the same values regardless of the asset.
@@ -1684,43 +1725,7 @@ class Loan_test : public beast::unit_test::suite
         std::vector<BrokerInfo> brokers;
         for (auto const& asset : assets)
         {
-            auto const deposit = asset(vaultDeposit);
-            auto const debtMaximumValue = asset(debtMaximumParameter).value();
-            auto const coverDepositValue = asset(coverDepositParameter).value();
-
-            auto [tx, vaultKeylet] =
-                vault.create({.owner = lender, .asset = asset});
-            env(tx);
-            env.close();
-            BEAST_EXPECT(env.le(vaultKeylet));
-
-            env(vault.deposit(
-                {.depositor = lender,
-                 .id = vaultKeylet.key,
-                 .amount = deposit}));
-            env.close();
-            if (auto const vault = env.le(keylet::vault(vaultKeylet.key));
-                BEAST_EXPECT(vault))
-            {
-                BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
-            }
-
-            auto const keylet =
-                keylet::loanbroker(lender.id(), env.seq(lender));
-            auto const testData = "spam spam spam spam";
-
-            using namespace loanBroker;
-            env(set(lender, vaultKeylet.key),
-                fee(increment),
-                data(testData),
-                managementFeeRate(TenthBips16(100)),
-                debtMaximum(debtMaximumValue),
-                coverRateMinimum(TenthBips32(coverRateMinParameter)),
-                coverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
-
-            env(coverDeposit(lender, keylet.key, coverDepositValue));
-
-            brokers.emplace_back(asset, keylet.key);
+            brokers.emplace_back(createVaultAndBroker(env, asset, lender));
         }
 
         // Create and update Loans
@@ -1764,11 +1769,131 @@ class Loan_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testSelfLoan()
+    {
+        testcase << "Self Loan";
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        // Create 3 loan brokers: one for XRP, one for an IOU, and one for an
+        // MPT. That'll require three corresponding SAVs.
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        // For simplicity, lender will be the sole actor for the vault &
+        // brokers.
+        Account const lender{"lender"};
+
+        // Fund the accounts and trust lines with the same amount so that tests
+        // can use the same values regardless of the asset.
+        env.fund(XRP(100'000), issuer, noripple(lender));
+        env.close();
+
+        // Use an XRP asset for simplicity
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+        // Create vaults and loan brokers
+        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender)};
+
+        using namespace loan;
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        Number const principalRequest{1, 3};
+        auto const startDate = env.now() + 60s;
+
+        // The LoanSet json can be created without a counterparty signature, but
+        // it is malformed.
+        auto createJson = env.json(
+            set(lender, broker.brokerID, principalRequest, startDate),
+            fee(loanSetFee));
+
+        env(createJson, ter(temMALFORMED));
+
+        // Adding an empty counterparty signature object is also malformed, but
+        // fails at the RPC level.
+        createJson = env.json(
+            createJson, json(sfCounterpartySignature, Json::objectValue));
+
+        env(createJson, ter(telENV_RPC_FAILED));
+
+        // Copy the transaction signature into the counterparty signature.
+        Json::Value counterpartyJson{Json::objectValue};
+        counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
+        counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
+        if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
+            counterpartyJson[sfSigners] = createJson[sfSigners];
+
+        // The duplicated signature works
+        createJson = env.json(
+            createJson, json(sfCounterpartySignature, counterpartyJson));
+        env(createJson);
+
+        env.close();
+
+        // Loan is successfully created
+        {
+            auto const res = env.rpc("account_objects", lender.human());
+            auto const objects = res[jss::result][jss::account_objects];
+
+            std::map<std::string, std::size_t> types;
+            BEAST_EXPECT(objects.size() == 4);
+            for (auto const& object : objects)
+            {
+                ++types[object[sfLedgerEntryType].asString()];
+            }
+            BEAST_EXPECT(types.size() == 4);
+            for (std::string const& type :
+                 {"MPToken", "Vault", "LoanBroker", "Loan"})
+            {
+                BEAST_EXPECT(types[type] == 1);
+            }
+        }
+        {
+            Json::Value params(Json::objectValue);
+            params[jss::account] = lender.human();
+            params[jss::type] = "Loan";
+            auto const res =
+                env.rpc("json", "account_objects", to_string(params));
+            auto const objects = res[jss::result][jss::account_objects];
+
+            BEAST_EXPECT(objects.size() == 1);
+
+            auto const loan = objects[0u];
+            BEAST_EXPECT(loan[sfAssetsAvailable] == "1000");
+            BEAST_EXPECT(loan[sfBorrower] == lender.human());
+            BEAST_EXPECT(loan[sfCloseInterestRate] == 0);
+            BEAST_EXPECT(loan[sfClosePaymentFee] == "0");
+            BEAST_EXPECT(loan[sfFlags] == 0);
+            BEAST_EXPECT(loan[sfGracePeriod] == 60);
+            BEAST_EXPECT(loan[sfInterestRate] == 0);
+            BEAST_EXPECT(loan[sfLateInterestRate] == 0);
+            BEAST_EXPECT(loan[sfLatePaymentFee] == "0");
+            BEAST_EXPECT(loan[sfLoanBrokerID] == to_string(broker.brokerID));
+            BEAST_EXPECT(loan[sfLoanOriginationFee] == "0");
+            BEAST_EXPECT(loan[sfLoanSequence] == 1);
+            BEAST_EXPECT(loan[sfLoanServiceFee] == "0");
+            BEAST_EXPECT(
+                loan[sfNextPaymentDueDate] == loan[sfStartDate].asUInt() + 60);
+            BEAST_EXPECT(loan[sfOverpaymentFee] == 0);
+            BEAST_EXPECT(loan[sfOverpaymentInterestRate] == 0);
+            BEAST_EXPECT(loan[sfPaymentInterval] == 60);
+            BEAST_EXPECT(loan[sfPaymentRemaining] == 1);
+            BEAST_EXPECT(loan[sfPreviousPaymentDate] == 0);
+            BEAST_EXPECT(loan[sfPrincipalOutstanding] == "1000");
+            BEAST_EXPECT(loan[sfPrincipalRequested] == "1000");
+            BEAST_EXPECT(
+                loan[sfStartDate].asUInt() ==
+                startDate.time_since_epoch().count());
+        }
+    }
+
 public:
     void
     run() override
     {
         testDisabled();
+        testSelfLoan();
         testLifecycle();
     }
 };

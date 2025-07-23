@@ -177,12 +177,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
                               "of the LoanBroker.";
         return tecNO_PERMISSION;
     }
-    if (account == counterparty)
-    {
-        JLOG(ctx.j.warn()) << "Account and Counterparty are the same. Can not "
-                              "loan money to yourself.";
-        return tecNO_PERMISSION;
-    }
 
     auto const borrower = counterparty == brokerOwner ? account : counterparty;
     if (auto const borrowerSle = ctx.view.read(keylet::account(borrower));
