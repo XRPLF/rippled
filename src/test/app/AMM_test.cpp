@@ -7485,7 +7485,8 @@ private:
 
         auto const testCase = [&](std::string suffix, FeatureBitset features) {
             testcase("Fail pseudo-account allocation " + suffix);
-            Env env{*this, features};
+            std::string logs;
+            Env env{*this, features, std::make_unique<CaptureLogs>(&logs)};
             env.fund(XRP(30'000), gw, alice);
             env.close();
             env(trust(alice, gw["USD"](30'000), 0));

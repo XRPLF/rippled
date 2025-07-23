@@ -120,7 +120,8 @@ preflightCheckSimulateKeys(
 {
     if (flags & tapDRY_RUN)  // simulation
     {
-        if (!sigObject.getFieldVL(sfTxnSignature).empty())
+        std::optional<Slice> const signature = sigObject[~sfTxnSignature];
+        if (signature && !signature->empty())
         {
             // NOTE: This code should never be hit because it's checked in the
             // `simulate` RPC
@@ -144,7 +145,8 @@ preflightCheckSimulateKeys(
             }
         }
 
-        if (!sigObject.getFieldVL(sfSigningPubKey).empty())
+        Slice const signingPubKey = sigObject[sfSigningPubKey];
+        if (!signingPubKey.empty())
         {
             // trying to single-sign _and_ multi-sign a transaction
             return temINVALID;
