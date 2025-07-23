@@ -9,6 +9,5 @@ var searchData=
   ['consensusmode_6',['ConsensusMode',['../namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563e',1,'ripple']]],
   ['consensusphase_7',['ConsensusPhase',['../namespaceripple.html#a77adb10ef53a2e25195ccd38b46bfe9b',1,'ripple']]],
   ['consensusstate_8',['ConsensusState',['../namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1',1,'ripple']]],
-  ['consequencesfactorytype_9',['ConsequencesFactoryType',['../classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938',1,'ripple::Transactor']]],
-  ['crosstype_10',['CrossType',['../namespaceripple.html#ae9b6ac4bca5f49e1aa2753e0d9faa2a1',1,'ripple']]]
+  ['consequencesfactorytype_9',['ConsequencesFactoryType',['../classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938',1,'ripple::Transactor']]]
 ];
