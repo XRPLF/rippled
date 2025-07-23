@@ -45,7 +45,6 @@ Workaround for overzealous clang warning, which trips on libstdc++ headers
 #endif
 
 #include <functional>
-#include <memory>
 
 #if defined(__clang__)
 #pragma clang diagnostic pop
@@ -53,10 +52,8 @@ Workaround for overzealous clang warning, which trips on libstdc++ headers
 
 #include <array>
 #include <chrono>
-#include <cstdint>
 #include <cstring>
-#include <map>
-#include <set>
+#include <memory>
 #include <string>
 #include <system_error>
 #include <tuple>

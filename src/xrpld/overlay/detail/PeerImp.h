@@ -99,7 +99,7 @@ private:
     // Node public key of peer.
     PublicKey const publicKey_;
     std::string name_;
-    boost::shared_mutex mutable nameMutex_;
+    std::shared_mutex mutable nameMutex_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
@@ -215,7 +215,7 @@ private:
         total_bytes() const;
 
     private:
-        boost::shared_mutex mutable mutex_;
+        std::shared_mutex mutable mutex_;
         boost::circular_buffer<std::uint64_t> rollingAvg_{30, 0ull};
         clock_type::time_point intervalStart_{clock_type::now()};
         std::uint64_t totalBytes_{0};
