@@ -613,10 +613,13 @@ struct Wasm_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        // Env env{*this, envconfig(), supported_amendments(), nullptr,
-        //     beast::severities::kTrace
-        // };
-        Env env{*this};
+        Env env{
+            *this,
+            envconfig(),
+            supported_amendments(),
+            nullptr,
+            beast::severities::kTrace};
+        // Env env{*this};
 
         auto const wasmStr = boost::algorithm::unhex(codecovWasm);
         Bytes const wasm(wasmStr.begin(), wasmStr.end());

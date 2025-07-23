@@ -2355,6 +2355,7 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::finish_time(env.now() + 100s));
             env(token::createOffer(carol, tokenId, XRP(100)),
                 token::owner(alice));
+            env(offer(alice, XRP(100), carol["USD"](0.1)));
             env(create(alice, carol, XRP(1000), 100s, alice.pk()));
             env(signers(alice, 1, {{carol, 1}}));
             env(ticket::create(alice, 1));
