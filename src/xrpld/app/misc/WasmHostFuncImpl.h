@@ -28,7 +28,7 @@ class WasmHostFunctionsImpl : public HostFunctions
     ApplyContext& ctx;
     Keylet leKey;
     std::shared_ptr<SLE const> currentLedgerObj = nullptr;
-    bool const isLedgerObjCached = true;
+    bool isLedgerObjCached = false;
 
     static int constexpr MAX_CACHE = 256;
     std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
