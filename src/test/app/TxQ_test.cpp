@@ -99,40 +99,6 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         return calcMedFeeLevel(feeLevel, feeLevel);
     }
 
-    static std::unique_ptr<Config>
-    makeConfig(
-        std::map<std::string, std::string> extraTxQ = {},
-        std::map<std::string, std::string> extraVoting = {})
-    {
-        auto p = test::jtx::envconfig();
-        auto& section = p->section("transaction_queue");
-        section.set("ledgers_in_queue", "2");
-        section.set("minimum_queue_size", "2");
-        section.set("min_ledgers_to_compute_size_limit", "3");
-        section.set("max_ledger_counts_to_store", "100");
-        section.set("retry_sequence_percent", "25");
-        section.set("normal_consensus_increase_percent", "0");
-
-        for (auto const& [k, v] : extraTxQ)
-            section.set(k, v);
-
-        // Some tests specify different fee settings that are enabled by
-        // a FeeVote
-        if (!extraVoting.empty())
-        {
-            auto& votingSection = p->section("voting");
-            for (auto const& [k, v] : extraVoting)
-            {
-                votingSection.set(k, v);
-            }
-
-            // In order for the vote to occur, we must run as a validator
-            p->section("validation_seed")
-                .legacy("shUwVw52ofnCUX5m7kPTKzJdr4HEH");
-        }
-        return p;
-    }
-
     std::size_t
     initFee(
         jtx::Env& env,

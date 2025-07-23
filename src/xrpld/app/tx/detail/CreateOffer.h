@@ -20,9 +20,9 @@
 #ifndef RIPPLE_TX_CREATEOFFER_H_INCLUDED
 #define RIPPLE_TX_CREATEOFFER_H_INCLUDED
 
-#include <xrpld/app/tx/detail/OfferStream.h>
-#include <xrpld/app/tx/detail/Taker.h>
 #include <xrpld/app/tx/detail/Transactor.h>
+
+#include <xrpl/protocol/Quality.h>
 
 namespace ripple {
 
@@ -36,8 +36,7 @@ public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
 
     /** Construct a Transactor subclass that creates an offer in the ledger. */
-    explicit CreateOffer(ApplyContext& ctx)
-        : Transactor(ctx), stepCounter_(1000, j_)
+    explicit CreateOffer(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -51,10 +50,6 @@ public:
     /** Enforce constraints beyond those of the Transactor base class. */
     static TER
     preclaim(PreclaimContext const& ctx);
-
-    /** Gather information beyond what the Transactor base class gathers. */
-    void
-    preCompute() override;
 
     /** Precondition: fee collection is likely.  Attempt to create the offer. */
     TER
@@ -73,65 +68,11 @@ private:
         beast::Journal const j,
         Issue const& issue);
 
-    bool
-    dry_offer(ApplyView& view, Offer const& offer);
-
-    static std::pair<bool, Quality>
-    select_path(
-        bool have_direct,
-        OfferStream const& direct,
-        bool have_bridge,
-        OfferStream const& leg1,
-        OfferStream const& leg2);
-
-    std::pair<TER, Amounts>
-    bridged_cross(
-        Taker& taker,
-        ApplyView& view,
-        ApplyView& view_cancel,
-        NetClock::time_point const when);
-
-    std::pair<TER, Amounts>
-    direct_cross(
-        Taker& taker,
-        ApplyView& view,
-        ApplyView& view_cancel,
-        NetClock::time_point const when);
-
-    // Step through the stream for as long as possible, skipping any offers
-    // that are from the taker or which cross the taker's threshold.
-    // Return false if the is no offer in the book, true otherwise.
-    static bool
-    step_account(OfferStream& stream, Taker const& taker);
-
-    // True if the number of offers that have been crossed
-    // exceeds the limit.
-    bool
-    reachedOfferCrossingLimit(Taker const& taker) const;
-
-    // Fill offer as much as possible by consuming offers already on the books,
-    // and adjusting account balances accordingly.
-    //
-    // Charges fees on top to taker.
-    std::pair<TER, Amounts>
-    takerCross(Sandbox& sb, Sandbox& sbCancel, Amounts const& takerAmount);
-
     // Use the payment flow code to perform offer crossing.
     std::pair<TER, Amounts>
     flowCross(
         PaymentSandbox& psb,
         PaymentSandbox& psbCancel,
-        Amounts const& takerAmount,
-        std::optional<uint256> const& domainID);
-
-    // Temporary
-    // This is a central location that invokes both versions of cross
-    // so the results can be compared.  Eventually this layer will be
-    // removed once flowCross is determined to be stable.
-    std::pair<TER, Amounts>
-    cross(
-        Sandbox& sb,
-        Sandbox& sbCancel,
         Amounts const& takerAmount,
         std::optional<uint256> const& domainID);
 
@@ -146,13 +87,6 @@ private:
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
         std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
-
-private:
-    // What kind of offer we are placing
-    CrossType cross_type_;
-
-    // The number of steps to take through order books while crossing
-    OfferStream::StepCounter stepCounter_;
 };
 
 using OfferCreate = CreateOffer;

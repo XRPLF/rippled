@@ -961,24 +961,12 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 wants to buy, must fail
-            if (features[featureFlowCross])
-            {
-                env(offer(A1, USD(1), XRP(2)),
-                    txflags(tfFillOrKill),
-                    ter(tecKILLED));
-                env.close();
-                env.require(
-                    balance(A1, USD(1002)),
-                    balance(A2, USD(997)),
-                    offers(A1, 0));
-            }
-            else
-            {
-                // The transaction that should be here would succeed.
-                // I don't want to adjust balances in following tests. Flow
-                // cross feature flag is not relevant to this particular test
-                // case so we're not missing out some corner cases checks.
-            }
+            env(offer(A1, USD(1), XRP(2)),
+                txflags(tfFillOrKill),
+                ter(tecKILLED));
+            env.close();
+            env.require(
+                balance(A1, USD(1002)), balance(A2, USD(997)), offers(A1, 0));
 
             // test: A1 can create passive sell offer
             env(offer(A1, XRP(2), USD(1)), txflags(tfPassive));
@@ -2106,18 +2094,15 @@ public:
             testNFTOffersWhenFreeze(features);
         };
         using namespace test::jtx;
-        auto const sa = supported_amendments();
-        testAll(
-            sa - featureFlowCross - featureDeepFreeze - featurePermissionedDEX -
-            fixEnforceNFTokenTrustlineV2);
-        testAll(
-            sa - featureFlowCross - featurePermissionedDEX -
-            fixEnforceNFTokenTrustlineV2);
+        auto const sa = testable_amendments();
         testAll(
             sa - featureDeepFreeze - featurePermissionedDEX -
             fixEnforceNFTokenTrustlineV2);
         testAll(sa - featurePermissionedDEX - fixEnforceNFTokenTrustlineV2);
+        testAll(sa - featureDeepFreeze - featurePermissionedDEX);
+        testAll(sa - featurePermissionedDEX);
         testAll(sa - fixEnforceNFTokenTrustlineV2);
+        testAll(sa - featureDeepFreeze);
         testAll(sa);
     }
 };

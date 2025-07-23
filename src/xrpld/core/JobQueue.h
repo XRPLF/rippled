@@ -30,6 +30,8 @@
 
 #include <boost/coroutine/all.hpp>
 
+#include <set>
+
 namespace ripple {
 
 namespace perf {

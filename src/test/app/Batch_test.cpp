@@ -3652,14 +3652,18 @@ class Batch_test : public beast::unit_test::suite
         {
             // Submit a tx with tfInnerBatchTxn
             uint256 const txBad = submitTx(tfInnerBatchTxn);
-            BEAST_EXPECT(env.app().getHashRouter().getFlags(txBad) == 0);
+            BEAST_EXPECT(
+                env.app().getHashRouter().getFlags(txBad) ==
+                HashRouterFlags::UNDEFINED);
         }
 
         // Validate: NetworkOPs::processTransaction()
         {
             uint256 const txid = processTxn(tfInnerBatchTxn);
-            // HashRouter::getFlags() should return SF_BAD
-            BEAST_EXPECT(env.app().getHashRouter().getFlags(txid) == SF_BAD);
+            // HashRouter::getFlags() should return LedgerFlags::BAD
+            BEAST_EXPECT(
+                env.app().getHashRouter().getFlags(txid) ==
+                HashRouterFlags::BAD);
         }
     }
 
@@ -4164,7 +4168,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testWithFeats(sa);
     }
 };
