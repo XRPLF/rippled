@@ -775,6 +775,9 @@ Config::loadFromString(std::string const& fileContents)
                 "greater than or equal to 3");
         /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
 
+        VP_REDUCE_RELAY_ENHANCED_SQUELCH_ENABLE =
+            sec.value_or("vp_enhanced_squelch_enable", false);
+
         TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
         TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
         TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);
