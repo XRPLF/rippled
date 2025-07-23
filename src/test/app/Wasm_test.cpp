@@ -638,24 +638,24 @@ struct Wasm_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        // testGetDataHelperFunctions();
-        // testWasmLib();
-        // testBadWasm();
-        // testWasmCheckJson();
-        // testWasmCompareJson();
-        // testWasmLedgerSqn();
+        testGetDataHelperFunctions();
+        testWasmLib();
+        testBadWasm();
+        testWasmCheckJson();
+        testWasmCompareJson();
+        testWasmLedgerSqn();
 
-        // testWasmFib();
-        // testWasmSha();
-        // testWasmB58();
+        testWasmFib();
+        testWasmSha();
+        testWasmB58();
 
-        // // runing too long
-        // // testWasmSP1Verifier();
-        // testWasmBG16Verifier();
+        // runing too long
+        // testWasmSP1Verifier();
+        testWasmBG16Verifier();
 
-        // testHFCost();
+        testHFCost();
 
-        // testEscrowWasmDN();
+        testEscrowWasmDN();
 
         testCodecovWasm();
 
