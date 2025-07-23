@@ -823,8 +823,8 @@ TaggedCache<
         return entry.ptr.getStrong();
     }
 
-    m_cache.erase(cit);  // TODO: if this erase happens on fetch, what is left
-                         // for a sweep?
+    m_cache.erase(cit);
+
     return {};
 }
 

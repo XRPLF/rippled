@@ -392,7 +392,7 @@ public:
     clear()
     {
         for (auto& p : map_)
-            p.clear();  // TODO make sure that it is locked inside
+            p.clear();
     }
 
     iterator
@@ -418,7 +418,7 @@ public:
     {
         std::size_t ret = 0;
         for (auto& p : map_)
-            ret += p.size();  // TODO make sure that it is locked inside
+            ret += p.size();
         return ret;
     }
 
