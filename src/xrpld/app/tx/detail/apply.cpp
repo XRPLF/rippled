@@ -27,11 +27,16 @@
 
 namespace ripple {
 
-// These are the same flags defined as SF_PRIVATE1-4 in HashRouter.h
-#define SF_SIGBAD SF_PRIVATE1     // Signature is bad
-#define SF_SIGGOOD SF_PRIVATE2    // Signature is good
-#define SF_LOCALBAD SF_PRIVATE3   // Local checks failed
-#define SF_LOCALGOOD SF_PRIVATE4  // Local checks passed
+// These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
+// HashRouter.h
+constexpr HashRouterFlags SF_SIGBAD =
+    HashRouterFlags::PRIVATE1;  // Signature is bad
+constexpr HashRouterFlags SF_SIGGOOD =
+    HashRouterFlags::PRIVATE2;  // Signature is good
+constexpr HashRouterFlags SF_LOCALBAD =
+    HashRouterFlags::PRIVATE3;  // Local checks failed
+constexpr HashRouterFlags SF_LOCALGOOD =
+    HashRouterFlags::PRIVATE4;  // Local checks passed
 
 //------------------------------------------------------------------------------
 
@@ -66,11 +71,11 @@ checkValidity(
         return {Validity::Valid, ""};
     }
 
-    if (flags & SF_SIGBAD)
+    if (any(flags & SF_SIGBAD))
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
 
-    if (!(flags & SF_SIGGOOD))
+    if (!any(flags & SF_SIGGOOD))
     {
         // Don't know signature state. Check it.
         auto const requireCanonicalSig =
@@ -88,12 +93,12 @@ checkValidity(
     }
 
     // Signature is now known good
-    if (flags & SF_LOCALBAD)
+    if (any(flags & SF_LOCALBAD))
         // ...but the local checks
         // are known bad.
         return {Validity::SigGoodOnly, "Local checks failed."};
 
-    if (flags & SF_LOCALGOOD)
+    if (any(flags & SF_LOCALGOOD))
         // ...and the local checks
         // are known good.
         return {Validity::Valid, ""};
@@ -112,7 +117,7 @@ checkValidity(
 void
 forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
 {
-    int flags = 0;
+    HashRouterFlags flags = HashRouterFlags::UNDEFINED;
     switch (validity)
     {
         case Validity::Valid:
@@ -125,7 +130,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
             // would be silly to call directly
             break;
     }
-    if (flags)
+    if (any(flags))
         router.setFlags(txid, flags);
 }
 
