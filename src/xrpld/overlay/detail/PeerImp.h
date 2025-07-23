@@ -22,6 +22,7 @@
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
+#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
@@ -612,7 +613,7 @@ private:
 
     void
     checkTransaction(
-        int flags,
+        HashRouterFlags flags,
         bool checkSignature,
         std::shared_ptr<STTx const> const& stx,
         bool batch);
