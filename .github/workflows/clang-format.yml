@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-24.04
     container: ghcr.io/xrplf/ci/tools-rippled-clang-format
     steps:
+      # Github issue opened in 2022 and not resolved in 2025 https://github.com/actions/runner/issues/2058 ¯\_(ツ)_/¯
+      - run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git config --global --add safe.directory ${{ github.workspace }}
       - uses: actions/checkout@v4
       - name: Format first-party sources
         run: |
