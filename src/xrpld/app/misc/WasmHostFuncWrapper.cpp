@@ -47,8 +47,8 @@ setData(
 
     if (!mem.s)
         return static_cast<std::underlying_type_t<HostFunctionError>>(
-            HostFunctionError::NO_MEM_EXPORTED);
-    if (dst + dsz > mem.s)
+            HostFunctionError::NO_MEM_EXPORTED);  // LCOV_EXCL_LINE
+    if (dst + dsz > memory.s)
         return static_cast<std::underlying_type_t<HostFunctionError>>(
             HostFunctionError::POINTER_OUT_OF_BOUNDS);
     if (ssz > dsz)
@@ -109,7 +109,7 @@ getDataSlice(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 
     auto mem = rt ? rt->getMem() : wmem();
     if (!mem.s)
-        return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
+        return Unexpected(HostFunctionError::NO_MEM_EXPORTED);  // LCOV_EXCL_LINE
 
     if (src + ssz > mem.s)
         return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
@@ -140,9 +140,16 @@ template <class IW>
 Expected<AccountID, HostFunctionError>
 getDataAccountID(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const r = getDataSlice(rt, params, i);
-    if (!r || (r->size() != AccountID::bytes))
+    auto const slice = getDataSlice(instanceWrapper, params, i);
+    if (!slice)
+    {
+        return Unexpected(slice.error());
+    }
+
+    if (slice->size() != AccountID::bytes)
+    {
         return Unexpected(HostFunctionError::INVALID_PARAMS);
+    }
 
     return AccountID::fromVoid(r->data());
 }
@@ -151,9 +158,16 @@ template <class IW>
 static Expected<Currency, HostFunctionError>
 getDataCurrency(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const r = getDataSlice(rt, params, i);
-    if (!r || (r->size() != Currency::bytes))
+    auto const slice = getDataSlice(instanceWrapper, params, i);
+    if (!slice)
+    {
+        return Unexpected(slice.error());
+    }
+
+    if (slice->size() != Currency::bytes)
+    {
         return Unexpected(HostFunctionError::INVALID_PARAMS);
+    }
 
     return Currency::fromVoid(r->data());
 }
