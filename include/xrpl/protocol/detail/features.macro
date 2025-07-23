@@ -26,9 +26,6 @@
 #if !defined(XRPL_RETIRE)
 #error "undefined macro: XRPL_RETIRE"
 #endif
-#if !defined(XRPL_ABANDON)
-#error "undefined macro: XRPL_ABANDON"
-#endif
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
@@ -36,6 +33,7 @@
 // in include/xrpl/protocol/Feature.h.
 
 XRPL_FEATURE(SmartEscrow,                Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (AMMClawbackRounding,        Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo)
@@ -97,7 +95,6 @@ XRPL_FEATURE(HardenedValidations,        Supported::yes, VoteBehavior::DefaultYe
 // fix1781: XRPEndpointSteps should be included in the circular payment check
 XRPL_FIX    (1781,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(RequireFullyCanonicalSig,   Supported::yes, VoteBehavior::DefaultYes)
-// fixQualityUpperBound should be activated before FlowCross
 XRPL_FIX    (QualityUpperBound,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DeletableAccounts,          Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (PayChanRecipientOwnerDir,   Supported::yes, VoteBehavior::DefaultYes)
@@ -115,7 +112,6 @@ XRPL_FIX    (1571,                       Supported::yes, VoteBehavior::DefaultYe
 XRPL_FEATURE(Checks,                     Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (1513,                       Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(FlowCross,                  Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 
 // The following amendments are obsolete, but must remain supported
@@ -133,11 +129,6 @@ XRPL_FIX    (NFTokenNegOffer,       Supported::yes, VoteBehavior::Obsolete)
 XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
-
-// The following amendments were never supported, never enabled, and 
-// we've abanded them. These features should never be in the ledger,
-// and we've removed all the related code.
-XRPL_ABANDON(OwnerPaysFee)
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
@@ -158,3 +149,4 @@ XRPL_RETIRE(fix1201)
 XRPL_RETIRE(fix1512)
 XRPL_RETIRE(fix1523)
 XRPL_RETIRE(fix1528)
+XRPL_RETIRE(FlowCross)
