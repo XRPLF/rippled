@@ -103,8 +103,7 @@ struct BookDirs_test : public beast::unit_test::suite
     run() override
     {
         using namespace jtx;
-        auto const sa = supported_amendments();
-        test_bookdir(sa - featureFlowCross - featurePermissionedDEX);
+        auto const sa = testable_amendments();
         test_bookdir(sa - featurePermissionedDEX);
         test_bookdir(sa);
     }

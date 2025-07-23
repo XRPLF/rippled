@@ -50,12 +50,6 @@ CreateOffer::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featurePermissionedDEX))
         return temDISABLED;
 
-    // Permissioned offers should use the PE (which must be enabled by
-    // featureFlowCross amendment)
-    if (ctx.rules.enabled(featurePermissionedDEX) &&
-        !ctx.rules.enabled(featureFlowCross))
-        return temDISABLED;
-
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -685,54 +679,6 @@ CreateOffer::step_account(OfferStream& stream, Taker const& taker)
     return false;
 }
 
-// Fill as much of the offer as possible by consuming offers
-// already on the books. Return the status and the amount of
-// the offer to left unfilled.
-std::pair<TER, Amounts>
-CreateOffer::takerCross(
-    Sandbox& sb,
-    Sandbox& sbCancel,
-    Amounts const& takerAmount)
-{
-    NetClock::time_point const when = sb.parentCloseTime();
-
-    beast::WrappedSink takerSink(j_, "Taker ");
-
-    Taker taker(
-        cross_type_,
-        sb,
-        account_,
-        takerAmount,
-        ctx_.tx.getFlags(),
-        beast::Journal(takerSink));
-
-    // If the taker is unfunded before we begin crossing
-    // there's nothing to do - just return an error.
-    //
-    // We check this in preclaim, but when selling XRP
-    // charged fees can cause a user's available balance
-    // to go to 0 (by causing it to dip below the reserve)
-    // so we check this case again.
-    if (taker.unfunded())
-    {
-        JLOG(j_.debug()) << "Not crossing: taker is unfunded.";
-        return {tecUNFUNDED_OFFER, takerAmount};
-    }
-
-    try
-    {
-        if (cross_type_ == CrossType::IouToIou)
-            return bridged_cross(taker, sb, sbCancel, when);
-
-        return direct_cross(taker, sb, sbCancel, when);
-    }
-    catch (std::exception const& e)
-    {
-        JLOG(j_.error()) << "Exception during offer crossing: " << e.what();
-        return {tecINTERNAL, taker.remaining_offer()};
-    }
-}
-
 std::pair<TER, Amounts>
 CreateOffer::flowCross(
     PaymentSandbox& psb,
@@ -944,22 +890,11 @@ CreateOffer::cross(
     Amounts const& takerAmount,
     std::optional<uint256> const& domainID)
 {
-    if (sb.rules().enabled(featureFlowCross))
-    {
-        PaymentSandbox psbFlow{&sb};
-        PaymentSandbox psbCancelFlow{&sbCancel};
-        auto const ret =
-            flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
-        psbFlow.apply(sb);
-        psbCancelFlow.apply(sbCancel);
-        return ret;
-    }
-
-    Sandbox sbTaker{&sb};
-    Sandbox sbCancelTaker{&sbCancel};
-    auto const ret = takerCross(sbTaker, sbCancelTaker, takerAmount);
-    sbTaker.apply(sb);
-    sbCancelTaker.apply(sbCancel);
+    PaymentSandbox psbFlow{&sb};
+    PaymentSandbox psbCancelFlow{&sbCancel};
+    auto const ret = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
+    psbFlow.apply(sb);
+    psbCancelFlow.apply(sbCancel);
     return ret;
 }
 
