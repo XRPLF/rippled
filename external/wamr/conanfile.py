@@ -1,10 +1,7 @@
-from conans import ConanFile, tools
+from conan import ConanFile
+from conan.tools.scm import Git
 from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps, cmake_layout
-from conan.tools.files import (
-    apply_conandata_patches,
-    export_conandata_patches,
-    # get,
-)
+from conan.tools.files import apply_conandata_patches, export_conandata_patches # get
 
 # import os
 
@@ -21,7 +18,6 @@ class WamrConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
     default_options = {"shared": False, "fPIC": True}
-    generators = "CMakeToolchain", "CMakeDeps"
     # requires = [("llvm/20.1.1@")]
 
     def export_sources(self):
@@ -39,12 +35,9 @@ class WamrConan(ConanFile):
         cmake_layout(self, src_folder="src")
 
     def source(self):
-        git = tools.Git()
-        git.clone(
-            "https://github.com/bytecodealliance/wasm-micro-runtime.git",
-            "2a303861cc916dc182b7fecaa0aacc1b797e7ac6",
-            shallow=True,
-        )
+        git = Git(self)
+        git.clone(url="https://github.com/bytecodealliance/wasm-micro-runtime.git", target=".")
+        git.checkout(commit="2a303861cc916dc182b7fecaa0aacc1b797e7ac6")
         # get(self, **self.conan_data["sources"][self.version], strip_root=True)
 
     def generate(self):
