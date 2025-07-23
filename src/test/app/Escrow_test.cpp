@@ -2325,13 +2325,8 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         {
-            Env env(*this);
-            env.fund(XRP(5000), alice, carol);
-        }
-
-        {
             Env env{*this};
-            env.fund(XRP(5000), alice, carol);
+            env.fund(XRP(10000), alice, carol);
 
             BEAST_EXPECT(env.seq(alice) == 4);
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2355,15 +2350,15 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::finish_time(env.now() + 100s));
             env(token::createOffer(carol, tokenId, XRP(100)),
                 token::owner(alice));
-            env(offer(alice, XRP(100), carol["USD"](0.1)));
+            env(offer(alice, carol["USD"](0.1), XRP(100)));
             env(create(alice, carol, XRP(1000), 100s, alice.pk()));
             env(signers(alice, 1, {{carol, 1}}));
             env(ticket::create(alice, 1));
             env.close();
 
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 11);
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 12);
             if (BEAST_EXPECTS(
-                    env.seq(alice) == 16, std::to_string(env.seq(alice))))
+                    env.seq(alice) == 17, std::to_string(env.seq(alice))))
             {
                 auto const seq = env.seq(alice);
                 XRPAmount txnFees = env.current()->fees().base + 1000;
