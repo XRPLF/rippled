@@ -1189,7 +1189,8 @@ EscrowFinish::doApply()
 
         if (ctx_.view().rules().enabled(featureDepositAuth))
         {
-            if (auto err = verifyDepositPreauth(ctx_, account_, destID, sled);
+            if (auto err = verifyDepositPreauth(
+                    ctx_.tx, ctx_.view(), account_, destID, sled, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }

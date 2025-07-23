@@ -1712,7 +1712,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // featureSmartEscrow disabled
-            Env env(*this, supported_amendments() - featureSmartEscrow);
+            Env env(*this, testable_amendments() - featureSmartEscrow);
             env.fund(XRP(5000), alice, carol);
             XRPAmount const txnFees = env.current()->fees().base + 1000;
             auto escrowCreate = escrow::create(alice, carol, XRP(1000));
@@ -1882,7 +1882,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // featureSmartEscrow disabled
-            Env env(*this, supported_amendments() - featureSmartEscrow);
+            Env env(*this, testable_amendments() - featureSmartEscrow);
             env.fund(XRP(5000), alice, carol);
             XRPAmount const txnFees = env.current()->fees().base + 1000;
             env(escrow::finish(carol, alice, 1),

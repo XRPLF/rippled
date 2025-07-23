@@ -384,6 +384,7 @@ jobs:
         run: |
           echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
+          conan export --version 2.3.1 external/wamr
           conan profile show
       - name: build dependencies
         run: |

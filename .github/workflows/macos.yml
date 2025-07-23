@@ -11,7 +11,7 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -31,7 +31,6 @@ env:
     tools.compilation:verbosity=verbose
 
 jobs:
-
   test:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
@@ -88,7 +87,7 @@ jobs:
           sysctl -n hw.logicalcpu
           clang --version
       - name: configure Conan
-        run : |
+        run: |
           echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
@@ -98,6 +97,7 @@ jobs:
           conan export --version 1.1.10 external/snappy
           conan export --version 9.7.3 external/rocksdb
           conan export --version 4.0.3 external/soci
+          conan export --version 2.3.1 external/wamr
       - name: add Ripple Conan remote
         if: env.CONAN_URL != ''
         shell: bash

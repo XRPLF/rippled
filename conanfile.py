@@ -193,6 +193,7 @@ class Xrpl(ConanFile):
             'protobuf::libprotobuf',
             'soci::soci',
             'sqlite3::sqlite',
+            'wamr::wamr',
             'xxhash::xxhash',
             'zlib::zlib',
         ]
