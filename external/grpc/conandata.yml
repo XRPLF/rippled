@@ -1,8 +1,0 @@
-sources:
-  "1.50.1":
-    url: "https://github.com/grpc/grpc/archive/v1.50.1.tar.gz"
-    sha256: "fb1ed98eb3555877d55eb2b948caca44bc8601c6704896594de81558639709ef"
-patches:
-  "1.50.1":
-    - patch_file: "patches/v1.50.x/001-disable-cppstd-override.patch"
-    - patch_file: "patches/v1.50.x/002-fix-clang-template-error.patch"

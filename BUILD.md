@@ -91,6 +91,13 @@ You'll need at least one Conan profile:
 conan profile detect
 ```
 
+You might also want to import the provided `conan/profiles/libxrpl` profile, or alternatively
+apply the required [tweaks](#conan-profile-tweaks) to your default profile.
+
+```bash
+conan config install conan/profiles/ -tf $(conan config home)/profiles/
+```
+
 After this you should verify that Conan detected your compiler correctly, with:
 
 ```bash
@@ -115,7 +122,10 @@ compiler, for example:
                "10.0", "11.0", "12.0", "13", "13.0", "13.1", "14", "14.0", "15", "15.0", "16", "16.0", "17", "17.0"]
 ```
 
-### Select language
+
+### Conan profile tweaks
+
+#### Select language
 
 Default profile created by Conan will typically select different C++ dialect than C++20
 used by this project. You should set `20` in the profile line starting with `compiler.cppstd=`, for example:
@@ -124,13 +134,45 @@ used by this project. You should set `20` in the profile line starting with `com
 sed -i.bak -e 's|^compiler\.cppstd=.*$|compiler.cppstd=20|' ~/.conan2/profiles/default
 ```
 
+#### Select standard library in Linux
+
+**Linux** developers will commonly have a default Conan [profile][] that compiles
+with GCC and links with libstdc++.
+If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
+then you will need to choose the `libstdc++11` ABI:
+
+```bash
+sed -i.bak -e 's|^compiler\.libcxx=.*$|compiler.libcxx=libstdc++11|' ~/.conan2/profiles/default
+```
+
+#### Select architecture and runtime in Windows
+
+**Windows** developers may need to use the x64 native build tools.
+An easy way to do that is to run the shortcut "x64 Native Tools Command
+Prompt" for the version of Visual Studio that you have installed.
+
+Windows developers must also build `rippled` and its dependencies for the x64
+architecture:
+
+```bash
+sed -i.bak -e 's|^arch=.*$|arch=x86_64|' ~/.conan2/profiles/default
+```
+
+**Windows** developers also must select static runtime
+
+```bash
+sed -i.bak -e 's|^compiler\.runtime=.*$|compiler.runtime=static|' ~/.conan2/profiles/default
+```
+
 ### Multiple compilers
 
 If you have multiple compilers installed, make sure to select the one to use in
-your default Conan configuration before running `conan profile detect`, by setting
-the `CC` and `CXX` environment variables. For example, if you have
-[homebrew LLVM@18](https://formulae.brew.sh/formula/llvm@18) and want to use it
-as a default compiler:
+your default Conan configuration **before** running `conan profile detect`, by setting
+the `CC` and `CXX` environment variables.
+
+For example, if you are running MacOS and have
+[homebrew LLVM@18](https://formulae.brew.sh/formula/llvm@18), and want to use it
+as a compiler in the new Conan profile:
 
    ```bash
    export CC=$(brew --prefix llvm@18)/bin/clang
@@ -153,7 +195,7 @@ example renaming `default` to a different name and then creating a new
 
 ### CMake 4 workaround
 
-If your system CMake is version 4 rather than 3, you will have to configure Conan
+If your system CMake is version 4 rather than 3, you may have to configure Conan
 profile to use CMake version 3 for dependencies, by adding the following two lines to profile:
 
 ```text
@@ -162,7 +204,7 @@ profile to use CMake version 3 for dependencies, by adding the following two lin
 ```
 
 This will force Conan to download and use a locally cached CMake 3 version, and is needed because
-some of the libraries used by this project do not support CMake 4.
+some of the dependencies used by this project do not support CMake 4.
 
 ### Export updated recipes
 
@@ -181,26 +223,11 @@ It does not override paths to dependencies when building with Visual Studio.
    conan export --version 9.7.3 external/rocksdb
    ```
 
-Export our [Conan recipe for grpc](./external/grpc).
-It fixes a compilation error when building with Clang 20 or Apple Clang 17.
-
-   ```bash
-   conan export --version 1.50.1 external/grpc
-   ```
-
 Export our [Conan recipe for SOCI](./external/soci).
 It patches their CMake to correctly import its dependencies.
 
    ```bash
    conan export --version 4.0.3 external/soci
-   ```
-
-Export our [Conan recipe for NuDB](./external/nudb).
-It fixes some source files to add missing `#include`s.
-
-
-   ```bash
-   conan export --version 2.0.8 external/nudb
    ```
 
 ### Build and Test

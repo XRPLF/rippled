@@ -18,6 +18,20 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+# This part of Conan configuration is specific to this workflow only; we do not want
+# to pollute conan/profiles directory with settings which might not work for others
+env:
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+  CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+  CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+  CONAN_GLOBAL_CONF: |
+    core.download:parallel={{os.cpu_count()}}
+    core.upload:parallel={{os.cpu_count()}}
+    core:default_build_profile=libxrpl
+    core:default_profile=libxrpl
+    tools.build:jobs=24
+    tools.build:verbosity=verbose
+    tools.compilation:verbosity=verbose
 
 jobs:
 
@@ -42,11 +56,11 @@ jobs:
       build_dir: .build
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: choose Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
-          python-version: 3.9
+          python-version: 3.13
       - name: learn Python cache directory
         id: pip-cache
         shell: bash
@@ -54,12 +68,12 @@ jobs:
           python -m pip install --upgrade pip
           echo "dir=$(pip cache dir)" | tee ${GITHUB_OUTPUT}
       - name: restore Python cache directory
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
         with:
             path: ${{ steps.pip-cache.outputs.dir }}
             key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
-        run: pip install wheel 'conan<2'
+        run: pip install wheel conan
       - name: check environment
         run: |
           dir env:
@@ -70,17 +84,27 @@ jobs:
       - name: configure Conan
         shell: bash
         run: |
-          conan profile new default --detect
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update \
-            settings.compiler.runtime=MT${{ matrix.configuration.runtime }} \
-            default
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
+          conan profile show
+      - name: export custom recipes
+        shell: bash
+        run: |
+          conan export --version 1.1.10 external/snappy
+          conan export --version 9.7.3 external/rocksdb
+          conan export --version 4.0.3 external/soci
+      - name: add Ripple Conan remote
+        if: env.CONAN_URL != ''
+        shell: bash
+        run: |
+          if conan remote list | grep -q "ripple"; then
+              conan remote remove ripple
+              echo "Removed conan remote ripple"
+          fi
+          conan remote add --index 0 ripple "${CONAN_URL}"
+          echo "Added conan remote ripple at ${CONAN_URL}"
       - name: build dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
-          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration.type }}
       - name: build
@@ -95,5 +119,6 @@ jobs:
         shell: bash
         if: ${{ matrix.configuration.tests }}
         run: |
-          ${build_dir}/${{ matrix.configuration.type }}/rippled --unittest \
-              --unittest-jobs $(nproc)
+          cd ${build_dir}/${{ matrix.configuration.type }}
+          ./rippled --unittest --unittest-jobs $(nproc)
+          ctest -j $(nproc) --output-on-failure

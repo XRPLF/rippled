@@ -91,7 +91,7 @@ if (MSVC)
       -machine:X64)
 else ()
   # HACK : because these need to come first, before any warning demotion
-  string (APPEND CMAKE_CXX_FLAGS " -Wall -Wno-deprecated-declarations")
+  string (APPEND CMAKE_CXX_FLAGS " -Wall -Wdeprecated")
   if (wextra)
     string (APPEND CMAKE_CXX_FLAGS " -Wextra -Wno-unused-parameter")
   endif ()
