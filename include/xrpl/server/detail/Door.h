@@ -28,7 +28,6 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/buffer.hpp>
-#include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
@@ -70,7 +69,7 @@ private:
         stream_type stream_;
         socket_type& socket_;
         endpoint_type remote_address_;
-        boost::asio::io_context::strand strand_;
+        boost::asio::strand<boost::asio::io_context::executor_type> strand_;
         beast::Journal const j_;
 
     public:
@@ -96,7 +95,7 @@ private:
     Handler& handler_;
     boost::asio::io_context& ioc_;
     acceptor_type acceptor_;
-    boost::asio::io_context::strand strand_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     bool ssl_;
     bool plain_;
 
@@ -156,7 +155,7 @@ Door<Handler>::Detector::Detector(
     , stream_(std::move(stream))
     , socket_(stream_.socket())
     , remote_address_(remote_address)
-    , strand_(ioc_)
+    , strand_(boost::asio::make_strand(ioc_))
     , j_(j)
 {
 }
@@ -165,13 +164,12 @@ template <class Handler>
 void
 Door<Handler>::Detector::run()
 {
-    boost::asio::spawn(
+    ripple::util::spawn(
         strand_,
         std::bind(
             &Detector::do_detect,
             this->shared_from_this(),
-            std::placeholders::_1),
-        boost::asio::detached);
+            std::placeholders::_1));
 }
 
 template <class Handler>
@@ -293,7 +291,7 @@ Door<Handler>::Door(
     , handler_(handler)
     , ioc_(io_context)
     , acceptor_(io_context)
-    , strand_(io_context)
+    , strand_(boost::asio::make_strand(io_context))
     , ssl_(
           port_.protocol.count("https") > 0 ||
           port_.protocol.count("wss") > 0 || port_.protocol.count("wss2") > 0 ||
@@ -309,13 +307,12 @@ template <class Handler>
 void
 Door<Handler>::run()
 {
-    boost::asio::spawn(
+    ripple::util::spawn(
         strand_,
         std::bind(
             &Door<Handler>::do_accept,
             this->shared_from_this(),
-            std::placeholders::_1),
-        boost::asio::detached);
+            std::placeholders::_1));
 }
 
 template <class Handler>

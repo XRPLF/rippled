@@ -30,6 +30,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/executor_work_guard.hpp>
@@ -358,8 +359,12 @@ public:
     {
         boost::asio::dispatch(
             m_io_service,
-            m_strand.wrap(std::bind(
-                &StatsDCollectorImp::do_post_buffer, this, std::move(buffer))));
+            boost::asio::bind_executor(
+                m_strand,
+                std::bind(
+                    &StatsDCollectorImp::do_post_buffer,
+                    this,
+                    std::move(buffer))));
     }
 
     // The keepAlive parameter makes sure the buffers sent to

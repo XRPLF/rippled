@@ -50,7 +50,7 @@ private:
     beast::Journal const journal_;
     endpoint_type remote_endpoint_;
     Resource::Consumer usage_;
-    boost::asio::io_context::strand strand_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
     std::unique_ptr<stream_type> stream_ptr_;
     socket_type& socket_;

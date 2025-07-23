@@ -24,7 +24,6 @@
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/PlainWSPeer.h>
 
-#include <boost/asio/detached.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 
 #include <memory>
@@ -106,23 +105,21 @@ PlainHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        boost::asio::spawn(
+        ripple::util::spawn(
             this->strand_,
-            std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()),
-            boost::asio::detached);
+            std::bind(&PlainHTTPPeer::do_close, this->shared_from_this()));
         return;
     }
 
     if (!socket_.is_open())
         return;
 
-    boost::asio::spawn(
+    ripple::util::spawn(
         this->strand_,
         std::bind(
             &PlainHTTPPeer::do_read,
             this->shared_from_this(),
-            std::placeholders::_1),
-        boost::asio::detached);
+            std::placeholders::_1));
 }
 
 template <class Handler>

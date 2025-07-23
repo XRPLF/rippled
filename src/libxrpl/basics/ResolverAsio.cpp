@@ -25,6 +25,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <boost/asio/bind_executor.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -218,10 +219,12 @@ public:
         {
             boost::asio::dispatch(
                 m_io_service,
-                m_strand.wrap(std::bind(
-                    &ResolverAsioImpl::do_stop,
-                    this,
-                    CompletionCounter(this))));
+                boost::asio::bind_executor(
+                    m_strand,
+                    std::bind(
+                        &ResolverAsioImpl::do_stop,
+                        this,
+                        CompletionCounter(this))));
 
             JLOG(m_journal.debug()) << "Queued a stop request";
         }
@@ -254,12 +257,14 @@ public:
         //           reducing cost.
         boost::asio::dispatch(
             m_io_service,
-            m_strand.wrap(std::bind(
-                &ResolverAsioImpl::do_resolve,
-                this,
-                names,
-                handler,
-                CompletionCounter(this))));
+            boost::asio::bind_executor(
+                m_strand,
+                std::bind(
+                    &ResolverAsioImpl::do_resolve,
+                    this,
+                    names,
+                    handler,
+                    CompletionCounter(this))));
     }
 
     //-------------------------------------------------------------------------
@@ -310,8 +315,12 @@ public:
 
         boost::asio::post(
             m_io_service,
-            m_strand.wrap(std::bind(
-                &ResolverAsioImpl::do_work, this, CompletionCounter(this))));
+            boost::asio::bind_executor(
+                m_strand,
+                std::bind(
+                    &ResolverAsioImpl::do_work,
+                    this,
+                    CompletionCounter(this))));
     }
 
     HostAndPort
@@ -394,10 +403,12 @@ public:
 
             boost::asio::post(
                 m_io_service,
-                m_strand.wrap(std::bind(
-                    &ResolverAsioImpl::do_work,
-                    this,
-                    CompletionCounter(this))));
+                boost::asio::bind_executor(
+                    m_strand,
+                    std::bind(
+                        &ResolverAsioImpl::do_work,
+                        this,
+                        CompletionCounter(this))));
 
             return;
         }
@@ -437,10 +448,12 @@ public:
             {
                 boost::asio::post(
                     m_io_service,
-                    m_strand.wrap(std::bind(
-                        &ResolverAsioImpl::do_work,
-                        this,
-                        CompletionCounter(this))));
+                    boost::asio::bind_executor(
+                        m_strand,
+                        std::bind(
+                            &ResolverAsioImpl::do_work,
+                            this,
+                            CompletionCounter(this))));
             }
         }
     }

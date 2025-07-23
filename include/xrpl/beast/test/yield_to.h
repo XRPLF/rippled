@@ -8,7 +8,6 @@
 #ifndef BEAST_TEST_YIELD_TO_HPP
 #define BEAST_TEST_YIELD_TO_HPP
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
@@ -125,7 +124,10 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
             if (--running_ == 0)
                 cv_.notify_all();
         },
-        boost::asio::detached);
+        [](std::exception_ptr e) {
+            if (e)
+                std::rethrow_exception(e);
+        });
     spawn(fn...);
 }
 

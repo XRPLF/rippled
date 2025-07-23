@@ -23,7 +23,6 @@
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/SSLWSPeer.h>
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -116,21 +115,19 @@ SSLHTTPPeer<Handler>::run()
 {
     if (!this->handler_.onAccept(this->session(), this->remote_address_))
     {
-        boost::asio::spawn(
+        ripple::util::spawn(
             this->strand_,
-            std::bind(&SSLHTTPPeer::do_close, this->shared_from_this()),
-            boost::asio::detached);
+            std::bind(&SSLHTTPPeer::do_close, this->shared_from_this()));
         return;
     }
     if (!socket_.is_open())
         return;
-    boost::asio::spawn(
+    ripple::util::spawn(
         this->strand_,
         std::bind(
             &SSLHTTPPeer::do_handshake,
             this->shared_from_this(),
-            std::placeholders::_1),
-        boost::asio::detached);
+            std::placeholders::_1));
 }
 
 template <class Handler>
@@ -167,13 +164,12 @@ SSLHTTPPeer<Handler>::do_handshake(yield_context do_yield)
         this->port().protocol.count("https") > 0;
     if (http)
     {
-        boost::asio::spawn(
+        ripple::util::spawn(
             this->strand_,
             std::bind(
                 &SSLHTTPPeer::do_read,
                 this->shared_from_this(),
-                std::placeholders::_1),
-            boost::asio::detached);
+                std::placeholders::_1));
         return;
     }
     // `this` will be destroyed

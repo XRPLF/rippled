@@ -27,6 +27,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <array>
 #include <chrono>
@@ -87,7 +88,7 @@ private:
     Handler& handler_;
     beast::Journal const j_;
     boost::asio::io_context& io_service_;
-    boost::asio::io_context::strand strand_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     std::optional<boost::asio::executor_work_guard<
         boost::asio::io_context::executor_type>>
         work_;
@@ -148,8 +149,8 @@ ServerImpl<Handler>::ServerImpl(
     : handler_(handler)
     , j_(journal)
     , io_service_(io_service)
-    , strand_(io_service_)
-    , work_(boost::asio::make_work_guard(io_service_))
+    , strand_(boost::asio::make_strand(io_service_))
+    , work_(std::in_place, boost::asio::make_work_guard(io_service_))
 {
 }
 

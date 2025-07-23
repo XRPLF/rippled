@@ -26,6 +26,10 @@
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/strand.hpp>
+
 namespace ripple {
 
 namespace detail {
@@ -59,7 +63,7 @@ private:
     std::string path_;
     callback_type cb_;
     boost::asio::io_context& ios_;
-    boost::asio::io_context::strand strand_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
 };
 
 //------------------------------------------------------------------------------
@@ -68,7 +72,10 @@ WorkFile::WorkFile(
     std::string const& path,
     boost::asio::io_context& ios,
     callback_type cb)
-    : path_(path), cb_(std::move(cb)), ios_(ios), strand_(ios)
+    : path_(path)
+    , cb_(std::move(cb))
+    , ios_(ios)
+    , strand_(boost::asio::make_strand(ios))
 {
 }
 
@@ -83,7 +90,9 @@ WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
         return boost::asio::post(
-            ios_, strand_.wrap(std::bind(&WorkFile::run, shared_from_this())));
+            ios_,
+            boost::asio::bind_executor(
+                strand_, std::bind(&WorkFile::run, shared_from_this())));
 
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));

@@ -1202,7 +1202,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     auto const txid = trans->getTransactionID();
     auto const flags = app_.getHashRouter().getFlags(txid);
 
-    if ((flags & SF_BAD) != 0)
+    if ((flags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
         JLOG(m_journal.warn()) << "Submitted transaction cached bad";
         return;
@@ -1246,7 +1246,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 {
     auto const newFlags = app_.getHashRouter().getFlags(transaction->getID());
 
-    if ((newFlags & SF_BAD) != 0)
+    if ((newFlags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
         // cached bad
         JLOG(m_journal.warn()) << transaction->getID() << ": cached bad!\n";
@@ -1265,7 +1265,8 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     {
         transaction->setStatus(INVALID);
         transaction->setResult(temINVALID_FLAG);
-        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        app_.getHashRouter().setFlags(
+            transaction->getID(), HashRouterFlags::BAD);
         return false;
     }
 
@@ -1284,7 +1285,8 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         JLOG(m_journal.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        app_.getHashRouter().setFlags(
+            transaction->getID(), HashRouterFlags::BAD);
         return false;
     }
 
@@ -1407,7 +1409,8 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
                 JLOG(m_journal.trace())
                     << "Exception checking transaction: " << reason;
             }
-            app_.getHashRouter().setFlags(tx->getTransactionID(), SF_BAD);
+            app_.getHashRouter().setFlags(
+                tx->getTransactionID(), HashRouterFlags::BAD);
             continue;
         }
 
@@ -1533,7 +1536,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             e.transaction->setResult(e.result);
 
             if (isTemMalformed(e.result))
-                app_.getHashRouter().setFlags(e.transaction->getID(), SF_BAD);
+                app_.getHashRouter().setFlags(
+                    e.transaction->getID(), HashRouterFlags::BAD);
 
 #ifdef DEBUG
             if (e.result != tesSUCCESS)
@@ -1621,7 +1625,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     //    (5) ledgers into the future. (Remember that an
                     //    unseated optional compares as less than all seated
                     //    values, so it has to be checked explicitly first.)
-                    // 3. The SF_HELD flag is not set on the txID. (setFlags
+                    // 3. The HashRouterFlags::BAD flag is not set on the txID.
+                    // (setFlags
                     //    checks before setting. If the flag is set, it returns
                     //    false, which means it's been held once without one of
                     //    the other conditions, so don't hold it again. Time's
@@ -1630,7 +1635,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.local ||
                         (ledgersLeft && ledgersLeft <= LocalTxs::holdLedgers) ||
                         app_.getHashRouter().setFlags(
-                            e.transaction->getID(), SF_HELD))
+                            e.transaction->getID(), HashRouterFlags::HELD))
                     {
                         // transaction should be held
                         JLOG(m_journal.debug())

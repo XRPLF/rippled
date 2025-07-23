@@ -26,6 +26,7 @@
 #include <xrpl/protocol/BuildInfo.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/read.hpp>
@@ -58,7 +59,7 @@ protected:
     std::string port_;
     callback_type cb_;
     boost::asio::io_context& ios_;
-    boost::asio::io_context::strand strand_;
+    boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     resolver_type resolver_;
     socket_type socket_;
     request_type req_;
@@ -129,7 +130,7 @@ WorkBase<Impl>::WorkBase(
     , port_(port)
     , cb_(std::move(cb))
     , ios_(ios)
-    , strand_(ios)
+    , strand_(boost::asio::make_strand(ios))
     , resolver_(ios)
     , socket_(ios)
     , lastEndpoint_{lastEndpoint}
@@ -154,16 +155,19 @@ WorkBase<Impl>::run()
     if (!strand_.running_in_this_thread())
         return boost::asio::post(
             ios_,
-            strand_.wrap(std::bind(&WorkBase::run, impl().shared_from_this())));
+            boost::asio::bind_executor(
+                strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
 
     resolver_.async_resolve(
         host_,
         port_,
-        strand_.wrap(std::bind(
-            &WorkBase::onResolve,
-            impl().shared_from_this(),
-            std::placeholders::_1,
-            std::placeholders::_2)));
+        boost::asio::bind_executor(
+            strand_,
+            std::bind(
+                &WorkBase::onResolve,
+                impl().shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 template <class Impl>
@@ -174,7 +178,9 @@ WorkBase<Impl>::cancel()
     {
         return boost::asio::post(
             ios_,
-            strand_.wrap(
+
+            boost::asio::bind_executor(
+                strand_,
                 std::bind(&WorkBase::cancel, impl().shared_from_this())));
     }
 
@@ -204,11 +210,13 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
     boost::asio::async_connect(
         socket_,
         results,
-        strand_.wrap(std::bind(
-            &WorkBase::onConnect,
-            impl().shared_from_this(),
-            std::placeholders::_1,
-            std::placeholders::_2)));
+        boost::asio::bind_executor(
+            strand_,
+            std::bind(
+                &WorkBase::onConnect,
+                impl().shared_from_this(),
+                std::placeholders::_1,
+                std::placeholders::_2)));
 }
 
 template <class Impl>
@@ -236,10 +244,12 @@ WorkBase<Impl>::onStart()
     boost::beast::http::async_write(
         impl().stream(),
         req_,
-        strand_.wrap(std::bind(
-            &WorkBase::onRequest,
-            impl().shared_from_this(),
-            std::placeholders::_1)));
+        boost::asio::bind_executor(
+            strand_,
+            std::bind(
+                &WorkBase::onRequest,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
 }
 
 template <class Impl>
@@ -253,10 +263,12 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         impl().stream(),
         readBuf_,
         res_,
-        strand_.wrap(std::bind(
-            &WorkBase::onResponse,
-            impl().shared_from_this(),
-            std::placeholders::_1)));
+        boost::asio::bind_executor(
+            strand_,
+            std::bind(
+                &WorkBase::onResponse,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
 }
 
 template <class Impl>

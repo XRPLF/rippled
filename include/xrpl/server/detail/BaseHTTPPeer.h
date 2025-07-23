@@ -26,16 +26,18 @@
 #include <xrpl/server/Session.h>
 #include <xrpl/server/detail/io_list.h>
 
-#include <boost/asio/detached.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/stream.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/beast/core/stream_traits.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/parser.hpp>
 #include <boost/beast/http/read.hpp>
+
+#include "Spawn.h"
 
 #include <atomic>
 #include <chrono>
@@ -216,8 +218,8 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     ConstBufferSequence const& buffers)
     : port_(port)
     , handler_(handler)
-    , work_(executor)
-    , strand_(executor)
+    , work_(boost::asio::make_work_guard(executor))
+    , strand_(boost::asio::make_strand(executor))
     , remote_address_(remote_address)
     , journal_(journal)
 {
@@ -357,13 +359,12 @@ BaseHTTPPeer<Handler, Impl>::on_write(
         return;
     if (graceful_)
         return do_close();
-    boost::asio::spawn(
+    ripple::util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
             impl().shared_from_this(),
-            std::placeholders::_1),
-        boost::asio::detached);
+            std::placeholders::_1));
 }
 
 template <class Handler, class Impl>
@@ -377,15 +378,14 @@ BaseHTTPPeer<Handler, Impl>::do_writer(
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keep_alive]() {
-            boost::asio::spawn(
+            ripple::util::spawn(
                 strand_,
                 std::bind(
                     &BaseHTTPPeer<Handler, Impl>::do_writer,
                     p,
                     writer,
                     keep_alive,
-                    std::placeholders::_1),
-                boost::asio::detached);
+                    std::placeholders::_1));
         });
     }
 
@@ -409,13 +409,12 @@ BaseHTTPPeer<Handler, Impl>::do_writer(
     if (!keep_alive)
         return do_close();
 
-    boost::asio::spawn(
+    ripple::util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
             impl().shared_from_this(),
-            std::placeholders::_1),
-        boost::asio::detached);
+            std::placeholders::_1));
 }
 
 //------------------------------------------------------------------------------
@@ -452,15 +451,14 @@ BaseHTTPPeer<Handler, Impl>::write(
     std::shared_ptr<Writer> const& writer,
     bool keep_alive)
 {
-    boost::asio::spawn(
+    ripple::util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_writer,
             impl().shared_from_this(),
             writer,
             keep_alive,
-            std::placeholders::_1),
-        boost::asio::detached);
+            std::placeholders::_1));
 }
 
 // DEPRECATED
@@ -495,13 +493,12 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    boost::asio::spawn(
+    ripple::util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
             impl().shared_from_this(),
-            std::placeholders::_1),
-        boost::asio::detached);
+            std::placeholders::_1));
 }
 
 // DEPRECATED

@@ -87,8 +87,10 @@ void
 OverlayImpl::Timer::async_wait()
 {
     timer_.expires_after(std::chrono::seconds(1));
-    timer_.async_wait(overlay_.strand_.wrap(std::bind(
-        &Timer::on_timer, shared_from_this(), std::placeholders::_1)));
+    timer_.async_wait(boost::asio::bind_executor(
+        overlay_.strand_,
+        std::bind(
+            &Timer::on_timer, shared_from_this(), std::placeholders::_1)));
 }
 
 void
@@ -129,7 +131,7 @@ OverlayImpl::OverlayImpl(
     : app_(app)
     , io_service_(io_service)
     , work_(std::in_place, boost::asio::make_work_guard(io_service_))
-    , strand_(io_service_)
+    , strand_(boost::asio::make_strand(io_service_))
     , setup_(setup)
     , journal_(app_.journal("Overlay"))
     , serverHandler_(serverHandler)
