@@ -36,7 +36,7 @@ class WasmHostFunctionsImpl : public HostFunctions
     void const* rt_ = nullptr;
 
     Expected<std::shared_ptr<SLE const>, HostFunctionError>
-    getCurrentLedgerObj() const
+    getCurrentLedgerObj()
     {
         if (!isLedgerObjCached)
         {
