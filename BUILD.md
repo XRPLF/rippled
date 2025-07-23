@@ -245,6 +245,24 @@ The workaround for this error is to add two lines to profile:
 tools.build:cxxflags=['-Wno-restrict']
 ```
 
+#### Workaround for clang 16
+
+If your compiler is clang, version 16, you may encounter compilation error like below:
+
+```text
+In file included from .../boost/beast/websocket/stream.hpp:2857:
+.../boost/beast/websocket/impl/read.hpp:695:17: error: call to 'async_teardown' is ambiguous
+                async_teardown(impl.role, impl.stream(),
+                ^~~~~~~~~~~~~~
+```
+
+The workaround for this error is to add two lines to profile:
+
+```text
+[conf]
+tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
+```
+
 ### Export updated recipes
 
 Export our [Conan recipe for Snappy](./external/snappy).
@@ -455,6 +473,7 @@ stored inside the build directory, as either of:
 | `unity` | OFF | Configure a unity build. |
 | `xrpld` | OFF | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
 | `werr` | OFF | Treat compilation warnings as errors |
+| `wextra` | OFF | Enable additional compilation warnings |
 
 [Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer

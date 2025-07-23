@@ -143,8 +143,6 @@ class Xrpl(ConanFile):
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
         tc.variables['xrpld'] = self.options.xrpld
-        if self.settings.compiler == 'clang' and self.settings.compiler.version == 16:
-            tc.extra_cxxflags = ["-DBOOST_ASIO_DISABLE_CONCEPTS"]
         tc.generate()
 
     def build(self):
