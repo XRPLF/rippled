@@ -37,7 +37,7 @@ setData(
     int32_t ssz)
 {
     if (!ssz)
-        return 0;
+        return 0;  // LCOV_EXCL_LINE
 
     if (dst < 0 || dsz < 0 || !src || ssz < 0)
         return static_cast<std::underlying_type_t<HostFunctionError>>(
@@ -45,10 +45,14 @@ setData(
 
     auto mem = rt ? rt->getMem() : wmem();
 
+    // LCOV_EXCL_START
     if (!mem.s)
+    {
         return static_cast<std::underlying_type_t<HostFunctionError>>(
-            HostFunctionError::NO_MEM_EXPORTED);  // LCOV_EXCL_LINE
-    if (dst + dsz > memory.s)
+            HostFunctionError::NO_MEM_EXPORTED);
+    }
+    // LCOV_EXCL_STOP
+    if (dst + dsz > mem.s)
         return static_cast<std::underlying_type_t<HostFunctionError>>(
             HostFunctionError::POINTER_OUT_OF_BOUNDS);
     if (ssz > dsz)
@@ -318,7 +322,7 @@ cacheLedgerObj_wrap(
     auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
-        return hfResult(results, cache.error());
+        return hfResult(results, cache.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
@@ -376,7 +380,7 @@ getLedgerObjField_wrap(
     auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
-        return hfResult(results, cache.error());
+        return hfResult(results, cache.error());  // LCOV_EXCL_LINE
     }
 
     auto const fname = getDataSField(rt, params, index);
@@ -441,7 +445,7 @@ getLedgerObjNestedField_wrap(
     auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
-        return hfResult(results, cache.error());
+        return hfResult(results, cache.error());  // LCOV_EXCL_LINE
     }
 
     auto const bytes = getDataSlice(rt, params, index);
@@ -510,7 +514,7 @@ getLedgerObjArrayLen_wrap(
     auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
-        return hfResult(results, cache.error());
+        return hfResult(results, cache.error());  // LCOV_EXCL_LINE
     }
 
     auto const fname = getDataSField(rt, params, index);
@@ -579,7 +583,7 @@ getLedgerObjNestedArrayLen_wrap(
     auto const cache = getDataInt32(rt, params, index);
     if (!cache)
     {
-        return hfResult(results, cache.error());
+        return hfResult(results, cache.error());  // LCOV_EXCL_LINE
     }
 
     auto const bytes = getDataSlice(rt, params, index);
@@ -671,7 +675,7 @@ checkKeylet_wrap(
     auto const seq = getDataInt32(rt, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
@@ -809,7 +813,7 @@ escrowKeylet_wrap(
     auto const seq = getDataInt32(rt, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
@@ -871,7 +875,7 @@ nftOfferKeylet_wrap(
     auto const seq = getDataInt32(rt, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
@@ -901,7 +905,7 @@ offerKeylet_wrap(
     auto const seq = getDataInt32(rt, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
@@ -927,7 +931,7 @@ oracleKeylet_wrap(
     auto const documentId = getDataInt32(rt, params, index);
     if (!documentId)
     {
-        return hfResult(results, documentId.error());
+        return hfResult(results, documentId.error());  // LCOV_EXCL_LINE
     }
     return returnResult(
         rt, params, results, hf->oracleKeylet(*acc, *documentId), index);
@@ -958,7 +962,7 @@ paychanKeylet_wrap(
     auto const seq = getDataInt32(rt, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
@@ -1008,7 +1012,7 @@ ticketKeylet_wrap(
     auto const seq = getDataInt32(rt, params, index);
     if (!seq)
     {
-        return hfResult(results, seq.error());
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
@@ -1065,7 +1069,7 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const asHex = getDataInt32(rt, params, index);
     if (!asHex)
     {
-        return hfResult(results, asHex.error());
+        return hfResult(results, asHex.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
@@ -1092,7 +1096,7 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const number = getDataInt64(rt, params, index);
     if (!number)
     {
-        return hfResult(results, number.error());
+        return hfResult(results, number.error());  // LCOV_EXCL_LINE
     }
 
     return returnResult(
