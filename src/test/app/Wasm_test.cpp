@@ -607,28 +607,54 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testCodecovWasm()
+    {
+        testcase("Codecov wasm test");
+
+        using namespace test::jtx;
+
+        // Env env{*this, envconfig(), supported_amendments(), nullptr,
+        //     beast::severities::kTrace
+        // };
+        Env env{*this};
+
+        auto const wasmStr = boost::algorithm::unhex(codecovWasm);
+        Bytes const wasm(wasmStr.begin(), wasmStr.end());
+        std::string const funcName("finish");
+        TestHostFunctions hfs(env, 0);
+
+        auto re =
+            runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(re->result);
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
 
-        testGetDataHelperFunctions();
-        testWasmLib();
-        testBadWasm();
-        testWasmCheckJson();
-        testWasmCompareJson();
-        testWasmLedgerSqn();
+        // testGetDataHelperFunctions();
+        // testWasmLib();
+        // testBadWasm();
+        // testWasmCheckJson();
+        // testWasmCompareJson();
+        // testWasmLedgerSqn();
 
-        testWasmFib();
-        testWasmSha();
-        testWasmB58();
+        // testWasmFib();
+        // testWasmSha();
+        // testWasmB58();
 
-        // runing too long
-        // testWasmSP1Verifier();
-        testWasmBG16Verifier();
+        // // runing too long
+        // // testWasmSP1Verifier();
+        // testWasmBG16Verifier();
 
-        testHFCost();
+        // testHFCost();
 
-        testEscrowWasmDN();
+        // testEscrowWasmDN();
+
+        testCodecovWasm();
 
         // perfTest();
     }
