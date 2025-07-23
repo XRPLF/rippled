@@ -49,43 +49,41 @@ WasmHostFunctionsImpl::getParentLedgerHash()
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::normalizeCacheIndex(int32_t normalizedIdx)
+WasmHostFunctionsImpl::normalizeCacheIndex(int32_t cacheIndex)
 {
-    --normalizedIdx;
-    if (normalizedIdx < 0 || normalizedIdx >= MAX_CACHE)
+    --cacheIndex;
+    if (cacheIndex < 0 || cacheIndex >= MAX_CACHE)
         return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
-    if (!cache[normalizedIdx])
+    if (!cache[cacheIndex])
         return Unexpected(HostFunctionError::EMPTY_SLOT);
-    return normalizedIdx;
+    return cacheIndex;
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::cacheLedgerObj(
-    uint256 const& objId,
-    int32_t normalizedIdx)
+WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIndex)
 {
     auto const& keylet = keylet::unchecked(objId);
-    if (normalizedIdx < 0 || normalizedIdx > MAX_CACHE)
+    if (cacheIndex < 0 || cacheIndex > MAX_CACHE)
         return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
 
-    if (normalizedIdx == 0)
+    if (cacheIndex == 0)
     {
-        for (normalizedIdx = 0; normalizedIdx < MAX_CACHE; ++normalizedIdx)
-            if (!cache[normalizedIdx])
+        for (cacheIndex = 0; cacheIndex < MAX_CACHE; ++cacheIndex)
+            if (!cache[cacheIndex])
                 break;
     }
     else
     {
-        normalizedIdx--;  // convert to 0-based index
+        cacheIndex--;  // convert to 0-based index
     }
 
-    if (normalizedIdx >= MAX_CACHE)
+    if (cacheIndex >= MAX_CACHE)
         return Unexpected(HostFunctionError::SLOTS_FULL);
 
-    cache[normalizedIdx] = ctx.view().read(keylet);
-    if (!cache[normalizedIdx])
+    cache[cacheIndex] = ctx.view().read(keylet);
+    if (!cache[cacheIndex])
         return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    return normalizedIdx + 1;  // return 1-based index
+    return cacheIndex + 1;  // return 1-based index
 }
 
 static Expected<Bytes, HostFunctionError>
