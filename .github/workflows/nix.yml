@@ -73,7 +73,7 @@ jobs:
             distro: ubuntu
             codename: jammy
           - compiler: clang
-            compiler_version: 17
+            compiler_version: 16
             distro: debian
             codename: bookworm
     runs-on: [self-hosted, heavy]
@@ -129,7 +129,7 @@ jobs:
             distro: ubuntu
             codename: jammy
           - compiler: clang
-            compiler_version: 17
+            compiler_version: 16
             distro: debian
             codename: bookworm
         cmake-args:
@@ -366,7 +366,7 @@ jobs:
   instrumentation-build:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/debian-bookworm:clang-17
+    container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
 
     steps:
         - name: checkout
