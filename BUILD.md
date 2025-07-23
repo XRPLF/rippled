@@ -44,7 +44,7 @@ but the instructions are significantly different,
 which is why we are not recommending it.
 
 [^2]: CMake 4 is not yet supported by all dependencies required by this project.
-If you are affected by this issue, follow [conan workaround for cmake 4](#cmake-4-workaround)
+If you are affected by this issue, follow [conan workaround for cmake 4](#workaround-for-cmake-4)
 
 `rippled` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
@@ -91,14 +91,15 @@ You'll need at least one Conan profile:
 conan profile detect
 ```
 
-You might also want to import the provided `conan/profiles/libxrpl` profile, or alternatively
-apply the required [tweaks](#conan-profile-tweaks) to your default profile.
+You will also need to apply the required [tweaks](#conan-profile-tweaks) to your default profile.
+
+Alternatively you may import the provided `conan/profiles/default` profile:
 
 ```bash
 conan config install conan/profiles/ -tf $(conan config home)/profiles/
 ```
 
-After this you should verify that Conan detected your compiler correctly, with:
+After this you should verify your conan profile, with:
 
 ```bash
 conan profile show
@@ -121,6 +122,35 @@ compiler, for example:
       version: ["5.0", "5.1", "6.0", "6.1", "7.0", "7.3", "8.0", "8.1", "9.0", "9.1",
                "10.0", "11.0", "12.0", "13", "13.0", "13.1", "14", "14.0", "15", "15.0", "16", "16.0", "17", "17.0"]
 ```
+
+### Multiple compilers
+
+If you have multiple compilers installed, make sure to select the one to use in
+your default Conan configuration **before** running `conan profile detect`, by setting
+the `CC` and `CXX` environment variables.
+
+For example, if you are running MacOS and have
+[homebrew LLVM@18](https://formulae.brew.sh/formula/llvm@18), and want to use it
+as a compiler in the new Conan profile:
+
+   ```bash
+   export CC=$(brew --prefix llvm@18)/bin/clang
+   export CXX=$(brew --prefix llvm@18)/bin/clang++
+   conan profile detect
+   ```
+
+You should also explicitly set the path to the compiler in the profile file. This
+helps to avoid errors when `CC` and/or `CXX` are set and disagree with the selected Conan
+profile. For example:
+
+```text
+[conf]
+tools.build:compiler_executables={'c':'/usr/bin/gcc','cpp':'/usr/bin/g++'}
+```
+
+You can manage Conan profile files in the directory `~/.conan2/profiles`, for
+example renaming `default` to a different name and then creating a new
+`default` profile for a different compiler.
 
 
 ### Conan profile tweaks
@@ -164,36 +194,7 @@ sed -i.bak -e 's|^arch=.*$|arch=x86_64|' ~/.conan2/profiles/default
 sed -i.bak -e 's|^compiler\.runtime=.*$|compiler.runtime=static|' ~/.conan2/profiles/default
 ```
 
-### Multiple compilers
-
-If you have multiple compilers installed, make sure to select the one to use in
-your default Conan configuration **before** running `conan profile detect`, by setting
-the `CC` and `CXX` environment variables.
-
-For example, if you are running MacOS and have
-[homebrew LLVM@18](https://formulae.brew.sh/formula/llvm@18), and want to use it
-as a compiler in the new Conan profile:
-
-   ```bash
-   export CC=$(brew --prefix llvm@18)/bin/clang
-   export CXX=$(brew --prefix llvm@18)/bin/clang++
-   conan profile detect
-   ```
-
-You should also explicitly set the path to the compiler in the profile file. This
-helps to avoid errors when `CC` and/or `CXX` are set and disagree with the selected Conan
-profile. For example:
-
-```text
-[conf]
-tools.build:compiler_executables={'c':'/usr/bin/gcc','cpp':'/usr/bin/g++'}
-```
-
-You can manage Conan profile files in the directory `~/.conan2/profiles`, for
-example renaming `default` to a different name and then creating a new
-`default` profile for a different compiler.
-
-### CMake 4 workaround
+#### Workaround for CMake 4
 
 If your system CMake is version 4 rather than 3, you may have to configure Conan
 profile to use CMake version 3 for dependencies, by adding the following two lines to profile:
@@ -205,6 +206,44 @@ profile to use CMake version 3 for dependencies, by adding the following two lin
 
 This will force Conan to download and use a locally cached CMake 3 version, and is needed because
 some of the dependencies used by this project do not support CMake 4.
+
+#### Clang workaround for grpc
+
+If your compiler is clang, version 19 or later, or apple-clang, version 17 or later, you may encounter
+compilation error while building `grpc` dependency in `conan`:
+
+```text
+In file included from .../lib/promise/try_seq.h:26:
+.../lib/promise/detail/basic_seq.h:499:38: error: a template argument list is expected after a name prefixed by the template keyword [-Wmissing-template-arg-list-after-template-kw]
+  499 |                     Traits::template CallSeqFactory(f_, *cur_, std::move(arg)));
+      |                                      ^
+```
+
+The workaround for this error is to add two lines to profile:
+
+```text
+[conf]
+tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
+```
+
+#### Workaround for gcc 12
+
+If your compiler is gcc, version 12, and you have enabled `werr` option, you may encounter
+compilation error like below:
+
+```text
+/usr/include/c++/12/bits/char_traits.h:435:56: error: 'void* __builtin_memcpy(void*, const void*, long unsigned int)' accessing 9223372036854775810 or more bytes at offsets [2, 9223372036854775807] and 1 may overlap up to 9223372036854775813 bytes at offset -3 [-Werror=restrict]
+  435 |         return static_cast<char_type*>(__builtin_memcpy(__s1, __s2, __n));
+      |                                        ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+cc1plus: all warnings being treated as errors
+```
+
+The workaround for this error is to add two lines to profile:
+
+```text
+[conf]
+tools.build:cxxflags=['-Wno-restrict']
+```
 
 ### Export updated recipes
 
@@ -409,12 +448,13 @@ stored inside the build directory, as either of:
 
 | Option | Default Value | Description |
 | --- | ---| ---|
-| `assert` | OFF | Enable assertions.
+| `assert` | OFF | Enable assertions. |
 | `coverage` | OFF | Prepare the coverage report. |
 | `san` | N/A | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
 | `tests` | OFF | Build tests. |
 | `unity` | OFF | Configure a unity build. |
 | `xrpld` | OFF | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
+| `werr` | OFF | Treat compilation warnings as errors |
 
 [Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer
