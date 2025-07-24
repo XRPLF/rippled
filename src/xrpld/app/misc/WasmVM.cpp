@@ -24,6 +24,8 @@
 #include <xrpld/app/misc/WamrVM.h>
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/tx/detail/ApplyContext.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>
@@ -32,6 +34,31 @@
 #include <memory>
 
 namespace ripple {
+
+enum ExitType : uint8_t {
+    UNSET = 0,
+    WASM_ERROR = 1,
+    ROLLBACK = 2,
+    ACCEPT = 3,
+};
+
+struct ContractResult
+{
+    std::queue<std::shared_ptr<ripple::Transaction>> emittedTxn{};
+    ripple::ExitType exitType = ripple::ExitType::ROLLBACK;
+    std::string exitReason{""};
+    int64_t exitCode{-1};
+};
+
+struct ContractContext
+{
+    ripple::ApplyContext& applyCtx;
+    int64_t expected_etxn_count{-1};
+    std::map<ripple::uint256, bool> nonce_used{};
+    uint32_t generation = 0;
+    uint64_t burden = 0;
+    ContractResult result;
+};
 
 std::vector<WasmImportFunc>
 createWasmImport(HostFunctions* hfs)
@@ -77,6 +104,7 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
         WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
         WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
+        WASM_IMPORT_FUNC2(i, submit, "submit", hfs,                                                               2000);
 
         // clang-format on
     }

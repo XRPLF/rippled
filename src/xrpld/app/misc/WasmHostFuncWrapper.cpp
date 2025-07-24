@@ -1085,6 +1085,44 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         rt, params, results, hf->traceNum(*msg, *number), index);
 }
 
+wasm_trap_t*
+submit_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const msg = getDataString(rt, params, index);
+    if (!msg)
+    {
+        return hfResult(results, msg.error());
+    }
+
+    auto const number = getDataInt64(rt, params, index);
+    if (!number)
+    {
+        return hfResult(results, number.error());
+    }
+
+    std::shared_ptr<STTx const> stpTrans;
+    // try
+    // {
+    //     stpTrans = std::make_shared<STTx const>(
+    //         SerialIter{memory + read_ptr, read_len});
+    // }
+    // catch (std::exception& e)
+    // {
+    //     return hfResult(results, number.error());
+    // }
+
+    return returnResult(
+        rt, params, results, hf->submit(*stpTrans), index);
+}
+
 class MockInstanceWrapper
 {
     wmem mem_;

@@ -24,6 +24,7 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -285,6 +286,12 @@ struct HostFunctions
 
     virtual Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    submit(STTx const& stx)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

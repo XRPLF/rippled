@@ -39,6 +39,10 @@ public:
     {
     }
 
+    // WasmHostFunctionsImpl(ApplyContext& ctx) : ctx(ctx)
+    // {
+    // }
+
     virtual void
     setRT(void const* rt) override
     {
@@ -172,6 +176,9 @@ public:
 
     Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data) override;
+
+    Expected<int32_t, HostFunctionError>
+    submit(STTx const& stx) override;
 };
 
 }  // namespace ripple
