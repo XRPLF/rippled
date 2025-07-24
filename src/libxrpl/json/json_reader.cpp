@@ -554,7 +554,7 @@ Reader::decodeNumber(Token& token)
     if (current == token.end_)
     {
         return addError(
-            "'" + std::string(token.start_, token.end_) +
+            std::string("'") + std::string(token.start_, token.end_) +
                 "' is not a valid number.",
             token);
     }
@@ -574,7 +574,7 @@ Reader::decodeNumber(Token& token)
         if (c < '0' || c > '9')
         {
             return addError(
-                "'" + std::string(token.start_, token.end_) +
+                std::string("'") + std::string(token.start_, token.end_) +
                     "' is not a number.",
                 token);
         }
@@ -586,7 +586,7 @@ Reader::decodeNumber(Token& token)
     if (current != token.end_)
     {
         return addError(
-            "'" + std::string(token.start_, token.end_) +
+            std::string("'") + std::string(token.start_, token.end_) +
                 "' exceeds the allowable range.",
             token);
     }
@@ -598,7 +598,7 @@ Reader::decodeNumber(Token& token)
         if (value < Value::minInt || value > Value::maxInt)
         {
             return addError(
-                "'" + std::string(token.start_, token.end_) +
+                std::string("'") + std::string(token.start_, token.end_) +
                     "' exceeds the allowable range.",
                 token);
         }
@@ -610,7 +610,7 @@ Reader::decodeNumber(Token& token)
         if (value > Value::maxUInt)
         {
             return addError(
-                "'" + std::string(token.start_, token.end_) +
+                std::string("'") + std::string(token.start_, token.end_) +
                     "' exceeds the allowable range.",
                 token);
         }

@@ -78,7 +78,8 @@ Endpoint::to_string() const
     {
         if (address().is_v6())
             s += ']';
-        s += ":" + std::to_string(port());
+        s += ':';
+        s += std::to_string(port());
     }
 
     return s;
