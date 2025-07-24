@@ -175,7 +175,7 @@ checkConsensusReached(
 
 ConsensusState
 checkConsensus(
-    std::size_t prevProposers,
+    bool sufficientProposers,
     std::size_t currentProposers,
     std::size_t currentAgree,
     std::size_t currentFinished,
@@ -188,8 +188,8 @@ checkConsensus(
     std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "checkConsensus: prop=" << currentProposers << "/"
-               << prevProposers << " agree=" << currentAgree
-               << " validated=" << currentFinished
+               << (sufficientProposers ? "sufficient" : "insufficient")
+               << " agree=" << currentAgree << " validated=" << currentFinished
                << " time=" << currentAgreeTime.count() << "/"
                << previousAgreeTime.count() << " proposing? " << proposing
                << " minimum duration to reach consensus: "
@@ -205,7 +205,7 @@ checkConsensus(
         return ConsensusState::No;
     }
 
-    if (currentProposers < (prevProposers * 3 / 4))
+    if (!sufficientProposers)
     {
         // Less than 3/4 of the last ledger's proposers are present; don't
         // rush: we may need more time.
