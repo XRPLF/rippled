@@ -361,31 +361,40 @@ jobs:
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
-
+    env:
+      build_dir: .build
     steps:
-        - name: checkout
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
         - name: download cache
           uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
           with:
             name: linux-clang-Debug
 
-        - name: prepare environment
+        - name: extract cache
           run: |
-            echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-            echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
+            mkdir -p ${CONAN_HOME}
+            tar -xzf conan.tar.gz -C ${CONAN_HOME}
 
-        - name: configure Conan
+        - name: check environment
           run: |
-            echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
-            conan config install conan/profiles/ -tf $(conan config home)/profiles/
-            conan profile show
+            echo ${PATH} | tr ':' '\n'
+            conan --version
+            cmake --version
+            env | sort
+            ls ${CONAN_HOME}
+
+        - name: checkout
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
         - name: dependencies
           uses: ./.github/actions/dependencies
           with:
             configuration: Debug
+
+        - name: prepare environment
+          run: |
+            mkdir -p ${build_dir}
+            echo "SOURCE_DIR=$(pwd)" >> $GITHUB_ENV
+            echo "BUILD_DIR=$(pwd)/${build_dir}" >> $GITHUB_ENV
 
         - name: build with instrumentation
           run: |
