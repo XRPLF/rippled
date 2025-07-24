@@ -357,14 +357,8 @@ jobs:
           cmake --build .
           ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
 
-  # NOTE we are not using dependencies built above because it lags with
-  # compiler versions. Instrumentation requires clang version 16 or
-  # later
-
   instrumentation-build:
-    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    env:
-      CLANG_RELEASE: 16
+    needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
 
@@ -372,9 +366,13 @@ jobs:
         - name: checkout
           uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+        - name: download cache
+          uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+          with:
+            name: linux-clang-Debug
+
         - name: prepare environment
           run: |
-            mkdir ${GITHUB_WORKSPACE}/.build
             echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
             echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
 
@@ -383,13 +381,11 @@ jobs:
             echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
             conan config install conan/profiles/ -tf $(conan config home)/profiles/
             conan profile show
-        - name: build dependencies
-          run: |
-            cd ${BUILD_DIR}
-            conan install ${SOURCE_DIR} \
-              --output-folder ${BUILD_DIR} \
-              --build missing \
-              --settings:all build_type=Debug
+
+        - name: dependencies
+          uses: ./.github/actions/dependencies
+          with:
+            configuration: Debug
 
         - name: build with instrumentation
           run: |
