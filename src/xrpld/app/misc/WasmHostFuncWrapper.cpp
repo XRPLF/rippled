@@ -111,9 +111,11 @@ getDataSlice(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
     if (ssz > maxWasmDataLength)
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    auto mem = rt ? rt->getMem() : wmem();
+    auto mem = instanceWrapper ? instanceWrapper->getMem() : wmem();
+    // LCOV_EXCL_START
     if (!mem.s)
-        return Unexpected(HostFunctionError::NO_MEM_EXPORTED);  // LCOV_EXCL_LINE
+        return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
+    // LCOV_EXCL_STOP
 
     if (src + ssz > mem.s)
         return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
