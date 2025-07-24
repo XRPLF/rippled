@@ -24,7 +24,7 @@
 namespace ripple {
 namespace test {
 
-static std::array<std::uint8_t, 2>
+static Bytes
 toBytes(std::uint16_t value)
 {
     auto const* b = reinterpret_cast<uint8_t const*>(&value);
@@ -32,7 +32,7 @@ toBytes(std::uint16_t value)
     return Bytes{b, e};
 }
 
-static std::array<std::uint8_t, 4>
+static Bytes
 toBytes(std::uint32_t value)
 {
     auto const* b = reinterpret_cast<uint8_t const*>(&value);
@@ -781,8 +781,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     std::to_string(static_cast<int>(weightResult.error()))))
             {
                 // Should be 1
-                std::array<std::uint8_t, 2> expected =
-                    toBytes(static_cast<std::uint16_t>(1));
+                auto const expected = toBytes(static_cast<std::uint16_t>(1));
                 BEAST_EXPECT(std::equal(
                     weightResult.value().begin(),
                     weightResult.value().end(),
@@ -801,8 +800,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     quorumResult.has_value(),
                     std::to_string(static_cast<int>(quorumResult.error()))))
             {
-                std::array<std::uint8_t, 4> expected =
-                    toBytes(static_cast<std::uint32_t>(2));
+                auto const expected = toBytes(static_cast<std::uint32_t>(2));
                 BEAST_EXPECT(std::equal(
                     quorumResult.value().begin(),
                     quorumResult.value().end(),

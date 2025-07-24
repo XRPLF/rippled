@@ -134,12 +134,6 @@ getAnyFieldData(STBase const* obj)
             return Bytes{data.begin(), data.end()};
         }
         break;
-        case STI_UINT256: {
-            auto const* num(static_cast<STBitString<256> const*>(obj));
-            auto const& data = num->value();
-            return Bytes{data.begin(), data.end()};
-        }
-        break;
         case STI_UINT16: {
             auto const& num(static_cast<STInteger<std::uint16_t> const*>(obj));
             std::uint16_t const data = num->value();
@@ -155,10 +149,14 @@ getAnyFieldData(STBase const* obj)
             return Bytes{b, e};
         }
         break;
-        // LCOV_EXCL_START
+        case STI_UINT256: {
+            auto const* num(static_cast<STBitString<256> const*>(obj));
+            auto const& data = num->value();
+            return Bytes{data.begin(), data.end()};
+        }
+        break;
         default:
-            return Unexpected(HostFunctionError::INTERNAL);
-            // LCOV_EXCL_STOP
+            break;  // default to serializer
     }
 
     Serializer msg;
