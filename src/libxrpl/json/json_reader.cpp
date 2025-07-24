@@ -656,10 +656,14 @@ Reader::decodeDouble(Token& token)
         count = sscanf(buffer.c_str(), format, &value);
     }
     if (count != 1)
-        return addError(
-            std::string("'") + std::string(token.start_, token.end_) +
-                "' is not a number.",
-            token);
+    {
+        std::string msg;
+        msg.reserve(2 + (token.end_ - token.start_) + 25);
+        msg.push_back('\'');
+        msg.append(token.start_, token.end_);
+        msg.append("' is not a number.");
+        return addError(std::move(msg), token);
+    }
     currentValue() = value;
     return true;
 }
