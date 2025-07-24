@@ -712,6 +712,7 @@ doLedgerEntry(RPC::JsonContext& context)
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")
         {jss::index, parseIndex, ltANY},
+        // aliases
         {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
         {jss::ripple_state, parseRippleState, ltRIPPLE_STATE},
     });
