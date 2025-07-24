@@ -1844,7 +1844,7 @@ class Loan_test : public beast::unit_test::suite
                 ++types[object[sfLedgerEntryType].asString()];
             }
             BEAST_EXPECT(types.size() == 4);
-            for (std::string const& type :
+            for (std::string const type :
                  {"MPToken", "Vault", "LoanBroker", "Loan"})
             {
                 BEAST_EXPECT(types[type] == 1);
