@@ -25,8 +25,6 @@ env:
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{ os.cpu_count() }}
     core.upload:parallel={{ os.cpu_count() }}
-    core:default_build_profile=libxrpl
-    core:default_profile=libxrpl
     tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
     tools.build:verbosity=verbose
     tools.compilation:verbosity=verbose
@@ -358,39 +356,44 @@ jobs:
           cmake --build .
           ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
 
-  # NOTE we are not using dependencies built above because it lags with
-  # compiler versions. Instrumentation requires clang version 16 or
-  # later
-
   instrumentation-build:
-    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    env:
-      CLANG_RELEASE: 16
+    needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
-
+    env:
+      build_dir: .build
     steps:
+        - name: download cache
+          uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+          with:
+            name: linux-clang-Debug
+
+        - name: extract cache
+          run: |
+            mkdir -p ${CONAN_HOME}
+            tar -xzf conan.tar.gz -C ${CONAN_HOME}
+
+        - name: check environment
+          run: |
+            echo ${PATH} | tr ':' '\n'
+            conan --version
+            cmake --version
+            env | sort
+            ls ${CONAN_HOME}
+
         - name: checkout
           uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+        - name: dependencies
+          uses: ./.github/actions/dependencies
+          with:
+            configuration: Debug
+
         - name: prepare environment
           run: |
-            mkdir ${GITHUB_WORKSPACE}/.build
-            echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-            echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
-
-        - name: configure Conan
-          run: |
-            echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
-            conan config install conan/profiles/ -tf $(conan config home)/profiles/
-            conan profile show
-        - name: build dependencies
-          run: |
-            cd ${BUILD_DIR}
-            conan install ${SOURCE_DIR} \
-              --output-folder ${BUILD_DIR} \
-              --build missing \
-              --settings:all build_type=Debug
+            mkdir -p ${build_dir}
+            echo "SOURCE_DIR=$(pwd)" >> $GITHUB_ENV
+            echo "BUILD_DIR=$(pwd)/${build_dir}" >> $GITHUB_ENV
 
         - name: build with instrumentation
           run: |
