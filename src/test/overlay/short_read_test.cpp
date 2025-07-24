@@ -32,8 +32,8 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
+#include <condition_variable>
 #include <functional>
-#include <optional>
 #include <thread>
 #include <utility>
 
