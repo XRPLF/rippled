@@ -23,6 +23,7 @@
 
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 
 #include <algorithm>
@@ -63,7 +64,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
             boost::asio::io_context ios;
             std::optional<boost::asio::executor_work_guard<
                 boost::asio::io_context::executor_type>>
-                work{ios};
+                work{boost::asio::make_work_guard(ios)};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
             elapsed_times_.reserve(num_samples);

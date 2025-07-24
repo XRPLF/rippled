@@ -125,8 +125,16 @@ class WSClientImpl : public WSClient
                 {
                     ws_.async_close(
                         {},
-                        boost::asio::bind_executor(
-                            strand_, [&](error_code) { stream_.cancel(); }));
+                        boost::asio::bind_executor(strand_, [&](error_code) {
+                            try
+                            {
+                                stream_.cancel();
+                            }
+                            catch (boost::system::system_error const&)
+                            {
+                                // ignored
+                            }
+                        }));
                 }
             }));
         work_ = std::nullopt;

@@ -98,9 +98,16 @@ ConnectAttempt::close()
         "ripple::ConnectAttempt::close : strand in this thread");
     if (socket_.is_open())
     {
-        // TODO: ec completely gone here now
-        timer_.cancel();
-        socket_.close();
+        try
+        {
+            timer_.cancel();
+            socket_.close();
+        }
+        catch (boost::system::system_error const&)
+        {
+            // ignored
+        }
+
         JLOG(journal_.debug()) << "Closed";
     }
 }
@@ -122,10 +129,13 @@ ConnectAttempt::fail(std::string const& name, error_code ec)
 void
 ConnectAttempt::setTimer()
 {
-    if (auto const cancelled = timer_.expires_after(std::chrono::seconds(15));
-        cancelled)
+    try
     {
-        JLOG(journal_.error()) << "setTimer: cancelled";
+        timer_.expires_after(std::chrono::seconds(15));
+    }
+    catch (boost::system::system_error const& e)
+    {
+        JLOG(journal_.error()) << "setTimer: " << e.code();
         return;
     }
 
@@ -140,7 +150,14 @@ ConnectAttempt::setTimer()
 void
 ConnectAttempt::cancelTimer()
 {
-    timer_.cancel();
+    try
+    {
+        timer_.cancel();
+    }
+    catch (boost::system::system_error const&)
+    {
+        // ignored
+    }
 }
 
 void

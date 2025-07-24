@@ -278,7 +278,15 @@ public:
 
     ~StatsDCollectorImp() override
     {
-        m_timer.cancel();
+        try
+        {
+            m_timer.cancel();
+        }
+        catch (boost::system::system_error const&)
+        {
+            // ignored
+        }
+
         m_work.reset();
         m_thread.join();
     }

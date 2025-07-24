@@ -32,6 +32,7 @@
 #include <boost/process/v1/args.hpp>
 #include <boost/process/v1/child.hpp>
 #include <boost/process/v1/exe.hpp>
+// #include <boost/process.hpp>
 
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
@@ -289,6 +290,7 @@ runUnitTests(
     {
         multi_runner_parent parent_runner;
         std::vector<boost::process::v1::child> children;
+        // std::vector<boost::process::child> children;
 
         std::string const exe_name = argv[0];
         std::vector<std::string> args;
@@ -303,6 +305,8 @@ runUnitTests(
             children.emplace_back(
                 boost::process::v1::exe = exe_name,
                 boost::process::v1::args = args);
+        // boost::process::exe = exe_name,
+        // boost::process::args = args);
 
         int bad_child_exits = 0;
         int terminated_child_exits = 0;

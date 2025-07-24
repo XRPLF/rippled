@@ -150,18 +150,22 @@ public:
             boost::asio::ip::resolver_query_base::numeric_service);
         mQuery = query;
 
-        auto const cancelled = mDeadline.expires_after(mTimeout);
-        if (cancelled)
-        // TODO: we no longer have a message here
-        // JLOG(j_.trace()) << "expires_after: " << mShutdown.message();
+        try
         {
+            mDeadline.expires_after(mTimeout);
+        }
+        catch (boost::system::system_error const& e)
+        {
+            mShutdown = e.code();
+
+            JLOG(j_.trace()) << "expires_after: " << mShutdown.message();
             mDeadline.async_wait(std::bind(
                 &HTTPClientImp::handleDeadline,
                 shared_from_this(),
                 std::placeholders::_1));
         }
 
-        if (cancelled)
+        if (!mShutdown)
         {
             JLOG(j_.trace()) << "Resolving: " << mDeqSites[0];
 
@@ -473,12 +477,16 @@ public:
         int iStatus = 0,
         std::string const& strData = "")
     {
-        boost::system::error_code ecCancel;  // no error
-        if (auto const cancelled = mDeadline.cancel(); not cancelled)
+        boost::system::error_code ecCancel;
+        try
         {
-            JLOG(j_.trace()) << "invokeComplete: Deadline cancel error. No "
-                                "handlers to cancel";
-            // TODO: set ecCancel somehow as it is used below
+            mDeadline.cancel();
+        }
+        catch (boost::system::system_error const& e)
+        {
+            JLOG(j_.trace())
+                << "invokeComplete: Deadline cancel error: " << e.what();
+            ecCancel = e.code();
         }
 
         JLOG(j_.debug()) << "invokeComplete: Deadline popping: "

@@ -1585,17 +1585,24 @@ ApplicationImp::run()
     m_resolver->stop();
 
     {
-        if (auto const cancelled = sweepTimer_.cancel(); not cancelled)
+        try
         {
-            JLOG(m_journal.error()) << "Application: sweepTimer cancel error. "
-                                       "No handlers to cancel were found";
+            sweepTimer_.cancel();
         }
-
-        if (auto const cancelled = entropyTimer_.cancel(); not cancelled)
+        catch (boost::system::system_error const& e)
         {
             JLOG(m_journal.error())
-                << "Application: entropyTimer cancel error. No handlers to "
-                   "cancel were found";
+                << "Application: sweepTimer cancel error: " << e.what();
+        }
+
+        try
+        {
+            entropyTimer_.cancel();
+        }
+        catch (boost::system::system_error const& e)
+        {
+            JLOG(m_journal.error())
+                << "Application: entropyTimer cancel error: " << e.what();
         }
     }
 

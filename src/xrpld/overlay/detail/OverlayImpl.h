@@ -327,7 +327,10 @@ public:
         if (req.method() != boost::beast::http::verb::get)
             return false;
         if (!boost::beast::http::token_list{req["Connection"]}.exists(
-                "upgrade"))
+                "upgrade") &&
+            !boost::beast::http::token_list{req["Connection"]}.exists(
+                "Upgrade"))  // TODO: Capital Upgrade may not be needed here,
+                             // need to verify
             return false;
         return true;
     }
@@ -339,7 +342,10 @@ public:
         if (req.version() < 11)
             return false;
         if (!boost::beast::http::token_list{req["Connection"]}.exists(
-                "upgrade"))
+                "upgrade") &&
+            !boost::beast::http::token_list{req["Connection"]}.exists(
+                "Upgrade"))  // TODO: Capital Upgrade may not be needed here,
+                             // need to verify
             return false;
         return true;
     }

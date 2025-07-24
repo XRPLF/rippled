@@ -581,9 +581,16 @@ PeerImp::close()
     if (socket_.is_open())
     {
         detaching_ = true;  // DEPRECATED
-        // TODO: ec is gone here
-        timer_.cancel();
-        socket_.close();
+        try
+        {
+            timer_.cancel();
+            socket_.close();
+        }
+        catch (boost::system::system_error const&)
+        {
+            // ignored
+        }
+
         overlay_.incPeerDisconnect();
         if (inbound_)
         {
@@ -654,10 +661,13 @@ PeerImp::gracefulClose()
 void
 PeerImp::setTimer()
 {
-    if (auto const cancelled = timer_.expires_after(peerTimerInterval);
-        cancelled)
+    try
     {
-        JLOG(journal_.error()) << "setTimer: cancelled";
+        timer_.expires_after(peerTimerInterval);
+    }
+    catch (boost::system::system_error const& e)
+    {
+        JLOG(journal_.error()) << "setTimer: " << e.code();
         return;
     }
     timer_.async_wait(bind_executor(
@@ -670,7 +680,14 @@ PeerImp::setTimer()
 void
 PeerImp::cancelTimer()
 {
-    timer_.cancel();
+    try
+    {
+        timer_.cancel();
+    }
+    catch (boost::system::system_error const&)
+    {
+        // ignored
+    }
 }
 
 //------------------------------------------------------------------------------

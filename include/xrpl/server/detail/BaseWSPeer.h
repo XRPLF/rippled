@@ -421,12 +421,17 @@ BaseWSPeer<Handler, Impl>::start_timer()
     // Max seconds without completing a message
     static constexpr std::chrono::seconds timeout{30};
     static constexpr std::chrono::seconds timeoutLocal{3};
-    if (auto const cancelled = timer_.expires_after(
-            remote_endpoint().address().is_loopback() ? timeoutLocal : timeout);
-        cancelled)
+
+    try
     {
-        return fail(boost::asio::error::operation_aborted, "start_timer");
+        timer_.expires_after(
+            remote_endpoint().address().is_loopback() ? timeoutLocal : timeout);
     }
+    catch (boost::system::system_error const& e)
+    {
+        return fail(e.code(), "start_timer");
+    }
+
     timer_.async_wait(bind_executor(
         strand_,
         std::bind(
@@ -440,7 +445,14 @@ template <class Handler, class Impl>
 void
 BaseWSPeer<Handler, Impl>::cancel_timer()
 {
-    timer_.cancel();
+    try
+    {
+        timer_.cancel();
+    }
+    catch (boost::system::system_error const&)
+    {
+        // ignored
+    }
 }
 
 template <class Handler, class Impl>

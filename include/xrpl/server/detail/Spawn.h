@@ -81,14 +81,21 @@ spawn(Ctx&& ctx, F&& func)
         boost::asio::spawn(
             std::forward<Ctx>(ctx),
             std::forward<F>(func),
-            impl::kPROPAGATE_EXCEPTIONS);
+            [](std::exception_ptr ePtr) {
+                if (ePtr)
+                    std::rethrow_exception(ePtr);
+            });
     }
     else
     {
         boost::asio::spawn(
-            boost::asio::make_strand(std::forward<Ctx>(ctx).get_executor()),
+            boost::asio::make_strand(
+                boost::asio::get_associated_executor(std::forward<Ctx>(ctx))),
             std::forward<F>(func),
-            impl::kPROPAGATE_EXCEPTIONS);
+            [](std::exception_ptr ePtr) {
+                if (ePtr)
+                    std::rethrow_exception(ePtr);
+            });
     }
 }
 

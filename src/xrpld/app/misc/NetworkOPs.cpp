@@ -588,26 +588,35 @@ public:
     stop() override
     {
         {
-            if (auto const cancelled = heartbeatTimer_.cancel(); not cancelled)
+            try
+            {
+                heartbeatTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
-                    << "NetworkOPs: heartbeatTimer cancel error. No handlers "
-                       "to cancel were found";
+                    << "NetworkOPs: heartbeatTimer cancel error: " << e.what();
             }
 
-            if (auto const cancelled = clusterTimer_.cancel(); not cancelled)
+            try
+            {
+                clusterTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
-                    << "NetworkOPs: clusterTimer cancel "
-                       "error. No handlers to cancel were found";
+                    << "NetworkOPs: clusterTimer cancel error: " << e.what();
             }
 
-            if (auto const cancelled = accountHistoryTxTimer_.cancel();
-                not cancelled)
+            try
+            {
+                accountHistoryTxTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
-                    << "NetworkOPs: accountHistoryTxTimer cancel "
-                       "error. No handlers to cancel were found";
+                    << "NetworkOPs: accountHistoryTxTimer cancel error: "
+                    << e.what();
             }
         }
         // Make sure that any waitHandlers pending in our timers are done.
