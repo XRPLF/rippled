@@ -55,6 +55,15 @@ class Xrpl(ConanFile):
         'date/*:header_only': True,
         'grpc/*:shared': False,
         'grpc/*:secure': True,
+        'grpc/*:codegen': False,
+        'grpc/*:csharp_ext': False,
+        'grpc/*:csharp_plugin': False,
+        'grpc/*:node_plugin': False,
+        'grpc/*:objective_c_plugin': False,
+        'grpc/*:php_plugin': False,
+        'grpc/*:python_plugin': False,
+        'grpc/*:ruby_plugin': False,
+        'grpc/*:otel_plugin': False,
         'libarchive/*:shared': False,
         'libarchive/*:with_acl': False,
         'libarchive/*:with_bzip2': False,
@@ -143,8 +152,6 @@ class Xrpl(ConanFile):
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
         tc.variables['xrpld'] = self.options.xrpld
-        if self.settings.compiler == 'clang' and self.settings.compiler.version == 16:
-            tc.extra_cxxflags = ["-DBOOST_ASIO_DISABLE_CONCEPTS"]
         tc.generate()
 
     def build(self):
