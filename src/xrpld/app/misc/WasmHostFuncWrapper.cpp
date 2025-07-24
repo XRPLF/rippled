@@ -111,7 +111,7 @@ getDataSlice(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
     if (ssz > maxWasmDataLength)
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    auto mem = instanceWrapper ? instanceWrapper->getMem() : wmem();
+    auto mem = rt ? rt->getMem() : wmem();
     // LCOV_EXCL_START
     if (!mem.s)
         return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
@@ -146,7 +146,7 @@ template <class IW>
 Expected<AccountID, HostFunctionError>
 getDataAccountID(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const slice = getDataSlice(instanceWrapper, params, i);
+    auto const slice = getDataSlice(rt, params, i);
     if (!slice)
     {
         return Unexpected(slice.error());
@@ -157,14 +157,14 @@ getDataAccountID(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
     }
 
-    return AccountID::fromVoid(r->data());
+    return AccountID::fromVoid(slice->data());
 }
 
 template <class IW>
 static Expected<Currency, HostFunctionError>
 getDataCurrency(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const slice = getDataSlice(instanceWrapper, params, i);
+    auto const slice = getDataSlice(rt, params, i);
     if (!slice)
     {
         return Unexpected(slice.error());
@@ -175,7 +175,7 @@ getDataCurrency(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
     }
 
-    return Currency::fromVoid(r->data());
+    return Currency::fromVoid(slice->data());
 }
 
 template <class IW>
