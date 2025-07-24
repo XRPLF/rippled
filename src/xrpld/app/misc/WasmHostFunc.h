@@ -25,12 +25,15 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 
 enum class HostFunctionError : int32_t {
+    SUCCESS = 0,
     INTERNAL = -1,
     FIELD_NOT_FOUND = -2,
     BUFFER_TOO_SMALL = -3,
@@ -49,6 +52,7 @@ enum class HostFunctionError : int32_t {
     INVALID_ACCOUNT = -16,
     INVALID_FIELD = -17,
     INDEX_OUT_OF_BOUNDS = -18,
+    SUBMIT_TXN_FAILURE = -19,
 };
 
 struct HostFunctions
@@ -285,6 +289,36 @@ struct HostFunctions
 
     virtual Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    contractFuncParam(std::uint32_t index, std::uint32_t stTypeId)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    otxnCallParam(std::uint32_t index, std::uint32_t stTypeId)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    getContractData(AccountID const& account)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    setContractData(AccountID const& account, STJson const& data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    submitTxn(std::shared_ptr<STTx const> const& stxPtr)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

@@ -1084,9 +1084,10 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 // non-active amendment will not set any field, by definition. Specific
 // properties of a pseudo-account are NOT checked here, that's what
 // InvariantCheck is for.
-static std::array<SField const*, 2> const pseudoAccountOwnerFields = {
-    &sfAMMID,    //
-    &sfVaultID,  //
+static std::array<SField const*, 3> const pseudoAccountOwnerFields = {
+    &sfAMMID,       //
+    &sfVaultID,     //
+    &sfContractID,  //
 };
 
 Expected<std::shared_ptr<SLE>, TER>

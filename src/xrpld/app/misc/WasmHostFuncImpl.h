@@ -19,14 +19,15 @@
 
 #pragma once
 
+#include <xrpld/app/contract/ContractContext.h>
 #include <xrpld/app/misc/WasmHostFunc.h>
-#include <xrpld/app/tx/detail/ApplyContext.h>
 
 namespace ripple {
 class WasmHostFunctionsImpl : public HostFunctions
 {
     ApplyContext& ctx;
     Keylet leKey;
+    ContractContext& contractCtx;
 
     static int constexpr MAX_CACHE = 256;
     std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
@@ -34,10 +35,17 @@ class WasmHostFunctionsImpl : public HostFunctions
     void const* rt_ = nullptr;
 
 public:
-    WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
-        : ctx(ctx), leKey(leKey)
+    WasmHostFunctionsImpl(ContractContext& contractContext)
+        : ctx(contractContext.applyCtx)
+        , leKey(contractContext.result.contractSourceKeylet)
+        , contractCtx(contractContext)
     {
     }
+
+    // WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
+    //     : ctx(ctx), leKey(leKey)
+    // {
+    // }
 
     virtual void
     setRT(void const* rt) override
@@ -172,6 +180,21 @@ public:
 
     Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data) override;
+
+    Expected<Bytes, HostFunctionError>
+    contractFuncParam(std::uint32_t index, std::uint32_t stTypeId) override;
+
+    Expected<Bytes, HostFunctionError>
+    otxnCallParam(std::uint32_t index, std::uint32_t stTypeId) override;
+
+    Expected<Bytes, HostFunctionError>
+    getContractData(AccountID const& account) override;
+
+    Expected<int32_t, HostFunctionError>
+    setContractData(AccountID const& account, STJson const& data) override;
+
+    Expected<int32_t, HostFunctionError>
+    submitTxn(std::shared_ptr<STTx const> const& stxPtr) override;
 };
 
 }  // namespace ripple

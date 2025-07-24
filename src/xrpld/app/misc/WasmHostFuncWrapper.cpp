@@ -1085,6 +1085,151 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         rt, params, results, hf->traceNum(*msg, *number), index);
 }
 
+wasm_trap_t*
+contractFuncParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const iindex = getDataInt32(rt, params, index);
+    if (!iindex)
+    {
+        return hfResult(results, iindex.error());
+    }
+
+    auto const stTypeId = getDataInt32(rt, params, index);
+    if (!stTypeId)
+    {
+        return hfResult(results, stTypeId.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->contractFuncParam(*iindex, *stTypeId), index);
+}
+
+wasm_trap_t*
+otxnCallParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const iindex = getDataInt32(rt, params, index);
+    if (!iindex)
+    {
+        return hfResult(results, iindex.error());
+    }
+
+    auto const stTypeId = getDataInt32(rt, params, index);
+    if (!stTypeId)
+    {
+        return hfResult(results, stTypeId.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->otxnCallParam(*iindex, *stTypeId), index);
+}
+
+wasm_trap_t*
+getContractData_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    return returnResult(rt, params, results, hf->getContractData(*acc), index);
+}
+
+wasm_trap_t*
+setContractData_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const data = getDataSlice(rt, params, index);
+    if (!data)
+    {
+        return hfResult(results, data.error());
+    }
+
+    auto parsed = STJson::fromBlob(data->data(), data->size());
+
+    return returnResult(
+        rt, params, results, hf->setContractData(*acc, *parsed), index);
+}
+
+wasm_trap_t*
+submitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const slice = getDataSlice(rt, params, index);
+    if (!slice)
+    {
+        return hfResult(results, slice.error());
+    }
+
+    std::shared_ptr<STTx const> stpTrans;
+    try
+    {
+        stpTrans = std::make_shared<STTx const>(SerialIter{*slice});
+    }
+    catch (std::exception& e)
+    {
+        return hfResult(results, HostFunctionError::INTERNAL);
+    }
+
+    return returnResult(rt, params, results, hf->submitTxn(stpTrans), index);
+}
+
 class MockInstanceWrapper
 {
     wmem mem_;

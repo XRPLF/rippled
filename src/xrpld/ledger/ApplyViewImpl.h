@@ -58,7 +58,7 @@ public:
         OpenView& to,
         STTx const& tx,
         TER ter,
-        std::optional<uint256> parentBatchId,
+        std::optional<uint256> parentTxId,
         bool isDryRun,
         beast::Journal j);
 
@@ -76,9 +76,24 @@ public:
     }
 
     void
-    setGasUsed(std::uint32_t const& gasUsed)
+    addContractMetaData(STObject&& contractExecution)
     {
-        gasUsed_ = gasUsed;
+        contractExecution_.push_back(std::move(contractExecution));
+    }
+
+    void
+    setContractMetaData(std::vector<STObject>&& executions)
+    {
+        contractExecution_ = std::move(executions);
+    }
+
+    void
+    copyContractMetaData(std::vector<STObject>& execution)
+    {
+        std::copy(
+            contractExecution_.begin(),
+            contractExecution_.end(),
+            std::back_inserter(execution));
     }
 
     /** Get the number of modified entries
@@ -100,6 +115,7 @@ public:
 private:
     std::optional<STAmount> deliver_;
     std::optional<std::uint32_t> gasUsed_;
+    std::vector<STObject> contractExecution_;
 };
 
 }  // namespace ripple

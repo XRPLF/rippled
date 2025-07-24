@@ -367,6 +367,7 @@ enum TECcodes : TERUnderlyingType {
     tecPRECISION_LOSS = 197,
     tecNO_DELEGATE_PERMISSION = 198,
     tecWASM_REJECTED = 199,
+    tecINVALID_PARAMETERS = 200,
 };
 
 //------------------------------------------------------------------------------

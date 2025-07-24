@@ -313,4 +313,39 @@ using traceNum_proto = int32_t(uint8_t const*, int32_t, int64_t);
 wasm_trap_t*
 traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
+using contractFuncParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+contractFuncParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using otxnCallParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+otxnCallParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getContractData_proto = int32_t(uint8_t*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getContractData_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using setContractData_proto = int32_t(uint8_t*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+setContractData_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using submitTxn_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+submitTxn_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 }  // namespace ripple

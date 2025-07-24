@@ -50,6 +50,13 @@ preflight0(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
+    if (isPseudoTx(ctx.tx) && ctx.tx.isFlag(tfGeneratedTxn))
+    {
+        JLOG(ctx.j.warn()) << "Pseudo transactions cannot contain the "
+                              "tfGeneratedTxn flag.";
+        return temINVALID_FLAG;
+    }
+
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
         uint32_t nodeNID = ctx.app.config().NETWORK_ID;
@@ -147,10 +154,19 @@ preflight1(PreflightContext const& ctx)
     if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
         return temINVALID_FLAG;
 
-    XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
-            !ctx.rules.enabled(featureBatch),
-        "Inner batch transaction must have a parent batch ID.");
+    // XRPL_ASSERT(
+    //     ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentTxId.has_value() ||
+    //         !ctx.rules.enabled(featureBatch),
+    //     "Inner batch transaction must have a parent batch ID.");
+
+    if (ctx.tx.isFlag(tfGeneratedTxn) &&
+        !ctx.rules.enabled(featureSmartContract))
+        return temINVALID_FLAG;
+
+    // XRPL_ASSERT(
+    //     ctx.tx.isFlag(tfGeneratedTxn) == ctx.parentTxId.has_value() ||
+    //         !ctx.rules.enabled(featureSmartContract),
+    //     "Generated transaction must have a parent transaction ID.");
 
     return tesSUCCESS;
 }
@@ -262,7 +278,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const feePaid = ctx.tx[sfFee].xrp();
 
-    if (ctx.flags & tapBATCH)
+    if (ctx.flags & tapGENERATED)
     {
         if (feePaid == beast::zero)
             return tesSUCCESS;
@@ -581,6 +597,18 @@ Transactor::checkSign(PreclaimContext const& ctx)
     // Ignore signature check on batch inner transactions
     if (ctx.tx.isFlag(tfInnerBatchTxn) &&
         ctx.view.rules().enabled(featureBatch))
+    {
+        // Defensive Check: These values are also checked in Batch::preflight
+        if (ctx.tx.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
+            ctx.tx.isFieldPresent(sfSigners))
+        {
+            return temINVALID_FLAG;  // LCOV_EXCL_LINE
+        }
+        return tesSUCCESS;
+    }
+
+    if (ctx.tx.isFlag(tfGeneratedTxn) &&
+        ctx.view.rules().enabled(featureSmartContract))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (ctx.tx.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
@@ -1014,7 +1042,12 @@ removeDeletedTrustLines(
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
+    ApplyViewImpl& avi = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+    std::vector<STObject> executions;
+    avi.copyContractMetaData(executions);
     ctx_.discard();
+    ApplyViewImpl& avi2 = dynamic_cast<ApplyViewImpl&>(ctx_.view());
+    avi2.setContractMetaData(std::move(executions));
 
     auto const txnAcct =
         view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));

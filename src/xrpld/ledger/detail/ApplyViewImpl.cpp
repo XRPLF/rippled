@@ -31,12 +31,20 @@ ApplyViewImpl::apply(
     OpenView& to,
     STTx const& tx,
     TER ter,
-    std::optional<uint256> parentBatchId,
+    std::optional<uint256> parentTxId,
     bool isDryRun,
     beast::Journal j)
 {
     return items_.apply(
-        to, tx, ter, deliver_, parentBatchId, gasUsed_, isDryRun, j);
+        to,
+        tx,
+        ter,
+        deliver_,
+        parentTxId,
+        gasUsed_,
+        contractExecution_,
+        isDryRun,
+        j);
 }
 
 std::size_t

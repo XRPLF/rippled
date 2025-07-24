@@ -24,6 +24,7 @@
 #include <xrpld/app/misc/WamrVM.h>
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
+#include <xrpld/app/tx/detail/ApplyContext.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>
@@ -77,6 +78,11 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
         WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
         WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
+        WASM_IMPORT_FUNC2(i, contractFuncParam, "contract_func_param", hfs,                                         70);
+        WASM_IMPORT_FUNC2(i, otxnCallParam, "otxn_call_param", hfs,                                                 70);
+        WASM_IMPORT_FUNC2(i, getContractData, "get_contract_data", hfs,                                             70);
+        WASM_IMPORT_FUNC2(i, setContractData, "set_contract_data", hfs,                                             70);
+        WASM_IMPORT_FUNC2(i, submitTxn, "submit_txn", hfs,                                                         2000);
 
         // clang-format on
     }
@@ -116,12 +122,11 @@ runEscrowWasm(
 #endif
         return Unexpected<TER>(ret.error());
     }
-
 #ifdef DEBUG_OUTPUT
     std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
               << std::endl;
 #endif
-    return EscrowResult{ret->result > 0, ret->cost};
+    return EscrowResult{ret->result, ret->cost};
 }
 
 NotTEC

@@ -38,8 +38,11 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
@@ -653,6 +656,20 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
+STData
+STObject::getFieldData(SField const& field) const
+{
+    static STData const empty{field};
+    return getFieldByConstRef<STData>(field, empty);
+}
+
+STDataType
+STObject::getFieldDataType(SField const& field) const
+{
+    static STDataType const empty{field};
+    return getFieldByConstRef<STDataType>(field, empty);
+}
+
 Blob
 STObject::getFieldVL(SField const& field) const
 {
@@ -817,6 +834,12 @@ STObject::setFieldPathSet(SField const& field, STPathSet const& v)
 
 void
 STObject::setFieldArray(SField const& field, STArray const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
+STObject::setFieldJson(SField const& field, STJson const& v)
 {
     setFieldUsingAssignment(field, v);
 }
