@@ -19,7 +19,7 @@ concurrency:
 # This part of Conan configuration is specific to this workflow only; we do not want
 # to pollute conan/profiles directory with settings which might not work for others
 env:
-  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+  #CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
   CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
   CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
   CONAN_GLOBAL_CONF: |
@@ -73,7 +73,7 @@ jobs:
             distro: ubuntu
             codename: jammy
           - compiler: clang
-            compiler_version: 16
+            compiler_version: 17
             distro: debian
             codename: bookworm
     runs-on: [self-hosted, heavy]
@@ -129,7 +129,7 @@ jobs:
             distro: ubuntu
             codename: jammy
           - compiler: clang
-            compiler_version: 16
+            compiler_version: 17
             distro: debian
             codename: bookworm
         cmake-args:
@@ -365,10 +365,8 @@ jobs:
 
   instrumentation-build:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    env:
-      CLANG_RELEASE: 16
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
+    container: ghcr.io/xrplf/ci/debian-bookworm:clang-17
 
     steps:
         - name: checkout
