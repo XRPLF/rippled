@@ -41,10 +41,10 @@ missingFieldError(
     std::optional<std::string> err = std::nullopt)
 {
     Json::Value json = Json::objectValue;
-    auto const& error = RPC::missing_field_message(std::string(field.c_str()));
+    auto const error = RPC::missing_field_message(std::string(field.c_str()));
     json[jss::error] = err.value_or("malformedRequest");
     json[jss::error_code] = rpcINVALID_PARAMS;
-    json[jss::error_message] = error;
+    json[jss::error_message] = std::move(error);
     return Unexpected(json);
 }
 
@@ -55,10 +55,10 @@ invalidFieldError(
     std::string const& type)
 {
     Json::Value json = Json::objectValue;
-    auto const& error = RPC::expected_field_message(field, type);
+    auto const error = RPC::expected_field_message(field, type);
     json[jss::error] = err;
     json[jss::error_code] = rpcINVALID_PARAMS;
-    json[jss::error_message] = error;
+    json[jss::error_message] = std::move(error);
     return Unexpected(json);
 }
 
@@ -78,7 +78,7 @@ hasRequired(
     std::initializer_list<Json::StaticString> fields,
     std::optional<std::string> err = std::nullopt)
 {
-    for (auto const& field : fields)
+    for (auto const field : fields)
     {
         if (!params.isMember(field) || params[field].isNull())
         {
