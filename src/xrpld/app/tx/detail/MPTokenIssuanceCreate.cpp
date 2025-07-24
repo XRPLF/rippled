@@ -28,7 +28,12 @@ namespace ripple {
 bool
 MPTokenIssuanceCreate::isEnabled(PreflightContext const& ctx)
 {
-    return ctx.rules.enabled(featureMPTokensV1);
+    if (!ctx.rules.enabled(featureMPTokensV1))
+        return false;
+
+    return !ctx.tx.isFieldPresent(sfDomainID) ||
+        (ctx.rules.enabled(featurePermissionedDomains) &&
+         ctx.rules.enabled(featureSingleAssetVault));
 }
 
 std::uint32_t
@@ -48,6 +53,16 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // If a non-zero TransferFee is set then the tfTransferable flag
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
+            return temMALFORMED;
+    }
+
+    if (auto const domain = ctx.tx[~sfDomainID])
+    {
+        if (*domain == beast::zero)
+            return temMALFORMED;
+
+        // Domain present implies that MPTokenIssuance is not public
+        if ((ctx.tx.getFlags() & tfMPTRequireAuth) == 0)
             return temMALFORMED;
     }
 
@@ -145,6 +160,7 @@ MPTokenIssuanceCreate::doApply()
             .assetScale = tx[~sfAssetScale],
             .transferFee = tx[~sfTransferFee],
             .metadata = tx[~sfMPTokenMetadata],
+            .domainId = tx[~sfDomainID],
         });
     return result ? tesSUCCESS : result.error();
 }
