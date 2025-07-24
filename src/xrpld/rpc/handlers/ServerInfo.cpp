@@ -89,7 +89,14 @@ public:
         auto end = fileContents.cend();
 
         std::regex ledgerSpecificFlagDef(
-            R"(^ *(lsf[a-zA-Z]+) *=(?:(?: *(0x[0-9]{8}),(?: *\/\/.+)?)|(?:\n *(0x[0-9]{8}),(?: *\/\/.+)?))$)",
+            R"(^)"                         // start of the line
+            R"( *(lsf[a-zA-Z]+))"          // flag name
+            R"( *=(?:(?: *(0x[0-9]{8}),)"  // capture the hexcode
+            R"((?: *\/\/.+)?))"            // regex pattern to match comments
+            R"(|)"
+            R"((?:\n *(0x[0-9]{8}),)"  // capture the hexcode
+            R"((?: *\/\/.+)?)))"       // regex pattern to match comments
+            R"($)",                    // end of the line
             std::regex_constants::multiline);
 
         while (std::regex_search(begin, end, match, ledgerSpecificFlagDef))
@@ -140,11 +147,27 @@ public:
         auto end = fileContents.cend();
 
         std::regex macroDefStart(
-            R"(^LEDGER_ENTRY(?:_DUPLICATE)?\((lt[A-Z_]+) *, *(0x[0-9a-f]+) *, *([^,]+) *, *(?:[^,]+) *, *\(\{$)",
+            R"(^LEDGER_ENTRY(?:_DUPLICATE)?\()"  // match the start of the macro
+                                                 // definition
+            R"((lt[A-Z_]+) *,)"  // capture the `lt` ledger-entry variable name
+            R"( *(0x[0-9a-f]+) *,)"  // grab the hexCode
+            R"( *([^,]+) *,)"    // grab the human-readable ledger-entry name
+            R"( *(?:[^,]+) *,)"  // match the lt-variable name used inside
+                                 // rippled
+            R"( *\(\{$)",  // verbatim match the remaining characters in the
+                           // definition
             std::regex_constants::multiline);
         std::regex macroDefEnd(R"(^\}\)\)$)", std::regex_constants::multiline);
         std::regex sfieldDef(
-            R"(^ *\{ *sf([^,]+) *, *soe(REQUIRED|OPTIONAL|DEFAULT) *\},?(?: *\/\/[^\n]+)?$)",
+            R"(^ *\{)"           // start of the SField definition
+            R"( *sf([^,]+) *,)"  // capture the SField title
+            R"( *soe(REQUIRED|OPTIONAL|DEFAULT) *\},?)"  // capture the
+                                                         // `optionality` of the
+                                                         // SField inside the
+                                                         // LedgerEntry
+            R"((?: *\/\/[^\n]+)?)"  // match the comments at the end of the
+                                    // SField definition
+            R"($)",                 // end of the line
             std::regex_constants::multiline);
 
         while (std::regex_search(begin, end, match, macroDefStart))
