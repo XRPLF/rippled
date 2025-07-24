@@ -93,7 +93,7 @@ shouldCloseLedger(
 */
 ConsensusState
 checkConsensus(
-    std::size_t prevProposers,
+    bool sufficientProposers,
     std::size_t currentProposers,
     std::size_t currentAgree,
     std::size_t currentFinished,
@@ -1712,8 +1712,11 @@ Consensus<Adaptor>::haveConsensus(
                      << ", disagree=" << disagree;
 
     ConsensusParms const& parms = adaptor_.parms();
+    bool const sufficientProposers =
+        (agree + disagree) >= (prevProposers_ * 3 / 4);
     // Stalling is BAD
-    bool const stalled = haveCloseTimeConsensus_ &&
+    bool const stalled = sufficientProposers && haveCloseTimeConsensus_ &&
+        !result_->disputes.empty() &&
         std::ranges::all_of(result_->disputes,
                             [this, &parms](auto const& dispute) {
                                 return dispute.second.stalled(
@@ -1721,10 +1724,17 @@ Consensus<Adaptor>::haveConsensus(
                                     mode_.get() == ConsensusMode::proposing,
                                     peerUnchangedCounter_);
                             });
+    if (stalled)
+    {
+        CLOG(clog) << "Consensus detects as stalled with " << (agree + disagree)
+                   << "/" << prevProposers_ << " proposers, and "
+                   << result_->disputes.size()
+                   << " stalled disputed transactions.";
+    }
 
     // Determine if we actually have consensus or not
     result_->state = checkConsensus(
-        prevProposers_,
+        sufficientProposers,
         agree + disagree,
         agree,
         currentFinished,
