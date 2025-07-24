@@ -384,25 +384,25 @@ ledgerFromRequest(T& ledger, JsonContext& context)
         return getLedger(ledger, ledgerHash, context);
     }
 
-    if (indexValue.isConvertibleTo(Json::stringValue))
-    {
-        auto const index = indexValue.asString();
+    if (!indexValue.isConvertibleTo(Json::stringValue))
+        return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
 
-        if (index == "current" || index.empty())
-            return getLedger(ledger, LedgerShortcut::CURRENT, context);
+    auto const index = indexValue.asString();
 
-        if (index == "validated")
-            return getLedger(ledger, LedgerShortcut::VALIDATED, context);
+    if (index == "current" || index.empty())
+        return getLedger(ledger, LedgerShortcut::CURRENT, context);
 
-        if (index == "closed")
-            return getLedger(ledger, LedgerShortcut::CLOSED, context);
+    if (index == "validated")
+        return getLedger(ledger, LedgerShortcut::VALIDATED, context);
 
-        std::uint32_t iVal;
-        if (beast::lexicalCastChecked(iVal, index))
-            return getLedger(ledger, iVal, context);
-    }
+    if (index == "closed")
+        return getLedger(ledger, LedgerShortcut::CLOSED, context);
 
-    return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+    std::uint32_t val;
+    if (!beast::lexicalCastChecked(val, index))
+        return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+
+    return getLedger(ledger, val, context);
 }
 }  // namespace
 

@@ -42,56 +42,83 @@ namespace ripple {
 
 namespace test {
 
+enum class FieldType {
+    AccountField,
+    BlobField,
+    ArrayField,
+    CurrencyField,
+    HashField,
+    HashOrObjectField,
+    ObjectField,
+    StringField,
+    TwoAccountArrayField,
+    UInt32Field,
+    UInt64Field,
+};
+
+std::vector<std::pair<Json::StaticString, FieldType>> mappings{
+    {jss::account, FieldType::AccountField},
+    {jss::accounts, FieldType::TwoAccountArrayField},
+    {jss::authorize, FieldType::AccountField},
+    {jss::authorized, FieldType::AccountField},
+    {jss::credential_type, FieldType::BlobField},
+    {jss::currency, FieldType::CurrencyField},
+    {jss::issuer, FieldType::AccountField},
+    {jss::oracle_document_id, FieldType::UInt32Field},
+    {jss::owner, FieldType::AccountField},
+    {jss::seq, FieldType::UInt32Field},
+    {jss::subject, FieldType::AccountField},
+    {jss::ticket_seq, FieldType::UInt32Field},
+};
+
+FieldType
+getFieldType(Json::StaticString fieldName)
+{
+    auto it = std::ranges::find_if(mappings, [&fieldName](auto const& pair) {
+        return pair.first == fieldName;
+    });
+    if (it != mappings.end())
+    {
+        return it->second;
+    }
+    else
+    {
+        Throw<std::runtime_error>(
+            "`mappings` is missing field " + std::string(fieldName.c_str()));
+    }
+}
+
+std::string
+getTypeName(FieldType typeID)
+{
+    switch (typeID)
+    {
+        case FieldType::UInt32Field:
+            return "number";
+        case FieldType::UInt64Field:
+            return "number";
+        case FieldType::HashField:
+            return "hex string";
+        case FieldType::AccountField:
+            return "AccountID";
+        case FieldType::BlobField:
+            return "hex string";
+        case FieldType::CurrencyField:
+            return "Currency";
+        case FieldType::ArrayField:
+            return "array";
+        case FieldType::HashOrObjectField:
+            return "hex string or object";
+        case FieldType::TwoAccountArrayField:
+            return "length-2 array of Accounts";
+        default:
+            Throw<std::runtime_error>(
+                "unknown type " + std::to_string(static_cast<uint8_t>(typeID)));
+    }
+}
+
 class LedgerEntry_test : public beast::unit_test::suite
 {
-    enum FieldType {
-        AccountField,
-        StringField,
-        HashField,
-        CurrencyField,
-        ArrayField,
-        ObjectField,
-        HashOrObjectField,
-        UInt32Field,
-        UInt64Field,
-        BlobField,
-        TwoAccountArrayField,
-    };
-
-    std::vector<std::pair<Json::StaticString, FieldType>> mappings{
-        {jss::account, AccountField},
-        {jss::accounts, TwoAccountArrayField},
-        {jss::authorize, AccountField},
-        {jss::authorized, AccountField},
-        {jss::currency, CurrencyField},
-        {jss::credential_type, BlobField},
-        {jss::issuer, AccountField},
-        {jss::oracle_document_id, UInt32Field},
-        {jss::owner, AccountField},
-        {jss::seq, UInt32Field},
-        {jss::subject, AccountField},
-        {jss::ticket_seq, UInt32Field},
-    };
-
-    FieldType
-    getFieldType(Json::StaticString fieldName)
-    {
-        auto it = std::find_if(
-            mappings.begin(), mappings.end(), [&fieldName](auto const& pair) {
-                return pair.first == fieldName;
-            });
-        if (it != mappings.end())
-        {
-            return it->second;
-        }
-        else
-        {
-            Throw<std::runtime_error>(
-                "`mappings` is missing field " +
-                std::string(fieldName.c_str()));
-        }
-    }
-
     void
     checkErrorValue(
         Json::Value const& jv,
@@ -195,26 +222,27 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         switch (fieldType)
         {
-            case UInt32Field:
+            case FieldType::UInt32Field:
                 return badUInt32Values;
-            case UInt64Field:
+            case FieldType::UInt64Field:
                 return badUInt64Values;
-            case HashField:
+            case FieldType::HashField:
                 return badHashValues;
-            case AccountField:
+            case FieldType::AccountField:
                 return badAccountValues;
-            case BlobField:
+            case FieldType::BlobField:
                 return badBlobValues;
-            case CurrencyField:
+            case FieldType::CurrencyField:
                 return badCurrencyValues;
-            case ArrayField:
-            case TwoAccountArrayField:
+            case FieldType::ArrayField:
+            case FieldType::TwoAccountArrayField:
                 return badArrayValues;
-            case HashOrObjectField:
+            case FieldType::HashOrObjectField:
                 return badIndexValues;
             default:
                 Throw<std::runtime_error>(
-                    "unknown type " + std::to_string(fieldType));
+                    "unknown type " +
+                    std::to_string(static_cast<uint8_t>(fieldType)));
         }
     }
 
@@ -231,58 +259,30 @@ class LedgerEntry_test : public beast::unit_test::suite
         auto const typeID = getFieldType(fieldName);
         switch (typeID)
         {
-            case UInt32Field:
+            case FieldType::UInt32Field:
                 return 1;
-            case UInt64Field:
+            case FieldType::UInt64Field:
                 return 1;
-            case HashField:
+            case FieldType::HashField:
                 return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
                        "B01403D6D";
-            case AccountField:
+            case FieldType::AccountField:
                 return "r4MrUGTdB57duTnRs6KbsRGQXgkseGb1b5";
-            case BlobField:
+            case FieldType::BlobField:
                 return "ABCDEF";
-            case CurrencyField:
+            case FieldType::CurrencyField:
                 return "USD";
-            case ArrayField:
+            case FieldType::ArrayField:
                 return Json::arrayValue;
-            case HashOrObjectField:
+            case FieldType::HashOrObjectField:
                 return "5233D68B4D44388F98559DE42903767803EFA7C1F8D01413FC16EE6"
                        "B01403D6D";
-            case TwoAccountArrayField:
+            case FieldType::TwoAccountArrayField:
                 return twoAccountArray;
             default:
                 Throw<std::runtime_error>(
-                    "unknown type " + std::to_string(typeID));
-        }
-    }
-
-    std::string
-    getTypeName(FieldType typeID)
-    {
-        switch (typeID)
-        {
-            case UInt32Field:
-                return "number";
-            case UInt64Field:
-                return "number";
-            case HashField:
-                return "hex string";
-            case AccountField:
-                return "AccountID";
-            case BlobField:
-                return "hex string";
-            case CurrencyField:
-                return "Currency";
-            case ArrayField:
-                return "array";
-            case HashOrObjectField:
-                return "hex string or object";
-            case TwoAccountArrayField:
-                return "length-2 array of Accounts";
-            default:
-                Throw<std::runtime_error>(
-                    "unknown type " + std::to_string(typeID));
+                    "unknown type " +
+                    std::to_string(static_cast<uint8_t>(typeID)));
         }
     }
 
@@ -410,7 +410,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             env,
             Json::Value{},
             parentField,
-            HashField,
+            FieldType::HashField,
             "malformedRequest",
             true,
             location);
@@ -434,7 +434,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             env,
             Json::Value{},
             parentField,
-            HashOrObjectField,
+            FieldType::HashOrObjectField,
             "malformedRequest",
             true,
             location);
@@ -486,7 +486,7 @@ class LedgerEntry_test : public beast::unit_test::suite
             // Missing ledger_entry ledger_hash
             Json::Value jvParams;
             jvParams[jss::account_root] = alice.human();
-            auto const typeId = HashField;
+            auto const typeId = FieldType::HashField;
 
             forAllApiVersions([&, this](unsigned apiVersion) {
                 auto tryField = [&](Json::Value fieldValue) -> void {
@@ -636,7 +636,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                 env,
                 jvParams,
                 jss::account_root,
-                AccountField,
+                FieldType::AccountField,
                 "malformedAddress");
         }
         {
@@ -962,7 +962,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                     jrr, "malformedAuthorizedCredentials", expectedErrMsg);
             };
 
-            auto const& badValues = getBadValues(AccountField);
+            auto const& badValues = getBadValues(FieldType::AccountField);
             for (auto const& value : badValues)
             {
                 tryField(value);
@@ -1020,7 +1020,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                     jrr, "malformedAuthorizedCredentials", expectedErrMsg);
             };
 
-            auto const& badValues = getBadValues(BlobField);
+            auto const& badValues = getBadValues(FieldType::BlobField);
             for (auto const& value : badValues)
             {
                 tryField(value);
@@ -1064,7 +1064,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                 jvParams,
                 jss::deposit_preauth,
                 jss::authorized_credentials,
-                ArrayField,
+                FieldType::ArrayField,
                 "malformedAuthorizedCredentials",
                 false);
         }
@@ -1259,7 +1259,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                 env,
                 jvParams,
                 jss::directory,
-                HashOrObjectField,
+                FieldType::HashOrObjectField,
                 "malformedRequest");
         }
         {
@@ -1273,7 +1273,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                 jvParams,
                 jss::directory,
                 jss::sub_index,
-                UInt64Field,
+                FieldType::UInt64Field,
                 "malformedRequest",
                 false);
         }
@@ -1288,7 +1288,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                 jvParams,
                 jss::directory,
                 jss::owner,
-                AccountField,
+                FieldType::AccountField,
                 "malformedAddress",
                 false);
         }
@@ -1617,7 +1617,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                     }
                 };
 
-                auto const& badValues = getBadValues(AccountField);
+                auto const& badValues = getBadValues(FieldType::AccountField);
                 for (auto const& value : badValues)
                 {
                     tryField(value);
@@ -1781,7 +1781,11 @@ class LedgerEntry_test : public beast::unit_test::suite
             // Malformed DID index
             Json::Value jvParams;
             testMalformedField(
-                env, jvParams, jss::did, AccountField, "malformedAddress");
+                env,
+                jvParams,
+                jss::did,
+                FieldType::AccountField,
+                "malformedAddress");
         }
     }
 
@@ -1939,7 +1943,7 @@ class LedgerEntry_test : public beast::unit_test::suite
                 env,
                 jvParams,
                 jss::mptoken,
-                HashOrObjectField,
+                FieldType::HashOrObjectField,
                 "malformedRequest");
         }
     }

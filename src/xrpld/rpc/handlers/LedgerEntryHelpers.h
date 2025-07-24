@@ -33,9 +33,11 @@
 
 namespace ripple {
 
+namespace LedgerEntryHelpers {
+
 Unexpected<Json::Value>
 missingFieldError(
-    Json::StaticString field,
+    Json::StaticString const field,
     std::optional<std::string> err = std::nullopt)
 {
     Json::Value json = Json::objectValue;
@@ -48,8 +50,8 @@ missingFieldError(
 
 Unexpected<Json::Value>
 invalidFieldError(
-    std::string err,
-    Json::StaticString field,
+    std::string const& err,
+    Json::StaticString const field,
     std::string const& type)
 {
     Json::Value json = Json::objectValue;
@@ -61,7 +63,7 @@ invalidFieldError(
 }
 
 Unexpected<Json::Value>
-malformedError(std::string err, std::string message)
+malformedError(std::string const& err, std::string const& message)
 {
     Json::Value json = Json::objectValue;
     json[jss::error] = err;
@@ -94,9 +96,9 @@ template <class T>
 Expected<T, Json::Value>
 required(
     Json::Value const& params,
-    Json::StaticString const& fieldName,
-    std::string err,
-    std::string expectedType)
+    Json::StaticString const fieldName,
+    std::string const& err,
+    std::string const& expectedType)
 {
     if (!params.isMember(fieldName) || params[fieldName].isNull())
     {
@@ -128,8 +130,8 @@ parse(Json::Value const& param)
 Expected<AccountID, Json::Value>
 requiredAccountID(
     Json::Value const& params,
-    Json::StaticString const& fieldName,
-    std::string err)
+    Json::StaticString const fieldName,
+    std::string const& err)
 {
     return required<AccountID>(params, fieldName, err, "AccountID");
 }
@@ -150,9 +152,9 @@ parseHexBlob(Json::Value const& param, std::size_t maxLength)
 Expected<Blob, Json::Value>
 requiredHexBlob(
     Json::Value const& params,
-    Json::StaticString const& fieldName,
+    Json::StaticString const fieldName,
     std::size_t maxLength,
-    std::string err)
+    std::string const& err)
 {
     if (!params.isMember(fieldName) || params[fieldName].isNull())
     {
@@ -185,8 +187,8 @@ parse(Json::Value const& param)
 Expected<std::uint32_t, Json::Value>
 requiredUInt32(
     Json::Value const& params,
-    Json::StaticString const& fieldName,
-    std::string err)
+    Json::StaticString const fieldName,
+    std::string const& err)
 {
     return required<std::uint32_t>(params, fieldName, err, "number");
 }
@@ -207,8 +209,8 @@ parse(Json::Value const& param)
 Expected<uint256, Json::Value>
 requiredUInt256(
     Json::Value const& params,
-    Json::StaticString const& fieldName,
-    std::string err)
+    Json::StaticString const fieldName,
+    std::string const& err)
 {
     return required<uint256>(params, fieldName, err, "Hash256");
 }
@@ -229,8 +231,8 @@ parse(Json::Value const& param)
 Expected<uint192, Json::Value>
 requiredUInt192(
     Json::Value const& params,
-    Json::StaticString const& fieldName,
-    std::string err)
+    Json::StaticString const fieldName,
+    std::string const& err)
 {
     return required<uint192>(params, fieldName, err, "Hash192");
 }
@@ -240,10 +242,10 @@ parseBridgeFields(Json::Value const& params)
 {
     if (auto const value = hasRequired(
             params,
-            {jss::IssuingChainDoor,
-             jss::LockingChainDoor,
-             jss::IssuingChainIssue,
-             jss::LockingChainIssue});
+            {jss::LockingChainDoor,
+             jss::LockingChainIssue,
+             jss::IssuingChainDoor,
+             jss::IssuingChainIssue});
         !value)
     {
         return Unexpected(value.error());
@@ -263,7 +265,7 @@ parseBridgeFields(Json::Value const& params)
         return Unexpected(issuingChainDoor.error());
     }
 
-    Issue lockingChainIssue, issuingChainIssue;
+    Issue lockingChainIssue;
     try
     {
         lockingChainIssue = issueFromJson(params[jss::LockingChainIssue]);
@@ -273,6 +275,8 @@ parseBridgeFields(Json::Value const& params)
         return invalidFieldError(
             "malformedIssue", jss::LockingChainIssue, "Issue");
     }
+
+    Issue issuingChainIssue;
     try
     {
         issuingChainIssue = issueFromJson(params[jss::IssuingChainIssue]);
@@ -289,5 +293,7 @@ parseBridgeFields(Json::Value const& params)
         *issuingChainDoor,
         issuingChainIssue);
 }
+
+}  // namespace LedgerEntryHelpers
 
 }  // namespace ripple
