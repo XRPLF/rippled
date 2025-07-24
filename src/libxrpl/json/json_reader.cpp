@@ -657,7 +657,8 @@ Reader::decodeDouble(Token& token)
     }
     if (count != 1)
         return addError(
-            "'" + std::string(token.start_, token.end_) + "' is not a number.",
+            std::string("'") + std::string(token.start_, token.end_) +
+                "' is not a number.",
             token);
     currentValue() = value;
     return true;
