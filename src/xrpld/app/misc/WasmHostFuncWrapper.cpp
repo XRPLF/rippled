@@ -96,9 +96,9 @@ template <class IW>
 Expected<Slice, HostFunctionError>
 getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const begin = params->data[i].of.i32;
+    auto const ptr = params->data[i].of.i32;
     auto const size = params->data[i + 1].of.i32;
-    if (begin < 0 || size < 0)
+    if (ptr < 0 || size < 0)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
     if (!size)
@@ -111,10 +111,10 @@ getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     if (!memory.s)
         return Unexpected(HostFunctionError::NO_MEM_EXPORTED);
 
-    if (begin + size > memory.s)
+    if (ptr + size > memory.s)
         return Unexpected(HostFunctionError::POINTER_OUT_OF_BOUNDS);
 
-    Slice data(memory.p + begin, size);
+    Slice data(memory.p + ptr, size);
     i += 2;
     return data;
 }
