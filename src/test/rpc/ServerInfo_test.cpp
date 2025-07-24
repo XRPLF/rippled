@@ -256,14 +256,24 @@ admin = 127.0.0.1
 
             // test the properties of the LEDGER_ENTRY_FLAGS section
             {
-                BEAST_EXPECT(result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
-                BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_FLAGS].size() == 44);
+                BEAST_EXPECT(
+                    result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
+                BEAST_EXPECT(
+                    result[jss::result][jss::LEDGER_ENTRY_FLAGS].size() == 44);
 
                 // test the mapped value of a few arbitrarily chosen flags
-                BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_FLAGS]["lsfDisallowXRP"] == "0x00080000");
-                BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_FLAGS]["lsfDepositAuth"] == "0x01000000");
-                BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_FLAGS]["lsfAllowTrustLineClawback"] == "0x80000000");
-                BEAST_EXPECT(result[jss::result][jss::LEDGER_ENTRY_FLAGS]["lsfHighFreeze"] == "0x00800000");
+                BEAST_EXPECT(
+                    result[jss::result][jss::LEDGER_ENTRY_FLAGS]
+                          ["lsfDisallowXRP"] == "0x00080000");
+                BEAST_EXPECT(
+                    result[jss::result][jss::LEDGER_ENTRY_FLAGS]
+                          ["lsfDepositAuth"] == "0x01000000");
+                BEAST_EXPECT(
+                    result[jss::result][jss::LEDGER_ENTRY_FLAGS]
+                          ["lsfAllowTrustLineClawback"] == "0x80000000");
+                BEAST_EXPECT(
+                    result[jss::result][jss::LEDGER_ENTRY_FLAGS]
+                          ["lsfHighFreeze"] == "0x00800000");
             }
 
             // test the properties of the LEDGER_ENTRIES section in

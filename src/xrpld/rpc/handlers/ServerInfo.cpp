@@ -67,7 +67,8 @@ public:
     parseLedgerEntryFlags()
     {
         Json::Value solution = Json::objectValue;
-        const std::string ledgerFormatFile{"/Users/ckeshavabs/rippled/include/xrpl/protocol/LedgerFormats.h"};
+        std::string const ledgerFormatFile{
+            "/Users/ckeshavabs/rippled/include/xrpl/protocol/LedgerFormats.h"};
         std::ifstream file(ledgerFormatFile);
 
         if (!file.is_open())
@@ -87,17 +88,22 @@ public:
         auto begin = fileContents.cbegin();
         auto end = fileContents.cend();
 
-        std::regex ledgerSpecificFlagDef(R"(^ *(lsf[a-zA-Z]+) *=(?:(?: *(0x[0-9]{8}),(?: *\/\/.+)?)|(?:\n *(0x[0-9]{8}),(?: *\/\/.+)?))$)", std::regex_constants::multiline);
+        std::regex ledgerSpecificFlagDef(
+            R"(^ *(lsf[a-zA-Z]+) *=(?:(?: *(0x[0-9]{8}),(?: *\/\/.+)?)|(?:\n *(0x[0-9]{8}),(?: *\/\/.+)?))$)",
+            std::regex_constants::multiline);
 
-        while(std::regex_search(begin, end, match, ledgerSpecificFlagDef))
+        while (std::regex_search(begin, end, match, ledgerSpecificFlagDef))
         {
-            if(match[2].str().empty())
+            if (match[2].str().empty())
             {
-                // handle the case where the flag is completely defined in one line
+                // handle the case where the flag is completely defined in one
+                // line
                 solution[match[1].str()] = match[3].str();
-            } else
+            }
+            else
             {
-                // handle the case where the flag definition is split across two lines
+                // handle the case where the flag definition is split across two
+                // lines
                 solution[match[1].str()] = match[2].str();
             }
             begin = match.suffix().first;
