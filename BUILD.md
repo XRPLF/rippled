@@ -170,7 +170,7 @@ yet included in the Conan recipe:
 
    ```
    # Conan 2.x
-   conan export --version 1.1.10 external/snappy
+   conan export --version 6.30.1 external/protobuf
    ```
 
 Export our [Conan recipe for Snappy](./external/snappy).
