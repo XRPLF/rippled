@@ -91,7 +91,8 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
@@ -164,6 +165,16 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+      - name: check linking
+        run: |
+          cd ${build_dir}
+          ldd ./rippled
+          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+            exit 1
+          fi
       - name: test
         run: |
           cd ${build_dir}
@@ -220,6 +231,7 @@ jobs:
           cd ${build_dir}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure
+
   coverage:
     strategy:
       fail-fast: false
@@ -296,7 +308,6 @@ jobs:
           attempt_limit: 5
           attempt_delay: 210000 # in milliseconds
 
-
   conan:
     needs: dependencies
     runs-on: [self-hosted, heavy]
@@ -313,7 +324,6 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: ${{ env.platform }}-${{ env.compiler }}-${{ env.configuration }}
-
       - name: extract cache
         run: |
           mkdir -p ${CONAN_HOME}
@@ -370,7 +380,8 @@ jobs:
 
         - name: configure Conan
           run: |
-            echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
+            echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+            conan config install conan/profiles/ -tf $(conan config home)/profiles/
             conan profile show
         - name: build dependencies
           run: |

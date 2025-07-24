@@ -26,9 +26,6 @@
 #if !defined(XRPL_RETIRE)
 #error "undefined macro: XRPL_RETIRE"
 #endif
-#if !defined(XRPL_ABANDON)
-#error "undefined macro: XRPL_ABANDON"
-#endif
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
@@ -133,11 +130,6 @@ XRPL_FIX    (NFTokenNegOffer,       Supported::yes, VoteBehavior::Obsolete)
 XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
-
-// The following amendments were never supported, never enabled, and 
-// we've abanded them. These features should never be in the ledger,
-// and we've removed all the related code.
-XRPL_ABANDON(OwnerPaysFee)
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
