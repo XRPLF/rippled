@@ -64,6 +64,47 @@ public:
         return defs_;
     }
     static Json::Value
+    parseLedgerEntryFlags()
+    {
+        Json::Value solution = Json::objectValue;
+        const std::string ledgerFormatFile{"/Users/ckeshavabs/rippled/include/xrpl/protocol/LedgerFormats.h"};
+        std::ifstream file(ledgerFormatFile);
+
+        if (!file.is_open())
+        {
+            Throw<std::runtime_error>(
+                "Error: Could not open file " + ledgerFormatFile);
+            return Json::Value{};
+        }
+
+        // Read entire file into a single string
+        std::string fileContents(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>());
+        file.close();
+
+        std::smatch match;
+        auto begin = fileContents.cbegin();
+        auto end = fileContents.cend();
+
+        std::regex ledgerSpecificFlagDef(R"(^ *(lsf[a-zA-Z]+) *=(?:(?: *(0x[0-9]{8}),(?: *\/\/.+)?)|(?:\n *(0x[0-9]{8}),(?: *\/\/.+)?))$)", std::regex_constants::multiline);
+
+        while(std::regex_search(begin, end, match, ledgerSpecificFlagDef))
+        {
+            if(match[2].str().empty())
+            {
+                // handle the case where the flag is completely defined in one line
+                solution[match[1].str()] = match[3].str();
+            } else
+            {
+                // handle the case where the flag definition is split across two lines
+                solution[match[1].str()] = match[2].str();
+            }
+            begin = match.suffix().first;
+        }
+        return solution;
+    }
+    static Json::Value
     parseLedgerEntries()
     {
         Json::Value ret;
@@ -99,7 +140,6 @@ public:
         std::regex sfieldDef(
             R"(^ *\{ *sf([^,]+) *, *soe(REQUIRED|OPTIONAL|DEFAULT) *\},?(?: *\/\/[^\n]+)?$)",
             std::regex_constants::multiline);
-        std::regex commentLine(R"(^ *\/\/[^\n]+$)");
 
         while (std::regex_search(begin, end, match, macroDefStart))
         {
@@ -221,6 +261,10 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     // populate ledger_entry formats
     defs_[jss::LEDGER_ENTRIES] = parseLedgerEntries();
+
+    // populate all the flags which are associated with ledger entries.
+    defs_[jss::LEDGER_ENTRY_FLAGS] = parseLedgerEntryFlags();
+
     // populate LedgerEntryType names and values
     defs_[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
     defs_[jss::LEDGER_ENTRY_TYPES][jss::Invalid] = -1;
