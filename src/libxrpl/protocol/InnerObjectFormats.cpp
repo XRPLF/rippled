@@ -172,6 +172,21 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookDirectory, soeREQUIRED},
             {sfBookNode, soeREQUIRED},
         });
+
+    add(sfFunction.jsonName.c_str(),
+        sfFunction.getCode(),
+        {
+            {sfFunctionName, soeREQUIRED},
+            {sfInstanceParameters, soeOPTIONAL},
+        });
+
+    add(sfInstanceParameter.jsonName,
+        sfInstanceParameter.getCode(),
+        {
+            {sfParameterName, soeOPTIONAL},
+            {sfParameterValue, soeOPTIONAL},
+            {sfParameterType, soeOPTIONAL},
+        });
 }
 
 InnerObjectFormats const&

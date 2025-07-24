@@ -96,10 +96,11 @@ enum class LedgerNameSpace : std::uint16_t {
     PERMISSIONED_DOMAIN = 'm',
     DELEGATE = 'E',
     VAULT = 'V',
+    CONTRACT_SOURCE = 'Z',
+    CONTRACT = 'z',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
-    CONTRACT [[deprecated]] = 'c',
     GENERATOR [[deprecated]] = 'g',
     NICKNAME [[deprecated]] = 'n',
 };
@@ -578,6 +579,28 @@ Keylet
 permissionedDomain(uint256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
+}
+
+Keylet
+contractSource(uint256 const& contractHash) noexcept
+{
+    return {
+        ltCONTRACT_SOURCE,
+        indexHash(LedgerNameSpace::CONTRACT_SOURCE, contractHash)};
+}
+
+Keylet
+contract(AccountID const& account) noexcept
+{
+    return {
+        ltCONTRACT,
+        indexHash(LedgerNameSpace::CONTRACT, account)};
+}
+
+Keylet
+contract(uint256 const& contractID) noexcept
+{
+    return {ltCONTRACT, contractID};
 }
 
 }  // namespace keylet

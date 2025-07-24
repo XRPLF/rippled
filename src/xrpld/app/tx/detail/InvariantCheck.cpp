@@ -543,6 +543,8 @@ LedgerEntryTypesMatch::visitEntry(
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
             case ltVAULT:
+            case ltCONTRACT_SOURCE:
+            case ltCONTRACT:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -961,8 +963,10 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
+    if ((tx.getTxnType() == ttPAYMENT || 
+         tx.getTxnType() == ttAMM_CREATE ||
          tx.getTxnType() == ttVAULT_CREATE ||
+         tx.getTxnType() == ttCONTRACT_CREATE ||
          tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
          tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
         result == tesSUCCESS)
@@ -971,7 +975,8 @@ ValidNewAccountRoot::finalize(
             (pseudoAccount_ && view.rules().enabled(featureSingleAssetVault));
 
         if (pseudoAccount && tx.getTxnType() != ttAMM_CREATE &&
-            tx.getTxnType() != ttVAULT_CREATE)
+            tx.getTxnType() != ttVAULT_CREATE &&
+            tx.getTxnType() != ttCONTRACT_CREATE)
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";

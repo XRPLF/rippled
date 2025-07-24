@@ -36,6 +36,8 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/detail/STVar.h>
+#include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STDataType.h>
 
 #include <stdexcept>
 #include <tuple>
@@ -234,6 +236,12 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
             return;
         case STI_CURRENCY:
             construct<STCurrency>(std::forward<Args>(args)...);
+            return;
+        case STI_DATA:
+            construct<STData>(std::forward<Args>(args)...);
+            return;
+        case STI_DATATYPE:
+            construct<STDataType>(std::forward<Args>(args)...);
             return;
         default:
             Throw<std::runtime_error>("Unknown object type");

@@ -249,6 +249,14 @@ constexpr std::uint32_t tfIndependent                  = 0x00080000;
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
 
+
+constexpr std::uint32_t tfImmutable     = 0x00010000;
+constexpr std::uint32_t tfCodeImmutable = 0x00020000;
+constexpr std::uint32_t tfABIImmutable  = 0x00040000;
+constexpr std::uint32_t tfUndeletable   = 0x00080000;
+constexpr std::uint32_t tfContractCreateMask =
+    ~(tfUniversal | tfImmutable | tfCodeImmutable | tfABIImmutable | tfUndeletable);
+
 // clang-format on
 
 }  // namespace ripple

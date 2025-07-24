@@ -355,6 +355,16 @@ permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+Keylet
+contractSource(uint256 const& contractHash) noexcept;
+
+Keylet
+contract(AccountID const& account) noexcept;
+
+Keylet
+contract(uint256 const& contractID) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

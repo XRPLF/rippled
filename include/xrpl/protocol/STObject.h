@@ -233,6 +233,10 @@ public:
     getFieldH256(SField const& field) const;
     AccountID
     getAccountID(SField const& field) const;
+    STData
+    getFieldData(SField const& field) const;
+    STDataType
+    getFieldDataType(SField const& field) const;
 
     Blob
     getFieldVL(SField const& field) const;
