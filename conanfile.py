@@ -99,7 +99,6 @@ class Xrpl(ConanFile):
 
     def configure(self):
         # Disable grpc plugins, we do not use any
-        self.options["grpc"].cpp_plugin = False
         self.options["grpc"].csharp_plugin = False
         self.options["grpc"].node_plugin = False
         self.options["grpc"].objective_c_plugin = False
