@@ -36,7 +36,7 @@ private:
                 result = to_string(*first++);
 
                 while (first != last)
-                    result += "," + to_string(*first++);
+                    result += std::string(",") + to_string(*first++);
             }
             return result;
         };
