@@ -654,4 +654,184 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
     return msg.size() + sizeof(data);
 }
 
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatFromInt(int64_t x, Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return Number(x);
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatFromUint(uint64_t x, Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        if (x <=
+            std::numeric_limits<
+                std::invoke_result_t<decltype(&Number::mantissa), Number>>::
+                max())
+            return Number(x);
+
+        return Number(x / 10, 1) + Number(x % 10);
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatSet(
+    int64_t mantissa,
+    int32_t exponent,
+    Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return Number(mantissa, exponent);
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::floatCompare(Number const& x, Number const& y)
+{
+    try
+    {
+        return x < y ? -1 : (x == y ? 0 : 1);
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatAdd(
+    Number const& x,
+    Number const& y,
+    Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return x + y;
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatSubtract(
+    Number const& x,
+    Number const& y,
+    Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return x - y;
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatMultiply(
+    Number const& x,
+    Number const& y,
+    Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return x * y;
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatDivide(
+    Number const& x,
+    Number const& y,
+    Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return x / y;
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatRoot(
+    Number const& x,
+    int32_t n,
+    Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return root(x, n);
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatPower(
+    Number const& x,
+    int32_t n,
+    Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return power(x, n, mode);
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Number, HostFunctionError>
+WasmHostFunctionsImpl::floatLog(Number const& x, Number::rounding_mode mode)
+{
+    try
+    {
+        Number::setround(mode);
+        return lg(x);
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
 }  // namespace ripple

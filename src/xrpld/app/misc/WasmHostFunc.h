@@ -22,6 +22,7 @@
 #include <xrpld/app/misc/WasmParamsHelper.h>
 
 #include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Keylet.h>
@@ -49,6 +50,8 @@ enum class HostFunctionError : int32_t {
     INVALID_ACCOUNT = -16,
     INVALID_FIELD = -17,
     INDEX_OUT_OF_BOUNDS = -18,
+    FLOAT_INPUT_MALFORMED = -19,
+    FLOAT_COMPUTATION_ERROR = -20,
 };
 
 struct HostFunctions
@@ -285,6 +288,72 @@ struct HostFunctions
 
     virtual Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatFromInt(int64_t x, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatFromUint(uint64_t x, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatSet(int64_t mantissa, int32_t exponent, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    floatCompare(Number const& x, Number const& y)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatAdd(Number const& x, Number const& y, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatSubtract(Number const& x, Number const& y, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatMultiply(Number const& x, Number const& y, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatDivide(Number const& x, Number const& y, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatRoot(Number const& x, int32_t n, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatPower(Number const& x, int32_t n, Number::rounding_mode mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Number, HostFunctionError>
+    floatLog(Number const& x, Number::rounding_mode mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

@@ -623,6 +623,34 @@ power(Number const& f, unsigned n)
     return r;
 }
 
+// Continued fraction approximation of ln(x)
+static Number
+ln(Number const& x, unsigned iterations = 50)
+{
+    if (x <= 0)
+        throw std::runtime_error("Not positive value");
+
+    Number const z = (x - 1) / (x + 1);
+    Number const z2 = z * z;
+    Number denom = Number(1, -20);
+
+    // Construct the fraction from the bottom up
+    for (int i = iterations; i >= 1; --i)
+    {
+        Number k(2 * i - 1);
+        denom = k + (z2 / denom);
+    }
+
+    return 2 * z / denom;
+}
+
+Number
+lg(Number const& value)
+{
+    static Number const ln10 = ln(Number(10));
+    return ln(value) / ln10;
+}
+
 // Returns f^(1/d)
 // Uses Newton–Raphson iterations until the result stops changing
 // to find the non-negative root of the polynomial g(x) = x^d - f

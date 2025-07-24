@@ -190,6 +190,44 @@ public:
 
     Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data) override;
+
+    Expected<Number, HostFunctionError>
+    floatFromInt(int64_t x, Number::rounding_mode mode) override;
+
+    Expected<Number, HostFunctionError>
+    floatFromUint(uint64_t x, Number::rounding_mode mode) override;
+
+    Expected<Number, HostFunctionError>
+    floatSet(int64_t mantissa, int32_t exponent, Number::rounding_mode mode)
+        override;
+
+    Expected<int32_t, HostFunctionError>
+    floatCompare(Number const& x, Number const& y) override;
+
+    Expected<Number, HostFunctionError>
+    floatAdd(Number const& x, Number const& y, Number::rounding_mode mode)
+        override;
+
+    Expected<Number, HostFunctionError>
+    floatSubtract(Number const& x, Number const& y, Number::rounding_mode mode)
+        override;
+
+    Expected<Number, HostFunctionError>
+    floatMultiply(Number const& x, Number const& y, Number::rounding_mode mode)
+        override;
+
+    Expected<Number, HostFunctionError>
+    floatDivide(Number const& x, Number const& y, Number::rounding_mode mode)
+        override;
+
+    Expected<Number, HostFunctionError>
+    floatRoot(Number const& x, int32_t n, Number::rounding_mode mode) override;
+
+    Expected<Number, HostFunctionError>
+    floatPower(Number const& x, int32_t n, Number::rounding_mode mode) override;
+
+    Expected<Number, HostFunctionError>
+    floatLog(Number const& x, Number::rounding_mode mode) override;
 };
 
 }  // namespace ripple
