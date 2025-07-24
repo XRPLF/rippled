@@ -187,6 +187,14 @@ It patches their CMake to correctly import its dependencies.
    conan export --version 4.0.3 external/soci
    ```
 
+Export our [Conan recipe for Protobuf](./external/rocksdb).
+It fixes compilation errors with clang-16 and Visual Studio.
+
+   ```
+   # Conan 2.x
+   conan export --version 6.30.1 external/protobuf
+   ```
+
 ### Build and Test
 
 1. Create a build directory and move into it.
