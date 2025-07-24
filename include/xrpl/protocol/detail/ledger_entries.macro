@@ -483,8 +483,7 @@ LEDGER_ENTRY(ltDELEGATE, 0x0083, Delegate, delegate, ({
 }))
 
 /** A ledger object representing a single asset vault.
-
-    \sa keylet::mptoken
+    \sa keylet::vault
  */
 LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfPreviousTxnID,        soeREQUIRED},

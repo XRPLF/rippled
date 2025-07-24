@@ -635,6 +635,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
     {sfTransferFee, soeOPTIONAL},
     {sfMaximumAmount, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type destroys a MPTokensIssuance instance */
@@ -656,6 +657,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     noPriv, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */
@@ -753,7 +755,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetsMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
-    {sfDomainID, soeOPTIONAL}, // PermissionedDomainID
+    {sfDomainID, soeOPTIONAL},
     {sfWithdrawalPolicy, soeOPTIONAL},
     {sfData, soeOPTIONAL},
 }))
@@ -767,7 +769,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
     noPriv, ({
     {sfVaultID, soeREQUIRED},
     {sfAssetsMaximum, soeOPTIONAL},
-    {sfDomainID, soeOPTIONAL}, // PermissionedDomainID
+    {sfDomainID, soeOPTIONAL},
     {sfData, soeOPTIONAL},
 }))
 
