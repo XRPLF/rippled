@@ -29,9 +29,6 @@
 namespace ripple {
 namespace test {
 
-bool
-testGetDataIncrement();
-
 using Add_proto = int32_t(int32_t, int32_t);
 static wasm_trap_t*
 Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
@@ -45,13 +42,6 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
 struct Wasm_test : public beast::unit_test::suite
 {
-    void
-    testGetDataHelperFunctions()
-    {
-        testcase("getData helper functions");
-        BEAST_EXPECT(testGetDataIncrement());
-    }
-
     void
     testWasmFib()
     {
@@ -510,6 +500,27 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testCodecovWasm()
+    {
+        testcase("Codecov wasm test");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        auto const wasmStr = boost::algorithm::unhex(codecovWasm);
+        Bytes const wasm(wasmStr.begin(), wasmStr.end());
+        std::string const funcName("finish");
+        TestHostFunctions hfs(env, 0);
+
+        auto re =
+            runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(re->result);
+    }
+
+    void
     perfTest()
     {
         testcase("Perf test host functions");
@@ -607,38 +618,10 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testCodecovWasm()
-    {
-        testcase("Codecov wasm test");
-
-        using namespace test::jtx;
-
-        // Env env{
-        //     *this,
-        //     envconfig(),
-        //     testable_amendments(),
-        //     nullptr,
-        //     beast::severities::kTrace};
-        Env env{*this};
-
-        auto const wasmStr = boost::algorithm::unhex(codecovWasm);
-        Bytes const wasm(wasmStr.begin(), wasmStr.end());
-        std::string const funcName("finish");
-        TestHostFunctions hfs(env, 0);
-
-        auto re =
-            runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
-
-        if (BEAST_EXPECT(re.has_value()))
-            BEAST_EXPECT(re->result);
-    }
-
-    void
     run() override
     {
         using namespace test::jtx;
 
-        testGetDataHelperFunctions();
         testWasmLib();
         testBadWasm();
         testWasmCheckJson();
