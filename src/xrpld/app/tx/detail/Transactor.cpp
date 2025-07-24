@@ -649,6 +649,17 @@ Transactor::checkSign(
     AccountID const& idAccount,
     STObject const& sigObject)
 {
+    {
+        auto const sle = ctx.view.read(keylet::account(idAccount));
+
+        if (ctx.view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
+    }
+
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
     if (sigObject.isFlag(tfInnerBatchTxn) &&

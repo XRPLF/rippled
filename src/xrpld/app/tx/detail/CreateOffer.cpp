@@ -46,11 +46,8 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 bool
 CreateOffer::isEnabled(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDEX))
-        return false;
-
-    return true;
+    return (!ctx.tx.isFieldPresent(sfDomainID)) ||
+        ctx.rules.enabled(featurePermissionedDEX);
 }
 
 std::uint32_t
@@ -69,7 +66,6 @@ CreateOffer::preflight(PreflightContext const& ctx)
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
     bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
 

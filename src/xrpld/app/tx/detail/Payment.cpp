@@ -48,8 +48,8 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
 }
 
 STAmount
-getMaxSourceAmount(
-    AccountID const& account,
+Payment::getMaxSourceAmount(
+    AccountID const& senderAccount,
     STAmount const& dstAmount,
     std::optional<STAmount> const& sendMax)
 {
@@ -59,7 +59,7 @@ getMaxSourceAmount(
         return dstAmount;
     else
         return STAmount(
-            Issue{dstAmount.get<Issue>().currency, account},
+            Issue{dstAmount.get<Issue>().currency, senderAccount},
             dstAmount.mantissa(),
             dstAmount.exponent(),
             dstAmount < beast::zero);
@@ -447,149 +447,35 @@ Payment::doApply()
 
     if (ripple)
     {
-        // Ripple payment with at least one intermediate step and uses
-        // transitive balances.
-
-        if (depositPreauth && depositAuth)
-        {
-            // If depositPreauth is enabled, then an account that requires
-            // authorization has two ways to get an IOU Payment in:
-            //  1. If Account == Destination, or
-            //  2. If Account is deposit preauthorized by destination.
-
-            if (auto err = verifyDepositPreauth(
-                    ctx_.tx,
-                    ctx_.view(),
-                    account_,
-                    dstAccountID,
-                    sleDst,
-                    ctx_.journal);
-                !isTesSuccess(err))
-                return err;
-        }
-
-        path::RippleCalc::Input rcInput;
-        rcInput.partialPaymentAllowed = partialPaymentAllowed;
-        rcInput.defaultPathsAllowed = defaultPathsAllowed;
-        rcInput.limitQuality = limitQuality;
-        rcInput.isLedgerOpen = view().open();
-
-        path::RippleCalc::Output rc;
-        {
-            PaymentSandbox pv(&view());
-            JLOG(j_.debug()) << "Entering RippleCalc in payment: "
-                             << ctx_.tx.getTransactionID();
-            rc = path::RippleCalc::rippleCalculate(
-                pv,
-                maxSourceAmount,
-                dstAmount,
-                dstAccountID,
-                account_,
-                ctx_.tx.getFieldPathSet(sfPaths),
-                ctx_.tx[~sfDomainID],
-                ctx_.app.logs(),
-                &rcInput);
-            // VFALCO NOTE We might not need to apply, depending
-            //             on the TER. But always applying *should*
-            //             be safe.
-            pv.apply(ctx_.rawView());
-        }
-
-        // TODO: is this right?  If the amount is the correct amount, was
-        // the delivered amount previously set?
-        if (rc.result() == tesSUCCESS && rc.actualAmountOut != dstAmount)
-        {
-            if (deliverMin && rc.actualAmountOut < *deliverMin)
-                rc.setResult(tecPATH_PARTIAL);
-            else
-                ctx_.deliver(rc.actualAmountOut);
-        }
-
-        auto terResult = rc.result();
-
-        // Because of its overhead, if RippleCalc
-        // fails with a retry code, claim a fee
-        // instead. Maybe the user will be more
-        // careful with their path spec next time.
-        if (isTerRetry(terResult))
-            terResult = tecPATH_DRY;
-        return terResult;
+        return makeRipplePayment(RipplePaymentParams{
+            .ctx = ctx_,
+            .maxSourceAmount = maxSourceAmount,
+            .srcAccountID = account_,
+            .dstAccountID = dstAccountID,
+            .sleDst = sleDst,
+            .dstAmount = dstAmount,
+            .paths = ctx_.tx.getFieldPathSet(sfPaths),
+            .deliverMin = deliverMin,
+            .partialPaymentAllowed = partialPaymentAllowed,
+            .defaultPathsAllowed = defaultPathsAllowed,
+            .limitQuality = limitQuality,
+            .j = j_});
     }
     else if (mptDirect)
     {
-        JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
-        auto const& mptIssue = dstAmount.get<MPTIssue>();
-
-        if (auto const ter = requireAuth(view(), mptIssue, account_);
-            ter != tesSUCCESS)
-            return ter;
-
-        if (auto const ter = requireAuth(view(), mptIssue, dstAccountID);
-            ter != tesSUCCESS)
-            return ter;
-
-        if (auto const ter =
-                canTransfer(view(), mptIssue, account_, dstAccountID);
-            ter != tesSUCCESS)
-            return ter;
-
-        if (auto err = verifyDepositPreauth(
-                ctx_.tx,
-                ctx_.view(),
-                account_,
-                dstAccountID,
-                sleDst,
-                ctx_.journal);
-            !isTesSuccess(err))
-            return err;
-
-        auto const& issuer = mptIssue.getIssuer();
-
-        // Transfer rate
-        Rate rate{QUALITY_ONE};
-        // Payment between the holders
-        if (account_ != issuer && dstAccountID != issuer)
-        {
-            // If globally/individually locked then
-            //   - can't send between holders
-            //   - holder can send back to issuer
-            //   - issuer can send to holder
-            if (isAnyFrozen(view(), {account_, dstAccountID}, mptIssue))
-                return tecLOCKED;
-
-            // Get the rate for a payment between the holders.
-            rate = transferRate(view(), mptIssue.getMptID());
-        }
-
-        // Amount to deliver.
-        STAmount amountDeliver = dstAmount;
-        // Factor in the transfer rate.
-        // No rounding. It'll change once MPT integrated into DEX.
-        STAmount requiredMaxSourceAmount = multiply(dstAmount, rate);
-
-        // Send more than the account wants to pay or less than
-        // the account wants to deliver (if no SendMax).
-        // Adjust the amount to deliver.
-        if (partialPaymentAllowed && requiredMaxSourceAmount > maxSourceAmount)
-        {
-            requiredMaxSourceAmount = maxSourceAmount;
-            // No rounding. It'll change once MPT integrated into DEX.
-            amountDeliver = divide(maxSourceAmount, rate);
-        }
-
-        if (requiredMaxSourceAmount > maxSourceAmount ||
-            (deliverMin && amountDeliver < *deliverMin))
-            return tecPATH_PARTIAL;
-
-        PaymentSandbox pv(&view());
-        auto res = accountSend(
-            pv, account_, dstAccountID, amountDeliver, ctx_.journal);
-        if (res == tesSUCCESS)
-            pv.apply(ctx_.rawView());
-        else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
-            res = tecPATH_PARTIAL;
-
-        return res;
+        return makeMPTDirectPayment(RipplePaymentParams{
+            .ctx = ctx_,
+            .maxSourceAmount = maxSourceAmount,
+            .srcAccountID = account_,
+            .dstAccountID = dstAccountID,
+            .sleDst = sleDst,
+            .dstAmount = dstAmount,
+            .paths = ctx_.tx.getFieldPathSet(sfPaths),
+            .deliverMin = deliverMin,
+            .partialPaymentAllowed = partialPaymentAllowed,
+            .defaultPathsAllowed = defaultPathsAllowed,
+            .limitQuality = limitQuality,
+            .j = j_});
     }
 
     XRPL_ASSERT(dstAmount.native(), "ripple::Payment::doApply : amount is XRP");
@@ -683,6 +569,162 @@ Payment::doApply()
         sleDst->clearFlag(lsfPasswordSpent);
 
     return tesSUCCESS;
+}
+
+// Reusable helpers
+TER
+Payment::makeRipplePayment(Payment::RipplePaymentParams const& p)
+{
+    // Ripple payment with at least one intermediate step and uses
+    // transitive balances.
+
+    bool const depositPreauth =
+        p.ctx.view().rules().enabled(featureDepositPreauth);
+    bool const depositAuth = p.ctx.view().rules().enabled(featureDepositAuth);
+
+    if (depositPreauth && depositAuth)
+    {
+        // If depositPreauth is enabled, then an account that requires
+        // authorization has two ways to get an IOU Payment in:
+        //  1. If Account == Destination, or
+        //  2. If Account is deposit preauthorized by destination.
+
+        if (auto err = verifyDepositPreauth(
+                p.ctx.tx,
+                p.ctx.view(),
+                p.srcAccountID,
+                p.dstAccountID,
+                p.sleDst,
+                p.ctx.journal);
+            !isTesSuccess(err))
+            return err;
+    }
+
+    path::RippleCalc::Input rcInput;
+    rcInput.partialPaymentAllowed = p.partialPaymentAllowed;
+    rcInput.defaultPathsAllowed = p.defaultPathsAllowed;
+    rcInput.limitQuality = p.limitQuality;
+    rcInput.isLedgerOpen = p.ctx.view().open();
+
+    path::RippleCalc::Output rc;
+    {
+        PaymentSandbox pv(&p.ctx.view());
+        JLOG(p.j.debug()) << "Entering RippleCalc in payment: "
+                          << p.ctx.tx.getTransactionID();
+        rc = path::RippleCalc::rippleCalculate(
+            pv,
+            p.maxSourceAmount,
+            p.dstAmount,
+            p.dstAccountID,
+            p.srcAccountID,
+            p.paths,
+            p.ctx.tx[~sfDomainID],
+            p.ctx.app.logs(),
+            &rcInput);
+        // VFALCO NOTE We might not need to apply, depending
+        //             on the TER. But always applying *should*
+        //             be safe.
+        pv.apply(p.ctx.rawView());
+    }
+
+    // TODO: is this right?  If the amount is the correct
+    // amount, was the delivered amount previously set?
+    if (rc.result() == tesSUCCESS && rc.actualAmountOut != p.dstAmount)
+    {
+        if (p.deliverMin && rc.actualAmountOut < *p.deliverMin)
+            rc.setResult(tecPATH_PARTIAL);
+        else
+            p.ctx.deliver(rc.actualAmountOut);
+    }
+
+    auto terResult = rc.result();
+
+    // Because of its overhead, if RippleCalc
+    // fails with a retry code, claim a fee
+    // instead. Maybe the user will be more
+    // careful with their path spec next time.
+    if (isTerRetry(terResult))
+        terResult = tecPATH_DRY;
+    return terResult;
+}
+
+TER
+Payment::makeMPTDirectPayment(Payment::RipplePaymentParams const& p)
+{
+    JLOG(p.j.trace()) << " p.dstAmount=" << p.dstAmount.getFullText();
+    auto const& mptIssue = p.dstAmount.get<MPTIssue>();
+
+    if (auto const ter = requireAuth(p.ctx.view(), mptIssue, p.srcAccountID);
+        ter != tesSUCCESS)
+        return ter;
+
+    if (auto const ter = requireAuth(p.ctx.view(), mptIssue, p.dstAccountID);
+        ter != tesSUCCESS)
+        return ter;
+
+    if (auto const ter =
+            canTransfer(p.ctx.view(), mptIssue, p.srcAccountID, p.dstAccountID);
+        ter != tesSUCCESS)
+        return ter;
+
+    if (auto err = verifyDepositPreauth(
+            p.ctx.tx,
+            p.ctx.view(),
+            p.srcAccountID,
+            p.dstAccountID,
+            p.sleDst,
+            p.ctx.journal);
+        !isTesSuccess(err))
+        return err;
+
+    auto const& issuer = mptIssue.getIssuer();
+
+    // Transfer rate
+    Rate rate{QUALITY_ONE};
+    // Payment between the holders
+    if (p.srcAccountID != issuer && p.dstAccountID != issuer)
+    {
+        // If globally/individually locked then
+        //   - can't send between holders
+        //   - holder can send back to issuer
+        //   - issuer can send to holder
+        if (isAnyFrozen(
+                p.ctx.view(), {p.srcAccountID, p.dstAccountID}, mptIssue))
+            return tecLOCKED;
+
+        // Get the rate for a payment between the holders.
+        rate = transferRate(p.ctx.view(), mptIssue.getMptID());
+    }
+
+    // Amount to deliver.
+    STAmount amountDeliver = p.dstAmount;
+    // Factor in the transfer rate.
+    // No rounding. It'll change once MPT integrated into DEX.
+    STAmount requiredMaxSourceAmount = multiply(p.dstAmount, rate);
+
+    // Send more than the account wants to pay or less than
+    // the account wants to deliver (if no SendMax).
+    // Adjust the amount to deliver.
+    if (p.partialPaymentAllowed && requiredMaxSourceAmount > p.maxSourceAmount)
+    {
+        requiredMaxSourceAmount = p.maxSourceAmount;
+        // No rounding. It'll change once MPT integrated into DEX.
+        amountDeliver = divide(p.maxSourceAmount, rate);
+    }
+
+    if (requiredMaxSourceAmount > p.maxSourceAmount ||
+        (p.deliverMin && amountDeliver < *p.deliverMin))
+        return tecPATH_PARTIAL;
+
+    PaymentSandbox pv(&p.ctx.view());
+    auto res = accountSend(
+        pv, p.srcAccountID, p.dstAccountID, amountDeliver, p.ctx.journal);
+    if (res == tesSUCCESS)
+        pv.apply(p.ctx.rawView());
+    else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
+        res = tecPATH_PARTIAL;
+
+    return res;
 }
 
 }  // namespace ripple
