@@ -373,9 +373,9 @@ public:
 
 #if BOOST_OS_WINDOWS
         // windows asio bugs...false positives
-        shouldParseEPV4("255", {{0, 0, 0, 255}}, 0, "0.0.0.255");
-        shouldParseEPV4("512", {{0, 0, 2, 0}}, 0, "0.0.2.0");
-        shouldParseEPV4("1.2.3:80", {{1, 2, 0, 3}}, 80, "1.2.0.3:80");
+        shouldParseEPV4("255", {{ 0, 0, 0, 255 }}, 0, "0.0.0.255");
+        shouldParseEPV4("512", {{ 0, 0, 2, 0 }}, 0, "0.0.2.0");
+        shouldParseEPV4("1.2.3:80", {{ 1, 2, 0, 3 }}, 80, "1.2.0.3:80");
 #else
         failParseEP("255");
         failParseEP("512");
