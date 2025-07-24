@@ -359,7 +359,7 @@ jobs:
   instrumentation-build:
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
+    container: ghcr.io/xrplf/ci/debian-bookworm:clang-17
     env:
       build_dir: .build
     steps:
