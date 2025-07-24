@@ -157,9 +157,6 @@ Multiple compilers</h3>
 <p >Export our <a href="./external/snappy">Conan recipe for Snappy</a>. It does not explicitly link the C++ standard library, which allows you to statically link it with GCC, if you want.</p>
 <div class="fragment"><div class="line"># Conan 2.x</div>
 <div class="line">conan export --version 1.1.10 external/snappy</div>
-</div><!-- fragment --><p >Export our <a href="./external/rocksdb">Conan recipe for RocksDB</a>. It does not override paths to dependencies when building with Visual Studio.</p>
-<div class="fragment"><div class="line"># Conan 2.x</div>
-<div class="line">conan export --version 9.7.3 external/rocksdb</div>
 </div><!-- fragment --><p >Export our <a href="./external/soci">Conan recipe for SOCI</a>. It patches their CMake to correctly import its dependencies.</p>
 <div class="fragment"><div class="line"># Conan 2.x</div>
 <div class="line">conan export --version 4.0.3 external/soci</div>
