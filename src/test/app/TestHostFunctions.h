@@ -163,14 +163,13 @@ public:
     Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override
     {
-        auto const& sn = fname.getName();
-        if (sn == "Balance")
+        if (fname == sfBalance)
         {
             int64_t x = 10'000;
             uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
             return Bytes{p, p + sizeof(x)};
         }
-        else if (sn == "Account")
+        else if (fname == sfAccount)
         {
             return Bytes(accountID_.begin(), accountID_.end());
         }
