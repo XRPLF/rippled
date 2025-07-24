@@ -162,6 +162,17 @@ Replace `<path>` with paths to the desired compilers:
 - `conan profile update env.CC=<path> default`
 - `conan profile update env.CXX=<path> default`
 
+Export our [Conan recipe for Protobuf](./external/protobuf).
+It patches a few portability bugs in protobuf which were recently fixed but not
+yet included in the Conan recipe:
+* [Unable to build v30.0 on debian-12 with clang-16 #20645 (protobuf)](https://github.com/protocolbuffers/protobuf/issues/20645)
+* [Unable to build v31.0 with clang-cl in c++20 debug build #21957 (protobuf)](https://github.com/protocolbuffers/protobuf/issues/20645)
+
+   ```
+   # Conan 2.x
+   conan export --version 1.1.10 external/snappy
+   ```
+
 Export our [Conan recipe for Snappy](./external/snappy).
 It does not explicitly link the C++ standard library,
 which allows you to statically link it with GCC, if you want.

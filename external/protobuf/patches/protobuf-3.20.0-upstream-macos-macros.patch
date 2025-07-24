@@ -1,0 +1,29 @@
+diff --git a/src/google/protobuf/port_def.inc b/src/google/protobuf/port_def.inc
+index bdb2eec..e8d7dbc 100644
+--- a/src/google/protobuf/port_def.inc
++++ b/src/google/protobuf/port_def.inc
+@@ -816,6 +816,11 @@
+ #undef TRUE
+ #pragma push_macro("FALSE")
+ #undef FALSE
++// Inconvenient macro names from usr/include/sys/syslimits.h in some macOS SDKs.
++#pragma push_macro("UID_MAX")
++#undef UID_MAX
++#pragma push_macro("GID_MAX")
++#undef GID_MAX
+ #endif  // __APPLE__
+ 
+ #if defined(__clang__) || PROTOBUF_GNUC_MIN(3, 0) || defined(_MSC_VER)
+diff --git a/src/google/protobuf/port_undef.inc b/src/google/protobuf/port_undef.inc
+index 58136a4..eb0fdc8 100644
+--- a/src/google/protobuf/port_undef.inc
++++ b/src/google/protobuf/port_undef.inc
+@@ -134,6 +134,8 @@
+ #pragma pop_macro("DOMAIN")
+ #pragma pop_macro("TRUE")
+ #pragma pop_macro("FALSE")
++#pragma pop_macro("UID_MAX")
++#pragma pop_macro("GID_MAX")
+ #endif  // __APPLE__
+ 
+ #if defined(__clang__) || defined(__GNUC__) || defined(_MSC_VER)
