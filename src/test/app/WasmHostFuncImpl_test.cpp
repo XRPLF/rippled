@@ -27,20 +27,17 @@ namespace test {
 static std::array<std::uint8_t, 2>
 toBytes(std::uint16_t value)
 {
-    std::array<std::uint8_t, 2> bytes = {
-        static_cast<std::uint8_t>(value & 0xFF),
-        static_cast<std::uint8_t>(value >> 8)};
-    return bytes;
+    auto const* b = reinterpret_cast<uint8_t const*>(&value);
+    auto const* e = reinterpret_cast<uint8_t const*>(&value + 1);
+    return Bytes{b, e};
 }
 
 static std::array<std::uint8_t, 4>
 toBytes(std::uint32_t value)
 {
-    return {
-        static_cast<std::uint8_t>(value & 0xFF),
-        static_cast<std::uint8_t>((value >> 8) & 0xFF),
-        static_cast<std::uint8_t>((value >> 16) & 0xFF),
-        static_cast<std::uint8_t>((value >> 24) & 0xFF)};
+    auto const* b = reinterpret_cast<uint8_t const*>(&value);
+    auto const* e = reinterpret_cast<uint8_t const*>(&value + 1);
+    return Bytes{b, e};
 }
 
 static Bytes

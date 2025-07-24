@@ -208,12 +208,12 @@ locateField(STObject const& obj, Slice const& locator)
     int32_t const* loc = reinterpret_cast<int32_t const*>(locator.data());
     int32_t const sz = locator.size() / 4;
     STBase const* field = nullptr;
-    auto const& allSFields = SField::getKnownCodeToField();
+    auto const& knownSFields = SField::getKnownCodeToField();
 
     {
-        int32_t const sfield = loc[0];
-        auto const it = allSFields.find(sfield);
-        if (it == allSFields.end())
+        int32_t const sfieldCode = loc[0];
+        auto const it = knownSFields.find(sfieldCode);
+        if (it == knownSFields.end())
             return Unexpected(HostFunctionError::INVALID_FIELD);
 
         auto const& fname(*it->second);
@@ -224,21 +224,21 @@ locateField(STObject const& obj, Slice const& locator)
 
     for (int i = 1; i < sz; ++i)
     {
-        int32_t const sfield = loc[i];
+        int32_t const sfieldCode = loc[i];
 
         if (STI_ARRAY == field->getSType())
         {
             auto const* arr = static_cast<STArray const*>(field);
-            if (sfield >= arr->size())
+            if (sfieldCode >= arr->size())
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-            field = &(arr->operator[](sfield));
+            field = &(arr->operator[](sfieldCode));
         }
         else if (STI_OBJECT == field->getSType())
         {
             auto const* o = static_cast<STObject const*>(field);
 
-            auto const it = allSFields.find(sfield);
-            if (it == allSFields.end())
+            auto const it = knownSFields.find(sfieldCode);
+            if (it == knownSFields.end())
                 return Unexpected(HostFunctionError::INVALID_FIELD);
 
             auto const& fname(*it->second);
