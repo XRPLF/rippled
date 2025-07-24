@@ -34,12 +34,12 @@ setData(
     int32_t dst,
     int32_t dstSize,
     uint8_t const* src,
-    int32_t size)
+    int32_t srcSize)
 {
-    if (!size)
+    if (!srcSize)
         return 0;
 
-    if (dst < 0 || dstSize < 0 || !src || size < 0)
+    if (dst < 0 || dstSize < 0 || !src || srcSize < 0)
         return static_cast<std::underlying_type_t<HostFunctionError>>(
             HostFunctionError::INVALID_PARAMS);
 
@@ -51,13 +51,13 @@ setData(
     if (dst + dstSize > memory.s)
         return static_cast<std::underlying_type_t<HostFunctionError>>(
             HostFunctionError::POINTER_OUT_OF_BOUNDS);
-    if (size > dstSize)
+    if (srcSize > dstSize)
         return static_cast<std::underlying_type_t<HostFunctionError>>(
             HostFunctionError::BUFFER_TOO_SMALL);
 
-    memcpy(memory.p + dst, src, size);
+    memcpy(memory.p + dst, src, srcSize);
 
-    return size;
+    return srcSize;
 }
 
 template <class IW>
