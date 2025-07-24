@@ -27,25 +27,22 @@
 
 namespace ripple {
 
+bool
+VaultDelete::isEnabled(PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureSingleAssetVault);
+}
+
 NotTEC
 VaultDelete::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
-
-    if (auto const ter = preflight1(ctx))
-        return ter;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     if (ctx.tx[sfVaultID] == beast::zero)
     {
         JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

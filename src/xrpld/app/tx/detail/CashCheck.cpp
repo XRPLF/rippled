@@ -32,23 +32,15 @@
 
 namespace ripple {
 
+bool
+CashCheck::isEnabled(PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureChecks);
+}
+
 NotTEC
 CashCheck::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureChecks))
-        return temDISABLED;
-
-    NotTEC const ret{preflight1(ctx)};
-    if (!isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        // There are no flags (other than universal) for CashCheck yet.
-        JLOG(ctx.j.warn()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
-
     // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];
     auto const optDeliverMin = ctx.tx[~sfDeliverMin];
@@ -76,7 +68,7 @@ CashCheck::preflight(PreflightContext const& ctx)
         return temBAD_CURRENCY;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

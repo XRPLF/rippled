@@ -26,30 +26,33 @@
 
 namespace ripple {
 
+bool
+MPTokenIssuanceSet::isEnabled(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureMPTokensV1))
+        return false;
+
+    return !ctx.tx.isFieldPresent(sfDomainID) ||
+        (ctx.rules.enabled(featurePermissionedDomains) &&
+         ctx.rules.enabled(featureSingleAssetVault));
+}
+
+std::uint32_t
+MPTokenIssuanceSet::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfMPTokenIssuanceSetMask;
+}
+
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !(ctx.rules.enabled(featurePermissionedDomains) &&
-          ctx.rules.enabled(featureSingleAssetVault)))
-        return temDISABLED;
-
     if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const txFlags = ctx.tx.getFlags();
 
-    // check flags
-    if (txFlags & tfMPTokenIssuanceSetMask)
-        return temINVALID_FLAG;
     // fails if both flags are set
-    else if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
+    if ((txFlags & tfMPTLock) && (txFlags & tfMPTUnlock))
         return temINVALID_FLAG;
 
     auto const accountID = ctx.tx[sfAccount];
@@ -64,7 +67,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

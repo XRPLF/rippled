@@ -26,22 +26,25 @@
 
 namespace ripple {
 
+bool
+MPTokenAuthorize::isEnabled(PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureMPTokensV1);
+}
+
+std::uint32_t
+MPTokenAuthorize::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfMPTokenAuthorizeMask;
+}
+
 NotTEC
 MPTokenAuthorize::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfMPTokenAuthorizeMask)
-        return temINVALID_FLAG;
-
     if (ctx.tx[sfAccount] == ctx.tx[~sfHolder])
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -36,6 +36,9 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -56,6 +59,12 @@ public:
     explicit EscrowFinish(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static bool
+    isEnabled(PreflightContext const& ctx);
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
@@ -80,6 +89,9 @@ public:
     explicit EscrowCancel(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
