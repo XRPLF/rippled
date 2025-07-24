@@ -98,6 +98,15 @@ class Xrpl(ConanFile):
                 self.version = match.group(1)
 
     def configure(self):
+        # Disable grpc plugins, we do not use any
+        self.options["grpc"].cpp_plugin = False
+        self.options["grpc"].csharp_plugin = False
+        self.options["grpc"].node_plugin = False
+        self.options["grpc"].objective_c_plugin = False
+        self.options["grpc"].php_plugin = False
+        self.options["grpc"].python_plugin = False
+        self.options["grpc"].ruby_plugin = False
+        self.options["grpc"].otel_plugin = False
         if self.settings.compiler == 'apple-clang':
             self.options['boost'].visibility = 'global'
 
