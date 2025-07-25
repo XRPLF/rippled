@@ -68,7 +68,7 @@ public:
     {
         Json::Value solution = Json::objectValue;
         std::string const ledgerFormatFile{
-            "/Users/ckeshavabs/rippled/include/xrpl/protocol/LedgerFormats.h"};
+            "../include/xrpl/protocol/LedgerFormats.h"};
         std::ifstream file(ledgerFormatFile);
 
         if (!file.is_open())
@@ -123,8 +123,7 @@ public:
     {
         Json::Value solution;
         std::string const transactionFormatsFile =
-            "/Users/ckeshavabs/rippled/include/xrpl/protocol/detail/"
-            "transactions.macro";
+            "../include/xrpl/protocol/detail/transactions.macro";
         std::ifstream file(transactionFormatsFile);
 
         if (!file.is_open())
@@ -223,8 +222,7 @@ public:
         Json::Value ret;
 
         std::string const ledger_entry_macros_file =
-            "/Users/ckeshavabs/rippled/cmake-build-debug/modules/"
-            "xrpl.libxrpl.protocol/xrpl/protocol/detail/ledger_entries.macro";
+            "../include/xrpl/protocol/detail/ledger_entries.macro";
 
         std::ifstream file(ledger_entry_macros_file);
 
