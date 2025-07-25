@@ -143,7 +143,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BookChanges, app, ripple);
+BEAST_DEFINE_TESTSUITE(BookChanges, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

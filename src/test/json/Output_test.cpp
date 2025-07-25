@@ -61,6 +61,6 @@ struct Output_test : ripple::test::TestOutputSuite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Output, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(Output, json, ripple);
 
 }  // namespace Json

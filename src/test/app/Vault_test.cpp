@@ -3342,6 +3342,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Vault, tx, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(Vault, app, ripple, 1);
 
 }  // namespace ripple

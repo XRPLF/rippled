@@ -159,7 +159,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STIssue, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE(STIssue, protocol, ripple);
 
 }  // namespace test
 }  // namespace ripple

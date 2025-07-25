@@ -1052,6 +1052,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STAmount, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE(STAmount, protocol, ripple);
 
 }  // namespace ripple
