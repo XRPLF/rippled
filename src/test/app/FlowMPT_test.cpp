@@ -615,7 +615,6 @@ struct FlowMPT_test : public beast::unit_test::suite
                     txflags(tfPartialPayment));
                 // +1 for fset in helperIssueIOU
                 using tEUR = std::decay_t<decltype(EUR)>;
-                using tUSD = std::decay_t<decltype(USD)>;
                 auto const fee = txfee(env, 3);
                 // bob pays 25% on 40USD (40 since sendmax is 40XRP)
                 // 8USD goes to gw and 32USD goes back to bob ->
