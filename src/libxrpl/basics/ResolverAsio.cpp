@@ -126,7 +126,7 @@ public:
     beast::Journal m_journal;
 
     boost::asio::io_context& m_io_service;
-    boost::asio::io_context::strand m_strand;
+    boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
     boost::asio::ip::tcp::resolver m_resolver;
 
     std::condition_variable m_cv;
@@ -160,7 +160,7 @@ public:
         beast::Journal journal)
         : m_journal(journal)
         , m_io_service(io_service)
-        , m_strand(io_service)
+        , m_strand(boost::asio::make_strand(io_service))
         , m_resolver(io_service)
         , m_asyncHandlersCompleted(true)
         , m_stop_called(false)
