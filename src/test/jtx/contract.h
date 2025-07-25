@@ -25,6 +25,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/utility.h>
 
 #include <xrpl/protocol/TxFlags.h>
 
@@ -70,6 +71,35 @@ public:
 
     void
     operator()(Env&, JTx& jtx) const;
+};
+
+/** Add Parameter Value on a JTx. */
+template <typename T>
+class add_param_value
+{
+private:
+    std::string name_;
+    std::string type_;
+    T value_;
+
+public:
+    explicit add_param_value(std::string const& name, std::string const& type, T value)
+        : name_(name), type_(type), value_(value)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jtx) const
+    {
+        Json::Value param = Json::Value(Json::objectValue);
+        param[sfInstanceParameter] = Json::Value(Json::objectValue);
+        param[sfInstanceParameter][sfParameterValue] =
+            Json::Value(Json::objectValue);
+        param[sfInstanceParameter][sfParameterValue][jss::name] = strHex(name_);
+        param[sfInstanceParameter][sfParameterValue][jss::type] = type_;
+        param[sfInstanceParameter][sfParameterValue][jss::value] = value_;
+        jtx.jv[sfInstanceParameters].append(param);
+    }
 };
 
 }  // namespace contract

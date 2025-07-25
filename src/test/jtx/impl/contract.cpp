@@ -30,11 +30,9 @@ namespace jtx {
 namespace contract {
 
 Json::Value
-create(
-    jtx::Account const& account,
-    std::string const& contractCode)
-    // std::vector<Json::Value> const& instanceParameters,
-    // std::vector<Json::Value> const& functions)
+create(jtx::Account const& account, std::string const& contractCode)
+// std::vector<Json::Value> const& instanceParameters,
+// std::vector<Json::Value> const& functions)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::ContractCreate;
@@ -46,9 +44,7 @@ create(
 }
 
 Json::Value
-create(
-    jtx::Account const& account,
-    uint256 const& contractHash)
+create(jtx::Account const& account, uint256 const& contractHash)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::ContractCreate;
@@ -68,6 +64,7 @@ call(
     jv[jss::Account] = account.human();
     jv[sfContractAccount] = contractAccount;
     jv[sfFunctionName] = strHex(functionName);
+    jv[sfInstanceParameters] = Json::Value(Json::arrayValue);
     return jv;
 }
 
@@ -75,10 +72,8 @@ Json::Value
 addFuncParam(std::string const& name, std::string const& typeName)
 {
     Json::Value param = Json::Value(Json::objectValue);
-    param[sfInstanceParameter][sfParameterName] =
-        strHex(name);
-    param[sfInstanceParameter][sfParameterType][jss::type] =
-        typeName;
+    param[sfInstanceParameter][sfParameterName] = strHex(name);
+    param[sfInstanceParameter][sfParameterType][jss::type] = typeName;
     return param;
 };
 
@@ -96,7 +91,6 @@ add_function::operator()(Env&, JTx& jt) const
             addFuncParam(p_name, p_type));
     }
 }
-
 
 }  // namespace contract
 

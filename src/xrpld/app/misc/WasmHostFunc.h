@@ -290,6 +290,18 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
+    virtual Expected<Bytes, HostFunctionError>
+    contractFuncParam(std::uint32_t index, std::uint32_t stTypeId)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    otxnFuncParam(std::uint32_t index, std::uint32_t stTypeId)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
     virtual Expected<int32_t, HostFunctionError>
     submit(STTx const& stx)
     {

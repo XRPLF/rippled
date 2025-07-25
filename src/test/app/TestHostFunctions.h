@@ -311,7 +311,7 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
-        auto j = getJournal().trace();
+        auto j = getJournal().error();
 #endif
         if (!asHex)
         {
@@ -341,7 +341,7 @@ public:
 #ifdef DEBUG_OUTPUT
         auto& j = std::cerr;
 #else
-        auto j = getJournal().trace();
+        auto j = getJournal().error();
 #endif
         j << "WAMR TRACE NUM: " << msg << " " << data;
 
@@ -803,14 +803,14 @@ public:
     {
         if (!account || !nftId)
         {
-            getJournal().trace() << "WAMR getNFT: Invalid account or NFT ID";
+            getJournal().error() << "WAMR getNFT: Invalid account or NFT ID";
             return Unexpected(HostFunctionError::INVALID_PARAMS);
         }
 
         auto obj = nft::findToken(*env_.current(), account, nftId);
         if (!obj)
         {
-            getJournal().trace() << "WAMR getNFT: NFT not found";
+            getJournal().error() << "WAMR getNFT: NFT not found";
             return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
         }
 

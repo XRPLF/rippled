@@ -141,6 +141,7 @@ ContractCall::doApply()
         return tefINTERNAL;
     }
 
+    uint256 const contractHash = contractSle->at(sfContractHash);
     auto const contractSourceSle = ctx_.view().read(
         keylet::contractSource(contractSle->at(sfContractHash)));
     if (!contractSourceSle)
@@ -155,7 +156,59 @@ ContractCall::doApply()
     auto const functionName = ctx_.tx.getFieldVL(sfFunctionName);
     std::string funcName(functionName.begin(), functionName.end());
 
-    WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
+    auto const contractFunctions = contractSle->isFieldPresent(sfFunctions)
+        ? contractSle->getFieldArray(sfFunctions)
+        : contractSourceSle->getFieldArray(sfFunctions);
+    std::optional<STObject> function;
+    for (auto const& contractFunction : contractFunctions)
+    {
+        if (contractFunction.getFieldVL(sfFunctionName) == functionName)
+            function = contractFunction;
+    }
+    if (!function)
+        return tecINTERNAL;
+
+    STArray const& funcParams = ctx_.tx.getFieldArray(sfInstanceParameters);
+    STArray const& funcParamsDef =
+        function->getFieldArray(sfInstanceParameters);
+
+    std::cout << "Function name: " << funcName << std::endl;
+    std::cout << "Function parameters: " << funcParams.size() << std::endl;
+    std::cout << "Function parameters (def): " << funcParamsDef.size() << std::endl;
+
+
+    std::vector<ripple::ParameterValueVec> fparameters;
+    fparameters = getParameterValueVec(funcParams);
+    std::cout << "Function parameters (values): " << fparameters.size() << std::endl;
+    auto typeVec = ripple::getParameterTypeVec(funcParamsDef);
+    std::cout << "Function parameters (typeVec): " << typeVec.size() << std::endl;
+    // if (fparameters.size() != typeVec.size())
+    //     return tecINTERNAL;
+
+    for (std::size_t i = 0; i < fparameters.size(); i++)
+    {
+        if (fparameters[i].value.getInnerSType() !=
+            typeVec[i].type.getInnerSType())
+            return tecINTERNAL;
+    }
+
+    ContractContext contractCtx = {
+        .applyCtx = ctx_,
+        .parameters = fparameters,
+        .expected_etxn_count = 1,
+        .generation = 0,
+        .burden = 0,
+        .result = {
+            .contractHash = contractHash,
+            .contractKeylet = k,
+            .contractSourceKeylet = k,
+            .contractAccountKeylet = k,
+            .contractAccount = contractAccount,
+            .otxnAccount = contractAccount,
+        },
+    };
+
+    WasmHostFunctionsImpl ledgerDataProvider(contractCtx);
 
     if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
     {

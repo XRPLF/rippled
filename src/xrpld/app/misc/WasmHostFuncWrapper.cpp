@@ -1086,6 +1086,60 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 }
 
 wasm_trap_t*
+contractFuncParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const iindex = getDataInt32(rt, params, index);
+    if (!iindex)
+    {
+        return hfResult(results, iindex.error());
+    }
+
+    auto const stTypeId = getDataInt32(rt, params, index);
+    if (!stTypeId)
+    {
+        return hfResult(results, stTypeId.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->contractFuncParam(*iindex, *stTypeId), index);
+}
+
+wasm_trap_t*
+otxnFuncParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const iindex = getDataInt32(rt, params, index);
+    if (!iindex)
+    {
+        return hfResult(results, iindex.error());
+    }
+
+    auto const stTypeId = getDataInt32(rt, params, index);
+    if (!stTypeId)
+    {
+        return hfResult(results, stTypeId.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->otxnFuncParam(*iindex, *stTypeId), index);
+}
+
+wasm_trap_t*
 submit_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);

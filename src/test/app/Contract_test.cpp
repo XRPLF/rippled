@@ -84,15 +84,15 @@ class Contract_test : public beast::unit_test::suite
         return param;
     };
 
-    template <typename T>
-    Json::Value
-    addFuncParamValue(std::string const& typeName, T value)
-    {
-        Json::Value param = Json::Value(Json::objectValue);
-        param[sfInstanceParameter][sfParameterValue][jss::type] = typeName;
-        param[sfInstanceParameter][sfParameterValue][jss::value] = value;
-        return param;
-    };
+    // template <typename T>
+    // Json::Value
+    // addFuncParamValue(std::string const& typeName, T value)
+    // {
+    //     Json::Value param = Json::Value(Json::objectValue);
+    //     param[sfInstanceParameter][sfParameterValue][jss::type] = typeName;
+    //     param[sfInstanceParameter][sfParameterValue][jss::value] = value;
+    //     return param;
+    // };
 
     void
     testEnabled(FeatureBitset features)
@@ -102,7 +102,8 @@ class Contract_test : public beast::unit_test::suite
         using namespace jtx;
         Account const alice{"alice"};
         Account const bob{"bob"};
-        Env env{*this, envconfig(), nullptr, beast::severities::kTrace};
+        // Env env{*this, envconfig(), nullptr, beast::severities::kTrace};
+        Env env{*this, features};
         env.fund(XRP(10000), alice, bob);
         env.close();
 
@@ -182,10 +183,110 @@ class Contract_test : public beast::unit_test::suite
         }
     }
 
+    std::string
+    loadContractWasmStr()
+    {
+        std::string name =
+            "/Users/darkmatter/projects/ledger-works/craft/projects/develop/"
+            "target/wasm32-unknown-unknown/release/develop.wasm";
+        if (!std::filesystem::exists(name))
+        {
+            std::cout << "File does not exist: " << name << "\n";
+            return "";
+        }
+
+        std::ifstream file(name, std::ios::binary);
+
+        if (!file)
+        {
+            std::cout << "Failed to open file: " << name << "\n";
+            return "";
+        }
+
+        // Read the file into a vector
+        std::vector<char> buffer(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>());
+
+        // Check if the buffer is empty
+        if (buffer.empty())
+        {
+            std::cout << "File is empty or could not be read properly.\n";
+            return "";
+        }
+
+        return strHex(buffer);
+    }
+
+    void
+    testSimple(FeatureBitset features)
+    {
+        testcase("Test simple");
+
+        using namespace jtx;
+
+        // Env env{*this, features};
+        // Env env{*this, envconfig(), features, nullptr,
+        //     beast::severities::kTrace
+        // };
+
+        test::jtx::Env env{*this, features};
+
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        std::string contractWasmStr = loadContractWasmStr();
+
+        env(contract::create(alice, contractWasmStr),
+            contract::add_function(
+                "finish",
+                {{"uint8", "UINT8"},
+                 {"uint16", "UINT16"},
+                 {"owner", "ACCOUNT"}}),
+            fee(XRP(200)),
+            ter(tesSUCCESS));
+        env.close();
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        auto const contractAccount = getContractOwner(env);
+
+        env(contract::call(alice, contractAccount, "finish"),
+            escrow::comp_allowance(1000000),
+            contract::add_param_value("uint8", "UINT8", 255),
+            contract::add_param_value("uint16", "UINT16", 65535),
+            contract::add_param_value("owner", "ACCOUNT", alice.human()),
+            ter(tesSUCCESS));
+        env.close();
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        // env(invoke::invoke(alice), M("test simple"), fee(XRP(1)),
+        // ter(tecDIR_FULL)); env.close();
+
+        // BEAST_EXPECT(env.le(alice)->getFieldU64(sfOwnerCount) == 8388578);
+    }
+
     void
     testWithFeats(FeatureBitset features)
     {
-        testEnabled(features);
+        // testEnabled(features);
+        testSimple(features);
     }
 
 public:

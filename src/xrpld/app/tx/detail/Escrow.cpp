@@ -1259,45 +1259,45 @@ EscrowFinish::doApply()
     }
 
     // Execute custom release function
-    if ((*slep)[~sfFinishFunction])
-    {
-        JLOG(j_.trace())
-            << "The escrow has a finish function, running WASM code...";
-        // WASM execution
-        auto const wasmStr = slep->getFieldVL(sfFinishFunction);
-        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-        std::string funcName("finish");
+    // if ((*slep)[~sfFinishFunction])
+    // {
+    //     JLOG(j_.trace())
+    //         << "The escrow has a finish function, running WASM code...";
+    //     // WASM execution
+    //     auto const wasmStr = slep->getFieldVL(sfFinishFunction);
+    //     std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+    //     std::string funcName("finish");
 
-        WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
+    //     WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
-        {
-            // already checked above, this check is just in case
-            return tecINTERNAL;
-        }
-        std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
-        auto re =
-            runEscrowWasm(wasm, funcName, {}, &ledgerDataProvider, allowance);
-        JLOG(j_.trace()) << "Escrow WASM ran";
-        if (re.has_value())
-        {
-            auto reValue = re.value().result;
-            // TODO: better error handling for this conversion
-            ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
-            JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue)
-                             << ", cost: " << re.value().cost;
-            if (!reValue)
-            {
-                // ctx_.view().update(slep);
-                return tecWASM_REJECTED;
-            }
-        }
-        else
-        {
-            JLOG(j_.debug()) << "WASM Failure: " + transHuman(re.error());
-            return re.error();
-        }
-    }
+    //     if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
+    //     {
+    //         // already checked above, this check is just in case
+    //         return tecINTERNAL;
+    //     }
+    //     std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
+    //     auto re =
+    //         runEscrowWasm(wasm, funcName, {}, &ledgerDataProvider, allowance);
+    //     JLOG(j_.trace()) << "Escrow WASM ran";
+    //     if (re.has_value())
+    //     {
+    //         auto reValue = re.value().result;
+    //         // TODO: better error handling for this conversion
+    //         ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
+    //         JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue)
+    //                          << ", cost: " << re.value().cost;
+    //         if (!reValue)
+    //         {
+    //             // ctx_.view().update(slep);
+    //             return tecWASM_REJECTED;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         JLOG(j_.debug()) << "WASM Failure: " + transHuman(re.error());
+    //         return re.error();
+    //     }
+    // }
 
     AccountID const account = (*slep)[sfAccount];
 
