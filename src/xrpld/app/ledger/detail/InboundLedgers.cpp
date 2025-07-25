@@ -384,17 +384,10 @@ public:
     {
         auto const start = m_clock.now();
 
-        // Make a list of things to sweep, while holding the lock
-        std::vector<MapType::mapped_type> stuffToSweep;
-        std::size_t total;
-
         {
             ScopedLockType sl(mLock);
             MapType::iterator it(mLedgers.begin());
-            total = mLedgers.size();
-
-            stuffToSweep.reserve(total);
-
+            
             while (it != mLedgers.end())
             {
                 auto const la = it->second->getLastAction();
@@ -406,9 +399,6 @@ public:
                 }
                 else if ((la + std::chrono::seconds(10)) < start)
                 {
-                    stuffToSweep.push_back(it->second);
-                    // shouldn't cause the actual final delete
-                    // since we are holding a reference in the vector.
                     it = mLedgers.erase(it);
                 }
                 else
@@ -419,14 +409,6 @@ public:
 
             beast::expire(mRecentFailures, kReacquireInterval);
         }
-
-        JLOG(j_.debug())
-            << "Swept " << stuffToSweep.size() << " out of " << total
-            << " inbound ledgers. Duration: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   m_clock.now() - start)
-                   .count()
-            << "ms";
     }
 
     void
