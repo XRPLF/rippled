@@ -101,7 +101,7 @@ class Xrpl(ConanFile):
         if self.settings.compiler == 'apple-clang':
             self.options['boost'].visibility = 'global'
         if self.settings.compiler in ['clang', 'gcc']:
-            self.options['boost'].without_stacktrace_from_exception = True
+            self.options['boost'].without_cobalt = True
 
     def requirements(self):
         # Conan 2 requires transitive headers to be specified
