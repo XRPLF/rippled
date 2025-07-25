@@ -313,7 +313,8 @@ using traceNum_proto = int32_t(uint8_t const*, int32_t, int64_t);
 wasm_trap_t*
 traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using traceFloat_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+using traceFloat_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
 wasm_trap_t*
 traceFloat_wrap(
     void* env,

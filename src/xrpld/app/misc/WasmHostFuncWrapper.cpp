@@ -290,7 +290,7 @@ returnResult(
         return hfResult(
             results,
             setData(
-                rt,
+                runtime,
                 params->data[index].of.i32,
                 params->data[index + 1].of.i32,
                 data.data(),
