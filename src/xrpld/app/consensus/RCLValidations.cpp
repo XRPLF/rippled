@@ -32,6 +32,8 @@
 
 #include <memory>
 
+using namespace std::chrono_literals;
+
 namespace ripple {
 
 RCLValidatedLedger::RCLValidatedLedger(MakeGenesis)
@@ -142,11 +144,19 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
         Application* pApp = &app_;
 
         app_.getJobQueue().addJob(
-            jtADVANCE, "getConsensusLedger2", [pApp, hash, this]() {
-                JLOG(j_.debug())
-                    << "JOB advanceLedger getConsensusLedger2 started";
-                pApp->getInboundLedgers().acquireAsync(
-                    hash, 0, InboundLedger::Reason::CONSENSUS);
+            jtADVANCE,
+            "getConsensusLedger2",
+            [pApp, hash, this, journal = j_]() {
+                perf::measureDurationAndLog(
+                    [&]() {
+                        JLOG(j_.debug())
+                            << "JOB advanceLedger getConsensusLedger2 started";
+                        pApp->getInboundLedgers().acquireAsync(
+                            hash, 0, InboundLedger::Reason::CONSENSUS);
+                    },
+                    "getConsensusLedger2",
+                    1s,
+                    journal);
             });
         return std::nullopt;
     }
