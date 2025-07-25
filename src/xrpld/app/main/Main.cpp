@@ -33,6 +33,9 @@
 
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
+
+#include <boost/algorithm/string.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/process.hpp>
 #include <boost/program_options.hpp>
 

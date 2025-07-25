@@ -162,7 +162,7 @@ public:
     virtual Config&
     config() = 0;
 
-    virtual boost::asio::io_service&
+    virtual boost::asio::io_context&
     getIOService() = 0;
 
     virtual CollectorManager&

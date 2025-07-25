@@ -79,11 +79,11 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstring>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <mutex>
 #include <optional>
-#include <sstream>
 #include <utility>
 
 namespace ripple {
@@ -108,7 +108,7 @@ private:
             beast::insight::Event ev,
             beast::Journal journal,
             std::chrono::milliseconds interval,
-            boost::asio::io_service& ios)
+            boost::asio::io_context& ios)
             : m_event(ev)
             , m_journal(journal)
             , m_probe(interval, ios)
@@ -594,7 +594,7 @@ public:
         return *serverHandler_;
     }
 
-    boost::asio::io_service&
+    boost::asio::io_context&
     getIOService() override
     {
         return get_io_service();
@@ -935,9 +935,8 @@ public:
                 }))
         {
             using namespace std::chrono;
-            sweepTimer_.expires_from_now(
-                seconds{config_->SWEEP_INTERVAL.value_or(
-                    config_->getValueFor(SizedItem::sweepInterval))});
+            sweepTimer_.expires_after(seconds{config_->SWEEP_INTERVAL.value_or(
+                config_->getValueFor(SizedItem::sweepInterval))});
             sweepTimer_.async_wait(std::move(*optionalCountedHandler));
         }
     }
@@ -966,7 +965,7 @@ public:
                 }))
         {
             using namespace std::chrono_literals;
-            entropyTimer_.expires_from_now(5min);
+            entropyTimer_.expires_after(5min);
             entropyTimer_.async_wait(std::move(*optionalCountedHandler));
         }
     }
@@ -1586,20 +1585,24 @@ ApplicationImp::run()
     m_resolver->stop();
 
     {
-        boost::system::error_code ec;
-        sweepTimer_.cancel(ec);
-        if (ec)
+        try
+        {
+            sweepTimer_.cancel();
+        }
+        catch (boost::system::system_error const& e)
         {
             JLOG(m_journal.error())
-                << "Application: sweepTimer cancel error: " << ec.message();
+                << "Application: sweepTimer cancel error: " << e.what();
         }
 
-        ec.clear();
-        entropyTimer_.cancel(ec);
-        if (ec)
+        try
+        {
+            entropyTimer_.cancel();
+        }
+        catch (boost::system::system_error const& e)
         {
             JLOG(m_journal.error())
-                << "Application: entropyTimer cancel error: " << ec.message();
+                << "Application: entropyTimer cancel error: " << e.what();
         }
     }
 

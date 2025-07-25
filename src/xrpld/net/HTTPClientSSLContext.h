@@ -180,7 +180,9 @@ public:
         boost::asio::ssl::verify_context& ctx,
         beast::Journal j)
     {
-        if (boost::asio::ssl::rfc2818_verification(domain)(preverified, ctx))
+        // TODO: verify if this is still the same rfc thingy. It is what the
+        // documentation recommends though
+        if (boost::asio::ssl::host_name_verification(domain)(preverified, ctx))
             return true;
 
         JLOG(j.warn()) << "Outbound SSL connection to " << domain
