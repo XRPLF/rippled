@@ -25,6 +25,7 @@
 #include <xrpl/beast/core/LexicalCast.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/ip/resolver_query_base.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/regex.hpp>
@@ -52,7 +53,7 @@ class HTTPClientImp : public std::enable_shared_from_this<HTTPClientImp>,
 {
 public:
     HTTPClientImp(
-        boost::asio::io_service& io_service,
+        boost::asio::io_context& io_service,
         unsigned short const port,
         std::size_t maxResponseSize,
         beast::Journal& j)
@@ -143,18 +144,21 @@ public:
     {
         JLOG(j_.trace()) << "Fetch: " << mDeqSites[0];
 
-        auto query = std::make_shared<boost::asio::ip::tcp::resolver::query>(
+        auto query = std::make_shared<Query>(
             mDeqSites[0],
             std::to_string(mPort),
             boost::asio::ip::resolver_query_base::numeric_service);
         mQuery = query;
 
-        mDeadline.expires_from_now(mTimeout, mShutdown);
-
-        JLOG(j_.trace()) << "expires_from_now: " << mShutdown.message();
-
-        if (!mShutdown)
+        try
         {
+            mDeadline.expires_after(mTimeout);
+        }
+        catch (boost::system::system_error const& e)
+        {
+            mShutdown = e.code();
+
+            JLOG(j_.trace()) << "expires_after: " << mShutdown.message();
             mDeadline.async_wait(std::bind(
                 &HTTPClientImp::handleDeadline,
                 shared_from_this(),
@@ -166,7 +170,9 @@ public:
             JLOG(j_.trace()) << "Resolving: " << mDeqSites[0];
 
             mResolver.async_resolve(
-                *mQuery,
+                mQuery->host,
+                mQuery->port,
+                mQuery->flags,
                 std::bind(
                     &HTTPClientImp::handleResolve,
                     shared_from_this(),
@@ -230,7 +236,7 @@ public:
     void
     handleResolve(
         boost::system::error_code const& ecResult,
-        boost::asio::ip::tcp::resolver::iterator itrEndpoint)
+        boost::asio::ip::tcp::resolver::results_type result)
     {
         if (!mShutdown)
         {
@@ -252,7 +258,7 @@ public:
 
             boost::asio::async_connect(
                 mSocket.lowest_layer(),
-                itrEndpoint,
+                result,
                 std::bind(
                     &HTTPClientImp::handleConnect,
                     shared_from_this(),
@@ -472,13 +478,15 @@ public:
         std::string const& strData = "")
     {
         boost::system::error_code ecCancel;
-
-        (void)mDeadline.cancel(ecCancel);
-
-        if (ecCancel)
+        try
         {
-            JLOG(j_.trace()) << "invokeComplete: Deadline cancel error: "
-                             << ecCancel.message();
+            mDeadline.cancel();
+        }
+        catch (boost::system::system_error const& e)
+        {
+            JLOG(j_.trace())
+                << "invokeComplete: Deadline cancel error: " << e.what();
+            ecCancel = e.code();
         }
 
         JLOG(j_.debug()) << "invokeComplete: Deadline popping: "
@@ -512,7 +520,15 @@ private:
     bool mSSL;
     AutoSocket mSocket;
     boost::asio::ip::tcp::resolver mResolver;
-    std::shared_ptr<boost::asio::ip::tcp::resolver::query> mQuery;
+
+    struct Query
+    {
+        std::string host;
+        std::string port;
+        boost::asio::ip::resolver_query_base::flags flags;
+    };
+    std::shared_ptr<Query> mQuery;
+
     boost::asio::streambuf mRequest;
     boost::asio::streambuf mHeader;
     boost::asio::streambuf mResponse;
@@ -543,7 +559,7 @@ private:
 void
 HTTPClient::get(
     bool bSSL,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     std::deque<std::string> deqSites,
     unsigned short const port,
     std::string const& strPath,
@@ -563,7 +579,7 @@ HTTPClient::get(
 void
 HTTPClient::get(
     bool bSSL,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     std::string strSite,
     unsigned short const port,
     std::string const& strPath,
@@ -585,7 +601,7 @@ HTTPClient::get(
 void
 HTTPClient::request(
     bool bSSL,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     std::string strSite,
     unsigned short const port,
     std::function<void(boost::asio::streambuf& sb, std::string const& strHost)>

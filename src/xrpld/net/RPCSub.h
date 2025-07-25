@@ -23,7 +23,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/net/InfoSub.h>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 
 namespace ripple {
 
@@ -44,7 +44,7 @@ protected:
 std::shared_ptr<RPCSub>
 make_RPCSub(
     InfoSub::Source& source,
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_service,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,

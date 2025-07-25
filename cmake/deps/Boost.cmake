@@ -30,6 +30,7 @@ target_link_libraries(ripple_boost
     Boost::date_time
     Boost::filesystem
     Boost::json
+    Boost::process
     Boost::program_options
     Boost::regex
     Boost::system

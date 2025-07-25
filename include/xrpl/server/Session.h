@@ -88,9 +88,7 @@ public:
              ++iter)
         {
             typename BufferSequence::value_type const& buffer(*iter);
-            write(
-                boost::asio::buffer_cast<void const*>(buffer),
-                boost::asio::buffer_size(buffer));
+            write(buffer.data(), boost::asio::buffer_size(buffer));
         }
     }
 
