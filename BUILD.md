@@ -36,23 +36,18 @@ See [System Requirements](https://xrpl.org/system-requirements.html).
 Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
 
 - [Python 3.7](https://www.python.org/downloads/)
-- [Conan 1.60](https://conan.io/downloads.html)[^1]
-- [CMake 3.16](https://cmake.org/download/)
+- [Conan 2](https://conan.io/downloads.html)
+- [CMake 3.22](https://cmake.org/download/)
 
-[^1]: It is possible to build with Conan 2.x,
-but the instructions are significantly different,
-which is why we are not recommending it yet.
-Notably, the `conan profile update` command is removed in 2.x.
-Profiles must be edited by hand.
 
 `rippled` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
 
 | Compiler    | Version |
 |-------------|---------|
-| GCC         | 11      |
-| Clang       | 13      |
-| Apple Clang | 13.1.6  |
+| GCC         | 12      |
+| Clang       | 16      |
+| Apple Clang | 16.0.  |
 | MSVC        | 19.23   |
 
 ### Linux
@@ -89,30 +84,14 @@ If you are unfamiliar with Conan, then please read [this crash course](./docs/bu
 You'll need at least one Conan profile:
 
    ```
-   conan profile new default --detect
+   conan profile detect
    ```
 
 Update the compiler settings:
 
    ```
-   conan profile update settings.compiler.cppstd=20 default
+   sed -i -e 's|^compiler\.cppstd=.*$|compiler.cppstd=20|' $(conan config home)/profiles/default
    ```
-
-Configure Conan (1.x only) to use recipe revisions:
-
-   ```
-   conan config set general.revisions_enabled=1
-   ```
-
-**Linux** developers will commonly have a default Conan [profile][] that compiles
-with GCC and links with libstdc++.
-If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
-then you will need to choose the `libstdc++11` ABI:
-
-   ```
-   conan profile update settings.compiler.libcxx=libstdc++11 default
-   ```
-
 
 Ensure inter-operability between `boost::string_view` and `std::string_view` types:
 
@@ -121,9 +100,9 @@ conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_BEAST_USE_STD_STRING_
 conan profile update 'env.CXXFLAGS="-DBOOST_BEAST_USE_STD_STRING_VIEW"' default
 ```
 
-If you have other flags in the `conf.tools.build` or `env.CXXFLAGS` sections, make sure to retain the existing flags and append the new ones. You can check them with:
+If you have other flags in the `conf.tools.build` or `env.CXXFLAGS` sections, make sure to retain the existing flags and append the new ones. You can check them in the default profile with:
 ```
-conan profile show default
+conan profile show
 ```
 
 
@@ -291,6 +270,24 @@ It patches their CMake to correctly import its dependencies.
    The location of `rippled` in your build directory depends on your CMake
    generator. Pass `--help` to see the rest of the command line options.
 
+
+#### Conan lockfile
+
+To achieve reproducible dependencies, we use [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html).
+
+The `conan.lock` file in the repository contains a "snapshot" of the current dependencies.
+
+It is implicitly used when running `conan` commands, you don't need to specify it.
+
+You have to update this file every time you add a new dependency or change a revision or version of an existing dependency.
+
+To do that, run the following command in the repository root:
+
+```bash
+
+conan lock create . -o '&:tests=True' -o '&:xrpld=True'
+
+```
 
 ## Coverage report
 
