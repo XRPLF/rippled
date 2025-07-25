@@ -24,8 +24,6 @@ env:
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{os.cpu_count()}}
     core.upload:parallel={{os.cpu_count()}}
-    core:default_build_profile=libxrpl
-    core:default_profile=libxrpl
     tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
     tools.build:verbosity=verbose
     tools.compilation:verbosity=verbose
@@ -95,7 +93,6 @@ jobs:
         shell: bash
         run: |
           conan export --version 1.1.10 external/snappy
-          conan export --version 9.7.3 external/rocksdb
           conan export --version 4.0.3 external/soci
           conan export --version 2.3.1 external/wamr
       - name: add Ripple Conan remote

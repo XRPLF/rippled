@@ -131,6 +131,9 @@ public:
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
+            BEAST_EXPECT(
+                jv[jss::result][jss::network_id] ==
+                env.app().config().NETWORK_ID);
         }
 
         {
@@ -139,7 +142,8 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 3;
+                return jv[jss::ledger_index] == 3 &&
+                    jv[jss::network_id] == env.app().config().NETWORK_ID;
             }));
         }
 
@@ -149,7 +153,8 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 4;
+                return jv[jss::ledger_index] == 4 &&
+                    jv[jss::network_id] == env.app().config().NETWORK_ID;
             }));
         }
 
@@ -509,6 +514,11 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
+                uint32_t netID = env.app().config().NETWORK_ID;
+                if (!jv.isMember(jss::network_id) ||
+                    jv[jss::network_id] != netID)
+                    return false;
+
                 // Certain fields are only added on a flag ledger.
                 bool const isFlagLedger =
                     (env.closed()->info().seq + 1) % 256 == 0;
@@ -583,6 +593,7 @@ public:
         jv[jss::streams][0u] = "ledger";
         jr = env.rpc("json", "subscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
+        BEAST_EXPECT(jr[jss::network_id] == env.app().config().NETWORK_ID);
 
         jr = env.rpc("json", "unsubscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");

@@ -21,6 +21,7 @@
 
 #include <xrpl/basics/Log.h>
 
+#include <cstdarg>
 #include <memory>
 
 #ifdef _DEBUG
