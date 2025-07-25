@@ -2707,10 +2707,11 @@ Enumerations</h2></td></tr>
  }</td></tr>
 <tr class="memdesc:a5b188f8f22827b2e24b506ef852ffd69"><td class="mdescLeft">&#160;</td><td class="mdescRight">Controls the treatment of unauthorized MPT balances.  <a href="namespaceripple.html#a5b188f8f22827b2e24b506ef852ffd69">More...</a><br /></td></tr>
 <tr class="separator:a5b188f8f22827b2e24b506ef852ffd69"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac257f40046c4e897b1109124734c7026"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026">MPTAuthType</a> : bool { <a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026a7559328fba92acce7308a39180e16441">StrongAuth</a> = true
-, <a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026a41aee20744fc47f976626aa2ade7adcb">WeakAuth</a> = false
+<tr class="memitem:a4e070aef85986336795216a3e5336f8d"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8d">AuthType</a> { <a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da7559328fba92acce7308a39180e16441">StrongAuth</a>
+, <a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da41aee20744fc47f976626aa2ade7adcb">WeakAuth</a>
+, <a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b">Legacy</a>
  }</td></tr>
-<tr class="separator:ac257f40046c4e897b1109124734c7026"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="separator:a4e070aef85986336795216a3e5336f8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57d7e7b27df7e719fdf5569f96be60a3"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3">NodeObjectType</a> : std::uint32_t { <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">hotUNKNOWN</a> = 0
 , <a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ae32ab8a0b50eee52b61ca3c8e5a56da1">hotLEDGER</a> = 1
@@ -4886,12 +4887,12 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="separator:a48d07c0de207fab49cfc61ff0de202f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5ee3f52d4feaf2ad6775033fbae860da"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5ee3f52d4feaf2ad6775033fbae860da">transferXRP</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;from, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;to, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="separator:a5ee3f52d4feaf2ad6775033fbae860da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e046f4b7ab06562107485513edb7098"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3e046f4b7ab06562107485513edb7098">requireAuth</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;view, <a class="el" href="classripple_1_1Issue.html">Issue</a> const  &amp;issue, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account)</td></tr>
-<tr class="memdesc:a3e046f4b7ab06562107485513edb7098"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the account lacks required authorization.  <a href="namespaceripple.html#a3e046f4b7ab06562107485513edb7098">More...</a><br /></td></tr>
-<tr class="separator:a3e046f4b7ab06562107485513edb7098"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3e86974b4b9b0ad30c48c3c3268335f7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3e86974b4b9b0ad30c48c3c3268335f7">requireAuth</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;view, <a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a> const  &amp;mptIssue, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account, <a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026">MPTAuthType</a> authType=<a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026a7559328fba92acce7308a39180e16441">MPTAuthType::StrongAuth</a>, int depth=0)</td></tr>
-<tr class="memdesc:a3e86974b4b9b0ad30c48c3c3268335f7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the account lacks required authorization.  <a href="namespaceripple.html#a3e86974b4b9b0ad30c48c3c3268335f7">More...</a><br /></td></tr>
-<tr class="separator:a3e86974b4b9b0ad30c48c3c3268335f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16b466cc38b73c15e032e268db4c4de7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a16b466cc38b73c15e032e268db4c4de7">requireAuth</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;view, <a class="el" href="classripple_1_1Issue.html">Issue</a> const  &amp;issue, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account, <a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8d">AuthType</a> authType=<a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b">AuthType::Legacy</a>)</td></tr>
+<tr class="memdesc:a16b466cc38b73c15e032e268db4c4de7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the account lacks required authorization.  <a href="namespaceripple.html#a16b466cc38b73c15e032e268db4c4de7">More...</a><br /></td></tr>
+<tr class="separator:a16b466cc38b73c15e032e268db4c4de7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a44c66100660cf38589aa34b804222615"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a44c66100660cf38589aa34b804222615">requireAuth</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const  &amp;view, <a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a> const  &amp;mptIssue, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account, <a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8d">AuthType</a> authType=<a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b">AuthType::Legacy</a>, int depth=0)</td></tr>
+<tr class="memdesc:a44c66100660cf38589aa34b804222615"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the account lacks required authorization.  <a href="namespaceripple.html#a44c66100660cf38589aa34b804222615">More...</a><br /></td></tr>
+<tr class="separator:a44c66100660cf38589aa34b804222615"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5f3c8c47a0495d2cc0667d32d0bc6ce0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5f3c8c47a0495d2cc0667d32d0bc6ce0">enforceMPTokenAuthorization</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a48dcfc87a5a55b47e868c00da3daa3f1">MPTID</a> const  &amp;mptIssuanceID, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;account, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const  &amp;priorBalance, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:a5f3c8c47a0495d2cc0667d32d0bc6ce0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enforce account has MPToken to match its authorization.  <a href="namespaceripple.html#a5f3c8c47a0495d2cc0667d32d0bc6ce0">More...</a><br /></td></tr>
 <tr class="separator:a5f3c8c47a0495d2cc0667d32d0bc6ce0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4928,6 +4929,12 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="memitem:a305f4975d04b00d2114318dbf78a6fa0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a305f4975d04b00d2114318dbf78a6fa0">isFrozen</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="classripple_1_1Asset.html">Asset</a> const &amp;asset, int depth=0)</td></tr>
 <tr class="memdesc:a305f4975d04b00d2114318dbf78a6fa0"><td class="mdescLeft">&#160;</td><td class="mdescRight">isFrozen check is recursive for MPT shares in a vault, descending to assets in the vault, up to maxAssetCheckDepth recursion depth.  <a href="namespaceripple.html#a305f4975d04b00d2114318dbf78a6fa0">More...</a><br /></td></tr>
 <tr class="separator:a305f4975d04b00d2114318dbf78a6fa0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a13dda1015b76a3c1dfddf1ccd3360ae8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a13dda1015b76a3c1dfddf1ccd3360ae8">checkFrozen</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issue)</td></tr>
+<tr class="separator:a13dda1015b76a3c1dfddf1ccd3360ae8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e8fe28e2b2a79a9cdc137c5b00b0258"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6e8fe28e2b2a79a9cdc137c5b00b0258">checkFrozen</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a> const &amp;mptIssue)</td></tr>
+<tr class="separator:a6e8fe28e2b2a79a9cdc137c5b00b0258"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a310ce0640511be1a5763ee1127c12e59"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a310ce0640511be1a5763ee1127c12e59">checkFrozen</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="classripple_1_1Asset.html">Asset</a> const &amp;asset)</td></tr>
+<tr class="separator:a310ce0640511be1a5763ee1127c12e59"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9654a7ede9d938d2f49bdb6265b08261"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9654a7ede9d938d2f49bdb6265b08261">isAnyFrozen</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/initializer_list.html">std::initializer_list</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; const &amp;accounts, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issue)</td></tr>
 <tr class="separator:a9654a7ede9d938d2f49bdb6265b08261"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9537971d7f67ef92bc1452bdd19e74bd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9537971d7f67ef92bc1452bdd19e74bd">isAnyFrozen</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/initializer_list.html">std::initializer_list</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; const &amp;accounts, <a class="el" href="classripple_1_1Asset.html">Asset</a> const &amp;asset, int depth=0)</td></tr>
@@ -4947,8 +4954,8 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="separator:a78c1236640e9d9be1dd67bdfb65edbe4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a43e3413a809d25a0efb3f79b7aa2e605"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a43e3413a809d25a0efb3f79b7aa2e605">removeEmptyHolding</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;accountID, <a class="el" href="classripple_1_1Asset.html">Asset</a> const &amp;asset, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
 <tr class="separator:a43e3413a809d25a0efb3f79b7aa2e605"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3231fd02e360a6181b211f140a65b2f3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3231fd02e360a6181b211f140a65b2f3">requireAuth</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="classripple_1_1Asset.html">Asset</a> const &amp;asset, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026">MPTAuthType</a> authType=<a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026a7559328fba92acce7308a39180e16441">MPTAuthType::StrongAuth</a>)</td></tr>
-<tr class="separator:a3231fd02e360a6181b211f140a65b2f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab8135627a7f4071f11e215d3db39fab2"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab8135627a7f4071f11e215d3db39fab2">requireAuth</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="classripple_1_1Asset.html">Asset</a> const &amp;asset, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8d">AuthType</a> authType=<a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b">AuthType::Legacy</a>)</td></tr>
+<tr class="separator:ab8135627a7f4071f11e215d3db39fab2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6afbbc2fe9c45f1a268aeda92e6108ba">cleanupOnAccountDelete</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;ownerDirKeylet, <a class="el" href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">EntryDeleter</a> const &amp;deleter, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> &gt; maxNodesToDelete=std::nullopt)</td></tr>
 <tr class="memdesc:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup owner directory entries on account delete.  <a href="namespaceripple.html#a6afbbc2fe9c45f1a268aeda92e6108ba">More...</a><br /></td></tr>
 <tr class="separator:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -7924,7 +7931,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00378">378</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00401">401</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -7943,7 +7950,7 @@ template&lt;class T &gt; </div>
 <p>Deleter function prototype. </p>
 <p >Returns the status of the entry deletion (if should not be skipped) and if the entry should be skipped. The status is always tesSUCCESS if the entry should be skipped. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00830">830</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00875">875</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -10341,8 +10348,8 @@ ledger.
 
 </div>
 </div>
-<a id="ac257f40046c4e897b1109124734c7026" name="ac257f40046c4e897b1109124734c7026"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac257f40046c4e897b1109124734c7026">&#9670;&#160;</a></span>MPTAuthType</h2>
+<a id="a4e070aef85986336795216a3e5336f8d" name="a4e070aef85986336795216a3e5336f8d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e070aef85986336795216a3e5336f8d">&#9670;&#160;</a></span>AuthType</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -10351,7 +10358,7 @@ ledger.
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">enum class <a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026">ripple::MPTAuthType</a> : bool</td>
+          <td class="memname">enum class <a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8d">ripple::AuthType</a></td>
         </tr>
       </table>
   </td>
@@ -10361,11 +10368,12 @@ ledger.
 </table>
 </div><div class="memdoc">
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ac257f40046c4e897b1109124734c7026a7559328fba92acce7308a39180e16441" name="ac257f40046c4e897b1109124734c7026a7559328fba92acce7308a39180e16441"></a>StrongAuth&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="ac257f40046c4e897b1109124734c7026a41aee20744fc47f976626aa2ade7adcb" name="ac257f40046c4e897b1109124734c7026a41aee20744fc47f976626aa2ade7adcb"></a>WeakAuth&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a4e070aef85986336795216a3e5336f8da7559328fba92acce7308a39180e16441" name="a4e070aef85986336795216a3e5336f8da7559328fba92acce7308a39180e16441"></a>StrongAuth&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4e070aef85986336795216a3e5336f8da41aee20744fc47f976626aa2ade7adcb" name="a4e070aef85986336795216a3e5336f8da41aee20744fc47f976626aa2ade7adcb"></a>WeakAuth&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b" name="a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b"></a>Legacy&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00732">732</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00760">760</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -42252,8 +42260,8 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
-<a id="a3e046f4b7ab06562107485513edb7098" name="a3e046f4b7ab06562107485513edb7098"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e046f4b7ab06562107485513edb7098">&#9670;&#160;</a></span>requireAuth() <span class="overload">[1/3]</span></h2>
+<a id="a16b466cc38b73c15e032e268db4c4de7" name="a16b466cc38b73c15e032e268db4c4de7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a16b466cc38b73c15e032e268db4c4de7">&#9670;&#160;</a></span>requireAuth() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -42274,7 +42282,13 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
-          <td class="paramname"><em>account</em>&#160;</td>
+          <td class="paramname"><em>account</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8d">AuthType</a>&#160;</td>
+          <td class="paramname"><em>authType</em> = <code><a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b">AuthType::Legacy</a></code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -42285,14 +42299,17 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </div><div class="memdoc">
 
 <p>Check if the account lacks required authorization. </p>
-<p >Return tecNO_AUTH or tecNO_LINE if it does and tesSUCCESS otherwise. </p>
+<p >Return tecNO_AUTH or tecNO_LINE if it does and tesSUCCESS otherwise.</p>
+<p >If StrongAuth then return tecNO_LINE if the RippleState doesn't exist. Return tecNO_AUTH if lsfRequireAuth is set on the issuer's AccountRoot, and the RippleState does exist, and the RippleState is not authorized.</p>
+<p >If WeakAuth then return tecNO_AUTH if lsfRequireAuth is set, and the RippleState exists, and is not authorized. Return tecNO_LINE if lsfRequireAuth is set and the RippleState doesn't exist. Consequently, if WeakAuth and lsfRequireAuth is <em>not</em> set, this function will return tesSUCCESS even if RippleState does <em>not</em> exist.</p>
+<p >The default "Legacy" auth type is equivalent to WeakAuth. </p>
 
 <p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02301">2301</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a3e86974b4b9b0ad30c48c3c3268335f7" name="a3e86974b4b9b0ad30c48c3c3268335f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e86974b4b9b0ad30c48c3c3268335f7">&#9670;&#160;</a></span>requireAuth() <span class="overload">[2/3]</span></h2>
+<a id="a44c66100660cf38589aa34b804222615" name="a44c66100660cf38589aa34b804222615"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a44c66100660cf38589aa34b804222615">&#9670;&#160;</a></span>requireAuth() <span class="overload">[2/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -42318,8 +42335,8 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026">MPTAuthType</a>&#160;</td>
-          <td class="paramname"><em>authType</em> = <code><a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026a7559328fba92acce7308a39180e16441">MPTAuthType::StrongAuth</a></code>, </td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8d">AuthType</a>&#160;</td>
+          <td class="paramname"><em>authType</em> = <code><a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b">AuthType::Legacy</a></code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -42338,9 +42355,11 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Check if the account lacks required authorization. </p>
 <p >This will also check for expired credentials. If it is called directly from preclaim, the user should convert result tecEXPIRED to tesSUCCESS and proceed to also check permissions with enforceMPTokenAuthorization inside doApply. This will ensure that any expired credentials are deleted.</p>
 <p >requireAuth check is recursive for MPT shares in a vault, descending to assets in the vault, up to maxAssetCheckDepth recursion depth. This is purely defensive, as we currently do not allow such vaults to be created.</p>
-<p >If StrongAuth then return tecNO_AUTH if MPToken doesn't exist or lsfMPTRequireAuth is set and MPToken is not authorized. If WeakAuth then return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken doesn't exist or is not authorized (explicitly or via credentials, if DomainID is set in MPTokenIssuance). Consequently, if WeakAuth and lsfMPTRequireAuth is <em>not</em> set, this function will return true even if MPToken does <em>not</em> exist. </p>
+<p >If StrongAuth then return tecNO_AUTH if MPToken doesn't exist or lsfMPTRequireAuth is set and MPToken is not authorized.</p>
+<p >If WeakAuth then return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken doesn't exist or is not authorized (explicitly or via credentials, if DomainID is set in MPTokenIssuance). Consequently, if WeakAuth and lsfMPTRequireAuth is <em>not</em> set, this function will return true even if MPToken does <em>not</em> exist.</p>
+<p >The default "Legacy" auth type is equivalent to StrongAuth. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02321">2321</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02333">2333</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42395,7 +42414,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p >The caller does NOT need to look for existing MPToken to match mptIssue/account - this function checks lsfMPTAuthorized of an existing MPToken iff DomainID is not set.</p>
 <p >Do not use for accounts which hold implied permission e.g. object owners or if MPTokenIssuance does not require authorization. In both cases use <a class="el" href="classripple_1_1MPTokenAuthorize.html#ae05b1d7698a2d531de63057594025666">MPTokenAuthorize::authorize</a> if MPToken does not yet exist. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02406">2406</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02419">2419</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42440,7 +42459,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Check if the destination account is allowed to receive MPT. </p>
 <p >Return tecNO_AUTH if it doesn't and tesSUCCESS otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02509">2509</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02522">2522</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42488,7 +42507,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02529">2529</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02542">2542</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42533,7 +42552,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Delete trustline to AMM. </p>
 <p >The passed <code>sle</code> must be obtained from a prior call to view.peek(). Fail if neither side of the trustline is AMM or if ammAccountID is seated and is not one of the trustline's side. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02607">2607</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02620">2620</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42590,7 +42609,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Calls static rippleCreditIOU if saAmount represents <a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a>. </p>
 <p >Calls static rippleCreditMPT if saAmount represents <a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02656">2656</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02669">2669</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42626,7 +42645,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02684">2684</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02697">2697</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42662,7 +42681,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02702">2702</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02715">2715</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42698,7 +42717,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02721">2721</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02734">2734</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42740,7 +42759,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02740">2740</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02753">2753</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42788,7 +42807,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02837">2837</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02850">2850</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42828,7 +42847,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if <em>now</em> refers to a time strictly after <em>mark</em>, else false. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02984">2984</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02997">2997</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42991,6 +43010,114 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
+<a id="a13dda1015b76a3c1dfddf1ccd3360ae8" name="a13dda1015b76a3c1dfddf1ccd3360ae8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a13dda1015b76a3c1dfddf1ccd3360ae8">&#9670;&#160;</a></span>checkFrozen() <span class="overload">[1/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::checkFrozen </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issue</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00179">179</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+
+</div>
+</div>
+<a id="a6e8fe28e2b2a79a9cdc137c5b00b0258" name="a6e8fe28e2b2a79a9cdc137c5b00b0258"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e8fe28e2b2a79a9cdc137c5b00b0258">&#9670;&#160;</a></span>checkFrozen() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::checkFrozen </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>mptIssue</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00185">185</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+
+</div>
+</div>
+<a id="a310ce0640511be1a5763ee1127c12e59" name="a310ce0640511be1a5763ee1127c12e59"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a310ce0640511be1a5763ee1127c12e59">&#9670;&#160;</a></span>checkFrozen() <span class="overload">[3/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::checkFrozen </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Asset.html">Asset</a> const &amp;&#160;</td>
+          <td class="paramname"><em>asset</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00194">194</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+
+</div>
+</div>
 <a id="a9654a7ede9d938d2f49bdb6265b08261" name="a9654a7ede9d938d2f49bdb6265b08261"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9654a7ede9d938d2f49bdb6265b08261">&#9670;&#160;</a></span>isAnyFrozen() <span class="overload">[2/3]</span></h2>
 
@@ -43023,7 +43150,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00186">186</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00209">209</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -43065,7 +43192,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00200">200</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00223">223</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -43103,7 +43230,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 <p>Iterate all items in an account's owner directory. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00318">318</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00341">341</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -43168,7 +43295,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>false</code> if the iteration failed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00333">333</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00356">356</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -43192,7 +43319,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p >The index that we return should meet two requirements: 1) It must be the index of a ledger that has the hash of the ledger we are looking for. This means that its sequence must be equal to greater than the sequence that we want but not more than 256 greater since each ledger contains the hashes of the 256 previous ledgers.</p>
 <p >2) Its hash must be easy for us to find. This means it must be 0 mod 256 because every such ledger is permanently enshrined in a LedgerHashes page which we can easily retrieve via the skip list. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00407">407</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00430">430</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -43222,7 +43349,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00543">543</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00566">566</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -43270,7 +43397,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00565">565</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00588">588</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -43312,12 +43439,12 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00622">622</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00645">645</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
-<a id="a3231fd02e360a6181b211f140a65b2f3" name="a3231fd02e360a6181b211f140a65b2f3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3231fd02e360a6181b211f140a65b2f3">&#9670;&#160;</a></span>requireAuth() <span class="overload">[3/3]</span></h2>
+<a id="ab8135627a7f4071f11e215d3db39fab2" name="ab8135627a7f4071f11e215d3db39fab2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8135627a7f4071f11e215d3db39fab2">&#9670;&#160;</a></span>requireAuth() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -43343,8 +43470,8 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026">MPTAuthType</a>&#160;</td>
-          <td class="paramname"><em>authType</em> = <code><a class="el" href="namespaceripple.html#ac257f40046c4e897b1109124734c7026a7559328fba92acce7308a39180e16441">MPTAuthType::StrongAuth</a></code>&#160;</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8d">AuthType</a>&#160;</td>
+          <td class="paramname"><em>authType</em> = <code><a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b">AuthType::Legacy</a></code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -43354,7 +43481,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00768">768</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00816">816</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
