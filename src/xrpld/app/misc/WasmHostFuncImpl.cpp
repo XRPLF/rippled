@@ -204,7 +204,7 @@ locateField(STObject const& obj, Slice const& locator)
         return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
     int32_t const* locPtr = reinterpret_cast<int32_t const*>(locator.data());
-    int32_t const sz = locator.size() / 4;
+    int32_t const locSize = locator.size() / 4;
     STBase const* field = nullptr;
     auto const& knownSFields = SField::getKnownCodeToField();
 
