@@ -114,7 +114,7 @@ class Xrpl(ConanFile):
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
         if self.options.rocksdb:
-            self.requires('rocksdb/9.7.3')
+            self.requires('rocksdb/10.0.1')
         self.requires('xxhash/0.8.3', **transitive_headers_opt)
 
     exports_sources = (
@@ -145,8 +145,6 @@ class Xrpl(ConanFile):
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
         tc.variables['xrpld'] = self.options.xrpld
-        if self.settings.compiler == 'clang' and self.settings.compiler.version == 16:
-            tc.extra_cxxflags = ["-DBOOST_ASIO_DISABLE_CONCEPTS"]
         tc.generate()
 
     def build(self):
