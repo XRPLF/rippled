@@ -91,14 +91,14 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar.gz -C ${CONAN_HOME} .
       - name: build dependencies
         uses: ./.github/actions/dependencies
-
         with:
           configuration: ${{ matrix.configuration }}
       - name: upload archive
@@ -164,6 +164,16 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+      - name: check linking
+        run: |
+          cd ${build_dir}
+          ldd ./rippled
+          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+            exit 1
+          fi
       - name: test
         run: |
           cd ${build_dir}
@@ -220,6 +230,7 @@ jobs:
           cd ${build_dir}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure
+
   coverage:
     strategy:
       fail-fast: false
@@ -296,7 +307,6 @@ jobs:
           attempt_limit: 5
           attempt_delay: 210000 # in milliseconds
 
-
   conan:
     needs: dependencies
     runs-on: [self-hosted, heavy]
@@ -313,7 +323,6 @@ jobs:
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: ${{ env.platform }}-${{ env.compiler }}-${{ env.configuration }}
-
       - name: extract cache
         run: |
           mkdir -p ${CONAN_HOME}
@@ -347,38 +356,44 @@ jobs:
           cmake --build .
           ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
 
-  # NOTE we are not using dependencies built above because it lags with
-  # compiler versions. Instrumentation requires clang version 16 or
-  # later
-
   instrumentation-build:
-    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    env:
-      CLANG_RELEASE: 16
+    needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
-
+    env:
+      build_dir: .build
     steps:
+        - name: download cache
+          uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+          with:
+            name: linux-clang-Debug
+
+        - name: extract cache
+          run: |
+            mkdir -p ${CONAN_HOME}
+            tar -xzf conan.tar.gz -C ${CONAN_HOME}
+
+        - name: check environment
+          run: |
+            echo ${PATH} | tr ':' '\n'
+            conan --version
+            cmake --version
+            env | sort
+            ls ${CONAN_HOME}
+
         - name: checkout
           uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
+        - name: dependencies
+          uses: ./.github/actions/dependencies
+          with:
+            configuration: Debug
+
         - name: prepare environment
           run: |
-            mkdir ${GITHUB_WORKSPACE}/.build
-            echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-            echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
-
-        - name: configure Conan
-          run: |
-            echo "${CONAN_GLOBAL_CONF}" >> ${CONAN_HOME}/global.conf
-            conan profile show
-        - name: build dependencies
-          run: |
-            cd ${BUILD_DIR}
-            conan install ${SOURCE_DIR} \
-              --output-folder ${BUILD_DIR} \
-              --build missing \
-              --settings:all build_type=Debug
+            mkdir -p ${build_dir}
+            echo "SOURCE_DIR=$(pwd)" >> $GITHUB_ENV
+            echo "BUILD_DIR=$(pwd)/${build_dir}" >> $GITHUB_ENV
 
         - name: build with instrumentation
           run: |

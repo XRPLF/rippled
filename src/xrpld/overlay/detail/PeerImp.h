@@ -22,6 +22,7 @@
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
+#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
@@ -98,7 +99,7 @@ private:
     // Node public key of peer.
     PublicKey const publicKey_;
     std::string name_;
-    boost::shared_mutex mutable nameMutex_;
+    std::shared_mutex mutable nameMutex_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
@@ -214,7 +215,7 @@ private:
         total_bytes() const;
 
     private:
-        boost::shared_mutex mutable mutex_;
+        std::shared_mutex mutable mutex_;
         boost::circular_buffer<std::uint64_t> rollingAvg_{30, 0ull};
         clock_type::time_point intervalStart_{clock_type::now()};
         std::uint64_t totalBytes_{0};
@@ -612,7 +613,7 @@ private:
 
     void
     checkTransaction(
-        int flags,
+        HashRouterFlags flags,
         bool checkSignature,
         std::shared_ptr<STTx const> const& stx,
         bool batch);
