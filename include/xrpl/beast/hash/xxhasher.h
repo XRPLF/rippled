@@ -26,9 +26,9 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <span>
-#include <cstdint>
 
 namespace beast {
 
