@@ -69,9 +69,9 @@ if (MSVC)
         -GS
         -Zc:forScope
       >
-      # static runtime
-      $<$<CONFIG:Debug>:-MTd>
-      $<$<NOT:$<CONFIG:Debug>>:-MT>
+      # dynamic runtime
+      $<$<CONFIG:Debug>:-MDd>
+      $<$<NOT:$<CONFIG:Debug>>:-MD>
       $<$<BOOL:${werr}>:-WX>
       )
   target_compile_definitions (common
