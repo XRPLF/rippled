@@ -234,6 +234,28 @@ class Vault_test : public beast::unit_test::suite
                 env(tx, ter{tecNO_PERMISSION});
             }
 
+            {
+                testcase(prefix + " fail to withdraw to zero destination");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1000)});
+                tx[sfDestination] = "0";
+                env(tx, ter(temMALFORMED));
+            }
+
+            {
+                testcase(
+                    prefix +
+                    " fail to withdraw with tag but without destination");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1000)});
+                tx[sfDestinationTag] = "0";
+                env(tx, ter(temMALFORMED));
+            }
+
             if (!asset.raw().native())
             {
                 testcase(
