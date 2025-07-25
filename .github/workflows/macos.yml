@@ -87,14 +87,13 @@ jobs:
           clang --version
       - name: configure Conan
         run : |
-          echo "${CONAN_GLOBAL_CONF}" > global.conf
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
       - name: export custom recipes
         shell: bash
         run: |
           conan export --version 1.1.10 external/snappy
-          conan export --version 9.7.3 external/rocksdb
           conan export --version 4.0.3 external/soci
       - name: add Ripple Conan remote
         if: env.CONAN_URL != ''
