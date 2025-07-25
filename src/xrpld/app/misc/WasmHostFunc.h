@@ -292,6 +292,12 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
+    virtual Expected<int32_t, HostFunctionError>
+    traceFloat(std::string_view const& msg, Number const& data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
     virtual Expected<Number, HostFunctionError>
     floatFromInt(int64_t x, Number::rounding_mode mode)
     {

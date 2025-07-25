@@ -1197,6 +1197,31 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 }
 
 wasm_trap_t*
+traceFloat_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    if (params->data[1].of.i32 > maxWasmDataLength)
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+
+    int index = 0;
+    auto const msg = getDataString(rt, params, index);
+    if (!msg)
+        return hfResult(results, msg.error());
+
+    auto const number = getDataNumber(rt, params, index);
+    if (!number)
+        return hfResult(results, number.error());
+
+    return returnResult(
+        rt, params, results, hf->traceFloat(*msg, *number), index);
+}
+
+wasm_trap_t*
 floatFromInt_wrap(
     void* env,
     wasm_val_vec_t const* params,

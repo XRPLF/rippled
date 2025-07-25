@@ -191,6 +191,9 @@ public:
     Expected<int32_t, HostFunctionError>
     traceNum(std::string_view const& msg, int64_t data) override;
 
+    Expected<int32_t, HostFunctionError>
+    traceFloat(std::string_view const& msg, Number const& data) override;
+
     Expected<Number, HostFunctionError>
     floatFromInt(int64_t x, Number::rounding_mode mode) override;
 
