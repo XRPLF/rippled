@@ -505,8 +505,8 @@ accountHolds(
         if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
             view.rules().enabled(featureSingleAssetVault))
         {
-            if (auto const err = requireAuth(
-                    view, mptIssue, account, MPTAuthType::StrongAuth);
+            if (auto const err =
+                    requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
@@ -2298,15 +2298,27 @@ transferXRP(
 }
 
 TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
+requireAuth(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& account,
+    AuthType authType)
 {
     if (isXRP(issue) || issue.account == account)
         return tesSUCCESS;
+
+    auto const trustLine =
+        view.read(keylet::line(account, issue.account, issue.currency));
+    // If account has no line, and this is a strong check, fail
+    if (!trustLine && authType == AuthType::StrongAuth)
+        return tecNO_LINE;
+
+    // If this is a weak or legacy check, or if the account has a line, fail if
+    // auth is required and not set on the line
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
-        if (auto const trustLine =
-                view.read(keylet::line(account, issue.account, issue.currency)))
+        if (trustLine)
             return ((*trustLine)[sfFlags] &
                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
                 ? tesSUCCESS
@@ -2322,7 +2334,7 @@ requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account,
-    MPTAuthType authType,
+    AuthType authType,
     int depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
@@ -2357,7 +2369,7 @@ requireAuth(
             if (auto const err = std::visit(
                     [&]<ValidIssueType TIss>(TIss const& issue) {
                         if constexpr (std::is_same_v<TIss, Issue>)
-                            return requireAuth(view, issue, account);
+                            return requireAuth(view, issue, account, authType);
                         else
                             return requireAuth(
                                 view, issue, account, authType, depth + 1);
@@ -2372,7 +2384,8 @@ requireAuth(
     auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
-    if (!sleToken && authType == MPTAuthType::StrongAuth)
+    if (!sleToken &&
+        (authType == AuthType::StrongAuth || authType == AuthType::Legacy))
         return tecNO_AUTH;
 
     // Note, this check is not amendment-gated because DomainID will be always
@@ -2747,18 +2760,18 @@ rippleLockEscrowMPT(
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
-    {
+    {  // LCOV_EXCL_START
         JLOG(j.error()) << "rippleLockEscrowMPT: MPT issuance not found for "
                         << mptIssue.getMptID();
-        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-    }
+        return tecOBJECT_NOT_FOUND;
+    }  // LCOV_EXCL_STOP
 
     if (amount.getIssuer() == sender)
-    {
+    {  // LCOV_EXCL_START
         JLOG(j.error())
             << "rippleLockEscrowMPT: sender is the issuer, cannot lock MPTs.";
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-    }
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
 
     // 1. Decrease the MPT Holder MPTAmount
     // 2. Increase the MPT Holder EscrowedAmount
@@ -2766,23 +2779,23 @@ rippleLockEscrowMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
         auto sle = view.peek(mptokenID);
         if (!sle)
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleLockEscrowMPT: MPToken not found for " << sender;
-            return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-        }
+            return tecOBJECT_NOT_FOUND;
+        }  // LCOV_EXCL_STOP
 
         auto const amt = sle->getFieldU64(sfMPTAmount);
         auto const pay = amount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, amt), STAmount(mptIssue, pay)))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleLockEscrowMPT: insufficient MPTAmount for "
                 << to_string(sender) << ": " << amt << " < " << pay;
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         (*sle)[sfMPTAmount] = amt - pay;
 
@@ -2790,12 +2803,12 @@ rippleLockEscrowMPT(
         uint64_t const locked = (*sle)[~sfLockedAmount].value_or(0);
 
         if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleLockEscrowMPT: overflow on locked amount for "
                 << to_string(sender) << ": " << locked << " + " << pay;
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         if (sle->isFieldPresent(sfLockedAmount))
             (*sle)[sfLockedAmount] += pay;
@@ -2815,13 +2828,13 @@ rippleLockEscrowMPT(
         // Overflow check for addition
         if (!canAdd(
                 STAmount(mptIssue, issuanceEscrowed), STAmount(mptIssue, pay)))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error()) << "rippleLockEscrowMPT: overflow on issuance "
                                "locked amount for "
                             << mptIssue.getMptID() << ": " << issuanceEscrowed
                             << " + " << pay;
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         if (sleIssuance->isFieldPresent(sfLockedAmount))
             (*sleIssuance)[sfLockedAmount] += pay;
@@ -2846,21 +2859,21 @@ rippleUnlockEscrowMPT(
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
-    {
+    {  // LCOV_EXCL_START
         JLOG(j.error()) << "rippleUnlockEscrowMPT: MPT issuance not found for "
                         << mptIssue.getMptID();
-        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-    }
+        return tecOBJECT_NOT_FOUND;
+    }  // LCOV_EXCL_STOP
 
     // Decrease the Issuance EscrowedAmount
     {
         if (!sleIssuance->isFieldPresent(sfLockedAmount))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: no locked amount in issuance for "
                 << mptIssue.getMptID();
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         auto const locked = sleIssuance->getFieldU64(sfLockedAmount);
         auto const redeem = amount.mpt().value();
@@ -2868,12 +2881,12 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(
                 STAmount(mptIssue, locked), STAmount(mptIssue, redeem)))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: insufficient locked amount for "
                 << mptIssue.getMptID() << ": " << locked << " < " << redeem;
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         auto const newLocked = locked - redeem;
         if (newLocked == 0)
@@ -2889,23 +2902,23 @@ rippleUnlockEscrowMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, receiver);
         auto sle = view.peek(mptokenID);
         if (!sle)
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: MPToken not found for " << receiver;
             return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-        }
+        }  // LCOV_EXCL_STOP
 
         auto current = sle->getFieldU64(sfMPTAmount);
         auto delta = amount.mpt().value();
 
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: overflow on MPTAmount for "
                 << to_string(receiver) << ": " << current << " + " << delta;
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         (*sle)[sfMPTAmount] += delta;
         view.update(sle);
@@ -2919,55 +2932,56 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(
                 STAmount(mptIssue, outstanding), STAmount(mptIssue, redeem)))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
                 << mptIssue.getMptID() << ": " << outstanding << " < "
                 << redeem;
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
         view.update(sleIssuance);
     }
 
     if (issuer == sender)
-    {
+    {  // LCOV_EXCL_START
         JLOG(j.error()) << "rippleUnlockEscrowMPT: sender is the issuer, "
                            "cannot unlock MPTs.";
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-    }
+        return tecINTERNAL;
+    }  // LCOV_EXCL_STOP
     else
     {
         // Decrease the MPT Holder EscrowedAmount
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
         auto sle = view.peek(mptokenID);
         if (!sle)
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: MPToken not found for " << sender;
-            return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-        }
+            return tecOBJECT_NOT_FOUND;
+        }  // LCOV_EXCL_STOP
 
         if (!sle->isFieldPresent(sfLockedAmount))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: no locked amount in MPToken for "
                 << to_string(sender);
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         auto const locked = sle->getFieldU64(sfLockedAmount);
         auto const delta = amount.mpt().value();
 
         // Underflow check for subtraction
+        // LCOV_EXCL_START
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
-        {
+        {  // LCOV_EXCL_START
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: insufficient locked amount for "
                 << to_string(sender) << ": " << locked << " < " << delta;
-            return tecINTERNAL;  // LCOV_EXCL_LINE
-        }
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
 
         auto const newLocked = locked - delta;
         if (newLocked == 0)

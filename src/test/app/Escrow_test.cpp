@@ -294,7 +294,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             testcase("Implied Finish Time (without fix1571)");
 
-            Env env(*this, supported_amendments() - fix1571);
+            Env env(*this, testable_amendments() - fix1571);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
@@ -368,6 +368,12 @@ struct Escrow_test : public beast::unit_test::suite
         auto const baseFee = env.current()->fees().base;
         env.fund(XRP(5000), "alice", "bob", "gw");
         env.close();
+
+        // temINVALID_FLAG
+        env(escrow::create("alice", "bob", XRP(1000)),
+            escrow::finish_time(env.now() + 5s),
+            txflags(tfPassive),
+            ter(temINVALID_FLAG));
 
         // Finish time is in the past
         env(escrow::create("alice", "bob", XRP(1000)),
@@ -1709,7 +1715,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testWithFeats(all);
         testWithFeats(all - featureTokenEscrow);
     }
