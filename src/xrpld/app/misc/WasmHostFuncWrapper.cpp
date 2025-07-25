@@ -1149,6 +1149,8 @@ public:
 };
 
 namespace test {
+
+// LCOV_EXCL_START
 bool
 testGetDataIncrement()
 {
@@ -1156,7 +1158,7 @@ testGetDataIncrement()
 
     std::array<std::uint8_t, 128> buffer = {
         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
-    MockInstanceWrapper rt(wmem{buffer.data(), buffer.size()});
+    MockInstanceWrapper runtime(wmem{buffer.data(), buffer.size()});
 
     {
         // test int32_t
@@ -1165,7 +1167,7 @@ testGetDataIncrement()
         values[0] = WASM_I32_VAL(42);
 
         int index = 0;
-        auto const result = getDataInt32(&rt, &params, index);
+        auto const result = getDataInt32(&runtime, &params, index);
         if (!result || result.value() != 42 || index != 1)
             return false;
     }
@@ -1177,7 +1179,7 @@ testGetDataIncrement()
         values[0] = WASM_I64_VAL(1234);
 
         int index = 0;
-        auto const result = getDataInt64(&rt, &params, index);
+        auto const result = getDataInt64(&runtime, &params, index);
         if (!result || result.value() != 1234 || index != 1)
             return false;
     }
@@ -1189,7 +1191,7 @@ testGetDataIncrement()
         values[0] = WASM_I32_VAL(sfAccount.fieldCode);
 
         int index = 0;
-        auto const result = getDataSField(&rt, &params, index);
+        auto const result = getDataSField(&runtime, &params, index);
         if (!result || result.value().get() != sfAccount || index != 1)
             return false;
     }
@@ -1202,7 +1204,7 @@ testGetDataIncrement()
         values[1] = WASM_I32_VAL(3);
 
         int index = 0;
-        auto const result = getDataSlice(&rt, &params, index);
+        auto const result = getDataSlice(&runtime, &params, index);
         if (!result || result.value() != Slice(buffer.data(), 3) || index != 2)
             return false;
     }
@@ -1215,7 +1217,7 @@ testGetDataIncrement()
         values[1] = WASM_I32_VAL(5);
 
         int index = 0;
-        auto const result = getDataString(&rt, &params, index);
+        auto const result = getDataString(&runtime, &params, index);
         if (!result ||
             result.value() !=
                 std::string_view(
@@ -1236,7 +1238,7 @@ testGetDataIncrement()
         memcpy(&buffer[0], id.data(), id.bytes);
 
         int index = 0;
-        auto const result = getDataAccountID(&rt, &params, index);
+        auto const result = getDataAccountID(&runtime, &params, index);
         if (!result || result.value() != id || index != 2)
             return false;
     }
@@ -1252,7 +1254,7 @@ testGetDataIncrement()
         memcpy(&buffer[0], h1.data(), h1.bytes);
 
         int index = 0;
-        auto const result = getDataUInt256(&rt, &params, index);
+        auto const result = getDataUInt256(&runtime, &params, index);
         if (!result || result.value() != h1 || index != 2)
             return false;
     }
@@ -1268,13 +1270,14 @@ testGetDataIncrement()
         memcpy(&buffer[0], c.data(), c.bytes);
 
         int index = 0;
-        auto const result = getDataCurrency(&rt, &params, index);
+        auto const result = getDataCurrency(&runtime, &params, index);
         if (!result || result.value() != c || index != 2)
             return false;
     }
 
     return true;
 }
+// LCOV_EXCL_STOP
 
 }  // namespace test
 }  // namespace ripple
