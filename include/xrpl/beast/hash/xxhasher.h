@@ -28,6 +28,7 @@
 #include <cstddef>
 #include <optional>
 #include <span>
+#include <cstdint>
 
 namespace beast {
 
