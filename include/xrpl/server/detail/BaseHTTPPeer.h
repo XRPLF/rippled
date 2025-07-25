@@ -24,6 +24,7 @@
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Session.h>
+#include <xrpl/server/detail/Spawn.h>
 #include <xrpl/server/detail/io_list.h>
 
 #include <boost/asio/ip/tcp.hpp>
@@ -36,8 +37,6 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/parser.hpp>
 #include <boost/beast/http/read.hpp>
-
-#include "Spawn.h"
 
 #include <atomic>
 #include <chrono>
