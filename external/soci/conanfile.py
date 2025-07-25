@@ -70,7 +70,7 @@ class SociConan(ConanFile):
         if self.options.with_postgresql:
             self.requires("libpq/15.5")
         if self.options.with_boost:
-            self.requires("boost/1.83.0")
+            self.requires("boost/1.86.0")
 
     @property
     def _minimum_compilers_version(self):
@@ -154,7 +154,7 @@ class SociConan(ConanFile):
         self.cpp_info.components["soci_core"].set_property("cmake_target_name", "SOCI::soci_core{}".format(target_suffix))
         self.cpp_info.components["soci_core"].libs = ["{}soci_core{}".format(lib_prefix, lib_suffix)]
         if self.options.with_boost:
-            self.cpp_info.components["soci_core"].requires.append("boost::boost")
+            self.cpp_info.components["soci_core"].requires.append("boost::headers")
 
         # soci_empty
         if self.options.empty:
