@@ -14,7 +14,7 @@ compiler={{compiler}}
 compiler.version={{ compiler_version }}
 compiler.cppstd=20
 {% if os == "Windows" %}
-compiler.runtime=static
+compiler.runtime=dynamic
 {% else %}
 compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
 {% endif %}

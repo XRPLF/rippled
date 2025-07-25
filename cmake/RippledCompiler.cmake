@@ -70,8 +70,8 @@ if (MSVC)
         -Zc:forScope
       >
       # static runtime
-      $<$<CONFIG:Debug>:-MTd>
-      $<$<NOT:$<CONFIG:Debug>>:-MT>
+      $<$<CONFIG:Debug>:-MDd>
+      $<$<NOT:$<CONFIG:Debug>>:-MD>
       $<$<BOOL:${werr}>:-WX>
       )
   target_compile_definitions (common
