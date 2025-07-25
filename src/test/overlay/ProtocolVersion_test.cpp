@@ -36,7 +36,10 @@ private:
                 result = to_string(*first++);
 
                 while (first != last)
-                    result += "," + to_string(*first++);
+                {
+                    result.push_back(',');
+                    result += to_string(*first++);
+                }
             }
             return result;
         };
