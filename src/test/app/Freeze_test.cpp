@@ -2094,12 +2094,15 @@ public:
             testNFTOffersWhenFreeze(features);
         };
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testAll(
             sa - featureDeepFreeze - featurePermissionedDEX -
             fixEnforceNFTokenTrustlineV2);
         testAll(sa - featurePermissionedDEX - fixEnforceNFTokenTrustlineV2);
+        testAll(sa - featureDeepFreeze - featurePermissionedDEX);
+        testAll(sa - featurePermissionedDEX);
         testAll(sa - fixEnforceNFTokenTrustlineV2);
+        testAll(sa - featureDeepFreeze);
         testAll(sa);
     }
 };

@@ -82,8 +82,8 @@ public:
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV1,
-              supported_amendments() | fixReducedOffersV1})
+             {testable_amendments() - fixReducedOffersV1,
+              testable_amendments() | fixReducedOffersV1})
         {
             Env env{*this, features};
 
@@ -237,8 +237,8 @@ public:
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV1,
-              supported_amendments() | fixReducedOffersV1})
+             {testable_amendments() - fixReducedOffersV1,
+              testable_amendments() | fixReducedOffersV1})
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, features};
@@ -399,8 +399,8 @@ public:
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV1,
-              supported_amendments() | fixReducedOffersV1})
+             {testable_amendments() - fixReducedOffersV1,
+              testable_amendments() | fixReducedOffersV1})
         {
             Env env{*this, features};
 
@@ -507,8 +507,8 @@ public:
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV1,
-              supported_amendments() | fixReducedOffersV1})
+             {testable_amendments() - fixReducedOffersV1,
+              testable_amendments() | fixReducedOffersV1})
         {
             Env env{*this, features};
 
@@ -634,8 +634,8 @@ public:
 
         // Make one test run without fixReducedOffersV2 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV2,
-              supported_amendments() | fixReducedOffersV2})
+             {testable_amendments() - fixReducedOffersV2,
+              testable_amendments() | fixReducedOffersV2})
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, features};

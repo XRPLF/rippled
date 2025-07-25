@@ -1281,7 +1281,6 @@ public:
         {
             auto acctOffers = offersOnAccount(env, account_to_test);
 
-            // No stale offers
             BEAST_EXPECT(acctOffers.size() == 0);
             for (auto const& offerPtr : acctOffers)
             {
@@ -4154,14 +4153,14 @@ public:
         };
 
         // clang-format off
-        TestData const flowTests[]{
+        TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
             {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - 4 * baseFee), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - 3 * baseFee), BTC(0), USD(1375)}}}, // no BTC xfer fee
             {0, 0, 0, BTC(5), {{"hye", 2, drops(4000000'000000 - 5 * baseFee), BTC(5), USD(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
 
-        for (auto const& t : flowTests)
+        for (auto const& t : tests)
         {
             Account const& self = t.actors[t.self].acct;
             Account const& leg0 = t.actors[t.leg0].acct;
@@ -4287,8 +4286,8 @@ public:
         // 1. alice creates an offer to acquire USD/gw, an asset for which
         //    she does not have a trust line.  At some point in the future,
         //    gw adds lsfRequireAuth.  Then, later, alice's offer is crossed.
-        //    alice's offer is deleted, not consumed,
-        //        since alice is not authorized to hold USD/gw.
+        //     Alice's offer is deleted, not consumed, since alice is not
+        //     authorized to hold USD/gw.
         //
         // 2. alice tries to create an offer for USD/gw, now that gw has
         //    lsfRequireAuth set.  This time the offer create fails because
@@ -4336,14 +4335,13 @@ public:
         // gw now requires authorization and bob has gwUSD(50).  Let's see if
         // bob can cross alice's offer.
         //
-        // bob's offer shouldn't cross and alice's
-        //   unauthorized offer should be deleted.
+        // Bob's offer shouldn't cross and alice's unauthorized offer should be
+        // deleted.
         env(offer(bob, XRP(4000), gwUSD(40)));
         env.close();
         std::uint32_t const bobOfferSeq = env.seq(bob) - 1;
 
         env.require(offers(alice, 0));
-
         // alice's unauthorized offer is deleted & bob's offer not crossed.
         env.require(balance(alice, gwUSD(none)));
         env.require(offers(bob, 1));
@@ -5300,7 +5298,7 @@ public:
     run(std::uint32_t instance, bool last = false)
     {
         using namespace jtx;
-        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const all{testable_amendments()};
         static FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         static FeatureBitset const immediateOfferKilled{
             featureImmediateOfferKilled};
@@ -5381,7 +5379,7 @@ class Offer_manual_test : public OfferBaseUtil_test
     run() override
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
@@ -5389,7 +5387,6 @@ class Offer_manual_test : public OfferBaseUtil_test
         FeatureBitset const permDEX{featurePermissionedDEX};
 
         testAll(all - f1513 - immediateOfferKilled - permDEX);
-        testAll(all - immediateOfferKilled - permDEX);
         testAll(all - immediateOfferKilled - fillOrKill - permDEX);
         testAll(all - fillOrKill - permDEX);
         testAll(all - permDEX);

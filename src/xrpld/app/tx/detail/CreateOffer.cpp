@@ -27,7 +27,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -334,6 +333,9 @@ CreateOffer::checkAcceptAsset(
         // needed.
         return requireAuth(
             view, asset.get<MPTIssue>(), id, MPTAuthType::WeakAuth);
+}
+
+    return tesSUCCESS;
 }
 
 std::pair<TER, Amounts>
@@ -743,11 +745,6 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         // We reverse pays and gets because during crossing we are taking.
         Amounts const takerAmount(saTakerGets, saTakerPays);
 
-        // The amount of the offer that is unfilled after crossing has been
-        // performed. It may be equal to the original amount (didn't cross),
-        // empty (fully crossed), or something in-between.
-        Amounts place_offer;
-
         JLOG(j_.debug()) << "Attempting cross: "
                          << to_string(takerAmount.in.asset()) << " -> "
                          << to_string(takerAmount.out.asset());
@@ -760,8 +757,17 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << format_amount(takerAmount.out);
         }
 
+        // The amount of the offer that is unfilled after crossing has been
+        // performed. It may be equal to the original amount (didn't cross),
+        // empty (fully crossed), or something in-between.
+        Amounts place_offer;
+        PaymentSandbox psbFlow{&sb};
+        PaymentSandbox psbCancelFlow{&sbCancel};
+
         std::tie(result, place_offer) =
-            cross(sb, sbCancel, takerAmount, domainID);
+            flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
+        psbFlow.apply(sb);
+        psbCancelFlow.apply(sbCancel);
 
         // We expect the implementation of cross to succeed
         // or give a tec.

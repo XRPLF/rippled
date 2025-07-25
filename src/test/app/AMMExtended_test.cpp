@@ -1447,7 +1447,7 @@ private:
     testOffers()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testRmFundedOffer(all);
         testRmFundedOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testEnforceNoRipple(all);
@@ -2823,8 +2823,8 @@ private:
         for (auto const withFix : {true, false})
         {
             auto const feats = withFix
-                ? supported_amendments()
-                : supported_amendments() - FeatureBitset{fix1781};
+                ? testable_amendments()
+                : testable_amendments() - FeatureBitset{fix1781};
 
             // Payment path starting with XRP
             Env env(*this, feats);
@@ -3788,7 +3788,7 @@ private:
     testFlow()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
 
         testFalseDry(all);
         testBookStep(all);
@@ -3802,7 +3802,7 @@ private:
     testCrossingLimits()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testStepLimit(all);
         testStepLimit(all - fixAMMv1_1 - fixAMMv1_3);
     }
@@ -3811,7 +3811,7 @@ private:
     testDeliverMin()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         test_convert_all_of_an_asset(all);
         test_convert_all_of_an_asset(all - fixAMMv1_1 - fixAMMv1_3);
     }
@@ -3819,7 +3819,7 @@ private:
     void
     testDepositAuth()
     {
-        auto const supported{jtx::supported_amendments()};
+        auto const supported{jtx::testable_amendments()};
         testPayment(supported - featureDepositPreauth);
         testPayment(supported);
         testPayIOU();
@@ -3829,7 +3829,7 @@ private:
     testFreeze()
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testRippleState(sa);
         testGlobalFreeze(sa);
         testOffersWhenFrozen(sa);
@@ -3839,7 +3839,7 @@ private:
     testMultisign()
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         testTxMultisign(
             all - featureMultiSignReserve - featureExpandedSignerList);
@@ -3851,7 +3851,7 @@ private:
     testPayStrand()
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         testToStrand(all);
         testRIPD1373(all);

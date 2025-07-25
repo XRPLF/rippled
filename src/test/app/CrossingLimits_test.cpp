@@ -77,6 +77,7 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
 
+        // The payment engine allows 1000 offers to cross.
         int const maxConsumed = 1000;
 
         env.fund(XRP(100000000), gw, "alice", "bob", "carol");
@@ -116,6 +117,7 @@ public:
 
         env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan", "evita");
 
+        // The payment engine allows 1000 offers to cross.
         int const maxConsumed = 1000;
 
         int const evitasOfferCount{maxConsumed + 49};
@@ -126,8 +128,7 @@ public:
         env.trust(USD(evitasOfferCount + 1), "evita");
         env(pay(gw, "evita", USD(evitasOfferCount + 1)));
 
-        // Give carol an extra 150 (unfunded) offers when we're using Taker
-        // to accommodate that difference.
+        // The payment engine has a limit of 1000 funded or unfunded offers.
         int const carolsOfferCount{700};
         n_offers(env, 400, "alice", XRP(1), USD(1));
         n_offers(env, carolsOfferCount, "carol", XRP(1), USD(1));
@@ -419,7 +420,7 @@ public:
             testOfferOverflow(features);
         };
         using namespace jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testAll(sa);
         testAll(sa - featurePermissionedDEX);
     }

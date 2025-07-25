@@ -1736,7 +1736,7 @@ public:
         using namespace jtx;
 
         FeatureBitset const all{
-            jtx::supported_amendments() | featurePermissionedDomains |
+            jtx::testable_amendments() | featurePermissionedDomains |
             featureCredentials | featurePermissionedDEX};
 
         Env env(*this, all);
@@ -1867,7 +1867,7 @@ public:
         using namespace jtx;
 
         FeatureBitset const all{
-            jtx::supported_amendments() | featurePermissionedDomains |
+            jtx::testable_amendments() | featurePermissionedDomains |
             featureCredentials | featurePermissionedDEX};
 
         Env env(*this, all);
