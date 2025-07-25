@@ -41,20 +41,13 @@ concept IsStrand = std::same_as<
  * This is intended to be passed as the third argument to `boost::asio::spawn`
  * so that exceptions are not ignored but propagated to `io_context.run()` call
  * site.
+ *
+ * @param ePtr The exception that was caught on the coroutine
  */
-inline constexpr struct PropagatingCompletionHandler
-{
-    /**
-     * @brief The completion handler
-     * @param ePtr The exception that was caught on the coroutine
-     */
-    void
-    operator()(std::exception_ptr ePtr)
-    {
-        if (ePtr)
-            std::rethrow_exception(ePtr);
-    }
-} kPROPAGATE_EXCEPTIONS;
+inline constexpr auto kPROPAGATE_EXCEPTIONS = [](std::exception_ptr ePtr) {
+    if (ePtr)
+        std::rethrow_exception(ePtr);
+};
 
 }  // namespace impl
 
@@ -81,10 +74,7 @@ spawn(Ctx&& ctx, F&& func)
         boost::asio::spawn(
             std::forward<Ctx>(ctx),
             std::forward<F>(func),
-            [](std::exception_ptr ePtr) {
-                if (ePtr)
-                    std::rethrow_exception(ePtr);
-            });
+            impl::kPROPAGATE_EXCEPTIONS);
     }
     else
     {
@@ -92,10 +82,7 @@ spawn(Ctx&& ctx, F&& func)
             boost::asio::make_strand(
                 boost::asio::get_associated_executor(std::forward<Ctx>(ctx))),
             std::forward<F>(func),
-            [](std::exception_ptr ePtr) {
-                if (ePtr)
-                    std::rethrow_exception(ePtr);
-            });
+            impl::kPROPAGATE_EXCEPTIONS);
     }
 }
 
