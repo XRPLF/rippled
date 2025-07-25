@@ -1148,4 +1148,133 @@ public:
     }
 };
 
+namespace test {
+bool
+testGetDataIncrement()
+{
+    wasm_val_t values[4];
+
+    std::array<std::uint8_t, 128> buffer = {
+        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
+    MockInstanceWrapper rt(wmem{buffer.data(), buffer.size()});
+
+    {
+        // test int32_t
+        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(42);
+
+        int index = 0;
+        auto const result = getDataInt32(&rt, &params, index);
+        if (!result || result.value() != 42 || index != 1)
+            return false;
+    }
+
+    {
+        // test int64_t
+        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I64_VAL(1234);
+
+        int index = 0;
+        auto const result = getDataInt64(&rt, &params, index);
+        if (!result || result.value() != 1234 || index != 1)
+            return false;
+    }
+
+    {
+        // test SFieldCRef
+        wasm_val_vec_t params = {1, &values[0], 1, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(sfAccount.fieldCode);
+
+        int index = 0;
+        auto const result = getDataSField(&rt, &params, index);
+        if (!result || result.value().get() != sfAccount || index != 1)
+            return false;
+    }
+
+    {
+        // test Slice
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(3);
+
+        int index = 0;
+        auto const result = getDataSlice(&rt, &params, index);
+        if (!result || result.value() != Slice(buffer.data(), 3) || index != 2)
+            return false;
+    }
+
+    {
+        // test string
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(5);
+
+        int index = 0;
+        auto const result = getDataString(&rt, &params, index);
+        if (!result ||
+            result.value() !=
+                std::string_view(
+                    reinterpret_cast<char const*>(buffer.data()), 5) ||
+            index != 2)
+            return false;
+    }
+
+    {
+        // test account
+        AccountID const id(calcAccountID(
+            generateKeyPair(KeyType::secp256k1, generateSeed("alice")).first));
+
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(id.bytes);
+        memcpy(&buffer[0], id.data(), id.bytes);
+
+        int index = 0;
+        auto const result = getDataAccountID(&rt, &params, index);
+        if (!result || result.value() != id || index != 2)
+            return false;
+    }
+
+    {
+        // test uint256
+
+        Hash h1 = sha512Half(Slice(buffer.data(), 8));
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(h1.bytes);
+        memcpy(&buffer[0], h1.data(), h1.bytes);
+
+        int index = 0;
+        auto const result = getDataUInt256(&rt, &params, index);
+        if (!result || result.value() != h1 || index != 2)
+            return false;
+    }
+
+    {
+        // test Currency
+
+        Currency const c = xrpCurrency();
+        wasm_val_vec_t params = {2, &values[0], 2, sizeof(wasm_val_t), nullptr};
+
+        values[0] = WASM_I32_VAL(0);
+        values[1] = WASM_I32_VAL(c.bytes);
+        memcpy(&buffer[0], c.data(), c.bytes);
+
+        int index = 0;
+        auto const result = getDataCurrency(&rt, &params, index);
+        if (!result || result.value() != c || index != 2)
+            return false;
+    }
+
+    return true;
+}
+
+}  // namespace test
 }  // namespace ripple
