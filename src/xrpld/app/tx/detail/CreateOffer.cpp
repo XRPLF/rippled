@@ -331,11 +331,7 @@ CreateOffer::checkAcceptAsset(
     else
         // WeakAuth - don't check if MPToken exists since it's created if
         // needed.
-        return requireAuth(
-            view, asset.get<MPTIssue>(), id, MPTAuthType::WeakAuth);
-}
-
-    return tesSUCCESS;
+        return requireAuth(view, asset.get<MPTIssue>(), id, AuthType::WeakAuth);
 }
 
 std::pair<TER, Amounts>
@@ -553,21 +549,6 @@ CreateOffer::flowCross(
         JLOG(j_.error()) << "Exception during offer crossing: " << e.what();
     }
     return {tecINTERNAL, takerAmount};
-}
-
-std::pair<TER, Amounts>
-CreateOffer::cross(
-    Sandbox& sb,
-    Sandbox& sbCancel,
-    Amounts const& takerAmount,
-    std::optional<uint256> const& domainID)
-{
-    PaymentSandbox psbFlow{&sb};
-    PaymentSandbox psbCancelFlow{&sbCancel};
-    auto const ret = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
-    psbFlow.apply(sb);
-    psbCancelFlow.apply(sbCancel);
-    return ret;
 }
 
 std::string

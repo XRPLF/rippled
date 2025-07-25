@@ -35,8 +35,10 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
         testcase("test invalid request");
         using namespace jtx;
 
+        for (auto const& feature :
+             {features, features - featureSingleAssetVault})
         {
-            Env env(*this, features);
+            Env env(*this, feature);
             Account gw{"gateway"};
             Account alice{"alice"};
             Account bob{"bob"};
@@ -121,7 +123,10 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
             {
                 Issue usd(USD.currency, amm.ammAccount());
                 auto amount = amountFromString(usd, "10");
-                env(claw(gw, amount), ter(tecAMM_ACCOUNT));
+                auto const err = feature[featureSingleAssetVault]
+                    ? tecPSEUDO_ACCOUNT
+                    : tecAMM_ACCOUNT;
+                env(claw(gw, amount), ter(err));
             }
 
             // AMM does not exist
@@ -234,7 +239,7 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
     {
         testcase("test feature disabled.");
         using namespace jtx;
-        Env env{*this};
+        Env env{*this, features};
         Account gw("gateway"), alice("alice");
         env.fund(XRP(30'000), gw, alice);
         env.close();
@@ -1307,7 +1312,7 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
 
         // test AMMClawback when MPT globally locked or IOU globally frozen
         {
-            Env env{*this};
+            Env env{*this, features};
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(1'000'000), gw, alice);
@@ -1346,7 +1351,9 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
             BTC.set({.flags = tfMPTUnlock});
             env(amm::ammClawback(gw, alice, MPT(BTC), USD, BTC(2'000)));
             BEAST_EXPECT(ammAlice.expectBalances(
-                USD(7'000), BTC(7'000), IOUAmount(7'000)));
+                STAmount(USD, UINT64_C(7'000'000000000001), -12),
+                BTC(7'001),
+                IOUAmount(7'000)));
             env.require(balance(alice, aliceBTC));
             env.require(balance(alice, aliceUSD + USD(2'000)));
             aliceUSD = env.balance(alice, USD);
@@ -1357,7 +1364,9 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
             env.close();
             env(amm::ammClawback(gw, alice, USD, MPT(BTC), USD(1'000)));
             BEAST_EXPECT(ammAlice.expectBalances(
-                USD(6'000), BTC(6'000), IOUAmount(6'000)));
+                STAmount(USD, UINT64_C(6000'000000000002), -12),
+                BTC(6'001),
+                IOUAmount(6'000'000000000001, -12)));
             env.require(balance(alice, aliceBTC + BTC(1'000)));
             env.require(balance(alice, aliceUSD));
             aliceBTC = env.balance(alice, MPT(BTC));
@@ -1369,7 +1378,9 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
             env(amm::ammClawback(gw, alice, USD, MPT(BTC), USD(2'000)),
                 txflags(tfClawTwoAssets));
             BEAST_EXPECT(ammAlice.expectBalances(
-                USD(4'000), BTC(4'000), IOUAmount(4'000)));
+                STAmount(USD, UINT64_C(4'000'000000000002), -12),
+                BTC(4'001),
+                IOUAmount(4'000'000000000001, -12)));
             env.require(balance(alice, aliceBTC));
             env.require(balance(alice, aliceUSD));
         }
@@ -1377,7 +1388,7 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
         // test AMMClawback when MPT individually locked or IOU individually
         // frozen
         {
-            Env env{*this};
+            Env env{*this, features};
             Account gw{"gateway"};
             Account alice{"alice"};
             env.fund(XRP(1'000'000), gw, alice);
@@ -1425,7 +1436,7 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
             BTC.set({.holder = alice, .flags = tfMPTUnlock});
             env(amm::ammClawback(gw, alice, MPT(BTC), USD, BTC(3'000)));
             BEAST_EXPECT(ammAlice.expectBalances(
-                USD(4'000), BTC(4'000), IOUAmount(4'000)));
+                USD(4'000), BTC(4'000), IOUAmount(3'999'999999999999, -12)));
             env.require(balance(alice, aliceBTC));
             env.require(balance(alice, aliceUSD + USD(3'000)));
             aliceUSD = env.balance(alice, USD);
@@ -1435,8 +1446,10 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
             env.close();
             env(amm::ammClawback(gw, alice, USD, MPT(BTC), USD(1'000)));
             BEAST_EXPECT(ammAlice.expectBalances(
-                USD(3'000), BTC(3'000), IOUAmount(3'000)));
-            env.require(balance(alice, aliceBTC + BTC(1'000)));
+                STAmount(USD, UINT64_C(3'000'000000000001), -12),
+                BTC(3'001),
+                IOUAmount(3'000)));
+            env.require(balance(alice, aliceBTC + BTC(999)));
             env.require(balance(alice, aliceUSD));
         }
     }
@@ -1908,23 +1921,15 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
     run() override
     {
         FeatureBitset const all{
-            jtx::supported_amendments() | fixAMMClawbackRounding};
+            jtx::testable_amendments() | fixAMMClawbackRounding};
 
         testInvalidRequest(all);
-        testInvalidRequest(all);
-        testFeatureDisabled(all);
         testFeatureDisabled(all);
         testAMMClawbackAmount(all);
-        testAMMClawbackAmount(all);
-        testAMMClawbackAll(all);
         testAMMClawbackAll(all);
         testAMMClawbackAmountSameIssuer(all);
-        testAMMClawbackAmountSameIssuer(all);
-        testAMMClawbackAllSameIssuer(all);
         testAMMClawbackAllSameIssuer(all);
         testAMMClawbackIssuesEachOther(all);
-        testAMMClawbackIssuesEachOther(all);
-        testAssetFrozenOrLocked(all);
         testAssetFrozenOrLocked(all);
         testSingleDepositAndClawback(all);
         testLastHolderLPTokenBalance(all);

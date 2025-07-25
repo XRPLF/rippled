@@ -227,10 +227,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
             }
             // WeakAuth - MPToken is created if it doesn't exist.
             if (auto const ter = requireAuth(
-                    ctx.view,
-                    amount->asset(),
-                    accountID,
-                    MPTAuthType::WeakAuth))
+                    ctx.view, amount->asset(), accountID, AuthType::WeakAuth))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Withdraw: account is not authorized, "
@@ -650,7 +647,7 @@ AMMWithdraw::withdraw(
         {
             auto const& mptIssue = asset.get<MPTIssue>();
             if (auto const err =
-                    requireAuth(view, mptIssue, account, MPTAuthType::WeakAuth);
+                    requireAuth(view, mptIssue, account, AuthType::WeakAuth);
                 err != tesSUCCESS)
                 return err;
 

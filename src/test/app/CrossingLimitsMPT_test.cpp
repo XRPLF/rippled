@@ -446,7 +446,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const features = supported_amendments();
+        auto const features = testable_amendments();
         testStepLimit(features);
         testCrossingLimit(features);
         testStepAndCrossingLimit(features);

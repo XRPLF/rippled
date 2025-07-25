@@ -2077,7 +2077,7 @@ private:
         testcase("Invalid AMMWithdraw");
 
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         testAMM(
             [&](AMM& ammAlice, Env& env) {
@@ -3156,7 +3156,7 @@ private:
             },
             {{AMMMPT(10'000), AMMMPT(10'000)}});
 
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         // Withdraw with EPrice limit.
         testAMM(
@@ -4320,12 +4320,12 @@ private:
     }
 
     void
-    testClawbackFromAMMAccount()
+    testClawbackFromAMMAccount(FeatureBitset features)
     {
         testcase("test clawback from AMM account");
         using namespace jtx;
 
-        Env env(*this);
+        Env env(*this, features);
         env.fund(XRP(1'000), gw);
         env(fset(gw, asfAllowTrustLineClawback));
         fund(env, gw, {alice}, XRP(1'000), {USD(1'000)}, Fund::Acct);
@@ -4339,13 +4339,15 @@ private:
 
         // to clawback from AMM account, must use AMMClawback instead of
         // Clawback
+        auto const err = features[featureSingleAssetVault] ? tecPSEUDO_ACCOUNT
+                                                           : tecAMM_ACCOUNT;
         AMM amm(env, gw, XRP(100), BTC(100));
         auto amount = amountFromString(amm.lptIssue(), "10");
-        env(claw(gw, amount), ter(tecAMM_ACCOUNT));
+        env(claw(gw, amount), ter(err));
 
         AMM amm1(env, alice, USD(100), BTC(200));
         auto amount1 = amountFromString(amm1.lptIssue(), "10");
-        env(claw(gw, amount1), ter(tecAMM_ACCOUNT));
+        env(claw(gw, amount1), ter(err));
     }
 
     void
@@ -5982,7 +5984,7 @@ private:
     {
         testcase("Amendment");
         using namespace jtx;
-        FeatureBitset const feature{supported_amendments() - featureMPTokensV2};
+        FeatureBitset const feature{testable_amendments() - featureMPTokensV2};
         Env env{*this, feature};
 
         env.fund(XRP(30'000), gw, alice);
@@ -7457,7 +7459,7 @@ private:
     void
     run() override
     {
-        FeatureBitset const all{jtx::supported_amendments()};
+        FeatureBitset const all{jtx::testable_amendments()};
         testInstanceCreate();
         testInvalidInstance();
         testInvalidDeposit(all);
@@ -7470,7 +7472,8 @@ private:
         testInvalidBid();
         testBid(all);
         testClawback();
-        testClawbackFromAMMAccount();
+        testClawbackFromAMMAccount(all);
+        testClawbackFromAMMAccount(all - featureSingleAssetVault);
         testInvalidAMMPayment();
         testBasicPaymentEngine();
         testAMMTokens();

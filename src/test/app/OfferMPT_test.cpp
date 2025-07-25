@@ -4805,7 +4805,7 @@ public:
     run() override
     {
         using namespace jtx;
-        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const all{testable_amendments()};
         testAll(all);
     }
 };

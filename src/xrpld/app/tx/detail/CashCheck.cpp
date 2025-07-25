@@ -272,7 +272,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                         ctx.view,
                         value.get<MPTIssue>(),
                         dstId,
-                        MPTAuthType::WeakAuth);
+                        AuthType::WeakAuth);
                     err != tesSUCCESS)
                 {
                     JLOG(ctx.j.warn())

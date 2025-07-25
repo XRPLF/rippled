@@ -1285,7 +1285,7 @@ private:
     testOffers()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testRmFundedOffer(all);
         testFillModes(all);
         testOfferCrossWithXRP(all);
@@ -3892,7 +3892,7 @@ private:
     testFlow()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
 
         testFalseDry(all);
         testBookStep(all);
@@ -3905,7 +3905,7 @@ private:
     testCrossingLimits()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testStepLimit(all);
     }
 
@@ -3913,14 +3913,14 @@ private:
     testDeliverMin()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         test_convert_all_of_an_asset(all);
     }
 
     void
     testDepositAuth()
     {
-        auto const supported{jtx::supported_amendments()};
+        auto const supported{jtx::testable_amendments()};
         testPayment(supported - featureDepositPreauth);
         testPayment(supported);
         testPayMPT();
@@ -3930,7 +3930,7 @@ private:
     testLock()
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testIndividualLock(sa);
         testGlobalLock(sa);
         testOffersWhenLocked(sa);
@@ -3940,7 +3940,7 @@ private:
     testMultisign()
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         testTxMultisign(
             all - featureMultiSignReserve - featureExpandedSignerList);
@@ -3952,7 +3952,7 @@ private:
     testPayStrand()
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         testToStrand(all);
         testRIPD1373(all);

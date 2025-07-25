@@ -149,19 +149,20 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         }
     }
 
-    // must be amount issue
     if (amount && ePrice)
     {
-        if (!ctx.rules.enabled(featureMPTokensV2))
+        auto assets = [&]() -> std::optional<std::pair<Asset, Asset>> {
+            // don't check ePrice issue
+            if (ctx.rules.enabled(featureMPTokensV2))
+                return std::nullopt;
+            // must be amount issue
+            return std::make_optional(
+                std::make_pair(amount->asset(), amount->asset()));
+        }();
+        if (auto const res = invalidAMMAmount(*ePrice, assets))
         {
-            if (auto const res = invalidAMMAmount(
-                    *ePrice,
-                    std::make_optional(
-                        std::make_pair(amount->asset(), amount->asset()))))
-            {
-                JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
-                return res;
-            }
+            JLOG(ctx.j.debug()) << "AMM Deposit: invalid EPrice";
+            return res;
         }
     }
 
@@ -263,8 +264,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
             // WeakAuth - don't need to check if MPT object exists as might be
             // depositing into non-MPT pool. It'll fail on send if MPT doesn't
             // exist.
-            if (auto const ter = requireAuth(
-                    ctx.view, asset, accountID, MPTAuthType::WeakAuth))
+            if (auto const ter =
+                    requireAuth(ctx.view, asset, accountID, AuthType::WeakAuth))
             {
                 JLOG(ctx.j.debug())
                     << "AMM Deposit: account is not authorized, " << asset;

@@ -321,7 +321,7 @@ applyCreate(
             auto const& mptID = mptIssue.getMptID();
             std::uint32_t flags = lsfMPTAMM;
             if (auto const err = requireAuth(
-                    ctx_.view(), mptIssue, accountId, MPTAuthType::WeakAuth);
+                    ctx_.view(), mptIssue, accountId, AuthType::WeakAuth);
                 err != tesSUCCESS)
             {
                 if (err == tecNO_AUTH)

@@ -2437,7 +2437,9 @@ requireAuth(
 
     bool const mptokensV2 = view.rules().enabled(featureMPTokensV2);
     // if account has no MPToken, fail
-    if (!sleToken && (!mptokensV2 || authType == AuthType::StrongAuth || authType == AuthType::Legacy))
+    if (!sleToken &&
+        (!mptokensV2 || authType == AuthType::StrongAuth ||
+         authType == AuthType::Legacy))
         return tecNO_AUTH;
 
     // Note, this check is not amendment-gated because DomainID will be always
