@@ -244,7 +244,7 @@ private:
     std::optional<boost::asio::executor_work_guard<
         boost::asio::io_context::executor_type>>
         m_work;
-    boost::asio::io_context::strand m_strand;
+    boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
     boost::asio::ip::udp::socket m_socket;
     std::deque<std::string> m_data;
@@ -269,7 +269,7 @@ public:
         , m_address(address)
         , m_prefix(prefix)
         , m_work(boost::asio::make_work_guard(m_io_service))
-        , m_strand(m_io_service)
+        , m_strand(boost::asio::make_strand(m_io_service))
         , m_timer(m_io_service)
         , m_socket(m_io_service)
         , m_thread(&StatsDCollectorImp::run, this)
