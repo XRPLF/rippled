@@ -45,7 +45,7 @@ runs:
         conan install \
           --output-folder . \
           --build missing \
-          --options:host "&:tests=True" \
-          --options:host "&:xrpld=True" \
+          --options:host "xrpl/*:tests=True" \
+          --options:host "xrpl/*:xrpld=True" \
           --settings:all build_type=${{ inputs.configuration }} \
           ..
