@@ -1716,14 +1716,13 @@ Consensus<Adaptor>::haveConsensus(
         (agree + disagree) >= (prevProposers_ * 3 / 4);
     // Stalling is BAD
     bool const stalled = sufficientProposers && haveCloseTimeConsensus_ &&
-        !result_->disputes.empty() &&
-        std::ranges::all_of(result_->disputes,
-                            [this, &parms](auto const& dispute) {
-                                return dispute.second.stalled(
-                                    parms,
-                                    mode_.get() == ConsensusMode::proposing,
-                                    peerUnchangedCounter_);
-                            });
+        std::ranges::count_if(
+            result_->disputes, [this, &parms](auto const& dispute) {
+                return dispute.second.stalled(
+                    parms,
+                    mode_.get() == ConsensusMode::proposing,
+                    peerUnchangedCounter_);
+            }) > 0;
 
     // Determine if we actually have consensus or not
     result_->state = checkConsensus(
