@@ -268,8 +268,7 @@ Conan</h3>
 <p >After any updates or changes to dependencies, you may need to do the following:</p>
 <ol type="1">
 <li>Remove your build directory.</li>
-<li>Remove the Conan cache: <div class="fragment"><div class="line">rm -rf ~/.conan/data</div>
-</div><!-- fragment --></li>
+<li>Remove the Conan cache: <code>conan remove "*" -c</code></li>
 <li>Re-run conan install.</li>
 </ol>
 <h3><a class="anchor" id="autotoc_md40"></a>
@@ -284,27 +283,7 @@ Conan</h3>
 <li>For conan install, pass <code>--settings build_type=Debug</code></li>
 <li>For cmake, pass <code>-DCMAKE_BUILD_TYPE=Debug</code></li>
 </ol>
-<h3><a class="anchor" id="autotoc_md41"></a>
-no std::result_of</h3>
-<p >If your compiler version is recent enough to have removed <code><a class="elRef" href="http://en.cppreference.com/w/cpp/types/result_of.html">std::result_of</a></code> as part of C++20, e.g. Apple Clang 15.0, then you might need to add a preprocessor definition to your build.</p>
-<div class="fragment"><div class="line">conan profile update &#39;options.boost:extra_b2_flags=&quot;define=BOOST_ASIO_HAS_STD_INVOKE_RESULT&quot;&#39; default</div>
-<div class="line">conan profile update &#39;env.CFLAGS=&quot;-DBOOST_ASIO_HAS_STD_INVOKE_RESULT&quot;&#39; default</div>
-<div class="line">conan profile update &#39;env.CXXFLAGS=&quot;-DBOOST_ASIO_HAS_STD_INVOKE_RESULT&quot;&#39; default</div>
-<div class="line">conan profile update &#39;conf.tools.build:cflags+=[&quot;-DBOOST_ASIO_HAS_STD_INVOKE_RESULT&quot;]&#39; default</div>
-<div class="line">conan profile update &#39;conf.tools.build:cxxflags+=[&quot;-DBOOST_ASIO_HAS_STD_INVOKE_RESULT&quot;]&#39; default</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md42"></a>
-call to 'async_teardown' is ambiguous</h3>
-<p >If you are compiling with an early version of Clang 16, then you might hit a <a href="https://github.com/boostorg/beast/issues/2648">regression</a> when compiling C++20 that manifests as an <a href="https://github.com/boostorg/beast/issues/2661">error in a Boost header</a>. You can workaround it by adding this preprocessor definition:</p>
-<div class="fragment"><div class="line">conan profile update &#39;env.CXXFLAGS=&quot;-DBOOST_ASIO_DISABLE_CONCEPTS&quot;&#39; default</div>
-<div class="line">conan profile update &#39;conf.tools.build:cxxflags+=[&quot;-DBOOST_ASIO_DISABLE_CONCEPTS&quot;]&#39; default</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md43"></a>
-recompile with -fPIC</h3>
-<p >If you get a linker error suggesting that you recompile Boost with position-independent code, such as:</p>
-<div class="fragment"><div class="line">/usr/bin/ld.gold: error: /home/username/.conan/data/boost/1.77.0/_/_/package/.../lib/libboost_container.a(alloc_lib.o):</div>
-<div class="line">  requires unsupported dynamic reloc 11; recompile with -fPIC</div>
-</div><!-- fragment --><p >Conan most likely downloaded a bad binary distribution of the dependency. This seems to be a <a href="https://github.com/conan-io/conan-center-index/issues/13168">bug</a> in Conan just for Boost 1.77.0 compiled with GCC for Linux. The solution is to build the dependency locally by passing <code>--build boost</code> when calling <code>conan install</code>.</p>
-<div class="fragment"><div class="line">conan install --build boost ...</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md44"></a>
+<h2><a class="anchor" id="autotoc_md41"></a>
 Add a Dependency</h2>
 <p >If you want to experiment with a new package, follow these steps:</p>
 <ol type="1">

@@ -114,7 +114,7 @@ $(function() {
 <td class="markdownTableBodyNone">16   </td><td class="markdownTableBodyNone">test/rpc test/app   </td></tr>
 </table>
 <p >(Note that <code>test</code> levelization is <em>much</em> less important and <em>much</em> less strictly enforced than <code>ripple</code> levelization, other than the requirement that <code>test</code> code should <em>never</em> be included in <code>ripple</code> code.)</p>
-<h1><a class="anchor" id="autotoc_md46"></a>
+<h1><a class="anchor" id="autotoc_md43"></a>
 Validation</h1>
 <p >The <a href="levelization.sh">levelization.sh</a> script takes no parameters, reads no environment variables, and can be run from any directory, as long as it is in the expected location in the rippled repo. It can be run at any time from within a checked out repo, and will do an analysis of all the <code>#include</code>s in the rippled source. The only caveat is that it runs much slower under Windows than in Linux. It hasn't yet been tested under MacOS. It generates many files of [results](results):</p>
 <ul>
