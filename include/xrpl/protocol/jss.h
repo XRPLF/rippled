@@ -227,6 +227,7 @@ JSS(dbKBLedger);              // out: getCounts
 JSS(dbKBTotal);               // out: getCounts
 JSS(dbKBTransaction);         // out: getCounts
 JSS(debug_signing);           // in: TransactionSign
+JSS(delegatability);          // out: server_definitions RPC
 JSS(deletion_blockers_only);  // in: AccountObjects
 JSS(delivered_amount);        // out: insertDeliveredAmount
 JSS(deposit_authorized);      // out: deposit_authorized
@@ -325,6 +326,7 @@ JSS(invalid_API_version);     // out: Many, when a request has an invalid
                               //      version
 JSS(io_latency_ms);           // out: NetworkOPs
 JSS(ip);                      // in: Connect, out: OverlayImpl
+JSS(isMPTSupported);          // out: server_definitions RPC
 JSS(is_burned);               // out: nft_info (clio)
 JSS(isSerialized);            // out: RPC server_definitions
                               // matches definitions.json format
@@ -630,6 +632,7 @@ JSS(transaction);             // in: Tx
 JSS(transaction_hash);        // out: RCLCxPeerPos, LedgerToJson
 JSS(transactions);            // out: LedgerToJson,
                               // in: AccountTx*, Unsubscribe
+JSS(TRANSACTION_FORMATS);     // out: RPC server_definitions
 JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
                               // matches definitions.json format
 JSS(TRANSACTION_TYPES);       // out: RPC server_definitions

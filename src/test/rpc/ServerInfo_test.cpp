@@ -276,6 +276,250 @@ admin = 127.0.0.1
                           ["lsfHighFreeze"] == "0x00800000");
             }
 
+            // test the response fields of the TRANSACTION_FORMATS section
+            {
+                BEAST_EXPECT(
+                    result[jss::result].isMember(jss::TRANSACTION_FORMATS));
+                BEAST_EXPECT(
+                    result[jss::result][jss::TRANSACTION_FORMATS].size() == 66);
+
+                // validate the contents of four arbitrarily selected
+                // transactions
+                // // validate the format of the OracleSet transaction
+                {
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS].isMember(
+                            "OracleSet"));
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::hexCode] == "51");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::delegatability] ==
+                        "delegatable");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields]
+                                  .size() == 6);
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][0u]
+                              [jss::sfield_Name] == "OracleDocumentID");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][0u]
+                              [jss::optionality] == "REQUIRED");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][1u]
+                              [jss::sfield_Name] == "Provider");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][1u]
+                              [jss::optionality] == "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][2u]
+                              [jss::sfield_Name] == "URI");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][2u]
+                              [jss::optionality] == "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][3u]
+                              [jss::sfield_Name] == "AssetClass");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][3u]
+                              [jss::optionality] == "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][4u]
+                              [jss::sfield_Name] == "LastUpdateTime");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][4u]
+                              [jss::optionality] == "REQUIRED");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][5u]
+                              [jss::sfield_Name] == "PriceDataSeries");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["OracleSet"][jss::sfields][5u]
+                              [jss::optionality] == "REQUIRED");
+                }
+
+                // validate the format of the PermissionedDomainDelete
+                // transaction
+                {
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS].isMember(
+                            "PermissionedDomainDelete"));
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["PermissionedDomainDelete"][jss::hexCode] ==
+                        "63");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["PermissionedDomainDelete"]
+                              [jss::delegatability] == "delegatable");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["PermissionedDomainDelete"][jss::sfields]
+                                  .size() == 1);
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["PermissionedDomainDelete"][jss::sfields][0u]
+                              [jss::sfield_Name] == "DomainID");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["PermissionedDomainDelete"][jss::sfields][0u]
+                              [jss::optionality] == "REQUIRED");
+                }
+
+                // validate the format of the Clawback transaction
+                {
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS].isMember(
+                            "Clawback"));
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["Clawback"][jss::hexCode] == "30");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["Clawback"][jss::delegatability] ==
+                        "delegatable");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["Clawback"][jss::sfields]
+                                  .size() == 2);
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["Clawback"][jss::sfields][0u]
+                              [jss::sfield_Name] == "Amount");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["Clawback"][jss::sfields][0u]
+                              [jss::optionality] == "REQUIRED");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["Clawback"][jss::sfields][0u]
+                              [jss::isMPTSupported] == "MPTSupported");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["Clawback"][jss::sfields][1u]
+                              [jss::sfield_Name] == "Holder");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]
+                              ["Clawback"][jss::sfields][1u]
+                              [jss::optionality] == "OPTIONAL");
+                }
+
+                // validate the format of the SetFee transaction
+                {
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS].isMember(
+                            "SetFee"));
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::hexCode] == "101");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::delegatability] == "notDelegatable");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields]
+                                  .size() == 8);
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][0u][jss::sfield_Name] ==
+                        "LedgerSequence");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][0u][jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][1u][jss::sfield_Name] ==
+                        "BaseFee");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][1u][jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][2u][jss::sfield_Name] ==
+                        "ReferenceFeeUnits");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][2u][jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][3u][jss::sfield_Name] ==
+                        "ReserveBase");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][3u][jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][4u][jss::sfield_Name] ==
+                        "ReserveIncrement");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][4u][jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][5u][jss::sfield_Name] ==
+                        "BaseFeeDrops");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][5u][jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][6u][jss::sfield_Name] ==
+                        "ReserveBaseDrops");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][6u][jss::optionality] ==
+                        "OPTIONAL");
+
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][7u][jss::sfield_Name] ==
+                        "ReserveIncrementDrops");
+                    BEAST_EXPECT(
+                        result[jss::result][jss::TRANSACTION_FORMATS]["SetFee"]
+                              [jss::sfields][7u][jss::optionality] ==
+                        "OPTIONAL");
+                }
+            }
+
             // test the properties of the LEDGER_ENTRIES section in
             // server_definitions response
             {
