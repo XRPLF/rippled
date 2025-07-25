@@ -49,41 +49,41 @@ WasmHostFunctionsImpl::getParentLedgerHash()
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::normalizeCacheIndex(int32_t cacheIndex)
+WasmHostFunctionsImpl::normalizeCacheIndex(int32_t cacheIdx)
 {
-    --cacheIndex;
-    if (cacheIndex < 0 || cacheIndex >= MAX_CACHE)
+    --cacheIdx;
+    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
         return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
-    if (!cache[cacheIndex])
+    if (!cache[cacheIdx])
         return Unexpected(HostFunctionError::EMPTY_SLOT);
-    return cacheIndex;
+    return cacheIdx;
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIndex)
+WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 {
     auto const& keylet = keylet::unchecked(objId);
-    if (cacheIndex < 0 || cacheIndex > MAX_CACHE)
+    if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
         return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
 
-    if (cacheIndex == 0)
+    if (cacheIdx == 0)
     {
-        for (cacheIndex = 0; cacheIndex < MAX_CACHE; ++cacheIndex)
-            if (!cache[cacheIndex])
+        for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
+            if (!cache[cacheIdx])
                 break;
     }
     else
     {
-        cacheIndex--;  // convert to 0-based index
+        cacheIdx--;  // convert to 0-based index
     }
 
-    if (cacheIndex >= MAX_CACHE)
+    if (cacheIdx >= MAX_CACHE)
         return Unexpected(HostFunctionError::SLOTS_FULL);
 
-    cache[cacheIndex] = ctx.view().read(keylet);
-    if (!cache[cacheIndex])
+    cache[cacheIdx] = ctx.view().read(keylet);
+    if (!cache[cacheIdx])
         return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    return cacheIndex + 1;  // return 1-based index
+    return cacheIdx + 1;  // return 1-based index
 }
 
 static Expected<Bytes, HostFunctionError>
@@ -203,13 +203,13 @@ locateField(STObject const& obj, Slice const& locator)
     if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
         return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
-    int32_t const* loc = reinterpret_cast<int32_t const*>(locator.data());
+    int32_t const* locPtr = reinterpret_cast<int32_t const*>(locator.data());
     int32_t const sz = locator.size() / 4;
     STBase const* field = nullptr;
     auto const& knownSFields = SField::getKnownCodeToField();
 
     {
-        int32_t const sfieldCode = loc[0];
+        int32_t const sfieldCode = locPtr[0];
         auto const it = knownSFields.find(sfieldCode);
         if (it == knownSFields.end())
             return Unexpected(HostFunctionError::INVALID_FIELD);
@@ -220,9 +220,9 @@ locateField(STObject const& obj, Slice const& locator)
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
-    for (int i = 1; i < sz; ++i)
+    for (int i = 1; i < locSize; ++i)
     {
-        int32_t const sfieldCode = loc[i];
+        int32_t const sfieldCode = locPtr[i];
 
         if (STI_ARRAY == field->getSType())
         {

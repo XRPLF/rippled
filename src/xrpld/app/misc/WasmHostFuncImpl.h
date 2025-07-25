@@ -49,7 +49,7 @@ class WasmHostFunctionsImpl : public HostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    normalizeCacheIndex(int32_t cacheIndex);
+    normalizeCacheIndex(int32_t cacheIdx);
 
 public:
     WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
