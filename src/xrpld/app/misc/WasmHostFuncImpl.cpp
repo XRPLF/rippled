@@ -643,12 +643,40 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
     return msg.size() + sizeof(data);
 }
 
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::traceFloat(
+    std::string_view const& msg,
+    Number const& data)
+{
+#ifdef DEBUG_OUTPUT
+    auto j = getJournal().error();
+#else
+    auto j = getJournal().trace();
+#endif
+    auto const s = to_string(data);
+    j << "WAMR TRACE FLOAT(" << leKey.key << "): " << msg << " " << s;
+    return msg.size() + s.size();
+}
+
+struct SetRound
+{
+    Number::rounding_mode oldMode_;
+    SetRound(Number::rounding_mode mode) : oldMode_(Number::getround())
+    {
+        Number::setround(mode);
+    }
+    ~SetRound()
+    {
+        Number::setround(oldMode_);
+    }
+};
+
 Expected<Number, HostFunctionError>
 WasmHostFunctionsImpl::floatFromInt(int64_t x, Number::rounding_mode mode)
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return Number(x);
     }
     catch (...)
@@ -662,7 +690,7 @@ WasmHostFunctionsImpl::floatFromUint(uint64_t x, Number::rounding_mode mode)
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         if (x <=
             std::numeric_limits<
                 std::invoke_result_t<decltype(&Number::mantissa), Number>>::
@@ -685,7 +713,7 @@ WasmHostFunctionsImpl::floatSet(
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return Number(mantissa, exponent);
     }
     catch (...)
@@ -715,7 +743,7 @@ WasmHostFunctionsImpl::floatAdd(
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return x + y;
     }
     catch (...)
@@ -732,7 +760,7 @@ WasmHostFunctionsImpl::floatSubtract(
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return x - y;
     }
     catch (...)
@@ -749,7 +777,7 @@ WasmHostFunctionsImpl::floatMultiply(
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return x * y;
     }
     catch (...)
@@ -766,7 +794,7 @@ WasmHostFunctionsImpl::floatDivide(
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return x / y;
     }
     catch (...)
@@ -783,7 +811,7 @@ WasmHostFunctionsImpl::floatRoot(
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return root(x, n);
     }
     catch (...)
@@ -800,7 +828,7 @@ WasmHostFunctionsImpl::floatPower(
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return power(x, n, mode);
     }
     catch (...)
@@ -814,7 +842,7 @@ WasmHostFunctionsImpl::floatLog(Number const& x, Number::rounding_mode mode)
 {
     try
     {
-        Number::setround(mode);
+        SetRound rm(mode);
         return lg(x);
     }
     catch (...)
