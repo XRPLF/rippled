@@ -3318,197 +3318,196 @@ $(function() {
 <div class="line"><a id="l03257" name="l03257"></a><span class="lineno"> 3257</span>{</div>
 <div class="line"><a id="l03258" name="l03258"></a><span class="lineno"> 3258</span>    <span class="keywordflow">if</span> (size() != other.size())</div>
 <div class="line"><a id="l03259" name="l03259"></a><span class="lineno"> 3259</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l03260" name="l03260"></a><span class="lineno"> 3260</span>    <span class="keyword">using </span>EqRng = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;const_iterator, const_iterator&gt;</a>;</div>
-<div class="line"><a id="l03261" name="l03261"></a><span class="lineno"> 3261</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> iter(cbegin()), last(cend()); iter != last;)</div>
-<div class="line"><a id="l03262" name="l03262"></a><span class="lineno"> 3262</span>    {</div>
-<div class="line"><a id="l03263" name="l03263"></a><span class="lineno"> 3263</span>        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; k(extract(*iter));</div>
-<div class="line"><a id="l03264" name="l03264"></a><span class="lineno"> 3264</span>        <span class="keyword">auto</span> <span class="keyword">const</span> eq(equal_range(k));</div>
-<div class="line"><a id="l03265" name="l03265"></a><span class="lineno"> 3265</span>        <span class="keyword">auto</span> <span class="keyword">const</span> oeq(other.equal_range(k));</div>
-<div class="line"><a id="l03266" name="l03266"></a><span class="lineno"> 3266</span><span class="preprocessor">#if BEAST_NO_CXX14_IS_PERMUTATION</span></div>
-<div class="line"><a id="l03267" name="l03267"></a><span class="lineno"> 3267</span>        <span class="keywordflow">if</span> (<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(eq.first, eq.second) !=</div>
-<div class="line"><a id="l03268" name="l03268"></a><span class="lineno"> 3268</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(oeq.first, oeq.second) ||</div>
-<div class="line"><a id="l03269" name="l03269"></a><span class="lineno"> 3269</span>            !<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/is_permutation.html">std::is_permutation</a>(eq.first, eq.second, oeq.first))</div>
-<div class="line"><a id="l03270" name="l03270"></a><span class="lineno"> 3270</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l03271" name="l03271"></a><span class="lineno"> 3271</span><span class="preprocessor">#else</span></div>
-<div class="line"><a id="l03272" name="l03272"></a><span class="lineno"> 3272</span>        <span class="keywordflow">if</span> (!<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/is_permutation.html">std::is_permutation</a>(eq.first, eq.second, oeq.first, oeq.second))</div>
-<div class="line"><a id="l03273" name="l03273"></a><span class="lineno"> 3273</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l03274" name="l03274"></a><span class="lineno"> 3274</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l03275" name="l03275"></a><span class="lineno"> 3275</span>        iter = eq.second;</div>
-<div class="line"><a id="l03276" name="l03276"></a><span class="lineno"> 3276</span>    }</div>
-<div class="line"><a id="l03277" name="l03277"></a><span class="lineno"> 3277</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a id="l03278" name="l03278"></a><span class="lineno"> 3278</span>}</div>
-<div class="line"><a id="l03279" name="l03279"></a><span class="lineno"> 3279</span> </div>
-<div class="line"><a id="l03280" name="l03280"></a><span class="lineno"> 3280</span><span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l03281" name="l03281"></a><span class="lineno"> 3281</span> </div>
-<div class="line"><a id="l03282" name="l03282"></a><span class="lineno"> 3282</span><span class="comment">// map, set</span></div>
-<div class="line"><a id="l03283" name="l03283"></a><span class="lineno"> 3283</span><span class="keyword">template</span> &lt;</div>
-<div class="line"><a id="l03284" name="l03284"></a><span class="lineno"> 3284</span>    <span class="keywordtype">bool</span> IsMulti,</div>
-<div class="line"><a id="l03285" name="l03285"></a><span class="lineno"> 3285</span>    <span class="keywordtype">bool</span> IsMap,</div>
-<div class="line"><a id="l03286" name="l03286"></a><span class="lineno"> 3286</span>    <span class="keyword">class </span>Key,</div>
-<div class="line"><a id="l03287" name="l03287"></a><span class="lineno"> 3287</span>    <span class="keyword">class </span>T,</div>
-<div class="line"><a id="l03288" name="l03288"></a><span class="lineno"> 3288</span>    <span class="keyword">class </span>Clock,</div>
-<div class="line"><a id="l03289" name="l03289"></a><span class="lineno"> 3289</span>    <span class="keyword">class </span>Hash,</div>
-<div class="line"><a id="l03290" name="l03290"></a><span class="lineno"> 3290</span>    <span class="keyword">class </span>KeyEqual,</div>
-<div class="line"><a id="l03291" name="l03291"></a><span class="lineno"> 3291</span>    <span class="keyword">class </span>Allocator&gt;</div>
-<div class="line"><a id="l03292" name="l03292"></a><span class="lineno"> 3292</span><span class="keyword">template</span> &lt;<span class="keywordtype">bool</span> maybe_multi&gt;</div>
-<div class="line"><a id="l03293" name="l03293"></a><span class="lineno"> 3293</span><span class="keyword">auto</span></div>
-<div class="line"><a id="l03294" name="l03294"></a><span class="lineno"> 3294</span><a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">aged_unordered_container</a>&lt;</div>
-<div class="line"><a id="l03295" name="l03295"></a><span class="lineno"> 3295</span>    IsMulti,</div>
-<div class="line"><a id="l03296" name="l03296"></a><span class="lineno"> 3296</span>    IsMap,</div>
-<div class="line"><a id="l03297" name="l03297"></a><span class="lineno"> 3297</span>    Key,</div>
-<div class="line"><a id="l03298" name="l03298"></a><span class="lineno"> 3298</span>    T,</div>
-<div class="line"><a id="l03299" name="l03299"></a><span class="lineno"> 3299</span>    Clock,</div>
-<div class="line"><a id="l03300" name="l03300"></a><span class="lineno"> 3300</span>    Hash,</div>
-<div class="line"><a id="l03301" name="l03301"></a><span class="lineno"> 3301</span>    KeyEqual,</div>
-<div class="line"><a id="l03302" name="l03302"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1aged__unordered__container.html#a822f056a1c4fa55a8126aa069f702461"> 3302</a></span>    Allocator&gt;::insert_unchecked(<a class="code hl_typedef" href="classbeast_1_1detail_1_1aged__unordered__container.html#a50c02966356b915ad780f834a892bf10">value_type</a> <span class="keyword">const</span>&amp; value) -&gt;</div>
-<div class="line"><a id="l03303" name="l03303"></a><span class="lineno"> 3303</span>    <span class="keyword">typename</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if&lt;!maybe_multi, std::pair&lt;iterator, bool&gt;</a>&gt;::type</div>
-<div class="line"><a id="l03304" name="l03304"></a><span class="lineno"> 3304</span>{</div>
-<div class="line"><a id="l03305" name="l03305"></a><span class="lineno"> 3305</span>    <span class="keyword">typename</span> cont_type::insert_commit_data d;</div>
-<div class="line"><a id="l03306" name="l03306"></a><span class="lineno"> 3306</span>    <span class="keyword">auto</span> <span class="keyword">const</span> result(m_cont.insert_check(</div>
-<div class="line"><a id="l03307" name="l03307"></a><span class="lineno"> 3307</span>        extract(value),</div>
-<div class="line"><a id="l03308" name="l03308"></a><span class="lineno"> 3308</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::cref</a>(m_config.hash_function()),</div>
-<div class="line"><a id="l03309" name="l03309"></a><span class="lineno"> 3309</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::cref</a>(m_config.key_value_equal()),</div>
-<div class="line"><a id="l03310" name="l03310"></a><span class="lineno"> 3310</span>        d));</div>
-<div class="line"><a id="l03311" name="l03311"></a><span class="lineno"> 3311</span>    <span class="keywordflow">if</span> (result.second)</div>
-<div class="line"><a id="l03312" name="l03312"></a><span class="lineno"> 3312</span>    {</div>
-<div class="line"><a id="l03313" name="l03313"></a><span class="lineno"> 3313</span>        <a class="code hl_struct" href="structbeast_1_1detail_1_1aged__unordered__container_1_1element.html">element</a>* <span class="keyword">const</span> p(new_element(value));</div>
-<div class="line"><a id="l03314" name="l03314"></a><span class="lineno"> 3314</span>        <span class="keyword">auto</span> <span class="keyword">const</span> iter(m_cont.insert_commit(*p, d));</div>
-<div class="line"><a id="l03315" name="l03315"></a><span class="lineno"> 3315</span>        chronological.list.push_back(*p);</div>
-<div class="line"><a id="l03316" name="l03316"></a><span class="lineno"> 3316</span>        <span class="keywordflow">return</span> <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(<a class="code hl_class" href="classbeast_1_1detail_1_1aged__container__iterator.html">iterator</a>(iter), <span class="keyword">true</span>);</div>
-<div class="line"><a id="l03317" name="l03317"></a><span class="lineno"> 3317</span>    }</div>
-<div class="line"><a id="l03318" name="l03318"></a><span class="lineno"> 3318</span>    <span class="keywordflow">return</span> <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(<a class="code hl_class" href="classbeast_1_1detail_1_1aged__container__iterator.html">iterator</a>(result.first), <span class="keyword">false</span>);</div>
-<div class="line"><a id="l03319" name="l03319"></a><span class="lineno"> 3319</span>}</div>
-<div class="line"><a id="l03320" name="l03320"></a><span class="lineno"> 3320</span> </div>
-<div class="line"><a id="l03321" name="l03321"></a><span class="lineno"> 3321</span><span class="comment">// multimap, multiset</span></div>
-<div class="line"><a id="l03322" name="l03322"></a><span class="lineno"> 3322</span><span class="keyword">template</span> &lt;</div>
-<div class="line"><a id="l03323" name="l03323"></a><span class="lineno"> 3323</span>    <span class="keywordtype">bool</span> IsMulti,</div>
-<div class="line"><a id="l03324" name="l03324"></a><span class="lineno"> 3324</span>    <span class="keywordtype">bool</span> IsMap,</div>
-<div class="line"><a id="l03325" name="l03325"></a><span class="lineno"> 3325</span>    <span class="keyword">class </span>Key,</div>
-<div class="line"><a id="l03326" name="l03326"></a><span class="lineno"> 3326</span>    <span class="keyword">class </span>T,</div>
-<div class="line"><a id="l03327" name="l03327"></a><span class="lineno"> 3327</span>    <span class="keyword">class </span>Clock,</div>
-<div class="line"><a id="l03328" name="l03328"></a><span class="lineno"> 3328</span>    <span class="keyword">class </span>Hash,</div>
-<div class="line"><a id="l03329" name="l03329"></a><span class="lineno"> 3329</span>    <span class="keyword">class </span>KeyEqual,</div>
-<div class="line"><a id="l03330" name="l03330"></a><span class="lineno"> 3330</span>    <span class="keyword">class </span>Allocator&gt;</div>
-<div class="line"><a id="l03331" name="l03331"></a><span class="lineno"> 3331</span><span class="keyword">template</span> &lt;<span class="keywordtype">bool</span> maybe_multi&gt;</div>
-<div class="line"><a id="l03332" name="l03332"></a><span class="lineno"> 3332</span><span class="keyword">auto</span></div>
-<div class="line"><a id="l03333" name="l03333"></a><span class="lineno"> 3333</span><a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">aged_unordered_container</a>&lt;</div>
-<div class="line"><a id="l03334" name="l03334"></a><span class="lineno"> 3334</span>    IsMulti,</div>
-<div class="line"><a id="l03335" name="l03335"></a><span class="lineno"> 3335</span>    IsMap,</div>
-<div class="line"><a id="l03336" name="l03336"></a><span class="lineno"> 3336</span>    Key,</div>
-<div class="line"><a id="l03337" name="l03337"></a><span class="lineno"> 3337</span>    T,</div>
-<div class="line"><a id="l03338" name="l03338"></a><span class="lineno"> 3338</span>    Clock,</div>
-<div class="line"><a id="l03339" name="l03339"></a><span class="lineno"> 3339</span>    Hash,</div>
-<div class="line"><a id="l03340" name="l03340"></a><span class="lineno"> 3340</span>    KeyEqual,</div>
-<div class="line"><a id="l03341" name="l03341"></a><span class="lineno"> 3341</span>    Allocator&gt;::insert_unchecked(value_type <span class="keyword">const</span>&amp; value) -&gt;</div>
-<div class="line"><a id="l03342" name="l03342"></a><span class="lineno"> 3342</span>    <span class="keyword">typename</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if&lt;maybe_multi, iterator&gt;::type</a></div>
-<div class="line"><a id="l03343" name="l03343"></a><span class="lineno"> 3343</span>{</div>
-<div class="line"><a id="l03344" name="l03344"></a><span class="lineno"> 3344</span>    element* <span class="keyword">const</span> p(new_element(value));</div>
-<div class="line"><a id="l03345" name="l03345"></a><span class="lineno"> 3345</span>    chronological.list.push_back(*p);</div>
-<div class="line"><a id="l03346" name="l03346"></a><span class="lineno"> 3346</span>    <span class="keyword">auto</span> <span class="keyword">const</span> iter(m_cont.insert(*p));</div>
-<div class="line"><a id="l03347" name="l03347"></a><span class="lineno"> 3347</span>    <span class="keywordflow">return</span> iterator(iter);</div>
-<div class="line"><a id="l03348" name="l03348"></a><span class="lineno"> 3348</span>}</div>
-<div class="line"><a id="l03349" name="l03349"></a><span class="lineno"> 3349</span> </div>
-<div class="line"><a id="l03350" name="l03350"></a><span class="lineno"> 3350</span><span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l03351" name="l03351"></a><span class="lineno"> 3351</span> </div>
-<div class="line"><a id="l03352" name="l03352"></a><span class="lineno"> 3352</span>}  <span class="comment">// namespace detail</span></div>
-<div class="line"><a id="l03353" name="l03353"></a><span class="lineno"> 3353</span> </div>
-<div class="line"><a id="l03354" name="l03354"></a><span class="lineno"> 3354</span><span class="comment">//------------------------------------------------------------------------------</span></div>
-<div class="line"><a id="l03355" name="l03355"></a><span class="lineno"> 3355</span> </div>
-<div class="line"><a id="l03356" name="l03356"></a><span class="lineno"> 3356</span><span class="keyword">template</span> &lt;</div>
-<div class="line"><a id="l03357" name="l03357"></a><span class="lineno"> 3357</span>    <span class="keywordtype">bool</span> IsMulti,</div>
-<div class="line"><a id="l03358" name="l03358"></a><span class="lineno"> 3358</span>    <span class="keywordtype">bool</span> IsMap,</div>
-<div class="line"><a id="l03359" name="l03359"></a><span class="lineno"> 3359</span>    <span class="keyword">class </span>Key,</div>
-<div class="line"><a id="l03360" name="l03360"></a><span class="lineno"> 3360</span>    <span class="keyword">class </span>T,</div>
-<div class="line"><a id="l03361" name="l03361"></a><span class="lineno"> 3361</span>    <span class="keyword">class </span>Clock,</div>
-<div class="line"><a id="l03362" name="l03362"></a><span class="lineno"> 3362</span>    <span class="keyword">class </span>Hash,</div>
-<div class="line"><a id="l03363" name="l03363"></a><span class="lineno"> 3363</span>    <span class="keyword">class </span>KeyEqual,</div>
-<div class="line"><a id="l03364" name="l03364"></a><span class="lineno"> 3364</span>    <span class="keyword">class </span>Allocator&gt;</div>
-<div class="line"><a id="l03365" name="l03365"></a><span class="lineno"><a class="line" href="structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__unordered__container_3_01IsMultia80d60acae45fc077226391e490a323d.html"> 3365</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structbeast_1_1is__aged__container.html">is_aged_container</a>&lt;<a class="code hl_namespace" href="namespacebeast.html">beast</a>::<a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">detail::aged_unordered_container</a>&lt;</div>
-<div class="line"><a id="l03366" name="l03366"></a><span class="lineno"> 3366</span>    IsMulti,</div>
-<div class="line"><a id="l03367" name="l03367"></a><span class="lineno"> 3367</span>    IsMap,</div>
-<div class="line"><a id="l03368" name="l03368"></a><span class="lineno"> 3368</span>    Key,</div>
-<div class="line"><a id="l03369" name="l03369"></a><span class="lineno"> 3369</span>    T,</div>
-<div class="line"><a id="l03370" name="l03370"></a><span class="lineno"> 3370</span>    Clock,</div>
-<div class="line"><a id="l03371" name="l03371"></a><span class="lineno"> 3371</span>    Hash,</div>
-<div class="line"><a id="l03372" name="l03372"></a><span class="lineno"> 3372</span>    KeyEqual,</div>
-<div class="line"><a id="l03373" name="l03373"></a><span class="lineno"> 3373</span>    Allocator&gt;&gt; : <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integral_constant.html">std::true_type</a></div>
-<div class="line"><a id="l03374" name="l03374"></a><span class="lineno"> 3374</span>{</div>
-<div class="line"><a id="l03375" name="l03375"></a><span class="lineno"><a class="line" href="structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__unordered__container_3_01IsMultia80d60acae45fc077226391e490a323d.html#a2209be63bb676e9732e2e5e33c58fb3e"> 3375</a></span>    <span class="keyword">explicit</span> <a class="code hl_function" href="structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__unordered__container_3_01IsMultia80d60acae45fc077226391e490a323d.html#a2209be63bb676e9732e2e5e33c58fb3e">is_aged_container</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a id="l03376" name="l03376"></a><span class="lineno"> 3376</span>};</div>
-<div class="line"><a id="l03377" name="l03377"></a><span class="lineno"> 3377</span> </div>
-<div class="line"><a id="l03378" name="l03378"></a><span class="lineno"> 3378</span><span class="comment">// Free functions</span></div>
-<div class="line"><a id="l03379" name="l03379"></a><span class="lineno"> 3379</span> </div>
-<div class="line"><a id="l03380" name="l03380"></a><span class="lineno"> 3380</span><span class="keyword">template</span> &lt;</div>
-<div class="line"><a id="l03381" name="l03381"></a><span class="lineno"> 3381</span>    <span class="keywordtype">bool</span> IsMulti,</div>
-<div class="line"><a id="l03382" name="l03382"></a><span class="lineno"> 3382</span>    <span class="keywordtype">bool</span> IsMap,</div>
-<div class="line"><a id="l03383" name="l03383"></a><span class="lineno"> 3383</span>    <span class="keyword">class </span>Key,</div>
-<div class="line"><a id="l03384" name="l03384"></a><span class="lineno"> 3384</span>    <span class="keyword">class </span>T,</div>
-<div class="line"><a id="l03385" name="l03385"></a><span class="lineno"> 3385</span>    <span class="keyword">class </span>Clock,</div>
-<div class="line"><a id="l03386" name="l03386"></a><span class="lineno"> 3386</span>    <span class="keyword">class </span>Hash,</div>
-<div class="line"><a id="l03387" name="l03387"></a><span class="lineno"> 3387</span>    <span class="keyword">class </span>KeyEqual,</div>
-<div class="line"><a id="l03388" name="l03388"></a><span class="lineno"> 3388</span>    <span class="keyword">class </span>Allocator&gt;</div>
-<div class="line"><a id="l03389" name="l03389"></a><span class="lineno"> 3389</span><span class="keywordtype">void</span></div>
-<div class="line"><a id="l03390" name="l03390"></a><span class="lineno"><a class="line" href="namespacebeast.html#a65eddcc4c83a40e71e903e9bc36a827b"> 3390</a></span><a class="code hl_function" href="namespacebeast.html#ae4687b34528a6de9d5b078021aebccea">swap</a>(</div>
-<div class="line"><a id="l03391" name="l03391"></a><span class="lineno"> 3391</span>    <a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt;</div>
-<div class="line"><a id="l03392" name="l03392"></a><span class="lineno"> 3392</span>        IsMulti,</div>
-<div class="line"><a id="l03393" name="l03393"></a><span class="lineno"> 3393</span>        IsMap,</div>
-<div class="line"><a id="l03394" name="l03394"></a><span class="lineno"> 3394</span>        Key,</div>
-<div class="line"><a id="l03395" name="l03395"></a><span class="lineno"> 3395</span>        T,</div>
-<div class="line"><a id="l03396" name="l03396"></a><span class="lineno"> 3396</span>        Clock,</div>
-<div class="line"><a id="l03397" name="l03397"></a><span class="lineno"> 3397</span>        Hash,</div>
-<div class="line"><a id="l03398" name="l03398"></a><span class="lineno"> 3398</span>        KeyEqual,</div>
-<div class="line"><a id="l03399" name="l03399"></a><span class="lineno"> 3399</span>        Allocator&gt;&amp; lhs,</div>
-<div class="line"><a id="l03400" name="l03400"></a><span class="lineno"> 3400</span>    <a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt;</div>
-<div class="line"><a id="l03401" name="l03401"></a><span class="lineno"> 3401</span>        IsMulti,</div>
-<div class="line"><a id="l03402" name="l03402"></a><span class="lineno"> 3402</span>        IsMap,</div>
-<div class="line"><a id="l03403" name="l03403"></a><span class="lineno"> 3403</span>        Key,</div>
-<div class="line"><a id="l03404" name="l03404"></a><span class="lineno"> 3404</span>        T,</div>
-<div class="line"><a id="l03405" name="l03405"></a><span class="lineno"> 3405</span>        Clock,</div>
-<div class="line"><a id="l03406" name="l03406"></a><span class="lineno"> 3406</span>        Hash,</div>
-<div class="line"><a id="l03407" name="l03407"></a><span class="lineno"> 3407</span>        KeyEqual,</div>
-<div class="line"><a id="l03408" name="l03408"></a><span class="lineno"> 3408</span>        Allocator&gt;&amp; rhs) <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l03409" name="l03409"></a><span class="lineno"> 3409</span>{</div>
-<div class="line"><a id="l03410" name="l03410"></a><span class="lineno"> 3410</span>    lhs.swap(rhs);</div>
-<div class="line"><a id="l03411" name="l03411"></a><span class="lineno"> 3411</span>}</div>
-<div class="line"><a id="l03412" name="l03412"></a><span class="lineno"> 3412</span> </div>
-<div class="line"><a id="l03414" name="l03414"></a><span class="lineno"> 3414</span><span class="keyword">template</span> &lt;</div>
-<div class="line"><a id="l03415" name="l03415"></a><span class="lineno"> 3415</span>    <span class="keywordtype">bool</span> IsMulti,</div>
-<div class="line"><a id="l03416" name="l03416"></a><span class="lineno"> 3416</span>    <span class="keywordtype">bool</span> IsMap,</div>
-<div class="line"><a id="l03417" name="l03417"></a><span class="lineno"> 3417</span>    <span class="keyword">class </span>Key,</div>
-<div class="line"><a id="l03418" name="l03418"></a><span class="lineno"> 3418</span>    <span class="keyword">class </span>T,</div>
-<div class="line"><a id="l03419" name="l03419"></a><span class="lineno"> 3419</span>    <span class="keyword">class </span>Clock,</div>
-<div class="line"><a id="l03420" name="l03420"></a><span class="lineno"> 3420</span>    <span class="keyword">class </span>Hash,</div>
-<div class="line"><a id="l03421" name="l03421"></a><span class="lineno"> 3421</span>    <span class="keyword">class </span>KeyEqual,</div>
-<div class="line"><a id="l03422" name="l03422"></a><span class="lineno"> 3422</span>    <span class="keyword">class </span>Allocator,</div>
-<div class="line"><a id="l03423" name="l03423"></a><span class="lineno"> 3423</span>    <span class="keyword">class </span>Rep,</div>
-<div class="line"><a id="l03424" name="l03424"></a><span class="lineno"> 3424</span>    <span class="keyword">class </span>Period&gt;</div>
-<div class="line"><a id="l03425" name="l03425"></a><span class="lineno"> 3425</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
-<div class="line"><a id="l03426" name="l03426"></a><span class="lineno"><a class="line" href="namespacebeast.html#a550eb4307d1fb60bf573a944bacf6a45"> 3426</a></span><a class="code hl_function" href="namespacebeast.html#abb430a45381177561de02886079786ad">expire</a>(</div>
-<div class="line"><a id="l03427" name="l03427"></a><span class="lineno"> 3427</span>    <a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt;</div>
-<div class="line"><a id="l03428" name="l03428"></a><span class="lineno"> 3428</span>        IsMulti,</div>
-<div class="line"><a id="l03429" name="l03429"></a><span class="lineno"> 3429</span>        IsMap,</div>
-<div class="line"><a id="l03430" name="l03430"></a><span class="lineno"> 3430</span>        Key,</div>
-<div class="line"><a id="l03431" name="l03431"></a><span class="lineno"> 3431</span>        T,</div>
-<div class="line"><a id="l03432" name="l03432"></a><span class="lineno"> 3432</span>        Clock,</div>
-<div class="line"><a id="l03433" name="l03433"></a><span class="lineno"> 3433</span>        Hash,</div>
-<div class="line"><a id="l03434" name="l03434"></a><span class="lineno"> 3434</span>        KeyEqual,</div>
-<div class="line"><a id="l03435" name="l03435"></a><span class="lineno"> 3435</span>        Allocator&gt;&amp; c,</div>
-<div class="line"><a id="l03436" name="l03436"></a><span class="lineno"> 3436</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration&lt;Rep, Period&gt;</a> <span class="keyword">const</span>&amp; age) <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l03437" name="l03437"></a><span class="lineno"> 3437</span>{</div>
-<div class="line"><a id="l03438" name="l03438"></a><span class="lineno"> 3438</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n(0);</div>
-<div class="line"><a id="l03439" name="l03439"></a><span class="lineno"> 3439</span>    <span class="keyword">auto</span> <span class="keyword">const</span> expired(c.clock().now() - age);</div>
-<div class="line"><a id="l03440" name="l03440"></a><span class="lineno"> 3440</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> iter(c.chronological.cbegin());</div>
-<div class="line"><a id="l03441" name="l03441"></a><span class="lineno"> 3441</span>         iter != c.chronological.cend() &amp;&amp; iter.when() &lt;= expired;)</div>
-<div class="line"><a id="l03442" name="l03442"></a><span class="lineno"> 3442</span>    {</div>
-<div class="line"><a id="l03443" name="l03443"></a><span class="lineno"> 3443</span>        iter = c.erase(iter);</div>
-<div class="line"><a id="l03444" name="l03444"></a><span class="lineno"> 3444</span>        ++n;</div>
-<div class="line"><a id="l03445" name="l03445"></a><span class="lineno"> 3445</span>    }</div>
-<div class="line"><a id="l03446" name="l03446"></a><span class="lineno"> 3446</span>    <span class="keywordflow">return</span> n;</div>
-<div class="line"><a id="l03447" name="l03447"></a><span class="lineno"> 3447</span>}</div>
-<div class="line"><a id="l03448" name="l03448"></a><span class="lineno"> 3448</span> </div>
-<div class="line"><a id="l03449" name="l03449"></a><span class="lineno"> 3449</span>}  <span class="comment">// namespace beast</span></div>
-<div class="line"><a id="l03450" name="l03450"></a><span class="lineno"> 3450</span> </div>
-<div class="line"><a id="l03451" name="l03451"></a><span class="lineno"> 3451</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l03260" name="l03260"></a><span class="lineno"> 3260</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> iter(cbegin()), last(cend()); iter != last;)</div>
+<div class="line"><a id="l03261" name="l03261"></a><span class="lineno"> 3261</span>    {</div>
+<div class="line"><a id="l03262" name="l03262"></a><span class="lineno"> 3262</span>        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; k(extract(*iter));</div>
+<div class="line"><a id="l03263" name="l03263"></a><span class="lineno"> 3263</span>        <span class="keyword">auto</span> <span class="keyword">const</span> eq(equal_range(k));</div>
+<div class="line"><a id="l03264" name="l03264"></a><span class="lineno"> 3264</span>        <span class="keyword">auto</span> <span class="keyword">const</span> oeq(other.equal_range(k));</div>
+<div class="line"><a id="l03265" name="l03265"></a><span class="lineno"> 3265</span><span class="preprocessor">#if BEAST_NO_CXX14_IS_PERMUTATION</span></div>
+<div class="line"><a id="l03266" name="l03266"></a><span class="lineno"> 3266</span>        <span class="keywordflow">if</span> (<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(eq.first, eq.second) !=</div>
+<div class="line"><a id="l03267" name="l03267"></a><span class="lineno"> 3267</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/iterator/distance.html">std::distance</a>(oeq.first, oeq.second) ||</div>
+<div class="line"><a id="l03268" name="l03268"></a><span class="lineno"> 3268</span>            !<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/is_permutation.html">std::is_permutation</a>(eq.first, eq.second, oeq.first))</div>
+<div class="line"><a id="l03269" name="l03269"></a><span class="lineno"> 3269</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l03270" name="l03270"></a><span class="lineno"> 3270</span><span class="preprocessor">#else</span></div>
+<div class="line"><a id="l03271" name="l03271"></a><span class="lineno"> 3271</span>        <span class="keywordflow">if</span> (!<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/is_permutation.html">std::is_permutation</a>(eq.first, eq.second, oeq.first, oeq.second))</div>
+<div class="line"><a id="l03272" name="l03272"></a><span class="lineno"> 3272</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l03273" name="l03273"></a><span class="lineno"> 3273</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l03274" name="l03274"></a><span class="lineno"> 3274</span>        iter = eq.second;</div>
+<div class="line"><a id="l03275" name="l03275"></a><span class="lineno"> 3275</span>    }</div>
+<div class="line"><a id="l03276" name="l03276"></a><span class="lineno"> 3276</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l03277" name="l03277"></a><span class="lineno"> 3277</span>}</div>
+<div class="line"><a id="l03278" name="l03278"></a><span class="lineno"> 3278</span> </div>
+<div class="line"><a id="l03279" name="l03279"></a><span class="lineno"> 3279</span><span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a id="l03280" name="l03280"></a><span class="lineno"> 3280</span> </div>
+<div class="line"><a id="l03281" name="l03281"></a><span class="lineno"> 3281</span><span class="comment">// map, set</span></div>
+<div class="line"><a id="l03282" name="l03282"></a><span class="lineno"> 3282</span><span class="keyword">template</span> &lt;</div>
+<div class="line"><a id="l03283" name="l03283"></a><span class="lineno"> 3283</span>    <span class="keywordtype">bool</span> IsMulti,</div>
+<div class="line"><a id="l03284" name="l03284"></a><span class="lineno"> 3284</span>    <span class="keywordtype">bool</span> IsMap,</div>
+<div class="line"><a id="l03285" name="l03285"></a><span class="lineno"> 3285</span>    <span class="keyword">class </span>Key,</div>
+<div class="line"><a id="l03286" name="l03286"></a><span class="lineno"> 3286</span>    <span class="keyword">class </span>T,</div>
+<div class="line"><a id="l03287" name="l03287"></a><span class="lineno"> 3287</span>    <span class="keyword">class </span>Clock,</div>
+<div class="line"><a id="l03288" name="l03288"></a><span class="lineno"> 3288</span>    <span class="keyword">class </span>Hash,</div>
+<div class="line"><a id="l03289" name="l03289"></a><span class="lineno"> 3289</span>    <span class="keyword">class </span>KeyEqual,</div>
+<div class="line"><a id="l03290" name="l03290"></a><span class="lineno"> 3290</span>    <span class="keyword">class </span>Allocator&gt;</div>
+<div class="line"><a id="l03291" name="l03291"></a><span class="lineno"> 3291</span><span class="keyword">template</span> &lt;<span class="keywordtype">bool</span> maybe_multi&gt;</div>
+<div class="line"><a id="l03292" name="l03292"></a><span class="lineno"> 3292</span><span class="keyword">auto</span></div>
+<div class="line"><a id="l03293" name="l03293"></a><span class="lineno"> 3293</span><a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">aged_unordered_container</a>&lt;</div>
+<div class="line"><a id="l03294" name="l03294"></a><span class="lineno"> 3294</span>    IsMulti,</div>
+<div class="line"><a id="l03295" name="l03295"></a><span class="lineno"> 3295</span>    IsMap,</div>
+<div class="line"><a id="l03296" name="l03296"></a><span class="lineno"> 3296</span>    Key,</div>
+<div class="line"><a id="l03297" name="l03297"></a><span class="lineno"> 3297</span>    T,</div>
+<div class="line"><a id="l03298" name="l03298"></a><span class="lineno"> 3298</span>    Clock,</div>
+<div class="line"><a id="l03299" name="l03299"></a><span class="lineno"> 3299</span>    Hash,</div>
+<div class="line"><a id="l03300" name="l03300"></a><span class="lineno"> 3300</span>    KeyEqual,</div>
+<div class="line"><a id="l03301" name="l03301"></a><span class="lineno"><a class="line" href="classbeast_1_1detail_1_1aged__unordered__container.html#a822f056a1c4fa55a8126aa069f702461"> 3301</a></span>    Allocator&gt;::insert_unchecked(<a class="code hl_typedef" href="classbeast_1_1detail_1_1aged__unordered__container.html#a50c02966356b915ad780f834a892bf10">value_type</a> <span class="keyword">const</span>&amp; value) -&gt;</div>
+<div class="line"><a id="l03302" name="l03302"></a><span class="lineno"> 3302</span>    <span class="keyword">typename</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if&lt;!maybe_multi, std::pair&lt;iterator, bool&gt;</a>&gt;::type</div>
+<div class="line"><a id="l03303" name="l03303"></a><span class="lineno"> 3303</span>{</div>
+<div class="line"><a id="l03304" name="l03304"></a><span class="lineno"> 3304</span>    <span class="keyword">typename</span> cont_type::insert_commit_data d;</div>
+<div class="line"><a id="l03305" name="l03305"></a><span class="lineno"> 3305</span>    <span class="keyword">auto</span> <span class="keyword">const</span> result(m_cont.insert_check(</div>
+<div class="line"><a id="l03306" name="l03306"></a><span class="lineno"> 3306</span>        extract(value),</div>
+<div class="line"><a id="l03307" name="l03307"></a><span class="lineno"> 3307</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::cref</a>(m_config.hash_function()),</div>
+<div class="line"><a id="l03308" name="l03308"></a><span class="lineno"> 3308</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::cref</a>(m_config.key_value_equal()),</div>
+<div class="line"><a id="l03309" name="l03309"></a><span class="lineno"> 3309</span>        d));</div>
+<div class="line"><a id="l03310" name="l03310"></a><span class="lineno"> 3310</span>    <span class="keywordflow">if</span> (result.second)</div>
+<div class="line"><a id="l03311" name="l03311"></a><span class="lineno"> 3311</span>    {</div>
+<div class="line"><a id="l03312" name="l03312"></a><span class="lineno"> 3312</span>        <a class="code hl_struct" href="structbeast_1_1detail_1_1aged__unordered__container_1_1element.html">element</a>* <span class="keyword">const</span> p(new_element(value));</div>
+<div class="line"><a id="l03313" name="l03313"></a><span class="lineno"> 3313</span>        <span class="keyword">auto</span> <span class="keyword">const</span> iter(m_cont.insert_commit(*p, d));</div>
+<div class="line"><a id="l03314" name="l03314"></a><span class="lineno"> 3314</span>        chronological.list.push_back(*p);</div>
+<div class="line"><a id="l03315" name="l03315"></a><span class="lineno"> 3315</span>        <span class="keywordflow">return</span> <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(<a class="code hl_class" href="classbeast_1_1detail_1_1aged__container__iterator.html">iterator</a>(iter), <span class="keyword">true</span>);</div>
+<div class="line"><a id="l03316" name="l03316"></a><span class="lineno"> 3316</span>    }</div>
+<div class="line"><a id="l03317" name="l03317"></a><span class="lineno"> 3317</span>    <span class="keywordflow">return</span> <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a>(<a class="code hl_class" href="classbeast_1_1detail_1_1aged__container__iterator.html">iterator</a>(result.first), <span class="keyword">false</span>);</div>
+<div class="line"><a id="l03318" name="l03318"></a><span class="lineno"> 3318</span>}</div>
+<div class="line"><a id="l03319" name="l03319"></a><span class="lineno"> 3319</span> </div>
+<div class="line"><a id="l03320" name="l03320"></a><span class="lineno"> 3320</span><span class="comment">// multimap, multiset</span></div>
+<div class="line"><a id="l03321" name="l03321"></a><span class="lineno"> 3321</span><span class="keyword">template</span> &lt;</div>
+<div class="line"><a id="l03322" name="l03322"></a><span class="lineno"> 3322</span>    <span class="keywordtype">bool</span> IsMulti,</div>
+<div class="line"><a id="l03323" name="l03323"></a><span class="lineno"> 3323</span>    <span class="keywordtype">bool</span> IsMap,</div>
+<div class="line"><a id="l03324" name="l03324"></a><span class="lineno"> 3324</span>    <span class="keyword">class </span>Key,</div>
+<div class="line"><a id="l03325" name="l03325"></a><span class="lineno"> 3325</span>    <span class="keyword">class </span>T,</div>
+<div class="line"><a id="l03326" name="l03326"></a><span class="lineno"> 3326</span>    <span class="keyword">class </span>Clock,</div>
+<div class="line"><a id="l03327" name="l03327"></a><span class="lineno"> 3327</span>    <span class="keyword">class </span>Hash,</div>
+<div class="line"><a id="l03328" name="l03328"></a><span class="lineno"> 3328</span>    <span class="keyword">class </span>KeyEqual,</div>
+<div class="line"><a id="l03329" name="l03329"></a><span class="lineno"> 3329</span>    <span class="keyword">class </span>Allocator&gt;</div>
+<div class="line"><a id="l03330" name="l03330"></a><span class="lineno"> 3330</span><span class="keyword">template</span> &lt;<span class="keywordtype">bool</span> maybe_multi&gt;</div>
+<div class="line"><a id="l03331" name="l03331"></a><span class="lineno"> 3331</span><span class="keyword">auto</span></div>
+<div class="line"><a id="l03332" name="l03332"></a><span class="lineno"> 3332</span><a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">aged_unordered_container</a>&lt;</div>
+<div class="line"><a id="l03333" name="l03333"></a><span class="lineno"> 3333</span>    IsMulti,</div>
+<div class="line"><a id="l03334" name="l03334"></a><span class="lineno"> 3334</span>    IsMap,</div>
+<div class="line"><a id="l03335" name="l03335"></a><span class="lineno"> 3335</span>    Key,</div>
+<div class="line"><a id="l03336" name="l03336"></a><span class="lineno"> 3336</span>    T,</div>
+<div class="line"><a id="l03337" name="l03337"></a><span class="lineno"> 3337</span>    Clock,</div>
+<div class="line"><a id="l03338" name="l03338"></a><span class="lineno"> 3338</span>    Hash,</div>
+<div class="line"><a id="l03339" name="l03339"></a><span class="lineno"> 3339</span>    KeyEqual,</div>
+<div class="line"><a id="l03340" name="l03340"></a><span class="lineno"> 3340</span>    Allocator&gt;::insert_unchecked(value_type <span class="keyword">const</span>&amp; value) -&gt;</div>
+<div class="line"><a id="l03341" name="l03341"></a><span class="lineno"> 3341</span>    <span class="keyword">typename</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if&lt;maybe_multi, iterator&gt;::type</a></div>
+<div class="line"><a id="l03342" name="l03342"></a><span class="lineno"> 3342</span>{</div>
+<div class="line"><a id="l03343" name="l03343"></a><span class="lineno"> 3343</span>    element* <span class="keyword">const</span> p(new_element(value));</div>
+<div class="line"><a id="l03344" name="l03344"></a><span class="lineno"> 3344</span>    chronological.list.push_back(*p);</div>
+<div class="line"><a id="l03345" name="l03345"></a><span class="lineno"> 3345</span>    <span class="keyword">auto</span> <span class="keyword">const</span> iter(m_cont.insert(*p));</div>
+<div class="line"><a id="l03346" name="l03346"></a><span class="lineno"> 3346</span>    <span class="keywordflow">return</span> iterator(iter);</div>
+<div class="line"><a id="l03347" name="l03347"></a><span class="lineno"> 3347</span>}</div>
+<div class="line"><a id="l03348" name="l03348"></a><span class="lineno"> 3348</span> </div>
+<div class="line"><a id="l03349" name="l03349"></a><span class="lineno"> 3349</span><span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a id="l03350" name="l03350"></a><span class="lineno"> 3350</span> </div>
+<div class="line"><a id="l03351" name="l03351"></a><span class="lineno"> 3351</span>}  <span class="comment">// namespace detail</span></div>
+<div class="line"><a id="l03352" name="l03352"></a><span class="lineno"> 3352</span> </div>
+<div class="line"><a id="l03353" name="l03353"></a><span class="lineno"> 3353</span><span class="comment">//------------------------------------------------------------------------------</span></div>
+<div class="line"><a id="l03354" name="l03354"></a><span class="lineno"> 3354</span> </div>
+<div class="line"><a id="l03355" name="l03355"></a><span class="lineno"> 3355</span><span class="keyword">template</span> &lt;</div>
+<div class="line"><a id="l03356" name="l03356"></a><span class="lineno"> 3356</span>    <span class="keywordtype">bool</span> IsMulti,</div>
+<div class="line"><a id="l03357" name="l03357"></a><span class="lineno"> 3357</span>    <span class="keywordtype">bool</span> IsMap,</div>
+<div class="line"><a id="l03358" name="l03358"></a><span class="lineno"> 3358</span>    <span class="keyword">class </span>Key,</div>
+<div class="line"><a id="l03359" name="l03359"></a><span class="lineno"> 3359</span>    <span class="keyword">class </span>T,</div>
+<div class="line"><a id="l03360" name="l03360"></a><span class="lineno"> 3360</span>    <span class="keyword">class </span>Clock,</div>
+<div class="line"><a id="l03361" name="l03361"></a><span class="lineno"> 3361</span>    <span class="keyword">class </span>Hash,</div>
+<div class="line"><a id="l03362" name="l03362"></a><span class="lineno"> 3362</span>    <span class="keyword">class </span>KeyEqual,</div>
+<div class="line"><a id="l03363" name="l03363"></a><span class="lineno"> 3363</span>    <span class="keyword">class </span>Allocator&gt;</div>
+<div class="line"><a id="l03364" name="l03364"></a><span class="lineno"><a class="line" href="structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__unordered__container_3_01IsMultia80d60acae45fc077226391e490a323d.html"> 3364</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structbeast_1_1is__aged__container.html">is_aged_container</a>&lt;<a class="code hl_namespace" href="namespacebeast.html">beast</a>::<a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">detail::aged_unordered_container</a>&lt;</div>
+<div class="line"><a id="l03365" name="l03365"></a><span class="lineno"> 3365</span>    IsMulti,</div>
+<div class="line"><a id="l03366" name="l03366"></a><span class="lineno"> 3366</span>    IsMap,</div>
+<div class="line"><a id="l03367" name="l03367"></a><span class="lineno"> 3367</span>    Key,</div>
+<div class="line"><a id="l03368" name="l03368"></a><span class="lineno"> 3368</span>    T,</div>
+<div class="line"><a id="l03369" name="l03369"></a><span class="lineno"> 3369</span>    Clock,</div>
+<div class="line"><a id="l03370" name="l03370"></a><span class="lineno"> 3370</span>    Hash,</div>
+<div class="line"><a id="l03371" name="l03371"></a><span class="lineno"> 3371</span>    KeyEqual,</div>
+<div class="line"><a id="l03372" name="l03372"></a><span class="lineno"> 3372</span>    Allocator&gt;&gt; : <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integral_constant.html">std::true_type</a></div>
+<div class="line"><a id="l03373" name="l03373"></a><span class="lineno"> 3373</span>{</div>
+<div class="line"><a id="l03374" name="l03374"></a><span class="lineno"><a class="line" href="structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__unordered__container_3_01IsMultia80d60acae45fc077226391e490a323d.html#a2209be63bb676e9732e2e5e33c58fb3e"> 3374</a></span>    <span class="keyword">explicit</span> <a class="code hl_function" href="structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__unordered__container_3_01IsMultia80d60acae45fc077226391e490a323d.html#a2209be63bb676e9732e2e5e33c58fb3e">is_aged_container</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l03375" name="l03375"></a><span class="lineno"> 3375</span>};</div>
+<div class="line"><a id="l03376" name="l03376"></a><span class="lineno"> 3376</span> </div>
+<div class="line"><a id="l03377" name="l03377"></a><span class="lineno"> 3377</span><span class="comment">// Free functions</span></div>
+<div class="line"><a id="l03378" name="l03378"></a><span class="lineno"> 3378</span> </div>
+<div class="line"><a id="l03379" name="l03379"></a><span class="lineno"> 3379</span><span class="keyword">template</span> &lt;</div>
+<div class="line"><a id="l03380" name="l03380"></a><span class="lineno"> 3380</span>    <span class="keywordtype">bool</span> IsMulti,</div>
+<div class="line"><a id="l03381" name="l03381"></a><span class="lineno"> 3381</span>    <span class="keywordtype">bool</span> IsMap,</div>
+<div class="line"><a id="l03382" name="l03382"></a><span class="lineno"> 3382</span>    <span class="keyword">class </span>Key,</div>
+<div class="line"><a id="l03383" name="l03383"></a><span class="lineno"> 3383</span>    <span class="keyword">class </span>T,</div>
+<div class="line"><a id="l03384" name="l03384"></a><span class="lineno"> 3384</span>    <span class="keyword">class </span>Clock,</div>
+<div class="line"><a id="l03385" name="l03385"></a><span class="lineno"> 3385</span>    <span class="keyword">class </span>Hash,</div>
+<div class="line"><a id="l03386" name="l03386"></a><span class="lineno"> 3386</span>    <span class="keyword">class </span>KeyEqual,</div>
+<div class="line"><a id="l03387" name="l03387"></a><span class="lineno"> 3387</span>    <span class="keyword">class </span>Allocator&gt;</div>
+<div class="line"><a id="l03388" name="l03388"></a><span class="lineno"> 3388</span><span class="keywordtype">void</span></div>
+<div class="line"><a id="l03389" name="l03389"></a><span class="lineno"><a class="line" href="namespacebeast.html#a65eddcc4c83a40e71e903e9bc36a827b"> 3389</a></span><a class="code hl_function" href="namespacebeast.html#ae4687b34528a6de9d5b078021aebccea">swap</a>(</div>
+<div class="line"><a id="l03390" name="l03390"></a><span class="lineno"> 3390</span>    <a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt;</div>
+<div class="line"><a id="l03391" name="l03391"></a><span class="lineno"> 3391</span>        IsMulti,</div>
+<div class="line"><a id="l03392" name="l03392"></a><span class="lineno"> 3392</span>        IsMap,</div>
+<div class="line"><a id="l03393" name="l03393"></a><span class="lineno"> 3393</span>        Key,</div>
+<div class="line"><a id="l03394" name="l03394"></a><span class="lineno"> 3394</span>        T,</div>
+<div class="line"><a id="l03395" name="l03395"></a><span class="lineno"> 3395</span>        Clock,</div>
+<div class="line"><a id="l03396" name="l03396"></a><span class="lineno"> 3396</span>        Hash,</div>
+<div class="line"><a id="l03397" name="l03397"></a><span class="lineno"> 3397</span>        KeyEqual,</div>
+<div class="line"><a id="l03398" name="l03398"></a><span class="lineno"> 3398</span>        Allocator&gt;&amp; lhs,</div>
+<div class="line"><a id="l03399" name="l03399"></a><span class="lineno"> 3399</span>    <a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt;</div>
+<div class="line"><a id="l03400" name="l03400"></a><span class="lineno"> 3400</span>        IsMulti,</div>
+<div class="line"><a id="l03401" name="l03401"></a><span class="lineno"> 3401</span>        IsMap,</div>
+<div class="line"><a id="l03402" name="l03402"></a><span class="lineno"> 3402</span>        Key,</div>
+<div class="line"><a id="l03403" name="l03403"></a><span class="lineno"> 3403</span>        T,</div>
+<div class="line"><a id="l03404" name="l03404"></a><span class="lineno"> 3404</span>        Clock,</div>
+<div class="line"><a id="l03405" name="l03405"></a><span class="lineno"> 3405</span>        Hash,</div>
+<div class="line"><a id="l03406" name="l03406"></a><span class="lineno"> 3406</span>        KeyEqual,</div>
+<div class="line"><a id="l03407" name="l03407"></a><span class="lineno"> 3407</span>        Allocator&gt;&amp; rhs) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l03408" name="l03408"></a><span class="lineno"> 3408</span>{</div>
+<div class="line"><a id="l03409" name="l03409"></a><span class="lineno"> 3409</span>    lhs.swap(rhs);</div>
+<div class="line"><a id="l03410" name="l03410"></a><span class="lineno"> 3410</span>}</div>
+<div class="line"><a id="l03411" name="l03411"></a><span class="lineno"> 3411</span> </div>
+<div class="line"><a id="l03413" name="l03413"></a><span class="lineno"> 3413</span><span class="keyword">template</span> &lt;</div>
+<div class="line"><a id="l03414" name="l03414"></a><span class="lineno"> 3414</span>    <span class="keywordtype">bool</span> IsMulti,</div>
+<div class="line"><a id="l03415" name="l03415"></a><span class="lineno"> 3415</span>    <span class="keywordtype">bool</span> IsMap,</div>
+<div class="line"><a id="l03416" name="l03416"></a><span class="lineno"> 3416</span>    <span class="keyword">class </span>Key,</div>
+<div class="line"><a id="l03417" name="l03417"></a><span class="lineno"> 3417</span>    <span class="keyword">class </span>T,</div>
+<div class="line"><a id="l03418" name="l03418"></a><span class="lineno"> 3418</span>    <span class="keyword">class </span>Clock,</div>
+<div class="line"><a id="l03419" name="l03419"></a><span class="lineno"> 3419</span>    <span class="keyword">class </span>Hash,</div>
+<div class="line"><a id="l03420" name="l03420"></a><span class="lineno"> 3420</span>    <span class="keyword">class </span>KeyEqual,</div>
+<div class="line"><a id="l03421" name="l03421"></a><span class="lineno"> 3421</span>    <span class="keyword">class </span>Allocator,</div>
+<div class="line"><a id="l03422" name="l03422"></a><span class="lineno"> 3422</span>    <span class="keyword">class </span>Rep,</div>
+<div class="line"><a id="l03423" name="l03423"></a><span class="lineno"> 3423</span>    <span class="keyword">class </span>Period&gt;</div>
+<div class="line"><a id="l03424" name="l03424"></a><span class="lineno"> 3424</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div>
+<div class="line"><a id="l03425" name="l03425"></a><span class="lineno"><a class="line" href="namespacebeast.html#a550eb4307d1fb60bf573a944bacf6a45"> 3425</a></span><a class="code hl_function" href="namespacebeast.html#abb430a45381177561de02886079786ad">expire</a>(</div>
+<div class="line"><a id="l03426" name="l03426"></a><span class="lineno"> 3426</span>    <a class="code hl_class" href="classbeast_1_1detail_1_1aged__unordered__container.html">beast::detail::aged_unordered_container</a>&lt;</div>
+<div class="line"><a id="l03427" name="l03427"></a><span class="lineno"> 3427</span>        IsMulti,</div>
+<div class="line"><a id="l03428" name="l03428"></a><span class="lineno"> 3428</span>        IsMap,</div>
+<div class="line"><a id="l03429" name="l03429"></a><span class="lineno"> 3429</span>        Key,</div>
+<div class="line"><a id="l03430" name="l03430"></a><span class="lineno"> 3430</span>        T,</div>
+<div class="line"><a id="l03431" name="l03431"></a><span class="lineno"> 3431</span>        Clock,</div>
+<div class="line"><a id="l03432" name="l03432"></a><span class="lineno"> 3432</span>        Hash,</div>
+<div class="line"><a id="l03433" name="l03433"></a><span class="lineno"> 3433</span>        KeyEqual,</div>
+<div class="line"><a id="l03434" name="l03434"></a><span class="lineno"> 3434</span>        Allocator&gt;&amp; c,</div>
+<div class="line"><a id="l03435" name="l03435"></a><span class="lineno"> 3435</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration&lt;Rep, Period&gt;</a> <span class="keyword">const</span>&amp; age) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l03436" name="l03436"></a><span class="lineno"> 3436</span>{</div>
+<div class="line"><a id="l03437" name="l03437"></a><span class="lineno"> 3437</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> n(0);</div>
+<div class="line"><a id="l03438" name="l03438"></a><span class="lineno"> 3438</span>    <span class="keyword">auto</span> <span class="keyword">const</span> expired(c.clock().now() - age);</div>
+<div class="line"><a id="l03439" name="l03439"></a><span class="lineno"> 3439</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> iter(c.chronological.cbegin());</div>
+<div class="line"><a id="l03440" name="l03440"></a><span class="lineno"> 3440</span>         iter != c.chronological.cend() &amp;&amp; iter.when() &lt;= expired;)</div>
+<div class="line"><a id="l03441" name="l03441"></a><span class="lineno"> 3441</span>    {</div>
+<div class="line"><a id="l03442" name="l03442"></a><span class="lineno"> 3442</span>        iter = c.erase(iter);</div>
+<div class="line"><a id="l03443" name="l03443"></a><span class="lineno"> 3443</span>        ++n;</div>
+<div class="line"><a id="l03444" name="l03444"></a><span class="lineno"> 3444</span>    }</div>
+<div class="line"><a id="l03445" name="l03445"></a><span class="lineno"> 3445</span>    <span class="keywordflow">return</span> n;</div>
+<div class="line"><a id="l03446" name="l03446"></a><span class="lineno"> 3446</span>}</div>
+<div class="line"><a id="l03447" name="l03447"></a><span class="lineno"> 3447</span> </div>
+<div class="line"><a id="l03448" name="l03448"></a><span class="lineno"> 3448</span>}  <span class="comment">// namespace beast</span></div>
+<div class="line"><a id="l03449" name="l03449"></a><span class="lineno"> 3449</span> </div>
+<div class="line"><a id="l03450" name="l03450"></a><span class="lineno"> 3450</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aaddressof_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/addressof.html">std::addressof</a></div><div class="ttdeci">T addressof(T... args)</div></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
 <div class="ttc" id="aallocate_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/allocator_traits/allocate.html">std::allocator_traits::allocate</a></div><div class="ttdeci">T allocate(T... args)</div></div>
@@ -3682,7 +3681,7 @@ $(function() {
 <div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html_a792cb2116564500cf72de228a5f70d73"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html#a792cb2116564500cf72de228a5f70d73">beast::detail::aged_unordered_container::cbegin</a></div><div class="ttdeci">const_local_iterator cbegin(size_type n) const</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l01291">aged_unordered_container.h:1291</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html_a81400c6450c6714a56e8f64d2e0d57ef"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html#a81400c6450c6714a56e8f64d2e0d57ef">beast::detail::aged_unordered_container::end</a></div><div class="ttdeci">const_iterator end() const</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l00983">aged_unordered_container.h:983</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html_a820fcd764ec975eb45bd33c4b063520e"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html#a820fcd764ec975eb45bd33c4b063520e">beast::detail::aged_unordered_container::cend</a></div><div class="ttdeci">const_iterator cend() const</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l00989">aged_unordered_container.h:989</a></div></div>
-<div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html_a822f056a1c4fa55a8126aa069f702461"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html#a822f056a1c4fa55a8126aa069f702461">beast::detail::aged_unordered_container::insert_unchecked</a></div><div class="ttdeci">auto insert_unchecked(value_type const &amp;value) -&gt; typename std::enable_if&lt;!maybe_multi, std::pair&lt; iterator, bool &gt; &gt;::type</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l03302">aged_unordered_container.h:3302</a></div></div>
+<div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html_a822f056a1c4fa55a8126aa069f702461"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html#a822f056a1c4fa55a8126aa069f702461">beast::detail::aged_unordered_container::insert_unchecked</a></div><div class="ttdeci">auto insert_unchecked(value_type const &amp;value) -&gt; typename std::enable_if&lt;!maybe_multi, std::pair&lt; iterator, bool &gt; &gt;::type</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l03301">aged_unordered_container.h:3301</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html_a86126173a86a6276e7b4cde20e4ccb81"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html#a86126173a86a6276e7b4cde20e4ccb81">beast::detail::aged_unordered_container::aged_unordered_container</a></div><div class="ttdeci">aged_unordered_container(aged_unordered_container const &amp;other, Allocator const &amp;alloc)</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l02108">aged_unordered_container.h:2109</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html_a8943698a5eeb7a219a4da6d267bf3b86"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html#a8943698a5eeb7a219a4da6d267bf3b86">beast::detail::aged_unordered_container::~aged_unordered_container</a></div><div class="ttdeci">~aged_unordered_container()</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l02452">aged_unordered_container.h:2452</a></div></div>
 <div class="ttc" id="aclassbeast_1_1detail_1_1aged__unordered__container_html_a8983db9df13b1f5c8620b41e96911560"><div class="ttname"><a href="classbeast_1_1detail_1_1aged__unordered__container.html#a8983db9df13b1f5c8620b41e96911560">beast::detail::aged_unordered_container::get_allocator</a></div><div class="ttdeci">allocator_type get_allocator() const</div><div class="ttdef"><b>Definition:</b> <a href="aged__unordered__container_8h_source.html#l00899">aged_unordered_container.h:899</a></div></div>

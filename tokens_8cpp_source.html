@@ -613,7 +613,7 @@ $(function() {
 <div class="line"><a id="l00544" name="l00544"></a><span class="lineno">  544</span>    XRPL_ASSERT(</div>
 <div class="line"><a id="l00545" name="l00545"></a><span class="lineno">  545</span>        num_b_58_10_coeffs &lt;= b_58_10_coeff.size(),</div>
 <div class="line"><a id="l00546" name="l00546"></a><span class="lineno">  546</span>        <span class="stringliteral">&quot;ripple::b58_fast::detail::b58_to_b256_be : maximum coeff&quot;</span>);</div>
-<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> c : input.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view/substr.html">substr</a>(0, partial_coeff_len))</div>
+<div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>    <span class="keywordflow">for</span> (<span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> c : input.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view/substr.html">substr</a>(0, partial_coeff_len))</div>
 <div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span>    {</div>
 <div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span>        <span class="keyword">auto</span> cur_val = <a class="code hl_variable" href="namespaceripple.html#a2ecf9aa7e6b7bbae47280534acefe9ea">::ripple::alphabetReverse</a>[c];</div>
 <div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>        <span class="keywordflow">if</span> (cur_val &lt; 0)</div>
@@ -627,7 +627,7 @@ $(function() {
 <div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>    {</div>
 <div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> j = 0; j &lt; num_full_coeffs; ++j)</div>
 <div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span>        {</div>
-<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>            <span class="keyword">auto</span> c = input[partial_coeff_len + j * 10 + i];</div>
+<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>            <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> c = input[partial_coeff_len + j * 10 + i];</div>
 <div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>            <span class="keyword">auto</span> cur_val = <a class="code hl_variable" href="namespaceripple.html#a2ecf9aa7e6b7bbae47280534acefe9ea">::ripple::alphabetReverse</a>[c];</div>
 <div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>            <span class="keywordflow">if</span> (cur_val &lt; 0)</div>
 <div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>            {</div>
