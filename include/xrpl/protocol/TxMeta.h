@@ -152,23 +152,21 @@ public:
     }
 
     void
-    setGasUsed(std::uint32_t const& gasUsed)
+    setContractExecutions(STArray const& contractExecutions)
     {
-        gasUsed_ = gasUsed;
+        mContractExecutions = contractExecutions;
     }
 
-    std::uint32_t
-    getGasUsed() const
+    STArray const&
+    getContractExecutions() const
     {
-        XRPL_ASSERT(
-            hasGasUsed(), "ripple::TxMeta::getGasUsed : non-null batch id");
-        return *gasUsed_;
+        return *mContractExecutions;
     }
 
     bool
-    hasGasUsed() const
+    hasContractExecutions() const
     {
-        return static_cast<bool>(gasUsed_);
+        return static_cast<bool>(mContractExecutions);
     }
 
 private:
@@ -178,8 +176,8 @@ private:
     int mResult;
 
     std::optional<STAmount> mDelivered;
-    std::optional<std::uint32_t> gasUsed_;
     std::optional<uint256> parentBatchId_;
+    std::optional<STArray> mContractExecutions;
 
     STArray mNodes;
 };

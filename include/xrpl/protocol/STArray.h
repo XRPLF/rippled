@@ -38,6 +38,8 @@ public:
     using iterator = list_type::iterator;
     using const_iterator = list_type::const_iterator;
 
+    STArray(std::vector<STObject> const& v, SField const& f);
+
     STArray() = default;
     STArray(STArray const&) = default;
 

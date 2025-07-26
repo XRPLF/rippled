@@ -194,6 +194,16 @@ InnerObjectFormats::InnerObjectFormats()
             {sfParameterValue, soeOPTIONAL},
             {sfParameterType, soeOPTIONAL},
         });
+
+    add(sfContractExecution.jsonName.c_str(),
+        sfContractExecution.getCode(),
+        {{sfContractResult, soeREQUIRED},
+         {sfContractHash, soeREQUIRED},
+         {sfContractAccount, soeREQUIRED},
+         {sfContractReturnCode, soeREQUIRED},
+         {sfContractReturnString, soeREQUIRED},
+         {sfGasUsed, soeREQUIRED},
+         {sfFlags, soeOPTIONAL}});
 }
 
 InnerObjectFormats const&

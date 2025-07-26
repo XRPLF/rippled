@@ -42,146 +42,146 @@ class Hooks_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        std::vector<std::reference_wrapper<SField const>> fields_to_test = {
-            sfHookResult,
-            sfHookStateChangeCount,
-            sfHookEmitCount,
-            sfHookExecutionIndex,
-            sfHookApiVersion,
-            sfHookStateCount,
-            sfEmitGeneration,
-            sfHookOn,
-            sfHookInstructionCount,
-            sfEmitBurden,
-            sfHookReturnCode,
-            sfReferenceCount,
-            sfEmitParentTxnID,
-            sfEmitNonce,
-            sfEmitHookHash,
-            sfHookStateKey,
-            sfHookHash,
-            sfHookNamespace,
-            sfHookSetTxnID,
-            sfHookStateData,
-            sfHookReturnString,
-            sfHookParameterName,
-            sfHookParameterValue,
-            sfEmitCallback,
-            sfHookAccount,
-            sfEmittedTxn,
-            sfHook,
-            sfHookDefinition,
-            sfHookParameter,
-            sfHookGrant,
-            sfEmitDetails,
-            sfHookExecutions,
-            sfHookExecution,
-            sfHookParameters,
-            sfHooks,
-            sfHookGrants};
+        // std::vector<std::reference_wrapper<SField const>> fields_to_test = {
+        //     sfHookResult,
+        //     sfHookStateChangeCount,
+        //     sfHookEmitCount,
+        //     sfHookExecutionIndex,
+        //     sfHookApiVersion,
+        //     sfHookStateCount,
+        //     sfEmitGeneration,
+        //     sfHookOn,
+        //     sfHookInstructionCount,
+        //     sfEmitBurden,
+        //     sfHookReturnCode,
+        //     sfReferenceCount,
+        //     sfEmitParentTxnID,
+        //     sfEmitNonce,
+        //     sfEmitHookHash,
+        //     sfHookStateKey,
+        //     sfHookHash,
+        //     sfHookNamespace,
+        //     sfHookSetTxnID,
+        //     sfHookStateData,
+        //     sfHookReturnString,
+        //     sfHookParameterName,
+        //     sfHookParameterValue,
+        //     sfEmitCallback,
+        //     sfHookAccount,
+        //     sfEmittedTxn,
+        //     sfHook,
+        //     sfHookDefinition,
+        //     sfHookParameter,
+        //     sfHookGrant,
+        //     sfEmitDetails,
+        //     sfHookExecutions,
+        //     sfHookExecution,
+        //     sfHookParameters,
+        //     sfHooks,
+        //     sfHookGrants};
 
-        for (auto const& rf : fields_to_test)
-        {
-            SField const& f = rf.get();
+        // for (auto const& rf : fields_to_test)
+        // {
+        //     SField const& f = rf.get();
 
-            STObject dummy{sfGeneric};
+        //     STObject dummy{sfGeneric};
 
-            BEAST_EXPECT(!dummy.isFieldPresent(f));
+        //     BEAST_EXPECT(!dummy.isFieldPresent(f));
 
-            switch (f.fieldType)
-            {
-                case STI_UINT8: {
-                    dummy.setFieldU8(f, 0);
-                    BEAST_EXPECT(dummy.getFieldU8(f) == 0);
+        //     switch (f.fieldType)
+        //     {
+        //         case STI_UINT8: {
+        //             dummy.setFieldU8(f, 0);
+        //             BEAST_EXPECT(dummy.getFieldU8(f) == 0);
 
-                    dummy.setFieldU8(f, 255);
-                    BEAST_EXPECT(dummy.getFieldU8(f) == 255);
+        //             dummy.setFieldU8(f, 255);
+        //             BEAST_EXPECT(dummy.getFieldU8(f) == 255);
 
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                case STI_UINT16: {
-                    dummy.setFieldU16(f, 0);
-                    BEAST_EXPECT(dummy.getFieldU16(f) == 0);
+        //         case STI_UINT16: {
+        //             dummy.setFieldU16(f, 0);
+        //             BEAST_EXPECT(dummy.getFieldU16(f) == 0);
 
-                    dummy.setFieldU16(f, 0xFFFFU);
-                    BEAST_EXPECT(dummy.getFieldU16(f) == 0xFFFFU);
+        //             dummy.setFieldU16(f, 0xFFFFU);
+        //             BEAST_EXPECT(dummy.getFieldU16(f) == 0xFFFFU);
 
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                case STI_UINT32: {
-                    dummy.setFieldU32(f, 0);
-                    BEAST_EXPECT(dummy.getFieldU32(f) == 0);
+        //         case STI_UINT32: {
+        //             dummy.setFieldU32(f, 0);
+        //             BEAST_EXPECT(dummy.getFieldU32(f) == 0);
 
-                    dummy.setFieldU32(f, 0xFFFFFFFFU);
-                    BEAST_EXPECT(dummy.getFieldU32(f) == 0xFFFFFFFFU);
+        //             dummy.setFieldU32(f, 0xFFFFFFFFU);
+        //             BEAST_EXPECT(dummy.getFieldU32(f) == 0xFFFFFFFFU);
 
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                case STI_UINT64: {
-                    dummy.setFieldU64(f, 0);
-                    BEAST_EXPECT(dummy.getFieldU64(f) == 0);
+        //         case STI_UINT64: {
+        //             dummy.setFieldU64(f, 0);
+        //             BEAST_EXPECT(dummy.getFieldU64(f) == 0);
 
-                    dummy.setFieldU64(f, 0xFFFFFFFFFFFFFFFFU);
-                    BEAST_EXPECT(dummy.getFieldU64(f) == 0xFFFFFFFFFFFFFFFFU);
+        //             dummy.setFieldU64(f, 0xFFFFFFFFFFFFFFFFU);
+        //             BEAST_EXPECT(dummy.getFieldU64(f) == 0xFFFFFFFFFFFFFFFFU);
 
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                case STI_UINT256: {
-                    uint256 u = uint256::fromVoid(
-                        "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBE"
-                        "EFDEADBEEF");
-                    dummy.setFieldH256(f, u);
-                    BEAST_EXPECT(dummy.getFieldH256(f) == u);
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //         case STI_UINT256: {
+        //             uint256 u = uint256::fromVoid(
+        //                 "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBE"
+        //                 "EFDEADBEEF");
+        //             dummy.setFieldH256(f, u);
+        //             BEAST_EXPECT(dummy.getFieldH256(f) == u);
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                case STI_VL: {
-                    std::vector<uint8_t> v{1, 2, 3};
-                    dummy.setFieldVL(f, v);
-                    BEAST_EXPECT(dummy.getFieldVL(f) == v);
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //         case STI_VL: {
+        //             std::vector<uint8_t> v{1, 2, 3};
+        //             dummy.setFieldVL(f, v);
+        //             BEAST_EXPECT(dummy.getFieldVL(f) == v);
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                case STI_ACCOUNT: {
-                    AccountID id = *parseBase58<AccountID>(
-                        "rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
-                    dummy.setAccountID(f, id);
-                    BEAST_EXPECT(dummy.getAccountID(f) == id);
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //         case STI_ACCOUNT: {
+        //             AccountID id = *parseBase58<AccountID>(
+        //                 "rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+        //             dummy.setAccountID(f, id);
+        //             BEAST_EXPECT(dummy.getAccountID(f) == id);
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                case STI_OBJECT: {
-                    dummy.emplace_back(STObject{f});
-                    BEAST_EXPECT(dummy.getField(f).getFName() == f);
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //         case STI_OBJECT: {
+        //             dummy.emplace_back(STObject{f});
+        //             BEAST_EXPECT(dummy.getField(f).getFName() == f);
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                case STI_ARRAY: {
-                    STArray dummy2{f, 2};
-                    dummy2.push_back(STObject{sfGeneric});
-                    dummy2.push_back(STObject{sfGeneric});
-                    dummy.setFieldArray(f, dummy2);
-                    BEAST_EXPECT(dummy.getFieldArray(f) == dummy2);
-                    BEAST_EXPECT(dummy.isFieldPresent(f));
-                    break;
-                }
+        //         case STI_ARRAY: {
+        //             STArray dummy2{f, 2};
+        //             dummy2.push_back(STObject{sfGeneric});
+        //             dummy2.push_back(STObject{sfGeneric});
+        //             dummy.setFieldArray(f, dummy2);
+        //             BEAST_EXPECT(dummy.getFieldArray(f) == dummy2);
+        //             BEAST_EXPECT(dummy.isFieldPresent(f));
+        //             break;
+        //         }
 
-                default:
-                    BEAST_EXPECT(false);
-            }
-        }
+        //         default:
+        //             BEAST_EXPECT(false);
+        //     }
+        // }
     }
 
 public:

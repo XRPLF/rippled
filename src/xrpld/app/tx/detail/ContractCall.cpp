@@ -224,18 +224,37 @@ ContractCall::doApply()
     }
     std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
     auto re = runEscrowWasm(wasm, funcName, {}, &ledgerDataProvider, allowance);
-    ContractResult const& result = ledgerDataProvider.getResult();
-    JLOG(j_.error()) << "Call WASM ran: " << re.has_value()
-                     << ", exitType: " << static_cast<int>(result.exitType)
-                     << ", exitReason: " << result.exitReason
-                     << ", exitCode: " << result.exitCode;
+    ContractResult const& contractResult = ledgerDataProvider.getResult();
+    JLOG(j_.error()) << "Call WASM ran: " << re.has_value() << ", exitType: "
+                     << static_cast<int>(contractResult.exitType)
+                     << ", exitReason: " << contractResult.exitReason
+                     << ", exitCode: " << contractResult.exitCode;
     if (re.has_value())
     {
         auto reValue = re.value().result;
         // TODO: better error handling for this conversion
-        ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
         JLOG(j_.error()) << "WASM Success: " + std::to_string(reValue)
                          << ", cost: " << re.value().cost;
+
+        ApplyViewImpl& avi =
+            dynamic_cast<ApplyViewImpl&>(contractCtx.applyCtx.view());
+        STObject meta{sfContractExecution};
+        meta.setFieldU8(sfContractResult, contractResult.exitType);
+        meta.setAccountID(sfContractAccount, contractResult.contractAccount);
+        uint64_t unsigned_exit_code =
+            (contractResult.exitCode >= 0
+                 ? contractResult.exitCode
+                 : 0x8000000000000000ULL + (-1 * contractResult.exitCode));
+        meta.setFieldU64(sfContractReturnCode, unsigned_exit_code);
+        meta.setFieldVL(
+            sfContractReturnString,
+            ripple::Slice{
+                contractResult.exitReason.data(),
+                contractResult.exitReason.size()});
+        meta.setFieldH256(sfContractHash, contractResult.contractHash);
+        meta.setFieldU32(sfGasUsed, static_cast<uint32_t>(re.value().cost));
+        avi.addContractMetaData(std::move(meta));
+
         if (!reValue)
         {
             // ctx_.view().update(slep);
@@ -248,8 +267,10 @@ ContractCall::doApply()
         // OpenView wholeBatchView(batch_view, contractCtx.applyCtx.openView());
 
         // OpenView perTxBatchView(batch_view, wholeBatchView);
-        // // auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx, tapBATCH, j);
-        // auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx, tapBATCH, j);
+        // // auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView,
+        // parentBatchId, stx, tapBATCH, j); auto const ret =
+        // apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx,
+        // tapBATCH, j);
         // // XRPL_ASSERT(
         // //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
         // //     "Inner transaction should not be applied");
@@ -277,19 +298,24 @@ ContractCall::doApply()
         //     [&app, &j, &parentBatchId, &batchView](STTx&& tx) {
         //         OpenView perTxBatchView(batch_view, batchView);
 
-        //         auto const ret = ripple::apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+        //         auto const ret = ripple::apply(app, perTxBatchView,
+        //         parentBatchId, tx, tapBATCH, j);
         //         // XRPL_ASSERT(
-        //         //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+        //         //     ret.applied == (isTesSuccess(ret.ter) ||
+        //         isTecClaim(ret.ter)),
         //         //     "Inner transaction should not be applied");
 
         //         JLOG(j.error()) << "WASM [" << parentBatchId
         //                         << "]: " << tx.getTransactionID() << " "
-        //                         << (ret.applied ? "applied" : "failure") << ": "
+        //                         << (ret.applied ? "applied" : "failure") <<
+        //                         ": "
         //                         << transToken(ret.ter);
 
-        //         // If the transaction should be applied push its changes to the
+        //         // If the transaction should be applied push its changes to
+        //         the
         //         // whole-batch view.
-        //         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+        //         if (ret.applied && (isTesSuccess(ret.ter) ||
+        //         isTecClaim(ret.ter)))
         //             perTxBatchView.apply(batchView);
 
         //         return ret;
@@ -298,7 +324,8 @@ ContractCall::doApply()
         // int applied = 0;
 
         // auto const result = applyOneTransaction(STTx{std::move(stx)});
-        // std::cout << "Transaction result: " << (result.applied ? "applied" : "failure") << std::endl;
+        // std::cout << "Transaction result: " << (result.applied ? "applied" :
+        // "failure") << std::endl;
 
         // for (STObject rb : batchTxn.getFieldArray(sfRawTransactions))
         // {
@@ -306,7 +333,8 @@ ContractCall::doApply()
         //     XRPL_ASSERT(
         //         result.applied ==
         //             (isTesSuccess(result.ter) || isTecClaim(result.ter)),
-        //         "Outer Batch failure, inner transaction should not be applied");
+        //         "Outer Batch failure, inner transaction should not be
+        //         applied");
 
         //     if (result.applied)
         //         ++applied;

@@ -118,6 +118,7 @@ ApplyStateTable::apply(
     std::optional<STAmount> const& deliver,
     std::optional<uint256 const> const& parentBatchId,
     std::optional<std::uint32_t> const& gasUsed,
+    std::vector<STObject> const& contractExecution,
     bool isDryRun,
     beast::Journal j)
 {
@@ -134,8 +135,8 @@ ApplyStateTable::apply(
             meta.setDeliveredAmount(*deliver);
         if (parentBatchId)
             meta.setParentBatchId(*parentBatchId);
-        if (gasUsed)
-            meta.setGasUsed(*gasUsed);
+        if (!contractExecution.empty())
+            meta.setContractExecutions(STArray{contractExecution, sfContractExecutions});
         Mods newMod;
         for (auto& item : items_)
         {
