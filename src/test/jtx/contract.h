@@ -60,12 +60,13 @@ class add_function
 private:
     std::string const name_;
     std::vector<std::pair<std::string, std::string>> params_;
+    std::vector<std::pair<std::string, std::string>> call_params_;
 
 public:
     explicit add_function(
         std::string const& name,
-        std::vector<std::pair<std::string, std::string>> params)
-        : name_{name}, params_{std::move(params)}
+        std::vector<std::pair<std::string, std::string>> call_params)
+        : name_{name}, call_params_{std::move(call_params)}
     {
     }
 

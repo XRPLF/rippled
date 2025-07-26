@@ -69,11 +69,11 @@ call(
 }
 
 Json::Value
-addFuncParam(std::string const& name, std::string const& typeName)
+addCallParam(std::string const& name, std::string const& typeName)
 {
     Json::Value param = Json::Value(Json::objectValue);
-    param[sfFunctionParameter][sfParameterName] = strHex(name);
-    param[sfFunctionParameter][sfParameterType][jss::type] = typeName;
+    param[sfCallParameter][sfParameterName] = strHex(name);
+    param[sfCallParameter][sfParameterType][jss::type] = typeName;
     return param;
 };
 
@@ -85,10 +85,10 @@ add_function::operator()(Env&, JTx& jt) const
 
     function = Json::Value{};
     function[sfFunction][sfFunctionName] = strHex(name_);
-    for (auto const& [p_name, p_type] : params_)
+    for (auto const& [p_name, p_type] : call_params_)
     {
-        function[sfFunction][sfFunctionParameters].append(
-            addFuncParam(p_name, p_type));
+        function[sfFunction][sfCallParameters].append(
+            addCallParam(p_name, p_type));
     }
 }
 
