@@ -21,6 +21,7 @@
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpl/basics/StringUtilities.h>
 
 #include <xrpl/protocol/digest.h>
 
@@ -1150,28 +1151,24 @@ submit_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
 
-    auto const msg = getDataString(rt, params, index);
-    if (!msg)
+    std::cout << "submit_wrap called" << std::endl;
+    auto const slice = getDataSlice(rt, params, index);
+    if (!slice)
     {
-        return hfResult(results, msg.error());
-    }
-
-    auto const number = getDataInt64(rt, params, index);
-    if (!number)
-    {
-        return hfResult(results, number.error());
+        std::cout << "submit_wrap: " << "!slice" << std::endl;
+        return hfResult(results, slice.error());
     }
 
     std::shared_ptr<STTx const> stpTrans;
-    // try
-    // {
-    //     stpTrans = std::make_shared<STTx const>(
-    //         SerialIter{memory + read_ptr, read_len});
-    // }
-    // catch (std::exception& e)
-    // {
-    //     return hfResult(results, number.error());
-    // }
+    try
+    {
+        stpTrans = std::make_shared<STTx const>(SerialIter{*slice});
+    }
+    catch (std::exception& e)
+    {
+        std::cout << "Error creating STTx: " << e.what() << " " << std::endl;
+        return hfResult(results, HostFunctionError::INTERNAL);
+    }
 
     return returnResult(
         rt, params, results, hf->submit(*stpTrans), index);

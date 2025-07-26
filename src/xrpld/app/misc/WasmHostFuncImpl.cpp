@@ -19,6 +19,7 @@
 
 #include <xrpld/app/misc/WasmHostFuncImpl.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/tx/apply.h>
 
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
@@ -664,9 +665,7 @@ getFieldDataFromSTData(
             if (funcParam.getInnerSType() != STI_UINT16)
                 return Unexpected(HostFunctionError::INVALID_PARAMS);
             uint16_t data = funcParam.getFieldU16();
-            return Bytes{
-                reinterpret_cast<uint8_t const*>(&data),
-                reinterpret_cast<uint8_t const*>(&data + 1)};
+            return Bytes{static_cast<unsigned char>(data)};
         }
         // case STI_UINT32: {
         //     // if (write_len != 0 && write_len != 4)
@@ -768,32 +767,43 @@ WasmHostFunctionsImpl::otxnFuncParam(std::uint32_t index, std::uint32_t stTypeId
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::submit(STTx const& stx)
 {
-    // Convert the data to a transaction.
-    // std::shared_ptr<STTx const> stpTrans;
-    // try
-    // {
-    //     stpTrans = std::make_shared<STTx const>(SerialIter{memory + read_ptr, read_len});
-    // }
-    // catch (std::exception& e)
-    // {
-    //     JLOG(j.error()) << "HookEmit[" << HC_ACC() << "]: Failed " << e.what()
-    //                     << "\n";
-    //     return EMISSION_FAILURE;
-    // }
+    std::cout << "WasmHostFunctionsImpl::submit called" << std::endl;
+    std::cout << "Transaction ID: " << stx.getTransactionID() << std::endl;
+    uint256 const parentBatchId = stx.getTransactionID();
+    auto j = getJournal();
+
+    // contractCtx.applyCtx.addTxToOpenView(stx);
+
     // Submit Transaction to ledger
-    // OpenView wholeBatchView(batch_view, view);
+    OpenView wholeBatchView(batch_view, contractCtx.applyCtx.openView());
+
+    OpenView perTxBatchView(batch_view, wholeBatchView);
+    // auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx, tapBATCH, j);
+    auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx, tapBATCH, j);
+    // XRPL_ASSERT(
+    //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+    //     "Inner transaction should not be applied");
+
+    JLOG(j.error()) << "WASM [" << parentBatchId
+                    << "]: " << stx.getTransactionID() << " "
+                    << (ret.applied ? "applied" : "failure") << ": "
+                    << transToken(ret.ter);
+
+    // If the transaction should be applied push its changes to the
+    // whole-batch view.
+    // if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+    //     perTxBatchView.apply(batchView);
 
     // auto applyOneTransaction =
     //     [&app, &j, &parentBatchId, &batchView](STTx&& tx) {
     //         OpenView perTxBatchView(batch_view, batchView);
 
-    //         auto const ret =
-    //             apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
-    //         XRPL_ASSERT(
-    //             ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
-    //             "Inner transaction should not be applied");
+    //         auto const ret = ripple::apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+    //         // XRPL_ASSERT(
+    //         //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+    //         //     "Inner transaction should not be applied");
 
-    //         JLOG(j.debug()) << "BatchTrace[" << parentBatchId
+    //         JLOG(j.error()) << "WASM [" << parentBatchId
     //                         << "]: " << tx.getTransactionID() << " "
     //                         << (ret.applied ? "applied" : "failure") << ": "
     //                         << transToken(ret.ter);
@@ -809,6 +819,7 @@ WasmHostFunctionsImpl::submit(STTx const& stx)
     // int applied = 0;
 
     // auto const result = applyOneTransaction(STTx{std::move(stx)});
+    // std::cout << "Transaction result: " << (result.applied ? "applied" : "failure") << std::endl;
 
     // for (STObject rb : batchTxn.getFieldArray(sfRawTransactions))
     // {

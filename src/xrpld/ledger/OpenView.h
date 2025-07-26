@@ -112,6 +112,8 @@ private:
 
     bool open_ = true;
 
+    std::vector<STTx> txsToApply_;
+
 public:
     OpenView() = delete;
     OpenView&

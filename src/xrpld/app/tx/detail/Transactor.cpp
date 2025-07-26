@@ -78,7 +78,7 @@ preflight0(PreflightContext const& ctx)
 
     if (txID == beast::zero)
     {
-        JLOG(ctx.j.warn())
+        JLOG(ctx.j.error())
             << "applyTransaction: transaction id may not be zero";
         return temINVALID;
     }
@@ -122,7 +122,8 @@ preflight1(PreflightContext const& ctx)
     auto const fee = ctx.tx.getFieldAmount(sfFee);
     if (!fee.native() || fee.negative() || !isLegalAmount(fee.xrp()))
     {
-        JLOG(ctx.j.debug()) << "preflight1: invalid fee";
+        
+        JLOG(ctx.j.error()) << "preflight1: invalid fee: " << fee.native() << fee.negative() << !isLegalAmount(fee.xrp()) << fee.xrp();
         return temBAD_FEE;
     }
 
@@ -130,7 +131,7 @@ preflight1(PreflightContext const& ctx)
 
     if (!spk.empty() && !publicKeyType(makeSlice(spk)))
     {
-        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
+        JLOG(ctx.j.error()) << "preflight1: invalid signing key";
         return temBAD_SIGNATURE;
     }
 
@@ -197,7 +198,7 @@ preflight2(PreflightContext const& ctx)
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
     {
-        JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
+        JLOG(ctx.j.error()) << "preflight2: bad signature. " << sigValid.second;
         return temINVALID;  // LCOV_EXCL_LINE
     }
     return tesSUCCESS;
@@ -258,7 +259,10 @@ TER
 Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 {
     if (!ctx.tx[sfFee].native())
+    {
+        JLOG(ctx.j.error()) << "Transactor::checkFee.1: invalid fee";
         return temBAD_FEE;
+    }
 
     auto const feePaid = ctx.tx[sfFee].xrp();
 
@@ -267,12 +271,15 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         if (feePaid == beast::zero)
             return tesSUCCESS;
 
-        JLOG(ctx.j.trace()) << "Batch: Fee must be zero.";
+        JLOG(ctx.j.error()) << "Batch: Fee must be zero.";
         return temBAD_FEE;  // LCOV_EXCL_LINE
     }
 
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
+    {
+        JLOG(ctx.j.error()) << "Transactor::checkFee.2: invalid fee";
         return temBAD_FEE;
+    }
 
     // Only check fee is sufficient when the ledger is open.
     if (ctx.view.open())

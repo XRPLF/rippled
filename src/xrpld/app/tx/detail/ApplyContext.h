@@ -74,6 +74,12 @@ public:
     XRPAmount const baseFee;
     beast::Journal const journal;
 
+    OpenView&
+    openView()
+    {
+        return base_;
+    }
+
     ApplyView&
     view()
     {
