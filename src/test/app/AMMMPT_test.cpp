@@ -5222,6 +5222,7 @@ private:
                  .pay = 2'000,
                  .flags = MPTDEXFlags});
             env(offer(bob, XRP(50), BTC(150)), txflags(tfPassive));
+            env.close();
             AMM ammAlice(env, alice, XRP(1'000), BTC(1'050));
             env(pay(alice, carol, BTC(200)),
                 sendmax(XRP(200)),
@@ -5894,11 +5895,13 @@ private:
                 ammAlice.vote(carol, 0);
                 BEAST_EXPECT(ammAlice.expectTradingFee(0));
                 // Carol bids
+                auto const baseFee = env.current()->fees().base;
+                auto const carolXRP = env.balance(carol);
                 env(ammAlice.bid({.account = carol, .bidMin = 100}));
                 BEAST_EXPECT(
                     ammAlice.expectLPTokens(carol, IOUAmount{4'999'900}));
                 BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{100}));
-                BEAST_EXPECT(accountBalance(env, carol) == "22499999950");
+                BEAST_EXPECT(env.balance(carol) == (carolXRP - baseFee));
                 priceXRP = ammAssetOut(
                     STAmount{XRPAmount{10'000'000'000}},
                     STAmount{token1, 9'999'900},
@@ -5906,7 +5909,8 @@ private:
                     0);
                 // Carol withdraws
                 ammAlice.withdrawAll(carol, XRP(0));
-                BEAST_EXPECT(accountBalance(env, carol) == "29999949939");
+                BEAST_EXPECT(
+                    env.balance(carol) == (carolXRP - baseFee * 2 + priceXRP));
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRPAmount{10'000'000'000} - priceXRP,
                     MPT(ammAlice[1])(10'000),
@@ -6288,16 +6292,18 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 auto const BTC = MPT(ammAlice[1]);
+                auto const carolXRP = env.balance(carol);
+                auto const baseFee = env.current()->fees().base;
                 env(offer(carol, BTC(10), XRP(10)));
                 env.close();
                 env.require(balance(carol, BTC(30'010)));
-                env.require(balance(carol, XRP(29989.99998)));
+                env.require(balance(carol, carolXRP - baseFee - XRP(10)));
 
                 // Change pool composition back
                 env(offer(carol, XRP(10), BTC(10)));
                 env.close();
                 env.require(balance(carol, BTC(30'000)));
-                env.require(balance(carol, XRP(29999.99997)));
+                env.require(balance(carol, carolXRP - baseFee * 2));
 
                 // set fee to 0.05%
                 ammAlice.vote(alice, 50);
@@ -6305,7 +6311,8 @@ private:
                 env(offer(carol, BTC(10), XRP(10)));
                 env.close();
                 env.require(balance(carol, BTC(30'009)));
-                env.require(balance(carol, XRP(29991.004453)));
+                env.require(balance(
+                    carol, carolXRP - baseFee * 3 - XRPAmount(8'995'507)));
                 BEAST_EXPECT(
                     expectOffers(env, carol, 1, {{Amounts{BTC(1), XRP(1)}}}));
             },
