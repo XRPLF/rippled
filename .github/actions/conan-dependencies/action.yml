@@ -26,6 +26,7 @@ runs:
   using: composite
   steps:
     - name: Install Conan dependencies
+      shell: bash
       run: |
         mkdir -p ${{ inputs.build_dir }}
         cd ${{ inputs.build_dir }}
@@ -37,4 +38,5 @@ runs:
           --settings:all build_type=${{ inputs.build_type }} \
           ..
     - name: Upload Conan dependencies
+      shell: bash
       run: conan upload '*' --confirm --check --remote ${{ inputs.conan_remote_name }}

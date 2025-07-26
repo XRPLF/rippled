@@ -30,6 +30,7 @@ runs:
   using: composite
   steps:
     - name: CMake configure
+      shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
         cmake \
@@ -41,6 +42,7 @@ runs:
           ${{ inputs.cmake_args }} \
           ..
     - name: CMake build
+      shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
         cmake --build . \

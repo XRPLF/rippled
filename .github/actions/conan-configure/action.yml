@@ -27,16 +27,19 @@ runs:
   using: composite
   steps:
     - name: Check configuration
+      shell: bash
       run: |
         echo "Checking Conan version."
         conan --version
     - name: Install Conan profile
+      shell: bash
       run: |
         echo "${{ inputs.conan_global_conf }}" >> $(conan config home)/global.conf
         conan config install conan/profiles/default -tf $(conan config home)/profiles/
         echo "Installed Conan profile:"
         conan profile show
     - name: Add Conan remote
+      shell: bash
       run: |
         # Remove the remote if it already exists. This can occur on self-hosted
         # runners where the workspace is not cleaned up between runs.
@@ -47,6 +50,7 @@ runs:
         conan remote add --index 0 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
         echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
     - name: Log into Conan remote
+      shell: bash
       run: |
         conan remote login ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_username }} --password "${{ inputs.conan_remote_password }}"
         conan remote list-users
