@@ -65,10 +65,10 @@ class Contract_test : public beast::unit_test::suite
                 meta[sfCreatedNode.fieldName].isMember(
                     sfLedgerEntryType.fieldName) &&
                 meta[sfCreatedNode.fieldName][sfLedgerEntryType.fieldName] ==
-                    jss::Contract)
+                    jss::AccountRoot)
             {
                 return meta[sfCreatedNode.fieldName][sfNewFields.fieldName]
-                           [sfOwner.fieldName]
+                           [sfAccount.fieldName]
                                .asString();
             }
         }
@@ -83,6 +83,17 @@ class Contract_test : public beast::unit_test::suite
         param[sfFunctionParameter][sfParameterType] = typeName;
         return param;
     };
+
+    Json::Value
+    payContract(AccountID const& account, std::string const& to, jtx::AnyAmount amount)
+    {
+        Json::Value jv;
+        jv[jss::Account] = to_string(account);
+        jv[jss::Amount] = amount.value.getJson(JsonOptions::none);
+        jv[jss::Destination] = to;
+        jv[jss::TransactionType] = jss::Payment;
+        return jv;
+    }
 
     // template <typename T>
     // Json::Value
@@ -260,6 +271,18 @@ class Contract_test : public beast::unit_test::suite
         }
 
         auto const contractAccount = getContractOwner(env);
+        std::cout << "Contract Account: " << contractAccount << "\n";
+        env(payContract(alice, contractAccount, XRP(2000)), ter(tesSUCCESS));
+        env.close();
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
 
         env(contract::call(alice, contractAccount, "finish"),
             escrow::comp_allowance(1000000),

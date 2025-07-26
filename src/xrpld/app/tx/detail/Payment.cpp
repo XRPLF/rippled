@@ -624,8 +624,8 @@ Payment::doApply()
     // transaction types. Note, this is not amendment-gated because all writes
     // to pseudo-account discriminator fields **are** amendment gated, hence the
     // behaviour of this check will always match the active amendments.
-    if (isPseudoAccount(sleDst))
-        return tecNO_PERMISSION;
+    // if (isPseudoAccount(sleDst))
+    //     return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the
     // source account has authority to deposit to the destination.

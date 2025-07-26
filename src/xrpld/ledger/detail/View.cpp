@@ -1125,8 +1125,10 @@ createPseudoAccount(
     // Ignore reserves requirement, disable the master key, allow default
     // rippling, and enable deposit authorization to prevent payments into
     // pseudo-account.
+    // account->setFieldU32(
+    //     sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     account->setFieldU32(
-        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+        sfFlags, lsfDisableMaster | lsfDefaultRipple);
     // Link the pseudo-account with its owner object.
     account->setFieldH256(ownerField, pseudoOwnerKey);
 

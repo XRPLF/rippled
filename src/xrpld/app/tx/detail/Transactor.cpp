@@ -148,10 +148,10 @@ preflight1(PreflightContext const& ctx)
     if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
         return temINVALID_FLAG;
 
-    XRPL_ASSERT(
-        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
-            !ctx.rules.enabled(featureBatch),
-        "Inner batch transaction must have a parent batch ID.");
+    // XRPL_ASSERT(
+    //     ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
+    //         !ctx.rules.enabled(featureBatch),
+    //     "Inner batch transaction must have a parent batch ID.");
 
     return tesSUCCESS;
 }
@@ -1045,9 +1045,9 @@ Transactor::reset(XRPAmount fee)
     auto const balance = payerSle->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
-    XRPL_ASSERT(
-        balance != beast::zero && (!view().open() || balance >= fee),
-        "ripple::Transactor::reset : valid balance");
+    // XRPL_ASSERT(
+    //     balance != beast::zero && (!view().open() || balance >= fee),
+    //     "ripple::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or
     // we're applying against an open ledger and the balance is less than

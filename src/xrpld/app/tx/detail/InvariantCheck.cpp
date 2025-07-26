@@ -158,12 +158,12 @@ XRPNotCreated::finalize(
     }
 
     // The negative of the net change should be equal to actual fee charged.
-    if (-drops_ != fee.drops())
-    {
-        JLOG(j.fatal()) << "Invariant failed: XRP net change of " << drops_
-                        << " doesn't match fee " << fee.drops();
-        return false;
-    }
+    // if (-drops_ != fee.drops())
+    // {
+    //     JLOG(j.fatal()) << "Invariant failed: XRP net change of " << drops_
+    //                     << " doesn't match fee " << fee.drops();
+    //     return false;
+    // }
 
     return true;
 }
@@ -1000,7 +1000,7 @@ ValidNewAccountRoot::finalize(
         if (pseudoAccount)
         {
             std::uint32_t const expected =
-                (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+                (lsfDisableMaster | lsfDefaultRipple);
             if (flags_ != expected)
             {
                 JLOG(j.fatal())

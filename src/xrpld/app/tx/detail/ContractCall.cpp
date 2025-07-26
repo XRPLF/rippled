@@ -126,15 +126,20 @@ TER
 ContractCall::doApply()
 {
     AccountID const contractAccount = ctx_.tx[sfContractAccount];
-    Keylet const k = keylet::contract(contractAccount);
+    auto const caSle = ctx_.view().read(keylet::account(contractAccount));
+    if (!caSle)
+    {
+        JLOG(j_.error()) << "ContractCall: ContractAccount does not exist.";
+        return tefINTERNAL;
+    }
 
+    Keylet const k = keylet::contract(contractAccount);
     auto const contractSle = ctx_.view().read(k);
     if (!contractSle)
     {
         JLOG(j_.error()) << "ContractCall: Contract does not exist.";
         return tefINTERNAL;
     }
-
     if (!contractSle->at(sfContractHash))
     {
         JLOG(j_.error()) << "ContractCall: Contract does not have a hash.";
@@ -194,6 +199,8 @@ ContractCall::doApply()
             return tecINTERNAL;
     }
 
+    std::cout << "Current Account Sequence: " << caSle->getFieldU32(sfSequence) << std::endl;
+
     ContractContext contractCtx = {
         .applyCtx = ctx_,
         .callParameters = callParameters,
@@ -208,10 +215,11 @@ ContractCall::doApply()
                 .contractSourceKeylet = k,
                 .contractAccountKeylet = k,
                 .contractAccount = contractAccount,
+                .nextSequence = caSle->getFieldU32(sfSequence),
                 .otxnAccount = contractAccount,
-                .exitType = ripple::ExitType::ROLLBACK,
+                .exitType = ripple::ExitType::ACCEPT,
                 .exitReason = std::string(""),
-                .exitCode = -1,
+                .exitCode = 0,
             },
     };
 
@@ -225,39 +233,33 @@ ContractCall::doApply()
     std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
     auto re = runEscrowWasm(wasm, funcName, {}, &ledgerDataProvider, allowance);
     ContractResult const& contractResult = ledgerDataProvider.getResult();
-    JLOG(j_.error()) << "Call WASM ran: " << re.has_value() << ", exitType: "
-                     << static_cast<int>(contractResult.exitType)
-                     << ", exitReason: " << contractResult.exitReason
-                     << ", exitCode: " << contractResult.exitCode;
+    
+    // Create MetaData
+    ApplyViewImpl& avi =
+        dynamic_cast<ApplyViewImpl&>(contractCtx.applyCtx.view());
+    STObject meta{sfContractExecution};
+    meta.setFieldU8(sfContractResult, contractResult.exitType);
+    meta.setAccountID(sfContractAccount, contractResult.contractAccount);
+    uint64_t unsigned_exit_code =
+        (contractResult.exitCode >= 0
+                ? contractResult.exitCode
+                : 0x8000000000000000ULL + (-1 * contractResult.exitCode));
+    meta.setFieldU64(sfContractReturnCode, unsigned_exit_code);
+    meta.setFieldVL(
+        sfContractReturnString,
+        ripple::Slice{
+            contractResult.exitReason.data(),
+            contractResult.exitReason.size()});
+    meta.setFieldH256(sfContractHash, contractResult.contractHash);
+
+    // Wasm Result
     if (re.has_value())
     {
         auto reValue = re.value().result;
-        // TODO: better error handling for this conversion
-        JLOG(j_.error()) << "WASM Success: " + std::to_string(reValue)
-                         << ", cost: " << re.value().cost;
-
-        ApplyViewImpl& avi =
-            dynamic_cast<ApplyViewImpl&>(contractCtx.applyCtx.view());
-        STObject meta{sfContractExecution};
-        meta.setFieldU8(sfContractResult, contractResult.exitType);
-        meta.setAccountID(sfContractAccount, contractResult.contractAccount);
-        uint64_t unsigned_exit_code =
-            (contractResult.exitCode >= 0
-                 ? contractResult.exitCode
-                 : 0x8000000000000000ULL + (-1 * contractResult.exitCode));
-        meta.setFieldU64(sfContractReturnCode, unsigned_exit_code);
-        meta.setFieldVL(
-            sfContractReturnString,
-            ripple::Slice{
-                contractResult.exitReason.data(),
-                contractResult.exitReason.size()});
-        meta.setFieldH256(sfContractHash, contractResult.contractHash);
         meta.setFieldU32(sfGasUsed, static_cast<uint32_t>(re.value().cost));
-        avi.addContractMetaData(std::move(meta));
-
         if (!reValue)
         {
-            // ctx_.view().update(slep);
+            avi.addContractMetaData(std::move(meta));
             return tecWASM_REJECTED;
         }
 
@@ -300,12 +302,25 @@ ContractCall::doApply()
                 applied = 0;
         }
 
-        if (applied != 0)
-            wholeBatchView.apply(contractCtx.applyCtx.openView());
+        if (applied == 0)
+        {
+            uint64_t unsigned_exit_code = 0x8000000000000000ULL + (-1 * -19);
+            meta.setFieldU64(sfContractReturnCode, unsigned_exit_code);
+            meta.setFieldU8(sfContractResult, ripple::ExitType::ROLLBACK);
+            // meta.setFieldVL(
+            //     sfContractReturnString,
+            //     ripple::Slice{});
+            avi.addContractMetaData(std::move(meta));
+            return tecWASM_REJECTED;
+        }
+
+        wholeBatchView.apply(contractCtx.applyCtx.openView());
+        avi.addContractMetaData(std::move(meta));
     }
     else
     {
         JLOG(j_.error()) << "WASM Failure: " + transHuman(re.error());
+        avi.addContractMetaData(std::move(meta));
         return re.error();
     }
     return tesSUCCESS;
