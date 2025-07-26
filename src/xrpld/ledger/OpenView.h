@@ -111,6 +111,7 @@ private:
     std::size_t baseTxCount_ = 0;
 
     bool open_ = true;
+    bool mock_ = true;
 
 public:
     OpenView() = delete;
@@ -186,6 +187,12 @@ public:
         all newly inserted tx.
     */
     OpenView(ReadView const* base, std::shared_ptr<void const> hold = nullptr);
+
+    bool
+    isMock() const
+    {
+        return mock_;
+    }
 
     /** Returns true if this reflects an open ledger. */
     bool
