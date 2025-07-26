@@ -27,7 +27,7 @@ env:
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{os.cpu_count()}}
     core.upload:parallel={{os.cpu_count()}}
-    tools.build:jobs=12
+    tools.build:jobs=6
 
 jobs:
 
