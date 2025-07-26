@@ -305,7 +305,7 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    exitContract(int32_t code)
+    exitContract(std::string_view const& msg, int32_t code)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

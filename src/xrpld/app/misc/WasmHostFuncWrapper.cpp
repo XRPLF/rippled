@@ -1151,6 +1151,14 @@ exitContract_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
 
+    std::cout << "exitContract_wrap" << std::endl;
+
+    auto const msg = getDataString(rt, params, index);
+    if (!msg)
+    {
+        return hfResult(results, msg.error());
+    }
+
     auto const code = getDataInt32(rt, params, index);
     if (!code)
     {
@@ -1158,7 +1166,7 @@ exitContract_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
     }
 
     return returnResult(
-        rt, params, results, hf->exitContract(*code), index);
+        rt, params, results, hf->exitContract(*msg, *code), index);
 }
 
 wasm_trap_t*

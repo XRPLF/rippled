@@ -194,7 +194,7 @@ public:
     otxnCallParam(std::uint32_t index, std::uint32_t stTypeId) override;
 
     Expected<int32_t, HostFunctionError>
-    exitContract(int32_t code) override;
+    exitContract(std::string_view const& msg, int32_t code) override;
 
     Expected<Bytes, HostFunctionError>
     submit(std::shared_ptr<STTx const> const& stxPtr) override;

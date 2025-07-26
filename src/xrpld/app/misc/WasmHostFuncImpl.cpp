@@ -766,10 +766,11 @@ WasmHostFunctionsImpl::otxnCallParam(
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::exitContract(int32_t code)
+WasmHostFunctionsImpl::exitContract(std::string_view const& msg, int32_t code)
 {
-    contractCtx.result.exitCode = static_cast<std::uint8_t>(code);
-    contractCtx.result.exitReason = "Unknown exit reason";
+    std::cout << "WASM: exitContract: code out of range: " << code << std::endl;
+    contractCtx.result.exitCode = code;
+    contractCtx.result.exitReason = msg;
     if (code < 0 || code > 255)
     {
         contractCtx.result.exitType = ripple::ExitType::ROLLBACK;
