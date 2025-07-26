@@ -1,34 +1,49 @@
 name: build
 inputs:
-  generator:
-    default: null
-  configuration:
+  build_dir:
+    description: 'The directory where the build will take place.'
     required: true
-  cmake-args:
-    default: null
-  cmake-target:
-    default: all
-# An implicit input is the environment variable `build_dir`.
+    type: string
+  build_type:
+    description: 'The build type to use.'
+    required: true
+    type: choice
+    options:
+      - Debug
+      - Release
+  cmake_args:
+    description: 'Additional arguments to pass to CMake.'
+    required: false
+    type: string
+  cmake_generator:
+    description: 'The CMake generator to use for the build.'
+    required: true
+    type: string
+  cmake_target:
+    description: 'The CMake target to build.'
+    required: false
+    type: string
+    default: 'all'
+
+
 runs:
   using: composite
   steps:
-    - name: configure
-      shell: bash
+    - name: CMake configure
+      working-directory: ${{ inputs.build_dir }}
       run: |
-        cd ${build_dir}
         cmake \
-          ${{ inputs.generator && format('-G "{0}"', inputs.generator) || '' }} \
+          ${{ inputs.build_generator && format('-G "{0}"', inputs.build_generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-          -DCMAKE_BUILD_TYPE=${{ inputs.configuration }} \
+          -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
           -Dtests=TRUE \
           -Dxrpld=TRUE \
-          ${{ inputs.cmake-args }} \
+          ${{ inputs.cmake_args }} \
           ..
-    - name: build
-      shell: bash
+    - name: CMake build
+      working-directory: ${{ inputs.build_dir }}
       run: |
-        cmake \
-          --build ${build_dir} \
-          --config ${{ inputs.configuration }} \
-          --parallel ${NUM_PROCESSORS:-$(nproc)} \
-          --target ${{ inputs.cmake-target }}
+        cmake --build . \
+              --config ${{ inputs.build_type }} \
+              --parallel $(nproc) \
+              --target ${{ inputs.cmake_target }}

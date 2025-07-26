@@ -1,0 +1,40 @@
+name: conan-dependencies
+
+inputs:
+  build_dir:
+    description: 'The directory where the build will take place.'
+    required: true
+    type: string
+  build_type:
+    description: 'The build type to use.'
+    required: true
+    type: choice
+    options:
+      - Debug
+      - Release
+  conan_remote_name:
+    description: 'The name of the Conan remote to use.'
+    required: true
+    type: string
+
+# Install the Conan dependencies for the specified configuration. The ones that
+# are not in the remote cache will be built from source and added to the cache.
+# This action assumes that the Conan profiles have already been installed and
+# that the user has logged into the specified remote, see the 'conan-configure'
+# action.
+runs:
+  using: composite
+  steps:
+    - name: Install Conan dependencies
+      run: |
+        mkdir -p ${{ inputs.build_dir }}
+        cd ${{ inputs.build_dir }}
+        conan install \
+          --output-folder . \
+          --build missing \
+          --options:host "&:tests=True" \
+          --options:host "&:xrpld=True" \
+          --settings:all build_type=${{ inputs.build_type }} \
+          ..
+    - name: Upload Conan dependencies
+      run: conan upload '*' --confirm --check --remote ${{ inputs.conan_remote_name }}

@@ -1,0 +1,53 @@
+name: Documentation
+
+# TODO: Use `workflow_run` to trigger this workflow after checks have completed.
+# This can only be done if the `checks` workflow already exists on the default
+# branch (i.e. `develop`), so we cannot do this yet.
+# See https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run.
+on:
+  push:
+    branches:
+      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  doxygen:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check configuration
+        run: |
+          echo "Checking path"
+          echo ${PATH} | tr ':' '\n'
+          
+          echo "Checking environment variables."
+          env | sort
+      - name: Check versions
+        run: |
+          echo "Checking CMake version."
+          cmake --version
+          
+          echo "Checking Doxygen version."
+          doxygen --version
+      - name: Build documentation
+        run: |
+          mkdir build
+          cd build
+          cmake -Donly_docs=TRUE ..
+          cmake --build . --target docs --parallel $(nproc)
+      - name: Publish documentation
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/docs/html

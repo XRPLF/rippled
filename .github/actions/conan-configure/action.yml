@@ -1,0 +1,52 @@
+name: conan-configure
+
+inputs:
+  conan_global_conf:
+    description: 'The contents of the global Conan configuration file.'
+    required: true
+    type: string
+  conan_remote_name:
+    description: 'The name of the Conan remote to use.'
+    required: true
+    type: string
+  conan_remote_url:
+    description: 'The URL of the Conan remote to use.'
+    required: true
+    type: string
+  conan_remote_username:
+    description: 'The username for logging into the Conan remote.'
+    required: true
+    type: string
+  conan_remote_password:
+    description: 'The password for logging into the Conan remote.'
+    required: true
+    type: string
+
+# Install the Conan profiles and log into the specified remote.
+runs:
+  using: composite
+  steps:
+    - name: Check configuration
+      run: |
+        echo "Checking Conan version."
+        conan --version
+    - name: Install Conan profile
+      run: |
+        echo "${{ inputs.conan_global_conf }}" >> $(conan config home)/global.conf
+        conan config install conan/profiles/default -tf $(conan config home)/profiles/
+        echo "Installed Conan profile:"
+        conan profile show
+    - name: Add Conan remote
+      run: |
+        # Remove the remote if it already exists. This can occur on self-hosted
+        # runners where the workspace is not cleaned up between runs.
+        if conan remote list | grep -q '${{ inputs.conan_remote_name }}'; then
+            conan remote remove ${{ inputs.conan_remote_name }}
+            echo "Removed Conan remote '${{ inputs.conan_remote_name }}'."
+        fi
+        conan remote add --index 0 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+        echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
+    - name: Log into Conan remote
+      run: |
+        conan remote login ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_username }} --password "${{ inputs.conan_remote_password }}"
+        conan remote list-users

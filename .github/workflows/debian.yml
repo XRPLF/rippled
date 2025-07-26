@@ -1,0 +1,215 @@
+name: Debian
+
+# TODO: Use `workflow_run` to trigger this workflow after checks have completed.
+# This can only be done if the `checks` workflow already exists on the default
+# branch (i.e. `develop`), so we cannot do this yet.
+# See https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run.
+on:
+  push:
+# TODO: Re-enable after testing.
+#    branches:
+#      - develop
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  BUILD_DIR: .build
+  CONAN_GLOBAL_CONF: |
+    core.download:parallel={{ os.cpu_count() }}
+    core.upload:parallel={{ os.cpu_count() }}
+    tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
+    tools.build:verbosity=verbose
+    tools.compilation:verbosity=verbose
+  CONAN_REMOTE_URL: https://conan.ripplex.io
+  CONAN_REMOTE_NAME: xrplf
+  # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
+  # duplication, we define it here using environment variables and create the
+  # matrix in the first job. The matrix defined below should be kept in sync
+  # with https://github.com/XRPLF/ci/blob/main/.github/workflows/debian.yml.
+  STRATEGY_MATRIX_ARCHITECTURE: |
+    [
+      {
+          "platform": "linux/amd64",
+          "runner": "ubuntu-24.04"
+      },
+      {
+          "platform": "linux/arm64",
+          "runner": "ubuntu-24.04-arm"
+      }
+    ]
+  STRATEGY_MATRIX_OS: |
+    [
+        {
+            "release": "bookworm",
+            "compiler_name": "gcc",
+            "compiler_version": "12"
+        },
+        {
+            "release": "bookworm",
+            "compiler_name": "gcc",
+            "compiler_version": "13"
+        },
+        {
+            "release": "bookworm",
+            "compiler_name": "gcc",
+            "compiler_version": "14"
+        },
+        {
+            "release": "bookworm",
+            "compiler_name": "clang",
+            "compiler_version": "16"
+        },
+        {
+            "release": "bookworm",
+            "compiler_name": "clang",
+            "compiler_version": "17"
+        },
+        {
+            "release": "bookworm",
+            "compiler_name": "clang",
+            "compiler_version": "18"
+        },
+        {
+            "release": "bookworm",
+            "compiler_name": "clang",
+            "compiler_version": "19"
+        }
+    ]
+  STRATEGY_MATRIX_BUILDTYPE: |
+    [
+      "Debug",
+      "Release"
+    ]
+  STRATEGY_MATRIX_UNITY: |
+    [
+      "-DUnity=OFF",
+      "-DUnity=ON"
+    ]
+
+jobs:
+  # Generate the strategy matrix, see https://stackoverflow.com/a/78046142.
+  generate-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate matrix
+        id: generate-matrix
+        run: |
+          # Use heredoc with random delimiter for multiline JSON.
+          DELIMITER="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)"
+          echo "architecture << ${DELIMITER}
+          ${STRATEGY_MATRIX_ARCHITECTURE}
+          ${DELIMITER}" >> "$GITHUB_OUTPUT"
+          echo "os << ${DELIMITER}
+          ${STRATEGY_MATRIX_OS}
+          ${DELIMITER}" >> "$GITHUB_OUTPUT"
+          echo "build_type << ${DELIMITER}
+          ${STRATEGY_MATRIX_BUILDTYPE}
+          ${DELIMITER}" >> "$GITHUB_OUTPUT"
+          echo "unity << ${DELIMITER}
+          ${STRATEGY_MATRIX_UNITY}
+          ${DELIMITER}" >> "$GITHUB_OUTPUT"
+    outputs:
+      architecture: ${{ steps.generate-matrix.outputs.architecture }}
+      os: ${{ steps.generate-matrix.outputs.os }}
+      build_type: ${{ steps.generate-matrix.outputs.build_type }}
+      unity: ${{ steps.generate-matrix.outputs.unity }}
+
+  # Install (and cache) the Conan dependencies.
+  install-dependencies:
+    needs:
+      - generate-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: ${{ fromJson(needs.generate-matrix.outputs.architecture) }}
+        os: ${{ fromJson(needs.generate-matrix.outputs.os) }}
+        build_type: ${{ fromJson(needs.generate-matrix.outputs.build_type) }}
+    runs-on: ${{ matrix.architecture.runner }}
+    image: ghcr.io/xrplf/ci/debian-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check configuration
+        run: |
+          echo "Checking path"
+          echo ${PATH} | tr ':' '\n'
+          
+          echo "Checking environment variables."
+          env | sort
+      - name: Check versions
+        run: |
+          echo "Checking release."
+          lsb_release -a
+          
+          echo "Checking CMake version."
+          cmake --version
+          
+          echo "Checking compiler version."
+          ${{ matrix.os.compiler_name }} --version
+      - name: Configure Conan
+        uses: ./.github/actions/conan-configure
+        with:
+          conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
+          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+          conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
+          conan_remote_username: ${{ secrets.CONAN_USERNAME }}
+          conan_remote_password: ${{ secrets.CONAN_PASSWORD }}
+      - name: Install Conan dependencies
+        uses: ./.github/actions/conan-dependencies
+        with:
+          build_dir: ${{ env.BUILD_DIR }}
+          build_type: ${{ matrix.build_type }}
+          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+
+  # Build and test the binary.
+  build-test:
+    needs:
+      - generate-matrix
+      - install-dependencies
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: ${{ fromJson(needs.generate-matrix.outputs.architecture) }}
+        os: ${{ fromJson(needs.generate-matrix.outputs.os) }}
+        build_type: ${{ fromJson(needs.generate-matrix.outputs.build_type) }}
+        unity: ${{ fromJson(needs.generate-matrix.outputs.unity) }}
+    runs-on: ${{ matrix.architecture.runner }}
+    image: ghcr.io/xrplf/ci/debian-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Configure Conan
+        uses: ./.github/actions/conan-configure
+        with:
+          conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
+          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+          conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
+          conan_remote_username: ${{ secrets.CONAN_USERNAME }}
+          conan_remote_password: ${{ secrets.CONAN_PASSWORD }}
+      - name: Build code
+        uses: ./.github/actions/build
+        with:
+          build_type: ${{ matrix.build_type }}
+          cmake_args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.unity }}"
+          cmake_generator: Ninja
+      - name: Check linking
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ldd ./rippled
+          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+            exit 1
+          fi
+      - name: Test code
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ./rippled --unittest --unittest-jobs $(nproc)
+          ctest -j $(nproc) --output-on-failure
