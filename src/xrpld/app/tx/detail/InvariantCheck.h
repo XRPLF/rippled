@@ -704,6 +704,39 @@ private:
         beast::Journal const&) const;
 };
 
+class ValidPayment
+{
+    struct MPTAmount
+    {
+        std::int64_t before;
+        std::int64_t after;
+    };
+    struct MPTData
+    {
+        std::int64_t outstandingBefore{0};
+        std::int64_t outstandingAfter{0};
+        hash_map<AccountID, MPTAmount> mptAmount;
+    };
+
+    bool overflow_{false};
+    hash_map<uint192, MPTData> data_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -725,7 +758,8 @@ using InvariantChecks = std::tuple<
     ValidMPTIssuance,
     ValidPermissionedDomain,
     ValidPermissionedDEX,
-    ValidAMM>;
+    ValidAMM,
+    ValidPayment>;
 
 /**
  * @brief get a tuple of all invariant checks
