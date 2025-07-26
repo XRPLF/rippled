@@ -23,7 +23,7 @@ runs:
         conan remote add --index 0 ripple "${CONAN_URL}"
         echo "Added conan remote ripple at ${CONAN_URL}"
     - name: try to authenticate to Ripple Conan remote
-      if: env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
+      if: env.CONAN_URL != '' && env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
       id: remote
       shell: bash
       run: |

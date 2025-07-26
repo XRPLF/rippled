@@ -19,7 +19,7 @@ concurrency:
 # This part of Conan configuration is specific to this workflow only; we do not want
 # to pollute conan/profiles directory with settings which might not work for others
 env:
-  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+  # CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
   CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
   CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
   CONAN_GLOBAL_CONF: |
