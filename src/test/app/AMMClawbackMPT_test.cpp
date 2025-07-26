@@ -1799,8 +1799,8 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice},
-                 .flags = tfMPTCanClawback | tfMPTCanTransfer,
-                 .pay = 40'000});
+                 .pay = 40'000,
+                 .flags = tfMPTCanClawback | tfMPTCanTransfer});
 
             // Asset USD is not clawable without asfAllowTrustLineClawback.
             AMM amm(env, alice, USD(200), BTC(100));
@@ -1840,8 +1840,8 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
                 {.env = env,
                  .issuer = gw2,
                  .holders = {alice},
-                 .flags = tfMPTCanClawback | tfMPTCanTransfer,
-                 .pay = 40'000});
+                 .pay = 40'000,
+                 .flags = tfMPTCanClawback | tfMPTCanTransfer});
 
             AMM amm(env, alice, USD(200), BTC(100));
 
@@ -1862,14 +1862,14 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = bob,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, USD(50000)));
                 env(pay(bob, alice, BTC(50000)));
                 env.close();
@@ -1893,14 +1893,14 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = bob,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, USD(50000)));
                 env(pay(bob, alice, BTC(50000)));
                 env.close();

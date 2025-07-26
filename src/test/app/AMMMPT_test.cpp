@@ -163,9 +163,9 @@ private:
             MPT BTC = MPTTester(
                 {.env = env,
                  .issuer = gw,
-                 .flags = tfMPTCanLock,
+                 .holders = {alice},
                  .pay = 40'000,
-                 .holders = {alice}});
+                 .flags = tfMPTCanLock});
             AMM ammAlice(
                 env, alice, BTC(20'000), XRP(10'000), ter(tecNO_PERMISSION));
         }
@@ -1221,14 +1221,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, carol, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
@@ -1278,14 +1278,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, carol, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
@@ -1336,14 +1336,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, carol, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
@@ -1501,14 +1501,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, carol, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
@@ -1655,15 +1655,15 @@ private:
             MPT BTC = MPTTester(
                 {.env = env,
                  .issuer = gw,
-                 .transferFee = 25'000,
                  .holders = {alice, carol},
+                 .transferFee = 25'000,
                  .pay = 400'000});
 
             MPT USD = MPTTester(
                 {.env = env,
                  .issuer = gw,
-                 .transferFee = 25'000,
                  .holders = {alice, carol},
+                 .transferFee = 25'000,
                  .pay = 400'000});
 
             AMM ammAlice(env, alice, USD(200'000), BTC(5));
@@ -1687,8 +1687,8 @@ private:
             MPT BTC = MPTTester(
                 {.env = env,
                  .issuer = gw,
-                 .transferFee = 25'000,
                  .holders = {alice, bob, carol},
+                 .transferFee = 25'000,
                  .pay = 400'000});
 
             auto const USD = gw["USD"];
@@ -1711,8 +1711,8 @@ private:
             MPT ETH = MPTTester(
                 {.env = env,
                  .issuer = gw,
-                 .transferFee = 25'000,
                  .holders = {alice, bob, carol},
+                 .transferFee = 25'000,
                  .pay = 400'000});
 
             // MPT/IOU
@@ -1875,14 +1875,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, carol, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
@@ -1940,14 +1940,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, carol, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
@@ -2688,14 +2688,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
                 env.close();
@@ -2750,14 +2750,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
                 env.close();
@@ -2857,14 +2857,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice}});
+                     .holders = {alice},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
                 env.close();
@@ -3082,14 +3082,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, carol}});
+                     .holders = {alice, carol},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, carol, BTC(50000)));
                 env(pay(gw, alice, USD(50000)));
@@ -3262,16 +3262,16 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
+                     .holders = {alice, bob, carol},
                      .limit = 1'000'000,
-                     .transferFee = 25'000,
-                     .holders = {alice, bob, carol}});
+                     .transferFee = 25'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
+                     .holders = {alice, bob, carol},
                      .limit = 1'000'000,
-                     .transferFee = 25'000,
-                     .holders = {alice, bob, carol}});
+                     .transferFee = 25'000});
                 env(pay(gw, alice, BTC(10000)));
                 env(pay(gw, bob, BTC(10000)));
                 env(pay(gw, carol, BTC(10000)));
@@ -4627,7 +4627,7 @@ private:
                  .flags = tfMPTCanLock | MPTDEXFlags});
 
             AMM ammAlice(env, alice, XRP(10'000), BTC(10'000));
-            BTC.set({.flags = tfMPTLock, .holder = ammAlice.ammAccount()});
+            BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
 
             env(pay(alice, carol, XRP(1)),
                 path(~XRP),

@@ -450,14 +450,14 @@ private:
                 {.env = env,
                  .token = "ETH",
                  .issuer = gw,
-                 .limit = 10'000'000'000'000'000,
-                 .holders = {alice, bob, carol, dan}});
+                 .holders = {alice, bob, carol, dan},
+                 .limit = 10'000'000'000'000'000});
             auto const BTC = issue2(
                 {.env = env,
                  .token = "BTC",
                  .issuer = gw,
-                 .limit = 10'000'000'000'000'000,
-                 .holders = {alice, bob, carol, dan}});
+                 .holders = {alice, bob, carol, dan},
+                 .limit = 10'000'000'000'000'000});
             env(pay(gw, alice, BTC(500'000'000'000'000)));
             env(pay(gw, carol, BTC(6'000'000'000'000'000)));
             env(pay(gw, dan, ETH(400'000'000'000'000)));
@@ -1706,14 +1706,14 @@ private:
                     {.env = env,
                      .token = "ETH",
                      .issuer = gw,
-                     .limit = 100'000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 100'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 100'000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 100'000'000});
                 env(pay(gw, alice, BTC(500000)));
                 env(pay(gw, bob, BTC(500000)));
                 env(pay(gw, carol, BTC(500000)));
@@ -1836,20 +1836,20 @@ private:
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1000'000000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 1000'000000});
                 auto const ETH = issue2(
                     {.env = env,
                      .token = "ETH",
                      .issuer = gw,
-                     .limit = 1000'000000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 1000'000000});
                 auto const GBP = issue3(
                     {.env = env,
                      .token = "GBP",
                      .issuer = gw,
-                     .limit = 1000'000000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 1000'000000});
 
                 env(pay(gw, alice, BTC(60'000)));
                 env(pay(gw, bob, ETH(200'000)));
@@ -2017,14 +2017,14 @@ private:
                     {.env = env,
                      .token = "ETH",
                      .issuer = gw,
-                     .limit = 10'000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 10'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 10'000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 10'000'000});
 
                 env(pay(gw, alice, ETH(1'000'000)));
                 env(pay(gw, bob, BTC(1'000'000)));
@@ -2720,14 +2720,14 @@ private:
                     {.env = env,
                      .token = "ETH",
                      .issuer = gw,
-                     .limit = 2000'000,
-                     .holders = {alice, bob}});
+                     .holders = {alice, bob},
+                     .limit = 2000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 2000'000,
-                     .holders = {alice, bob}});
+                     .holders = {alice, bob},
+                     .limit = 2000'000});
 
                 env(pay(gw, alice, BTC(200'000)));
                 env(pay(gw, bob, BTC(200'000)));
@@ -2756,14 +2756,14 @@ private:
                     {.env = env,
                      .token = "ETH",
                      .issuer = gw,
-                     .limit = 2000'000,
-                     .holders = {alice, bob}});
+                     .holders = {alice, bob},
+                     .limit = 2000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 2000'000,
-                     .holders = {alice, bob}});
+                     .holders = {alice, bob},
+                     .limit = 2000'000});
 
                 env(pay(gw, alice, BTC(200'000)));
                 env(pay(gw, bob, BTC(200'000)));
@@ -2794,20 +2794,20 @@ private:
                     {.env = env,
                      .token = "ETH",
                      .issuer = gw,
-                     .limit = 2000'000,
-                     .holders = {alice, bob}});
+                     .holders = {alice, bob},
+                     .limit = 2000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 2000'000,
-                     .holders = {alice, bob}});
+                     .holders = {alice, bob},
+                     .limit = 2000'000});
                 auto const JPY = issue2(
                     {.env = env,
                      .token = "JPY",
                      .issuer = gw,
-                     .limit = 2000'000,
-                     .holders = {alice, bob}});
+                     .holders = {alice, bob},
+                     .limit = 2000'000});
 
                 env(pay(gw, alice, BTC(200'000)));
                 env(pay(gw, bob, BTC(200'000)));
@@ -2892,8 +2892,8 @@ private:
             MPTTester USD(
                 {.env = env,
                  .issuer = gw,
-                 .pay = 10000'000'000,
                  .holders = {alice, bob, carol, dan, ed},
+                 .pay = 10000'000'000,
                  .flags = MPTDEXFlags});
 
             env.trust(BTC(11'000'000'000'000), ed);
@@ -3086,14 +3086,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 3000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 3000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 1'000'000});
 
                 env(pay(gw, alice, USD(10'000)));
                 env(pay(gw, bob, USD(10'000)));
@@ -3149,14 +3149,14 @@ private:
                     {.env = env,
                      .token = "USD",
                      .issuer = gw,
-                     .limit = 3000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 3000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 1'000'000});
 
                 env(pay(gw, alice, USD(100'000)));
                 env(pay(gw, bob, USD(100'000)));
@@ -3684,14 +3684,14 @@ private:
                     {.env = env,
                      .token = "ETH",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 1'000'000});
                 auto const BTC = issue2(
                     {.env = env,
                      .token = "BTC",
                      .issuer = gw,
-                     .limit = 1'000'000,
-                     .holders = {alice, bob, carol}});
+                     .holders = {alice, bob, carol},
+                     .limit = 1'000'000});
                 env(pay(gw, alice, BTC(50000)));
                 env(pay(gw, bob, BTC(50000)));
                 env(pay(gw, carol, BTC(50000)));
