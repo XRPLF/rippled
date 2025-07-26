@@ -101,19 +101,22 @@ jobs:
         id: generate-matrix
         run: |
           # Use heredoc with random delimiter for multiline JSON.
-          DELIMITER="$(dd bs=512 if=/dev/urandom count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 20)"
-          echo "architecture << ${DELIMITER}
+          DELIMITER_ARCHITECTURE="$(dd bs=512 if=/dev/urandom count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 20)"
+          echo "architecture << ${DELIMITER_ARCHITECTURE}
           ${STRATEGY_MATRIX_ARCHITECTURE}
-          ${DELIMITER}" >> "$GITHUB_OUTPUT"
-          echo "os << ${DELIMITER}
+          ${DELIMITER_ARCHITECTURE}" >> "$GITHUB_OUTPUT"
+          DELIMITER_OS="$(dd bs=512 if=/dev/urandom count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 20)"
+          echo "os << ${DELIMITER_OS}
           ${STRATEGY_MATRIX_OS}
-          ${DELIMITER}" >> "$GITHUB_OUTPUT"
-          echo "build_type << ${DELIMITER}
+          ${DELIMITER_OS}" >> "$GITHUB_OUTPUT"
+          DELIMITER_BUILDTYPE="$(dd bs=512 if=/dev/urandom count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 20)"
+          echo "build_type << ${DELIMITER_BUILDTYPE}
           ${STRATEGY_MATRIX_BUILDTYPE}
-          ${DELIMITER}" >> "$GITHUB_OUTPUT"
-          echo "unity << ${DELIMITER}
+          ${DELIMITER_BUILDTYPE}" >> "$GITHUB_OUTPUT"
+          DELIMITER_UNITY="$(dd bs=512 if=/dev/urandom count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 20)"
+          echo "unity << ${DELIMITER_UNITY}
           ${STRATEGY_MATRIX_UNITY}
-          ${DELIMITER}" >> "$GITHUB_OUTPUT"
+          ${DELIMITER_UNITY}" >> "$GITHUB_OUTPUT"
     outputs:
       architecture: ${{ steps.generate-matrix.outputs.architecture }}
       os: ${{ steps.generate-matrix.outputs.os }}
