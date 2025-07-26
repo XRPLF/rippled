@@ -81,7 +81,7 @@ env:
             "compiler_version": "19"
         }
     ]
-  STRATEGY_MATRIX_BUILDTYPE: >-
+  STRATEGY_MATRIX_BUILD_TYPE: >-
     [
       "Debug",
       "Release"
@@ -93,27 +93,17 @@ env:
     ]
 
 jobs:
-  # Generate the strategy matrix, see https://stackoverflow.com/a/78046142.
+  # Generate the strategy matrix.
   generate-matrix:
     runs-on: ubuntu-latest
     steps:
       - name: Generate matrix
         id: generate-matrix
         run: |
-          # Use heredoc with random delimiter for multiline JSON.
-          DELIMITER="$(openssl rand -hex 8)"
-          echo "architecture << ${DELIMITER}
-          ${STRATEGY_MATRIX_ARCHITECTURE}
-          ${DELIMITER}" >> "$GITHUB_OUTPUT"
-          echo "os << ${DELIMITER}
-          ${STRATEGY_MATRIX_OS}
-          ${DELIMITER}" >> "$GITHUB_OUTPUT"
-          echo "build_type << ${DELIMITER}
-          ${STRATEGY_MATRIX_BUILDTYPE}
-          ${DELIMITER}" >> "$GITHUB_OUTPUT"
-          echo "unity << ${DELIMITER}
-          ${STRATEGY_MATRIX_UNITY}
-          ${DELIMITER}" >> "$GITHUB_OUTPUT"
+          echo "architecture=$(jq -c <<< '${{ env.STRATEGY_MATRIX_ARCHITECTURE }}') >> "$GITHUB_OUTPUT"
+          echo "os=$(jq -c <<< '${{ env.STRATEGY_MATRIX_OS }}') >> "$GITHUB_OUTPUT"
+          echo "build_type=$(jq -c <<< '${{ env.STRATEGY_MATRIX_BUILD_TYPE }}') >> "$GITHUB_OUTPUT"
+          echo "unity=$(jq -c <<< '${{ env.STRATEGY_MATRIX_UNITY }}') >> "$GITHUB_OUTPUT"
     outputs:
       architecture: ${{ steps.generate-matrix.outputs.architecture }}
       os: ${{ steps.generate-matrix.outputs.os }}
