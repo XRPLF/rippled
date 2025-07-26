@@ -1141,6 +1141,27 @@ otxnCallParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
 }
 
 wasm_trap_t*
+exitContract_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const code = getDataInt32(rt, params, index);
+    if (!code)
+    {
+        return hfResult(results, code.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->exitContract(*code), index);
+}
+
+wasm_trap_t*
 submit_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
@@ -1151,11 +1172,9 @@ submit_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
 
-    std::cout << "submit_wrap called" << std::endl;
     auto const slice = getDataSlice(rt, params, index);
     if (!slice)
     {
-        std::cout << "submit_wrap: " << "!slice" << std::endl;
         return hfResult(results, slice.error());
     }
 
@@ -1171,7 +1190,7 @@ submit_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     }
 
     return returnResult(
-        rt, params, results, hf->submit(*stpTrans), index);
+        rt, params, results, hf->submit(stpTrans), index);
 }
 
 class MockInstanceWrapper

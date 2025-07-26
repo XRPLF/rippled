@@ -59,6 +59,12 @@ public:
         return rt_;
     }
 
+    ContractResult
+    getResult()
+    {
+        return contractCtx.result;
+    }
+
     beast::Journal
     getJournal() override
     {
@@ -188,7 +194,10 @@ public:
     otxnCallParam(std::uint32_t index, std::uint32_t stTypeId) override;
 
     Expected<int32_t, HostFunctionError>
-    submit(STTx const& stx) override;
+    exitContract(int32_t code) override;
+
+    Expected<Bytes, HostFunctionError>
+    submit(std::shared_ptr<STTx const> const& stxPtr) override;
 };
 
 }  // namespace ripple

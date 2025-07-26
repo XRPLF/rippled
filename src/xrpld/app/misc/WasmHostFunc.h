@@ -32,6 +32,7 @@
 namespace ripple {
 
 enum class HostFunctionError : int32_t {
+    SUCCESS = 0,
     INTERNAL = -1,
     FIELD_NOT_FOUND = -2,
     BUFFER_TOO_SMALL = -3,
@@ -50,6 +51,7 @@ enum class HostFunctionError : int32_t {
     INVALID_ACCOUNT = -16,
     INVALID_FIELD = -17,
     INDEX_OUT_OF_BOUNDS = -18,
+    SUBMIT_TXN_FAILURE = -19,
 };
 
 struct HostFunctions
@@ -303,7 +305,13 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    submit(STTx const& stx)
+    exitContract(int32_t code)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    submit(std::shared_ptr<STTx const> const& stxPtr)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

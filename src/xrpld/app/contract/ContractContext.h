@@ -65,8 +65,7 @@ struct ContractResult
     ripple::Keylet const contractAccountKeylet;
     ripple::AccountID const contractAccount;
     ripple::AccountID const otxnAccount;
-
-    std::queue<std::shared_ptr<ripple::Transaction>> emittedTxn{};
+    std::queue<std::shared_ptr<ripple::Transaction>> pendingTxns{};
     ripple::ExitType exitType = ripple::ExitType::ROLLBACK;
     std::string exitReason{""};
     int64_t exitCode{-1};

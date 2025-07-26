@@ -209,6 +209,9 @@ ContractCall::doApply()
                 .contractAccountKeylet = k,
                 .contractAccount = contractAccount,
                 .otxnAccount = contractAccount,
+                .exitType = ripple::ExitType::ROLLBACK,
+                .exitReason = std::string(""),
+                .exitCode = -1,
             },
     };
 
@@ -221,7 +224,11 @@ ContractCall::doApply()
     }
     std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
     auto re = runEscrowWasm(wasm, funcName, {}, &ledgerDataProvider, allowance);
-    JLOG(j_.error()) << "Call WASM ran";
+    ContractResult const& result = ledgerDataProvider.getResult();
+    JLOG(j_.error()) << "Call WASM ran: " << re.has_value()
+                     << ", exitType: " << static_cast<int>(result.exitType)
+                     << ", exitReason: " << result.exitReason
+                     << ", exitCode: " << result.exitCode;
     if (re.has_value())
     {
         auto reValue = re.value().result;
@@ -234,6 +241,90 @@ ContractCall::doApply()
             // ctx_.view().update(slep);
             return tecWASM_REJECTED;
         }
+
+        // contractCtx.applyCtx.addTxToOpenView(stx);
+
+        // Submit Transaction to ledger
+        // OpenView wholeBatchView(batch_view, contractCtx.applyCtx.openView());
+
+        // OpenView perTxBatchView(batch_view, wholeBatchView);
+        // // auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx, tapBATCH, j);
+        // auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx, tapBATCH, j);
+        // // XRPL_ASSERT(
+        // //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+        // //     "Inner transaction should not be applied");
+
+        // JLOG(j.error()) << "WASM [" << parentBatchId
+        //                 << "]: " << stx.getTransactionID() << " "
+        //                 << (ret.applied ? "applied" : "failure") << ": "
+        //                 << transToken(ret.ter);
+
+        //     // XRPL_ASSERT(
+        // //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+        // //     "Inner transaction should not be applied");
+
+        // JLOG(j.error()) << "WASM [" << parentBatchId
+        //                 << "]: " << stx.getTransactionID() << " "
+        //                 << (ret.applied ? "applied" : "failure") << ": "
+        //                 << transToken(ret.ter);
+
+        // If the transaction should be applied push its changes to the
+        // whole-batch view.
+        // if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+        //     perTxBatchView.apply(batchView);
+
+        // auto applyOneTransaction =
+        //     [&app, &j, &parentBatchId, &batchView](STTx&& tx) {
+        //         OpenView perTxBatchView(batch_view, batchView);
+
+        //         auto const ret = ripple::apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+        //         // XRPL_ASSERT(
+        //         //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+        //         //     "Inner transaction should not be applied");
+
+        //         JLOG(j.error()) << "WASM [" << parentBatchId
+        //                         << "]: " << tx.getTransactionID() << " "
+        //                         << (ret.applied ? "applied" : "failure") << ": "
+        //                         << transToken(ret.ter);
+
+        //         // If the transaction should be applied push its changes to the
+        //         // whole-batch view.
+        //         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+        //             perTxBatchView.apply(batchView);
+
+        //         return ret;
+        //     };
+
+        // int applied = 0;
+
+        // auto const result = applyOneTransaction(STTx{std::move(stx)});
+        // std::cout << "Transaction result: " << (result.applied ? "applied" : "failure") << std::endl;
+
+        // for (STObject rb : batchTxn.getFieldArray(sfRawTransactions))
+        // {
+        //     auto const result = applyOneTransaction(STTx{std::move(rb)});
+        //     XRPL_ASSERT(
+        //         result.applied ==
+        //             (isTesSuccess(result.ter) || isTecClaim(result.ter)),
+        //         "Outer Batch failure, inner transaction should not be applied");
+
+        //     if (result.applied)
+        //         ++applied;
+
+        //     if (!isTesSuccess(result.ter))
+        //     {
+        //         if (mode & tfAllOrNothing)
+        //             return false;
+
+        //         if (mode & tfUntilFailure)
+        //             break;
+        //     }
+        //     else if (mode & tfOnlyOne)
+        //         break;
+        // }
+
+        // if (applied != 0)
+        //     wholeBatchView.apply(view);
     }
     else
     {

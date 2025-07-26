@@ -17,9 +17,10 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/WasmHostFuncImpl.h>
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/apply.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
 
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
@@ -645,9 +646,7 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 }
 
 Expected<Bytes, HostFunctionError>
-getFieldDataFromSTData(
-    ripple::STData const& funcParam,
-    std::uint32_t stTypeId)
+getFieldDataFromSTData(ripple::STData const& funcParam, std::uint32_t stTypeId)
 {
     switch (stTypeId)
     {
@@ -739,7 +738,9 @@ getFieldDataFromSTData(
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::contractFuncParam(std::uint32_t index, std::uint32_t stTypeId)
+WasmHostFunctionsImpl::contractFuncParam(
+    std::uint32_t index,
+    std::uint32_t stTypeId)
 {
     auto const& funcParams = contractCtx.funcParameters;
 
@@ -748,11 +749,12 @@ WasmHostFunctionsImpl::contractFuncParam(std::uint32_t index, std::uint32_t stTy
 
     ripple::STData const& funcParam = funcParams[index].value;
     return getFieldDataFromSTData(funcParam, stTypeId);
-    
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::otxnCallParam(std::uint32_t index, std::uint32_t stTypeId)
+WasmHostFunctionsImpl::otxnCallParam(
+    std::uint32_t index,
+    std::uint32_t stTypeId)
 {
     auto const& callParams = contractCtx.callParameters;
 
@@ -761,92 +763,58 @@ WasmHostFunctionsImpl::otxnCallParam(std::uint32_t index, std::uint32_t stTypeId
 
     ripple::STData const& callParam = callParams[index].value;
     return getFieldDataFromSTData(callParam, stTypeId);
-
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::submit(STTx const& stx)
+WasmHostFunctionsImpl::exitContract(int32_t code)
 {
-    std::cout << "WasmHostFunctionsImpl::submit called" << std::endl;
-    std::cout << "Transaction ID: " << stx.getTransactionID() << std::endl;
-    uint256 const parentBatchId = stx.getTransactionID();
+    contractCtx.result.exitCode = static_cast<std::uint8_t>(code);
+    contractCtx.result.exitReason = "Unknown exit reason";
+    if (code < 0 || code > 255)
+    {
+        contractCtx.result.exitType = ripple::ExitType::ROLLBACK;
+        return Unexpected(HostFunctionError{code});
+    }
+    contractCtx.result.exitType = ripple::ExitType::ACCEPT;
+    return Unexpected(HostFunctionError::SUCCESS);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::submit(std::shared_ptr<STTx const> const& stxPtr)
+{
+    auto& app = contractCtx.applyCtx.app;
+    auto& view = contractCtx.applyCtx.view();
+    auto& tx = contractCtx.applyCtx.tx;
     auto j = getJournal();
 
-    // contractCtx.applyCtx.addTxToOpenView(stx);
+    std::string reason;
+    auto tpTrans = std::make_shared<Transaction>(stxPtr, reason, app);
+    if (tpTrans->getStatus() != NEW)
+    {
+        JLOG(j.error()) << "WASM: tpTrans->getStatus() != NEW";
+        return Unexpected(HostFunctionError::SUBMIT_TXN_FAILURE);
+    }
 
-    // Submit Transaction to ledger
-    OpenView wholeBatchView(batch_view, contractCtx.applyCtx.openView());
+    // preflight the transaction
+    auto preflightResult = ripple::preflight(
+        app,
+        view.rules(),
+        tx.getTransactionID(),
+        *stxPtr,
+        ripple::ApplyFlags::tapBATCH,
+        j);
 
-    OpenView perTxBatchView(batch_view, wholeBatchView);
-    // auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx, tapBATCH, j);
-    auto const ret = apply(contractCtx.applyCtx.app, perTxBatchView, parentBatchId, stx, tapBATCH, j);
-    // XRPL_ASSERT(
-    //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
-    //     "Inner transaction should not be applied");
+    if (!isTesSuccess(preflightResult.ter))
+    {
+        JLOG(j.error()) << "WASM: Transaction preflight failure: "
+                        << preflightResult.ter;
+        return Unexpected(HostFunctionError::SUBMIT_TXN_FAILURE);
+    }
 
-    JLOG(j.error()) << "WASM [" << parentBatchId
-                    << "]: " << stx.getTransactionID() << " "
-                    << (ret.applied ? "applied" : "failure") << ": "
-                    << transToken(ret.ter);
+    auto const& txID = stxPtr->getTransactionID();
 
-    // If the transaction should be applied push its changes to the
-    // whole-batch view.
-    // if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
-    //     perTxBatchView.apply(batchView);
-
-    // auto applyOneTransaction =
-    //     [&app, &j, &parentBatchId, &batchView](STTx&& tx) {
-    //         OpenView perTxBatchView(batch_view, batchView);
-
-    //         auto const ret = ripple::apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
-    //         // XRPL_ASSERT(
-    //         //     ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
-    //         //     "Inner transaction should not be applied");
-
-    //         JLOG(j.error()) << "WASM [" << parentBatchId
-    //                         << "]: " << tx.getTransactionID() << " "
-    //                         << (ret.applied ? "applied" : "failure") << ": "
-    //                         << transToken(ret.ter);
-
-    //         // If the transaction should be applied push its changes to the
-    //         // whole-batch view.
-    //         if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
-    //             perTxBatchView.apply(batchView);
-
-    //         return ret;
-    //     };
-
-    // int applied = 0;
-
-    // auto const result = applyOneTransaction(STTx{std::move(stx)});
-    // std::cout << "Transaction result: " << (result.applied ? "applied" : "failure") << std::endl;
-
-    // for (STObject rb : batchTxn.getFieldArray(sfRawTransactions))
-    // {
-    //     auto const result = applyOneTransaction(STTx{std::move(rb)});
-    //     XRPL_ASSERT(
-    //         result.applied ==
-    //             (isTesSuccess(result.ter) || isTecClaim(result.ter)),
-    //         "Outer Batch failure, inner transaction should not be applied");
-
-    //     if (result.applied)
-    //         ++applied;
-
-    //     if (!isTesSuccess(result.ter))
-    //     {
-    //         if (mode & tfAllOrNothing)
-    //             return false;
-
-    //         if (mode & tfUntilFailure)
-    //             break;
-    //     }
-    //     else if (mode & tfOnlyOne)
-    //         break;
-    // }
-
-    // if (applied != 0)
-    //     wholeBatchView.apply(view);
-    return 0;
+    contractCtx.result.pendingTxns.push(tpTrans);
+    return Bytes{txID.begin(), txID.end()};
 }
 
 }  // namespace ripple
