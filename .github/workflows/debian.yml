@@ -101,7 +101,7 @@ jobs:
         id: generate-matrix
         run: |
           # Use heredoc with random delimiter for multiline JSON.
-          DELIMITER="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)"
+          DELIMITER="$(dd bs=512 if=/dev/urandom count=1 2>/dev/null | tr -dc 'a-zA-Z0-9' | head -c 20)"
           echo "architecture << ${DELIMITER}
           ${STRATEGY_MATRIX_ARCHITECTURE}
           ${DELIMITER}" >> "$GITHUB_OUTPUT"
