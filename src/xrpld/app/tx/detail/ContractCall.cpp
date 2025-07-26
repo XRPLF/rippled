@@ -266,21 +266,22 @@ ContractCall::doApply()
         auto& j = contractCtx.applyCtx.journal;
         OpenView wholeBatchView(batch_view, contractCtx.applyCtx.openView());
         auto const parentBatchId = ctx_.tx.getTransactionID();
-        auto applyOneTransaction = [&app, &j, &parentBatchId, &wholeBatchView](std::shared_ptr<const STTx> const& tx) {
-                OpenView perTxBatchView(batch_view, wholeBatchView);
+        auto applyOneTransaction = [&app, &j, &parentBatchId, &wholeBatchView](
+                                       std::shared_ptr<STTx const> const& tx) {
+            OpenView perTxBatchView(batch_view, wholeBatchView);
 
-                auto const ret = ripple::apply(app, perTxBatchView, parentBatchId, *tx, tapBATCH, j);
-                JLOG(j.error()) << "WASM [" << parentBatchId
-                                << "]: " << tx->getTransactionID() << " "
-                                << (ret.applied ? "applied" : "failure") <<
-                                ": "
-                                << transToken(ret.ter);
+            auto const ret = ripple::apply(
+                app, perTxBatchView, parentBatchId, *tx, tapBATCH, j);
+            JLOG(j.error())
+                << "WASM [" << parentBatchId << "]: " << tx->getTransactionID()
+                << " " << (ret.applied ? "applied" : "failure") << ": "
+                << transToken(ret.ter);
 
-                if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
-                    perTxBatchView.apply(wholeBatchView);
+            if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+                perTxBatchView.apply(wholeBatchView);
 
-                return ret;
-            };
+            return ret;
+        };
 
         int applied = 0;
 
@@ -289,8 +290,8 @@ ContractCall::doApply()
         {
             auto rb = txns.front();
             txns.pop();
-            std::cout << "WASM: Submitting transaction: "
-                      << rb->getID() << std::endl;
+            std::cout << "WASM: Submitting transaction: " << rb->getID()
+                      << std::endl;
             auto const result = applyOneTransaction(rb->getSTransaction());
             if (result.applied)
                 ++applied;
