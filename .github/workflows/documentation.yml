@@ -30,14 +30,14 @@ jobs:
         run: |
           echo "Checking path"
           echo ${PATH} | tr ':' '\n'
-          
+
           echo "Checking environment variables."
           env | sort
       - name: Check versions
         run: |
           echo "Checking CMake version."
           cmake --version
-          
+
           echo "Checking Doxygen version."
           doxygen --version
       - name: Build documentation

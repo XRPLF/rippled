@@ -67,7 +67,7 @@ jobs:
       - name: Check for differences
         env:
           MESSAGE: |
-            
+
             The dependency relationships between the modules in rippled have
             changed, which may be an improvement or a regression.
 

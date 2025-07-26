@@ -139,17 +139,17 @@ jobs:
         run: |
           echo "Checking path"
           echo ${PATH} | tr ':' '\n'
-          
+
           echo "Checking environment variables."
           env | sort
       - name: Check versions
         run: |
           echo "Checking release."
           lsb_release -a
-          
+
           echo "Checking CMake version."
           cmake --version
-          
+
           echo "Checking compiler version."
           ${{ matrix.os.compiler_name }} --version
       - name: Configure Conan
@@ -180,7 +180,7 @@ jobs:
         build_type: ${{ fromJson(needs.generate-matrix.outputs.build_type) }}
         unity: ${{ fromJson(needs.generate-matrix.outputs.unity) }}
     runs-on: ${{ matrix.architecture.runner }}
-    image: ghcr.io/xrplf/ci/debian-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+    container: ghcr.io/xrplf/ci/debian-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
