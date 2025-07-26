@@ -21,8 +21,8 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/ledger/ReadView.h>
-#include <xrpld/net/RPCSub.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/RPCSub.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
