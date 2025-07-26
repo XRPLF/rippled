@@ -184,9 +184,7 @@ InnerObjectFormats::InnerObjectFormats()
     add(sfFunctionParameter.jsonName,
         sfFunctionParameter.getCode(),
         {
-            {sfParameterName, soeOPTIONAL},
             {sfParameterValue, soeOPTIONAL},
-            {sfParameterType, soeOPTIONAL},
         });
 
     add(sfCallParameter.jsonName,

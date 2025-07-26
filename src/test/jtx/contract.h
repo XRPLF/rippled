@@ -59,14 +59,15 @@ class add_function
 {
 private:
     std::string const name_;
-    std::vector<std::pair<std::string, std::string>> params_;
+    std::vector<std::tuple<std::string, std::string, std::string>> func_params_;
     std::vector<std::pair<std::string, std::string>> call_params_;
 
 public:
     explicit add_function(
         std::string const& name,
+        std::vector<std::tuple<std::string, std::string, std::string>> func_params,
         std::vector<std::pair<std::string, std::string>> call_params)
-        : name_{name}, call_params_{std::move(call_params)}
+        : name_{name}, func_params_{std::move(func_params)}, call_params_{std::move(call_params)}
     {
     }
 

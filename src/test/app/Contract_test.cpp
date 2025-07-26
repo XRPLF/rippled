@@ -242,6 +242,7 @@ class Contract_test : public beast::unit_test::suite
         env(contract::create(alice, contractWasmStr),
             contract::add_function(
                 "finish",
+                {{"master", "ACCOUNT", env.master.human()}},
                 {{"uint8", "UINT8"},
                  {"uint16", "UINT16"},
                  {"owner", "ACCOUNT"}}),

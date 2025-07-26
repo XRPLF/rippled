@@ -173,31 +173,26 @@ ContractCall::doApply()
 
     // ContractCall Parameters
     STArray const& callParams = ctx_.tx.getFieldArray(sfCallParameters);
-    std::vector<ripple::ParameterValueVec> callParameters = getParameterValueVec(callParams);
+    std::vector<ripple::ParameterValueVec> callParameters =
+        getParameterValueVec(callParams);
     // ContractSource/Contract Default Parameters
     STArray const& funcParams = function->getFieldArray(sfFunctionParameters);
-    std::vector<ripple::ParameterValueVec> funcParameters = getParameterValueVec(funcParams);
+    std::vector<ripple::ParameterValueVec> funcParameters =
+        getParameterValueVec(funcParams);
 
-    // // Validate the call parameters against the ContractSource/Contract definition.
-    // ContractSource ABI Call Parameters (ABI Call Parameters Must == ContractCall Parameters)
-    // STArray const& callParamsDef = function->getFieldArray(sfCallParameters);
-    // auto const typeVec = ripple::getParameterTypeVec(callParamsDef);
-    // if (callParameters.size() != typeVec.size())
-    //     return tecINTERNAL;
+    // NOTE: This does not handle optional parameters. Any parameters listed in
+    // the ContractSource are required in the ContractCall.
+    STArray const& callParamsDef = function->getFieldArray(sfCallParameters);
+    auto const typeVec = ripple::getParameterTypeVec(callParamsDef);
+    if (callParameters.size() != typeVec.size())
+        return tecINTERNAL;
 
-    // for (std::size_t i = 0; i < callParameters.size(); i++)
-    // {
-    //     if (callParameters[i].value.getInnerSType() !=
-    //         typeVec[i].type.getInnerSType())
-    //         return tecINTERNAL;
-    // }
-
-    // std::cout << "Function name: " << funcName << std::endl;
-    // std::cout << "Call parameters: " << callParams.size() << std::endl;
-    // std::cout << "Function parameters: " << funcParams.size() << std::endl;
-    // std::cout << "Function parameters (def): " << callParamsDef.size() << std::endl;
-    // std::cout << "Function parameters (values): " << callParameters.size() << std::endl;
-    // std::cout << "Function parameters (typeVec): " << typeVec.size() << std::endl;
+    for (std::size_t i = 0; i < callParameters.size(); i++)
+    {
+        if (callParameters[i].value.getInnerSType() !=
+            typeVec[i].type.getInnerSType())
+            return tecINTERNAL;
+    }
 
     ContractContext contractCtx = {
         .applyCtx = ctx_,
@@ -206,14 +201,15 @@ ContractCall::doApply()
         .expected_etxn_count = 1,
         .generation = 0,
         .burden = 0,
-        .result = {
-            .contractHash = contractHash,
-            .contractKeylet = k,
-            .contractSourceKeylet = k,
-            .contractAccountKeylet = k,
-            .contractAccount = contractAccount,
-            .otxnAccount = contractAccount,
-        },
+        .result =
+            {
+                .contractHash = contractHash,
+                .contractKeylet = k,
+                .contractSourceKeylet = k,
+                .contractAccountKeylet = k,
+                .contractAccount = contractAccount,
+                .otxnAccount = contractAccount,
+            },
     };
 
     WasmHostFunctionsImpl ledgerDataProvider(contractCtx);
