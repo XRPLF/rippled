@@ -134,9 +134,6 @@ jobs:
           env | sort
       - name: Check versions
         run: |
-          echo "Checking release."
-          lsb_release -a
-
           echo "Checking CMake version."
           cmake --version
 
