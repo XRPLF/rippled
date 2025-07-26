@@ -741,7 +741,7 @@ getFieldDataFromSTData(
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::contractFuncParam(std::uint32_t index, std::uint32_t stTypeId)
 {
-    auto const& funcParams = contractCtx.parameters;
+    auto const& funcParams = contractCtx.funcParameters;
 
     if (funcParams.size() <= index)
         return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
@@ -752,16 +752,16 @@ WasmHostFunctionsImpl::contractFuncParam(std::uint32_t index, std::uint32_t stTy
 }
 
 Expected<Bytes, HostFunctionError>
-WasmHostFunctionsImpl::otxnFuncParam(std::uint32_t index, std::uint32_t stTypeId)
+WasmHostFunctionsImpl::otxnCallParam(std::uint32_t index, std::uint32_t stTypeId)
 {
-    auto const& funcParams = contractCtx.parameters;
+    auto const& callParams = contractCtx.callParameters;
 
-    if (funcParams.size() <= index)
+    if (callParams.size() <= index)
         return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
 
-    ripple::STData const& funcParam = funcParams[index].value;
-    return getFieldDataFromSTData(funcParam, stTypeId);
-    
+    ripple::STData const& callParam = callParams[index].value;
+    return getFieldDataFromSTData(callParam, stTypeId);
+
 }
 
 Expected<int32_t, HostFunctionError>

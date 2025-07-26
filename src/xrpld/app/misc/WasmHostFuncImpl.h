@@ -185,7 +185,7 @@ public:
     contractFuncParam(std::uint32_t index, std::uint32_t stTypeId) override;
     
     Expected<Bytes, HostFunctionError>
-    otxnFuncParam(std::uint32_t index, std::uint32_t stTypeId) override;
+    otxnCallParam(std::uint32_t index, std::uint32_t stTypeId) override;
 
     Expected<int32_t, HostFunctionError>
     submit(STTx const& stx) override;

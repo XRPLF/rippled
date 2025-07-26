@@ -297,7 +297,7 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    otxnFuncParam(std::uint32_t index, std::uint32_t stTypeId)
+    otxnCallParam(std::uint32_t index, std::uint32_t stTypeId)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

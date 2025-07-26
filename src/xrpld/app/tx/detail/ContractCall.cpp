@@ -168,33 +168,37 @@ ContractCall::doApply()
     if (!function)
         return tecINTERNAL;
 
-    STArray const& funcParams = ctx_.tx.getFieldArray(sfInstanceParameters);
-    STArray const& funcParamsDef =
-        function->getFieldArray(sfInstanceParameters);
+    STArray const& callParams = ctx_.tx.getFieldArray(sfCallParameters);
+    STArray const& funcParams = function->getFieldArray(sfFunctionParameters);
+    STArray const& funcParamsDef = function->getFieldArray(sfFunctionParameters);
 
     std::cout << "Function name: " << funcName << std::endl;
+    std::cout << "Call parameters: " << callParams.size() << std::endl;
     std::cout << "Function parameters: " << funcParams.size() << std::endl;
     std::cout << "Function parameters (def): " << funcParamsDef.size() << std::endl;
 
 
-    std::vector<ripple::ParameterValueVec> fparameters;
-    fparameters = getParameterValueVec(funcParams);
-    std::cout << "Function parameters (values): " << fparameters.size() << std::endl;
+    std::vector<ripple::ParameterValueVec> funcParameters;
+    funcParameters = getParameterValueVec(funcParams);
+    std::cout << "Function parameters (values): " << funcParameters.size() << std::endl;
     auto typeVec = ripple::getParameterTypeVec(funcParamsDef);
     std::cout << "Function parameters (typeVec): " << typeVec.size() << std::endl;
-    // if (fparameters.size() != typeVec.size())
+    // if (funcParameters.size() != typeVec.size())
     //     return tecINTERNAL;
 
-    for (std::size_t i = 0; i < fparameters.size(); i++)
+    for (std::size_t i = 0; i < funcParameters.size(); i++)
     {
-        if (fparameters[i].value.getInnerSType() !=
+        if (funcParameters[i].value.getInnerSType() !=
             typeVec[i].type.getInnerSType())
             return tecINTERNAL;
     }
 
+    std::vector<ripple::ParameterValueVec> callParameters = getParameterValueVec(callParams);
+
     ContractContext contractCtx = {
         .applyCtx = ctx_,
-        .parameters = fparameters,
+        .callParameters = callParameters,
+        .funcParameters = funcParameters,
         .expected_etxn_count = 1,
         .generation = 0,
         .burden = 0,

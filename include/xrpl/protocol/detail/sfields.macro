@@ -374,8 +374,9 @@ UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    34)
 UNTYPED_SFIELD(sfBatchSigner,            OBJECT,    35)
 UNTYPED_SFIELD(sfBook,                   OBJECT,    36)
-UNTYPED_SFIELD(sfInstanceParameter,      OBJECT,    37)
-UNTYPED_SFIELD(sfFunction,               OBJECT,    38)
+UNTYPED_SFIELD(sfFunction,               OBJECT,    37)
+UNTYPED_SFIELD(sfFunctionParameter,      OBJECT,    38)
+UNTYPED_SFIELD(sfCallParameter,          OBJECT,    39)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -410,8 +411,9 @@ UNTYPED_SFIELD(sfAcceptedCredentials,    ARRAY,     28)
 UNTYPED_SFIELD(sfPermissions,            ARRAY,     29)
 UNTYPED_SFIELD(sfRawTransactions,        ARRAY,     30)
 UNTYPED_SFIELD(sfBatchSigners,           ARRAY,     31, SField::sMD_Default, SField::notSigning)
-UNTYPED_SFIELD(sfInstanceParameters,     ARRAY,     33)
-UNTYPED_SFIELD(sfFunctions,              ARRAY,     34)
+UNTYPED_SFIELD(sfFunctions,              ARRAY,     33)
+UNTYPED_SFIELD(sfFunctionParameters,     ARRAY,     34)
+UNTYPED_SFIELD(sfCallParameters,         ARRAY,     35)
 
 // data
 TYPED_SFIELD(sfParameterValue,           DATA,       1);

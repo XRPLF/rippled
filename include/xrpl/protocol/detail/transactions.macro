@@ -532,14 +532,13 @@ TRANSACTION(ttCONTRACT_CREATE, 72, ContractCreate, Delegation::delegatable, ({
     {sfContractCode, soeOPTIONAL},
     {sfContractHash, soeOPTIONAL},
     {sfFunctions, soeOPTIONAL},
-    {sfInstanceParameters, soeOPTIONAL},
 }))
 
 /** This transaction type calls the smart contract. */
 TRANSACTION(ttCONTRACT_CALL, 73, ContractCall, Delegation::delegatable, ({
     {sfContractAccount, soeREQUIRED},
     {sfFunctionName, soeREQUIRED},
-    {sfInstanceParameters, soeOPTIONAL},
+    {sfCallParameters, soeOPTIONAL},
     {sfComputationAllowance, soeREQUIRED},
 }))
 

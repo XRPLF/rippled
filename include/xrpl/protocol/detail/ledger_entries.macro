@@ -523,7 +523,6 @@ LEDGER_ENTRY(ltCONTRACT_SOURCE, 0x0085, ContractSource, contract_source, ({
     {sfOwner,                soeREQUIRED},
     {sfContractHash,         soeREQUIRED},
     {sfContractCode,         soeREQUIRED},
-    {sfInstanceParameters,   soeOPTIONAL},
     {sfFunctions,            soeREQUIRED},
     {sfReferenceCount,       soeREQUIRED},
 }))
@@ -539,7 +538,7 @@ LEDGER_ENTRY(ltCONTRACT, 0x0086, Contract, contract, ({
     {sfOwner,                soeREQUIRED},
     {sfAccount,              soeREQUIRED},
     {sfContractHash,         soeREQUIRED},
-    {sfInstanceParameters,   soeOPTIONAL},
+    {sfFunctions,            soeOPTIONAL},
     {sfURI,                  soeOPTIONAL},
 }))
 

@@ -65,7 +65,7 @@ ContractCreate::preflight(PreflightContext const& ctx)
 
     // If ContractCode is present, InstanceParameters and Functions must also be
     // present. if (ctx.tx.isFieldPresent(sfContractCode) &&
-    // (!ctx.tx.isFieldPresent(sfInstanceParameters) ||
+    // (!ctx.tx.isFieldPresent(sfFunctionParameters) ||
     // !ctx.tx.isFieldPresent(sfFunctions)))
     // {
     //     JLOG(ctx.j.error())
@@ -125,9 +125,9 @@ ContractCreate::doApply()
         contractSourceSle->at(sfContractCode) = makeSlice(wasmBytes);
         contractSourceSle->setFieldArray(
             sfFunctions, ctx_.tx.getFieldArray(sfFunctions));
-        // if (ctx_.tx.isFieldPresent(sfInstanceParameters))
-        //     contractSourceSle->at(sfInstanceParameters) =
-        //     ctx_.tx.getFieldArray(sfInstanceParameters);
+        // if (ctx_.tx.isFieldPresent(sfFunctionParameters))
+        //     contractSourceSle->at(sfFunctionParameters) =
+        //     ctx_.tx.getFieldArray(sfFunctionParameters);
         contractSourceSle->at(sfReferenceCount) = 1;
 
         ctx_.view().insert(contractSourceSle);
@@ -144,9 +144,9 @@ ContractCreate::doApply()
         contractSle->at(sfFlags) = ctx_.tx.getFlags();
         contractSle->at(sfContractHash) = contractHash;
 
-        // if (ctx_.tx.isFieldPresent(sfInstanceParameters))
-        //     contractSle->at(sfInstanceParameters) =
-        //     ctx_.tx.getFieldArray(sfInstanceParameters);
+        // if (ctx_.tx.isFieldPresent(sfFunctionParameters))
+        //     contractSle->at(sfFunctionParameters) =
+        //     ctx_.tx.getFieldArray(sfFunctionParameters);
 
         // if (ctx_.tx.isFieldPresent(sfURI))
         //     contractSle->at(sfURI) = ctx_.tx.getFieldVL(sfURI);

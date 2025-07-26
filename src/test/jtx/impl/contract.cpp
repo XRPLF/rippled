@@ -64,7 +64,7 @@ call(
     jv[jss::Account] = account.human();
     jv[sfContractAccount] = contractAccount;
     jv[sfFunctionName] = strHex(functionName);
-    jv[sfInstanceParameters] = Json::Value(Json::arrayValue);
+    jv[sfCallParameters] = Json::Value(Json::arrayValue);
     return jv;
 }
 
@@ -72,8 +72,8 @@ Json::Value
 addFuncParam(std::string const& name, std::string const& typeName)
 {
     Json::Value param = Json::Value(Json::objectValue);
-    param[sfInstanceParameter][sfParameterName] = strHex(name);
-    param[sfInstanceParameter][sfParameterType][jss::type] = typeName;
+    param[sfFunctionParameter][sfParameterName] = strHex(name);
+    param[sfFunctionParameter][sfParameterType][jss::type] = typeName;
     return param;
 };
 
@@ -87,7 +87,7 @@ add_function::operator()(Env&, JTx& jt) const
     function[sfFunction][sfFunctionName] = strHex(name_);
     for (auto const& [p_name, p_type] : params_)
     {
-        function[sfFunction][sfInstanceParameters].append(
+        function[sfFunction][sfFunctionParameters].append(
             addFuncParam(p_name, p_type));
     }
 }

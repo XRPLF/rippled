@@ -79,7 +79,7 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
         WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
         WASM_IMPORT_FUNC2(i, contractFuncParam, "contract_func_param", hfs,                                         70);
-        WASM_IMPORT_FUNC2(i, otxnFuncParam, "otxn_func_param", hfs,                                                 70);
+        WASM_IMPORT_FUNC2(i, otxnCallParam, "otxn_call_param", hfs,                                                 70);
         WASM_IMPORT_FUNC2(i, submit, "submit", hfs,                                                               2000);
 
         // clang-format on

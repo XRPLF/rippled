@@ -92,13 +92,13 @@ public:
     operator()(Env&, JTx& jtx) const
     {
         Json::Value param = Json::Value(Json::objectValue);
-        param[sfInstanceParameter] = Json::Value(Json::objectValue);
-        param[sfInstanceParameter][sfParameterValue] =
+        param[sfCallParameter] = Json::Value(Json::objectValue);
+        param[sfCallParameter][sfParameterValue] =
             Json::Value(Json::objectValue);
-        param[sfInstanceParameter][sfParameterValue][jss::name] = strHex(name_);
-        param[sfInstanceParameter][sfParameterValue][jss::type] = type_;
-        param[sfInstanceParameter][sfParameterValue][jss::value] = value_;
-        jtx.jv[sfInstanceParameters].append(param);
+        param[sfCallParameter][sfParameterValue][jss::name] = strHex(name_);
+        param[sfCallParameter][sfParameterValue][jss::type] = type_;
+        param[sfCallParameter][sfParameterValue][jss::value] = value_;
+        jtx.jv[sfCallParameters].append(param);
     }
 };
 

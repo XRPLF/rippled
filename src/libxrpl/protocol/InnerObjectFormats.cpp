@@ -177,11 +177,19 @@ InnerObjectFormats::InnerObjectFormats()
         sfFunction.getCode(),
         {
             {sfFunctionName, soeREQUIRED},
-            {sfInstanceParameters, soeOPTIONAL},
+            {sfFunctionParameters, soeOPTIONAL},
         });
 
-    add(sfInstanceParameter.jsonName,
-        sfInstanceParameter.getCode(),
+    add(sfFunctionParameter.jsonName,
+        sfFunctionParameter.getCode(),
+        {
+            {sfParameterName, soeOPTIONAL},
+            {sfParameterValue, soeOPTIONAL},
+            {sfParameterType, soeOPTIONAL},
+        });
+
+    add(sfCallParameter.jsonName,
+        sfCallParameter.getCode(),
         {
             {sfParameterName, soeOPTIONAL},
             {sfParameterValue, soeOPTIONAL},

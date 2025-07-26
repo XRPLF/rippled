@@ -1114,7 +1114,7 @@ contractFuncParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* 
 }
 
 wasm_trap_t*
-otxnFuncParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+otxnCallParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
@@ -1137,7 +1137,7 @@ otxnFuncParam_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resu
     }
 
     return returnResult(
-        rt, params, results, hf->otxnFuncParam(*iindex, *stTypeId), index);
+        rt, params, results, hf->otxnCallParam(*iindex, *stTypeId), index);
 }
 
 wasm_trap_t*

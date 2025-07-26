@@ -79,8 +79,8 @@ class Contract_test : public beast::unit_test::suite
     addFuncParam(std::string const& name, std::string const& typeName)
     {
         Json::Value param = Json::Value(Json::objectValue);
-        param[sfInstanceParameter][sfParameterName] = strHex(name);
-        param[sfInstanceParameter][sfParameterType] = typeName;
+        param[sfFunctionParameter][sfParameterName] = strHex(name);
+        param[sfFunctionParameter][sfParameterType] = typeName;
         return param;
     };
 
@@ -89,8 +89,8 @@ class Contract_test : public beast::unit_test::suite
     // addFuncParamValue(std::string const& typeName, T value)
     // {
     //     Json::Value param = Json::Value(Json::objectValue);
-    //     param[sfInstanceParameter][sfParameterValue][jss::type] = typeName;
-    //     param[sfInstanceParameter][sfParameterValue][jss::value] = value;
+    //     param[sfFunctionParameter][sfParameterValue][jss::type] = typeName;
+    //     param[sfFunctionParameter][sfParameterValue][jss::value] = value;
     //     return param;
     // };
 

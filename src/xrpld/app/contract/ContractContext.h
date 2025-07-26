@@ -75,7 +75,8 @@ struct ContractResult
 struct ContractContext
 {
     ripple::ApplyContext& applyCtx;
-    std::vector<ParameterValueVec> parameters;
+    std::vector<ParameterValueVec> callParameters;
+    std::vector<ParameterValueVec> funcParameters;
     int64_t expected_etxn_count{-1};
     std::map<ripple::uint256, bool> nonce_used{};
     uint32_t generation = 0;
