@@ -74,7 +74,7 @@ jobs:
             compiler_version: 16
             distro: debian
             codename: bookworm
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
@@ -133,7 +133,7 @@ jobs:
           -
           - "-Dunity=ON"
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
@@ -194,7 +194,7 @@ jobs:
           - "-DUNIT_TEST_REFERENCE_FEE=200"
           - "-DUNIT_TEST_REFERENCE_FEE=1000"
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
@@ -242,7 +242,7 @@ jobs:
         configuration:
           - Debug
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
@@ -309,7 +309,7 @@ jobs:
 
   conan:
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container:
       image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
@@ -358,7 +358,7 @@ jobs:
 
   instrumentation-build:
     needs: dependencies
-    runs-on: [self-hosted, heavy]
+    runs-on: [self-hosted, Linux, X64, devbox]
     container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
     env:
       build_dir: .build
