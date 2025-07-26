@@ -23,7 +23,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 
