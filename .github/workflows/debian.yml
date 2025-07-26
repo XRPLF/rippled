@@ -100,10 +100,10 @@ jobs:
       - name: Generate matrix
         id: generate-matrix
         run: |
-          echo "architecture=$(jq -c <<< '${{ env.STRATEGY_MATRIX_ARCHITECTURE }}') >> "$GITHUB_OUTPUT"
-          echo "os=$(jq -c <<< '${{ env.STRATEGY_MATRIX_OS }}') >> "$GITHUB_OUTPUT"
-          echo "build_type=$(jq -c <<< '${{ env.STRATEGY_MATRIX_BUILD_TYPE }}') >> "$GITHUB_OUTPUT"
-          echo "unity=$(jq -c <<< '${{ env.STRATEGY_MATRIX_UNITY }}') >> "$GITHUB_OUTPUT"
+          echo "architecture=$(jq -c <<< '${{ env.STRATEGY_MATRIX_ARCHITECTURE }}')" >> "$GITHUB_OUTPUT"
+          echo "os=$(jq -c <<< '${{ env.STRATEGY_MATRIX_OS }}')" >> "$GITHUB_OUTPUT"
+          echo "build_type=$(jq -c <<< '${{ env.STRATEGY_MATRIX_BUILD_TYPE }}')" >> "$GITHUB_OUTPUT"
+          echo "unity=$(jq -c <<< '${{ env.STRATEGY_MATRIX_UNITY }}')" >> "$GITHUB_OUTPUT"
     outputs:
       architecture: ${{ steps.generate-matrix.outputs.architecture }}
       os: ${{ steps.generate-matrix.outputs.os }}
