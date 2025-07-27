@@ -163,12 +163,12 @@ jobs:
             echo "os: ${{ needs.generate-outputs.outputs.strategy_matrix_os }}"
             echo "build_type: ${{ needs.generate-outputs.outputs.strategy_matrix_build_type }}"
             echo "cmake_args: ${{ needs.generate-outputs.outputs.strategy_matrix_cmake_args }}"
-            echo "Platform: ${{ strategy.matrix.architecture.platform }}"
-            echo "Runner: ${{ strategy.matrix.architecture.runner }}"
-            echo "OS: ${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}"
-            echo "Compiler: ${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}"
-            echo "Build Type: ${{ strategy.matrix.build_type }}"
-            echo "CMake Args: ${{ strategy.matrix.cmake_args }}"
+            echo "Platform: ${{ matrix.architecture.platform }}"
+            echo "Runner: ${{ matrix.architecture.runner }}"
+            echo "OS: ${{ matrix.os.distro }}-${{ matrix.os.release }}"
+            echo "Compiler: ${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}"
+            echo "Build Type: ${{ matrix.build_type }}"
+            echo "CMake Args: ${{ matrix.cmake_args }}"
 
 #  # Install and cache the dependencies using various configurations.
 #  install-dependencies:
