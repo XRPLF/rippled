@@ -140,7 +140,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate strategy matrix
-        uses: ./.github/actions/generate-matrix.yml
+        uses: ./.github/actions/generate-matrix
         with:
           architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
           os: ${{ env.STRATEGY_MATRIX_OS }}
