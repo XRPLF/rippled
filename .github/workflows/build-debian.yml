@@ -124,9 +124,10 @@ env:
     ]
 
 jobs:
-  # Expose environment variables used by other jobs. This is a workaround, as
-  # environment variables cannot be passed as inputs to reusable workflows. They
-  # can, however, be passed as inputs to actions.
+  # Generate the strategy matrix and expose environment variables to be used by
+  # following jobs. Exposing env vars this way is needed as they cannot be
+  # directly passed as inputs to reusable workflows (although they can be passed
+  # as inputs to actions).
   generate-outputs:
     runs-on: ubuntu-latest
     steps:
@@ -144,11 +145,30 @@ jobs:
       strategy_matrix_build_type: ${{ steps.generate.outputs.strategy_matrix_build_type }}
       strategy_matrix_cmake_args: ${{ steps.generate.outputs.strategy_matrix_cmake_args }}
 
-  # Debug outputs
-  debug-outputs:
+  # Install and cache the dependencies using various configurations.
+  install-dependencies:
     needs:
       - generate-outputs
-    runs-on: ubuntu-latest
+    uses: ./.github/workflows/install-dependencies.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
+        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
+        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
+    with:
+      build_dir: ${{ inputs.build_dir }}
+      build_type: ${{ matrix.build_type }}
+      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
+      container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+      runner: ${{ matrix.architecture.runner }}
+
+  # Build and test the binary using various configurations.
+  build-and-test:
+    needs:
+      - generate-outputs
+      - install-dependencies
+    uses: ./.github/workflows/build-nix.yml
     strategy:
       fail-fast: false
       matrix:
@@ -156,56 +176,11 @@ jobs:
         os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
         cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
-    steps:
-        - name: Debug outputs
-          run: |
-            echo "architecture: ${{ needs.generate-outputs.outputs.strategy_matrix_architecture }}"
-            echo "os: ${{ needs.generate-outputs.outputs.strategy_matrix_os }}"
-            echo "build_type: ${{ needs.generate-outputs.outputs.strategy_matrix_build_type }}"
-            echo "cmake_args: ${{ needs.generate-outputs.outputs.strategy_matrix_cmake_args }}"
-            echo "Platform: ${{ matrix.architecture.platform }}"
-            echo "Runner: ${{ matrix.architecture.runner }}"
-            echo "OS: ${{ matrix.os.distro }}-${{ matrix.os.release }}"
-            echo "Compiler: ${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}"
-            echo "Build Type: ${{ matrix.build_type }}"
-            echo "CMake Args: ${{ matrix.cmake_args }}"
-
-#  # Install and cache the dependencies using various configurations.
-#  install-dependencies:
-#    needs:
-#      - generate-outputs
-#    uses: ./.github/workflows/install-dependencies.yml
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
-#        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
-#        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
-#    with:
-#      build_dir: ${{ inputs.build_dir }}
-#      build_type: ${{ strategy.matrix.build_type }}
-#      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
-#      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
-#      runner: ${{ strategy.matrix.architecture.runner }}
-#
-#  # Build and test the binary using various configurations.
-#  build-and-test:
-#    needs:
-#      - generate-outputs
-#      - install-dependencies
-#    uses: ./.github/workflows/build-nix.yml
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
-#        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
-#        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
-#        cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
-#    with:
-#      build_dir: ${{ inputs.build_dir }}
-#      build_type: ${{ strategy.matrix.build_type }}
-#      cmake_args: ${{ strategy.matrix.cmake_args }}
-#      cmake_generator: "Ninja"
-#      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
-#      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
-#      runner: ${{ strategy.matrix.architecture.runner }}
+    with:
+      build_dir: ${{ inputs.build_dir }}
+      build_type: ${{ matrix.build_type }}
+      cmake_args: ${{ matrix.cmake_args }}
+      cmake_generator: "Ninja"
+      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
+      container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+      runner: ${{ matrix.architecture.runner }}
