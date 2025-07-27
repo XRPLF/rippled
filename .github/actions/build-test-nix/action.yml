@@ -68,7 +68,7 @@ runs:
         echo "Checking compiler version."
         ${CC} --version
     - name: Configure Conan
-      uses: ./.github/actions/conan-configure
+      uses: ./.github/actions/configure-conan
       with:
         conan_global_conf: ${{ inputs.conan_global_conf }}
         conan_remote_name: ${{ inputs.conan_remote_name }}
