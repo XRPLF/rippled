@@ -19,23 +19,7 @@ defaults:
   run:
     shell: bash
 
-env:
-  # The Conan remote where the dependencies will be cached.
-  CONAN_REMOTE_NAME: xrplf
-  CONAN_REMOTE_URL: https://conan.ripplex.io
-
 jobs:
-  # This job exposes the environment variables that will be used by other jobs.
-  # It is a workaround for the env-context not being available in the 'with'
-  # steps when calling other workflows.
-  env-vars:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Exposing environment variables."
-    outputs:
-      conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
-      conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
-
   check-clang-format:
     if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
     uses: ./.github/workflows/check-clang-format.yml
@@ -46,66 +30,31 @@ jobs:
 
   debian:
     needs:
-      - env-vars
       - check-clang-format
       - check-levelization
     uses: ./.github/workflows/build-debian.yml
-    with:
-      conan_remote_name: ${{ needs.env-vars.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.env-vars.outputs.conan_remote_url }}
-    secrets:
-      conan_username: ${{ secrets.CONAN_USERNAME }}
-      conan_password: ${{ secrets.CONAN_PASSWORD }}
 
 #  rhel:
 #    needs:
-#      - env-vars
 #      - check-clang-format
 #      - check-levelization
 #    uses: ./.github/workflows/build-rhel.yml
-#    with:
-#      conan_remote_name: ${{ needs.env-vars.outputs.conan_remote_name }}
-#      conan_remote_url: ${{ needs.env-vars.outputs.conan_remote_url }}
-#    secrets:
-#      conan_username: ${{ secrets.CONAN_USERNAME }}
-#      conan_password: ${{ secrets.CONAN_PASSWORD }}
 #
 #  ubuntu:
 #    needs:
-#      - env-vars
 #      - check-clang-format
 #      - check-levelization
 #    uses: ./.github/workflows/build-ubuntu.yml
-#    with:
-#      conan_remote_name: ${{ needs.env-vars.outputs.conan_remote_name }}
-#      conan_remote_url: ${{ needs.env-vars.outputs.conan_remote_url }}
-#    secrets:
-#      conan_username: ${{ secrets.CONAN_USERNAME }}
-#      conan_password: ${{ secrets.CONAN_PASSWORD }}
 #
 #  macos:
 #    needs:
-#      - env-vars
 #      - check-clang-format
 #      - check-levelization
 #    uses: ./.github/workflows/build-macos.yml
-#    with:
-#      conan_remote_name: ${{ needs.env-vars.outputs.conan_remote_name }}
-#      conan_remote_url: ${{ needs.env-vars.outputs.conan_remote_url }}
-#    secrets:
-#      conan_username: ${{ secrets.CONAN_USERNAME }}
-#      conan_password: ${{ secrets.CONAN_PASSWORD }}
 #
 #  windows:
 #    needs:
-#      - env-vars
 #      - check-clang-format
 #      - check-levelization
 #    uses: ./.github/workflows/build-windows.yml
-#    with:
-#      conan_remote_name: ${{ needs.env-vars.outputs.conan_remote_name }}
-#      conan_remote_url: ${{ needs.env-vars.outputs.conan_remote_url }}
-#    secrets:
-#      conan_username: ${{ secrets.CONAN_USERNAME }}
-#      conan_password: ${{ secrets.CONAN_PASSWORD }}
 

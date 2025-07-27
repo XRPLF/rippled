@@ -92,9 +92,20 @@ env:
     ]
 
 jobs:
+  # Expose environment variables used by other jobs. This is a workaround, as
+  # environment variables cannot be passed as inputs to reusable workflows.
+  expose-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Expose environment variables
+        run: echo ""
+    outputs:
+      conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
+
   # Generate the strategy matrix.
   generate-matrix:
-    uses: ./.github/workflows/generate-matrix.yml
+    runs-on: ubuntu-latest
+    uses: ./.github/actions/generate-matrix.yml
     with:
       architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
       os: ${{ env.STRATEGY_MATRIX_OS }}
@@ -104,6 +115,7 @@ jobs:
   # Install and cache the dependencies using various configurations.
   install-dependencies:
     needs:
+      - expose-env
       - generate-matrix
     uses: ./.github/workflows/install-dependencies.yml
     strategy:
@@ -115,18 +127,15 @@ jobs:
     with:
       build_dir: ${{ inputs.build_dir }}
       build_type: ${{ strategy.matrix.build_type }}
-      conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
-      conan_remote_name: ${{ inputs.conan_remote_name }}
-      conan_remote_url: ${{ inputs.conan_remote_url }}
+      conan_global_conf: ${{ needs.expose-env.outputs.conan_global_conf }}
       container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
       runner: ${{ strategy.matrix.architecture.runner }}
     secrets:
-      conan_remote_username: ${{ secrets.conan_remote_username }}
-      conan_remote_password: ${{ secrets.conan_remote_password }}
 
   # Build and test the binary using various configurations.
   build-and-test:
     needs:
+      - expose-env
       - generate-matrix
       - install-dependencies
     uses: ./.github/workflows/build-nix.yml
@@ -142,11 +151,6 @@ jobs:
       build_type: ${{ strategy.matrix.build_type }}
       cmake_args: ${{ strategy.matrix.cmake_args }}
       cmake_generator: "Ninja"
-      conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
-      conan_remote_name: ${{ inputs.conan_remote_name }}
-      conan_remote_url: ${{ inputs.conan_remote_url }}
+      conan_global_conf: ${{ needs.expose-env.outputs.conan_global_conf }}
       container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
       runner: ${{ strategy.matrix.architecture.runner }}
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}

@@ -1,0 +1,47 @@
+name: generate-matrix
+
+inputs:
+  architecture:
+    description: 'A string representing a JSON array with objects containing the "platform" (e.g. "linux/arm64") and "runner" (e.g. "ubuntu-24.04-arm") to use.'
+    required: true
+    type: string
+  os:
+    description: 'A string representing a JSON array with objects containing the "distro" (e.g. "debian"), "release" (e.g. "bookworm"), "compiler_name" (e.g. "gcc") and "compiler_version" (e.g. "13") to use.'
+    required: true
+    type: string
+  build_type:
+    description: 'A string representing a JSON array with strings holding the build type (e.g. "Debug", "Release") to use.'
+    required: true
+    type: string
+  cmake_args:
+    description: 'A string representing a JSON array with strings holding the CMake arguments (e.g. "-DUnity=ON", "-DUnity=OFF") to use. Multiple arguments can be specified by separating them with a space (e.g. "-DUnity=ON -DVoidstar=ON").'
+    required: true
+    type: string
+
+# Generate the JSON outputs by using JQ to compact the JSON string so they can
+# be used in a job as follows:
+#   strategy:
+#     fail-fast: false
+#     matrix:
+#       architecture: ${{ fromJson(needs.json-outputs.outputs.architecture) }}
+#       os: ${{ fromJson(needs.json-outputs.outputs.os) }}
+#       build_type: ${{ fromJson(needs.json-outputs.outputs.build_type) }}
+#       cmake_args: ${{ fromJson(needs.json-outputs.outputs.cmake_args) }}
+#   runs-on: ${{ matrix.architecture.runner }}
+#   container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+#   ...
+runs:
+  using: composite
+  steps:
+    - name: Generate outputs
+      id: generate
+      run: |
+        echo "architecture=$(jq -c <<< '${{ inputs.architecture }}')" >> "$GITHUB_OUTPUT"
+        echo "os=$(jq -c <<< '${{ inputs.os }}')" >> "$GITHUB_OUTPUT"
+        echo "build_type=$(jq -c <<< '${{ inputs.build_type }}')" >> "$GITHUB_OUTPUT"
+        echo "cmake_args=$(jq -c <<< '${{ inputs.cmake_args }}')" >> "$GITHUB_OUTPUT"
+  outputs:
+    architecture: ${{ steps.generate.outputs.architecture }}
+    os: ${{ steps.generate.outputs.os }}
+    build_type: ${{ steps.generate.outputs.build_type }}
+    cmake_args: ${{ steps.generate.outputs.cmake_args }}
