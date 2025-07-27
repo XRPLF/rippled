@@ -34,8 +34,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
     - name: Check configuration
       shell: bash
       run: |

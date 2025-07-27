@@ -150,6 +150,8 @@ jobs:
         os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
         with:
