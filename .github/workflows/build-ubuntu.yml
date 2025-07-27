@@ -1,6 +1,5 @@
-# This workflow builds and tests the binary on various Red Hat Enterprise Linux
-# configurations.
-name: RHEL
+# This workflow builds and tests the binary on various Ubuntu configurations.
+name: Ubuntu
 
 on:
   workflow_call:
@@ -47,7 +46,7 @@ env:
   # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
   # duplication, we define it here using environment variables and create the
   # matrix in the first job. The matrix defined below should be kept in sync
-  # with https://github.com/XRPLF/ci/blob/main/.github/workflows/rhel.yml.
+  # with https://github.com/XRPLF/ci/blob/main/.github/workflows/ubuntu.yml.
 #  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
 #      {
@@ -62,22 +61,46 @@ env:
 #  STRATEGY_MATRIX_OS: >-
 #    [
 #        {
-#            "distro": "rhel",
-#            "release": "9.6",
+#            "distro": "ubuntu",
+#            "release": "jammy",
+#            "compiler_name": "gcc",
+#            "compiler_version": "12"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
 #            "compiler_name": "gcc",
 #            "compiler_version": "13"
 #        },
 #        {
-#            "distro": "rhel",
-#            "release": "9.6",
+#            "distro": "ubuntu",
+#            "release": "noble",
 #            "compiler_name": "gcc",
 #            "compiler_version": "14"
 #        },
 #        {
-#            "distro": "rhel",
-#            "release": "9.6",
+#            "distro": "ubuntu",
+#            "release": "noble",
 #            "compiler_name": "clang",
-#            "compiler_version": "any"
+#            "compiler_version": "16"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "clang",
+#            "compiler_version": "17"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "clang",
+#            "compiler_version": "18"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "clang",
+#            "compiler_version": "19"
 #        },
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
@@ -100,10 +123,10 @@ env:
   STRATEGY_MATRIX_OS: >-
     [
         {
-            "distro": "rhel",
-            "release": "9.6",
+            "distro": "ubuntu",
+            "release": "jammy",
             "compiler_name": "gcc",
-            "compiler_version": "13"
+            "compiler_version": "12"
         }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-

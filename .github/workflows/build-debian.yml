@@ -162,7 +162,7 @@ jobs:
 
   # Install and cache the dependencies, and then build and test the binary using
   # various configurations.
-  build-and-test:
+  build-test:
     needs:
       - generate-outputs
     runs-on: ${{ matrix.architecture.runner }}
