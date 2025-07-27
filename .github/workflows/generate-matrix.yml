@@ -5,10 +5,6 @@ name: generate-matrix
 on:
   workflow_call:
     inputs:
-      runner:
-        description: 'An optional string representing the GitHub runner to use.'
-        required: true
-        type: string
       architecture:
         description: 'A string representing a JSON array holding objects containing the "platform" (e.g. "linux/arm64") and "runner" (e.g. "ubuntu-24.04-arm") to use.'
         required: true
@@ -54,7 +50,7 @@ on:
 # ```
 jobs:
   generate-matrix:
-    runs-on: ${{ inputs.runner }}
+    runs-on: ubuntu-latest
     steps:
       - name: Generate outputs
         id: generate
