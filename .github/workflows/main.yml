@@ -29,7 +29,7 @@ jobs:
 #    uses: ./.github/workflows/check-levelization.yml
 
   debian:
-    needs:
+#    needs:
 #      - check-clang-format
 #      - check-levelization
     uses: ./.github/workflows/build-debian.yml
