@@ -138,12 +138,14 @@ jobs:
   # Generate the strategy matrix.
   generate-matrix:
     runs-on: ubuntu-latest
-    uses: ./.github/actions/generate-matrix.yml
-    with:
-      architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
-      os: ${{ env.STRATEGY_MATRIX_OS }}
-      build_type: ${{ env.STRATEGY_MATRIX_BUILD_TYPE }}
-      cmake_args: ${{ env.STRATEGY_MATRIX_UNITY }}
+    steps:
+      - name: Generate strategy matrix
+        uses: ./.github/actions/generate-matrix.yml
+        with:
+          architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
+          os: ${{ env.STRATEGY_MATRIX_OS }}
+          build_type: ${{ env.STRATEGY_MATRIX_BUILD_TYPE }}
+          cmake_args: ${{ env.STRATEGY_MATRIX_UNITY }}
 
   # Install and cache the dependencies using various configurations.
   install-dependencies:

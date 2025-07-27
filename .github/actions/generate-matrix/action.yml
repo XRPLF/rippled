@@ -34,6 +34,7 @@ runs:
   using: composite
   steps:
     - name: Generate outputs
+      shell: bash
       id: generate
       run: |
         echo "architecture=$(jq -c <<< '${{ inputs.architecture }}')" >> "$GITHUB_OUTPUT"
