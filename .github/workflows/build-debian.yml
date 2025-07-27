@@ -159,10 +159,10 @@ jobs:
     steps:
         - name: Debug outputs
           run: |
-            echo "architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}"
-            echo "os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}"
-            echo "build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}"
-            echo "cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}"
+            echo "architecture: ${{ needs.generate-outputs.outputs.strategy_matrix_architecture }}"
+            echo "os: ${{ needs.generate-outputs.outputs.strategy_matrix_os }}"
+            echo "build_type: ${{ needs.generate-outputs.outputs.strategy_matrix_build_type }}"
+            echo "cmake_args: ${{ needs.generate-outputs.outputs.strategy_matrix_cmake_args }}"
             echo "Platform: ${{ strategy.matrix.architecture.platform }}"
             echo "Runner: ${{ strategy.matrix.architecture.runner }}"
             echo "OS: ${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}"
