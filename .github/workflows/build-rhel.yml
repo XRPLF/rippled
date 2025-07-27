@@ -1,0 +1,149 @@
+# This workflow builds and tests the binary on various Red Hat Enterprise Linux
+# configurations.
+name: RHEL
+
+on:
+  workflow_call:
+    inputs:
+      conan_remote_name:
+        description: 'The name of the Conan remote to use.'
+        required: true
+        type: string
+      conan_remote_url:
+        description: 'The URL of the Conan remote to use.'
+        required: true
+        type: string
+    secrets:
+      conan_remote_username:
+        description: 'The username for logging into the Conan remote.'
+        required: true
+        type: string
+      conan_remote_password:
+        description: 'The password for logging into the Conan remote.'
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # Global configuration for Conan. This is used to set the number of parallel
+  # downloads, uploads, and build jobs. The verbosity is set to verbose to
+  # provide more information during the build process.
+  CONAN_GLOBAL_CONF: |
+    core.download:parallel={{ os.cpu_count() }}
+    core.upload:parallel={{ os.cpu_count() }}
+    tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
+    tools.build:verbosity=verbose
+    tools.compilation:verbosity=verbose
+  # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
+  # duplication, we define it here using environment variables and create the
+  # matrix in the first job. The matrix defined below should be kept in sync
+  # with https://github.com/XRPLF/ci/blob/main/.github/workflows/rhel.yml.
+  STRATEGY_MATRIX_ARCHITECTURE: >-
+    [
+      {
+          "platform": "linux/amd64",
+          "runner": "ubuntu-24.04"
+      },
+      {
+          "platform": "linux/arm64",
+          "runner": "ubuntu-24.04-arm"
+      }
+    ]
+  STRATEGY_MATRIX_OS: >-
+    [
+        {
+            "distro": "rhel",
+            "release": "9.6",
+            "compiler_name": "gcc",
+            "compiler_version": "13"
+        },
+        {
+            "distro": "rhel",
+            "release": "9.6",
+            "compiler_name": "gcc",
+            "compiler_version": "14"
+        },
+        {
+            "distro": "rhel",
+            "release": "9.6",
+            "compiler_name": "clang",
+            "compiler_version": "any"
+        },
+    ]
+  STRATEGY_MATRIX_BUILD_TYPE: >-
+    [
+      "Debug",
+      "Release"
+    ]
+  STRATEGY_MATRIX_CMAKE_ARGS: >-
+    [
+      "-DUnity=OFF",
+      "-DUnity=ON"
+    ]
+
+jobs:
+  # Generate the strategy matrix.
+  generate-matrix:
+    uses: .github/workflows/generate-matrix.yml
+    with:
+      architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
+      os: ${{ env.STRATEGY_MATRIX_OS }}
+      build_type: ${{ env.STRATEGY_MATRIX_BUILD_TYPE }}
+      cmake_args: ${{ env.STRATEGY_MATRIX_UNITY }}
+
+  # Install and cache the dependencies using various configurations.
+  install-dependencies:
+    needs:
+      - generate-matrix
+    uses: .github/workflows/install-dependencies.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: ${{ fromJson(needs.generate-matrix.outputs.architecture) }}
+        os: ${{ fromJson(needs.generate-matrix.outputs.os) }}
+        build_type: ${{ fromJson(needs.generate-matrix.outputs.build_type) }}
+    with:
+      build_dir: ${{ inputs.build_dir }}
+      build_type: ${{ strategy.matrix.build_type }}
+      conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
+      conan_remote_name: ${{ inputs.conan_remote_name }}
+      conan_remote_url: ${{ inputs.conan_remote_url }}
+      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
+      runner: ${{ strategy.matrix.architecture.runner }}
+    secrets:
+      conan_remote_username: ${{ secrets.conan_remote_username }}
+      conan_remote_password: ${{ secrets.conan_remote_password }}
+
+  # Build and test the binary using various configurations.
+  build-and-test:
+    needs:
+      - generate-matrix
+      - install-dependencies
+    uses: .github/workflows/build-nix.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        architecture: ${{ fromJson(needs.generate-matrix.outputs.architecture) }}
+        os: ${{ fromJson(needs.generate-matrix.outputs.os) }}
+        build_type: ${{ fromJson(needs.generate-matrix.outputs.build_type) }}
+        cmake_args: ${{ fromJson(needs.generate-matrix.outputs.cmake_args) }}
+    with:
+      build_dir: ${{ inputs.build_dir }}
+      build_type: ${{ strategy.matrix.build_type }}
+      cmake_args: ${{ strategy.matrix.cmake_args }}
+      cmake_generator: "Ninja"
+      conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
+      conan_remote_name: ${{ inputs.conan_remote_name }}
+      conan_remote_url: ${{ inputs.conan_remote_url }}
+      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
+      runner: ${{ strategy.matrix.architecture.runner }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}

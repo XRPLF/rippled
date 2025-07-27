@@ -7,7 +7,7 @@ on:
   pull_request:
     paths:
       - 'src/libxrpl/protocol/BuildInfo.cpp'
-      - '.github/workflows/libxrpl.yml'
+      - 'check-libxrpl.yml'
     types: [opened, reopened, synchronize, ready_for_review]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

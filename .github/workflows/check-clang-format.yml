@@ -1,6 +1,15 @@
-name: Checks
+# This workflow checks if the code is formatted according to the .clang-format
+# rules.
+name: Clang Format
 
-on: push
+# This workflow can only be triggered by other workflows.
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: 'An optional string representing the GitHub runner to use.'
+        required: true
+        type: string
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -11,10 +20,8 @@ defaults:
     shell: bash
 
 jobs:
-  # Check if the code is formatted according to the .clang-format rules.
   clang-format:
-    if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     container: ghcr.io/xrplf/ci/tools-rippled-clang-format
     steps:
       # The $GITHUB_WORKSPACE and ${{ github.workspace }} might not point to the
@@ -51,39 +58,6 @@ jobs:
             # Print the files that changed to give the contributor a hint about
             # what to expect when running git-clang-format on their own machine.
             git status
-            echo "${MESSAGE}"
-            exit 1
-          fi
-
-  # Check if the dependencies between the modules are correctly indexed
-  levelization:
-    if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Check levelization
-        run: Builds/levelization/levelization.sh
-      - name: Check for differences
-        env:
-          MESSAGE: |
-
-            The dependency relationships between the modules in rippled have
-            changed, which may be an improvement or a regression.
-
-            A rule of thumb is that if your changes caused something to be
-            removed from loops.txt, it's probably an improvement, while if
-            something was added, it's probably a regression.
-
-            Run './Builds/levelization/levelization.sh' in your repo, and then
-            commit and push the changes. See Builds/levelization/README.md for
-            more info.
-        run: |
-          DIFF=$(git status --porcelain)
-          if [ -n "${DIFF}" ]; then
-            # Print the differences to give the contributor a hint about what to
-            # expect when running levelization on their own machine.
-            git diff
             echo "${MESSAGE}"
             exit 1
           fi

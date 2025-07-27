@@ -1,0 +1,96 @@
+# This workflow installs and caches the Conan dependencies for the specified
+# configuration. The ones that are not in the remote cache will be built from
+# source and added to the cache.
+name: Install dependencies
+
+on:
+  workflow_call:
+    inputs:
+      build_dir:
+        description: 'The directory where the build will take place.'
+        required: true
+        type: string
+      build_type:
+        description: 'The build type to use.'
+        required: true
+        type: string
+      conan_global_conf:
+        description: 'The contents of the global Conan configuration.'
+        required: true
+        type: string
+      conan_remote_name:
+        description: 'The name of the Conan remote to use.'
+        required: true
+        type: string
+      conan_remote_url:
+        description: 'The URL of the Conan remote to use.'
+        required: true
+        type: string
+      container:
+        description: 'The container image to use for the job.'
+        required: true
+        type: string
+      runner:
+        description: 'A string representing the runner to use.'
+        required: true
+        type: string
+    secrets:
+      conan_remote_username:
+        description: 'The username for logging into the Conan remote.'
+        required: true
+        type: string
+      conan_remote_password:
+        description: 'The password for logging into the Conan remote.'
+        required: true
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  runs-on: ${{ inputs.runner }}
+  container: ${{ inputs.container }}
+  steps:
+    - name: Checkout repository
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+    - name: Check configuration
+      run: |
+        echo "Checking path"
+        echo ${PATH} | tr ':' '\n'
+
+        echo "Checking environment variables."
+        env | sort
+    - name: Check versions
+      run: |
+        echo "Checking CMake version."
+        cmake --version
+
+        echo "Checking compiler version."
+        ${CC} --version
+    - name: Configure Conan
+      uses: ./.github/actions/conan-configure
+      with:
+        conan_global_conf: ${{ inputs.conan_global_conf }}
+        conan_remote_name: ${{ inputs.conan_remote_name }}
+        conan_remote_url: ${{ inputs.conan_remote_url }}
+        conan_remote_username: ${{ secrets.conan_remote_username }}
+        conan_remote_password: ${{ secrets.conan_remote_password }}
+    - name: Install Conan dependencies
+      run: |
+        mkdir -p ${{ inputs.build_dir }}
+        cd ${{ inputs.build_dir }}
+        conan install \
+          --output-folder . \
+          --build missing \
+          --options:host "&:tests=True" \
+          --options:host "&:xrpld=True" \
+          --settings:all build_type=${{ inputs.build_type }} \
+          ..
+    - name: Upload Conan dependencies
+      shell: bash
+      run: conan upload '*' --confirm --check --remote ${{ inputs.conan_remote_name }}

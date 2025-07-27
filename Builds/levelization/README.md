@@ -72,15 +72,15 @@ It generates many files of [results](results):
   desired as described above. In a perfect repo, this file will be
   empty.
   This file is committed to the repo, and is used by the [levelization
-  Github workflow](../../.github/workflows/checks.yml) to validate
+  Github workflow](../../.github/workflows/check-levelization.yml) to validate
   that nothing changed.
 * [`ordering.txt`](results/ordering.txt): A list showing relationships
   between modules where there are no loops as they actually exist, as
   opposed to how they are desired as described above.
   This file is committed to the repo, and is used by the [levelization
-  Github workflow](../../.github/workflows/checks.yml) to validate
+  Github workflow](../../.github/workflows/check-levelization.yml) to validate
   that nothing changed.
-* [`levelization.yml`](../../.github/workflows/checks.yml)
+* [`levelization.yml`](../../.github/workflows/check-levelization.yml)
   Github Actions workflow to test that levelization loops haven't
   changed.  Unfortunately, if changes are detected, it can't tell if
   they are improvements or not, so if you have resolved any issues or
