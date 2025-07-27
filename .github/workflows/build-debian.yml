@@ -139,29 +139,17 @@ jobs:
       strategy_matrix_build_type: ${{ env.STRATEGY_MATRIX_BUILD_TYPE }}
       strategy_matrix_cmake_args: ${{ env.STRATEGY_MATRIX_CMAKE_ARGS }}
 
-  # Generate the strategy matrix.
-  generate-matrix:
-    needs:
-      - expose-env
-    uses: ./.github/workflows/generate-matrix.yml
-    with:
-      architecture: ${{ needs.expose-env.outputs.strategy_matrix_architecture }}
-      os: ${{ needs.expose-env.outputs.strategy_matrix_os }}
-      build_type: ${{ needs.expose-env.outputs.strategy_matrix_build_type }}
-      cmake_args: ${{ needs.expose-env.outputs.strategy_matrix_cmake_args }}
-
   # Install and cache the dependencies using various configurations.
   install-dependencies:
     needs:
       - expose-env
-      - generate-matrix
     uses: ./.github/workflows/install-dependencies.yml
     strategy:
       fail-fast: false
       matrix:
-        architecture: ${{ fromJson(needs.generate-matrix.outputs.architecture) }}
-        os: ${{ fromJson(needs.generate-matrix.outputs.os) }}
-        build_type: ${{ fromJson(needs.generate-matrix.outputs.build_type) }}
+        architecture: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_architecture) }}
+        os: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_os) }}
+        build_type: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_build_type) }}
     with:
       build_dir: ${{ inputs.build_dir }}
       build_type: ${{ strategy.matrix.build_type }}
@@ -173,16 +161,15 @@ jobs:
   build-and-test:
     needs:
       - expose-env
-      - generate-matrix
       - install-dependencies
     uses: ./.github/workflows/build-nix.yml
     strategy:
       fail-fast: false
       matrix:
-        architecture: ${{ fromJson(needs.generate-matrix.outputs.architecture) }}
-        os: ${{ fromJson(needs.generate-matrix.outputs.os) }}
-        build_type: ${{ fromJson(needs.generate-matrix.outputs.build_type) }}
-        cmake_args: ${{ fromJson(needs.generate-matrix.outputs.cmake_args) }}
+        architecture: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_architecture) }}
+        os: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_os) }}
+        build_type: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_build_type) }}
+        cmake_args: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_cmake_args) }}
     with:
       build_dir: ${{ inputs.build_dir }}
       build_type: ${{ strategy.matrix.build_type }}
