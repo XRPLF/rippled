@@ -28,7 +28,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Check configuration
+    - name: Check versions
       shell: bash
       run: |
         echo "Checking Conan version."
