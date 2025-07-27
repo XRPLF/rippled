@@ -113,10 +113,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Install build tools
-        run: |
-          echo "Installing build tools."
-          brew install cmake conan coreutils ninja
       - name: Check configuration
         shell: bash
         run: |
@@ -132,7 +128,7 @@ jobs:
           cmake --version
           
           echo "Checking compiler version."
-          ${CC} --version
+          clang --version
           
           echo "Checking Conan version."
           conan --version

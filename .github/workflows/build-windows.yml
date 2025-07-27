@@ -113,14 +113,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Check configuration
-        shell: bash
-        run: |
-          echo "Checking path"
-          $env:PATH -split ';' | Sort-Object
-          
-          echo "Checking environment variables."
-          ls env:
+#      - name: Check configuration
+#        shell: bash
+#        run: |
+#          echo "Checking path"
+#          $env:PATH -split ';' | Sort-Object
+#
+#          echo "Checking environment variables."
+#          ls env:
       - name: Check versions
         shell: bash
         run: |
