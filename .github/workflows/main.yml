@@ -28,29 +28,29 @@ jobs:
 #    if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
 #    uses: ./.github/workflows/check-levelization.yml
 
-#  debian:
-##    needs:
-##      - check-clang-format
-##      - check-levelization
-#    uses: ./.github/workflows/build-debian.yml
-#    with:
-#      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
-#      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-#    secrets:
-#      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-#      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-#
-#  rhel:
-##    needs:
-##      - check-clang-format
-##      - check-levelization
-#    uses: ./.github/workflows/build-rhel.yml
-#    with:
-#      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
-#      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-#    secrets:
-#      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-#      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+  debian:
+#    needs:
+#      - check-clang-format
+#      - check-levelization
+    uses: ./.github/workflows/build-debian.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  rhel:
+#    needs:
+#      - check-clang-format
+#      - check-levelization
+    uses: ./.github/workflows/build-rhel.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   ubuntu:
 #    needs:
@@ -76,15 +76,15 @@ jobs:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
-#  windows:
+  windows:
 #    needs:
 #      - check-clang-format
 #      - check-levelization
-#    uses: ./.github/workflows/build-windows.yml
-#    with:
-#      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
-#      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-#    secrets:
-#      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-#      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 

@@ -49,7 +49,7 @@ env:
 #  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
 #      {
-#        "runner": ["self-hosted", "macOS", "mac-runner-m1"]
+#        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
 #      }
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
@@ -65,7 +65,7 @@ env:
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
-        "runner": ["self-hosted", "macOS", "mac-runner-m1"]
+        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
       }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
@@ -113,6 +113,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install build tools
+        run: |
+          echo "Installing build tools."
+          brew install cmake conan coreutils ninja
       - name: Check configuration
         shell: bash
         run: |
@@ -132,6 +136,9 @@ jobs:
           
           echo "Checking Conan version."
           conan --version
+          
+          echo "Checking Ninja version."
+          ninja --version
       - name: Configure Conan
         uses: ./.github/actions/configure-conan
         with:
@@ -147,10 +154,11 @@ jobs:
           build_type: ${{ matrix.build_type }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
       - name: Build and test the binary
-        uses: ./.github/actions/build-test-nix
+        uses: ./.github/actions/build-test
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Ninja'
-          link_check: false
+          cmake_target: 'all'
+          os: 'MacOS'

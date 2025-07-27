@@ -51,11 +51,11 @@ env:
 #    [
 #      {
 #          "platform": "linux/amd64",
-#          "runner": "ubuntu-24.04"
+#          "runner": ["self-hosted", "Linux", "X64"]
 #      },
 #      {
 #          "platform": "linux/arm64",
-#          "runner": "ubuntu-24.04-arm"
+#          "runner": ["self-hosted", "Linux", "ARM64"]
 #      }
 #    ]
 #  STRATEGY_MATRIX_OS: >-
@@ -113,11 +113,12 @@ env:
 #      "-DUnity=OFF",
 #      "-DUnity=ON"
 #    ]
+
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
           "platform": "linux/amd64",
-          "runner": "ubuntu-24.04"
+          "runner": ["self-hosted", "Linux", "X64"]
       }
     ]
   STRATEGY_MATRIX_OS: >-
@@ -131,7 +132,7 @@ env:
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
-      "Debug"
+      "Release"
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
@@ -197,6 +198,9 @@ jobs:
           
           echo "Checking Conan version."
           conan --version
+          
+          echo "Checking Ninja version."
+          ninja --version
       - name: Configure Conan
         uses: ./.github/actions/configure-conan
         with:
@@ -212,10 +216,11 @@ jobs:
           build_type: ${{ matrix.build_type }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
       - name: Build and test the binary
-        uses: ./.github/actions/build-test-nix
+        uses: ./.github/actions/build-test
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Ninja'
-          link_check: true
+          cmake_target: 'all'
+          os: 'Linux'

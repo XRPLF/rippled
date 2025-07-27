@@ -19,13 +19,16 @@ inputs:
     type: string
   cmake_target:
     description: 'The CMake target to build.'
-    required: false
-    type: string
-    default: 'all'
-  link_check:
-    description: 'A boolean representing whether to check how the binary is linked.'
     required: true
-    type: boolean
+    type: string
+  os:
+    description: 'A string representing which operating system is used.'
+    required: true
+    type: choice
+    options:
+      - Linux
+      - MacOS
+      - Windows
 
 # Install the Conan profiles and log into the specified remote. We first remove
 # the remote if it already exists, which can occur on self-hosted runners where
@@ -54,7 +57,7 @@ runs:
               --parallel $(nproc) \
               --target ${{ inputs.cmake_target }}
     - name: Check linking
-      if: inputs.link_check
+      if: inputs.os == 'Linux'
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
@@ -67,7 +70,7 @@ runs:
         fi
     - name: Test the binary
       shell: bash
-      working-directory: ${{ inputs.build_dir }}
+      working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'Windows' && inputs.build_type || '' }}
       run: |
         ./rippled --unittest --unittest-jobs $(nproc)
         ctest -j $(nproc) --output-on-failure

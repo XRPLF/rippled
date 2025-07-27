@@ -1,6 +1,5 @@
-# This workflow builds and tests the binary on various Red Hat Enterprise Linux
-# configurations.
-name: RHEL
+# This workflow builds and tests the binary on various Windows configurations.
+name: Windows
 
 on:
   workflow_call:
@@ -27,7 +26,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-rhel
+  group: ${{ github.workflow }}-${{ github.ref }}-windows
   cancel-in-progress: true
 
 defaults:
@@ -46,39 +45,12 @@ env:
     tools.compilation:verbosity=verbose
   # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
   # duplication, we define it here using environment variables and create the
-  # matrix in the first job. The matrix defined below should be kept in sync
-  # with https://github.com/XRPLF/ci/blob/main/.github/workflows/rhel.yml.
+  # matrix in the first job.
 #  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
 #      {
-#          "platform": "linux/amd64",
-#          "runner": ["self-hosted", "Linux", "X64"]
-#      },
-#      {
-#          "platform": "linux/arm64",
-#          "runner": ["self-hosted", "Linux", "ARM64"]
+#        "runner": ["self-hosted", "Windows", "X64", "devbox"]
 #      }
-#    ]
-#  STRATEGY_MATRIX_OS: >-
-#    [
-#        {
-#            "distro": "rhel",
-#            "release": "9.6",
-#            "compiler_name": "gcc",
-#            "compiler_version": "13"
-#        },
-#        {
-#            "distro": "rhel",
-#            "release": "9.6",
-#            "compiler_name": "gcc",
-#            "compiler_version": "14"
-#        },
-#        {
-#            "distro": "rhel",
-#            "release": "9.6",
-#            "compiler_name": "clang",
-#            "compiler_version": "any"
-#        },
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
 #    [
@@ -91,29 +63,19 @@ env:
 #      "-DUnity=ON"
 #    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
-  [
-    {
-        "platform": "linux/amd64",
-        "runner": ["self-hosted", "Linux", "X64"]
-    }
-  ]
-  STRATEGY_MATRIX_OS: >-
-  [
+    [
       {
-          "distro": "rhel",
-          "release": "9.6",
-          "compiler_name": "gcc",
-          "compiler_version": "13"
+        "runner": ["self-hosted", "Windows", "X64", "devbox"]
       }
-  ]
+    ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
-  [
-    "Release"
-  ]
+    [
+      "Debug"
+    ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
-  [
-    "-DUnity=ON"
-  ]
+    [
+      "-DUnity=ON"
+    ]
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by
@@ -127,13 +89,11 @@ jobs:
         id: generate
         run: |
           echo "strategy_matrix_architecture=$(jq -c <<< '${{ env.STRATEGY_MATRIX_ARCHITECTURE }}')" >> "$GITHUB_OUTPUT"
-          echo "strategy_matrix_os=$(jq -c <<< '${{ env.STRATEGY_MATRIX_OS }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_build_type=$(jq -c <<< '${{ env.STRATEGY_MATRIX_BUILD_TYPE }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_cmake_args=$(jq -c <<< '${{ env.STRATEGY_MATRIX_CMAKE_ARGS }}')" >> "$GITHUB_OUTPUT"
     outputs:
       conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
       strategy_matrix_architecture: ${{ steps.generate.outputs.strategy_matrix_architecture }}
-      strategy_matrix_os: ${{ steps.generate.outputs.strategy_matrix_os }}
       strategy_matrix_build_type: ${{ steps.generate.outputs.strategy_matrix_build_type }}
       strategy_matrix_cmake_args: ${{ steps.generate.outputs.strategy_matrix_cmake_args }}
 
@@ -143,13 +103,11 @@ jobs:
     needs:
       - generate-outputs
     runs-on: ${{ matrix.architecture.runner }}
-    container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
     strategy:
       fail-fast: false
       max-parallel: 4
       matrix:
         architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
-        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
         cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
     steps:
@@ -159,24 +117,18 @@ jobs:
         shell: bash
         run: |
           echo "Checking path"
-          echo ${PATH} | tr ':' '\n'
+          $env:PATH -split ';' | Sort-Object
           
           echo "Checking environment variables."
-          env | sort
+          ls env:
       - name: Check versions
         shell: bash
         run: |
           echo "Checking CMake version."
           cmake --version
           
-          echo "Checking compiler version."
-          ${CC} --version
-          
           echo "Checking Conan version."
           conan --version
-          
-          echo "Checking Ninja version."
-          ninja --version
       - name: Configure Conan
         uses: ./.github/actions/configure-conan
         with:
@@ -197,6 +149,6 @@ jobs:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
-          cmake_generator: 'Ninja'
-          cmake_target: 'all'
-          os: 'Linux'
+          cmake_generator: 'Visual Studio 17 2022'
+          cmake_target: 'install'
+          os: 'Windows'
