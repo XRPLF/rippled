@@ -32,16 +32,23 @@ env:
   # duplication, we define it here using environment variables and create the
   # matrix in the first job. The matrix defined below should be kept in sync
   # with https://github.com/XRPLF/ci/blob/main/.github/workflows/debian.yml.
+#  STRATEGY_MATRIX_ARCHITECTURE: >-
+#    [
+#      {
+#          "platform": "linux/amd64",
+#          "runner": "ubuntu-24.04"
+#      },
+#      {
+#          "platform": "linux/arm64",
+#          "runner": "ubuntu-24.04-arm"
+#      }
+#    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
           "platform": "linux/amd64",
           "runner": "ubuntu-24.04"
       },
-      {
-          "platform": "linux/arm64",
-          "runner": "ubuntu-24.04-arm"
-      }
     ]
   STRATEGY_MATRIX_OS: >-
     [
