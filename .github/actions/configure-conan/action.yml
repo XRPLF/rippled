@@ -1,4 +1,4 @@
-name: conan-configure
+name: Configure Conan
 
 inputs:
   conan_global_conf:

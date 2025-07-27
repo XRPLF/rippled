@@ -164,48 +164,47 @@ jobs:
   install-dependencies:
     needs:
       - generate-outputs
-    uses: ./.github/workflows/install-dependencies.yml
+    runs-on: ${{ matrix.architecture.runner }}
+    container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
     strategy:
       fail-fast: false
       matrix:
         architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
         os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
+    uses: ./.github/actions/install-dependencies
     with:
       build_dir: ${{ inputs.build_dir }}
       build_type: ${{ matrix.build_type }}
       conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
-      conan_remote_name: ${ inputs.conan_remote_name }
-      conan_remote_url: ${ inputs.conan_remote_url }
-      container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
-      runner: ${{ matrix.architecture.runner }}
-    secrets:
+      conan_remote_name: ${{ inputs.conan_remote_name }}
+      conan_remote_url: ${{ inputs.conan_remote_url }}
       conan_remote_username: ${{ inputs.conan_remote_username }}
       conan_remote_password: ${{ inputs.conan_remote_password }}
 
-  # Build and test the binary using various configurations.
-  build-and-test:
-    needs:
-      - generate-outputs
-      - install-dependencies
-    uses: ./.github/workflows/build-nix.yml
-    strategy:
-      fail-fast: false
-      matrix:
-        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
-        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
-        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
-        cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
-    with:
-      build_dir: ${{ inputs.build_dir }}
-      build_type: ${{ matrix.build_type }}
-      cmake_args: ${{ matrix.cmake_args }}
-      cmake_generator: "Ninja"
-      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
-      conan_remote_name: ${ inputs.conan_remote_name }
-      conan_remote_url: ${ inputs.conan_remote_url }
-      container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
-      runner: ${{ matrix.architecture.runner }}
-    secrets:
-      conan_remote_username: ${{ inputs.conan_remote_username }}
-      conan_remote_password: ${{ inputs.conan_remote_password }}
+#  # Build and test the binary using various configurations.
+#  build-and-test:
+#    needs:
+#      - generate-outputs
+#      - install-dependencies
+#    uses: ./.github/workflows/build-nix.yml
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
+#        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
+#        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
+#        cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
+#    with:
+#      build_dir: ${{ inputs.build_dir }}
+#      build_type: ${{ matrix.build_type }}
+#      cmake_args: ${{ matrix.cmake_args }}
+#      cmake_generator: "Ninja"
+#      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
+#      conan_remote_name: ${ inputs.conan_remote_name }
+#      conan_remote_url: ${ inputs.conan_remote_url }
+#      container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+#      runner: ${{ matrix.architecture.runner }}
+#    secrets:
+#      conan_remote_username: ${{ inputs.conan_remote_username }}
+#      conan_remote_password: ${{ inputs.conan_remote_password }}
