@@ -118,8 +118,9 @@ class Loan_test : public beast::unit_test::suite
     {
         jtx::PrettyAsset asset;
         uint256 brokerID;
-        BrokerInfo(jtx::PrettyAsset const& asset_, uint256 const& brokerID_)
-            : asset(asset_), brokerID(brokerID_)
+        uint256 vaultID;
+        BrokerInfo(jtx::PrettyAsset const& asset_, uint256 const& brokerID_, uint256 const& vaultID_)
+            : asset(asset_), brokerID(brokerID_), vaultID(vaultID_)
         {
         }
     };
@@ -376,7 +377,7 @@ class Loan_test : public beast::unit_test::suite
 
         env.close();
 
-        return {asset, keylet.key};
+        return {asset, keylet.key, vaultKeylet.key};
     }
 
     void
@@ -1889,17 +1890,276 @@ class Loan_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testLifecycleSlow()
+    {
+        testcase("Lifecycle Slow");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        using d = NetClock::duration;
+        using tp = NetClock::time_point;
+
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const depositor{"depositor"};
+        Account const exploiter{"exploiter"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, noripple(lender, depositor, exploiter, borrower));
+        env.close();
+
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerInfo broker = createVaultAndBroker(env, xrpAsset, lender);
+        std::cout << "Broker ID: " << broker.brokerID << std::endl;
+        std::cout << "Vault ID: " << broker.vaultID << std::endl;
+
+        Vault vault{env};
+        auto const deposit = broker.asset(vaultDeposit);
+        env(vault.deposit({.depositor = depositor, .id = broker.vaultID, .amount = deposit}));
+        env.close();
+
+        // {
+        //     Json::Value params;
+        //     params[jss::ledger_index] = env.current()->seq() - 1;
+        //     params[jss::transactions] = true;
+        //     params[jss::expand] = true;
+        //     auto const jrr = env.rpc("json", "ledger", to_string(params));
+        //     std::cout << jrr << std::endl;
+        // }
+
+        // {
+        //     auto const withdraw = broker.asset(vaultDeposit);
+        //     env(vault.withdraw({.depositor = depositor, .id = broker.vaultID, .amount = withdraw}));
+        //     env.close();
+
+        //     Json::Value params;
+        //     params[jss::ledger_index] = env.current()->seq() - 1;
+        //     params[jss::transactions] = true;
+        //     params[jss::expand] = true;
+        //     auto const jrr = env.rpc("json", "ledger", to_string(params));
+        //     std::cout << jrr << std::endl;
+        // }
+
+        // {
+        //     auto const withdraw = broker.asset(vaultDeposit);
+        //     env(vault.withdraw({.depositor = lender, .id = broker.vaultID, .amount = withdraw}));
+        //     env.close();
+
+        //     Json::Value params;
+        //     params[jss::ledger_index] = env.current()->seq() - 1;
+        //     params[jss::transactions] = true;
+        //     params[jss::expand] = true;
+        //     auto const jrr = env.rpc("json", "ledger", to_string(params));
+        //     std::cout << jrr << std::endl;
+        // }
+
+        Number const loanAmount{1, 3}; // 1000
+        int interestExponent = 0; // 1.2%
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        Number const principalRequest = broker.asset(loanAmount).value();
+        auto const startDate = env.now() + 3600s;
+        auto const originationFee = broker.asset(1).value();
+        auto const serviceFee = broker.asset(2).value();
+        auto const lateFee = broker.asset(3).value();
+        auto const closeFee = broker.asset(4).value();
+
+        auto applyExponent = [interestExponent,
+                              this](TenthBips32 value) mutable {
+            BEAST_EXPECT(value > TenthBips32(0));
+            while (interestExponent > 0)
+            {
+                auto const oldValue = value;
+                value *= 10;
+                --interestExponent;
+                BEAST_EXPECT(value / 10 == oldValue);
+            }
+            while (interestExponent < 0)
+            {
+                auto const oldValue = value;
+                value /= 10;
+                ++interestExponent;
+                BEAST_EXPECT(value * 10 == oldValue);
+            }
+            return value;
+        };
+
+        auto const overFee = applyExponent(percentageToTenthBips(5) / 10);
+        auto const interest = applyExponent(percentageToTenthBips(12));
+        // 2.4%
+        auto const lateInterest = applyExponent(percentageToTenthBips(24) / 10);
+        auto const closeInterest = applyExponent(percentageToTenthBips(36) / 10);
+        auto const overpaymentInterest = applyExponent(percentageToTenthBips(48) / 10);
+        auto const total = 12;
+        auto const _interval = 600;
+        auto const grace = 60;
+
+        // Use the defined values
+        auto brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+        auto loanSequence = brokerSle->at(sfLoanSequence);
+        auto createJtx = env.jt(
+            set(borrower, broker.brokerID, principalRequest, startDate, tfLoanOverpayment),
+            sig(sfCounterpartySignature, lender),
+            loanOriginationFee(originationFee),
+            loanServiceFee(serviceFee),
+            latePaymentFee(lateFee),
+            closePaymentFee(closeFee),
+            overpaymentFee(overFee),
+            interestRate(interest),
+            lateInterestRate(lateInterest),
+            closeInterestRate(closeInterest),
+            overpaymentInterestRate(overpaymentInterest),
+            paymentTotal(total),
+            paymentInterval(_interval),
+            gracePeriod(grace),
+            fee(loanSetFee));
+        // Successfully create a Loan
+        env(createJtx);
+        env.close();
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+        auto logLoanStatus = [&](auto const& keylet) {
+            auto loanSle = env.le(keylet);
+            std::cout << "Principal Outstanding: " << loanSle->at(sfPrincipalOutstanding) << std::endl;
+        };
+
+        auto getLoanState = [&](auto const& keylet) {
+            auto loanSle = env.le(keylet);
+            LoanState state{
+            .previousPaymentDate = loanSle->at(sfPreviousPaymentDate),
+            .startDate = tp{d{loanSle->at(sfStartDate)}},
+            .nextPaymentDate = loanSle->at(sfNextPaymentDueDate),
+            .paymentRemaining = loanSle->at(sfPaymentRemaining),
+            .assetsAvailable = loanSle->at(sfAssetsAvailable),
+            .principalRequested = loanSle->at(sfPrincipalRequested),
+            .principalOutstanding = loanSle->at(sfPrincipalOutstanding),
+            .flags = loanSle->at(sfFlags),
+            .paymentInterval = loanSle->at(sfPaymentInterval),
+            };
+            return state;
+        };
+
+        auto state = getLoanState(loanKeylet);
+
+        env.close(state.startDate + 5s);
+
+        auto logVaultStatus = [&]() {
+            auto const vaultKeylet = keylet::vault(broker.vaultID);
+            auto vaultSle = env.le(vaultKeylet);
+            std::cout << "Assets Available: " << vaultSle->at(sfAssetsAvailable) << std::endl;
+            std::cout << "Assets Total: " << vaultSle->at(sfAssetsTotal) << std::endl;
+        };
+
+        STAmount const drawAmount{broker.asset, state.assetsAvailable};
+        env(draw(borrower, loanKeylet.key, drawAmount));
+        env.close(state.startDate + 20s);
+
+        logVaultStatus();
+        logLoanStatus(loanKeylet);
+
+        PrettyAmount adjustment = broker.asset(0);
+        if (broker.asset.raw().native())
+        {
+            adjustment = env.current()->fees().base;
+        }
+
+        Number const interval = state.paymentInterval;
+        auto const periodicRate = interval * Number(12, -2) / (365 * 24 * 60 * 60);
+
+        while (state.paymentRemaining > 0)
+        {
+            STAmount const principalRequestedAmount{broker.asset, state.principalRequested};
+            auto const rateFactor = power(1 + periodicRate, state.paymentRemaining);
+            Number const rawPeriodicPayment = state.principalOutstanding * periodicRate * rateFactor / (rateFactor - 1);
+            STAmount const periodicPayment = roundToReference(STAmount{broker.asset, rawPeriodicPayment}, principalRequestedAmount);
+            STAmount const totalDue = roundToReference(periodicPayment + broker.asset(2), principalRequestedAmount);
+            STAmount const transactionAmount = STAmount{broker.asset, totalDue} + broker.asset(10);
+            auto const totalDueAmount = STAmount{broker.asset, totalDue};
+            Number const rawInterest = state.paymentRemaining == 1 ? rawPeriodicPayment - state.principalOutstanding : state.principalOutstanding * periodicRate;
+            STAmount const interest = roundToReference(STAmount{broker.asset, rawInterest}, principalRequestedAmount);
+            // auto const rawPrincipal = rawPeriodicPayment - rawInterest;
+            auto const principal = roundToReference(STAmount{broker.asset, periodicPayment - interest}, principalRequestedAmount);
+            auto const borrowerBalanceBeforePayment = env.balance(borrower, broker.asset);
+            // Make the payment
+            env(pay(borrower, loanKeylet.key, transactionAmount));
+            env.close();
+            // Need to account for fees if the loan is in XRP
+            adjustment = broker.asset(0);
+            if (broker.asset.raw().native())
+            {
+                adjustment = env.current()->fees().base;
+            }
+
+            // Check the result
+            auto const borrowerBalance =
+                env.balance(borrower, broker.asset);
+            auto const expectedBalance = borrowerBalanceBeforePayment -
+                totalDueAmount - adjustment;
+
+            --state.paymentRemaining;
+            state.previousPaymentDate = state.nextPaymentDate;
+            state.nextPaymentDate += state.paymentInterval;
+            state.principalOutstanding -= principal;
+            std::cout << "Payment Remaining: " << state.paymentRemaining << std::endl;
+            std::cout << "Principal Remaining: " << state.principalOutstanding << std::endl;
+        }
+
+        logVaultStatus();
+        logLoanStatus(loanKeylet);
+
+        // // Loan is paid off
+        BEAST_EXPECT(state.paymentRemaining == 0);
+        BEAST_EXPECT(state.principalOutstanding == 0);
+
+        auto const MPT = MPTIssue{MPTID{"0000000107AC772C89DFE65E093629FEA501C68AD3119454"}};
+        {
+            STAmount mpt1{MPT, UINT64_C(50000000000)};
+            STAmount mpt2{MPT, UINT64_C(50000000000)};
+            env(vault.withdraw({.depositor = depositor, .id = broker.vaultID, .amount = mpt1}));
+            env(vault.withdraw({.depositor = lender, .id = broker.vaultID, .amount = mpt2}));
+            env.close();
+
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        std::cout << "Lender XRP Balance: " << env.balance(lender, broker.asset) << std::endl;
+        BEAST_EXPECT(env.balance(lender, broker.asset) == XRP(98978.905268));
+        env.balance(lender, MPT);
+        std::cout << "Depositor XRP Balance: " << env.balance(depositor, broker.asset) << std::endl;
+        BEAST_EXPECT(env.balance(depositor, broker.asset) == XRP(100002.969921));
+        env.balance(depositor, MPT);
+    }
+
 public:
     void
     run() override
     {
-        testDisabled();
-        testSelfLoan();
-        testLifecycle();
+        // testDisabled();
+        // testSelfLoan();
+        // testLifecycle();
+        testLifecycleSlow();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Loan, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Loan, app, ripple);
 
 }  // namespace test
 }  // namespace ripple

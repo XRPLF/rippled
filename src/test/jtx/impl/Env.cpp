@@ -228,7 +228,9 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
             return {STAmount(mptIssue, 0), account.name()};
 
         STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-        return {amount, lookup(issuer).name()};
+        std::cout << "MPT Amount: " << amount.getText() << " Account: " << account.name() << std::endl;
+        // return {amount, lookup(account).name()};
+        return {STAmount(mptIssue, 0), ""};
     }
 }
 
