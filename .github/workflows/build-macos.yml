@@ -70,11 +70,11 @@ env:
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
-      "Debug"
+      "Release"
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
-      "-DUnity=ON"
+      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=ON"
     ]
 
 jobs:
