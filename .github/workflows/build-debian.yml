@@ -165,7 +165,6 @@ jobs:
       conan_global_conf: ${{ needs.expose-env.outputs.conan_global_conf }}
       container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
       runner: ${{ strategy.matrix.architecture.runner }}
-    secrets:
 
   # Build and test the binary using various configurations.
   build-and-test:

@@ -93,7 +93,8 @@ env:
 
 jobs:
   # Expose environment variables used by other jobs. This is a workaround, as
-  # environment variables cannot be passed as inputs to reusable workflows.
+  # environment variables cannot be passed as inputs to reusable workflows. They
+  # can, however, be passed as inputs to actions.
   expose-env:
     runs-on: ubuntu-latest
     steps:
@@ -105,12 +106,14 @@ jobs:
   # Generate the strategy matrix.
   generate-matrix:
     runs-on: ubuntu-latest
-    uses: ./.github/actions/generate-matrix.yml
-    with:
-      architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
-      os: ${{ env.STRATEGY_MATRIX_OS }}
-      build_type: ${{ env.STRATEGY_MATRIX_BUILD_TYPE }}
-      cmake_args: ${{ env.STRATEGY_MATRIX_UNITY }}
+    steps:
+      - name: Generate strategy matrix
+        uses: ./.github/actions/generate-matrix.yml
+        with:
+          architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
+          os: ${{ env.STRATEGY_MATRIX_OS }}
+          build_type: ${{ env.STRATEGY_MATRIX_BUILD_TYPE }}
+          cmake_args: ${{ env.STRATEGY_MATRIX_UNITY }}
 
   # Install and cache the dependencies using various configurations.
   install-dependencies:
@@ -130,7 +133,6 @@ jobs:
       conan_global_conf: ${{ needs.expose-env.outputs.conan_global_conf }}
       container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
       runner: ${{ strategy.matrix.architecture.runner }}
-    secrets:
 
   # Build and test the binary using various configurations.
   build-and-test:
