@@ -6,7 +6,7 @@ on:
   workflow_call:
     inputs:
       build_dir:
-        description: 'The directory where the build will take place.'
+        description: 'The directory where to build.'
         required: false
         type: string
         default: '.build'
@@ -137,41 +137,16 @@ jobs:
       strategy_matrix_build_type: ${{ steps.generate.outputs.strategy_matrix_build_type }}
       strategy_matrix_cmake_args: ${{ steps.generate.outputs.strategy_matrix_cmake_args }}
 
-  # Install and cache the dependencies using various configurations.
-  install-dependencies:
-    needs:
-      - generate-outputs
-    runs-on: ${{ matrix.architecture.runner }}
-    container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
-        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
-        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Install dependencies
-        uses: ./.github/actions/install-dependencies
-        with:
-          build_dir: ${{ inputs.build_dir }}
-          build_type: ${{ matrix.build_type }}
-          conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
-          conan_remote_url: ${{ inputs.conan_remote_url }}
-          conan_remote_username: ${{ secrets.conan_remote_username }}
-          conan_remote_password: ${{ secrets.conan_remote_password }}
-
-  # Build and test the binary using various configurations.
+  # Install and cache the dependencies, and then build and test the binary using
+  # various configurations.
   build-and-test:
     needs:
       - generate-outputs
-      - install-dependencies
     runs-on: ${{ matrix.architecture.runner }}
     container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
         os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
@@ -180,16 +155,44 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check configuration
+        shell: bash
+        run: |
+          echo "Checking path"
+          echo ${PATH} | tr ':' '\n'
+          
+          echo "Checking environment variables."
+          env | sort
+      - name: Check versions
+        shell: bash
+        run: |
+          echo "Checking CMake version."
+          cmake --version
+          
+          echo "Checking compiler version."
+          ${CC} --version
+          
+          echo "Checking Conan version."
+          conan --version
+      - name: Configure Conan
+        uses: ./.github/actions/configure-conan
+        with:
+          conan_global_conf: ${{ inputs.conan_global_conf }}
+          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_url: ${{ inputs.conan_remote_url }}
+          conan_remote_username: ${{ secrets.conan_remote_username }}
+          conan_remote_password: ${{ secrets.conan_remote_password }}
+      - name: Install dependencies
+        uses: ./.github/actions/install-dependencies
+        with:
+          build_dir: ${{ inputs.build_dir }}
+          build_type: ${{ matrix.build_type }}
+          conan_remote_name: ${{ inputs.conan_remote_name }}
       - name: Build and test the binary
         uses: ./.github/actions/build-test-nix
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
-          cmake_generator: "Ninja"
-          conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
-          conan_remote_url: ${{ inputs.conan_remote_url }}
-          conan_remote_username: ${{ secrets.conan_remote_username }}
-          conan_remote_password: ${{ secrets.conan_remote_password }}
-          linking: true
+          cmake_generator: 'Ninja'
+          link_check: true

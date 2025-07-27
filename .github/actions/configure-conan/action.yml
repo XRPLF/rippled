@@ -28,11 +28,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Check versions
-      shell: bash
-      run: |
-        echo "Checking Conan version."
-        conan --version
     - name: Install Conan profile
       shell: bash
       run: |

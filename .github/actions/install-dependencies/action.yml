@@ -2,31 +2,17 @@ name: Install-dependencies
 
 inputs:
   build_dir:
-    description: 'The directory where the build will take place.'
+    description: 'The directory where to build.'
     required: true
     type: string
   build_type:
     description: 'The build type to use.'
     required: true
     type: string
-  conan_global_conf:
-    description: 'The contents of the global Conan configuration.'
-    required: true
-    type: string
   conan_remote_name:
     description: 'The name of the Conan remote to use.'
     required: true
     type: string
-  conan_remote_url:
-    description: 'The URL of the Conan remote to use.'
-    required: true
-    type: string
-  conan_remote_username:
-    description: 'The username for logging into the Conan remote.'
-    required: true
-  conan_remote_password:
-    description: 'The password for logging into the Conan remote.'
-    required: true
 
 # Install the Conan profiles and log into the specified remote. We first remove
 # the remote if it already exists, which can occur on self-hosted runners where
@@ -34,30 +20,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Check configuration
-      shell: bash
-      run: |
-        echo "Checking path"
-        echo ${PATH} | tr ':' '\n'
-
-        echo "Checking environment variables."
-        env | sort
-    - name: Check versions
-      shell: bash
-      run: |
-        echo "Checking CMake version."
-        cmake --version
-
-        echo "Checking compiler version."
-        ${CC} --version
-    - name: Configure Conan
-      uses: ./.github/actions/configure-conan
-      with:
-        conan_global_conf: ${{ inputs.conan_global_conf }}
-        conan_remote_name: ${{ inputs.conan_remote_name }}
-        conan_remote_url: ${{ inputs.conan_remote_url }}
-        conan_remote_username: ${{ inputs.conan_remote_username }}
-        conan_remote_password: ${{ inputs.conan_remote_password }}
     - name: Install Conan dependencies
       shell: bash
       run: |

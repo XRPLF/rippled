@@ -2,7 +2,7 @@ name: Build and Test (Linux and MacOS)
 
 inputs:
   build_dir:
-    description: 'The directory where the build will take place.'
+    description: 'The directory where to build.'
     required: true
     type: string
   build_type:
@@ -22,25 +22,7 @@ inputs:
     required: false
     type: string
     default: 'all'
-  conan_global_conf:
-    description: 'The contents of the global Conan configuration.'
-    required: true
-    type: string
-  conan_remote_name:
-    description: 'The name of the Conan remote to use.'
-    required: true
-    type: string
-  conan_remote_url:
-    description: 'The URL of the Conan remote to use.'
-    required: true
-    type: string
-  conan_remote_username:
-    description: 'The username for logging into the Conan remote.'
-    required: true
-  conan_remote_password:
-    description: 'The password for logging into the Conan remote.'
-    required: true
-  linking:
+  link_check:
     description: 'A boolean representing whether to check how the binary is linked.'
     required: true
     type: boolean
@@ -51,30 +33,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Check configuration
-      shell: bash
-      run: |
-        echo "Checking path"
-        echo ${PATH} | tr ':' '\n'
-        
-        echo "Checking environment variables."
-        env | sort
-    - name: Check versions
-      shell: bash
-      run: |
-        echo "Checking CMake version."
-        cmake --version
-        
-        echo "Checking compiler version."
-        ${CC} --version
-    - name: Configure Conan
-      uses: ./.github/actions/configure-conan
-      with:
-        conan_global_conf: ${{ inputs.conan_global_conf }}
-        conan_remote_name: ${{ inputs.conan_remote_name }}
-        conan_remote_url: ${{ inputs.conan_remote_url }}
-        conan_remote_username: ${{ inputs.conan_remote_username }}
-        conan_remote_password: ${{ inputs.conan_remote_password }}
     - name: Configure CMake
       shell: bash
       working-directory: ${{ inputs.build_dir }}
@@ -96,7 +54,7 @@ runs:
               --parallel $(nproc) \
               --target ${{ inputs.cmake_target }}
     - name: Check linking
-      if: inputs.linking
+      if: inputs.link_check
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
