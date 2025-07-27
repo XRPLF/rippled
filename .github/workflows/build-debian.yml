@@ -142,7 +142,7 @@ env:
 jobs:
   # Generate the strategy matrix.
   generate-matrix:
-    uses: .github/workflows/generate-matrix.yml
+    uses: ./.github/workflows/generate-matrix.yml
     with:
       architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
       os: ${{ env.STRATEGY_MATRIX_OS }}
@@ -153,7 +153,7 @@ jobs:
   install-dependencies:
     needs:
       - generate-matrix
-    uses: .github/workflows/install-dependencies.yml
+    uses: ./.github/workflows/install-dependencies.yml
     strategy:
       fail-fast: false
       matrix:
@@ -177,7 +177,7 @@ jobs:
     needs:
       - generate-matrix
       - install-dependencies
-    uses: .github/workflows/build-nix.yml
+    uses: ./.github/workflows/build-nix.yml
     strategy:
       fail-fast: false
       matrix:
