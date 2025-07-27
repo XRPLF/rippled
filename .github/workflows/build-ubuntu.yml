@@ -47,77 +47,15 @@ env:
   # duplication, we define it here using environment variables and create the
   # matrix in the first job. The matrix defined below should be kept in sync
   # with https://github.com/XRPLF/ci/blob/main/.github/workflows/ubuntu.yml.
-#  STRATEGY_MATRIX_ARCHITECTURE: >-
-#    [
-#      {
-#          "platform": "linux/amd64",
-#          "runner": ["self-hosted", "Linux", "X64"]
-#      },
-#      {
-#          "platform": "linux/arm64",
-#          "runner": ["self-hosted", "Linux", "ARM64"]
-#      }
-#    ]
-#  STRATEGY_MATRIX_OS: >-
-#    [
-#        {
-#            "distro": "ubuntu",
-#            "release": "jammy",
-#            "compiler_name": "gcc",
-#            "compiler_version": "12"
-#        },
-#        {
-#            "distro": "ubuntu",
-#            "release": "noble",
-#            "compiler_name": "gcc",
-#            "compiler_version": "13"
-#        },
-#        {
-#            "distro": "ubuntu",
-#            "release": "noble",
-#            "compiler_name": "gcc",
-#            "compiler_version": "14"
-#        },
-#        {
-#            "distro": "ubuntu",
-#            "release": "noble",
-#            "compiler_name": "clang",
-#            "compiler_version": "16"
-#        },
-#        {
-#            "distro": "ubuntu",
-#            "release": "noble",
-#            "compiler_name": "clang",
-#            "compiler_version": "17"
-#        },
-#        {
-#            "distro": "ubuntu",
-#            "release": "noble",
-#            "compiler_name": "clang",
-#            "compiler_version": "18"
-#        },
-#        {
-#            "distro": "ubuntu",
-#            "release": "noble",
-#            "compiler_name": "clang",
-#            "compiler_version": "19"
-#        }
-#    ]
-#  STRATEGY_MATRIX_BUILD_TYPE: >-
-#    [
-#      "Debug",
-#      "Release"
-#    ]
-#  STRATEGY_MATRIX_CMAKE_ARGS: >-
-#    [
-#      "-DUnity=OFF",
-#      "-DUnity=ON"
-#    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
           "platform": "linux/amd64",
           "runner": ["self-hosted", "Linux", "X64"]
+      },
+      {
+          "platform": "linux/arm64",
+          "runner": ["self-hosted", "Linux", "ARM64"]
       }
     ]
   STRATEGY_MATRIX_OS: >-
@@ -127,16 +65,78 @@ env:
             "release": "jammy",
             "compiler_name": "gcc",
             "compiler_version": "12"
+        },
+        {
+            "distro": "ubuntu",
+            "release": "noble",
+            "compiler_name": "gcc",
+            "compiler_version": "13"
+        },
+        {
+            "distro": "ubuntu",
+            "release": "noble",
+            "compiler_name": "gcc",
+            "compiler_version": "14"
+        },
+        {
+            "distro": "ubuntu",
+            "release": "noble",
+            "compiler_name": "clang",
+            "compiler_version": "16"
+        },
+        {
+            "distro": "ubuntu",
+            "release": "noble",
+            "compiler_name": "clang",
+            "compiler_version": "17"
+        },
+        {
+            "distro": "ubuntu",
+            "release": "noble",
+            "compiler_name": "clang",
+            "compiler_version": "18"
+        },
+        {
+            "distro": "ubuntu",
+            "release": "noble",
+            "compiler_name": "clang",
+            "compiler_version": "19"
         }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
+      "Debug",
       "Release"
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
+      "-DUnity=OFF",
       "-DUnity=ON"
     ]
+#  STRATEGY_MATRIX_ARCHITECTURE: >-
+#    [
+#      {
+#          "platform": "linux/amd64",
+#          "runner": ["self-hosted", "Linux", "X64"]
+#      }
+#    ]
+#  STRATEGY_MATRIX_OS: >-
+#    [
+#        {
+#            "distro": "ubuntu",
+#            "release": "jammy",
+#            "compiler_name": "gcc",
+#            "compiler_version": "12"
+#        }
+#    ]
+#  STRATEGY_MATRIX_BUILD_TYPE: >-
+#    [
+#      "Release"
+#    ]
+#  STRATEGY_MATRIX_CMAKE_ARGS: >-
+#    [
+#      "-DUnity=ON"
+#    ]
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by
