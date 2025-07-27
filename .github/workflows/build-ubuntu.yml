@@ -26,7 +26,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-rhel
+  group: ${{ github.workflow }}-${{ github.ref }}-ubuntu
   cancel-in-progress: true
 
 defaults:

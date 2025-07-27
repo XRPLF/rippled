@@ -26,7 +26,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-debian
+  group: ${{ github.workflow }}-${{ github.ref }}-macos
   cancel-in-progress: true
 
 defaults:
@@ -46,9 +46,9 @@ env:
   # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
   # duplication, we define it here using environment variables and create the
   # matrix in the first job.
-#  STRATEGY_MATRIX_RUNNER: >-
+#  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
-#      "mac-runner-m1"
+#      "runner": ["self-hosted", "macOS", "mac-runner-m1"]
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
 #    [
@@ -60,9 +60,9 @@ env:
 #      "-DUnity=OFF",
 #      "-DUnity=ON"
 #    ]
-  STRATEGY_MATRIX_RUNNER: >-
+  STRATEGY_MATRIX_ARCHITECTURE: >-
     [
-      "mac-runner-m1"
+      "runner": ["self-hosted", "macOS", "mac-runner-m1"]
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
@@ -84,12 +84,12 @@ jobs:
       - name: Generate outputs
         id: generate
         run: |
-          echo "strategy_matrix_runner=$(jq -c <<< '${{ env.STRATEGY_MATRIX_RUNNER }}')" >> "$GITHUB_OUTPUT"
+          echo "strategy_matrix_architecture=$(jq -c <<< '${{ env.STRATEGY_MATRIX_ARCHITECTURE }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_build_type=$(jq -c <<< '${{ env.STRATEGY_MATRIX_BUILD_TYPE }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_cmake_args=$(jq -c <<< '${{ env.STRATEGY_MATRIX_CMAKE_ARGS }}')" >> "$GITHUB_OUTPUT"
     outputs:
       conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
-      strategy_matrix_runner: ${{ steps.generate.outputs.strategy_matrix_runner }}
+      strategy_matrix_architecture: ${{ steps.generate.outputs.strategy_matrix_architecture }}
       strategy_matrix_build_type: ${{ steps.generate.outputs.strategy_matrix_build_type }}
       strategy_matrix_cmake_args: ${{ steps.generate.outputs.strategy_matrix_cmake_args }}
 
@@ -98,12 +98,12 @@ jobs:
   build-test:
     needs:
       - generate-outputs
-    runs-on: [self-hosted, macOS, ${{ matrix.runner }}]
+    runs-on: ${{ matrix.architecture.runner }}
     strategy:
       fail-fast: false
       max-parallel: 4
       matrix:
-        runner: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_runner) }}
+        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
         cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
     steps:
