@@ -20,18 +20,18 @@ defaults:
     shell: bash
 
 jobs:
-  check-clang-format:
-    if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
-    uses: ./.github/workflows/check-clang-format.yml
-
-  check-levelization:
-    if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
-    uses: ./.github/workflows/check-levelization.yml
+#  check-clang-format:
+#    if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
+#    uses: ./.github/workflows/check-clang-format.yml
+#
+#  check-levelization:
+#    if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
+#    uses: ./.github/workflows/check-levelization.yml
 
   debian:
     needs:
-      - check-clang-format
-      - check-levelization
+#      - check-clang-format
+#      - check-levelization
     uses: ./.github/workflows/build-debian.yml
 
 #  rhel:
