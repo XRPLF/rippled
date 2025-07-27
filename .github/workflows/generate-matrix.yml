@@ -54,13 +54,13 @@ jobs:
   generate-matrix:
     runs-on: ${{ inputs.runner }}
     steps:
-    - name: Generate outputs
-      id: generate
-      run: |
-        echo "architecture=$(jq -c <<< '${{ inputs.architecture }}')" >> "$GITHUB_OUTPUT"
-        echo "os=$(jq -c <<< '${{ inputs.os }}')" >> "$GITHUB_OUTPUT"
-        echo "build_type=$(jq -c <<< '${{ inputs.build_type }}')" >> "$GITHUB_OUTPUT"
-        echo "cmake_args=$(jq -c <<< '${{ inputs.cmake_args }}')" >> "$GITHUB_OUTPUT"
+      - name: Generate outputs
+        id: generate
+        run: |
+          echo "architecture=$(jq -c <<< '${{ inputs.architecture }}')" >> "$GITHUB_OUTPUT"
+          echo "os=$(jq -c <<< '${{ inputs.os }}')" >> "$GITHUB_OUTPUT"
+          echo "build_type=$(jq -c <<< '${{ inputs.build_type }}')" >> "$GITHUB_OUTPUT"
+          echo "cmake_args=$(jq -c <<< '${{ inputs.cmake_args }}')" >> "$GITHUB_OUTPUT"
   outputs:
     architecture: ${{ steps.generate.outputs.architecture }}
     os: ${{ steps.generate.outputs.os }}
