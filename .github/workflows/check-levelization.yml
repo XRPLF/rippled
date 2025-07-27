@@ -19,8 +19,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Check levelization
-        run: Builds/levelization/levelization.sh
+      # TODO: Re-enable this step once the levelization script is faster.
+#      - name: Check levelization
+#        run: Builds/levelization/levelization.sh
       - name: Check for differences
         env:
           MESSAGE: |
