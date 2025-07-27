@@ -48,15 +48,53 @@ env:
   # duplication, we define it here using environment variables and create the
   # matrix in the first job. The matrix defined below should be kept in sync
   # with https://github.com/XRPLF/ci/blob/main/.github/workflows/rhel.yml.
+#  STRATEGY_MATRIX_ARCHITECTURE: >-
+#    [
+#      {
+#          "platform": "linux/amd64",
+#          "runner": "ubuntu-24.04"
+#      },
+#      {
+#          "platform": "linux/arm64",
+#          "runner": "ubuntu-24.04-arm"
+#      }
+#    ]
+#  STRATEGY_MATRIX_OS: >-
+#    [
+#        {
+#            "distro": "rhel",
+#            "release": "9.6",
+#            "compiler_name": "gcc",
+#            "compiler_version": "13"
+#        },
+#        {
+#            "distro": "rhel",
+#            "release": "9.6",
+#            "compiler_name": "gcc",
+#            "compiler_version": "14"
+#        },
+#        {
+#            "distro": "rhel",
+#            "release": "9.6",
+#            "compiler_name": "clang",
+#            "compiler_version": "any"
+#        },
+#    ]
+#  STRATEGY_MATRIX_BUILD_TYPE: >-
+#    [
+#      "Debug",
+#      "Release"
+#    ]
+#  STRATEGY_MATRIX_CMAKE_ARGS: >-
+#    [
+#      "-DUnity=OFF",
+#      "-DUnity=ON"
+#    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
           "platform": "linux/amd64",
           "runner": "ubuntu-24.04"
-      },
-      {
-          "platform": "linux/arm64",
-          "runner": "ubuntu-24.04-arm"
       }
     ]
   STRATEGY_MATRIX_OS: >-
@@ -66,28 +104,14 @@ env:
             "release": "9.6",
             "compiler_name": "gcc",
             "compiler_version": "13"
-        },
-        {
-            "distro": "rhel",
-            "release": "9.6",
-            "compiler_name": "gcc",
-            "compiler_version": "14"
-        },
-        {
-            "distro": "rhel",
-            "release": "9.6",
-            "compiler_name": "clang",
-            "compiler_version": "any"
-        },
+        }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
-      "Debug",
-      "Release"
+      "Debug"
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
-      "-DUnity=OFF",
       "-DUnity=ON"
     ]
 
@@ -128,8 +152,13 @@ jobs:
       build_dir: ${{ inputs.build_dir }}
       build_type: ${{ matrix.build_type }}
       conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
+      conan_remote_name: ${ inputs.conan_remote_name }
+      conan_remote_url: ${ inputs.conan_remote_url }
       container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
       runner: ${{ matrix.architecture.runner }}
+    secrets:
+      conan_remote_username: ${{ inputs.conan_remote_username }}
+      conan_remote_password: ${{ inputs.conan_remote_password }}
 
   # Build and test the binary using various configurations.
   build-and-test:
@@ -150,5 +179,10 @@ jobs:
       cmake_args: ${{ matrix.cmake_args }}
       cmake_generator: "Ninja"
       conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
+      conan_remote_name: ${ inputs.conan_remote_name }
+      conan_remote_url: ${ inputs.conan_remote_url }
       container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
       runner: ${{ matrix.architecture.runner }}
+    secrets:
+      conan_remote_username: ${{ inputs.conan_remote_username }}
+      conan_remote_password: ${{ inputs.conan_remote_password }}
