@@ -69,63 +69,64 @@ defaults:
 # that the user has logged into the specified remote, see the 'conan-configure'
 # action.
 jobs:
-  runs-on: ${{ inputs.runner }}
-  container: ${{ inputs.container }}
-  steps:
-    - name: Checkout repository
-      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-    - name: Check configuration
-      run: |
-        echo "Checking path"
-        echo ${PATH} | tr ':' '\n'
-
-        echo "Checking environment variables."
-        env | sort
-    - name: Check versions
-      run: |
-        echo "Checking CMake version."
-        cmake --version
-
-        echo "Checking compiler version."
-        ${CC} --version
-    - name: Configure Conan
-      uses: ./.github/actions/conan-configure
-      with:
-        conan_global_conf: ${{ inputs.conan_global_conf }}
-        conan_remote_name: ${{ inputs.conan_remote_name }}
-        conan_remote_url: ${{ inputs.conan_remote_url }}
-        conan_remote_username: ${{ secrets.conan_remote_username }}
-        conan_remote_password: ${{ secrets.conan_remote_password }}
-    - name: Configure CMake
-      working-directory: ${{ inputs.build_dir }}
-      run: |
-        cmake \
-          ${{ inputs.cmake_generator && format('-G "{0}"', inputs.cmake_generator) || '' }} \
-          -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
-          -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
-          -Dtests=TRUE \
-          -Dxrpld=TRUE \
-          ${{ inputs.cmake_args }} \
-          ..
-    - name: Build the binary
-      working-directory: ${{ inputs.build_dir }}
-      run: |
-        cmake --build . \
-              --config ${{ inputs.build_type }} \
-              --parallel $(nproc) \
-              --target ${{ inputs.cmake_target }}
-    - name: Check linking
-      working-directory: ${{ inputs.build_dir }}
-      run: |
-        ldd ./rippled
-        if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
-          echo 'The binary is statically linked.'
-        else
-          echo 'The binary is dynamically linked.'
-        exit 1
-        fi
-    - name: Test the binary
-      working-directory: ${{ inputs.build_dir }}
-      run: |
-        ./rippled --unittest --unittest-jobs $(nproc)
-        ctest -j $(nproc) --output-on-failure
+  build-and-test:
+    runs-on: ${{ inputs.runner }}
+    container: ${{ inputs.container }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check configuration
+        run: |
+          echo "Checking path"
+          echo ${PATH} | tr ':' '\n'
+  
+          echo "Checking environment variables."
+          env | sort
+      - name: Check versions
+        run: |
+          echo "Checking CMake version."
+          cmake --version
+  
+          echo "Checking compiler version."
+          ${CC} --version
+      - name: Configure Conan
+        uses: ./.github/actions/conan-configure
+        with:
+          conan_global_conf: ${{ inputs.conan_global_conf }}
+          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_url: ${{ inputs.conan_remote_url }}
+          conan_remote_username: ${{ secrets.conan_remote_username }}
+          conan_remote_password: ${{ secrets.conan_remote_password }}
+      - name: Configure CMake
+        working-directory: ${{ inputs.build_dir }}
+        run: |
+          cmake \
+            ${{ inputs.cmake_generator && format('-G "{0}"', inputs.cmake_generator) || '' }} \
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+            -Dtests=TRUE \
+            -Dxrpld=TRUE \
+            ${{ inputs.cmake_args }} \
+            ..
+      - name: Build the binary
+        working-directory: ${{ inputs.build_dir }}
+        run: |
+          cmake --build . \
+                --config ${{ inputs.build_type }} \
+                --parallel $(nproc) \
+                --target ${{ inputs.cmake_target }}
+      - name: Check linking
+        working-directory: ${{ inputs.build_dir }}
+        run: |
+          ldd ./rippled
+          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+          exit 1
+          fi
+      - name: Test the binary
+        working-directory: ${{ inputs.build_dir }}
+        run: |
+          ./rippled --unittest --unittest-jobs $(nproc)
+          ctest -j $(nproc) --output-on-failure
