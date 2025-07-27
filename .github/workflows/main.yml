@@ -23,35 +23,26 @@ env:
   # The Conan remote where the dependencies will be cached.
   CONAN_REMOTE_NAME: xrplf
   CONAN_REMOTE_URL: https://conan.ripplex.io
-  # The default runner for the jobs. This can be overridden in individual jobs.
-  RUNNER: ubuntu-latest
 
 jobs:
   # This job exposes the environment variables that will be used by other jobs.
   # It is a workaround for the env-context not being available in the 'with'
   # steps when calling other workflows.
   env-vars:
-    runs-on: ${{ env.RUNNER }}
+    runs-on: ubuntu-latest
     steps:
       - run: echo "Exposing environment variables."
     outputs:
       conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
-      runner: ${{ env.RUNNER }}
 
   check-clang-format:
-    needs: env-vars
     if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
     uses: ./.github/workflows/check-clang-format.yml
-    with:
-      runner: ${{ needs.env-vars.outputs.runner }}
 
   check-levelization:
-    needs: env-vars
     if: github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI')
     uses: ./.github/workflows/check-levelization.yml
-    with:
-      runner: ${{ needs.env-vars.outputs.runner }}
 
   debian:
     needs:
