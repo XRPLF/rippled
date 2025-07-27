@@ -48,7 +48,9 @@ env:
   # matrix in the first job.
 #  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
-#      "runner": ["self-hosted", "macOS", "mac-runner-m1"]
+#      {
+#        "runner": ["self-hosted", "macOS", "mac-runner-m1"]
+#      }
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
 #    [
@@ -62,7 +64,9 @@ env:
 #    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
-      "runner": ["self-hosted", "macOS", "mac-runner-m1"]
+      {
+        "runner": ["self-hosted", "macOS", "mac-runner-m1"]
+      }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
