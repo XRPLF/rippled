@@ -148,7 +148,7 @@ jobs:
       architecture: ${{ needs.expose-env.outputs.strategy_matrix_architecture }}
       os: ${{ needs.expose-env.outputs.strategy_matrix_os }}
       build_type: ${{ needs.expose-env.outputs.strategy_matrix_build_type }}
-      cmake_args: ${{ needs.expose-env.outputs.strategy_cmake_args }}
+      cmake_args: ${{ needs.expose-env.outputs.strategy_matrix_cmake_args }}
 
   # Install and cache the dependencies using various configurations.
   install-dependencies:
