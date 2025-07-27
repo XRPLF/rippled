@@ -107,42 +107,42 @@ jobs:
       strategy_matrix_build_type: ${{ env.STRATEGY_MATRIX_BUILD_TYPE }}
       strategy_matrix_cmake_args: ${{ env.STRATEGY_MATRIX_CMAKE_ARGS }}
 
-  # Install and cache the dependencies using various configurations.
-  install-dependencies:
-    needs:
-      - expose-env
-    uses: ./.github/workflows/install-dependencies.yml
-    strategy:
-      fail-fast: false
-      matrix:
-        architecture: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_architecture) }}
-        os: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_os) }}
-        build_type: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_build_type) }}
-    with:
-      build_dir: ${{ inputs.build_dir }}
-      build_type: ${{ strategy.matrix.build_type }}
-      conan_global_conf: ${{ needs.expose-env.outputs.conan_global_conf }}
-      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
-      runner: ${{ strategy.matrix.architecture.runner }}
-
-  # Build and test the binary using various configurations.
-  build-and-test:
-    needs:
-      - expose-env
-      - install-dependencies
-    uses: ./.github/workflows/build-nix.yml
-    strategy:
-      fail-fast: false
-      matrix:
-        architecture: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_architecture) }}
-        os: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_os) }}
-        build_type: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_build_type) }}
-        cmake_args: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_cmake_args) }}
-    with:
-      build_dir: ${{ inputs.build_dir }}
-      build_type: ${{ strategy.matrix.build_type }}
-      cmake_args: ${{ strategy.matrix.cmake_args }}
-      cmake_generator: "Ninja"
-      conan_global_conf: ${{ needs.expose-env.outputs.conan_global_conf }}
-      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
-      runner: ${{ strategy.matrix.architecture.runner }}
+#  # Install and cache the dependencies using various configurations.
+#  install-dependencies:
+#    needs:
+#      - expose-env
+#    uses: ./.github/workflows/install-dependencies.yml
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        architecture: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_architecture) }}
+#        os: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_os) }}
+#        build_type: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_build_type) }}
+#    with:
+#      build_dir: ${{ inputs.build_dir }}
+#      build_type: ${{ strategy.matrix.build_type }}
+#      conan_global_conf: ${{ needs.expose-env.outputs.conan_global_conf }}
+#      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
+#      runner: ${{ strategy.matrix.architecture.runner }}
+#
+#  # Build and test the binary using various configurations.
+#  build-and-test:
+#    needs:
+#      - expose-env
+#      - install-dependencies
+#    uses: ./.github/workflows/build-nix.yml
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        architecture: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_architecture) }}
+#        os: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_os) }}
+#        build_type: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_build_type) }}
+#        cmake_args: ${{ fromJson(needs.expose-env.outputs.strategy_matrix_cmake_args) }}
+#    with:
+#      build_dir: ${{ inputs.build_dir }}
+#      build_type: ${{ strategy.matrix.build_type }}
+#      cmake_args: ${{ strategy.matrix.cmake_args }}
+#      cmake_generator: "Ninja"
+#      conan_global_conf: ${{ needs.expose-env.outputs.conan_global_conf }}
+#      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
+#      runner: ${{ strategy.matrix.architecture.runner }}

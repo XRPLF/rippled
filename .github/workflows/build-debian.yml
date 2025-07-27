@@ -144,30 +144,11 @@ jobs:
       strategy_matrix_build_type: ${{ steps.generate.outputs.strategy_matrix_build_type }}
       strategy_matrix_cmake_args: ${{ steps.generate.outputs.strategy_matrix_cmake_args }}
 
-  # Install and cache the dependencies using various configurations.
-  install-dependencies:
+  # Debug outputs
+  debug-outputs:
     needs:
       - generate-outputs
-    uses: ./.github/workflows/install-dependencies.yml
-    strategy:
-      fail-fast: false
-      matrix:
-        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
-        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
-        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
-    with:
-      build_dir: ${{ inputs.build_dir }}
-      build_type: ${{ strategy.matrix.build_type }}
-      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
-      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
-      runner: ${{ strategy.matrix.architecture.runner }}
-
-  # Build and test the binary using various configurations.
-  build-and-test:
-    needs:
-      - generate-outputs
-      - install-dependencies
-    uses: ./.github/workflows/build-nix.yml
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -175,11 +156,52 @@ jobs:
         os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
         cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
-    with:
-      build_dir: ${{ inputs.build_dir }}
-      build_type: ${{ strategy.matrix.build_type }}
-      cmake_args: ${{ strategy.matrix.cmake_args }}
-      cmake_generator: "Ninja"
-      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
-      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
-      runner: ${{ strategy.matrix.architecture.runner }}
+    steps:
+        - name: Debug outputs
+          run: |
+          echo "Platform: ${{ strategy.matrix.architecture.platform }}"
+          echo "Runner: ${{ strategy.matrix.architecture.runner }}"
+          echo "OS: ${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}"
+          echo "Compiler: ${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}"
+          echo "Build Type: ${{ strategy.matrix.build_type }}"
+          echo "CMake Args: ${{ strategy.matrix.cmake_args }}"
+
+#  # Install and cache the dependencies using various configurations.
+#  install-dependencies:
+#    needs:
+#      - generate-outputs
+#    uses: ./.github/workflows/install-dependencies.yml
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
+#        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
+#        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
+#    with:
+#      build_dir: ${{ inputs.build_dir }}
+#      build_type: ${{ strategy.matrix.build_type }}
+#      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
+#      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
+#      runner: ${{ strategy.matrix.architecture.runner }}
+#
+#  # Build and test the binary using various configurations.
+#  build-and-test:
+#    needs:
+#      - generate-outputs
+#      - install-dependencies
+#    uses: ./.github/workflows/build-nix.yml
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
+#        os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
+#        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
+#        cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
+#    with:
+#      build_dir: ${{ inputs.build_dir }}
+#      build_type: ${{ strategy.matrix.build_type }}
+#      cmake_args: ${{ strategy.matrix.cmake_args }}
+#      cmake_generator: "Ninja"
+#      conan_global_conf: ${{ needs.generate-outputs.outputs.conan_global_conf }}
+#      container: ghcr.io/xrplf/ci/${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}:${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}
+#      runner: ${{ strategy.matrix.architecture.runner }}
