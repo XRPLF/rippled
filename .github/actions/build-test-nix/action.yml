@@ -52,6 +52,7 @@ runs:
   using: composite
   steps:
     - name: Check configuration
+      shell: bash
       run: |
         echo "Checking path"
         echo ${PATH} | tr ':' '\n'
@@ -59,6 +60,7 @@ runs:
         echo "Checking environment variables."
         env | sort
     - name: Check versions
+      shell: bash
       run: |
         echo "Checking CMake version."
         cmake --version
@@ -74,6 +76,7 @@ runs:
         conan_remote_username: ${{ inputs.conan_remote_username }}
         conan_remote_password: ${{ inputs.conan_remote_password }}
     - name: Configure CMake
+      shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
         cmake \
@@ -85,6 +88,7 @@ runs:
           ${{ inputs.cmake_args }} \
           ..
     - name: Build the binary
+      shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
         cmake --build . \
@@ -93,6 +97,7 @@ runs:
               --target ${{ inputs.cmake_target }}
     - name: Check linking
       if: inputs.linking
+      shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
         ldd ./rippled
@@ -103,6 +108,7 @@ runs:
         exit 1
         fi
     - name: Test the binary
+      shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
         ./rippled --unittest --unittest-jobs $(nproc)
