@@ -98,7 +98,7 @@ jobs:
   build-test:
     needs:
       - generate-outputs
-    runs-on: [self-hosted, macOS, ${{ matrix.architecture.runner }}]
+    runs-on: [self-hosted, macOS, ${{ matrix.runner }}]
     strategy:
       fail-fast: false
       max-parallel: 4
