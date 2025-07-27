@@ -59,6 +59,12 @@ jobs:
           echo "os=$(jq -c <<< '${{ inputs.os }}')" >> "$GITHUB_OUTPUT"
           echo "build_type=$(jq -c <<< '${{ inputs.build_type }}')" >> "$GITHUB_OUTPUT"
           echo "cmake_args=$(jq -c <<< '${{ inputs.cmake_args }}')" >> "$GITHUB_OUTPUT"
+      - name: Print outputs
+        run: |
+          echo "Architecture: ${{ steps.generate.outputs.architecture }}"
+          echo "OS: ${{ steps.generate.outputs.os }}"
+          echo "Build Type: ${{ steps.generate.outputs.build_type }}"
+          echo "CMake Args: ${{ steps.generate.outputs.cmake_args }}"
     outputs:
       architecture: ${{ steps.generate.outputs.architecture }}
       os: ${{ steps.generate.outputs.os }}
