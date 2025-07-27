@@ -159,12 +159,12 @@ jobs:
     steps:
         - name: Debug outputs
           run: |
-          echo "Platform: ${{ strategy.matrix.architecture.platform }}"
-          echo "Runner: ${{ strategy.matrix.architecture.runner }}"
-          echo "OS: ${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}"
-          echo "Compiler: ${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}"
-          echo "Build Type: ${{ strategy.matrix.build_type }}"
-          echo "CMake Args: ${{ strategy.matrix.cmake_args }}"
+            echo "Platform: ${{ strategy.matrix.architecture.platform }}"
+            echo "Runner: ${{ strategy.matrix.architecture.runner }}"
+            echo "OS: ${{ strategy.matrix.os.distro }}-${{ strategy.matrix.os.release }}"
+            echo "Compiler: ${{ strategy.matrix.os.compiler_name }}-${{ strategy.matrix.os.compiler_version }}"
+            echo "Build Type: ${{ strategy.matrix.build_type }}"
+            echo "CMake Args: ${{ strategy.matrix.cmake_args }}"
 
 #  # Install and cache the dependencies using various configurations.
 #  install-dependencies:
