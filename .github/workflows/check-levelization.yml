@@ -3,13 +3,7 @@
 name: Levelization
 
 # This workflow can only be triggered by other workflows.
-on:
-  workflow_call:
-    inputs:
-      runner:
-        description: 'An optional string representing the GitHub runner to use.'
-        required: true
-        type: string
+on: workflow_call
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,7 +15,7 @@ defaults:
 
 jobs:
   levelization:
-    runs-on: ${{ inputs.runner }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683

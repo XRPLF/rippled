@@ -27,6 +27,31 @@ on:
         type: string
 
 # Generate the JSON outputs by using JQ to compact the JSON string.
+# * This workflow can be called as follows:
+# ```yaml
+#   generate-matrix:
+#     uses: ./.github/workflows/generate-matrix.yml
+#     with:
+#       architecture: ${{ env.STRATEGY_MATRIX_ARCHITECTURE }}
+#       os: ${{ env.STRATEGY_MATRIX_OS }}
+#       build_type: ${{ env.STRATEGY_MATRIX_BUILD_TYPE }}
+#       cmake_args: ${{ env.STRATEGY_MATRIX_UNITY }}
+# ```
+# * This workflow can be used as follows:
+# ```yaml
+#   use-matrix:
+#     needs: generate-matrix
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         architecture: ${{ fromJson(needs.generate-matrix.outputs.architecture) }}
+#         os: ${{ fromJson(needs.generate-matrix.outputs.os) }}
+#         build_type: ${{ fromJson(needs.generate-matrix.outputs.build_type) }}
+#         cmake_args: ${{ fromJson(needs.generate-matrix.outputs.cmake_args) }}
+#     runs-on: ${{ matrix.architecture.runner }}
+#     container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+#     ...
+# ```
 jobs:
   generate-matrix:
     runs-on: ${{ inputs.runner }}

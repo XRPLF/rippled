@@ -3,13 +3,7 @@
 name: Clang Format
 
 # This workflow can only be triggered by other workflows.
-on:
-  workflow_call:
-    inputs:
-      runner:
-        description: 'An optional string representing the GitHub runner to use.'
-        required: true
-        type: string
+on: workflow_call
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,7 +15,7 @@ defaults:
 
 jobs:
   clang-format:
-    runs-on: ${{ inputs.runner }}
+    runs-on: ubuntu-latest
     container: ghcr.io/xrplf/ci/tools-rippled-clang-format
     steps:
       # The $GITHUB_WORKSPACE and ${{ github.workspace }} might not point to the

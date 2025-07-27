@@ -6,8 +6,9 @@ on:
     inputs:
       build_dir:
         description: 'The directory where the build will take place.'
-        required: true
+        required: false
         type: string
+        default: '.build'
       conan_remote_name:
         description: 'The name of the Conan remote to use.'
         required: true
