@@ -48,7 +48,7 @@ env:
       {
           "platform": "linux/amd64",
           "runner": "ubuntu-24.04"
-      },
+      }
     ]
   STRATEGY_MATRIX_OS: >-
     [
