@@ -11,7 +11,7 @@ on:
         default: '.build'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-debian
   cancel-in-progress: true
 
 defaults:
