@@ -91,29 +91,29 @@ env:
 #      "-DUnity=ON"
 #    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
-  [
-    {
-        "platform": "linux/amd64",
-        "runner": ["self-hosted", "Linux", "X64"]
-    }
-  ]
-  STRATEGY_MATRIX_OS: >-
-  [
+    [
       {
-          "distro": "rhel",
-          "release": "9.6",
-          "compiler_name": "gcc",
-          "compiler_version": "13"
+          "platform": "linux/amd64",
+          "runner": ["self-hosted", "Linux", "X64"]
       }
-  ]
+    ]
+  STRATEGY_MATRIX_OS: >-
+    [
+        {
+            "distro": "rhel",
+            "release": "9.6",
+            "compiler_name": "gcc",
+            "compiler_version": "13"
+        }
+    ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
-  [
-    "Release"
-  ]
+    [
+      "Release"
+    ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
-  [
-    "-DUnity=ON"
-  ]
+    [
+      "-DUnity=ON"
+    ]
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by
