@@ -46,22 +46,6 @@ env:
   # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
   # duplication, we define it here using environment variables and create the
   # matrix in the first job.
-  STRATEGY_MATRIX_ARCHITECTURE: >-
-    [
-      {
-        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
-      }
-    ]
-  STRATEGY_MATRIX_BUILD_TYPE: >-
-    [
-      "Debug",
-      "Release"
-    ]
-  STRATEGY_MATRIX_CMAKE_ARGS: >-
-    [
-      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=OFF",
-      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=ON"
-    ]
 #  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
 #      {
@@ -70,12 +54,28 @@ env:
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
 #    [
+#      "Debug",
 #      "Release"
 #    ]
 #  STRATEGY_MATRIX_CMAKE_ARGS: >-
 #    [
+#      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=OFF",
 #      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=ON"
 #    ]
+  STRATEGY_MATRIX_ARCHITECTURE: >-
+    [
+      {
+        "runner": ["self-hosted", "macOS", "ARM64", "devbox"]
+      }
+    ]
+  STRATEGY_MATRIX_BUILD_TYPE: >-
+    [
+      "Release"
+    ]
+  STRATEGY_MATRIX_CMAKE_ARGS: >-
+    [
+      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=ON"
+    ]
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by
