@@ -73,6 +73,7 @@ if (MSVC)
       $<$<CONFIG:Debug>:-MTd>
       $<$<NOT:$<CONFIG:Debug>>:-MT>
       $<$<BOOL:${werr}>:-WX>
+      -DOPENSSL_SUPPRESS_DEPRECATED
       )
   target_compile_definitions (common
     INTERFACE
@@ -103,7 +104,9 @@ else ()
       # tweak gcc optimization for debug
       $<$<AND:$<BOOL:${is_gcc}>,$<CONFIG:Debug>>:-O0>
       # Add debug symbols to release config
-      $<$<CONFIG:Release>:-g>)
+      $<$<CONFIG:Release>:-g>
+      -DOPENSSL_SUPPRESS_DEPRECATED
+      )
   target_link_libraries (common
     INTERFACE
       -rdynamic
