@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/VaultWithdraw.h>
+//
+#include <xrpld/app/tx/detail/Payment.h>
 
 #include <xrpl/ledger/CredentialHelpers.h>
 #include <xrpl/ledger/View.h>
@@ -267,7 +269,7 @@ VaultWithdraw::doApply()
     assetsAvailable -= assetsWithdrawn;
     view().update(vault);
 
-    auto const& vaultAccount = vault->at(sfAccount);
+    AccountID const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
     if (auto const ter = accountSend(
             view(),
@@ -313,16 +315,66 @@ VaultWithdraw::doApply()
         return account_;
     }();
 
-    // Transfer assets from vault to depositor or destination account.
-    if (auto const ter = accountSend(
-            view(),
-            vaultAccount,
-            dstAcct,
-            assetsWithdrawn,
-            j_,
-            WaiveTransferFee::Yes);
-        !isTesSuccess(ter))
-        return ter;
+    if (dstAcct != account_ && !assetsWithdrawn.native())
+    {
+        bool const mptDirect = assetsWithdrawn.holds<MPTIssue>();
+        STAmount const maxSourceAmount =
+            Payment::getMaxSourceAmount(vaultAccount, assetsWithdrawn);
+        SLE::pointer sleDst = view().peek(keylet::account(dstAcct));
+        if (!sleDst)
+            return tecINTERNAL;
+
+        Payment::RipplePaymentParams paymentParams{
+            .ctx = ctx_,
+            .maxSourceAmount = maxSourceAmount,
+            .srcAccountID = vaultAccount,
+            .dstAccountID = dstAcct,
+            .sleDst = sleDst,
+            .dstAmount = assetsWithdrawn,
+            .paths = STPathSet{},
+            .deliverMin = std::nullopt,
+            .j = j_};
+
+        // If sending the assets to a different account, then this is
+        // effectively a payment. Use the Payment transaction code to call
+        // the payment engine, though only a subset of the functionality is
+        // supported in this transaction. e.g. No paths, no partial
+        // payments.
+        TER ret;
+        if (mptDirect)
+        {
+            ret = Payment::makeMPTDirectPayment(paymentParams);
+        }
+        else
+        {
+            ret = Payment::makeRipplePayment(paymentParams);
+        }
+        // Always claim a fee
+        if (!isTesSuccess(ret) && !isTecClaim(ret))
+        {
+            JLOG(j_.info())
+                << "LoanBrokerCoverWithdraw: changing result from "
+                << transToken(ret)
+                << " to tecPATH_DRY for IOU payment with Destination";
+            return tecPATH_DRY;
+        }
+        if (ret)
+            return ret;
+    }
+    else
+    {
+        // Transfer assets from vault to depositor or destination (only if XRP)
+        // account.
+        if (auto const ter = accountSend(
+                view(),
+                vaultAccount,
+                dstAcct,
+                assetsWithdrawn,
+                j_,
+                WaiveTransferFee::Yes);
+            !isTesSuccess(ter))
+            return ter;
+    }
 
     // Sanity check
     if (accountHolds(
