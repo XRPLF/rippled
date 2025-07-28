@@ -52,9 +52,19 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination];
-        destination && *destination == beast::zero)
+        destination.has_value())
     {
-        JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty destination account.";
+        if (*destination == beast::zero)
+        {
+            JLOG(ctx.j.debug())
+                << "VaultWithdraw: zero/empty destination account.";
+            return temMALFORMED;
+        }
+    }
+    else if (ctx.tx.isFieldPresent(sfDestinationTag))
+    {
+        JLOG(ctx.j.debug()) << "VaultWithdraw: sfDestinationTag is set but "
+                               "sfDestination is not";
         return temMALFORMED;
     }
 
@@ -123,33 +133,39 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Withdrawal to a 3rd party destination account is essentially a transfer,
     // via shares in the vault. Enforce all the usual asset transfer checks.
+    AuthType authType = AuthType::Legacy;
     if (account != dstAcct)
     {
         auto const sleDst = ctx.view.read(keylet::account(dstAcct));
         if (sleDst == nullptr)
             return tecNO_DST;
 
-        if (sleDst->getFlags() & lsfRequireDestTag)
+        if (sleDst->isFlag(lsfRequireDestTag) &&
+            !ctx.tx.isFieldPresent(sfDestinationTag))
             return tecDST_TAG_NEEDED;  // Cannot send without a tag
 
-        if (sleDst->getFlags() & lsfDepositAuth)
+        if (sleDst->isFlag(lsfDepositAuth))
         {
             if (!ctx.view.exists(keylet::depositPreauth(dstAcct, account)))
                 return tecNO_PERMISSION;
         }
+        // The destination account must have consented to receive the asset by
+        // creating a RippleState or MPToken
+        authType = AuthType::StrongAuth;
     }
 
-    // Destination MPToken must exist (if asset is an MPT)
-    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct);
+    // Destination MPToken (for an MPT) or trust line (for an IOU) must exist
+    // if not sending to Account.
+    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType);
         !isTesSuccess(ter))
         return ter;
 
     // Cannot withdraw from a Vault an Asset frozen for the destination account
-    if (isFrozen(ctx.view, dstAcct, vaultAsset))
-        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    if (auto const ret = checkFrozen(ctx.view, dstAcct, vaultAsset))
+        return ret;
 
-    if (isFrozen(ctx.view, account, vaultShare))
-        return tecLOCKED;
+    if (auto const ret = checkFrozen(ctx.view, account, vaultShare))
+        return ret;
 
     return tesSUCCESS;
 }

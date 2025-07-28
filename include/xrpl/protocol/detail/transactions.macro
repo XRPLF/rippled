@@ -509,6 +509,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw, Delegation::delegatable, ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfDestination, soeOPTIONAL},
+    {sfDestinationTag, soeOPTIONAL},
 }))
 
 /** This transaction claws back tokens from a vault. */
