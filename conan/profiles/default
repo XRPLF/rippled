@@ -30,5 +30,9 @@ tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
 tools.build:cxxflags=['-Wno-restrict']
 {% endif %}
 
+{% if os == "Macos" or os == "Windows" %}
+tools.info.package_id:confs+=[{{ os }}]
+{% endif %}
+
 [tool_requires]
 !cmake/*: cmake/[>=3 <4]
