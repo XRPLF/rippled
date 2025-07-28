@@ -31,7 +31,7 @@ tools.build:cxxflags=['-Wno-restrict']
 {% endif %}
 
 {% if os == "Macos" or os == "Windows" %}
-tools.info.package_id:confs+=[{{ os }}]
+tools.info.package_id:confs+=["{{ os }}"]
 {% endif %}
 
 [tool_requires]
