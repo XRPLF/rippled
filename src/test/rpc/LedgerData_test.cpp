@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/jss.h>
 
@@ -303,8 +304,8 @@ public:
 
         // Make sure fixInnerObjTemplate2 doesn't break amendments.
         for (FeatureBitset const& features :
-             {supported_amendments() - fixInnerObjTemplate2,
-              supported_amendments() | fixInnerObjTemplate2})
+             {testable_amendments() - fixInnerObjTemplate2,
+              testable_amendments() | fixInnerObjTemplate2})
         {
             using namespace std::chrono;
             Env env{*this, envconfig(validator, ""), features};
@@ -368,7 +369,6 @@ public:
             {
                 Json::Value jv;
                 jv[jss::TransactionType] = jss::EscrowCreate;
-                jv[jss::Flags] = tfUniversal;
                 jv[jss::Account] = Account{"bob5"}.human();
                 jv[jss::Destination] = Account{"bob6"}.human();
                 jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::none);
@@ -382,7 +382,6 @@ public:
             {
                 Json::Value jv;
                 jv[jss::TransactionType] = jss::PaymentChannelCreate;
-                jv[jss::Flags] = tfUniversal;
                 jv[jss::Account] = Account{"bob6"}.human();
                 jv[jss::Destination] = Account{"bob7"}.human();
                 jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::none);

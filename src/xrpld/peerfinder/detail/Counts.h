@@ -23,9 +23,8 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
-#include <xrpl/basics/random.h>
 
-#include <cmath>
+#include <xrpl/basics/random.h>
 
 namespace ripple {
 namespace PeerFinder {

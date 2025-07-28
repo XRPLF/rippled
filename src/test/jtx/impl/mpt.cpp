@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <test/jtx/mpt.h>
+#include <test/jtx.h>
 
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -83,7 +84,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
 }
 
 void
-MPTTester::create(const MPTCreate& arg)
+MPTTester::create(MPTCreate const& arg)
 {
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
@@ -99,6 +100,8 @@ MPTTester::create(const MPTCreate& arg)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.maxAmt)
         jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
+    if (arg.domainID)
+        jv[sfDomainID] = to_string(*arg.domainID);
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
@@ -233,6 +236,10 @@ MPTTester::set(MPTSet const& arg)
     }
     if (arg.holder)
         jv[sfHolder] = arg.holder->human();
+    if (arg.delegate)
+        jv[sfDelegate] = arg.delegate->human();
+    if (arg.domainID)
+        jv[sfDomainID] = to_string(*arg.domainID);
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
         auto require = [&](std::optional<Account> const& holder,
@@ -268,6 +275,16 @@ MPTTester::forObject(
     if (auto const sle = env_.le(key))
         return cb(sle);
     return false;
+}
+
+[[nodiscard]] bool
+MPTTester::checkDomainID(std::optional<uint256> expected) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        if (sle->isFieldPresent(sfDomainID))
+            return expected == sle->getFieldH256(sfDomainID);
+        return (!expected.has_value());
+    });
 }
 
 [[nodiscard]] bool
@@ -411,7 +428,7 @@ MPTTester::getFlags(std::optional<Account> const& holder) const
 }
 
 MPT
-MPTTester::operator[](const std::string& name)
+MPTTester::operator[](std::string const& name)
 {
     return MPT(name, issuanceID());
 }

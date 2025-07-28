@@ -20,15 +20,14 @@
 #ifndef RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 #define RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
-#include <xrpl/beast/utility/instrumentation.h>
 #include <array>
 #include <concepts>
 #include <cstdlib>
 #include <functional>
-#include <limits>
 #include <type_traits>
 #include <utility>
 
@@ -80,7 +79,7 @@ struct MultiApiJson
     }
 
     void
-    set(const char* key, auto const& v)
+    set(char const* key, auto const& v)
         requires std::constructible_from<Json::Value, decltype(v)>
     {
         for (auto& a : this->val)
@@ -91,7 +90,7 @@ struct MultiApiJson
     enum IsMemberResult : int { none = 0, some, all };
 
     [[nodiscard]] IsMemberResult
-    isMember(const char* key) const
+    isMember(char const* key) const
     {
         int count = 0;
         for (auto& a : this->val)

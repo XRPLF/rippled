@@ -22,8 +22,8 @@
 
 #include <xrpld/core/ClosureCounter.h>
 #include <xrpld/core/LoadMonitor.h>
+
 #include <xrpl/basics/CountedObject.h>
-#include <functional>
 
 #include <functional>
 
@@ -132,13 +132,13 @@ public:
     // These comparison operators make the jobs sort in priority order
     // in the job set
     bool
-    operator<(const Job& j) const;
+    operator<(Job const& j) const;
     bool
-    operator>(const Job& j) const;
+    operator>(Job const& j) const;
     bool
-    operator<=(const Job& j) const;
+    operator<=(Job const& j) const;
     bool
-    operator>=(const Job& j) const;
+    operator>=(Job const& j) const;
 
 private:
     JobType mType;

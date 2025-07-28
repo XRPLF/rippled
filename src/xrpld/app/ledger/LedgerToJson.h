@@ -24,11 +24,9 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpl/basics/StringUtilities.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/Object.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
 
 namespace ripple {
@@ -39,9 +37,8 @@ struct LedgerFill
         ReadView const& l,
         RPC::Context* ctx,
         int o = 0,
-        std::vector<TxQ::TxDetails> q = {},
-        LedgerEntryType t = ltANY)
-        : ledger(l), options(o), txQueue(std::move(q)), type(t), context(ctx)
+        std::vector<TxQ::TxDetails> q = {})
+        : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
     {
         if (context)
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
@@ -60,7 +57,6 @@ struct LedgerFill
     ReadView const& ledger;
     int options;
     std::vector<TxQ::TxDetails> txQueue;
-    LedgerEntryType type;
     RPC::Context* context;
     std::optional<NetClock::time_point> closeTime;
 };

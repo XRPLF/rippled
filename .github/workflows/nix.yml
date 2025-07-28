@@ -1,9 +1,10 @@
 name: nix
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
-    # build/test jobs (nix, macos, windows, instrumentation)
+    # build/test jobs (nix, macos, windows)
     branches:
       # Always build the package branches
       - develop
@@ -15,9 +16,22 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# This workflow has two job matrixes.
-# They can be considered phases because the second matrix ("test")
-# depends on the first ("dependencies").
+# This part of Conan configuration is specific to this workflow only; we do not want
+# to pollute conan/profiles directory with settings which might not work for others
+env:
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+  CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+  CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+  CONAN_GLOBAL_CONF: |
+    core.download:parallel={{ os.cpu_count() }}
+    core.upload:parallel={{ os.cpu_count() }}
+    tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
+    tools.build:verbosity=verbose
+    tools.compilation:verbosity=verbose
+
+# This workflow has multiple job matrixes.
+# They can be considered phases because most of the matrices ("test",
+# "coverage", "conan", ) depend on the first ("dependencies").
 #
 # The first phase has a job in the matrix for each combination of
 # variables that affects dependency ABI:
@@ -30,12 +44,16 @@ concurrency:
 # to hold the binaries if they are built locally.
 # We must use the "{upload,download}-artifact" actions instead.
 #
-# The second phase has a job in the matrix for each test configuration.
-# It installs dependency binaries from the cache, whichever was used,
-# and builds and tests rippled.
+# The remaining phases have a job in the matrix for each test
+# configuration. They install dependency binaries from the cache,
+# whichever was used, and build and test rippled.
+#
+# "instrumentation" is independent, but is included here because it also
+# builds on linux in the same "on:" conditions.
 
 jobs:
   dependencies:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:
@@ -49,59 +67,45 @@ jobs:
           - Release
         include:
           - compiler: gcc
-            profile:
-              version: 11
-              cc: /usr/bin/gcc
-              cxx: /usr/bin/g++
+            compiler_version: 12
+            distro: ubuntu
+            codename: jammy
           - compiler: clang
-            profile:
-              version: 14
-              cc: /usr/bin/clang-14
-              cxx: /usr/bin/clang++-14
+            compiler_version: 16
+            distro: debian
+            codename: bookworm
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
           lsb_release -a || true
-          ${{ matrix.profile.cc }} --version
+          ${{ matrix.compiler }}-${{ matrix.compiler_version }} --version
           conan --version
           cmake --version
           env | sort
       - name: configure Conan
         run: |
-          conan profile new default --detect
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler=${{ matrix.compiler }} default
-          conan profile update settings.compiler.version=${{ matrix.profile.version }} default
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile update env.CC=${{ matrix.profile.cc }} default
-          conan profile update env.CXX=${{ matrix.profile.cxx }} default
-          conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
+          conan profile show
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
-        run: tar -czf conan.tar -C ~/.conan .
+        run: tar -czf conan.tar.gz -C ${CONAN_HOME} .
       - name: build dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
-          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
       - name: upload archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
-          path: conan.tar
+          path: conan.tar.gz
           if-no-files-found: error
 
   test:
@@ -116,26 +120,32 @@ jobs:
         configuration:
           - Debug
           - Release
+        include:
+          - compiler: gcc
+            compiler_version: 12
+            distro: ubuntu
+            codename: jammy
+          - compiler: clang
+            compiler_version: 16
+            distro: debian
+            codename: bookworm
         cmake-args:
           -
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: download cache
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
       - name: check environment
         run: |
           env | sort
@@ -143,11 +153,9 @@ jobs:
           conan --version
           cmake --version
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -155,10 +163,73 @@ jobs:
         with:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
-          cmake-args: ${{ matrix.cmake-args }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+      - name: check linking
+        run: |
+          cd ${build_dir}
+          ldd ./rippled
+          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+            exit 1
+          fi
       - name: test
         run: |
-          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
+          cd ${build_dir}
+          ./rippled --unittest --unittest-jobs $(nproc)
+          ctest -j $(nproc) --output-on-failure
+
+  reference-fee-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+        configuration:
+          - Debug
+        cmake-args:
+          - "-DUNIT_TEST_REFERENCE_FEE=200"
+          - "-DUNIT_TEST_REFERENCE_FEE=1000"
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
+    env:
+      build_dir: .build
+    steps:
+      - name: download cache
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
+      - name: check environment
+        run: |
+          env | sort
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+      - name: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+      - name: test
+        run: |
+          cd ${build_dir}
+          ./rippled --unittest --unittest-jobs $(nproc)
+          ctest -j $(nproc) --output-on-failure
 
   coverage:
     strategy:
@@ -172,23 +243,18 @@ jobs:
           - Debug
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: download cache
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
-      - name: install gcovr
-        run: pip install "gcovr>=7,<8"
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -196,13 +262,11 @@ jobs:
           cmake --version
           gcovr --version
           env | sort
-          ls ~/.conan
+          ls ${CONAN_HOME}
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -211,6 +275,8 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: >-
+            -Dassert=TRUE
+            -Dwerr=TRUE
             -Dcoverage=ON
             -Dcoverage_format=xml
             -DCODE_COVERAGE_VERBOSE=ON
@@ -222,7 +288,7 @@ jobs:
         run: |
           mv "${build_dir}/coverage.xml" ./
       - name: archive coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: coverage.xml
           path: coverage.xml
@@ -244,22 +310,23 @@ jobs:
   conan:
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container:
+      image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
     env:
       build_dir: .build
+      platform: linux
+      compiler: gcc
+      compiler_version: 12
       configuration: Release
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: download cache
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: linux-gcc-${{ env.configuration }}
+          name: ${{ env.platform }}-${{ env.compiler }}-${{ env.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
       - name: check environment
         run: |
           env | sort
@@ -267,29 +334,88 @@ jobs:
           conan --version
           cmake --version
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
           configuration: ${{ env.configuration }}
       - name: export
         run: |
-          version=$(conan inspect --raw version .)
-          reference="xrpl/${version}@local/test"
-          conan remove -f ${reference} || true
-          conan export . local/test
-          echo "reference=${reference}" >> "${GITHUB_ENV}"
+          conan export . --version head
       - name: build
         run: |
-          cd examples/example
-          mkdir ${build_dir}
-          cd ${build_dir}
-          conan install .. --output-folder . \
-            --require-override ${reference} --build missing
+          cd tests/conan
+          mkdir ${build_dir} && cd ${build_dir}
+          conan install .. \
+            --settings:all build_type=${configuration} \
+            --output-folder . \
+            --build missing
           cmake .. \
             -DCMAKE_TOOLCHAIN_FILE:FILEPATH=./build/${configuration}/generators/conan_toolchain.cmake \
             -DCMAKE_BUILD_TYPE=${configuration}
           cmake --build .
           ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
+
+  instrumentation-build:
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
+    env:
+      build_dir: .build
+    steps:
+        - name: download cache
+          uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+          with:
+            name: linux-clang-Debug
+
+        - name: extract cache
+          run: |
+            mkdir -p ${CONAN_HOME}
+            tar -xzf conan.tar.gz -C ${CONAN_HOME}
+
+        - name: check environment
+          run: |
+            echo ${PATH} | tr ':' '\n'
+            conan --version
+            cmake --version
+            env | sort
+            ls ${CONAN_HOME}
+
+        - name: checkout
+          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+        - name: dependencies
+          uses: ./.github/actions/dependencies
+          with:
+            configuration: Debug
+
+        - name: prepare environment
+          run: |
+            mkdir -p ${build_dir}
+            echo "SOURCE_DIR=$(pwd)" >> $GITHUB_ENV
+            echo "BUILD_DIR=$(pwd)/${build_dir}" >> $GITHUB_ENV
+
+        - name: build with instrumentation
+          run: |
+            cd ${BUILD_DIR}
+            cmake -S ${SOURCE_DIR} -B ${BUILD_DIR} \
+              -Dvoidstar=ON \
+              -Dtests=ON \
+              -Dxrpld=ON \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DSECP256K1_BUILD_BENCHMARK=OFF \
+              -DSECP256K1_BUILD_TESTS=OFF \
+              -DSECP256K1_BUILD_EXHAUSTIVE_TESTS=OFF \
+              -DCMAKE_TOOLCHAIN_FILE=${BUILD_DIR}/build/generators/conan_toolchain.cmake
+            cmake --build .  --parallel $(nproc)
+
+        - name: verify instrumentation enabled
+          run: |
+            cd ${BUILD_DIR}
+            ./rippled --version | grep libvoidstar
+
+        - name: run unit tests
+          run: |
+            cd ${BUILD_DIR}
+            ./rippled -u --unittest-jobs $(( $(nproc)/4 ))
+            ctest -j $(nproc) --output-on-failure

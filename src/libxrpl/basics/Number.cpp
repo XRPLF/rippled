@@ -19,19 +19,25 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <boost/predef.h>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <limits>
 #include <numeric>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 
-#ifdef BOOST_COMP_MSVC
+#ifdef _MSC_VER
+#pragma message("Using boost::multiprecision::uint128_t")
 #include <boost/multiprecision/cpp_int.hpp>
 using uint128_t = boost::multiprecision::uint128_t;
-#else   // !defined(_MSVC_LANG)
+#else   // !defined(_MSC_VER)
 using uint128_t = __uint128_t;
-#endif  // !defined(_MSVC_LANG)
+#endif  // !defined(_MSC_VER)
 
 namespace ripple {
 
@@ -463,7 +469,7 @@ Number::operator/=(Number const& y)
     }
     // Shift by 10^17 gives greatest precision while not overflowing uint128_t
     // or the cast back to int64_t
-    const uint128_t f = 100'000'000'000'000'000;
+    uint128_t const f = 100'000'000'000'000'000;
     mantissa_ = static_cast<std::int64_t>(uint128_t(nm) * f / uint128_t(dm));
     exponent_ = ne - de - 17;
     mantissa_ *= np * dp;

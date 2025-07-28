@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/unit_test/FileDirGuard.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/unit_test.h>
@@ -33,7 +34,7 @@ public:
         using namespace ripple::test::detail;
         using namespace boost::system;
 
-        constexpr const char* expectedContents =
+        constexpr char const* expectedContents =
             "This file is very short. That's all we need.";
 
         FileDirGuard file(

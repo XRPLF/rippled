@@ -19,13 +19,13 @@
 
 #include <test/csf/Validation.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/consensus/Validations.h>
+
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>
-#include <memory>
-#include <tuple>
-#include <type_traits>
+
 #include <vector>
 
 namespace ripple {
@@ -805,7 +805,6 @@ class Validations_test : public beast::unit_test::suite
         Ledger ledgerACD = h["acd"];
 
         using Seq = Ledger::Seq;
-        using ID = Ledger::ID;
 
         auto pref = [](Ledger ledger) {
             return std::make_pair(ledger.seq(), ledger.id());

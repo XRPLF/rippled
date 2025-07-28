@@ -19,8 +19,10 @@
 
 #include <test/jtx/Env.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
@@ -1286,7 +1288,7 @@ public:
     void
     run() override
     {
-        FeatureBitset const all{test::jtx::supported_amendments()};
+        FeatureBitset const all{test::jtx::testable_amendments()};
         FeatureBitset const fixMajorityCalc{fixAmendmentMajorityCalc};
 
         testConstruct();

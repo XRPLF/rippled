@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
-
 namespace RPC {
 
 class AccountLines_test : public beast::unit_test::suite
@@ -250,6 +250,10 @@ public:
                     gw1.human() + R"("})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+
+            // Check no ripple is not set for trustlines between alice and gw1
+            auto const& line = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(!line[jss::no_ripple].isMember(jss::no_ripple));
         }
         {
             // Use a malformed peer.
@@ -569,22 +573,6 @@ public:
         env.fund(XRP(10000), alice, becky, gw1);
         env.close();
 
-        // A couple of helper lambdas
-        auto escrow = [&env](
-                          Account const& account,
-                          Account const& to,
-                          STAmount const& amount) {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::EscrowCreate;
-            jv[jss::Flags] = tfUniversal;
-            jv[jss::Account] = account.human();
-            jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
-            NetClock::time_point finish = env.now() + 1s;
-            jv[sfFinishAfter.jsonName] = finish.time_since_epoch().count();
-            return jv;
-        };
-
         auto payChan = [](Account const& account,
                           Account const& to,
                           STAmount const& amount,
@@ -592,7 +580,6 @@ public:
                           PublicKey const& pk) {
             Json::Value jv;
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
-            jv[jss::Flags] = tfUniversal;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
             jv[jss::Amount] = amount.getJson(JsonOptions::none);
@@ -621,8 +608,10 @@ public:
         env.close();
 
         // Escrow, in each direction
-        env(escrow(alice, becky, XRP(1000)));
-        env(escrow(becky, alice, XRP(1000)));
+        env(escrow::create(alice, becky, XRP(1000)),
+            escrow::finish_time(env.now() + 1s));
+        env(escrow::create(becky, alice, XRP(1000)),
+            escrow::finish_time(env.now() + 1s));
 
         // Pay channels, in each direction
         env(payChan(alice, becky, XRP(1000), 100s, alice.pk()));

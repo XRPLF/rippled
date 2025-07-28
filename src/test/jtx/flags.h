@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_FLAGS_H_INCLUDED
 
 #include <test/jtx/Env.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -82,6 +83,21 @@ private:
                 break;
             case asfAllowTrustLineClawback:
                 mask_ |= lsfAllowTrustLineClawback;
+                break;
+            case asfDisallowIncomingCheck:
+                mask_ |= lsfDisallowIncomingCheck;
+                break;
+            case asfDisallowIncomingNFTokenOffer:
+                mask_ |= lsfDisallowIncomingNFTokenOffer;
+                break;
+            case asfDisallowIncomingPayChan:
+                mask_ |= lsfDisallowIncomingPayChan;
+                break;
+            case asfDisallowIncomingTrustline:
+                mask_ |= lsfDisallowIncomingTrustline;
+                break;
+            case asfAllowTrustLineLocking:
+                mask_ |= lsfAllowTrustLineLocking;
                 break;
             default:
                 Throw<std::runtime_error>("unknown flag");

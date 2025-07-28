@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
@@ -208,8 +210,11 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // the reserve for creating their first NFT.
         auto const acctReserve = env.current()->fees().accountReserve(0);
         auto const incReserve = env.current()->fees().increment;
+        auto const baseFee = env.current()->fees().base;
+
         env.fund(acctReserve, alice, minter);
         env.close();
+
         BEAST_EXPECT(env.balance(alice) == acctReserve);
         BEAST_EXPECT(env.balance(minter) == acctReserve);
         BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -219,12 +224,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // page.
         env(token::mint(alice, 0u), ter(tecINSUFFICIENT_RESERVE));
         env.close();
+
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(mintedCount(env, alice) == 0);
         BEAST_EXPECT(burnedCount(env, alice) == 0);
 
         // Pay alice almost enough to make the reserve for an NFT page.
-        env(pay(env.master, alice, incReserve + drops(9)));
+        env(pay(env.master, alice, incReserve + drops(baseFee - 1)));
         env.close();
 
         // A lambda that checks alice's ownerCount, mintedCount, and
@@ -256,15 +262,17 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // page.
         env(token::mint(alice, 0u), ter(tecINSUFFICIENT_RESERVE));
         env.close();
+
         checkAliceOwnerMintedBurned(0, 0, 0, __LINE__);
 
         // Pay alice enough to make the reserve for an NFT page.
-        env(pay(env.master, alice, drops(11)));
+        env(pay(env.master, alice, drops(baseFee + 1)));
         env.close();
 
         // Now alice can mint an NFT.
         env(token::mint(alice));
         env.close();
+
         checkAliceOwnerMintedBurned(1, 1, 0, __LINE__);
 
         // Alice should be able to mint an additional 31 NFTs without
@@ -282,7 +290,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         checkAliceOwnerMintedBurned(1, 32, 0, __LINE__);
 
         // Pay alice almost enough to make the reserve for an NFT page.
-        env(pay(env.master, alice, XRP(50) + drops(329)));
+        env(pay(env.master, alice, incReserve + drops(baseFee * 33 - 1)));
         env.close();
 
         // alice still does not have enough XRP for the reserve of an NFT
@@ -292,7 +300,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         checkAliceOwnerMintedBurned(1, 32, 0, __LINE__);
 
         // Pay alice enough to make the reserve for an NFT page.
-        env(pay(env.master, alice, drops(11)));
+        env(pay(env.master, alice, drops(baseFee + 1)));
         env.close();
 
         // Now alice can mint an NFT.
@@ -365,7 +373,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         std::uint32_t nftSeq = 33;
 
         // Pay minter almost enough to make the reserve for an NFT page.
-        env(pay(env.master, minter, XRP(50) - drops(1)));
+        env(pay(env.master, minter, incReserve - drops(1)));
         env.close();
         checkMintersOwnerMintedBurned(0, 33, nftSeq, 0, 0, 0, __LINE__);
 
@@ -380,7 +388,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         checkMintersOwnerMintedBurned(0, 33, nftSeq, 0, 0, 0, __LINE__);
 
         // Pay minter enough to make the reserve for an NFT page.
-        env(pay(env.master, minter, drops(11)));
+        env(pay(env.master, minter, drops(baseFee + 1)));
         env.close();
 
         // Now minter can mint an NFT for alice.
@@ -398,7 +406,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Pay minter almost enough for the reserve of an additional NFT
         // page.
-        env(pay(env.master, minter, XRP(50) + drops(319)));
+        env(pay(env.master, minter, incReserve + drops(baseFee * 32 - 1)));
         env.close();
 
         // That NFT page is full.  Creating an additional NFT page requires
@@ -411,7 +419,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         checkMintersOwnerMintedBurned(0, 65, nftSeq, 1, 0, 0, __LINE__);
 
         // Pay minter enough for the reserve of an additional NFT page.
-        env(pay(env.master, minter, drops(11)));
+        env(pay(env.master, minter, drops(baseFee + 1)));
         env.close();
 
         // Now minter can mint an NFT.
@@ -878,7 +886,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
         // Give buyer almost enough XRP to cover the reserve.
-        env(pay(env.master, buyer, XRP(50) + drops(119)));
+        auto const baseFee = env.current()->fees().base;
+        env(pay(env.master, buyer, XRP(50) + drops(baseFee * 12 - 1)));
         env.close();
 
         env(token::createOffer(buyer, nftAlice0ID, gwAUD(1000)),
@@ -888,7 +897,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
         // Give buyer just enough XRP to cover the reserve for the offer.
-        env(pay(env.master, buyer, drops(11)));
+        env(pay(env.master, buyer, drops(baseFee + 1)));
         env.close();
 
         // We don't care whether the offer is fully funded until the offer is
@@ -2087,6 +2096,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
+        auto const baseFee = env.current()->fees().base;
 
         Account const alice{"alice"};
         Account const becky{"becky"};
@@ -2380,7 +2390,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // minter buys the nft for XRP(1).  Since the transfer involves
             // alice there should be no transfer fee.
-            STAmount fee = drops(10);
             STAmount aliceBalance = env.balance(alice);
             STAmount minterBalance = env.balance(minter);
             uint256 const minterBuyOfferIndex =
@@ -2389,8 +2398,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             env(token::acceptBuyOffer(alice, minterBuyOfferIndex));
             env.close();
-            aliceBalance += XRP(1) - fee;
-            minterBalance -= XRP(1) + fee;
+            aliceBalance += XRP(1) - baseFee;
+            minterBalance -= XRP(1) + baseFee;
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
             BEAST_EXPECT(env.balance(minter) == minterBalance);
 
@@ -2404,8 +2413,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             env(token::acceptSellOffer(carol, minterSellOfferIndex));
             env.close();
-            minterBalance += pmt - fee;
-            carolBalance -= pmt + fee;
+            minterBalance += pmt - baseFee;
+            carolBalance -= pmt + baseFee;
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
             BEAST_EXPECT(env.balance(minter) == minterBalance);
             BEAST_EXPECT(env.balance(carol) == carolBalance);
@@ -2420,8 +2429,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));
             env.close();
-            carolBalance += pmt - drops(1) - fee;
-            beckyBalance -= pmt + fee;
+            carolBalance += pmt - drops(1) - baseFee;
+            beckyBalance -= pmt + baseFee;
             aliceBalance += drops(1);
 
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
@@ -3903,6 +3912,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
               features | fixNonFungibleTokensV1_2})
         {
             Env env{*this, tweakedFeatures};
+            auto const baseFee = env.current()->fees().base;
 
             // The most important thing to explore here is the way funds are
             // assigned from the buyer to...
@@ -4001,7 +4011,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // requested XRP(0).
                 BEAST_EXPECT(env.balance(minter) == minterBalance + XRP(1));
                 BEAST_EXPECT(env.balance(buyer) == buyerBalance - XRP(1));
-                BEAST_EXPECT(env.balance(broker) == brokerBalance - drops(10));
+                BEAST_EXPECT(env.balance(broker) == brokerBalance - baseFee);
                 BEAST_EXPECT(env.balance(issuer) == issuerBalance);
 
                 // Burn the NFT so the next test starts with a clean state.
@@ -4057,8 +4067,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(minter) == minterBalance + XRP(0.5));
                 BEAST_EXPECT(env.balance(buyer) == buyerBalance - XRP(1));
                 BEAST_EXPECT(
-                    env.balance(broker) ==
-                    brokerBalance + XRP(0.5) - drops(10));
+                    env.balance(broker) == brokerBalance + XRP(0.5) - baseFee);
                 BEAST_EXPECT(env.balance(issuer) == issuerBalance);
 
                 // Burn the NFT so the next test starts with a clean state.
@@ -4105,7 +4114,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // requested XRP(0).
                 BEAST_EXPECT(env.balance(minter) == minterBalance + XRP(0.5));
                 BEAST_EXPECT(env.balance(buyer) == buyerBalance - XRP(1));
-                BEAST_EXPECT(env.balance(broker) == brokerBalance - drops(10));
+                BEAST_EXPECT(env.balance(broker) == brokerBalance - baseFee);
                 BEAST_EXPECT(env.balance(issuer) == issuerBalance + XRP(0.5));
 
                 // Burn the NFT so the next test starts with a clean state.
@@ -4155,8 +4164,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(minter) == minterBalance + XRP(0.125));
                 BEAST_EXPECT(env.balance(buyer) == buyerBalance - XRP(1));
                 BEAST_EXPECT(
-                    env.balance(broker) ==
-                    brokerBalance + XRP(0.75) - drops(10));
+                    env.balance(broker) == brokerBalance + XRP(0.75) - baseFee);
                 BEAST_EXPECT(env.balance(issuer) == issuerBalance + XRP(0.125));
 
                 // Burn the NFT so the next test starts with a clean state.
@@ -5991,6 +5999,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         Account const broker{"broker"};
 
         Env env{*this, features};
+        auto const baseFee = env.current()->fees().base;
         env.fund(XRP(10000), alice, bob, broker);
         env.close();
 
@@ -6062,8 +6071,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(nftCount(env, bob) == 1);
             BEAST_EXPECT(env.balance(bob) == bobsPriorBalance - XRP(1));
             BEAST_EXPECT(
-                env.balance(broker) ==
-                brokersPriorBalance + XRP(1) - drops(10));
+                env.balance(broker) == brokersPriorBalance + XRP(1) - baseFee);
         }
         else
         {
@@ -6071,8 +6079,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // than the broker burning their transaction fee.
             BEAST_EXPECT(nftCount(env, bob) == 1);
             BEAST_EXPECT(env.balance(bob) == bobsPriorBalance);
-            BEAST_EXPECT(
-                env.balance(broker) == brokersPriorBalance - drops(10));
+            BEAST_EXPECT(env.balance(broker) == brokersPriorBalance - baseFee);
         }
     }
 
@@ -6613,6 +6620,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // The remaining tests assume featureNFTokenMintOffer is enabled.
         {
             Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
             Account const alice("alice");
             Account const buyer{"buyer"};
             Account const gw("gw");
@@ -6750,13 +6758,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
 
                 // have reserve for NFTokenPage, Offer
-                env(pay(env.master, bob, incReserve + drops(10)));
+                env(pay(env.master, bob, incReserve + drops(baseFee)));
                 env.close();
                 env(token::mint(bob), token::amount(XRP(0)));
                 env.close();
 
                 // doesn't have reserve for Offer
-                env(pay(env.master, bob, drops(10)));
+                env(pay(env.master, bob, drops(baseFee)));
                 env.close();
                 env(token::mint(bob),
                     token::amount(XRP(0)),
@@ -6764,7 +6772,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
 
                 // have reserve for Offer
-                env(pay(env.master, bob, incReserve + drops(10)));
+                env(pay(env.master, bob, incReserve + drops(baseFee)));
                 env.close();
                 env(token::mint(bob), token::amount(XRP(0)));
                 env.close();
@@ -7128,6 +7136,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const acctReserve = env.current()->fees().accountReserve(0);
             auto const incReserve = env.current()->fees().increment;
+            auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(10000), alice);
             env.close();
@@ -7161,8 +7170,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // there is enough reserve. A detail to note is that NFTs(sell
             // offer) will not allow one to go below the reserve requirement,
             // because buyer's balance is computed after the transaction fee is
-            // deducted. This means that the reserve requirement will be 10
-            // drops higher than normal.
+            // deducted. This means that the reserve requirement will be `base
+            // fee` drops higher than normal.
             else
             {
                 // Bob is not able to accept the offer with only the account
@@ -7171,26 +7180,26 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
 
-                // after prev transaction, Bob owns 199,999,990 drops due to
-                // burnt tx fee
+                // after prev transaction, Bob owns `200M - base fee` drops due
+                // to burnt tx fee
 
                 BEAST_EXPECT(ownerCount(env, bob) == 0);
 
-                // Send bob an increment reserve and 10 drops (to make up for
+                // Send bob an increment reserve and base fee (to make up for
                 // the transaction fee burnt from the prev failed tx) Bob now
                 // owns 250,000,000 drops
-                env(pay(env.master, bob, incReserve + drops(10)));
+                env(pay(env.master, bob, incReserve + drops(baseFee)));
                 env.close();
 
                 // However, this transaction will still fail because the reserve
-                // requirement is 10 drops higher
+                // requirement is `base fee` drops higher
                 env(token::acceptSellOffer(bob, sellOfferIndex),
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
 
-                // Send bob an increment reserve and 20 drops
-                // Bob now owns 250,000,010 drops
-                env(pay(env.master, bob, drops(20)));
+                // Send bob `base fee * 2` drops
+                // Bob now owns `250M + base fee` drops
+                env(pay(env.master, bob, drops(baseFee * 2)));
                 env.close();
 
                 // Bob is now able to accept the offer
@@ -7307,6 +7316,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const acctReserve = env.current()->fees().accountReserve(0);
             auto const incReserve = env.current()->fees().increment;
+            auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(10000), alice);
             env.close();
@@ -7328,15 +7338,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::createOffer(bob, nftId, XRP(1)), token::owner(alice));
             env.close();
 
-            // accepting the buy offer fails because bob's balance is 10 drops
-            // lower than the required amount, since the previous tx burnt 10
+            // accepting the buy offer fails because bob's balance is `base fee`
+            // drops lower than the required amount, since the previous tx burnt
             // drops for tx fee.
             env(token::acceptBuyOffer(alice, buyOfferIndex),
                 ter(tecINSUFFICIENT_FUNDS));
             env.close();
 
-            // send Bob 10 drops
-            env(pay(env.master, bob, drops(10)));
+            // send Bob `base fee` drops
+            env(pay(env.master, bob, drops(baseFee)));
             env.close();
 
             // Now bob can buy the offer
@@ -7357,6 +7367,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const acctReserve = env.current()->fees().accountReserve(0);
             auto const incReserve = env.current()->fees().increment;
+            auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(10000), alice, broker);
             env.close();
@@ -7395,8 +7406,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 ter(tecINSUFFICIENT_FUNDS));
             env.close();
 
-            // send Bob 10 drops
-            env(pay(env.master, bob, drops(10)));
+            // send Bob `base fee` drops
+            env(pay(env.master, bob, drops(baseFee)));
             env.close();
 
             // broker offers.
@@ -8064,7 +8075,7 @@ public:
     run(std::uint32_t instance, bool last = false)
     {
         using namespace test::jtx;
-        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const all{testable_amendments()};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
         static std::array<FeatureBitset, 8> const feats{

@@ -22,8 +22,8 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/ledger/ApplyView.h>
+
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/tagged_integer.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/nft.h>
@@ -151,6 +151,20 @@ tokenOfferCreateApply(
     XRPAmount const& priorBalance,
     beast::Journal j,
     std::uint32_t txFlags = lsfSellNFToken);
+
+TER
+checkTrustlineAuthorized(
+    ReadView const& view,
+    AccountID const id,
+    beast::Journal const j,
+    Issue const& issue);
+
+TER
+checkTrustlineDeepFrozen(
+    ReadView const& view,
+    AccountID const id,
+    beast::Journal const j,
+    Issue const& issue);
 
 }  // namespace nft
 

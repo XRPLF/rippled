@@ -19,6 +19,21 @@
 
 #include <xrpl/basics/FileUtilities.h>
 
+#include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/errc.hpp>
+
+#include <cerrno>
+#include <cstddef>
+#include <fstream>
+#include <ios>
+#include <iterator>
+#include <optional>
+#include <string>
+
 namespace ripple {
 
 std::string
@@ -41,7 +56,7 @@ getFileContents(
         return {};
     }
 
-    ifstream fileStream(fullPath, std::ios::in);
+    std::ifstream fileStream(fullPath.string(), std::ios::in);
 
     if (!fileStream)
     {
@@ -49,7 +64,7 @@ getFileContents(
         return {};
     }
 
-    const std::string result{
+    std::string const result{
         std::istreambuf_iterator<char>{fileStream},
         std::istreambuf_iterator<char>{}};
 
@@ -71,7 +86,8 @@ writeFileContents(
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    ofstream fileStream(destPath, std::ios::out | std::ios::trunc);
+    std::ofstream fileStream(
+        destPath.string(), std::ios::out | std::ios::trunc);
 
     if (!fileStream)
     {

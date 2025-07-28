@@ -30,9 +30,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SField.h>
+
 #include <cstdint>
 #include <cstring>
-#include <iomanip>
 #include <type_traits>
 
 namespace ripple {
@@ -138,9 +138,9 @@ public:
     int
     addRaw(Slice slice);
     int
-    addRaw(const void* ptr, int len);
+    addRaw(void const* ptr, int len);
     int
-    addRaw(const Serializer& s);
+    addRaw(Serializer const& s);
 
     int
     addVL(Blob const& vector);
@@ -150,7 +150,7 @@ public:
     int
     addVL(Iter begin, Iter end, int len);
     int
-    addVL(const void* ptr, int len);
+    addVL(void const* ptr, int len);
 
     // disassemble functions
     bool
@@ -160,7 +160,7 @@ public:
     bool
     getInteger(Integer& number, int offset)
     {
-        static const auto bytes = sizeof(Integer);
+        static auto const bytes = sizeof(Integer);
         if ((offset + bytes) > mData.size())
             return false;
         number = 0;
@@ -219,7 +219,7 @@ public:
     {
         return mData.size();
     }
-    const void*
+    void const*
     getDataPtr() const
     {
         return mData.data();
@@ -237,7 +237,7 @@ public:
     std::string
     getString() const
     {
-        return std::string(static_cast<const char*>(getDataPtr()), size());
+        return std::string(static_cast<char const*>(getDataPtr()), size());
     }
     void
     erase()
@@ -295,12 +295,12 @@ public:
         return v != mData;
     }
     bool
-    operator==(const Serializer& v) const
+    operator==(Serializer const& v) const
     {
         return v.mData == mData;
     }
     bool
-    operator!=(const Serializer& v) const
+    operator!=(Serializer const& v) const
     {
         return v.mData != mData;
     }

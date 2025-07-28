@@ -21,7 +21,9 @@
 #define RIPPLE_PROTOCOL_BOOK_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Issue.h>
+
 #include <boost/utility/base_from_member.hpp>
 
 namespace ripple {
@@ -35,12 +37,17 @@ class Book final : public CountedObject<Book>
 public:
     Issue in;
     Issue out;
+    std::optional<uint256> domain;
 
     Book()
     {
     }
 
-    Book(Issue const& in_, Issue const& out_) : in(in_), out(out_)
+    Book(
+        Issue const& in_,
+        Issue const& out_,
+        std::optional<uint256> const& domain_)
+        : in(in_), out(out_), domain(domain_)
     {
     }
 };
@@ -60,6 +67,8 @@ hash_append(Hasher& h, Book const& b)
 {
     using beast::hash_append;
     hash_append(h, b.in, b.out);
+    if (b.domain)
+        hash_append(h, *(b.domain));
 }
 
 Book
@@ -70,7 +79,8 @@ reversed(Book const& book);
 [[nodiscard]] inline constexpr bool
 operator==(Book const& lhs, Book const& rhs)
 {
-    return (lhs.in == rhs.in) && (lhs.out == rhs.out);
+    return (lhs.in == rhs.in) && (lhs.out == rhs.out) &&
+        (lhs.domain == rhs.domain);
 }
 /** @} */
 
@@ -81,7 +91,18 @@ operator<=>(Book const& lhs, Book const& rhs)
 {
     if (auto const c{lhs.in <=> rhs.in}; c != 0)
         return c;
-    return lhs.out <=> rhs.out;
+    if (auto const c{lhs.out <=> rhs.out}; c != 0)
+        return c;
+
+    // Manually compare optionals
+    if (lhs.domain && rhs.domain)
+        return *lhs.domain <=> *rhs.domain;  // Compare values if both exist
+    if (!lhs.domain && rhs.domain)
+        return std::weak_ordering::less;  // Empty is considered less
+    if (lhs.domain && !rhs.domain)
+        return std::weak_ordering::greater;  // Non-empty is greater
+
+    return std::weak_ordering::equivalent;  // Both are empty
 }
 /** @} */
 
@@ -103,7 +124,7 @@ private:
         boost::base_from_member<std::hash<ripple::AccountID>, 1>;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     using value_type = std::size_t;
     using argument_type = ripple::Issue;
@@ -125,12 +146,14 @@ template <>
 struct hash<ripple::Book>
 {
 private:
-    using hasher = std::hash<ripple::Issue>;
+    using issue_hasher = std::hash<ripple::Issue>;
+    using uint256_hasher = ripple::uint256::hasher;
 
-    hasher m_hasher;
+    issue_hasher m_issue_hasher;
+    uint256_hasher m_uint256_hasher;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     using value_type = std::size_t;
     using argument_type = ripple::Book;
@@ -138,8 +161,12 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(m_hasher(value.in));
-        boost::hash_combine(result, m_hasher(value.out));
+        value_type result(m_issue_hasher(value.in));
+        boost::hash_combine(result, m_issue_hasher(value.out));
+
+        if (value.domain)
+            boost::hash_combine(result, m_uint256_hasher(*value.domain));
+
         return result;
     }
 };
@@ -153,7 +180,7 @@ namespace boost {
 template <>
 struct hash<ripple::Issue> : std::hash<ripple::Issue>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<ripple::Issue>;
     // VFALCO NOTE broken in vs2012
@@ -163,7 +190,7 @@ struct hash<ripple::Issue> : std::hash<ripple::Issue>
 template <>
 struct hash<ripple::Book> : std::hash<ripple::Book>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<ripple::Book>;
     // VFALCO NOTE broken in vs2012

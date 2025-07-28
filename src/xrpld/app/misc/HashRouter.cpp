@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/core/Config.h>
 
 namespace ripple {
 
@@ -33,7 +34,7 @@ HashRouter::emplace(uint256 const& key) -> std::pair<Entry&, bool>
     }
 
     // See if any supressions need to be expired
-    expire(suppressionMap_, holdTime_);
+    expire(suppressionMap_, setup_.holdTime);
 
     return std::make_pair(
         std::ref(suppressionMap_.emplace(key, Entry()).first->second), true);
@@ -54,7 +55,7 @@ HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer)
 }
 
 std::pair<bool, std::optional<Stopwatch::time_point>>
-HashRouter::addSuppressionPeerWithStatus(const uint256& key, PeerShortID peer)
+HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
 {
     std::lock_guard lock(mutex_);
 
@@ -64,7 +65,10 @@ HashRouter::addSuppressionPeerWithStatus(const uint256& key, PeerShortID peer)
 }
 
 bool
-HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer, int& flags)
+HashRouter::addSuppressionPeer(
+    uint256 const& key,
+    PeerShortID peer,
+    HashRouterFlags& flags)
 {
     std::lock_guard lock(mutex_);
 
@@ -78,7 +82,7 @@ bool
 HashRouter::shouldProcess(
     uint256 const& key,
     PeerShortID peer,
-    int& flags,
+    HashRouterFlags& flags,
     std::chrono::seconds tx_interval)
 {
     std::lock_guard lock(mutex_);
@@ -90,7 +94,7 @@ HashRouter::shouldProcess(
     return s.shouldProcess(suppressionMap_.clock().now(), tx_interval);
 }
 
-int
+HashRouterFlags
 HashRouter::getFlags(uint256 const& key)
 {
     std::lock_guard lock(mutex_);
@@ -99,9 +103,10 @@ HashRouter::getFlags(uint256 const& key)
 }
 
 bool
-HashRouter::setFlags(uint256 const& key, int flags)
+HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 {
-    XRPL_ASSERT(flags, "ripple::HashRouter::setFlags : valid input");
+    XRPL_ASSERT(
+        static_cast<bool>(flags), "ripple::HashRouter::setFlags : valid input");
 
     std::lock_guard lock(mutex_);
 
@@ -122,10 +127,45 @@ HashRouter::shouldRelay(uint256 const& key)
 
     auto& s = emplace(key).first;
 
-    if (!s.shouldRelay(suppressionMap_.clock().now(), holdTime_))
+    if (!s.shouldRelay(suppressionMap_.clock().now(), setup_.relayTime))
         return {};
 
     return s.releasePeerSet();
+}
+
+HashRouter::Setup
+setup_HashRouter(Config const& config)
+{
+    using namespace std::chrono;
+
+    HashRouter::Setup setup;
+    auto const& section = config.section("hashrouter");
+
+    std::int32_t tmp;
+
+    if (set(tmp, "hold_time", section))
+    {
+        if (tmp < 12)
+            Throw<std::runtime_error>(
+                "HashRouter hold time must be at least 12 seconds (the "
+                "approximate validation time for three ledgers).");
+        setup.holdTime = seconds(tmp);
+    }
+    if (set(tmp, "relay_time", section))
+    {
+        if (tmp < 8)
+            Throw<std::runtime_error>(
+                "HashRouter relay time must be at least 8 seconds (the "
+                "approximate validation time for two ledgers).");
+        setup.relayTime = seconds(tmp);
+    }
+    if (setup.relayTime > setup.holdTime)
+    {
+        Throw<std::runtime_error>(
+            "HashRouter relay time must be less than or equal to hold time");
+    }
+
+    return setup;
 }
 
 }  // namespace ripple

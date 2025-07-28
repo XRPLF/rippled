@@ -22,11 +22,19 @@
 
 #include <xrpl/basics/contract.h>
 
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated"
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
 #include <boost/outcome.hpp>
 
-#include <concepts>
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
+
 #include <stdexcept>
-#include <type_traits>
 
 namespace ripple {
 
@@ -95,7 +103,7 @@ public:
     {
     }
 
-    constexpr const E&
+    constexpr E const&
     value() const&
     {
         return val_;
@@ -113,7 +121,7 @@ public:
         return std::move(val_);
     }
 
-    constexpr const E&&
+    constexpr E const&&
     value() const&&
     {
         return std::move(val_);

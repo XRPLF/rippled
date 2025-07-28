@@ -25,8 +25,10 @@
 #include <xrpl/beast/container/detail/aged_associative_container.h>
 #include <xrpl/beast/container/detail/aged_container_iterator.h>
 #include <xrpl/beast/container/detail/empty_base_optimization.h>
+
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/unordered_set.hpp>
+
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -3255,7 +3257,6 @@ operator==(aged_unordered_container<
 {
     if (size() != other.size())
         return false;
-    using EqRng = std::pair<const_iterator, const_iterator>;
     for (auto iter(cbegin()), last(cend()); iter != last;)
     {
         auto const& k(extract(*iter));

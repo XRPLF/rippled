@@ -18,15 +18,16 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/ledger/Dir.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <chrono>
 
 namespace ripple {
 namespace test {
@@ -400,6 +401,52 @@ struct PayChan_test : public beast::unit_test::suite
             env(claim(carol, chan), txflags(tfClose));
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             BEAST_EXPECT(env.balance(alice) == preAlice + channelFunds);
+        }
+        // fixPayChanCancelAfter
+        // CancelAfter should be greater than close time
+        {
+            for (bool const withFixPayChan : {true, false})
+            {
+                auto const amend = withFixPayChan
+                    ? features
+                    : features - fixPayChanCancelAfter;
+                Env env{*this, amend};
+                env.fund(XRP(10000), alice, bob);
+                env.close();
+
+                auto const pk = alice.pk();
+                auto const settleDelay = 100s;
+                auto const channelFunds = XRP(1000);
+                NetClock::time_point const cancelAfter =
+                    env.current()->info().parentCloseTime - 1s;
+                auto const txResult =
+                    withFixPayChan ? ter(tecEXPIRED) : ter(tesSUCCESS);
+                env(create(
+                        alice, bob, channelFunds, settleDelay, pk, cancelAfter),
+                    txResult);
+            }
+        }
+        // fixPayChanCancelAfter
+        // CancelAfter can be equal to the close time
+        {
+            for (bool const withFixPayChan : {true, false})
+            {
+                auto const amend = withFixPayChan
+                    ? features
+                    : features - fixPayChanCancelAfter;
+                Env env{*this, amend};
+                env.fund(XRP(10000), alice, bob);
+                env.close();
+
+                auto const pk = alice.pk();
+                auto const settleDelay = 100s;
+                auto const channelFunds = XRP(1000);
+                NetClock::time_point const cancelAfter =
+                    env.current()->info().parentCloseTime;
+                env(create(
+                        alice, bob, channelFunds, settleDelay, pk, cancelAfter),
+                    ter(tesSUCCESS));
+            }
         }
     }
 
@@ -839,7 +886,7 @@ struct PayChan_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         Account const alice("alice");
         Account const bob("bob");
@@ -988,7 +1035,7 @@ struct PayChan_test : public beast::unit_test::suite
 
         {
             // Credentials amendment not enabled
-            Env env(*this, supported_amendments() - featureCredentials);
+            Env env(*this, testable_amendments() - featureCredentials);
             env.fund(XRP(5000), "alice", "bob");
             env.close();
 
@@ -1911,7 +1958,6 @@ struct PayChan_test : public beast::unit_test::suite
             Env env{*this, amd};
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
-            auto const feeDrops = env.current()->fees().base;
 
             // Create a channel from alice to bob
             auto const pk = alice.pk();
@@ -1930,6 +1976,7 @@ struct PayChan_test : public beast::unit_test::suite
                 carol,
                 withOwnerDirFix ? TER(tecHAS_OBLIGATIONS) : TER(tesSUCCESS));
 
+            auto const feeDrops = env.current()->fees().base;
             auto chanBal = channelBalance(*env.current(), chan);
             auto chanAmt = channelAmount(*env.current(), chan);
             BEAST_EXPECT(chanBal == XRP(0));
@@ -2002,7 +2049,6 @@ struct PayChan_test : public beast::unit_test::suite
             Env env{*this, features - fixPayChanRecipientOwnerDir};
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
-            auto const feeDrops = env.current()->fees().base;
 
             // Create a channel from alice to bob
             auto const pk = alice.pk();
@@ -2017,6 +2063,7 @@ struct PayChan_test : public beast::unit_test::suite
             rmAccount(env, bob, carol);
             BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
 
+            auto const feeDrops = env.current()->fees().base;
             auto chanBal = channelBalance(*env.current(), chan);
             auto chanAmt = channelAmount(*env.current(), chan);
             BEAST_EXPECT(chanBal == XRP(0));
@@ -2297,7 +2344,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testWithFeats(all - disallowIncoming);
         testWithFeats(all);
         testDepositAuthCreds();

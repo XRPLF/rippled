@@ -21,14 +21,12 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/detail/Tuning.h>
+
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/RPCErr.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/resource/Fees.h>
 
 #include <optional>
 
@@ -43,6 +41,12 @@ namespace ripple {
 Json::Value
 doChannelAuthorize(RPC::JsonContext& context)
 {
+    if (context.role != Role::ADMIN && !context.app.config().canSign())
+    {
+        return RPC::make_error(
+            rpcNOT_SUPPORTED, "Signing is not supported by this server.");
+    }
+
     auto const& params(context.params);
     for (auto const& p : {jss::channel_id, jss::amount})
         if (!params.isMember(p))

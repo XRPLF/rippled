@@ -27,7 +27,6 @@
 #include <xrpl/protocol/STBase.h>
 
 #include <cstring>
-#include <memory>
 
 namespace ripple {
 
@@ -63,7 +62,7 @@ public:
     add(Serializer& s) const override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     bool
     isDefault() const override;

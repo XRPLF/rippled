@@ -17,15 +17,24 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/ToString.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/regex.hpp>
-#include <algorithm>
+
+#include <boost/algorithm/hex.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_fwd.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+
+#include <cstdint>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <string_view>
 
 namespace ripple {
 
@@ -80,13 +89,13 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
     boost::algorithm::to_lower(pUrl.scheme);
     pUrl.username = smMatch[2];
     pUrl.password = smMatch[3];
-    const std::string domain = smMatch[4];
+    std::string const domain = smMatch[4];
     // We need to use Endpoint to parse the domain to
     // strip surrounding brackets from IPv6 addresses,
     // e.g. [::1] => ::1.
-    const auto result = beast::IP::Endpoint::from_string_checked(domain);
+    auto const result = beast::IP::Endpoint::from_string_checked(domain);
     pUrl.domain = result ? result->address().to_string() : domain;
-    const std::string port = smMatch[5];
+    std::string const port = smMatch[5];
     if (!port.empty())
     {
         pUrl.port = beast::lexicalCast<std::uint16_t>(port);

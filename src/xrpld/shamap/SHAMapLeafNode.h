@@ -21,11 +21,9 @@
 #define RIPPLE_SHAMAP_SHAMAPLEAFNODE_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapItem.h>
-#include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace ripple {
 
@@ -44,9 +42,9 @@ protected:
         SHAMapHash const& hash);
 
 public:
-    SHAMapLeafNode(const SHAMapLeafNode&) = delete;
+    SHAMapLeafNode(SHAMapLeafNode const&) = delete;
     SHAMapLeafNode&
-    operator=(const SHAMapLeafNode&) = delete;
+    operator=(SHAMapLeafNode const&) = delete;
 
     bool
     isLeaf() const final override

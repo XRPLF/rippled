@@ -16,12 +16,16 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_TX_H_INCLUDED
 #define RIPPLE_TEST_CSF_TX_H_INCLUDED
+
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
+
 #include <boost/container/flat_set.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
+
 #include <algorithm>
 #include <map>
 #include <ostream>
@@ -48,7 +52,7 @@ public:
     {
     }
 
-    ID
+    ID const&
     id() const
     {
         return id_;
@@ -184,7 +188,7 @@ private:
 // Helper functions for debug printing
 
 inline std::ostream&
-operator<<(std::ostream& o, const Tx& t)
+operator<<(std::ostream& o, Tx const& t)
 {
     return o << t.id();
 }

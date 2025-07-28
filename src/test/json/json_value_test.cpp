@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/beast/type_name.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>

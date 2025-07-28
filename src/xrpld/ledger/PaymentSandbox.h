@@ -23,9 +23,10 @@
 #include <xrpld/ledger/RawView.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
+
 #include <xrpl/protocol/AccountID.h>
+
 #include <map>
-#include <utility>
 
 namespace ripple {
 

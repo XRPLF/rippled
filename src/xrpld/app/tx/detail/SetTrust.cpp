@@ -17,14 +17,17 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 
 namespace {
 
@@ -128,6 +131,69 @@ SetTrust::preflight(PreflightContext const& ctx)
 }
 
 TER
+SetTrust::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
+
+    std::uint32_t const txFlags = tx.getFlags();
+
+    // Currently we only support TrustlineAuthorize, TrustlineFreeze and
+    // TrustlineUnfreeze granular permission. Setting other flags returns
+    // error.
+    if (txFlags & tfTrustSetPermissionMask)
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (tx.isFieldPresent(sfQualityIn) || tx.isFieldPresent(sfQualityOut))
+        return tecNO_DELEGATE_PERMISSION;
+
+    auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
+    auto const sleRippleState = view.read(keylet::line(
+        tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
+
+    // if the trustline does not exist, granular permissions are
+    // not allowed to create trustline
+    if (!sleRippleState)
+        return tecNO_DELEGATE_PERMISSION;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
+
+    if (txFlags & tfSetfAuth &&
+        !granularPermissions.contains(TrustlineAuthorize))
+        return tecNO_DELEGATE_PERMISSION;
+    if (txFlags & tfSetFreeze && !granularPermissions.contains(TrustlineFreeze))
+        return tecNO_DELEGATE_PERMISSION;
+    if (txFlags & tfClearFreeze &&
+        !granularPermissions.contains(TrustlineUnfreeze))
+        return tecNO_DELEGATE_PERMISSION;
+
+    // updating LimitAmount is not allowed only with granular permissions,
+    // unless there's a new granular permission for this in the future.
+    auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
+        ? sleRippleState->getFieldAmount(sfHighLimit)
+        : sleRippleState->getFieldAmount(sfLowLimit);
+
+    STAmount saLimitAllow = saLimitAmount;
+    saLimitAllow.setIssuer(tx[sfAccount]);
+
+    if (curLimit != saLimitAllow)
+        return tecNO_DELEGATE_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
 SetTrust::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];
@@ -177,14 +243,16 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
+    if ((ctx.view.rules().enabled(featureDisallowIncoming) ||
+         ammEnabled(ctx.view.rules()) ||
+         ctx.view.rules().enabled(featureSingleAssetVault)) &&
+        sleDst == nullptr)
+        return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
     if (ctx.view.rules().enabled(featureDisallowIncoming))
     {
-        if (!sleDst)
-            return tecNO_DST;
-
         if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
         {
             // The original implementation of featureDisallowIncoming was
@@ -202,18 +270,22 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // If destination is AMM and the trustline doesn't exist then only
-    // allow SetTrust if the asset is AMM LP token and AMM is not
-    // in empty state.
-    if (ammEnabled(ctx.view.rules()))
+    // In general, trust lines to pseudo accounts are not permitted, unless
+    // enabled in the code section below, for specific cases. This block is not
+    // amendment-gated because sleDst will not have a pseudo-account designator
+    // field populated, unless the appropriate amendment was already enabled.
+    if (sleDst && isPseudoAccount(sleDst))
     {
-        if (!sleDst)
-            return tecNO_DST;
-
-        if (sleDst->isFieldPresent(sfAMMID) &&
-            !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
+        // If destination is AMM and the trustline doesn't exist then only allow
+        // SetTrust if the asset is AMM LP token and AMM is not in empty state.
+        if (sleDst->isFieldPresent(sfAMMID))
         {
-            if (auto const ammSle =
+            if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+            {
+                // pass
+            }
+            else if (
+                auto const ammSle =
                     ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
                 if (auto const lpTokens =
@@ -224,8 +296,16 @@ SetTrust::preclaim(PreclaimContext const& ctx)
                     return tecNO_PERMISSION;
             }
             else
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
         }
+        else if (sleDst->isFieldPresent(sfVaultID))
+        {
+            if (!ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+                return tecNO_PERMISSION;
+            // else pass
+        }
+        else
+            return tecPSEUDO_ACCOUNT;
     }
 
     // Checking all freeze/deep freeze flag invariants.

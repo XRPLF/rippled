@@ -18,14 +18,11 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpl/basics/strHex.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
 
 #include <algorithm>
-#include <iterator>
 
 namespace ripple {
 namespace test {
@@ -77,6 +74,7 @@ struct DID_test : public beast::unit_test::suite
         // the reserve for creating a DID.
         auto const acctReserve = env.current()->fees().accountReserve(0);
         auto const incReserve = env.current()->fees().increment;
+        auto const baseFee = env.current()->fees().base;
         env.fund(acctReserve, alice);
         env.close();
         BEAST_EXPECT(env.balance(alice) == acctReserve);
@@ -88,8 +86,10 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // Pay alice almost enough to make the reserve for a DID.
-        env(pay(env.master, alice, incReserve + drops(19)));
-        BEAST_EXPECT(env.balance(alice) == acctReserve + incReserve + drops(9));
+        env(pay(env.master, alice, drops(incReserve + 2 * baseFee - 1)));
+        BEAST_EXPECT(
+            env.balance(alice) ==
+            acctReserve + incReserve + drops(baseFee - 1));
         env.close();
 
         // alice still does not have enough XRP for the reserve of a DID.
@@ -98,7 +98,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // Pay alice enough to make the reserve for a DID.
-        env(pay(env.master, alice, drops(11)));
+        env(pay(env.master, alice, drops(baseFee + 1)));
         env.close();
 
         // Now alice can create a DID.
@@ -149,7 +149,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // uri is too long
-        const std::string longString(257, 'a');
+        std::string const longString(257, 'a');
         env(did::set(alice), did::uri(longString), ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -390,7 +390,7 @@ struct DID_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const emptyDID{fixEmptyDID};
         testEnabled(all);
         testAccountReserve(all);

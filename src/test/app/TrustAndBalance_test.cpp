@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -479,8 +480,8 @@ public:
         };
 
         using namespace test::jtx;
-        auto const sa = supported_amendments();
-        testWithFeatures(sa - featureFlowCross);
+        auto const sa = testable_amendments();
+        testWithFeatures(sa - featurePermissionedDEX);
         testWithFeatures(sa);
     }
 };

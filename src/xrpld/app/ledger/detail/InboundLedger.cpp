@@ -23,10 +23,10 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
@@ -502,15 +502,17 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
     if (auto stream = journal_.debug())
     {
-        stream << "Trigger acquiring ledger " << hash_;
+        std::stringstream ss;
+        ss << "Trigger acquiring ledger " << hash_;
         if (peer)
-            stream << " from " << peer;
+            ss << " from " << peer;
 
         if (complete_ || failed_)
-            stream << "complete=" << complete_ << " failed=" << failed_;
+            ss << " complete=" << complete_ << " failed=" << failed_;
         else
-            stream << "header=" << mHaveHeader << " tx=" << mHaveTransactions
-                   << " as=" << mHaveState;
+            ss << " header=" << mHaveHeader << " tx=" << mHaveTransactions
+               << " as=" << mHaveState;
+        stream << ss.str();
     }
 
     if (!mHaveHeader)

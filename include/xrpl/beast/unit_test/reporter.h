@@ -10,11 +10,12 @@
 
 #include <xrpl/beast/unit_test/amount.h>
 #include <xrpl/beast/unit_test/recorder.h>
+
 #include <boost/lexical_cast.hpp>
 #include <boost/optional.hpp>
+
 #include <algorithm>
 #include <chrono>
-#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <sstream>

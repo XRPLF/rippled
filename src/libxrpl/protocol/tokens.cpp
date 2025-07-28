@@ -25,21 +25,25 @@
  * file COPYING or http://www.opensource.org/licenses/mit-license.php.
  */
 
-#include <xrpl/protocol/tokens.h>
-
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/b58_utils.h>
+#include <xrpl/protocol/detail/token_errors.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <boost/container/small_vector.hpp>
-#include <boost/endian.hpp>
 #include <boost/endian/conversion.hpp>
 
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <cstring>
-#include <memory>
+#include <span>
+#include <string>
+#include <string_view>
 #include <type_traits>
-#include <utility>
 #include <vector>
 
 /*
@@ -540,7 +544,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     XRPL_ASSERT(
         num_b_58_10_coeffs <= b_58_10_coeff.size(),
         "ripple::b58_fast::detail::b58_to_b256_be : maximum coeff");
-    for (auto c : input.substr(0, partial_coeff_len))
+    for (unsigned char c : input.substr(0, partial_coeff_len))
     {
         auto cur_val = ::ripple::alphabetReverse[c];
         if (cur_val < 0)
@@ -554,7 +558,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     {
         for (int j = 0; j < num_full_coeffs; ++j)
         {
-            auto c = input[partial_coeff_len + j * 10 + i];
+            unsigned char c = input[partial_coeff_len + j * 10 + i];
             auto cur_val = ::ripple::alphabetReverse[c];
             if (cur_val < 0)
             {

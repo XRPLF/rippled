@@ -21,6 +21,7 @@
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+
 #include <xrpl/json/json_reader.h>
 
 namespace ripple {
@@ -208,7 +209,7 @@ ConnectAttempt::onHandshake(error_code ec)
         app_.config().COMPRESSION,
         app_.config().LEDGER_REPLAY,
         app_.config().TX_REDUCE_RELAY_ENABLE,
-        app_.config().VP_REDUCE_RELAY_ENABLE);
+        app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
 
     buildHandshake(
         req_,

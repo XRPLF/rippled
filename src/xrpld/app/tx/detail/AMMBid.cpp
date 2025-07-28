@@ -17,15 +17,14 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/AMMBid.h>
-
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/tx/detail/AMMBid.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -78,6 +77,21 @@ AMMBid::preflight(PreflightContext const& ctx)
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid number of AuthAccounts.";
             return temMALFORMED;
+        }
+        else if (ctx.rules.enabled(fixAMMv1_3))
+        {
+            AccountID account = ctx.tx[sfAccount];
+            std::set<AccountID> unique;
+            for (auto const& obj : authAccounts)
+            {
+                auto authAccount = obj[sfAccount];
+                if (authAccount == account || unique.contains(authAccount))
+                {
+                    JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
+                    return temMALFORMED;
+                }
+                unique.insert(authAccount);
+            }
         }
     }
 
@@ -233,7 +247,9 @@ applyBid(
             auctionSlot.makeFieldAbsent(sfAuthAccounts);
         // Burn the remaining bid amount
         auto const saBurn = adjustLPTokens(
-            lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), false);
+            lptAMMBalance,
+            toSTAmount(lptAMMBalance.issue(), burn),
+            IsDeposit::No);
         if (saBurn >= lptAMMBalance)
         {
             // This error case should never occur.

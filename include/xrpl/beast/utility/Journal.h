@@ -21,6 +21,7 @@
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <sstream>
 
 namespace beast {
@@ -111,6 +112,16 @@ public:
         */
         virtual void
         write(Severity level, std::string const& text) = 0;
+
+        /** Bypass filter and write text to the sink at the specified severity.
+         * Always write the message, but maintain the same formatting as if
+         * it passed through a level filter.
+         *
+         * @param level Level to display in message.
+         * @param text Text to write to sink.
+         */
+        virtual void
+        writeAlways(Severity level, std::string const& text) = 0;
 
     private:
         Severity thresh_;

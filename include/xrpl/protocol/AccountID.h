@@ -29,7 +29,6 @@
 #include <xrpl/protocol/json_get_or_throw.h>
 
 #include <cstddef>
-#include <mutex>
 #include <optional>
 #include <string>
 
@@ -114,7 +113,7 @@ operator<<(std::ostream& os, AccountID const& x)
     is expensive (it requires a SHA-256 operation) in most cases the overhead
     of the cache is worth the benefit.
 
-    @param count The number of entries the cache should accomodate. Zero will
+    @param count The number of entries the cache should accommodate. Zero will
                  disable the cache, releasing any memory associated with it.
 
     @note The function will only initialize the cache the first time it is
@@ -149,7 +148,7 @@ namespace std {
 template <>
 struct hash<ripple::AccountID> : ripple::AccountID::hasher
 {
-    explicit hash() = default;
+    hash() = default;
 };
 
 }  // namespace std

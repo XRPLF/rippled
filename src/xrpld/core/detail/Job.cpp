@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/core/Job.h>
+
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/utility/instrumentation.h>
 
 namespace ripple {
 
@@ -73,7 +73,7 @@ Job::doJob()
 }
 
 bool
-Job::operator>(const Job& j) const
+Job::operator>(Job const& j) const
 {
     if (mType < j.mType)
         return true;
@@ -85,7 +85,7 @@ Job::operator>(const Job& j) const
 }
 
 bool
-Job::operator>=(const Job& j) const
+Job::operator>=(Job const& j) const
 {
     if (mType < j.mType)
         return true;
@@ -97,7 +97,7 @@ Job::operator>=(const Job& j) const
 }
 
 bool
-Job::operator<(const Job& j) const
+Job::operator<(Job const& j) const
 {
     if (mType < j.mType)
         return false;
@@ -109,7 +109,7 @@ Job::operator<(const Job& j) const
 }
 
 bool
-Job::operator<=(const Job& j) const
+Job::operator<=(Job const& j) const
 {
     if (mType < j.mType)
         return false;

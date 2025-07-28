@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpl/basics/StringUtilities.h>
+
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -53,7 +53,7 @@ public:
         Account const alice("alice");
 
         // Test without DepositAuth enabled initially.
-        Env env(*this, supported_amendments() - featureDepositAuth);
+        Env env(*this, testable_amendments() - featureDepositAuth);
         env.fund(XRP(10000), noripple(alice));
 
         // Give alice a regular key so she can legally set and clear
@@ -97,6 +97,12 @@ public:
                 {
                     // The asfAllowTrustLineClawback flag can't be cleared.  It
                     // is tested elsewhere.
+                    continue;
+                }
+                if (flag == asfAllowTrustLineLocking)
+                {
+                    // These flags are part of the AllowTokenLocking amendment
+                    // and are tested elsewhere
                     continue;
                 }
 
@@ -351,7 +357,7 @@ public:
         };
 
         doTests(
-            supported_amendments(),
+            testable_amendments(),
             {{1.0, tesSUCCESS, 1.0},
              {1.1, tesSUCCESS, 1.1},
              {2.0, tesSUCCESS, 2.0},

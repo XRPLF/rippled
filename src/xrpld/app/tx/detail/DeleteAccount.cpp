@@ -19,12 +19,14 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/DID.h>
+#include <xrpld/app/tx/detail/DelegateSet.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -33,7 +35,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -57,7 +58,8 @@ DeleteAccount::preflight(PreflightContext const& ctx)
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
 
-    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j);
+        !isTesSuccess(err))
         return err;
 
     return preflight2(ctx);
@@ -180,6 +182,18 @@ removeCredentialFromLedger(
     return credentials::deleteSLE(view, sleDel, j);
 }
 
+TER
+removeDelegateFromLedger(
+    Application& app,
+    ApplyView& view,
+    AccountID const& account,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return DelegateSet::deleteDelegate(view, sleDel, account, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -204,6 +218,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeOracleFromLedger;
         case ltCREDENTIAL:
             return removeCredentialFromLedger;
+        case ltDELEGATE:
+            return removeDelegateFromLedger;
         default:
             return nullptr;
     }
@@ -226,7 +242,8 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
         return tecDST_TAG_NEEDED;
 
     // If credentials are provided - check them anyway
-    if (auto const err = credentials::valid(ctx, account); !isTesSuccess(err))
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, account, ctx.j);
+        !isTesSuccess(err))
         return err;
 
     // if credentials then postpone auth check to doApply, to check for expired
@@ -361,7 +378,8 @@ DeleteAccount::doApply()
     if (ctx_.view().rules().enabled(featureDepositAuth) &&
         ctx_.tx.isFieldPresent(sfCredentialIDs))
     {
-        if (auto err = verifyDepositPreauth(ctx_, account_, dstID, dst);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx, ctx_.view(), account_, dstID, dst, ctx_.journal);
             !isTesSuccess(err))
             return err;
     }

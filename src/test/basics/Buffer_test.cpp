@@ -19,6 +19,7 @@
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <cstdint>
 #include <type_traits>
 
@@ -97,8 +98,7 @@ struct Buffer_test : beast::unit_test::suite
             x = b0;
             BEAST_EXPECT(x == b0);
             BEAST_EXPECT(sane(x));
-#if defined(__clang__) && (!defined(__APPLE__) && (__clang_major__ >= 7)) || \
-    (defined(__APPLE__) && (__apple_build_version__ >= 10010043))
+#if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
 #endif
@@ -110,8 +110,7 @@ struct Buffer_test : beast::unit_test::suite
             BEAST_EXPECT(y == b3);
             BEAST_EXPECT(sane(y));
 
-#if defined(__clang__) && (!defined(__APPLE__) && (__clang_major__ >= 7)) || \
-    (defined(__APPLE__) && (__apple_build_version__ >= 10010043))
+#if defined(__clang__)
 #pragma clang diagnostic pop
 #endif
         }

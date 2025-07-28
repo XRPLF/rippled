@@ -19,11 +19,13 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
@@ -42,7 +44,6 @@ doLogLevel(RPC::JsonContext& context)
             Logs::toString(Logs::fromSeverity(context.app.logs().threshold()));
         std::vector<std::pair<std::string, std::string>> logTable(
             context.app.logs().partition_severities());
-        using stringPair = std::map<std::string, std::string>::value_type;
         for (auto const& [k, v] : logTable)
             lev[k] = v;
 

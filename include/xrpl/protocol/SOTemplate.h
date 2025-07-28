@@ -22,9 +22,9 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
+
 #include <functional>
 #include <initializer_list>
-#include <memory>
 #include <stdexcept>
 
 namespace ripple {

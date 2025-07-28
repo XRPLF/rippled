@@ -16,10 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#ifndef RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
-#define RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
+
+#ifndef RIPPLE_APP_MISC_AMMUTILS_H_INCLUDED
+#define RIPPLE_APP_MISC_AMMUTILS_H_INCLUDED
 
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STAmount.h>
@@ -123,6 +125,17 @@ isOnlyLiquidityProvider(
     Issue const& ammIssue,
     AccountID const& lpAccount);
 
+/** Due to rounding, the LPTokenBalance of the last LP might
+ * not match the LP's trustline balance. If it's within the tolerance,
+ * update LPTokenBalance to match the LP's trustline balance.
+ */
+Expected<bool, TER>
+verifyAndAdjustLPTokenBalance(
+    Sandbox& sb,
+    STAmount const& lpTokens,
+    std::shared_ptr<SLE>& ammSle,
+    AccountID const& account);
+
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
+#endif  // RIPPLE_APP_MISC_AMMUTILS_H_INCLUDED

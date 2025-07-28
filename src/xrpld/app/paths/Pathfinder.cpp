@@ -23,9 +23,9 @@
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/app/paths/detail/PathfinderUtils.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/join.h>
 #include <xrpl/json/to_string.h>
@@ -77,7 +77,7 @@ struct AccountCandidate
     int priority;
     AccountID account;
 
-    static const int highPriority = 10000;
+    static int const highPriority = 10000;
 };
 
 bool
@@ -166,6 +166,7 @@ Pathfinder::Pathfinder(
     std::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
     std::optional<STAmount> const& srcAmount,
+    std::optional<uint256> const& domain,
     Application& app)
     : mSrcAccount(uSrcAccount)
     , mDstAccount(uDstAccount)
@@ -184,6 +185,7 @@ Pathfinder::Pathfinder(
           0,
           true)))
     , convert_all_(convertAllCheck(mDstAmount))
+    , mDomain(domain)
     , mLedger(cache->getLedger())
     , mRLCache(cache)
     , app_(app)
@@ -236,7 +238,8 @@ Pathfinder::findPaths(
     mSource = STPathElement(account, mSrcCurrency, issuer);
     auto issuerString =
         mSrcIssuer ? to_string(*mSrcIssuer) : std::string("none");
-    JLOG(j_.trace()) << "findPaths>" << " mSrcAccount=" << mSrcAccount
+    JLOG(j_.trace()) << "findPaths>"
+                     << " mSrcAccount=" << mSrcAccount
                      << " mDstAccount=" << mDstAccount
                      << " mDstAmount=" << mDstAmount.getFullText()
                      << " mSrcCurrency=" << mSrcCurrency
@@ -371,6 +374,7 @@ Pathfinder::getPathLiquidity(
             mDstAccount,
             mSrcAccount,
             pathSet,
+            mDomain,
             app_.logs(),
             &rcInput);
         // If we can't get even the minimum liquidity requested, we're done.
@@ -391,6 +395,7 @@ Pathfinder::getPathLiquidity(
                 mDstAccount,
                 mSrcAccount,
                 pathSet,
+                mDomain,
                 app_.logs(),
                 &rcInput);
 
@@ -430,6 +435,7 @@ Pathfinder::computePathRanks(
             mDstAccount,
             mSrcAccount,
             STPathSet(),
+            mDomain,
             app_.logs(),
             &rcInput);
 
@@ -582,7 +588,7 @@ Pathfinder::getBestPaths(
     XRPL_ASSERT(
         fullLiquidityPath.empty(),
         "ripple::Pathfinder::getBestPaths : first empty path result");
-    const bool issuerIsSender =
+    bool const issuerIsSender =
         isXRP(mSrcCurrency) || (srcIssuer == mSrcAccount);
 
     std::vector<PathRank> extraPathRanks;
@@ -740,7 +746,7 @@ Pathfinder::getPathsOut(
 
     if (!bFrozen)
     {
-        count = app_.getOrderBookDB().getBookSize(issue);
+        count = app_.getOrderBookDB().getBookSize(issue, mDomain);
 
         if (auto const lines = mRLCache->getRippleLines(account, direction))
         {
@@ -943,7 +949,7 @@ addUniquePath(STPathSet& pathSet, STPath const& path)
 
 void
 Pathfinder::addLink(
-    const STPath& currentPath,   // The path to build from
+    STPath const& currentPath,   // The path to build from
     STPathSet& incompletePaths,  // The set of partial paths we add to
     int addFlags,
     std::function<bool(void)> const& continueCallback)
@@ -1127,7 +1133,8 @@ Pathfinder::addLink(
         {
             // to XRP only
             if (!bOnXRP &&
-                app_.getOrderBookDB().isBookToXRP({uEndCurrency, uEndIssuer}))
+                app_.getOrderBookDB().isBookToXRP(
+                    {uEndCurrency, uEndIssuer}, mDomain))
             {
                 STPathElement pathElement(
                     STPathElement::typeCurrency,
@@ -1141,7 +1148,7 @@ Pathfinder::addLink(
         {
             bool bDestOnly = (addFlags & afOB_LAST) != 0;
             auto books = app_.getOrderBookDB().getBooksByTakerPays(
-                {uEndCurrency, uEndIssuer});
+                {uEndCurrency, uEndIssuer}, mDomain);
             JLOG(j_.trace())
                 << books.size() << " books found from this currency/issuer";
 

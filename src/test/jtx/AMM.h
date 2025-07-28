@@ -25,7 +25,9 @@
 #include <test/jtx/multisign.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>
+
 #include <xrpld/rpc/GRPCHandlers.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -125,7 +127,6 @@ class AMM
     STAmount const asset1_;
     STAmount const asset2_;
     uint256 const ammID_;
-    IOUAmount const initialLPTokens_;
     bool log_;
     bool doClose_;
     // Predict next purchase price
@@ -138,6 +139,7 @@ class AMM
     std::uint32_t const fee_;
     AccountID const ammAccount_;
     Issue const lptIssue_;
+    IOUAmount const initialLPTokens_;
 
 public:
     AMM(Env& env,
@@ -193,6 +195,12 @@ public:
         Issue const& issue1,
         Issue const& issue2,
         std::optional<AccountID> const& account = std::nullopt) const;
+
+    std::tuple<STAmount, STAmount, STAmount>
+    balances(std::optional<AccountID> const& account = std::nullopt) const
+    {
+        return balances(asset1_.get<Issue>(), asset2_.get<Issue>(), account);
+    }
 
     [[nodiscard]] bool
     expectLPTokens(AccountID const& account, IOUAmount const& tokens) const;
@@ -428,6 +436,9 @@ private:
 
     [[nodiscard]] bool
     expectAuctionSlot(auto&& cb) const;
+
+    IOUAmount
+    initialTokens();
 };
 
 namespace amm {

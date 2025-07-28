@@ -17,14 +17,13 @@
 */
 //==============================================================================
 
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -288,7 +287,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     // generate hash
     {
-        const std::string out = Json::FastWriter().write(defs_);
+        std::string const out = Json::FastWriter().write(defs_);
         defsHash_ = ripple::sha512Half(ripple::Slice{out.data(), out.size()});
         defs_[jss::hash] = to_string(defsHash_);
     }
@@ -309,7 +308,7 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    static const detail::ServerDefinitions defs{};
+    static detail::ServerDefinitions const defs{};
     if (defs.hashMatches(hash))
     {
         Json::Value jv = Json::objectValue;

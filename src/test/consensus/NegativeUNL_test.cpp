@@ -18,13 +18,14 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/ledger/View.h>
-#include <xrpl/basics/Log.h>
+
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {
@@ -226,7 +227,7 @@ class NegativeUNL_test : public beast::unit_test::suite
 
         testcase("Create UNLModify Tx and apply to ledgers");
 
-        jtx::Env env(*this, jtx::supported_amendments() | featureNegativeUNL);
+        jtx::Env env(*this, jtx::testable_amendments() | featureNegativeUNL);
         std::vector<PublicKey> publicKeys = createPublicKeys(3);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
@@ -525,7 +526,7 @@ class NegativeUNLNoAmendment_test : public beast::unit_test::suite
     {
         testcase("No negative UNL amendment");
 
-        jtx::Env env(*this, jtx::supported_amendments() - featureNegativeUNL);
+        jtx::Env env(*this, jtx::testable_amendments() - featureNegativeUNL);
         std::vector<PublicKey> publicKeys = createPublicKeys(1);
         // genesis ledger
         auto l = std::make_shared<Ledger>(
@@ -581,7 +582,7 @@ struct NetworkHistory
     };
 
     NetworkHistory(beast::unit_test::suite& suite, Parameter const& p)
-        : env(suite, jtx::supported_amendments() | featureNegativeUNL)
+        : env(suite, jtx::testable_amendments() | featureNegativeUNL)
         , param(p)
         , validations(env.app().getValidations())
     {

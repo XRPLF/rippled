@@ -18,16 +18,18 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
+
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/lexical_cast.hpp>
+
 #include <optional>
 #include <utility>
 
@@ -187,6 +189,7 @@ public:
         {
             Env env(*this);
             env.fund(n, "alice", "bob", gw);
+            env.close();
             env(trust("alice", USD(100)), require(lines("alice", 1)));
         }
 
@@ -197,6 +200,7 @@ public:
             BEAST_EXPECT(env.balance(alice, USD) != 0);
             BEAST_EXPECT(env.balance(alice, USD) == USD(0));
             env.fund(n, alice, gw);
+            env.close();
             BEAST_EXPECT(env.balance(alice) == n);
             BEAST_EXPECT(env.balance(gw) == n);
             env.trust(USD(1000), alice);
@@ -241,6 +245,7 @@ public:
         env.require(balance("alice", none));
         env.require(balance("alice", XRP(none)));
         env.fund(XRP(10000), "alice", gw);
+        env.close();
         env.require(balance("alice", USD(none)));
         env.trust(USD(100), "alice");
         env.require(balance("alice", XRP(10000)));  // fee refunded
@@ -260,7 +265,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, supported_amendments() | fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
         Account const alice("alice", KeyType::ed25519);
         Account const bob("bob", KeyType::secp256k1);
         Account const carol("carol");
@@ -678,6 +683,7 @@ public:
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
         env.fund(XRP(10000), "alice", "bob");
+        env.close();
         env.json(
             pay("alice", "bob", USD(10)),
             path(Account("alice")),
@@ -714,6 +720,8 @@ public:
         Env env(*this);
         Env_ss envs(env);
 
+        auto const baseFee = env.current()->fees().base;
+
         auto const alice = Account("alice");
         env.fund(XRP(10000), alice);
 
@@ -747,12 +755,16 @@ public:
             // Force the factor low enough to fail
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
+
+            auto const expectedErrorString = "Fee of " +
+                std::to_string(baseFee.drops()) +
+                " exceeds the requested tx limit of " +
+                std::to_string(baseFee.drops() / 2);
             envs(
                 noop(alice),
                 fee(none),
                 seq(none),
-                rpc(rpcHIGH_FEE,
-                    "Fee of 10 exceeds the requested tx limit of 5"))(params);
+                rpc(rpcHIGH_FEE, expectedErrorString))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);
@@ -764,7 +776,7 @@ public:
     {
         testcase("Env features");
         using namespace jtx;
-        auto const supported = supported_amendments();
+        auto const supported = testable_amendments();
 
         // this finds a feature that is not in
         // the supported amendments list and tests that it can be
@@ -815,7 +827,7 @@ public:
         }
 
         auto const missingSomeFeatures =
-            supported_amendments() - featureMultiSignReserve - featureFlow;
+            testable_amendments() - featureMultiSignReserve - featureFlow;
         BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
@@ -875,7 +887,7 @@ public:
             // add a feature that is NOT in the supported amendments list
             // along with all supported amendments
             // the unsupported features should be enabled
-            Env env{*this, supported_amendments().set(*neverSupportedFeat)};
+            Env env{*this, testable_amendments().set(*neverSupportedFeat)};
 
             // this app will have all supported amendments and then the
             // one additional never supported feature flag

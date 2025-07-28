@@ -32,7 +32,7 @@ namespace test {
 
 extern std::atomic<bool> envUseIPv4;
 
-inline const char*
+inline char const*
 getEnvLocalhostAddr()
 {
     return envUseIPv4 ? "127.0.0.1" : "::1";
@@ -126,6 +126,11 @@ std::unique_ptr<Config>
 addGrpcConfigWithSecureGateway(
     std::unique_ptr<Config>,
     std::string const& secureGateway);
+
+std::unique_ptr<Config>
+makeConfig(
+    std::map<std::string, std::string> extraTxQ = {},
+    std::map<std::string, std::string> extraVoting = {});
 
 }  // namespace jtx
 }  // namespace test

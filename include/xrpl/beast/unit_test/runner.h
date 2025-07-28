@@ -9,9 +9,10 @@
 #define BEAST_UNIT_TEST_RUNNER_H_INCLUDED
 
 #include <xrpl/beast/unit_test/suite_info.h>
+
 #include <boost/assert.hpp>
+
 #include <mutex>
-#include <ostream>
 #include <string>
 
 namespace beast {

@@ -18,14 +18,17 @@
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
+
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+
 #include <tuple>
 
 namespace ripple {
@@ -128,6 +131,9 @@ public:
                 BEAST_EXPECT(jv.isMember(jss::id) && jv[jss::id] == 5);
             }
             BEAST_EXPECT(jv[jss::result][jss::ledger_index] == 2);
+            BEAST_EXPECT(
+                jv[jss::result][jss::network_id] ==
+                env.app().config().NETWORK_ID);
         }
 
         {
@@ -136,7 +142,8 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 3;
+                return jv[jss::ledger_index] == 3 &&
+                    jv[jss::network_id] == env.app().config().NETWORK_ID;
             }));
         }
 
@@ -146,7 +153,8 @@ public:
 
             // Check stream update
             BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                return jv[jss::ledger_index] == 4;
+                return jv[jss::ledger_index] == 4 &&
+                    jv[jss::network_id] == env.app().config().NETWORK_ID;
             }));
         }
 
@@ -169,6 +177,7 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
+        auto baseFee = env.current()->fees().base.drops();
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -200,9 +209,9 @@ public:
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
                     jv[jss::transaction][jss::DeliverMax]  //
-                    == "10000000010" &&
+                    == std::to_string(10000000000 + baseFee) &&
                     jv[jss::transaction][jss::Fee]  //
-                    == "10" &&
+                    == std::to_string(baseFee) &&
                     jv[jss::transaction][jss::Sequence]  //
                     == 1;
             }));
@@ -225,9 +234,9 @@ public:
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
                     jv[jss::transaction][jss::DeliverMax]  //
-                    == "10000000010" &&
+                    == std::to_string(10000000000 + baseFee) &&
                     jv[jss::transaction][jss::Fee]  //
-                    == "10" &&
+                    == std::to_string(baseFee) &&
                     jv[jss::transaction][jss::Sequence]  //
                     == 2;
             }));
@@ -315,7 +324,10 @@ public:
 
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FEES.reference_fee = 10;
+            return cfg;
+        }));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream{Json::objectValue};
 
@@ -502,6 +514,11 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
+                uint32_t netID = env.app().config().NETWORK_ID;
+                if (!jv.isMember(jss::network_id) ||
+                    jv[jss::network_id] != netID)
+                    return false;
+
                 // Certain fields are only added on a flag ledger.
                 bool const isFlagLedger =
                     (env.closed()->info().seq + 1) % 256 == 0;
@@ -560,6 +577,7 @@ public:
         jv[jss::streams][0u] = "ledger";
         jr = env.rpc("json", "subscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
+        BEAST_EXPECT(jr[jss::network_id] == env.app().config().NETWORK_ID);
 
         jr = env.rpc("json", "unsubscribe", to_string(jv))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
@@ -1294,10 +1312,283 @@ public:
     }
 
     void
+    testSubBookChanges()
+    {
+        testcase("SubBookChanges");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        FeatureBitset const all{
+            jtx::testable_amendments() | featurePermissionedDomains |
+            featureCredentials | featurePermissionedDEX};
+
+        Env env(*this, all);
+        PermissionedDEX permDex(env);
+        auto const alice = permDex.alice;
+        auto const bob = permDex.bob;
+        auto const carol = permDex.carol;
+        auto const domainID = permDex.domainID;
+        auto const gw = permDex.gw;
+        auto const USD = permDex.USD;
+
+        auto wsc = makeWSClient(env.app().config());
+
+        Json::Value streams;
+        streams[jss::streams] = Json::arrayValue;
+        streams[jss::streams][0u] = "book_changes";
+
+        auto jv = wsc->invoke("subscribe", streams);
+        if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            return;
+        env(offer(alice, XRP(10), USD(10)),
+            domain(domainID),
+            txflags(tfHybrid));
+        env.close();
+
+        env(pay(bob, carol, USD(5)),
+            path(~USD),
+            sendmax(XRP(5)),
+            domain(domainID));
+        env.close();
+
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            if (jv[jss::changes].size() != 1)
+                return false;
+
+            auto const jrOffer = jv[jss::changes][0u];
+            return (jv[jss::changes][0u][jss::domain]).asString() ==
+                strHex(domainID) &&
+                jrOffer[jss::currency_a].asString() == "XRP_drops" &&
+                jrOffer[jss::volume_a].asString() == "5000000" &&
+                jrOffer[jss::currency_b].asString() ==
+                "rHUKYAZyUFn8PCZWbPfwHfbVQXTYrYKkHb/USD" &&
+                jrOffer[jss::volume_b].asString() == "5";
+        }));
+    }
+
+    void
+    testNFToken(FeatureBitset features)
+    {
+        // `nftoken_id` is added for `transaction` stream in the `subscribe`
+        // response for NFTokenMint and NFTokenAcceptOffer.
+        //
+        // `nftoken_ids` is added for `transaction` stream in the `subscribe`
+        // response for NFTokenCancelOffer
+        //
+        // `offer_id` is added for `transaction` stream in the `subscribe`
+        // response for NFTokenCreateOffer
+        //
+        // The values of these fields are dependent on the NFTokenID/OfferID
+        // changed in its corresponding transaction. We want to validate each
+        // response to make sure the synethic fields hold the right values.
+
+        testcase("Test synthetic fields from Subscribe response");
+
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const broker{"broker"};
+
+        Env env{*this, features};
+        env.fund(XRP(10000), alice, bob, broker);
+        env.close();
+
+        auto wsc = test::makeWSClient(env.app().config());
+        Json::Value stream;
+        stream[jss::streams] = Json::arrayValue;
+        stream[jss::streams].append("transactions");
+        auto jv = wsc->invoke("subscribe", stream);
+
+        // Verify `nftoken_id` value equals to the NFTokenID that was
+        // changed in the most recent NFTokenMint or NFTokenAcceptOffer
+        // transaction
+        auto verifyNFTokenID = [&](uint256 const& actualNftID) {
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                uint256 nftID;
+                BEAST_EXPECT(
+                    nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
+                return nftID == actualNftID;
+            }));
+        };
+
+        // Verify `nftoken_ids` value equals to the NFTokenIDs that were
+        // changed in the most recent NFTokenCancelOffer transaction
+        auto verifyNFTokenIDsInCancelOffer =
+            [&](std::vector<uint256> actualNftIDs) {
+                BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                    std::vector<uint256> metaIDs;
+                    std::transform(
+                        jv[jss::meta][jss::nftoken_ids].begin(),
+                        jv[jss::meta][jss::nftoken_ids].end(),
+                        std::back_inserter(metaIDs),
+                        [this](Json::Value id) {
+                            uint256 nftID;
+                            BEAST_EXPECT(nftID.parseHex(id.asString()));
+                            return nftID;
+                        });
+                    // Sort both array to prepare for comparison
+                    std::sort(metaIDs.begin(), metaIDs.end());
+                    std::sort(actualNftIDs.begin(), actualNftIDs.end());
+
+                    // Make sure the expect number of NFTs is correct
+                    BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
+
+                    // Check the value of NFT ID in the meta with the
+                    // actual values
+                    for (size_t i = 0; i < metaIDs.size(); ++i)
+                        BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
+                    return true;
+                }));
+            };
+
+        // Verify `offer_id` value equals to the offerID that was
+        // changed in the most recent NFTokenCreateOffer tx
+        auto verifyNFTokenOfferID = [&](uint256 const& offerID) {
+            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+                uint256 metaOfferID;
+                BEAST_EXPECT(metaOfferID.parseHex(
+                    jv[jss::meta][jss::offer_id].asString()));
+                return metaOfferID == offerID;
+            }));
+        };
+
+        // Check new fields in tx meta when for all NFTtransactions
+        {
+            // Alice mints 2 NFTs
+            // Verify the NFTokenIDs are correct in the NFTokenMint tx meta
+            uint256 const nftId1{
+                token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+            verifyNFTokenID(nftId1);
+
+            uint256 const nftId2{
+                token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+            verifyNFTokenID(nftId2);
+
+            // Alice creates one sell offer for each NFT
+            // Verify the offer indexes are correct in the NFTokenCreateOffer tx
+            // meta
+            uint256 const aliceOfferIndex1 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId1, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(aliceOfferIndex1);
+
+            uint256 const aliceOfferIndex2 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId2, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(aliceOfferIndex2);
+
+            // Alice cancels two offers she created
+            // Verify the NFTokenIDs are correct in the NFTokenCancelOffer tx
+            // meta
+            env(token::cancelOffer(
+                alice, {aliceOfferIndex1, aliceOfferIndex2}));
+            env.close();
+            verifyNFTokenIDsInCancelOffer({nftId1, nftId2});
+
+            // Bobs creates a buy offer for nftId1
+            // Verify the offer id is correct in the NFTokenCreateOffer tx meta
+            auto const bobBuyOfferIndex =
+                keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));
+            env.close();
+            verifyNFTokenOfferID(bobBuyOfferIndex);
+
+            // Alice accepts bob's buy offer
+            // Verify the NFTokenID is correct in the NFTokenAcceptOffer tx meta
+            env(token::acceptBuyOffer(alice, bobBuyOfferIndex));
+            env.close();
+            verifyNFTokenID(nftId1);
+        }
+
+        // Check `nftoken_ids` in brokered mode
+        {
+            // Alice mints a NFT
+            uint256 const nftId{
+                token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+            verifyNFTokenID(nftId);
+
+            // Alice creates sell offer and set broker as destination
+            uint256 const offerAliceToBroker =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)),
+                token::destination(broker),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(offerAliceToBroker);
+
+            // Bob creates buy offer
+            uint256 const offerBobToBroker =
+                keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId, drops(1)), token::owner(alice));
+            env.close();
+            verifyNFTokenOfferID(offerBobToBroker);
+
+            // Check NFTokenID meta for NFTokenAcceptOffer in brokered mode
+            env(token::brokerOffers(
+                broker, offerBobToBroker, offerAliceToBroker));
+            env.close();
+            verifyNFTokenID(nftId);
+        }
+
+        // Check if there are no duplicate nft id in Cancel transactions where
+        // multiple offers are cancelled for the same NFT
+        {
+            // Alice mints a NFT
+            uint256 const nftId{
+                token::getNextID(env, alice, 0u, tfTransferable)};
+            env(token::mint(alice, 0u), txflags(tfTransferable));
+            env.close();
+            verifyNFTokenID(nftId);
+
+            // Alice creates 2 sell offers for the same NFT
+            uint256 const aliceOfferIndex1 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(aliceOfferIndex1);
+
+            uint256 const aliceOfferIndex2 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            verifyNFTokenOfferID(aliceOfferIndex2);
+
+            // Make sure the metadata only has 1 nft id, since both offers are
+            // for the same nft
+            env(token::cancelOffer(
+                alice, {aliceOfferIndex1, aliceOfferIndex2}));
+            env.close();
+            verifyNFTokenIDsInCancelOffer({nftId});
+        }
+
+        if (features[featureNFTokenMintOffer])
+        {
+            uint256 const aliceMintWithOfferIndex1 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::mint(alice), token::amount(XRP(0)));
+            env.close();
+            verifyNFTokenOfferID(aliceMintWithOfferIndex1);
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testServer();
@@ -1311,6 +1602,9 @@ public:
         testSubErrors(false);
         testSubByUrl();
         testHistoryTxStream();
+        testSubBookChanges();
+        testNFToken(all);
+        testNFToken(all - featureNFTokenMintOffer);
     }
 };
 

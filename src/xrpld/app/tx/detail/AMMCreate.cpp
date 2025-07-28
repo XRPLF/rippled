@@ -17,16 +17,15 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/AMMCreate.h>
-
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/tx/detail/AMMCreate.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -184,6 +183,14 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
+    if (ctx.view.rules().enabled(featureSingleAssetVault))
+    {
+        if (auto const accountId = pseudoAccountAddress(
+                ctx.view, keylet::amm(amount.issue(), amount2.issue()).key);
+            accountId == beast::zero)
+            return terADDRESS_COLLISION;
+    }
+
     // If featureAMMClawback is enabled, allow AMMCreate without checking
     // if the issuer has clawback enabled
     if (ctx.view.rules().enabled(featureAMMClawback))
@@ -220,64 +227,37 @@ applyCreate(
     auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
 
     // Mitigate same account exists possibility
-    auto const ammAccount = [&]() -> Expected<AccountID, TER> {
-        std::uint16_t constexpr maxAccountAttempts = 256;
-        for (auto p = 0; p < maxAccountAttempts; ++p)
-        {
-            auto const ammAccount =
-                ammAccountID(p, sb.info().parentHash, ammKeylet.key);
-            if (!sb.read(keylet::account(ammAccount)))
-                return ammAccount;
-        }
-        return Unexpected(tecDUPLICATE);
-    }();
-
+    auto const maybeAccount = createPseudoAccount(sb, ammKeylet.key, sfAMMID);
     // AMM account already exists (should not happen)
-    if (!ammAccount)
+    if (!maybeAccount)
     {
-        JLOG(j_.error()) << "AMM Instance: AMM already exists.";
-        return {ammAccount.error(), false};
+        JLOG(j_.error()) << "AMM Instance: failed to create pseudo account.";
+        return {maybeAccount.error(), false};
     }
+    auto& account = *maybeAccount;
+    auto const accountId = (*account)[sfAccount];
 
     // LP Token already exists. (should not happen)
     auto const lptIss = ammLPTIssue(
-        amount.issue().currency, amount2.issue().currency, *ammAccount);
-    if (sb.read(keylet::line(*ammAccount, lptIss)))
+        amount.issue().currency, amount2.issue().currency, accountId);
+    if (sb.read(keylet::line(accountId, lptIss)))
     {
         JLOG(j_.error()) << "AMM Instance: LP Token already exists.";
         return {tecDUPLICATE, false};
     }
 
-    // Create AMM Root Account.
-    auto sleAMMRoot = std::make_shared<SLE>(keylet::account(*ammAccount));
-    sleAMMRoot->setAccountID(sfAccount, *ammAccount);
-    sleAMMRoot->setFieldAmount(sfBalance, STAmount{});
-    std::uint32_t const seqno{
-        ctx_.view().rules().enabled(featureDeletableAccounts)
-            ? ctx_.view().seq()
-            : 1};
-    sleAMMRoot->setFieldU32(sfSequence, seqno);
-    // Ignore reserves requirement, disable the master key, allow default
-    // rippling (AMM LPToken can be used in payments and offer crossing but
-    // not as a token in another AMM), and enable deposit authorization to
-    // prevent payments into AMM.
     // Note, that the trustlines created by AMM have 0 credit limit.
     // This prevents shifting the balance between accounts via AMM,
     // or sending unsolicited LPTokens. This is a desired behavior.
     // A user can only receive LPTokens through affirmative action -
     // either an AMMDeposit, TrustSet, crossing an offer, etc.
-    sleAMMRoot->setFieldU32(
-        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
-    // Link the root account and AMM object
-    sleAMMRoot->setFieldH256(sfAMMID, ammKeylet.key);
-    sb.insert(sleAMMRoot);
 
     // Calculate initial LPT balance.
     auto const lpTokens = ammLPTokens(amount, amount2, lptIss);
 
     // Create ltAMM
     auto ammSle = std::make_shared<SLE>(ammKeylet);
-    ammSle->setAccountID(sfAccount, *ammAccount);
+    ammSle->setAccountID(sfAccount, accountId);
     ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
     auto const& [issue1, issue2] = std::minmax(amount.issue(), amount2.issue());
     ammSle->setFieldIssue(sfAsset, STIssue{sfAsset, issue1});
@@ -287,22 +267,15 @@ applyCreate(
         ctx_.view(), ammSle, account_, lptIss, ctx_.tx[sfTradingFee]);
 
     // Add owner directory to link the root account and AMM object.
-    if (auto const page = sb.dirInsert(
-            keylet::ownerDir(*ammAccount),
-            ammSle->key(),
-            describeOwnerDir(*ammAccount)))
-    {
-        ammSle->setFieldU64(sfOwnerNode, *page);
-    }
-    else
+    if (auto ter = dirLink(sb, accountId, ammSle); ter)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
-        return {tecDIR_FULL, false};
+        return {ter, false};
     }
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto res = accountSend(sb, *ammAccount, account_, lpTokens, ctx_.journal);
+    auto res = accountSend(sb, accountId, account_, lpTokens, ctx_.journal);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -313,7 +286,7 @@ applyCreate(
         if (auto const res = accountSend(
                 sb,
                 account_,
-                *ammAccount,
+                accountId,
                 amount,
                 ctx_.journal,
                 WaiveTransferFee::Yes))
@@ -322,7 +295,7 @@ applyCreate(
         if (!isXRP(amount))
         {
             if (SLE::pointer sleRippleState =
-                    sb.peek(keylet::line(*ammAccount, amount.issue()));
+                    sb.peek(keylet::line(accountId, amount.issue()));
                 !sleRippleState)
                 return tecINTERNAL;
             else
@@ -351,12 +324,12 @@ applyCreate(
         return {res, false};
     }
 
-    JLOG(j_.debug()) << "AMM Instance: success " << *ammAccount << " "
+    JLOG(j_.debug()) << "AMM Instance: success " << accountId << " "
                      << ammKeylet.key << " " << lpTokens << " " << amount << " "
                      << amount2;
     auto addOrderBook =
         [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {
-            Book const book{issueIn, issueOut};
+            Book const book{issueIn, issueOut, std::nullopt};
             auto const dir = keylet::quality(keylet::book(book), uRate);
             if (auto const bookExisted = static_cast<bool>(sb.read(dir));
                 !bookExisted)

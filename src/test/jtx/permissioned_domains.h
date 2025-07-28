@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
-#pragma once
+#ifndef RIPPLE_TEST_JTX_PERMISSIONED_DOMAINS_H_INCLUDED
+#define RIPPLE_TEST_JTX_PERMISSIONED_DOMAINS_H_INCLUDED
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/deposit.h>
 
 namespace ripple {
@@ -69,3 +71,5 @@ getNewDomain(std::shared_ptr<STObject const> const& meta);
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple
+
+#endif

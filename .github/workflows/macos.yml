@@ -1,6 +1,7 @@
 name: macos
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows, instrumentation)
@@ -14,10 +15,23 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+# This part of Conan configuration is specific to this workflow only; we do not want
+# to pollute conan/profiles directory with settings which might not work for others
+env:
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+  CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
+  CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+  CONAN_GLOBAL_CONF: |
+    core.download:parallel={{os.cpu_count()}}
+    core.upload:parallel={{os.cpu_count()}}
+    tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
+    tools.build:verbosity=verbose
+    tools.compilation:verbosity=verbose
 
 jobs:
 
   test:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       matrix:
         platform:
@@ -26,23 +40,22 @@ jobs:
           - Ninja
         configuration:
           - Release
-    runs-on: [self-hosted, macOS]
+    runs-on: [self-hosted, macOS, mac-runner-m1]
     env:
       # The `build` action requires these variables.
       build_dir: .build
       NUM_PROCESSORS: 12
     steps:
       - name: checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: install Conan
         run: |
-          brew install conan@1
-          echo '/opt/homebrew/opt/conan@1/bin' >> $GITHUB_PATH
+          brew install conan
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
       - name: install python
-        run: | 
+        run: |
           if which python > /dev/null 2>&1; then
               echo "Python executable exists"
           else
@@ -69,17 +82,31 @@ jobs:
           nproc --version
           echo -n "nproc returns: "
           nproc
+          system_profiler SPHardwareDataType
+          sysctl -n hw.logicalcpu
+          clang --version
       - name: configure Conan
         run : |
-          conan profile new default --detect || true
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          conan config install conan/profiles/ -tf $(conan config home)/profiles/
+          conan profile show
+      - name: export custom recipes
+        shell: bash
+        run: |
+          conan export --version 1.1.10 external/snappy
+          conan export --version 4.0.3 external/soci
+      - name: add Ripple Conan remote
+        if: env.CONAN_URL != ''
+        shell: bash
+        run: |
+          if conan remote list | grep -q "ripple"; then
+              conan remote remove ripple
+              echo "Removed conan remote ripple"
+          fi
+          conan remote add --index 0 ripple "${CONAN_URL}"
+          echo "Added conan remote ripple at ${CONAN_URL}"
       - name: build dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
-          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
       - name: build
@@ -87,9 +114,12 @@ jobs:
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
-          cmake-args: ${{ matrix.cmake-args }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
           n=$(nproc)
           echo "Using $n test jobs"
-          ${build_dir}/rippled --unittest --unittest-jobs $n
+
+          cd ${build_dir}
+          ./rippled --unittest --unittest-jobs $n
+          ctest -j $n --output-on-failure

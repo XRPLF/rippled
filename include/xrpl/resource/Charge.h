@@ -20,7 +20,6 @@
 #ifndef RIPPLE_RESOURCE_CHARGE_H_INCLUDED
 #define RIPPLE_RESOURCE_CHARGE_H_INCLUDED
 
-#include <ios>
 #include <string>
 
 namespace ripple {
@@ -56,6 +55,9 @@ public:
 
     std::strong_ordering
     operator<=>(Charge const&) const;
+
+    Charge
+    operator*(value_type m) const;
 
 private:
     value_type m_cost;

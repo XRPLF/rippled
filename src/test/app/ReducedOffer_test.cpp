@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/jss.h>
@@ -81,8 +82,8 @@ public:
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV1,
-              supported_amendments() | fixReducedOffersV1})
+             {testable_amendments() - fixReducedOffersV1,
+              testable_amendments() | fixReducedOffersV1})
         {
             Env env{*this, features};
 
@@ -115,7 +116,7 @@ public:
                 STAmount const initialRate = Quality(newOffer).rate();
                 std::uint32_t const bobOfferSeq = env.seq(bob);
                 STAmount const bobInitialBalance = env.balance(bob);
-                STAmount const bobsFee = drops(10);
+                STAmount const bobsFee = env.current()->fees().base;
                 env(offer(bob, newOffer.in, newOffer.out, tfSell),
                     fee(bobsFee));
                 env.close();
@@ -237,8 +238,8 @@ public:
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV1,
-              supported_amendments() | fixReducedOffersV1})
+             {testable_amendments() - fixReducedOffersV1,
+              testable_amendments() | fixReducedOffersV1})
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, features};
@@ -400,8 +401,8 @@ public:
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV1,
-              supported_amendments() | fixReducedOffersV1})
+             {testable_amendments() - fixReducedOffersV1,
+              testable_amendments() | fixReducedOffersV1})
         {
             Env env{*this, features};
 
@@ -508,8 +509,8 @@ public:
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV1,
-              supported_amendments() | fixReducedOffersV1})
+             {testable_amendments() - fixReducedOffersV1,
+              testable_amendments() | fixReducedOffersV1})
         {
             Env env{*this, features};
 
@@ -638,8 +639,8 @@ public:
 
         // Make one test run without fixReducedOffersV2 and one with.
         for (FeatureBitset features :
-             {supported_amendments() - fixReducedOffersV2,
-              supported_amendments() | fixReducedOffersV2})
+             {testable_amendments() - fixReducedOffersV2,
+              testable_amendments() | fixReducedOffersV2})
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, features};

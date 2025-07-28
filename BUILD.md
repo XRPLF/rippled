@@ -167,41 +167,16 @@ It does not explicitly link the C++ standard library,
 which allows you to statically link it with GCC, if you want.
 
    ```
-   # Conan 1.x
-   conan export external/snappy snappy/1.1.10@
    # Conan 2.x
    conan export --version 1.1.10 external/snappy
-   ```
-
-Export our [Conan recipe for RocksDB](./external/rocksdb).
-It does not override paths to dependencies when building with Visual Studio.
-
-   ```
-   # Conan 1.x
-   conan export external/rocksdb rocksdb/6.29.5@
-   # Conan 2.x
-   conan export --version 6.29.5 external/rocksdb
    ```
 
 Export our [Conan recipe for SOCI](./external/soci).
 It patches their CMake to correctly import its dependencies.
 
    ```
-   # Conan 1.x
-   conan export external/soci soci/4.0.3@
    # Conan 2.x
    conan export --version 4.0.3 external/soci
-   ```
-
-Export our [Conan recipe for NuDB](./external/nudb).
-It fixes some source files to add missing `#include`s.
-
-
-   ```
-   # Conan 1.x
-   conan export external/nudb nudb/2.0.8@
-   # Conan 2.x
-   conan export --version 2.0.8 external/nudb
    ```
 
 ### Build and Test
@@ -222,12 +197,14 @@ It fixes some source files to add missing `#include`s.
    the `install-folder` or `-if` option to every `conan install` command
    in the next step.
 
-2. Generate CMake files for every configuration you want to build. 
+2. Use conan to generate CMake files for every configuration you want to build:
 
     ```
     conan install .. --output-folder . --build missing --settings build_type=Release
     conan install .. --output-folder . --build missing --settings build_type=Debug
     ```
+
+    To build Debug, in the next step, be sure to set `-DCMAKE_BUILD_TYPE=Debug`
 
     For a single-configuration generator, e.g. `Unix Makefiles` or `Ninja`,
     you only need to run this command once.
@@ -258,13 +235,16 @@ It fixes some source files to add missing `#include`s.
 
     Single-config generators:
 
+    Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
+    and make sure it matches the one of the `build_type` settings
+    you chose in the previous step.
+
+    For example, to build Debug, in the next command, replace "Release" with "Debug"
+
     ```
     cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..
     ```
 
-    Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
-    and make sure it matches the `build_type` setting you chose in the previous
-    step.
 
     Multi-config generators:
 
@@ -274,7 +254,7 @@ It fixes some source files to add missing `#include`s.
 
     **Note:** You can pass build options for `rippled` in this step.
 
-4. Build `rippled`.
+5. Build `rippled`.
 
    For a single-configuration generator, it will build whatever configuration
    you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator,
@@ -283,7 +263,7 @@ It fixes some source files to add missing `#include`s.
    Single-config generators:
 
    ```
-   cmake --build .
+   cmake --build . -j $(nproc)
    ```
 
    Multi-config generators:
@@ -293,7 +273,7 @@ It fixes some source files to add missing `#include`s.
    cmake --build . --config Debug
    ```
 
-5. Test rippled.
+6. Test rippled.
 
    Single-config generators:
 
@@ -390,65 +370,29 @@ and can be helpful for detecting `#include` omissions.
 
 ## Troubleshooting
 
-
 ### Conan
 
 After any updates or changes to dependencies, you may need to do the following:
 
 1. Remove your build directory.
-2. Remove the Conan cache:
-   ```
-   rm -rf ~/.conan/data
-   ```
-4. Re-run [conan install](#build-and-test).
+2. Remove the Conan cache: `conan remove "*" -c`
+3. Re-run [conan install](#build-and-test).
 
+### 'protobuf/port_def.inc' file not found
 
-### no std::result_of
-
-If your compiler version is recent enough to have removed `std::result_of` as
-part of C++20, e.g. Apple Clang 15.0, then you might need to add a preprocessor
-definition to your build.
+If `cmake --build .` results in an error due to a missing a protobuf file, then you might have generated CMake files for a different `build_type` than the `CMAKE_BUILD_TYPE` you passed to conan.
 
 ```
-conan profile update 'options.boost:extra_b2_flags="define=BOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'conf.tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
+/rippled/.build/pb-xrpl.libpb/xrpl/proto/ripple.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
+   10 | #include <google/protobuf/port_def.inc>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
 ```
 
+For example, if you want to build Debug:
 
-### call to 'async_teardown' is ambiguous
-
-If you are compiling with an early version of Clang 16, then you might hit
-a [regression][6] when compiling C++20 that manifests as an [error in a Boost
-header][7]. You can workaround it by adding this preprocessor definition:
-
-```
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-```
-
-
-### recompile with -fPIC
-
-If you get a linker error suggesting that you recompile Boost with
-position-independent code, such as:
-
-```
-/usr/bin/ld.gold: error: /home/username/.conan/data/boost/1.77.0/_/_/package/.../lib/libboost_container.a(alloc_lib.o):
-  requires unsupported dynamic reloc 11; recompile with -fPIC
-```
-
-Conan most likely downloaded a bad binary distribution of the dependency.
-This seems to be a [bug][1] in Conan just for Boost 1.77.0 compiled with GCC
-for Linux. The solution is to build the dependency locally by passing
-`--build boost` when calling `conan install`.
-
-```
-conan install --build boost ...
-```
-
+1. For conan install, pass `--settings build_type=Debug`
+2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
 
 ## Add a Dependency
 

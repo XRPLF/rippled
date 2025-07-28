@@ -20,7 +20,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/ledger/ReadView.h>
@@ -28,7 +27,7 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpl/json/json_reader.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
@@ -36,8 +35,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-
-#include <grpcpp/grpcpp.h>
 
 namespace ripple {
 
@@ -351,7 +348,7 @@ populateJsonResponse(
                             txnMeta->getJson(JsonOptions::include_date);
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
-                        insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
+                        RPC::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                         RPC::insertMPTokenIssuanceID(
                             jvObj[jss::meta], sttx, *txnMeta);
                     }

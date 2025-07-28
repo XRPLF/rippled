@@ -18,11 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/ledger/View.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test.h>
 
@@ -230,7 +229,6 @@ class RCLValidations_test : public beast::unit_test::suite
         // support for a ledger hash which is already in the trie.
 
         using Seq = RCLValidatedLedger::Seq;
-        using ID = RCLValidatedLedger::ID;
 
         // Max known ancestors for each ledger
         Seq const maxAncestors = 256;

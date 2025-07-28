@@ -16,11 +16,14 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <test/csf/ledgers.h>
+
 #include <xrpld/consensus/LedgerTrie.h>
+
 #include <xrpl/beast/unit_test.h>
+
 #include <random>
-#include <unordered_map>
 
 namespace ripple {
 namespace test {
@@ -310,7 +313,6 @@ class LedgerTrie_test : public beast::unit_test::suite
     testSupport()
     {
         using namespace csf;
-        using Seq = Ledger::Seq;
 
         LedgerTrie<Ledger> t;
         LedgerHistoryHelper h;
@@ -593,7 +595,6 @@ class LedgerTrie_test : public beast::unit_test::suite
     testRootRelated()
     {
         using namespace csf;
-        using Seq = Ledger::Seq;
         // Since the root is a special node that breaks the no-single child
         // invariant, do some tests that exercise it.
 

@@ -23,10 +23,11 @@
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+
 #include <boost/operators.hpp>
+
 #include <cstdint>
 #include <string>
-#include <utility>
 
 namespace ripple {
 
@@ -97,6 +98,12 @@ public:
 
     static IOUAmount
     minPositiveAmount();
+
+    friend std::ostream&
+    operator<<(std::ostream& os, IOUAmount const& x)
+    {
+        return os << to_string(x);
+    }
 };
 
 inline IOUAmount::IOUAmount(beast::Zero)

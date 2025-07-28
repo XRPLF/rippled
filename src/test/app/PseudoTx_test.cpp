@@ -16,9 +16,11 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STAccount.h>
+
 #include <string>
 #include <vector>
 
@@ -113,7 +115,7 @@ struct PseudoTx_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testPrevented(all - featureXRPFees);

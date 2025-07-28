@@ -10,7 +10,6 @@
 #include <charconv>
 #include <exception>
 #include <optional>
-#include <string>
 
 namespace Json {
 struct JsonMissingKeyError : std::exception
@@ -20,7 +19,7 @@ struct JsonMissingKeyError : std::exception
     JsonMissingKeyError(Json::StaticString const& k) : key{k.c_str()}
     {
     }
-    const char*
+    char const*
     what() const noexcept override
     {
         if (msg.empty())
@@ -40,7 +39,7 @@ struct JsonTypeMismatchError : std::exception
         : key{k.c_str()}, expectedType{std::move(et)}
     {
     }
-    const char*
+    char const*
     what() const noexcept override
     {
         if (msg.empty())

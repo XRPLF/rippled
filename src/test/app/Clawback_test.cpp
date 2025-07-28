@@ -19,12 +19,8 @@
 
 #include <test/jtx.h>
 #include <test/jtx/trust.h>
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpl/basics/random.h>
-#include <xrpl/json/to_string.h>
+
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/jss.h>
-#include <initializer_list>
 
 namespace ripple {
 
@@ -953,7 +949,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
 
         testWithFeats(all - featureMPTokensV1);
         testWithFeats(all);

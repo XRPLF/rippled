@@ -22,14 +22,15 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/PeerReservationTable.h>
-#include <xrpld/shamap/FullBelowCache.h>
 #include <xrpld/shamap/TreeNodeCache.h>
+
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/protocol/Protocol.h>
+
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
-#include <memory>
+
 #include <mutex>
 
 namespace ripple {
@@ -54,6 +55,8 @@ template <
     class Key,
     class T,
     bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
     class Hash,
     class KeyEqual,
     class Mutex>
@@ -138,7 +141,7 @@ public:
     virtual void
     run() = 0;
     virtual void
-    signalStop(std::string msg = "") = 0;
+    signalStop(std::string msg) = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
@@ -270,7 +273,7 @@ public:
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
 
-    virtual const std::optional<uint256>&
+    virtual std::optional<uint256> const&
     trapTxID() const = 0;
 };
 

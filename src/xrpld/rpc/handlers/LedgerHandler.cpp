@@ -23,7 +23,7 @@
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/handlers/LedgerHandler.h>
-#include <xrpl/json/Object.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -54,10 +54,6 @@ LedgerHandler::check()
     bool const binary = params[jss::binary].asBool();
     bool const owner_funds = params[jss::owner_funds].asBool();
     bool const queue = params[jss::queue].asBool();
-    auto type = chooseLedgerEntryType(params);
-    if (type.first)
-        return type.first;
-    type_ = type.second;
 
     options_ = (full ? LedgerFill::full : 0) |
         (expand ? LedgerFill::expand : 0) |

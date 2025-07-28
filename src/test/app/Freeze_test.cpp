@@ -16,8 +16,10 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
+
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
@@ -959,24 +961,12 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 wants to buy, must fail
-            if (features[featureFlowCross])
-            {
-                env(offer(A1, USD(1), XRP(2)),
-                    txflags(tfFillOrKill),
-                    ter(tecKILLED));
-                env.close();
-                env.require(
-                    balance(A1, USD(1002)),
-                    balance(A2, USD(997)),
-                    offers(A1, 0));
-            }
-            else
-            {
-                // The transaction that should be here would succeed.
-                // I don't want to adjust balances in following tests. Flow
-                // cross feature flag is not relevant to this particular test
-                // case so we're not missing out some corner cases checks.
-            }
+            env(offer(A1, USD(1), XRP(2)),
+                txflags(tfFillOrKill),
+                ter(tecKILLED));
+            env.close();
+            env.require(
+                balance(A1, USD(1002)), balance(A2, USD(997)), offers(A1, 0));
 
             // test: A1 can create passive sell offer
             env(offer(A1, XRP(2), USD(1)), txflags(tfPassive));
@@ -1883,6 +1873,31 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
         }
 
+        // Testing A1 nft buy offer when A2 deep frozen by issuer
+        if (features[featureDeepFreeze] &&
+            features[fixEnforceNFTokenTrustlineV2])
+        {
+            env(trust(G1, A2["USD"](0), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            uint256 const nftID{token::getNextID(env, A2, 0u, tfTransferable)};
+            env(token::mint(A2, 0), txflags(tfTransferable));
+            env.close();
+
+            auto const buyIdx = keylet::nftoffer(A1, env.seq(A1)).key;
+            env(token::createOffer(A1, nftID, USD(10)), token::owner(A2));
+            env.close();
+
+            env(token::acceptBuyOffer(A2, buyIdx), ter(tecFROZEN));
+            env.close();
+
+            env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+
+            env(token::acceptBuyOffer(A2, buyIdx));
+            env.close();
+        }
+
         // Testing A2 nft offer sell when A2 frozen by currency holder
         {
             auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
@@ -1940,6 +1955,68 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             env(trust(A2, limit, tfClearFreeze | tfClearDeepFreeze));
+            env.close();
+        }
+
+        // Testing brokered offer acceptance
+        if (features[featureDeepFreeze] &&
+            features[fixEnforceNFTokenTrustlineV2])
+        {
+            Account broker{"broker"};
+            env.fund(XRP(10000), broker);
+            env.close();
+            env(trust(G1, broker["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            uint256 const nftID{token::getNextID(env, A2, 0u, tfTransferable)};
+            env(token::mint(A2, 0), txflags(tfTransferable));
+            env.close();
+
+            uint256 const sellIdx = keylet::nftoffer(A2, env.seq(A2)).key;
+            env(token::createOffer(A2, nftID, USD(10)), txflags(tfSellNFToken));
+            env.close();
+            auto const buyIdx = keylet::nftoffer(A1, env.seq(A1)).key;
+            env(token::createOffer(A1, nftID, USD(11)), token::owner(A2));
+            env.close();
+
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::brokerFee(USD(1)),
+                ter(tecFROZEN));
+            env.close();
+        }
+
+        // Testing transfer fee
+        if (features[featureDeepFreeze] &&
+            features[fixEnforceNFTokenTrustlineV2])
+        {
+            Account minter{"minter"};
+            env.fund(XRP(10000), minter);
+            env.close();
+            env(trust(G1, minter["USD"](1000)));
+            env.close();
+
+            uint256 const nftID{
+                token::getNextID(env, minter, 0u, tfTransferable, 1u)};
+            env(token::mint(minter, 0),
+                token::xferFee(1u),
+                txflags(tfTransferable));
+            env.close();
+
+            uint256 const minterSellIdx =
+                keylet::nftoffer(minter, env.seq(minter)).key;
+            env(token::createOffer(minter, nftID, drops(1)),
+                txflags(tfSellNFToken));
+            env.close();
+            env(token::acceptSellOffer(A2, minterSellIdx));
+            env.close();
+
+            uint256 const sellIdx = keylet::nftoffer(A2, env.seq(A2)).key;
+            env(token::createOffer(A2, nftID, USD(100)),
+                txflags(tfSellNFToken));
+            env.close();
+            env(trust(G1, minter["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+            env(token::acceptSellOffer(A1, sellIdx), ter(tecFROZEN));
             env.close();
         }
     }
@@ -2017,9 +2094,14 @@ public:
             testNFTOffersWhenFreeze(features);
         };
         using namespace test::jtx;
-        auto const sa = supported_amendments();
-        testAll(sa - featureFlowCross - featureDeepFreeze);
-        testAll(sa - featureFlowCross);
+        auto const sa = testable_amendments();
+        testAll(
+            sa - featureDeepFreeze - featurePermissionedDEX -
+            fixEnforceNFTokenTrustlineV2);
+        testAll(sa - featurePermissionedDEX - fixEnforceNFTokenTrustlineV2);
+        testAll(sa - featureDeepFreeze - featurePermissionedDEX);
+        testAll(sa - featurePermissionedDEX);
+        testAll(sa - fixEnforceNFTokenTrustlineV2);
         testAll(sa - featureDeepFreeze);
         testAll(sa);
     }

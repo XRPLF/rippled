@@ -17,8 +17,16 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <string>
+#include <utility>
 
 namespace ripple {
 
@@ -63,9 +71,9 @@ STBlob::add(Serializer& s) const
 }
 
 bool
-STBlob::isEquivalent(const STBase& t) const
+STBlob::isEquivalent(STBase const& t) const
 {
-    const STBlob* v = dynamic_cast<const STBlob*>(&t);
+    STBlob const* v = dynamic_cast<STBlob const*>(&t);
     return v && (value_ == v->value_);
 }
 
