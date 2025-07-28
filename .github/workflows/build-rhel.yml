@@ -78,7 +78,7 @@ env:
             "release": "9.6",
             "compiler_name": "clang",
             "compiler_version": "any"
-        },
+        }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
