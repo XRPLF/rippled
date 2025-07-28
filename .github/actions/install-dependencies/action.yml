@@ -34,4 +34,4 @@ runs:
           ..
     - name: Upload Conan dependencies
       shell: bash
-      run: conan upload '*' --confirm --check --remote ${{ inputs.conan_remote_name }}
+      run: conan upload '*' --confirm --remote ${{ inputs.conan_remote_name }}
