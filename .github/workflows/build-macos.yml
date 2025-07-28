@@ -59,8 +59,8 @@ env:
 #    ]
 #  STRATEGY_MATRIX_CMAKE_ARGS: >-
 #    [
-#      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=OFF",
-#      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=ON"
+#      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Dunity=OFF",
+#      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Dunity=ON"
 #    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
@@ -74,7 +74,7 @@ env:
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
-      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DUnity=ON"
+      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Dunity=ON"
     ]
 
 jobs:

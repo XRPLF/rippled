@@ -110,8 +110,8 @@ env:
 #    ]
 #  STRATEGY_MATRIX_CMAKE_ARGS: >-
 #    [
-#      "-DUnity=OFF",
-#      "-DUnity=ON"
+#      "-Dunity=OFF",
+#      "-Dunity=ON"
 #    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
@@ -142,7 +142,7 @@ env:
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
-      "-DUnity=ON"
+      "-Dunity=ON"
     ]
 
 jobs:
