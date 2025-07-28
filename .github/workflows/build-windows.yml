@@ -49,7 +49,7 @@ env:
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
-        "runner": "windows-latest"
+        "runner": ["self-hosted", "Windows", "devbox"]
       }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-

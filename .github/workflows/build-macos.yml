@@ -49,7 +49,7 @@ env:
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
-        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
+        "runner": ["self-hosted", "macOS", "ARM64", "devbox"]
       }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-

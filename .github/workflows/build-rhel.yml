@@ -52,11 +52,11 @@ env:
     [
       {
           "platform": "linux/amd64",
-          "runner": ["self-hosted", "Linux", "X64"]
+          "runner": ["self-hosted", "Linux", "X64", "devbox"]
       },
       {
           "platform": "linux/arm64",
-          "runner": ["self-hosted", "Linux", "ARM64"]
+          "runner": ["self-hosted", "Linux", "ARM64", "devbox"]
       }
     ]
   STRATEGY_MATRIX_OS: >-
