@@ -68,7 +68,9 @@ target_link_libraries(xrpl.imports.main
     wamr::wamr
 )
 
-if (WIN32)
+if (is_gcc)
+  target_link_libraries(xrpl.imports.main INTERFACE bsd)
+elseif (WIN32)
   target_link_libraries(xrpl.imports.main INTERFACE ntdll)
 endif()
 
