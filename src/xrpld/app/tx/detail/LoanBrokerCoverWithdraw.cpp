@@ -63,10 +63,20 @@ LoanBrokerCoverWithdraw::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination];
-        destination && *destination == beast::zero)
+        destination.has_value())
+    {
+        if (*destination == beast::zero)
+        {
+            JLOG(ctx.j.debug())
+                << "LoanBrokerCoverWithdraw: zero/empty destination account.";
+            return temMALFORMED;
+        }
+    }
+    else if (ctx.tx.isFieldPresent(sfDestinationTag))
     {
         JLOG(ctx.j.debug())
-            << "LoanBrokerCoverWithdraw: zero/empty destination account.";
+            << "LoanBrokerCoverWithdraw: sfDestinationTag is set but "
+               "sfDestination is not";
         return temMALFORMED;
     }
 

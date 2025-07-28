@@ -27,6 +27,7 @@
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
+#include <test/jtx/tag.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
@@ -399,6 +400,17 @@ class LoanBroker_test : public beast::unit_test::suite
                     destination(bystander),
                     ter(expected));
             }
+
+            // Can not withdraw to the zero address
+            env(coverWithdraw(alice, keylet.key, vault.asset(1)),
+                destination(AccountID{}),
+                ter(temMALFORMED));
+
+            // If a destination tag is specified, a destination must be
+            // specified, too
+            env(coverWithdraw(alice, keylet.key, vault.asset(1)),
+                dtag(123),
+                ter(temMALFORMED));
             verifyCoverAmount(10);
 
             // Withdraw some of the cover amount
@@ -413,8 +425,16 @@ class LoanBroker_test : public beast::unit_test::suite
 
             // Withdraw some more. Send it to Evan. Very generous, considering
             // how much trouble he's been.
-            env(coverWithdraw(alice, keylet.key, vault.asset(2)),
+            env(coverWithdraw(alice, keylet.key, vault.asset(1)),
                 destination(evan));
+            env.close();
+            verifyCoverAmount(7);
+
+            // Withdraw some more. Send it to Evan. Very generous, considering
+            // how much trouble he's been.
+            env(coverWithdraw(alice, keylet.key, vault.asset(1)),
+                destination(evan),
+                dtag(3));
             env.close();
             verifyCoverAmount(6);
 
