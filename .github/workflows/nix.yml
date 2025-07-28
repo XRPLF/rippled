@@ -253,6 +253,7 @@ jobs:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
+          exit 1
           mkdir -p ${CONAN_HOME}
           tar -xzf conan.tar.gz -C ${CONAN_HOME}
       - name: check environment
