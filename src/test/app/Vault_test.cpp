@@ -2535,6 +2535,7 @@ class Vault_test : public beast::unit_test::suite
             // transfer fees ignored on withdraw
             BEAST_EXPECT(env.balance(owner, issue) == asset(120));
             BEAST_EXPECT(env.balance(vaultAccount(keylet), issue) == asset(30));
+            BEAST_EXPECT(env.balance(charlie, issue) == asset(0));
 
             {
                 auto tx = vault.withdraw(
