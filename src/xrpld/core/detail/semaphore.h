@@ -28,8 +28,18 @@
  *     * GCC PR 104928: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104928
  *     * LLVM PR 79265: https://github.com/llvm/llvm-project/pull/79265
  *
- * Once the minimum compiler version is updated to GCC 13.3 or Clang 17, we can
- * remove this file.
+ * GCC:
+ * According to GCC Bugzilla PR104928
+ * (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104928#c15), the fix is
+ * scheduled for inclusion in GCC 16.0 (see comment #15, Target
+ * Milestone: 16.0). It is not included in GCC 14.x or earlier, and there is no
+ * indication that it will be backported to GCC 13.x or 14.x branches.
+ *
+ * Clang:
+ * The fix for is included in Clang 19.1.0+
+ *
+ * Once the minimum compiler version is updated to > GCC 16.0 or Clang 19.1.0,
+ * we can remove this file.
  *
  * WARNING: Avoid using std::counting_semaphore until the minimum compiler
  * version is updated.
