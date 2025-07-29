@@ -3058,11 +3058,11 @@ checkLPTokenAuthorization(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (TER const& res =
-            requireAuth(view, (*sleAmm)[sfAsset], acct, AuthType::StrongAuth);
+            requireAuth(view, (*sleAmm)[sfAsset], acct, AuthType::Legacy);
         !isTesSuccess(res))
         return res;
     if (TER const& res =
-            requireAuth(view, (*sleAmm)[sfAsset2], acct, AuthType::StrongAuth);
+            requireAuth(view, (*sleAmm)[sfAsset2], acct, AuthType::Legacy);
         !isTesSuccess(res))
         return res;
 
