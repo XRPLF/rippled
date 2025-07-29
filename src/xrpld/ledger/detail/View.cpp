@@ -546,8 +546,8 @@ accountHolds(
         if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
             view.rules().enabled(featureSingleAssetVault))
         {
-            if (auto const err = requireAuth(
-                    view, mptIssue, account, MPTAuthType::StrongAuth);
+            if (auto const err =
+                    requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
@@ -2342,15 +2342,27 @@ transferXRP(
 }
 
 TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
+requireAuth(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& account,
+    AuthType authType)
 {
     if (isXRP(issue) || issue.account == account)
         return tesSUCCESS;
+
+    auto const trustLine =
+        view.read(keylet::line(account, issue.account, issue.currency));
+    // If account has no line, and this is a strong check, fail
+    if (!trustLine && authType == AuthType::StrongAuth)
+        return tecNO_LINE;
+
+    // If this is a weak or legacy check, or if the account has a line, fail if
+    // auth is required and not set on the line
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
-        if (auto const trustLine =
-                view.read(keylet::line(account, issue.account, issue.currency)))
+        if (trustLine)
             return ((*trustLine)[sfFlags] &
                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
                 ? tesSUCCESS
@@ -2366,7 +2378,7 @@ requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account,
-    MPTAuthType authType,
+    AuthType authType,
     int depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
@@ -2401,7 +2413,7 @@ requireAuth(
             if (auto const err = std::visit(
                     [&]<ValidIssueType TIss>(TIss const& issue) {
                         if constexpr (std::is_same_v<TIss, Issue>)
-                            return requireAuth(view, issue, account);
+                            return requireAuth(view, issue, account, authType);
                         else
                             return requireAuth(
                                 view, issue, account, authType, depth + 1);
@@ -2416,7 +2428,8 @@ requireAuth(
     auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
-    if (!sleToken && authType == MPTAuthType::StrongAuth)
+    if (!sleToken &&
+        (authType == AuthType::StrongAuth || authType == AuthType::Legacy))
         return tecNO_AUTH;
 
     // Note, this check is not amendment-gated because DomainID will be always
@@ -2937,7 +2950,7 @@ rippleUnlockEscrowMPT(
             JLOG(j.error())
                 << "rippleUnlockEscrowMPT: MPToken not found for " << receiver;
             return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
-        }  // LCOV_EXCL_STOP
+        }                                // LCOV_EXCL_STOP
 
         auto current = sle->getFieldU64(sfMPTAmount);
         auto delta = amount.mpt().value();
@@ -3044,12 +3057,12 @@ checkLPTokenAuthorization(
     if (!sleAmm)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (TER const& res = requireAuth(
-            view, (*sleAmm)[sfAsset], acct, MPTAuthType::StrongAuth);
+    if (TER const& res =
+            requireAuth(view, (*sleAmm)[sfAsset], acct, AuthType::StrongAuth);
         !isTesSuccess(res))
         return res;
-    if (TER const& res = requireAuth(
-            view, (*sleAmm)[sfAsset2], acct, MPTAuthType::StrongAuth);
+    if (TER const& res =
+            requireAuth(view, (*sleAmm)[sfAsset2], acct, AuthType::StrongAuth);
         !isTesSuccess(res))
         return res;
 
