@@ -27,11 +27,29 @@ class WasmHostFunctionsImpl : public HostFunctions
 {
     ApplyContext& ctx;
     Keylet leKey;
+    std::shared_ptr<SLE const> currentLedgerObj = nullptr;
+    bool isLedgerObjCached = false;
 
     static int constexpr MAX_CACHE = 256;
     std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
 
     void const* rt_ = nullptr;
+
+    Expected<std::shared_ptr<SLE const>, HostFunctionError>
+    getCurrentLedgerObj()
+    {
+        if (!isLedgerObjCached)
+        {
+            isLedgerObjCached = true;
+            currentLedgerObj = ctx.view().read(leKey);
+        }
+        if (currentLedgerObj)
+            return currentLedgerObj;
+        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    normalizeCacheIndex(int32_t cacheIdx);
 
 public:
     WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
