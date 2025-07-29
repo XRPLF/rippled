@@ -43,7 +43,7 @@ runs:
         cd ${build_dir}
         conan install \
           --output-folder . \
-          --build missing \
+          --build '*' \
           --options:host "&:tests=True" \
           --options:host "&:xrpld=True" \
           --settings:all build_type=${{ inputs.configuration }} \
