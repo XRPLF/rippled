@@ -304,8 +304,8 @@ public:
 
         // Make sure fixInnerObjTemplate2 doesn't break amendments.
         for (FeatureBitset const& features :
-             {supported_amendments() - fixInnerObjTemplate2,
-              supported_amendments() | fixInnerObjTemplate2})
+             {testable_amendments() - fixInnerObjTemplate2,
+              testable_amendments() | fixInnerObjTemplate2})
         {
             using namespace std::chrono;
             Env env{*this, envconfig(validator, ""), features};

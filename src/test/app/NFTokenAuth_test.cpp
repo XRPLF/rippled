@@ -599,7 +599,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const all{testable_amendments()};
 
         static std::array const features = {
             all - fixEnforceNFTokenTrustlineV2, all};

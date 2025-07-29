@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <test/jtx/permissioned_domains.h>
+#include <test/jtx.h>
 
 namespace ripple {
 namespace test {

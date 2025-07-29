@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <test/jtx/permissioned_dex.h>
+#include <test/jtx.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>

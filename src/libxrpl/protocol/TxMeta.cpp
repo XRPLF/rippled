@@ -189,6 +189,18 @@ TxMeta::getAffectedAccounts() const
                                 list.insert(issuer);
                         }
                     }
+                    else if (field.getFName() == sfMPTokenIssuanceID)
+                    {
+                        auto mptID =
+                            dynamic_cast<STBitString<192> const*>(&field);
+                        if (mptID != nullptr)
+                        {
+                            auto issuer = MPTIssue(mptID->value()).getIssuer();
+
+                            if (issuer.isNonZero())
+                                list.insert(issuer);
+                        }
+                    }
                 }
             }
         }

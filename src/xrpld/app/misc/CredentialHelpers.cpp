@@ -120,15 +120,15 @@ deleteSLE(
 }
 
 NotTEC
-checkFields(PreflightContext const& ctx)
+checkFields(STTx const& tx, beast::Journal j)
 {
-    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
+    if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
-    auto const& credentials = ctx.tx.getFieldV256(sfCredentialIDs);
+    auto const& credentials = tx.getFieldV256(sfCredentialIDs);
     if (credentials.empty() || (credentials.size() > maxCredentialsArraySize))
     {
-        JLOG(ctx.j.trace())
+        JLOG(j.trace())
             << "Malformed transaction: Credentials array size is invalid: "
             << credentials.size();
         return temMALFORMED;
@@ -140,7 +140,7 @@ checkFields(PreflightContext const& ctx)
         auto [it, ins] = duplicates.insert(cred);
         if (!ins)
         {
-            JLOG(ctx.j.trace())
+            JLOG(j.trace())
                 << "Malformed transaction: duplicates in credentials.";
             return temMALFORMED;
         }
@@ -150,24 +150,28 @@ checkFields(PreflightContext const& ctx)
 }
 
 TER
-valid(PreclaimContext const& ctx, AccountID const& src)
+valid(
+    STTx const& tx,
+    ReadView const& view,
+    AccountID const& src,
+    beast::Journal j)
 {
-    if (!ctx.tx.isFieldPresent(sfCredentialIDs))
+    if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
-    auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));
+    auto const& credIDs(tx.getFieldV256(sfCredentialIDs));
     for (auto const& h : credIDs)
     {
-        auto const sleCred = ctx.view.read(keylet::credential(h));
+        auto const sleCred = view.read(keylet::credential(h));
         if (!sleCred)
         {
-            JLOG(ctx.j.trace()) << "Credential doesn't exist. Cred: " << h;
+            JLOG(j.trace()) << "Credential doesn't exist. Cred: " << h;
             return tecBAD_CREDENTIALS;
         }
 
         if (sleCred->getAccountID(sfSubject) != src)
         {
-            JLOG(ctx.j.trace())
+            JLOG(j.trace())
                 << "Credential doesn't belong to the source account. Cred: "
                 << h;
             return tecBAD_CREDENTIALS;
@@ -175,7 +179,7 @@ valid(PreclaimContext const& ctx, AccountID const& src)
 
         if (!(sleCred->getFlags() & lsfAccepted))
         {
-            JLOG(ctx.j.trace()) << "Credential isn't accepted. Cred: " << h;
+            JLOG(j.trace()) << "Credential isn't accepted. Cred: " << h;
             return tecBAD_CREDENTIALS;
         }
 
@@ -352,10 +356,12 @@ verifyValidDomain(
 
 TER
 verifyDepositPreauth(
-    ApplyContext& ctx,
+    STTx const& tx,
+    ApplyView& view,
     AccountID const& src,
     AccountID const& dst,
-    std::shared_ptr<SLE> const& sleDst)
+    std::shared_ptr<SLE> const& sleDst,
+    beast::Journal j)
 {
     // If depositPreauth is enabled, then an account that requires
     // authorization has at least two ways to get a payment in:
@@ -363,24 +369,21 @@ verifyDepositPreauth(
     //  2. If src is deposit preauthorized by dst (either by account or by
     //  credentials).
 
-    bool const credentialsPresent = ctx.tx.isFieldPresent(sfCredentialIDs);
+    bool const credentialsPresent = tx.isFieldPresent(sfCredentialIDs);
 
     if (credentialsPresent &&
-        credentials::removeExpired(
-            ctx.view(), ctx.tx.getFieldV256(sfCredentialIDs), ctx.journal))
+        credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
         return tecEXPIRED;
 
     if (sleDst && (sleDst->getFlags() & lsfDepositAuth))
     {
         if (src != dst)
         {
-            if (!ctx.view().exists(keylet::depositPreauth(dst, src)))
+            if (!view.exists(keylet::depositPreauth(dst, src)))
                 return !credentialsPresent
                     ? tecNO_PERMISSION
                     : credentials::authorizedDepositPreauth(
-                          ctx.view(),
-                          ctx.tx.getFieldV256(sfCredentialIDs),
-                          dst);
+                          view, tx.getFieldV256(sfCredentialIDs), dst);
         }
     }
 

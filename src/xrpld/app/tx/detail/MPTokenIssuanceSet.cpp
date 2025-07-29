@@ -21,6 +21,7 @@
 #include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -30,6 +31,14 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
+
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !(ctx.rules.enabled(featurePermissionedDomains) &&
+          ctx.rules.enabled(featureSingleAssetVault)))
+        return temDISABLED;
+
+    if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
+        return temMALFORMED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
@@ -47,6 +56,13 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const holderID = ctx.tx[~sfHolder];
     if (holderID && accountID == holderID)
         return temMALFORMED;
+
+    if (ctx.rules.enabled(featureSingleAssetVault))
+    {
+        // Is this transaction actually changing anything ?
+        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID))
+            return temMALFORMED;
+    }
 
     return preflight2(ctx);
 }
@@ -97,9 +113,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // if the mpt has disabled locking
-    if (!((*sleMptIssuance)[sfFlags] & lsfMPTCanLock))
-        return tecNO_PERMISSION;
+    if (!sleMptIssuance->isFlag(lsfMPTCanLock))
+    {
+        // For readability two separate `if` rather than `||` of two conditions
+        if (!ctx.view.rules().enabled(featureSingleAssetVault))
+            return tecNO_PERMISSION;
+        else if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
+            return tecNO_PERMISSION;
+    }
 
     // ensure it is issued by the tx submitter
     if ((*sleMptIssuance)[sfIssuer] != ctx.tx[sfAccount])
@@ -117,6 +138,20 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
+    if (auto const domain = ctx.tx[~sfDomainID])
+    {
+        if (not sleMptIssuance->isFlag(lsfMPTRequireAuth))
+            return tecNO_PERMISSION;
+
+        if (*domain != beast::zero)
+        {
+            auto const sleDomain =
+                ctx.view.read(keylet::permissionedDomain(*domain));
+            if (!sleDomain)
+                return tecOBJECT_NOT_FOUND;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -126,6 +161,7 @@ MPTokenIssuanceSet::doApply()
     auto const mptIssuanceID = ctx_.tx[sfMPTokenIssuanceID];
     auto const txFlags = ctx_.tx.getFlags();
     auto const holderID = ctx_.tx[~sfHolder];
+    auto const domainID = ctx_.tx[~sfDomainID];
     std::shared_ptr<SLE> sle;
 
     if (holderID)
@@ -146,6 +182,24 @@ MPTokenIssuanceSet::doApply()
 
     if (flagsIn != flagsOut)
         sle->setFieldU32(sfFlags, flagsOut);
+
+    if (domainID)
+    {
+        // This is enforced in preflight.
+        XRPL_ASSERT(
+            sle->getType() == ltMPTOKEN_ISSUANCE,
+            "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
+
+        if (*domainID != beast::zero)
+        {
+            sle->setFieldH256(sfDomainID, *domainID);
+        }
+        else
+        {
+            if (sle->isFieldPresent(sfDomainID))
+                sle->makeFieldAbsent(sfDomainID);
+        }
+    }
 
     view().update(sle);
 

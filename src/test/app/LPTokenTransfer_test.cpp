@@ -467,7 +467,7 @@ public:
     void
     run() override
     {
-        FeatureBitset const all{jtx::supported_amendments()};
+        FeatureBitset const all{jtx::testable_amendments()};
 
         for (auto const features : {all, all - fixFrozenLPTokenTransfer})
         {

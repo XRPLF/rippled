@@ -24,10 +24,8 @@
 
 #include <boost/operators.hpp>
 
-#include <functional>
 #include <iostream>
 #include <type_traits>
-#include <utility>
 
 namespace ripple {
 

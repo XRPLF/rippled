@@ -16,7 +16,6 @@
 
 #include <algorithm>
 #include <chrono>
-#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <sstream>

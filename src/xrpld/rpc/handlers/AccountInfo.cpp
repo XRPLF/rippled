@@ -108,6 +108,10 @@ doAccountInfo(RPC::JsonContext& context)
         allowTrustLineClawbackFlag{
             "allowTrustLineClawback", lsfAllowTrustLineClawback};
 
+    static constexpr std::pair<std::string_view, LedgerSpecificFlags>
+        allowTrustLineLockingFlag{
+            "allowTrustLineLocking", lsfAllowTrustLineLocking};
+
     auto const sleAccepted = ledger->read(keylet::account(accountID));
     if (sleAccepted)
     {
@@ -139,6 +143,10 @@ doAccountInfo(RPC::JsonContext& context)
         if (ledger->rules().enabled(featureClawback))
             acctFlags[allowTrustLineClawbackFlag.first.data()] =
                 sleAccepted->isFlag(allowTrustLineClawbackFlag.second);
+
+        if (ledger->rules().enabled(featureTokenEscrow))
+            acctFlags[allowTrustLineLockingFlag.first.data()] =
+                sleAccepted->isFlag(allowTrustLineLockingFlag.second);
 
         result[jss::account_flags] = std::move(acctFlags);
 

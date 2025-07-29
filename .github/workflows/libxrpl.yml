@@ -1,6 +1,6 @@
 name: Check libXRPL compatibility with Clio
 env:
-  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
   CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
   CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
 on:

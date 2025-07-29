@@ -32,6 +32,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
+#include <set>
 
 namespace ripple {
 

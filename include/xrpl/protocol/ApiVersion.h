@@ -20,7 +20,6 @@
 #ifndef RIPPLE_PROTOCOL_APIVERSION_H_INCLUDED
 #define RIPPLE_PROTOCOL_APIVERSION_H_INCLUDED
 
-#include <functional>
 #include <type_traits>
 #include <utility>
 

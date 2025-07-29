@@ -31,7 +31,7 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test featurePermissionDelegation not enabled");
         using namespace jtx;
 
-        Env env{*this, supported_amendments() - featurePermissionDelegation};
+        Env env{*this, testable_amendments() - featurePermissionDelegation};
         Account gw{"gateway"};
         Account alice{"alice"};
         Account bob{"bob"};

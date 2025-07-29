@@ -268,19 +268,16 @@ fillJsonState(Object& json, LedgerFill const& fill)
 
     for (auto const& sle : ledger.sles)
     {
-        if (fill.type == ltANY || sle->getType() == fill.type)
+        if (binary)
         {
-            if (binary)
-            {
-                auto&& obj = appendObject(array);
-                obj[jss::hash] = to_string(sle->key());
-                obj[jss::tx_blob] = serializeHex(*sle);
-            }
-            else if (expanded)
-                array.append(sle->getJson(JsonOptions::none));
-            else
-                array.append(to_string(sle->key()));
+            auto&& obj = appendObject(array);
+            obj[jss::hash] = to_string(sle->key());
+            obj[jss::tx_blob] = serializeHex(*sle);
         }
+        else if (expanded)
+            array.append(sle->getJson(JsonOptions::none));
+        else
+            array.append(to_string(sle->key()));
     }
 }
 

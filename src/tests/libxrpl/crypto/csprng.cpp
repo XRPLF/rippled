@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2012-2017 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,47 +17,18 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/crypto/csprng.h>
 
-#include <string>
+#include <doctest/doctest.h>
 
-namespace ripple {
+using namespace ripple;
 
-class contract_test : public beast::unit_test::suite
+TEST_CASE("get values")
 {
-public:
-    void
-    run() override
-    {
-        try
-        {
-            Throw<std::runtime_error>("Throw test");
-        }
-        catch (std::runtime_error const& e1)
-        {
-            BEAST_EXPECT(std::string(e1.what()) == "Throw test");
-
-            try
-            {
-                Rethrow();
-            }
-            catch (std::runtime_error const& e2)
-            {
-                BEAST_EXPECT(std::string(e2.what()) == "Throw test");
-            }
-            catch (...)
-            {
-                BEAST_EXPECT(false);
-            }
-        }
-        catch (...)
-        {
-            BEAST_EXPECT(false);
-        }
-    }
-};
-
-BEAST_DEFINE_TESTSUITE(contract, basics, ripple);
-
-}  // namespace ripple
+    auto& engine = crypto_prng();
+    auto rand_val = engine();
+    CHECK(rand_val >= engine.min());
+    CHECK(rand_val <= engine.max());
+    uint16_t twoByte{0};
+    engine(&twoByte, sizeof(uint16_t));
+}

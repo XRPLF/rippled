@@ -29,11 +29,7 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/functional/hash.hpp>
 
-#include <cstdint>
-#include <ios>
-#include <sstream>
 #include <string>
-#include <typeinfo>
 
 //------------------------------------------------------------------------------
 

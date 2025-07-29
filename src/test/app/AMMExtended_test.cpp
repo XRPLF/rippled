@@ -1183,9 +1183,7 @@ private:
 
         using namespace jtx;
 
-        // The problem was identified when featureOwnerPaysFee was enabled,
-        // so make sure that gets included.
-        Env env{*this, features | featureOwnerPaysFee};
+        Env env{*this, features};
 
         // The fee that's charged for transactions.
         auto const fee = env.current()->fees().base;
@@ -1449,7 +1447,7 @@ private:
     testOffers()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testRmFundedOffer(all);
         testRmFundedOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testEnforceNoRipple(all);
@@ -2218,271 +2216,6 @@ private:
     }
 
     void
-    testTransferRate(FeatureBitset features)
-    {
-        testcase("Transfer Rate");
-
-        using namespace jtx;
-
-        {
-            // transfer fee on AMM
-            Env env(*this, features);
-
-            fund(env, gw, {alice, bob, carol}, XRP(10'000), {USD(1'000)});
-            env(rate(gw, 1.25));
-            env.close();
-
-            AMM ammBob(env, bob, XRP(100), USD(150));
-            // no transfer fee on create
-            BEAST_EXPECT(expectLine(env, bob, USD(1000 - 150)));
-
-            env(pay(alice, carol, USD(50)), path(~USD), sendmax(XRP(50)));
-            env.close();
-
-            BEAST_EXPECT(expectLine(env, bob, USD(1'000 - 150)));
-            BEAST_EXPECT(
-                ammBob.expectBalances(XRP(150), USD(100), ammBob.tokens()));
-            BEAST_EXPECT(expectLedgerEntryRoot(
-                env, alice, xrpMinusFee(env, 10'000 - 50)));
-            BEAST_EXPECT(expectLine(env, carol, USD(1'050)));
-        }
-
-        {
-            // Transfer fee AMM and offer
-            Env env(*this, features);
-
-            fund(
-                env,
-                gw,
-                {alice, bob, carol},
-                XRP(10'000),
-                {USD(1'000), EUR(1'000)});
-            env(rate(gw, 1.25));
-            env.close();
-
-            AMM ammBob(env, bob, XRP(100), USD(140));
-            BEAST_EXPECT(expectLine(env, bob, USD(1'000 - 140)));
-
-            env(offer(bob, USD(50), EUR(50)));
-
-            // alice buys 40EUR with 40XRP
-            env(pay(alice, carol, EUR(40)), path(~USD, ~EUR), sendmax(XRP(40)));
-
-            // 40XRP is swapped in for 40USD
-            BEAST_EXPECT(
-                ammBob.expectBalances(XRP(140), USD(100), ammBob.tokens()));
-            // 40USD buys 40EUR via bob's offer. 40EUR delivered to carol
-            // and bob pays 25% on 40EUR, 40EUR*0.25=10EUR
-            BEAST_EXPECT(expectLine(env, bob, EUR(1'000 - 40 - 40 * 0.25)));
-            // bob gets 40USD back from the offer
-            BEAST_EXPECT(expectLine(env, bob, USD(1'000 - 140 + 40)));
-            BEAST_EXPECT(expectLedgerEntryRoot(
-                env, alice, xrpMinusFee(env, 10'000 - 40)));
-            BEAST_EXPECT(expectLine(env, carol, EUR(1'040)));
-            BEAST_EXPECT(expectOffers(env, bob, 1, {{USD(10), EUR(10)}}));
-        }
-
-        {
-            // Transfer fee two consecutive AMM
-            Env env(*this, features);
-
-            fund(
-                env,
-                gw,
-                {alice, bob, carol},
-                XRP(10'000),
-                {USD(1'000), EUR(1'000)});
-            env(rate(gw, 1.25));
-            env.close();
-
-            AMM ammBobXRP_USD(env, bob, XRP(100), USD(140));
-            BEAST_EXPECT(expectLine(env, bob, USD(1'000 - 140)));
-
-            AMM ammBobUSD_EUR(env, bob, USD(100), EUR(140));
-            BEAST_EXPECT(expectLine(env, bob, EUR(1'000 - 140)));
-            BEAST_EXPECT(expectLine(env, bob, USD(1'000 - 140 - 100)));
-
-            // alice buys 40EUR with 40XRP
-            env(pay(alice, carol, EUR(40)), path(~USD, ~EUR), sendmax(XRP(40)));
-
-            // 40XRP is swapped in for 40USD
-            BEAST_EXPECT(ammBobXRP_USD.expectBalances(
-                XRP(140), USD(100), ammBobXRP_USD.tokens()));
-            // 40USD is swapped in for 40EUR
-            BEAST_EXPECT(ammBobUSD_EUR.expectBalances(
-                USD(140), EUR(100), ammBobUSD_EUR.tokens()));
-            // no other charges on bob
-            BEAST_EXPECT(expectLine(env, bob, USD(1'000 - 140 - 100)));
-            BEAST_EXPECT(expectLine(env, bob, EUR(1'000 - 140)));
-            BEAST_EXPECT(expectLedgerEntryRoot(
-                env, alice, xrpMinusFee(env, 10'000 - 40)));
-            BEAST_EXPECT(expectLine(env, carol, EUR(1'040)));
-        }
-
-        {
-            // Payment via AMM with limit quality, deliver less
-            // than requested
-            Env env(*this, features);
-
-            fund(
-                env,
-                gw,
-                {alice, bob, carol},
-                XRP(1'000),
-                {USD(1'200), GBP(1'200)});
-            env(rate(gw, 1.25));
-            env.close();
-
-            AMM amm(env, bob, GBP(1'000), USD(1'100));
-
-            // requested quality limit is 90USD/110GBP = 0.8181
-            // trade quality is 77.2727USD/94.4444GBP = 0.8181
-            env(pay(alice, carol, USD(90)),
-                path(~USD),
-                sendmax(GBP(110)),
-                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
-            env.close();
-
-            if (!features[fixAMMv1_1])
-            {
-                // alice buys 77.2727USD with 75.5555GBP and pays 25% tr fee
-                // on 75.5555GBP
-                // 1,200 - 75.55555*1.25 = 1200 - 94.4444 = 1105.55555GBP
-                BEAST_EXPECT(expectLine(
-                    env,
-                    alice,
-                    STAmount{GBP, UINT64_C(1'105'555555555555), -12}));
-                // 75.5555GBP is swapped in for 77.7272USD
-                BEAST_EXPECT(amm.expectBalances(
-                    STAmount{GBP, UINT64_C(1'075'555555555556), -12},
-                    STAmount{USD, UINT64_C(1'022'727272727272), -12},
-                    amm.tokens()));
-            }
-            else
-            {
-                // alice buys 77.2727USD with 75.5555GBP and pays 25% tr fee
-                // on 75.5555GBP
-                // 1,200 - 75.55555*1.25 = 1200 - 94.4444 = 1105.55555GBP
-                BEAST_EXPECT(expectLine(
-                    env,
-                    alice,
-                    STAmount{GBP, UINT64_C(1'105'555555555554), -12}));
-                // 75.5555GBP is swapped in for 77.7272USD
-                BEAST_EXPECT(amm.expectBalances(
-                    STAmount{GBP, UINT64_C(1'075'555555555557), -12},
-                    STAmount{USD, UINT64_C(1'022'727272727272), -12},
-                    amm.tokens()));
-            }
-            BEAST_EXPECT(expectLine(
-                env, carol, STAmount{USD, UINT64_C(1'277'272727272728), -12}));
-        }
-
-        {
-            // AMM offer crossing
-            Env env(*this, features);
-
-            fund(env, gw, {alice, bob}, XRP(1'000), {USD(1'200), EUR(1'200)});
-            env(rate(gw, 1.25));
-            env.close();
-
-            AMM amm(env, bob, USD(1'000), EUR(1'150));
-
-            env(offer(alice, EUR(100), USD(100)));
-            env.close();
-
-            if (!features[fixAMMv1_1])
-            {
-                // 95.2380USD is swapped in for 100EUR
-                BEAST_EXPECT(amm.expectBalances(
-                    STAmount{USD, UINT64_C(1'095'238095238095), -12},
-                    EUR(1'050),
-                    amm.tokens()));
-                // alice pays 25% tr fee on 95.2380USD
-                // 1200-95.2380*1.25 = 1200 - 119.0477 = 1080.9523USD
-                BEAST_EXPECT(expectLine(
-                    env,
-                    alice,
-                    STAmount{USD, UINT64_C(1'080'952380952381), -12},
-                    EUR(1'300)));
-            }
-            else
-            {
-                // 95.2380USD is swapped in for 100EUR
-                BEAST_EXPECT(amm.expectBalances(
-                    STAmount{USD, UINT64_C(1'095'238095238096), -12},
-                    EUR(1'050),
-                    amm.tokens()));
-                // alice pays 25% tr fee on 95.2380USD
-                // 1200-95.2380*1.25 = 1200 - 119.0477 = 1080.9523USD
-                BEAST_EXPECT(expectLine(
-                    env,
-                    alice,
-                    STAmount{USD, UINT64_C(1'080'95238095238), -11},
-                    EUR(1'300)));
-            }
-            BEAST_EXPECT(expectOffers(env, alice, 0));
-        }
-
-        {
-            // First pass through a strand redeems, second pass issues,
-            // through an offer limiting step is not an endpoint
-            Env env(*this, features);
-            auto const USDA = alice["USD"];
-            auto const USDB = bob["USD"];
-            Account const dan("dan");
-
-            env.fund(XRP(10'000), bob, carol, dan, gw);
-            fund(env, {alice}, XRP(10'000));
-            env(rate(gw, 1.25));
-            env.trust(USD(2'000), alice, bob, carol, dan);
-            env.trust(EUR(2'000), carol, dan);
-            env.trust(USDA(1'000), bob);
-            env.trust(USDB(1'000), gw);
-            env(pay(gw, bob, USD(50)));
-            env(pay(gw, dan, EUR(1'050)));
-            env(pay(gw, dan, USD(1'000)));
-            AMM ammDan(env, dan, USD(1'000), EUR(1'050));
-
-            if (!features[fixAMMv1_1])
-            {
-                // alice -> bob -> gw -> carol. $50 should have transfer fee;
-                // $10, no fee
-                env(pay(alice, carol, EUR(50)),
-                    path(bob, gw, ~EUR),
-                    sendmax(USDA(60)),
-                    txflags(tfNoRippleDirect));
-                BEAST_EXPECT(ammDan.expectBalances(
-                    USD(1'050), EUR(1'000), ammDan.tokens()));
-                BEAST_EXPECT(expectLine(env, dan, USD(0)));
-                BEAST_EXPECT(expectLine(env, dan, EUR(0)));
-                BEAST_EXPECT(expectLine(env, bob, USD(-10)));
-                BEAST_EXPECT(expectLine(env, bob, USDA(60)));
-                BEAST_EXPECT(expectLine(env, carol, EUR(50)));
-            }
-            else
-            {
-                // alice -> bob -> gw -> carol. $50 should have transfer fee;
-                // $10, no fee
-                env(pay(alice, carol, EUR(50)),
-                    path(bob, gw, ~EUR),
-                    sendmax(USDA(60.1)),
-                    txflags(tfNoRippleDirect));
-                BEAST_EXPECT(ammDan.expectBalances(
-                    STAmount{USD, UINT64_C(1'050'000000000001), -12},
-                    EUR(1'000),
-                    ammDan.tokens()));
-                BEAST_EXPECT(expectLine(env, dan, USD(0)));
-                BEAST_EXPECT(expectLine(env, dan, EUR(0)));
-                BEAST_EXPECT(expectLine(
-                    env, bob, STAmount{USD, INT64_C(-10'000000000001), -12}));
-                BEAST_EXPECT(expectLine(
-                    env, bob, STAmount{USDA, UINT64_C(60'000000000001), -12}));
-                BEAST_EXPECT(expectLine(env, carol, EUR(50)));
-            }
-        }
-    }
-
-    void
     testTransferRateNoOwnerFee(FeatureBitset features)
     {
         testcase("No Owner Fee");
@@ -3090,8 +2823,8 @@ private:
         for (auto const withFix : {true, false})
         {
             auto const feats = withFix
-                ? supported_amendments()
-                : supported_amendments() - FeatureBitset{fix1781};
+                ? testable_amendments()
+                : testable_amendments() - FeatureBitset{fix1781};
 
             // Payment path starting with XRP
             Env env(*this, feats);
@@ -4056,14 +3789,10 @@ private:
     testFlow()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
-        FeatureBitset const ownerPaysFee{featureOwnerPaysFee};
+        FeatureBitset const all{testable_amendments()};
 
         testFalseDry(all);
         testBookStep(all);
-        testBookStep(all | ownerPaysFee);
-        testTransferRate(all | ownerPaysFee);
-        testTransferRate((all - fixAMMv1_1 - fixAMMv1_3) | ownerPaysFee);
         testTransferRateNoOwnerFee(all);
         testTransferRateNoOwnerFee(all - fixAMMv1_1 - fixAMMv1_3);
         testLimitQuality();
@@ -4074,7 +3803,7 @@ private:
     testCrossingLimits()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testStepLimit(all);
         testStepLimit(all - fixAMMv1_1 - fixAMMv1_3);
     }
@@ -4083,7 +3812,7 @@ private:
     testDeliverMin()
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         test_convert_all_of_an_asset(all);
         test_convert_all_of_an_asset(all - fixAMMv1_1 - fixAMMv1_3);
     }
@@ -4091,7 +3820,7 @@ private:
     void
     testDepositAuth()
     {
-        auto const supported{jtx::supported_amendments()};
+        auto const supported{jtx::testable_amendments()};
         testPayment(supported - featureDepositPreauth);
         testPayment(supported);
         testPayIOU();
@@ -4101,7 +3830,7 @@ private:
     testFreeze()
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testRippleState(sa);
         testGlobalFreeze(sa);
         testOffersWhenFrozen(sa);
@@ -4111,7 +3840,7 @@ private:
     testMultisign()
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         testTxMultisign(
             all - featureMultiSignReserve - featureExpandedSignerList);
@@ -4123,7 +3852,7 @@ private:
     testPayStrand()
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         testToStrand(all);
         testRIPD1373(all);

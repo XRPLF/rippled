@@ -1100,7 +1100,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const fixNFTDir{
             fixNFTokenDirV1, featureNonFungibleTokensV1_1};
 

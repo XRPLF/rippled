@@ -20,8 +20,6 @@
 #ifndef BEAST_CONTAINER_DETAIL_AGED_ASSOCIATIVE_CONTAINER_H_INCLUDED
 #define BEAST_CONTAINER_DETAIL_AGED_ASSOCIATIVE_CONTAINER_H_INCLUDED
 
-#include <type_traits>
-
 namespace beast {
 namespace detail {
 

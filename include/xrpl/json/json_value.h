@@ -26,7 +26,6 @@
 #include <cstring>
 #include <map>
 #include <string>
-#include <utility>
 #include <vector>
 
 /** \brief JSON (JavaScript Object Notation).

@@ -32,7 +32,6 @@
 #include <cstring>
 #include <optional>
 #include <ostream>
-#include <utility>
 
 namespace ripple {
 

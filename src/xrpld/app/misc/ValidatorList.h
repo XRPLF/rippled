@@ -226,7 +226,7 @@ class ValidatorList
     TimeKeeper& timeKeeper_;
     boost::filesystem::path const dataPath_;
     beast::Journal const j_;
-    boost::shared_mutex mutable mutex_;
+    std::shared_mutex mutable mutex_;
     using lock_guard = std::lock_guard<decltype(mutex_)>;
     using shared_lock = std::shared_lock<decltype(mutex_)>;
 

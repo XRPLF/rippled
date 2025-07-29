@@ -1478,7 +1478,7 @@ public:
         Account const cheri{"cheri", KeyType::secp256k1};
         Account const daria{"daria", KeyType::ed25519};
 
-        Env env{*this, supported_amendments() - featureMultiSignReserve};
+        Env env{*this, testable_amendments() - featureMultiSignReserve};
         env.fund(XRP(1000), alice, becky, cheri, daria);
         env.close();
 
@@ -1729,7 +1729,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
 
         // The reserve required on a signer list changes based on
         // featureMultiSignReserve.  Limits on the number of signers

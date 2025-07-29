@@ -31,6 +31,11 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !(ctx.rules.enabled(featurePermissionedDomains) &&
+          ctx.rules.enabled(featureSingleAssetVault)))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -45,6 +50,16 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // If a non-zero TransferFee is set then the tfTransferable flag
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
+            return temMALFORMED;
+    }
+
+    if (auto const domain = ctx.tx[~sfDomainID])
+    {
+        if (*domain == beast::zero)
+            return temMALFORMED;
+
+        // Domain present implies that MPTokenIssuance is not public
+        if ((ctx.tx.getFlags() & tfMPTRequireAuth) == 0)
             return temMALFORMED;
     }
 
@@ -142,6 +157,7 @@ MPTokenIssuanceCreate::doApply()
             .assetScale = tx[~sfAssetScale],
             .transferFee = tx[~sfTransferFee],
             .metadata = tx[~sfMPTokenMetadata],
+            .domainId = tx[~sfDomainID],
         });
     return result ? tesSUCCESS : result.error();
 }

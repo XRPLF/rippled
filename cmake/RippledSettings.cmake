@@ -18,7 +18,7 @@ if(tests)
   endif()
 endif()
 
-option(unity "Creates a build using UNITY support in cmake. This is the default" ON)
+option(unity "Creates a build using UNITY support in cmake." OFF)
 if(unity)
   if(NOT is_ci)
     set(CMAKE_UNITY_BUILD_BATCH_SIZE 15 CACHE STRING "")

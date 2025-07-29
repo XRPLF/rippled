@@ -24,9 +24,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
 
-#include <functional>
-#include <type_traits>
-
 namespace ripple {
 
 /** A currency issued by an account.

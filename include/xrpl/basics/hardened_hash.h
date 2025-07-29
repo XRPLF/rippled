@@ -24,12 +24,8 @@
 #include <xrpl/beast/hash/xxhasher.h>
 
 #include <cstdint>
-#include <functional>
 #include <mutex>
 #include <random>
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
 #include <utility>
 
 namespace ripple {
