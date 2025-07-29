@@ -607,6 +607,33 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testCodecovWasm()
+    {
+        testcase("Codecov wasm test");
+
+        using namespace test::jtx;
+
+        // Env env{
+        //     *this,
+        //     envconfig(),
+        //     testable_amendments(),
+        //     nullptr,
+        //     beast::severities::kTrace};
+        Env env{*this};
+
+        auto const wasmStr = boost::algorithm::unhex(codecovWasm);
+        Bytes const wasm(wasmStr.begin(), wasmStr.end());
+        std::string const funcName("finish");
+        TestHostFunctions hfs(env, 0);
+
+        auto re =
+            runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(re->result);
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -629,6 +656,8 @@ struct Wasm_test : public beast::unit_test::suite
         testHFCost();
 
         testEscrowWasmDN();
+
+        testCodecovWasm();
 
         // perfTest();
     }
