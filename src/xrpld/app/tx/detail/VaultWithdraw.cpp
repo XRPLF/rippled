@@ -148,7 +148,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         }
         // The destination account must have consented to receive the asset by
         // creating a RippleState or MPToken
-        // authType = AuthType::StrongAuth;
+        authType = AuthType::StrongAuth;
     }
 
     // Destination MPToken (for an MPT) or trust line (for an IOU) must exist
