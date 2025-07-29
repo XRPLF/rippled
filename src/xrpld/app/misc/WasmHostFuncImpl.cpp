@@ -49,20 +49,33 @@ WasmHostFunctionsImpl::getParentLedgerHash()
 }
 
 Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::normalizeCacheIndex(int32_t cacheIdx)
+{
+    --cacheIdx;
+    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    if (!cache[cacheIdx])
+        return Unexpected(HostFunctionError::EMPTY_SLOT);
+    return cacheIdx;
+}
+
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 {
     auto const& keylet = keylet::unchecked(objId);
     if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
         return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
 
-    if (!cacheIdx)
+    if (cacheIdx == 0)
     {
         for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
             if (!cache[cacheIdx])
                 break;
     }
     else
-        --cacheIdx;
+    {
+        cacheIdx--;  // convert to 0-based index
+    }
 
     if (cacheIdx >= MAX_CACHE)
         return Unexpected(HostFunctionError::SLOTS_FULL);
@@ -70,7 +83,7 @@ WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     cache[cacheIdx] = ctx.view().read(keylet);
     if (!cache[cacheIdx])
         return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    return cacheIdx + 1;
+    return cacheIdx + 1;  // return 1-based index
 }
 
 static Expected<Bytes, HostFunctionError>
@@ -83,10 +96,12 @@ getAnyFieldData(STBase const* obj)
     auto const stype = obj->getSType();
     switch (stype)
     {
+        // LCOV_EXCL_START
         case STI_UNKNOWN:
         case STI_NOTPRESENT:
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
             break;
+        // LCOV_EXCL_STOP
         case STI_OBJECT:
         case STI_ARRAY:
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
@@ -104,7 +119,7 @@ getAnyFieldData(STBase const* obj)
             auto const* issue(static_cast<STIssue const*>(obj));
             Asset const& asset(issue->value());
             // XRP and IOU will be processed by serializer
-            if (!asset.holds<Issue>())
+            if (asset.holds<MPTIssue>())
             {
                 // MPT
                 auto const& mptIssue = asset.get<MPTIssue>();
@@ -119,12 +134,13 @@ getAnyFieldData(STBase const* obj)
             return Bytes{data.begin(), data.end()};
         }
         break;
-        case STI_UINT256: {
-            auto const* num(static_cast<STBitString<256> const*>(obj));
-            auto const& data = num->value();
-            return Bytes{data.begin(), data.end()};
+        case STI_UINT16: {
+            auto const& num(static_cast<STInteger<std::uint16_t> const*>(obj));
+            std::uint16_t const data = num->value();
+            auto const* b = reinterpret_cast<uint8_t const*>(&data);
+            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+            return Bytes{b, e};
         }
-        break;
         case STI_UINT32: {
             auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
             std::uint32_t const data = num->value();
@@ -133,8 +149,14 @@ getAnyFieldData(STBase const* obj)
             return Bytes{b, e};
         }
         break;
+        case STI_UINT256: {
+            auto const* num(static_cast<STBitString<256> const*>(obj));
+            auto const& data = num->value();
+            return Bytes{data.begin(), data.end()};
+        }
+        break;
         default:
-            break;
+            break;  // default to serializer
     }
 
     Serializer msg;
@@ -153,21 +175,19 @@ WasmHostFunctionsImpl::getTxField(SField const& fname)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    return getAnyFieldData(sle->peekAtPField(fname));
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
+    return getAnyFieldData(sle.value()->peekAtPField(fname));
 }
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
 {
-    --cacheIdx;
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-    return getAnyFieldData(cache[cacheIdx]->peekAtPField(fname));
+    auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
+    if (!normalizedIdx.has_value())
+        return Unexpected(normalizedIdx.error());
+    return getAnyFieldData(cache[normalizedIdx.value()]->peekAtPField(fname));
 }
 
 static inline bool
@@ -178,20 +198,20 @@ noField(STBase const* field)
 }
 
 static Expected<STBase const*, HostFunctionError>
-locateField(STObject const& obj, Slice const& loc)
+locateField(STObject const& obj, Slice const& locator)
 {
-    if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
+    if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
         return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
-    int32_t const* l = reinterpret_cast<int32_t const*>(loc.data());
-    int32_t const sz = loc.size() / 4;
+    int32_t const* locPtr = reinterpret_cast<int32_t const*>(locator.data());
+    int32_t const locSize = locator.size() / 4;
     STBase const* field = nullptr;
-    auto const& m = SField::getKnownCodeToField();
+    auto const& knownSFields = SField::getKnownCodeToField();
 
     {
-        int32_t const c = l[0];
-        auto const it = m.find(c);
-        if (it == m.end())
+        int32_t const sfieldCode = locPtr[0];
+        auto const it = knownSFields.find(sfieldCode);
+        if (it == knownSFields.end())
             return Unexpected(HostFunctionError::INVALID_FIELD);
 
         auto const& fname(*it->second);
@@ -200,23 +220,23 @@ locateField(STObject const& obj, Slice const& loc)
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
-    for (int i = 1; i < sz; ++i)
+    for (int i = 1; i < locSize; ++i)
     {
-        int32_t const c = l[i];
+        int32_t const sfieldCode = locPtr[i];
 
         if (STI_ARRAY == field->getSType())
         {
             auto const* arr = static_cast<STArray const*>(field);
-            if (c >= arr->size())
+            if (sfieldCode >= arr->size())
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-            field = &(arr->operator[](c));
+            field = &(arr->operator[](sfieldCode));
         }
         else if (STI_OBJECT == field->getSType())
         {
             auto const* o = static_cast<STObject const*>(field);
 
-            auto const it = m.find(c);
-            if (it == m.end())
+            auto const it = knownSFields.find(sfieldCode);
+            if (it == knownSFields.end())
                 return Unexpected(HostFunctionError::INVALID_FIELD);
 
             auto const& fname(*it->second);
@@ -247,11 +267,11 @@ WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
 
-    auto const r = locateField(*sle, locator);
+    auto const r = locateField(*sle.value(), locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -263,14 +283,11 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
     int32_t cacheIdx,
     Slice const& locator)
 {
-    --cacheIdx;
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
+    if (!normalizedIdx.has_value())
+        return Unexpected(normalizedIdx.error());
 
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-
-    auto const r = locateField(*cache[cacheIdx], locator);
+    auto const r = locateField(*cache[normalizedIdx.value()], locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -288,7 +305,7 @@ WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -300,16 +317,16 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
     if (fname.fieldType != STI_ARRAY)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
 
-    auto const* field = sle->peekAtPField(fname);
+    auto const* field = sle.value()->peekAtPField(fname);
     if (noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -323,18 +340,17 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
     if (fname.fieldType != STI_ARRAY)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
+    if (!normalizedIdx.has_value())
+        return Unexpected(normalizedIdx.error());
 
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-
-    auto const* field = cache[cacheIdx]->peekAtPField(fname);
+    auto const* field = cache[normalizedIdx.value()]->peekAtPField(fname);
     if (noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
+
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -358,10 +374,10 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    auto const r = locateField(*sle, locator);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
+    auto const r = locateField(*sle.value(), locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -378,14 +394,11 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     int32_t cacheIdx,
     Slice const& locator)
 {
-    --cacheIdx;
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
+    if (!normalizedIdx.has_value())
+        return Unexpected(normalizedIdx.error());
 
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-
-    auto const r = locateField(*cache[cacheIdx], locator);
+    auto const r = locateField(*cache[normalizedIdx.value()], locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -556,8 +569,6 @@ WasmHostFunctionsImpl::paychanKeylet(
     if (!account || !destination)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
     if (account == destination)
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
-    if (seq == 0)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
     auto const keylet = keylet::payChan(account, destination, seq);
     return Bytes{keylet.key.begin(), keylet.key.end()};
