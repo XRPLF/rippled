@@ -61,6 +61,13 @@ public:
         AccountID const& account,
         std::uint32_t const flags);
 
+    static TER
+    checkCreateMPT(
+        ripple::ApplyView& view,
+        ripple::MPTIssue const& mptIssue,
+        ripple::AccountID const& holder,
+        beast::Journal j);
+
     TER
     doApply() override;
 };
