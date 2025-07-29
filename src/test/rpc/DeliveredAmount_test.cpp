@@ -331,7 +331,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
     }
 
     void
-    testMPT(FeatureBitset features)
+    testMPTDeliveredAmountRPC(FeatureBitset features)
     {
         testcase("MPT DeliveredAmount");
 
@@ -417,8 +417,8 @@ public:
         testTxDeliveredAmountRPC();
         testAccountDeliveredAmountSubscribe();
 
-        testMPT(all - fixMPTDeliveredAmount);
-        testMPT(all);
+        testMPTDeliveredAmountRPC(all - fixMPTDeliveredAmount);
+        testMPTDeliveredAmountRPC(all);
     }
 };
 
