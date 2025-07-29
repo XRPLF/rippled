@@ -24,7 +24,7 @@ class Xrpl(ConanFile):
     }
 
     requires = [
-        'grpc/1.50.1',
+        'grpc/1.72.0',
         'libarchive/3.8.1',
         'nudb/2.0.9',
         'openssl/1.1.1w',
@@ -37,7 +37,7 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
-        'protobuf/3.21.12',
+        'protobuf/6.30.1',
     ]
 
     default_options = {
@@ -98,6 +98,14 @@ class Xrpl(ConanFile):
                 self.version = match.group(1)
 
     def configure(self):
+        # Disable grpc plugins, we do not use any
+        self.options["grpc"].csharp_plugin = False
+        self.options["grpc"].node_plugin = False
+        self.options["grpc"].objective_c_plugin = False
+        self.options["grpc"].php_plugin = False
+        self.options["grpc"].python_plugin = False
+        self.options["grpc"].ruby_plugin = False
+        self.options["grpc"].otel_plugin = False
         if self.settings.compiler == 'apple-clang':
             self.options['boost'].visibility = 'global'
 
@@ -107,7 +115,7 @@ class Xrpl(ConanFile):
         self.requires('boost/1.86.0', force=True, **transitive_headers_opt)
         self.requires('date/3.0.4', **transitive_headers_opt)
         self.requires('lz4/1.10.0', force=True)
-        self.requires('protobuf/3.21.12', force=True)
+        self.requires('protobuf/6.30.1', force=True)
         self.requires('sqlite3/3.49.1', force=True)
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')

@@ -21,15 +21,13 @@ concurrency:
 # This part of Conan configuration is specific to this workflow only; we do not want
 # to pollute conan/profiles directory with settings which might not work for others
 env:
-  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+  # CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
   CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
   CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{os.cpu_count()}}
     core.upload:parallel={{os.cpu_count()}}
-    tools.build:jobs=24
-    tools.build:verbosity=verbose
-    tools.compilation:verbosity=verbose
+    tools.build:jobs=6
 
 jobs:
 
@@ -90,6 +88,7 @@ jobs:
         run: |
           conan export --version 1.1.10 external/snappy
           conan export --version 4.0.3 external/soci
+          conan export --version 6.30.1 external/protobuf
       - name: add Ripple Conan remote
         if: env.CONAN_URL != ''
         shell: bash
