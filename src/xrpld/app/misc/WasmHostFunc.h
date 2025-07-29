@@ -22,7 +22,7 @@
 #include <xrpld/app/misc/WasmParamsHelper.h>
 
 #include <xrpl/basics/Expected.h>
-#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Keylet.h>
@@ -53,6 +53,42 @@ enum class HostFunctionError : int32_t {
     FLOAT_INPUT_MALFORMED = -19,
     FLOAT_COMPUTATION_ERROR = -20,
 };
+
+std::string
+floatToString(Slice const& data);
+
+Expected<Bytes, HostFunctionError>
+floatFromIntImpl(int64_t x, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatFromUintImpl(uint64_t x, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode);
+
+Expected<int32_t, HostFunctionError>
+floatCompareImpl(Slice const& x, Slice const& y);
+
+Expected<Bytes, HostFunctionError>
+floatAddImpl(Slice const& x, Slice const& y, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatDivideImpl(Slice const& x, Slice const& y, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatRootImpl(Slice const& x, int32_t n, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatPowerImpl(Slice const& x, int32_t n, int32_t mode);
+
+Expected<Bytes, HostFunctionError>
+floatLogImpl(Slice const& x, int32_t mode);
 
 struct HostFunctions
 {
@@ -293,73 +329,73 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    traceFloat(std::string_view const& msg, Number const& data)
+    traceFloat(std::string_view const& msg, Slice const& data)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatFromInt(int64_t x, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatFromInt(int64_t x, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatFromUint(uint64_t x, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatFromUint(uint64_t x, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatSet(int64_t mantissa, int32_t exponent, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<int32_t, HostFunctionError>
-    floatCompare(Number const& x, Number const& y)
+    floatCompare(Slice const& x, Slice const& y)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatAdd(Number const& x, Number const& y, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatAdd(Slice const& x, Slice const& y, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatSubtract(Number const& x, Number const& y, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatSubtract(Slice const& x, Slice const& y, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatMultiply(Number const& x, Number const& y, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatMultiply(Slice const& x, Slice const& y, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatDivide(Number const& x, Number const& y, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatDivide(Slice const& x, Slice const& y, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatRoot(Number const& x, int32_t n, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatRoot(Slice const& x, int32_t n, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatPower(Number const& x, int32_t n, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatPower(Slice const& x, int32_t n, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
-    virtual Expected<Number, HostFunctionError>
-    floatLog(Number const& x, Number::rounding_mode mode)
+    virtual Expected<Bytes, HostFunctionError>
+    floatLog(Slice const& x, int32_t mode)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

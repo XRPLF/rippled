@@ -192,45 +192,40 @@ public:
     traceNum(std::string_view const& msg, int64_t data) override;
 
     Expected<int32_t, HostFunctionError>
-    traceFloat(std::string_view const& msg, Number const& data) override;
+    traceFloat(std::string_view const& msg, Slice const& data) override;
 
-    Expected<Number, HostFunctionError>
-    floatFromInt(int64_t x, Number::rounding_mode mode) override;
+    Expected<Bytes, HostFunctionError>
+    floatFromInt(int64_t x, int32_t mode) override;
 
-    Expected<Number, HostFunctionError>
-    floatFromUint(uint64_t x, Number::rounding_mode mode) override;
+    Expected<Bytes, HostFunctionError>
+    floatFromUint(uint64_t x, int32_t mode) override;
 
-    Expected<Number, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, Number::rounding_mode mode)
-        override;
+    Expected<Bytes, HostFunctionError>
+    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override;
 
     Expected<int32_t, HostFunctionError>
-    floatCompare(Number const& x, Number const& y) override;
+    floatCompare(Slice const& x, Slice const& y) override;
 
-    Expected<Number, HostFunctionError>
-    floatAdd(Number const& x, Number const& y, Number::rounding_mode mode)
-        override;
+    Expected<Bytes, HostFunctionError>
+    floatAdd(Slice const& x, Slice const& y, int32_t mode) override;
 
-    Expected<Number, HostFunctionError>
-    floatSubtract(Number const& x, Number const& y, Number::rounding_mode mode)
-        override;
+    Expected<Bytes, HostFunctionError>
+    floatSubtract(Slice const& x, Slice const& y, int32_t mode) override;
 
-    Expected<Number, HostFunctionError>
-    floatMultiply(Number const& x, Number const& y, Number::rounding_mode mode)
-        override;
+    Expected<Bytes, HostFunctionError>
+    floatMultiply(Slice const& x, Slice const& y, int32_t mode) override;
 
-    Expected<Number, HostFunctionError>
-    floatDivide(Number const& x, Number const& y, Number::rounding_mode mode)
-        override;
+    Expected<Bytes, HostFunctionError>
+    floatDivide(Slice const& x, Slice const& y, int32_t mode) override;
 
-    Expected<Number, HostFunctionError>
-    floatRoot(Number const& x, int32_t n, Number::rounding_mode mode) override;
+    Expected<Bytes, HostFunctionError>
+    floatRoot(Slice const& x, int32_t n, int32_t mode) override;
 
-    Expected<Number, HostFunctionError>
-    floatPower(Number const& x, int32_t n, Number::rounding_mode mode) override;
+    Expected<Bytes, HostFunctionError>
+    floatPower(Slice const& x, int32_t n, int32_t mode) override;
 
-    Expected<Number, HostFunctionError>
-    floatLog(Number const& x, Number::rounding_mode mode) override;
+    Expected<Bytes, HostFunctionError>
+    floatLog(Slice const& x, int32_t mode) override;
 };
 
 }  // namespace ripple

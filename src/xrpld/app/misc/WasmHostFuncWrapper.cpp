@@ -65,7 +65,7 @@ setData(
 
 template <class IW>
 Expected<int32_t, HostFunctionError>
-getDataInt32(IW const* _rt, wasm_val_vec_t const* params, int32_t& i)
+getDataInt32(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i32;
     i++;
@@ -74,7 +74,7 @@ getDataInt32(IW const* _rt, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 Expected<int64_t, HostFunctionError>
-getDataInt64(IW const* _rt, wasm_val_vec_t const* params, int32_t& i)
+getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const result = params->data[i].of.i64;
     i++;
@@ -83,9 +83,9 @@ getDataInt64(IW const* _rt, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 Expected<uint64_t, HostFunctionError>
-getDataUint64(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
+getDataUint64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
-    auto const r = getDataSlice(rt, params, i);
+    auto const r = getDataSlice(runtime, params, i);
     if (!r)
         return Unexpected(r.error());
     if (r->size() != sizeof(uint64_t))
@@ -96,7 +96,7 @@ getDataUint64(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 Expected<SFieldCRef, HostFunctionError>
-getDataSField(IW const* _rt, wasm_val_vec_t const* params, int32_t& i)
+getDataSField(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const& m = SField::getKnownCodeToField();
     auto const it = m.find(params->data[i].of.i32);
@@ -201,42 +201,6 @@ getDataString(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
         reinterpret_cast<char const*>(slice->data()), slice->size());
 }
 
-template <class IW>
-Expected<Number, HostFunctionError>
-getDataNumber(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
-{
-    auto const r = getDataSlice(rt, params, i);
-    if (!r)
-        return Unexpected(r.error());
-
-    try
-    {
-        SerialIter sit(*r);
-        STNumber num(sit, sfNumber);
-        return num.value();
-    }
-    catch (...)
-    {
-    }
-    return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-}
-
-template <class IW>
-Expected<Number::rounding_mode, HostFunctionError>
-getDataRM(IW const* rt, wasm_val_vec_t const* params, int32_t& i)
-{
-    auto const rmw = getDataInt32(rt, params, i);
-    if (!rmw)
-        return Unexpected(rmw.error());
-
-    if (*rmw < Number::rounding_mode::to_nearest ||
-        *rmw > Number::rounding_mode::upward)
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
-
-    auto const rm = static_cast<Number::rounding_mode>(*rmw);
-    return rm;
-}
-
 std::nullptr_t
 hfResult(wasm_val_vec_t* results, int32_t value)
 {
@@ -279,22 +243,6 @@ returnResult(
                 params->data[index + 1].of.i32,
                 res->data(),
                 res->size()));
-    }
-    else if constexpr (std::is_same_v<t, Number>)
-    {
-        STNumber num(sfNumber, *res);
-        Serializer msg;
-        num.add(msg);
-        auto const data = msg.getData();
-
-        return hfResult(
-            results,
-            setData(
-                runtime,
-                params->data[index].of.i32,
-                params->data[index + 1].of.i32,
-                data.data(),
-                data.size()));
     }
     else if constexpr (std::is_same_v<t, Hash>)
     {
@@ -1203,22 +1151,22 @@ traceFloat_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     if (params->data[1].of.i32 > maxWasmDataLength)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    int index = 0;
-    auto const msg = getDataString(rt, params, index);
+    int i = 0;
+    auto const msg = getDataString(runtime, params, i);
     if (!msg)
         return hfResult(results, msg.error());
 
-    auto const number = getDataNumber(rt, params, index);
+    auto const number = getDataSlice(runtime, params, i);
     if (!number)
         return hfResult(results, number.error());
 
     return returnResult(
-        rt, params, results, hf->traceFloat(*msg, *number), index);
+        runtime, params, results, hf->traceFloat(*msg, *number), i);
 }
 
 wasm_trap_t*
@@ -1228,20 +1176,21 @@ floatFromInt_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataInt64(rt, params, i);
+    auto const x = getDataInt64(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
     i = 3;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 1;
-    return returnResult(rt, params, results, hf->floatFromInt(*x, *rmw), i);
+    return returnResult(
+        runtime, params, results, hf->floatFromInt(*x, *rounding), i);
 }
 
 wasm_trap_t*
@@ -1251,44 +1200,46 @@ floatFromUint_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataUint64(rt, params, i);
+    auto const x = getDataUint64(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
     i = 4;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 2;
-    return returnResult(rt, params, results, hf->floatFromUint(*x, *rmw), i);
+    return returnResult(
+        runtime, params, results, hf->floatFromUint(*x, *rounding), i);
 }
 
 wasm_trap_t*
 floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const e = getDataInt32(rt, params, i);
-    if (!e)
-        return hfResult(results, e.error());
+    auto const exp = getDataInt32(runtime, params, i);
+    if (!exp)
+        return hfResult(results, exp.error());
 
-    auto const m = getDataInt64(rt, params, i);
-    if (!m)
-        return hfResult(results, m.error());
+    auto const mant = getDataInt64(runtime, params, i);
+    if (!mant)
+        return hfResult(results, mant.error());
 
     i = 4;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 2;
-    return returnResult(rt, params, results, hf->floatSet(*m, *e, *rmw), i);
+    return returnResult(
+        runtime, params, results, hf->floatSet(*mant, *exp, *rounding), i);
 }
 
 wasm_trap_t*
@@ -1298,42 +1249,43 @@ floatCompare_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataNumber(rt, params, i);
+    auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
-    auto const y = getDataNumber(rt, params, i);
+    auto const y = getDataSlice(runtime, params, i);
     if (!y)
         return hfResult(results, y.error());
 
-    return returnResult(rt, params, results, hf->floatCompare(*x, *y), i);
+    return returnResult(runtime, params, results, hf->floatCompare(*x, *y), i);
 }
 
 wasm_trap_t*
 floatAdd_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataNumber(rt, params, i);
+    auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
-    auto const y = getDataNumber(rt, params, i);
+    auto const y = getDataSlice(runtime, params, i);
     if (!y)
         return hfResult(results, y.error());
 
     i = 6;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 4;
-    return returnResult(rt, params, results, hf->floatAdd(*x, *y, *rmw), i);
+    return returnResult(
+        runtime, params, results, hf->floatAdd(*x, *y, *rounding), i);
 }
 
 wasm_trap_t*
@@ -1343,25 +1295,25 @@ floatSubtract_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataNumber(rt, params, i);
+    auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
-    auto const y = getDataNumber(rt, params, i);
+    auto const y = getDataSlice(runtime, params, i);
     if (!y)
         return hfResult(results, y.error());
 
     i = 6;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 4;
     return returnResult(
-        rt, params, results, hf->floatSubtract(*x, *y, *rmw), i);
+        runtime, params, results, hf->floatSubtract(*x, *y, *rounding), i);
 }
 
 wasm_trap_t*
@@ -1371,25 +1323,25 @@ floatMultiply_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataNumber(rt, params, i);
+    auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
-    auto const y = getDataNumber(rt, params, i);
+    auto const y = getDataSlice(runtime, params, i);
     if (!y)
         return hfResult(results, y.error());
 
     i = 6;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 4;
     return returnResult(
-        rt, params, results, hf->floatMultiply(*x, *y, *rmw), i);
+        runtime, params, results, hf->floatMultiply(*x, *y, *rounding), i);
 }
 
 wasm_trap_t*
@@ -1399,48 +1351,50 @@ floatDivide_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataNumber(rt, params, i);
+    auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
-    auto const y = getDataNumber(rt, params, i);
+    auto const y = getDataSlice(runtime, params, i);
     if (!y)
         return hfResult(results, y.error());
 
     i = 6;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 4;
-    return returnResult(rt, params, results, hf->floatDivide(*x, *y, *rmw), i);
+    return returnResult(
+        runtime, params, results, hf->floatDivide(*x, *y, *rounding), i);
 }
 
 wasm_trap_t*
 floatRoot_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataNumber(rt, params, i);
+    auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
-    auto const n = getDataInt32(rt, params, i);
+    auto const n = getDataInt32(runtime, params, i);
     if (!n)
         return hfResult(results, n.error());
 
     i = 5;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 3;
-    return returnResult(rt, params, results, hf->floatRoot(*x, *n, *rmw), i);
+    return returnResult(
+        runtime, params, results, hf->floatRoot(*x, *n, *rounding), i);
 }
 
 wasm_trap_t*
@@ -1450,44 +1404,46 @@ floatPower_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataNumber(rt, params, i);
+    auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
-    auto const n = getDataInt32(rt, params, i);
+    auto const n = getDataInt32(runtime, params, i);
     if (!n)
         return hfResult(results, n.error());
 
     i = 5;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 3;
-    return returnResult(rt, params, results, hf->floatPower(*x, *n, *rmw), i);
+    return returnResult(
+        runtime, params, results, hf->floatPower(*x, *n, *rounding), i);
 }
 
 wasm_trap_t*
 floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataNumber(rt, params, i);
+    auto const x = getDataSlice(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
     i = 4;
-    auto const rmw = getDataRM(rt, params, i);
-    if (!rmw)
-        return hfResult(results, rmw.error());
+    auto const rounding = getDataInt32(runtime, params, i);
+    if (!rounding)
+        return hfResult(results, rounding.error());
 
     i = 2;
-    return returnResult(rt, params, results, hf->floatLog(*x, *rmw), i);
+    return returnResult(
+        runtime, params, results, hf->floatLog(*x, *rounding), i);
 }
 
 namespace test {
@@ -1508,7 +1464,6 @@ public:
         return mem_;
     }
 };
-
 
 // LCOV_EXCL_START
 bool

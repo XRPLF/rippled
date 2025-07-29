@@ -26,6 +26,7 @@
 #include <xrpld/ledger/detail/ApplyViewBase.h>
 
 namespace ripple {
+
 namespace test {
 
 struct TestLedgerDataProvider : public HostFunctions
@@ -380,193 +381,86 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
-    traceFloat(std::string_view const& msg, Number const& data) override
+    traceFloat(std::string_view const& msg, Slice const& data) override
     {
 #ifdef DEBUG_OUTPUT
-        auto j = getJournal().error();
+        auto& j = std::cerr;
 #else
         auto j = getJournal().trace();
 #endif
-        auto const s = to_string(data);
+        auto const s = floatToString(data);
         j << "WAMR TRACE FLOAT: " << msg << " " << s;
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
         return msg.size() + s.size();
     }
 
-    struct SetRound
+    Expected<Bytes, HostFunctionError>
+    floatFromInt(int64_t x, int32_t mode) override
     {
-        Number::rounding_mode oldMode_;
-        SetRound(Number::rounding_mode mode) : oldMode_(Number::getround())
-        {
-            Number::setround(mode);
-        }
-        ~SetRound()
-        {
-            Number::setround(oldMode_);
-        }
-    };
-
-    Expected<Number, HostFunctionError>
-    floatFromInt(int64_t x, Number::rounding_mode mode) override
-    {
-        try
-        {
-            SetRound rm(mode);
-            return Number(x);
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatFromIntImpl(x, mode);
     }
 
-    Expected<Number, HostFunctionError>
-    floatFromUint(uint64_t x, Number::rounding_mode mode) override
+    Expected<Bytes, HostFunctionError>
+    floatFromUint(uint64_t x, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            if (x <=
-                std::numeric_limits<
-                    std::invoke_result_t<decltype(&Number::mantissa), Number>>::
-                    max())
-                return Number(x);
-
-            return Number(x / 10, 1) + Number(x % 10);
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatFromUintImpl(x, mode);
     }
 
-    Expected<Number, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, Number::rounding_mode mode)
-        override
+    Expected<Bytes, HostFunctionError>
+    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            return Number(mantissa, exponent);
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatSetImpl(mantissa, exponent, mode);
     }
 
     Expected<int32_t, HostFunctionError>
-    floatCompare(Number const& x, Number const& y) override
+    floatCompare(Slice const& x, Slice const& y) override
     {
-        try
-        {
-            return x < y ? -1 : (x == y ? 0 : 1);
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatCompareImpl(x, y);
     }
 
-    Expected<Number, HostFunctionError>
-    floatAdd(Number const& x, Number const& y, Number::rounding_mode mode)
-        override
+    Expected<Bytes, HostFunctionError>
+    floatAdd(Slice const& x, Slice const& y, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            return x + y;
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatAddImpl(x, y, mode);
     }
 
-    Expected<Number, HostFunctionError>
-    floatSubtract(Number const& x, Number const& y, Number::rounding_mode mode)
-        override
+    Expected<Bytes, HostFunctionError>
+    floatSubtract(Slice const& x, Slice const& y, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            return x - y;
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatSubtractImpl(x, y, mode);
     }
 
-    Expected<Number, HostFunctionError>
-    floatMultiply(Number const& x, Number const& y, Number::rounding_mode mode)
-        override
+    Expected<Bytes, HostFunctionError>
+    floatMultiply(Slice const& x, Slice const& y, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            return x * y;
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatMultiplyImpl(x, y, mode);
     }
 
-    Expected<Number, HostFunctionError>
-    floatDivide(Number const& x, Number const& y, Number::rounding_mode mode)
-        override
+    Expected<Bytes, HostFunctionError>
+    floatDivide(Slice const& x, Slice const& y, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            return x / y;
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatDivideImpl(x, y, mode);
     }
 
-    Expected<Number, HostFunctionError>
-    floatRoot(Number const& x, int32_t n, Number::rounding_mode mode) override
+    Expected<Bytes, HostFunctionError>
+    floatRoot(Slice const& x, int32_t n, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            return root(x, n);
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatRootImpl(x, n, mode);
     }
 
-    Expected<Number, HostFunctionError>
-    floatPower(Number const& x, int32_t n, Number::rounding_mode mode) override
+    Expected<Bytes, HostFunctionError>
+    floatPower(Slice const& x, int32_t n, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            return power(x, n, mode);
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatPowerImpl(x, n, mode);
     }
 
-    Expected<Number, HostFunctionError>
-    floatLog(Number const& x, Number::rounding_mode mode) override
+    Expected<Bytes, HostFunctionError>
+    floatLog(Slice const& x, int32_t mode) override
     {
-        try
-        {
-            SetRound rm(mode);
-            return lg(x);
-        }
-        catch (...)
-        {
-        }
-        return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        return floatLogImpl(x, mode);
     }
 };
 

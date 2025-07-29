@@ -631,24 +631,38 @@ ln(Number const& x, unsigned iterations = 50)
         throw std::runtime_error("Not positive value");
 
     Number const z = (x - 1) / (x + 1);
-    Number const z2 = z * z;
-    Number denom = Number(1, -20);
+    Number const zz = z * z;
+    Number denom = Number(1, -10);
 
     // Construct the fraction from the bottom up
-    for (int i = iterations; i >= 1; --i)
+    for (int i = iterations; i > 0; --i)
     {
         Number k(2 * i - 1);
-        denom = k + (z2 / denom);
+        denom = k - (i * i * zz / denom);
     }
 
-    return 2 * z / denom;
+    auto const r = 2 * z / denom;
+    return r;
 }
 
 Number
-lg(Number const& value)
+lg(Number const& x)
 {
     static Number const ln10 = ln(Number(10));
-    return ln(value) / ln10;
+
+    if (x <= Number(10))
+    {
+        auto const r = ln(x) / ln10;
+        return r;
+    }
+
+    // ln(x) = ln(normX * 10^norm) = ln(normX) + norm * ln(10)
+    int diffExp = 15 + x.exponent();
+    Number const normalX = x / Number(1, diffExp);  // (1 <= normalX < 10)
+    auto const lnX = ln(normalX) + diffExp * ln10;
+
+    auto const r = lnX / ln10;
+    return r;
 }
 
 // Returns f^(1/d)

@@ -657,58 +657,315 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::traceFloat(
     std::string_view const& msg,
-    Number const& data)
+    Slice const& data)
 {
 #ifdef DEBUG_OUTPUT
     auto j = getJournal().error();
 #else
     auto j = getJournal().trace();
 #endif
-    auto const s = to_string(data);
+    auto const s = floatToString(data);
     j << "WAMR TRACE FLOAT(" << leKey.key << "): " << msg << " " << s;
     return msg.size() + s.size();
 }
 
-struct SetRound
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode)
 {
-    Number::rounding_mode oldMode_;
-    SetRound(Number::rounding_mode mode) : oldMode_(Number::getround())
-    {
-        Number::setround(mode);
-    }
-    ~SetRound()
-    {
-        Number::setround(oldMode_);
-    }
-};
-
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatFromInt(int64_t x, Number::rounding_mode mode)
-{
-    try
-    {
-        SetRound rm(mode);
-        return Number(x);
-    }
-    catch (...)
-    {
-    }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return floatFromIntImpl(x, mode);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatFromUint(uint64_t x, Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode)
 {
-    try
+    return floatFromUintImpl(x, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatSet(
+    int64_t mantissa,
+    int32_t exponent,
+    int32_t mode)
+{
+    return floatSetImpl(mantissa, exponent, mode);
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y)
+{
+    return floatCompareImpl(x, y);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode)
+{
+    return floatAddImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatSubtract(
+    Slice const& x,
+    Slice const& y,
+    int32_t mode)
+{
+    return floatSubtractImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatMultiply(
+    Slice const& x,
+    Slice const& y,
+    int32_t mode)
+{
+    return floatMultiplyImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode)
+{
+    return floatDivideImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode)
+{
+    return floatRootImpl(x, n, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode)
+{
+    return floatPowerImpl(x, n, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode)
+{
+    return floatLogImpl(x, mode);
+}
+
+class Number2 : public Number
+{
+    bool good_;
+
+    enum Issue { XRP, MPT, IOU };
+    Issue issue_;
+
+public:
+    Number2(Slice const& data) : Number(0), good_(false), issue_(IOU)
     {
-        SetRound rm(mode);
+        if (data.size() != 8)
+            return;
+
+        uint64_t const v = SerialIter(data).get64();
+        int const neg = (v & STAmount::cPositive) ? 1 : -1;
+
+        Number x;
+
+        if (v & STAmount::cIssuedCurrency)
+        {
+            // IOU
+            int32_t const e =
+                static_cast<uint8_t>((v >> (64 - 10)) & ((1ull << 8) - 1));
+            int64_t const m = neg * (v & ((1ull << 54) - 1));
+            x = !m ? Number() : Number(m, e - 97);
+            if (m && (x.exponent() > 80 || x.exponent() < -96))
+                return;  // invalid number
+            issue_ = IOU;
+        }
+        else if (v & STAmount::cMPToken)
+        {
+            // MPT
+            int64_t const m = neg * (v & ((1ull << 61) - 1));
+            x = !m ? Number() : Number(m);
+            issue_ = MPT;
+        }
+        else
+        {
+            // XRP
+            int64_t const m = neg * (v & ((1ull << 61) - 1));
+            x = !m ? Number() : Number(m);
+            issue_ = XRP;
+        }
+
+        *static_cast<Number*>(this) = x;
+        good_ = true;
+    }
+
+    Number2(int64_t x) : Number(x), good_(true), issue_(IOU)
+    {
+    }
+
+    Number2(uint64_t x) : Number(0), good_(false), issue_(IOU)
+    {
         if (x <=
             std::numeric_limits<
                 std::invoke_result_t<decltype(&Number::mantissa), Number>>::
                 max())
-            return Number(x);
+            *static_cast<Number*>(this) = Number(x);
+        else
+        {
+            *static_cast<Number*>(this) = Number(x / 10, 1) + Number(x % 10);
+        }
 
-        return Number(x / 10, 1) + Number(x % 10);
+        good_ = true;
+    }
+
+    Number2(int64_t mantissa, int32_t exponent)
+        : Number(mantissa, exponent), good_(true), issue_(IOU)
+    {
+    }
+
+    Number2(Number const& n) : Number(n), good_(true), issue_(IOU)
+    {
+    }
+
+    operator bool() const
+    {
+        return good_;
+    }
+
+    Expected<Bytes, HostFunctionError>
+    toBytes() const
+    {
+        uint64_t v = mantissa() >= 0 ? STAmount::cPositive : 0;
+
+        if (issue_ == IOU)
+        {
+            v |= STAmount::cIssuedCurrency;
+
+            if (!mantissa())
+            {
+                if (exponent() != std::numeric_limits<int>::lowest())
+                    return Unexpected(
+                        HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            }
+            else if (exponent() > 80 || exponent() < -96)
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
+            uint64_t absM = mantissa() >= 0 ? mantissa() : -mantissa();
+            if (absM > ((1ull << 54) - 1))
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
+            v |= absM;
+
+            int const e = (!mantissa() ? 0 : exponent()) + 97;
+            v |= ((uint64_t)e) << 54;
+        }
+        else if (issue_ == MPT)
+        {
+            v |= STAmount::cMPToken;
+            uint64_t x = toUInt(61);
+            if (x == std::numeric_limits<uint64_t>::max())
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            v |= x;
+        }
+        else
+        {
+            uint64_t x = toUInt(61);
+            if (x == std::numeric_limits<uint64_t>::max())
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            v |= x;
+        }
+
+        Serializer msg;
+        msg.add64(v);
+        auto const data = msg.getData();
+        return data;
+    }
+
+protected:
+    uint64_t
+    toUInt(unsigned bits) const
+    {
+        if (bits >= sizeof(uint64_t) * 8)
+            return std::numeric_limits<uint64_t>::max();
+
+        uint64_t maxV = (1ull << bits) - 1;
+        uint64_t absM = mantissa() >= 0 ? mantissa() : -mantissa();
+
+        if (!absM)
+            return 0;
+        else if (exponent() < 0)
+        {
+            for (int i = 0; i > exponent(); --i)
+            {
+                if (absM < 10)
+                    return std::numeric_limits<uint64_t>::max();  // underflow
+                absM /= 10;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < exponent(); ++i)
+            {
+                if (absM > maxV / 10)
+                    return std::numeric_limits<uint64_t>::max();  // overflow
+                absM *= 10;
+            }
+        }
+
+        return absM > maxV ? std::numeric_limits<uint64_t>::max() : absM;
+    }
+};
+
+struct SetRound
+{
+    Number::rounding_mode oldMode_;
+    bool good_;
+
+    SetRound(int32_t mode) : oldMode_(Number::getround()), good_(false)
+    {
+        if (mode < Number::rounding_mode::to_nearest ||
+            mode > Number::rounding_mode::upward)
+            return;
+
+        Number::setround(static_cast<Number::rounding_mode>(mode));
+        good_ = true;
+    }
+
+    ~SetRound()
+    {
+        Number::setround(oldMode_);
+    }
+
+    operator bool() const
+    {
+        return good_;
+    }
+};
+
+std::string
+floatToString(Slice const& data)
+{
+    Number2 const num(data);
+    if (!num)
+    {
+        std::string hex;
+        hex.reserve(data.size() * 2);
+        boost::algorithm::hex(
+            data.begin(), data.end(), std::back_inserter(hex));
+        return "Invalid data: " + hex;
+    }
+
+    auto const s = to_string(num);
+    return s;
+}
+
+Expected<Bytes, HostFunctionError>
+floatFromIntImpl(int64_t x, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 num(x);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        return num.toBytes();
     }
     catch (...)
     {
@@ -716,16 +973,39 @@ WasmHostFunctionsImpl::floatFromUint(uint64_t x, Number::rounding_mode mode)
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatSet(
-    int64_t mantissa,
-    int32_t exponent,
-    Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+floatFromUintImpl(uint64_t x, int32_t mode)
 {
     try
     {
         SetRound rm(mode);
-        return Number(mantissa, exponent);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 num(x);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        return num.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 num(mantissa, exponent);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        return num.toBytes();
     }
     catch (...)
     {
@@ -734,11 +1014,17 @@ WasmHostFunctionsImpl::floatSet(
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::floatCompare(Number const& x, Number const& y)
+floatCompareImpl(Slice const& x, Slice const& y)
 {
     try
     {
-        return x < y ? -1 : (x == y ? 0 : 1);
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        return xx < yy ? 2 : (xx == yy ? 0 : 1);
     }
     catch (...)
     {
@@ -746,16 +1032,23 @@ WasmHostFunctionsImpl::floatCompare(Number const& x, Number const& y)
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatAdd(
-    Number const& x,
-    Number const& y,
-    Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         SetRound rm(mode);
-        return x + y;
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 res = xx + yy;
+        return res.toBytes();
     }
     catch (...)
     {
@@ -763,16 +1056,22 @@ WasmHostFunctionsImpl::floatAdd(
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatSubtract(
-    Number const& x,
-    Number const& y,
-    Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         SetRound rm(mode);
-        return x - y;
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 res = xx - yy;
+        return res.toBytes();
     }
     catch (...)
     {
@@ -780,16 +1079,22 @@ WasmHostFunctionsImpl::floatSubtract(
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatMultiply(
-    Number const& x,
-    Number const& y,
-    Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         SetRound rm(mode);
-        return x * y;
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 res = xx * yy;
+        return res.toBytes();
     }
     catch (...)
     {
@@ -797,16 +1102,22 @@ WasmHostFunctionsImpl::floatMultiply(
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatDivide(
-    Number const& x,
-    Number const& y,
-    Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
 {
     try
     {
         SetRound rm(mode);
-        return x / y;
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 res = xx / yy;
+        return res.toBytes();
     }
     catch (...)
     {
@@ -814,16 +1125,21 @@ WasmHostFunctionsImpl::floatDivide(
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatRoot(
-    Number const& x,
-    int32_t n,
-    Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+floatRootImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
         SetRound rm(mode);
-        return root(x, n);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 const res(root(xx, n));
+
+        return res.toBytes();
     }
     catch (...)
     {
@@ -831,16 +1147,24 @@ WasmHostFunctionsImpl::floatRoot(
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatPower(
-    Number const& x,
-    int32_t n,
-    Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
         SetRound rm(mode);
-        return power(x, n, mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        if (xx == Number() && !n)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+        Number2 const res(power(xx, n, 1));
+
+        return res.toBytes();
     }
     catch (...)
     {
@@ -848,13 +1172,21 @@ WasmHostFunctionsImpl::floatPower(
     return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
-Expected<Number, HostFunctionError>
-WasmHostFunctionsImpl::floatLog(Number const& x, Number::rounding_mode mode)
+Expected<Bytes, HostFunctionError>
+floatLogImpl(Slice const& x, int32_t mode)
 {
     try
     {
         SetRound rm(mode);
-        return lg(x);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 const res(lg(xx));
+
+        return res.toBytes();
     }
     catch (...)
     {

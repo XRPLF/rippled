@@ -18,7 +18,7 @@
 //==============================================================================
 
 #ifdef _DEBUG
-#define DEBUG_OUTPUT 1
+// #define DEBUG_OUTPUT 1
 #endif
 
 #include <test/app/TestHostFunctions.h>
@@ -512,7 +512,7 @@ struct Wasm_test : public beast::unit_test::suite
     void
     testFloat()
     {
-        testcase("wasm float");
+        testcase("float point");
 
         std::string const funcName("finish");
 
@@ -528,7 +528,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(re->result && (re->cost == 91'394));
+                BEAST_EXPECT(re->result && (re->cost == 91'412));
             }
             env.close();
         }
@@ -663,24 +663,24 @@ struct Wasm_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        // testGetDataHelperFunctions();
-        // testWasmLib();
-        // testBadWasm();
-        // testWasmCheckJson();
-        // testWasmCompareJson();
-        // testWasmLedgerSqn();
+        testGetDataHelperFunctions();
+        testWasmLib();
+        testBadWasm();
+        testWasmCheckJson();
+        testWasmCompareJson();
+        testWasmLedgerSqn();
 
-        // testWasmFib();
-        // testWasmSha();
-        // testWasmB58();
+        testWasmFib();
+        testWasmSha();
+        testWasmB58();
 
-        // // runing too long
-        // // testWasmSP1Verifier();
-        // testWasmBG16Verifier();
+        // runing too long
+        // testWasmSP1Verifier();
+        testWasmBG16Verifier();
 
-        // testHFCost();
+        testHFCost();
 
-        // testEscrowWasmDN();
+        testEscrowWasmDN();
         testFloat();
 
         testCodecovWasm();
