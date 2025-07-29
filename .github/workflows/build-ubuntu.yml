@@ -127,17 +127,11 @@ env:
             "release": "jammy",
             "compiler_name": "gcc",
             "compiler_version": "12"
-        },
-        {
-            "distro": "ubuntu",
-            "release": "noble",
-            "compiler_name": "clang",
-            "compiler_version": "16"
         }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
-      "Debug", 
+      "Debug",
       "Release"
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-

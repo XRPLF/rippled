@@ -28,8 +28,8 @@ runs:
         conan install \
           --output-folder . \
           --build '*' \
-          --options:host "&:tests=True" \
-          --options:host "&:xrpld=True" \
+          --options:host '&:tests=True' \
+          --options:host '&:xrpld=True' \
           --settings:all build_type=${{ inputs.build_type }} \
           ..
     - name: Upload Conan dependencies

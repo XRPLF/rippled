@@ -41,9 +41,9 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
 #  rhel:
-#    needs:
-#      - check-clang-format
-#      - check-levelization
+##    needs:
+##      - check-clang-format
+##      - check-levelization
 #    uses: ./.github/workflows/build-rhel.yml
 #    with:
 #      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
@@ -51,7 +51,7 @@ jobs:
 #    secrets:
 #      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
 #      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-#
+
   ubuntu:
 #    needs:
 #      - check-clang-format
@@ -65,9 +65,9 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
 #  macos:
-#    needs:
-#      - check-clang-format
-#      - check-levelization
+##    needs:
+##      - check-clang-format
+##      - check-levelization
 #    uses: ./.github/workflows/build-macos.yml
 #    with:
 #      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
@@ -77,9 +77,9 @@ jobs:
 #      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 #
 #  windows:
-#    needs:
-#      - check-clang-format
-#      - check-levelization
+##    needs:
+##      - check-clang-format
+##      - check-levelization
 #    uses: ./.github/workflows/build-windows.yml
 #    with:
 #      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}

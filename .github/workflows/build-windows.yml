@@ -46,22 +46,6 @@ env:
   # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
   # duplication, we define it here using environment variables and create the
   # matrix in the first job.
-#  STRATEGY_MATRIX_ARCHITECTURE: >-
-#    [
-#      {
-#        "runner": "windows-latest"
-#      }
-#    ]
-#  STRATEGY_MATRIX_BUILD_TYPE: >-
-#    [
-#      "Debug",
-#      "Release"
-#    ]
-#  STRATEGY_MATRIX_CMAKE_ARGS: >-
-#    [
-#      "-Dunity=OFF",
-#      "-Dunity=ON"
-#    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
@@ -70,12 +54,28 @@ env:
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
-      "Debug"
+      "Debug",
+      "Release"
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
+      "-Dunity=OFF",
       "-Dunity=ON"
     ]
+#  STRATEGY_MATRIX_ARCHITECTURE: >-
+#    [
+#      {
+#        "runner": "windows-latest"
+#      }
+#    ]
+#  STRATEGY_MATRIX_BUILD_TYPE: >-
+#    [
+#      "Debug"
+#    ]
+#  STRATEGY_MATRIX_CMAKE_ARGS: >-
+#    [
+#      "-Dunity=ON"
+#    ]
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by

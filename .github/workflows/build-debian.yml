@@ -125,12 +125,6 @@ env:
         {
             "distro": "debian",
             "release": "bookworm",
-            "compiler_name": "gcc",
-            "compiler_version": "12"
-        },
-        {
-            "distro": "debian",
-            "release": "bookworm",
             "compiler_name": "clang",
             "compiler_version": "16"
         }
