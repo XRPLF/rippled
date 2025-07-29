@@ -23,7 +23,7 @@ env:
   CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
   CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
   CONAN_GLOBAL_CONF: |
-    general.default_package_id_mode=full_package_mode
+    core.default_package_id_mode=full_package_mode
     core.download:parallel={{ os.cpu_count() }}
     core.upload:parallel={{ os.cpu_count() }}
     tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
