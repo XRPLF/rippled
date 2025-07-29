@@ -805,7 +805,6 @@ class Validations_test : public beast::unit_test::suite
         Ledger ledgerACD = h["acd"];
 
         using Seq = Ledger::Seq;
-        using ID = Ledger::ID;
 
         auto pref = [](Ledger ledger) {
             return std::make_pair(ledger.seq(), ledger.id());
