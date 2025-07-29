@@ -69,9 +69,7 @@ public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
         : env_(env), clock_drift_(cd)
     {
-        auto opt = parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-        if (opt)
-            accountID_ = *opt;
+        accountID_ = env_.master.id();
         std::string t = "10000";
         data_ = Bytes{t.begin(), t.end()};
     }
@@ -165,12 +163,15 @@ public:
     Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override
     {
-        // auto const& sn = fname.getName();
         if (fname == sfBalance)
         {
             int64_t x = 10'000;
             uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
             return Bytes{p, p + sizeof(x)};
+        }
+        else if (fname == sfAccount)
+        {
+            return Bytes(accountID_.begin(), accountID_.end());
         }
         return data_;
     }
@@ -178,6 +179,15 @@ public:
     Expected<Bytes, HostFunctionError>
     getTxNestedField(Slice const& locator) override
     {
+        if (locator.size() == 4)
+        {
+            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const sfield = l[0];
+            if (sfield == sfAccount.fieldCode)
+            {
+                return Bytes(accountID_.begin(), accountID_.end());
+            }
+        }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
                              0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
@@ -188,6 +198,15 @@ public:
     Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjNestedField(Slice const& locator) override
     {
+        if (locator.size() == 4)
+        {
+            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const sfield = l[0];
+            if (sfield == sfAccount.fieldCode)
+            {
+                return Bytes(accountID_.begin(), accountID_.end());
+            }
+        }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
                              0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
@@ -198,6 +217,15 @@ public:
     Expected<Bytes, HostFunctionError>
     getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
     {
+        if (locator.size() == 4)
+        {
+            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const sfield = l[0];
+            if (sfield == sfAccount.fieldCode)
+            {
+                return Bytes(accountID_.begin(), accountID_.end());
+            }
+        }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
                              0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
