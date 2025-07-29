@@ -47,77 +47,15 @@ env:
   # duplication, we define it here using environment variables and create the
   # matrix in the first job. The matrix defined below should be kept in sync
   # with https://github.com/XRPLF/ci/blob/main/.github/workflows/debian.yml.
-#  STRATEGY_MATRIX_ARCHITECTURE: >-
-#    [
-#      {
-#          "platform": "linux/amd64",
-#          "runner": ["self-hosted", "Linux", "X64", "heavy"]
-#      },
-#      {
-#          "platform": "linux/arm64",
-#          "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
-#      }
-#    ]
-#  STRATEGY_MATRIX_OS: >-
-#    [
-#        {
-#            "distro": "debian",
-#            "release": "bookworm",
-#            "compiler_name": "gcc",
-#            "compiler_version": "12"
-#        },
-#        {
-#            "distro": "debian",
-#            "release": "bookworm",
-#            "compiler_name": "gcc",
-#            "compiler_version": "13"
-#        },
-#        {
-#            "distro": "debian",
-#            "release": "bookworm",
-#            "compiler_name": "gcc",
-#            "compiler_version": "14"
-#        },
-#        {
-#            "distro": "debian",
-#            "release": "bookworm",
-#            "compiler_name": "clang",
-#            "compiler_version": "16"
-#        },
-#        {
-#            "distro": "debian",
-#            "release": "bookworm",
-#            "compiler_name": "clang",
-#            "compiler_version": "17"
-#        },
-#        {
-#            "distro": "debian",
-#            "release": "bookworm",
-#            "compiler_name": "clang",
-#            "compiler_version": "18"
-#        },
-#        {
-#            "distro": "debian",
-#            "release": "bookworm",
-#            "compiler_name": "clang",
-#            "compiler_version": "19"
-#        }
-#    ]
-#  STRATEGY_MATRIX_BUILD_TYPE: >-
-#    [
-#      "Debug",
-#      "Release"
-#    ]
-#  STRATEGY_MATRIX_CMAKE_ARGS: >-
-#    [
-#      "-Dunity=OFF",
-#      "-Dunity=ON"
-#    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
           "platform": "linux/amd64",
           "runner": ["self-hosted", "Linux", "X64", "heavy"]
+      },
+      {
+          "platform": "linux/arm64",
+          "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
       }
     ]
   STRATEGY_MATRIX_OS: >-
@@ -125,8 +63,44 @@ env:
         {
             "distro": "debian",
             "release": "bookworm",
+            "compiler_name": "gcc",
+            "compiler_version": "12"
+        },
+        {
+            "distro": "debian",
+            "release": "bookworm",
+            "compiler_name": "gcc",
+            "compiler_version": "13"
+        },
+        {
+            "distro": "debian",
+            "release": "bookworm",
+            "compiler_name": "gcc",
+            "compiler_version": "14"
+        },
+        {
+            "distro": "debian",
+            "release": "bookworm",
             "compiler_name": "clang",
             "compiler_version": "16"
+        },
+        {
+            "distro": "debian",
+            "release": "bookworm",
+            "compiler_name": "clang",
+            "compiler_version": "17"
+        },
+        {
+            "distro": "debian",
+            "release": "bookworm",
+            "compiler_name": "clang",
+            "compiler_version": "18"
+        },
+        {
+            "distro": "debian",
+            "release": "bookworm",
+            "compiler_name": "clang",
+            "compiler_version": "19"
         }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
@@ -136,8 +110,34 @@ env:
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
+      "-Dunity=OFF",
       "-Dunity=ON"
     ]
+#  STRATEGY_MATRIX_ARCHITECTURE: >-
+#    [
+#      {
+#          "platform": "linux/amd64",
+#          "runner": ["self-hosted", "Linux", "X64", "heavy"]
+#      }
+#    ]
+#  STRATEGY_MATRIX_OS: >-
+#    [
+#        {
+#            "distro": "debian",
+#            "release": "bookworm",
+#            "compiler_name": "clang",
+#            "compiler_version": "16"
+#        }
+#    ]
+#  STRATEGY_MATRIX_BUILD_TYPE: >-
+#    [
+#      "Debug",
+#      "Release"
+#    ]
+#  STRATEGY_MATRIX_CMAKE_ARGS: >-
+#    [
+#      "-Dunity=ON"
+#    ]
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by
