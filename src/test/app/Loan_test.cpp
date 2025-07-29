@@ -1938,7 +1938,7 @@ class Loan_test : public beast::unit_test::suite
         env(batch::outer(borrower, seq, batchFee, tfAllOrNothing),
             batch::inner(forgedLoanSet, seq + 1),
             batch::inner(pay(borrower, lender, XRP(1)), seq + 2),
-            ter(tesSUCCESS));
+            ter(temBAD_SIGNATURE));
         env.close();
 
         // ? Check that the loan was created
@@ -1949,37 +1949,7 @@ class Loan_test : public beast::unit_test::suite
             auto const res =
                 env.rpc("json", "account_objects", to_string(params));
             auto const objects = res[jss::result][jss::account_objects];
-            BEAST_EXPECT(objects.size() == 1);
-
-            auto const loan = objects[0u];
-            BEAST_EXPECT(loan[sfAssetsAvailable] == "1000");
-            BEAST_EXPECT(loan[sfBorrower] == borrower.human());
-            BEAST_EXPECT(loan[sfCloseInterestRate] == 0);
-            BEAST_EXPECT(loan[sfClosePaymentFee] == "0");
-            BEAST_EXPECT(loan[sfFlags] == 0);
-            BEAST_EXPECT(loan[sfGracePeriod] == 60);
-            BEAST_EXPECT(loan[sfInterestRate] == 0);
-            BEAST_EXPECT(loan[sfLateInterestRate] == 0);
-            BEAST_EXPECT(loan[sfLatePaymentFee] == "0");
-            BEAST_EXPECT(loan[sfLoanBrokerID] == to_string(broker.brokerID));
-            BEAST_EXPECT(loan[sfLoanOriginationFee] == "0");
-            BEAST_EXPECT(loan[sfLoanSequence] == 1);
-            BEAST_EXPECT(loan[sfLoanServiceFee] == "0");
-            BEAST_EXPECT(
-                loan[sfNextPaymentDueDate] == loan[sfStartDate].asUInt() + 60);
-            BEAST_EXPECT(loan[sfOverpaymentFee] == 0);
-            BEAST_EXPECT(loan[sfOverpaymentInterestRate] == 0);
-            BEAST_EXPECT(loan[sfPaymentInterval] == 60);
-            BEAST_EXPECT(loan[sfPaymentRemaining] == 1);
-            BEAST_EXPECT(loan[sfPreviousPaymentDate] == 0);
-            BEAST_EXPECT(loan[sfPrincipalOutstanding] == "1000");
-            BEAST_EXPECT(loan[sfPrincipalRequested] == "1000");
-            BEAST_EXPECT(
-                loan[sfStartDate].asUInt() ==
-                startDate.time_since_epoch().count());
-
-            // TODO: Draw the funds for a full exploit
-            // env(draw(borrower, loanKeylet.key, XRP(500)));
+            BEAST_EXPECT(objects.size() == 0);
         }
     }
 

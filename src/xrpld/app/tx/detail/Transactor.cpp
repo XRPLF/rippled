@@ -231,12 +231,17 @@ Transactor::preflight2(PreflightContext const& ctx)
         // regardless of success or failure
         return *ret;
 
-    auto const sigValid = checkValidity(
-        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
-    if (sigValid.first == Validity::SigBad)
+    // Skip signature check on batch inner transactions
+    if (!ctx.tx.isFlag(tfInnerBatchTxn) || !ctx.rules.enabled(featureBatch))
     {
-        JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
-        return temINVALID;  // LCOV_EXCL_LINE
+        auto const sigValid = checkValidity(
+            ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+        if (sigValid.first == Validity::SigBad)
+        {
+            JLOG(ctx.j.debug())
+                << "preflight2: bad signature. " << sigValid.second;
+            return temINVALID;  // LCOV_EXCL_LINE
+        }
     }
     return tesSUCCESS;
 }
@@ -662,8 +667,7 @@ Transactor::checkSign(
 
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (sigObject.isFlag(tfInnerBatchTxn) &&
-        ctx.view.rules().enabled(featureBatch))
+    if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||

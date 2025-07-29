@@ -62,6 +62,17 @@ NotTEC
 LoanSet::preflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
+
+    // Special case for Batch inner transactions
+    if (tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch) &&
+        !tx.isFieldPresent(sfCounterparty))
+    {
+        auto const parentBatchId = ctx.parentBatchId.value_or(uint256{0});
+        JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                            << "no Counterparty for inner LoanSet transaction.";
+        return temBAD_SIGNER;
+    }
+
     auto const counterPartySig = ctx.tx.getFieldObject(sfCounterpartySignature);
 
     if (auto const ret =
@@ -139,10 +150,12 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
     // Each signer adds one more baseFee to the minimum required fee
-    // for the transaction. Note that unlike the base class, if there are no
-    // signers, 1 extra signature is still counted for the single signer.
-    std::size_t const signerCount =
-        tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 1;
+    // for the transaction. Note that unlike the base class, the single signer
+    // is counted if present. It will only be absent in a batch inner
+    // transaction.
+    std::size_t const signerCount = tx.isFieldPresent(sfSigners)
+        ? tx.getFieldArray(sfSigners).size()
+        : (counterSig.isFieldPresent(sfTxnSignature) ? 1 : 0);
 
     return normalCost + (signerCount * baseFee);
 }
