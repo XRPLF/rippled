@@ -316,14 +316,14 @@ escrowCreatePreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter =
-            requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
+            requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
     if (auto const ter =
-            requireAuth(ctx.view, mptIssue, dest, MPTAuthType::WeakAuth);
+            requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
@@ -743,7 +743,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter =
-            requireAuth(ctx.view, mptIssue, dest, MPTAuthType::WeakAuth);
+            requireAuth(ctx.view, mptIssue, dest, AuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
@@ -1257,7 +1257,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter =
-            requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
+            requireAuth(ctx.view, mptIssue, account, AuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
