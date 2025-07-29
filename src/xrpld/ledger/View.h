@@ -842,9 +842,14 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
-/* Check if MPToken exists:
- * - StrongAuth - before checking lsfMPTRequireAuth is set
- * - WeakAuth - after checking if lsfMPTRequireAuth is set
+/* Check if MPToken (for MPT) or trust line (for IOU) exists:
+ * - StrongAuth - before checking if authorization is required
+ * - WeakAuth
+ *    for MPT - after checking lsfMPTRequireAuth flag
+ *    for IOU - do not check if trust line exists
+ * - Legacy
+ *    for MPT - before checking lsfMPTRequireAuth flag i.e. same as StrongAuth
+ *    for IOU - do not check if trust line exists i.e. same as WeakAuth
  */
 enum class AuthType { StrongAuth, WeakAuth, Legacy };
 

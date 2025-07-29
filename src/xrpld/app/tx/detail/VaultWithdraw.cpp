@@ -49,9 +49,19 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination];
-        destination && *destination == beast::zero)
+        destination.has_value())
     {
-        JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty destination account.";
+        if (*destination == beast::zero)
+        {
+            JLOG(ctx.j.debug())
+                << "VaultWithdraw: zero/empty destination account.";
+            return temMALFORMED;
+        }
+    }
+    else if (ctx.tx.isFieldPresent(sfDestinationTag))
+    {
+        JLOG(ctx.j.debug()) << "VaultWithdraw: sfDestinationTag is set but "
+                               "sfDestination is not";
         return temMALFORMED;
     }
 
@@ -141,7 +151,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // authType = AuthType::StrongAuth;
     }
 
-    // Destination MPToken must exist (if asset is an MPT)
+    // Destination MPToken (for an MPT) or trust line (for an IOU) must exist
+    // if not sending to Account.
     if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct, authType);
         !isTesSuccess(ter))
         return ter;
