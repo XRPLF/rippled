@@ -2415,6 +2415,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         jvObj[jss::flags] = val->getFlags();
         jvObj[jss::signing_time] = *(*val)[~sfSigningTime];
         jvObj[jss::data] = strHex(val->getSerializer().slice());
+        jvObj[jss::network_id] = app_.config().NETWORK_ID;
 
         if (auto version = (*val)[~sfServerVersion])
             jvObj[jss::server_version] = std::to_string(*version);
@@ -3147,6 +3148,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::ledger_hash] = to_string(lpAccepted->info().hash);
             jvObj[jss::ledger_time] = Json::Value::UInt(
                 lpAccepted->info().closeTime.time_since_epoch().count());
+
+            jvObj[jss::network_id] = app_.config().NETWORK_ID;
 
             if (!lpAccepted->rules().enabled(featureXRPFees))
                 jvObj[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
@@ -4208,6 +4211,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::ledger_hash] = to_string(lpClosed->info().hash);
         jvResult[jss::ledger_time] = Json::Value::UInt(
             lpClosed->info().closeTime.time_since_epoch().count());
+        jvResult[jss::network_id] = app_.config().NETWORK_ID;
         if (!lpClosed->rules().enabled(featureXRPFees))
             jvResult[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();

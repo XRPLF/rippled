@@ -3257,7 +3257,6 @@ operator==(aged_unordered_container<
 {
     if (size() != other.size())
         return false;
-    using EqRng = std::pair<const_iterator, const_iterator>;
     for (auto iter(cbegin()), last(cend()); iter != last;)
     {
         auto const& k(extract(*iter));
