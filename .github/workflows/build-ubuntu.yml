@@ -124,6 +124,12 @@ env:
     [
         {
             "distro": "ubuntu",
+            "release": "jammy",
+            "compiler_name": "gcc",
+            "compiler_version": "12"
+        },
+        {
+            "distro": "ubuntu",
             "release": "noble",
             "compiler_name": "clang",
             "compiler_version": "16"

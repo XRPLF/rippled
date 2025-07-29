@@ -52,7 +52,6 @@ class Xrpl(ConanFile):
         'unity': False,
         'xrpld': False,
 
-        'b2/*:toolset': 'cxx',
         'date/*:header_only': True,
         'grpc/*:shared': False,
         'grpc/*:secure': True,
