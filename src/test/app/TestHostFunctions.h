@@ -20,6 +20,7 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
+#include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -109,6 +110,37 @@ public:
     getParentLedgerHash() override
     {
         return env_.current()->info().parentHash;
+    }
+
+    Expected<Hash, HostFunctionError>
+    getLedgerAccountHash() override
+    {
+        return env_.current()->info().accountHash;
+    }
+
+    Expected<Hash, HostFunctionError>
+    getLedgerTransactionHash() override
+    {
+        return env_.current()->info().txHash;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getBaseFee() override
+    {
+        // relatively safe to assume the tx base fee won't be > 2^31-1 drops
+        return static_cast<int32_t>(env_.current()->fees().base.drops());
+    }
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(uint256 const& amendmentId) override
+    {
+        return 1;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(std::string_view const& amendmentName) override
+    {
+        return 1;
     }
 
     virtual Expected<int32_t, HostFunctionError>
