@@ -40,7 +40,11 @@ public:
     // Callers should use this if they possibly need an authoritative
     // response immediately.
     virtual std::shared_ptr<Ledger const>
-    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason) = 0;
+    acquire(
+        uint256 const& hash,
+        std::uint32_t seq,
+        InboundLedger::Reason,
+        char const* context) = 0;
 
     // Callers should use this if they are known to be executing on the Job
     // Queue. TODO review whether all callers of acquire() can use this
