@@ -338,14 +338,17 @@ class Loan_test : public beast::unit_test::suite
     createVaultAndBroker(
         jtx::Env& env,
         jtx::PrettyAsset const& asset,
-        jtx::Account const& lender)
+        jtx::Account const& lender,
+        std::optional<Number> debtMax = std::nullopt)
     {
         using namespace jtx;
 
         Vault vault{env};
 
         auto const deposit = asset(vaultDeposit);
-        auto const debtMaximumValue = asset(debtMaximumParameter).value();
+        auto const debtMaximumValue = debtMax
+            ? STAmount{asset.raw(), *debtMax}
+            : asset(debtMaximumParameter).value();
         auto const coverDepositValue = asset(coverDepositParameter).value();
 
         auto [tx, vaultKeylet] =
@@ -1968,6 +1971,63 @@ class Loan_test : public beast::unit_test::suite
         }
     }
 
+    BrokerInfo
+    createVaultAndBrokerNoMaxDebt(
+        jtx::Env& env,
+        jtx::PrettyAsset const& asset,
+        jtx::Account const& lender)
+    {
+        return createVaultAndBroker(env, asset, lender, Number(0));
+    }
+
+    void
+    testWrongMaxDebtBehavior()
+    {
+        testcase << "Wrong Max Debt Behavior";
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+
+        env.fund(XRP(100'000), issuer, noripple(lender));
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+        BrokerInfo broker{createVaultAndBrokerNoMaxDebt(env, xrpAsset, lender)};
+
+        if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
+            BEAST_EXPECT(brokerSle))
+        {
+            BEAST_EXPECT(brokerSle->at(sfDebtMaximum) == 0);
+        }
+
+        using namespace loan;
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        Number const principalRequest{1, 3};
+        auto const startDate = env.now() + 60s;
+
+        auto createJson = env.json(
+            set(lender, broker.brokerID, principalRequest, startDate),
+            fee(loanSetFee));
+
+        Json::Value counterpartyJson{Json::objectValue};
+        counterpartyJson[sfTxnSignature] = createJson[sfTxnSignature];
+        counterpartyJson[sfSigningPubKey] = createJson[sfSigningPubKey];
+        if (!BEAST_EXPECT(!createJson.isMember(jss::Signers)))
+            counterpartyJson[sfSigners] = createJson[sfSigners];
+
+        createJson = env.json(
+            createJson, json(sfCounterpartySignature, counterpartyJson));
+        env(createJson);
+
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -1976,6 +2036,7 @@ public:
         testSelfLoan();
         testLifecycle();
         testBatchBypassCounterparty();
+        testWrongMaxDebtBehavior();
     }
 };
 
