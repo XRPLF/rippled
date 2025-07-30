@@ -91,7 +91,7 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
+          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           echo "Conan profile:"
           conan profile show
@@ -104,7 +104,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          os: ${{ matrix.distro }}-${{ matrix.codename }}
+          remote_name: ${{ matrix.distro }}-${{ matrix.codename }}
       - name: upload archive
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -162,7 +162,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          os: ${{ matrix.distro }}-${{ matrix.codename }}
+          remote_name: ${{ matrix.distro }}-${{ matrix.codename }}
       - name: build
         uses: ./.github/actions/build
         with:
@@ -224,7 +224,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          os: ubuntu-jammy
+          remote_name: ubuntu-jammy
       - name: build
         uses: ./.github/actions/build
         with:
@@ -275,7 +275,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          os: ubuntu-jammy
+          remote_name: ubuntu-jammy
       - name: build
         uses: ./.github/actions/build
         with:
@@ -346,7 +346,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ env.configuration }}
-          os: ubuntu-jammy
+          remote_name: ubuntu-jammy
       - name: export
         run: |
           conan export . --version head
@@ -397,7 +397,7 @@ jobs:
           uses: ./.github/actions/dependencies
           with:
             configuration: Debug
-            os: debian-bookworm
+            remote_name: debian-bookworm
 
         - name: prepare environment
           run: |

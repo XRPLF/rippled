@@ -2,7 +2,7 @@ name: dependencies
 inputs:
   configuration:
     required: true
-  os:
+  remote_name:
     required: false
 # An implicit input is the environment variable `build_dir`.
 runs:
@@ -13,23 +13,33 @@ runs:
       run: |
         conan export --version 1.1.10 external/snappy
         conan export --version 4.0.3 external/soci
-    - name: add Ripple Conan remote
+    - name: add Conan remotes
       if: env.CONAN_URL != ''
       shell: bash
       run: |
-        if conan remote list | grep -q "ripple"; then
-            conan remote remove ripple
-            echo "Removed conan remote ripple"
+        echo "Adding Conan remotes for recipes."
+        if conan remote list | grep -q "recipes"; then
+          conan remote update recipes --index 0 --url ${CONAN_URL}/recipes
+          echo "Updated Conan remote 'recipes' to ${CONAN_URL}/recipes."
+        elif
+          conan remote add --index 0 recipes ${CONAN_URL}/recipes
+          echo "Added new conan remote 'recipes' at ${CONAN_URL}/recipes."
         fi
-        conan remote add --index 0 ripple "${CONAN_URL}"
-        echo "Added conan remote ripple at ${CONAN_URL}"
-    - name: try to authenticate to Ripple Conan remote
-      if: env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
+        echo "Adding Conan remotes for packages."
+        if conan remote list | grep -q "${{ inputs.remote_name }}"; then
+          conan remote update ${{ inputs.remote_name }} --index 1 --url ${CONAN_URL}/${{ inputs.remote_name }}
+          echo "Updated Conan remote '${{ inputs.remote_name }}' to ${CONAN_URL}/${{ inputs.remote_name }}."
+        elif
+          conan remote add --index 1 ${{ inputs.remote_name }} ${CONAN_URL}/${{ inputs.remote_name }}
+          echo "Added new conan remote '${{ inputs.remote_name }}' at ${CONAN_URL}/${{ inputs.remote_name }}."
+        fi
+    - name: Log into Conan remotes
+      if: env.CONAN_URL != '' && env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
       id: remote
       shell: bash
       run: |
-        echo "Authenticating to ripple remote..."
-        conan remote auth ripple --force
+        conan remote login recipes "${{ env.CONAN_LOGIN_USERNAME_RIPPLE }}" --password "${{ env.CONAN_PASSWORD_RIPPLE }}"
+        conan remote login ${{ inputs.conan_remote_name }} "${{ env.CONAN_LOGIN_USERNAME_RIPPLE }}" --password "${{ env.CONAN_PASSWORD_RIPPLE }}"
         conan remote list-users
     - name: list missing binaries
       id: binaries
@@ -37,7 +47,7 @@ runs:
       # Print the list of dependencies that would need to be built locally.
       # A non-empty list means we have "failed" to cache binaries remotely.
       run: |
-        echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} ${{ inputs.os && '--settings os=' || '' }}${{ inputs.os }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
+        echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
     - name: install dependencies
       shell: bash
       run: |
@@ -49,5 +59,4 @@ runs:
           --options:host "&:tests=True" \
           --options:host "&:xrpld=True" \
           --settings:all build_type=${{ inputs.configuration }} \
-          ${{ inputs.os && '--settings:all os=' || '' }}${{ inputs.os }} \
           ..

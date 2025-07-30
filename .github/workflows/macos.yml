@@ -112,6 +112,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
+          remote_name: macos
       - name: build
         uses: ./.github/actions/build
         with:
