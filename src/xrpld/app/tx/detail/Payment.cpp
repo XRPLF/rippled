@@ -415,6 +415,14 @@ Payment::doApply()
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, seqno);
 
+        auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+        if (sponsor.has_value())
+        {
+            addSponsorToLedgerEntry(sleDst, sponsor);
+            sponsor.value()->setFieldU32(sfSponsoringAccountCount, 1);
+            view().update(sponsor.value());
+        }
+
         view().insert(sleDst);
     }
     else

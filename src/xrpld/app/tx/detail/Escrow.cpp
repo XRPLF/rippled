@@ -599,7 +599,9 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
+    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(slep, sponsor);
     ctx_.view().update(sle);
     return tesSUCCESS;
 }
@@ -796,6 +798,7 @@ template <ValidIssueType T>
 static TER
 escrowUnlockApplyHelper(
     ApplyView& view,
+    STTx const& tx,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
     STAmount const& xrpBalance,
@@ -810,6 +813,7 @@ template <>
 TER
 escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
+    STTx const& tx,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
     STAmount const& xrpBalance,
@@ -945,6 +949,7 @@ template <>
 TER
 escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
+    STTx const& tx,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
     STAmount const& xrpBalance,
@@ -977,7 +982,9 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        adjustOwnerCount(view, sleDest, 1, journal);
+        auto const sponsor = getTxReserveSponsor(view, tx);
+        adjustOwnerCount(view, sleDest, sponsor, 1, journal);
+        addSponsorToLedgerEntry(sleDest, sponsor);
     }
 
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
@@ -1157,6 +1164,7 @@ EscrowFinish::doApply()
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
+                        ctx_.tx,
                         lockedRate,
                         sled,
                         mPriorBalance,
@@ -1187,7 +1195,8 @@ EscrowFinish::doApply()
 
     // Adjust source owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
+    auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger
@@ -1372,6 +1381,7 @@ EscrowCancel::doApply()
                 [&]<typename T>(T const&) {
                     return escrowUnlockApplyHelper<T>(
                         ctx_.view(),
+                        ctx_.tx,
                         parityRate,
                         slep,
                         mPriorBalance,
@@ -1398,7 +1408,8 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(ctx_.view(), sle, -1, ctx_.journal);
+    auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), slep);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, -1, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger

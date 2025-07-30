@@ -294,6 +294,7 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
+                std::nullopt,
                 1,
                 beast::Journal{beast::Journal::getNullSink()});
         });
@@ -458,11 +459,15 @@ removeToken(
             cnt--;
 
         if (cnt != 0)
+        {
+            auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
+                sponsor,
                 cnt,
                 beast::Journal{beast::Journal::getNullSink()});
+        }
 
         return tesSUCCESS;
     }
@@ -496,9 +501,11 @@ removeToken(
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
+            auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
+                sponsor,
                 -1,
                 beast::Journal{beast::Journal::getNullSink()});
 
@@ -550,6 +557,7 @@ removeToken(
     adjustOwnerCount(
         view,
         view.peek(keylet::account(owner)),
+        std::nullopt,
         -1 * cnt,
         beast::Journal{beast::Journal::getNullSink()});
 
@@ -703,9 +711,11 @@ deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
             false))
         return false;
 
+    auto const sponsor = getLedgerEntryReserveSponsor(view, offer);
     adjustOwnerCount(
         view,
         view.peek(keylet::account(owner)),
+        sponsor,
         -1,
         beast::Journal{beast::Journal::getNullSink()});
 
@@ -1022,6 +1032,7 @@ tokenOfferCreatePreclaim(
 TER
 tokenOfferCreateApply(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& acctID,
     STAmount const& amount,
     std::optional<AccountID> const& dest,
@@ -1038,6 +1049,7 @@ tokenOfferCreateApply(
         return tecINSUFFICIENT_RESERVE;
 
     auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
+    auto const sponsor = getTxReserveSponsor(view, tx);
 
     // Create the offer:
     {
@@ -1084,11 +1096,13 @@ tokenOfferCreateApply(
         if (dest)
             (*offer)[sfDestination] = *dest;
 
+        addSponsorToLedgerEntry(offer, sponsor);
+
         view.insert(offer);
     }
 
     // Update owner count.
-    adjustOwnerCount(view, view.peek(acctKeylet), 1, j);
+    adjustOwnerCount(view, view.peek(acctKeylet), sponsor, 1, j);
 
     return tesSUCCESS;
 }

@@ -848,7 +848,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     }
 
     // Update owner count.
-    adjustOwnerCount(sb, sleCreator, 1, viewJ);
+    auto const sponsor = getTxReserveSponsor(sb, ctx_.tx);
+    adjustOwnerCount(sb, sleCreator, sponsor, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue())
                      << " : " << to_string(saTakerGets.issue())
@@ -908,6 +909,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sleOffer->setFlag(lsfSell);
     if (domainID)
         sleOffer->setFieldH256(sfDomainID, *domainID);
+    addSponsorToLedgerEntry(sleOffer, sponsor);
 
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)

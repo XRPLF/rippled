@@ -636,7 +636,7 @@ SetTrust::doApply()
         if (bLowReserveSet && !bLowReserved)
         {
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, 1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, std::nullopt, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
 
             if (!bHigh)
@@ -646,14 +646,14 @@ SetTrust::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, -1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, std::nullopt, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, 1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, std::nullopt, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
 
             if (bHigh)
@@ -663,7 +663,7 @@ SetTrust::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, -1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, std::nullopt, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
         }
 

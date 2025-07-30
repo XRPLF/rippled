@@ -231,9 +231,11 @@ removeSignersFromLedger(
         return tefBAD_LEDGER;
     }
 
+    auto const sponsor = getLedgerEntryReserveSponsor(view, signers);
     adjustOwnerCount(
         view,
         view.peek(accountKeylet),
+        sponsor,
         removeFromOwnerCount,
         app.journal("View"));
 
@@ -394,7 +396,9 @@ SetSignerList::replaceSignerList()
 
     // If we succeeded, the new entry counts against the
     // creator's reserve.
-    adjustOwnerCount(view(), sle, addedOwnerCount, viewJ);
+    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    adjustOwnerCount(view(), sle, sponsor, addedOwnerCount, viewJ);
+    addSponsorToLedgerEntry(signerList, sponsor);
     return tesSUCCESS;
 }
 

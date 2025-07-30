@@ -213,11 +213,19 @@ Change::activateTrustLinesToSelfFix()
 
         if (tl->getFlags() & lsfLowReserve)
             adjustOwnerCount(
-                sb, sb.peek(keylet::account(lo.getIssuer())), -1, j_);
+                sb,
+                sb.peek(keylet::account(lo.getIssuer())),
+                std::nullopt,
+                -1,
+                j_);
 
         if (tl->getFlags() & lsfHighReserve)
             adjustOwnerCount(
-                sb, sb.peek(keylet::account(hi.getIssuer())), -1, j_);
+                sb,
+                sb.peek(keylet::account(hi.getIssuer())),
+                std::nullopt,
+                -1,
+                j_);
 
         sb.erase(tl);
 

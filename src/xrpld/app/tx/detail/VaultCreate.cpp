@@ -174,7 +174,9 @@ VaultCreate::doApply()
 
     if (auto ter = dirLink(view(), account_, vault))
         return ter;
-    adjustOwnerCount(view(), owner, 1, j_);
+    auto const sponsor = getTxReserveSponsor(view(), tx);
+    adjustOwnerCount(view(), owner, sponsor, 1, j_);
+    addSponsorToLedgerEntry(vault, sponsor);
     auto ownerCount = owner->at(sfOwnerCount);
     if (mPriorBalance < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
@@ -203,6 +205,7 @@ VaultCreate::doApply()
     // in the vault
     auto maybeShare = MPTokenIssuanceCreate::create(
         view(),
+        tx,
         j_,
         {
             .priorBalance = std::nullopt,

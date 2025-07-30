@@ -243,7 +243,9 @@ CreateCheck::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    adjustOwnerCount(view(), sle, 1, viewJ);
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    adjustOwnerCount(view(), sle, sponsor, 1, viewJ);
+    addSponsorToLedgerEntry(sleCheck, sponsor);
     return tesSUCCESS;
 }
 

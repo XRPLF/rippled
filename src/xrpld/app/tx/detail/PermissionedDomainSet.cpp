@@ -142,7 +142,9 @@ PermissionedDomainSet::doApply()
 
         slePd->setFieldU64(sfOwnerNode, *page);
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), ownerSle, 1, ctx_.journal);
+        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        adjustOwnerCount(view(), ownerSle, sponsor, 1, ctx_.journal);
+        addSponsorToLedgerEntry(slePd, sponsor);
         view().insert(slePd);
     }
 

@@ -85,6 +85,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 Expected<MPTID, TER>
 MPTokenIssuanceCreate::create(
     ApplyView& view,
+    STTx const& tx,
     beast::Journal journal,
     MPTCreateArgs const& args)
 {
@@ -99,6 +100,8 @@ MPTokenIssuanceCreate::create(
 
     auto const mptId = makeMptID(args.sequence, args.account);
     auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
+
+    auto const sponsor = getTxReserveSponsor(view, tx);
 
     // create the MPTokenIssuance
     {
@@ -132,11 +135,13 @@ MPTokenIssuanceCreate::create(
         if (args.domainId)
             (*mptIssuance)[sfDomainID] = *args.domainId;
 
+        addSponsorToLedgerEntry(mptIssuance, sponsor);
+
         view.insert(mptIssuance);
     }
 
     // Update owner count.
-    adjustOwnerCount(view, acct, 1, journal);
+    adjustOwnerCount(view, acct, sponsor, 1, journal);
 
     return mptId;
 }
@@ -147,6 +152,7 @@ MPTokenIssuanceCreate::doApply()
     auto const& tx = ctx_.tx;
     auto const result = create(
         view(),
+        tx,
         j_,
         {
             .priorBalance = mPriorBalance,

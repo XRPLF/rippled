@@ -753,7 +753,9 @@ finalizeClaimHelper(
             // Remove the claim id from the ledger
             outerSb.erase(sleClaimID);
 
-            adjustOwnerCount(outerSb, sleOwner, -1, j);
+            auto const sponsor =
+                getLedgerEntryReserveSponsor(outerSb, sleClaimID);
+            adjustOwnerCount(outerSb, sleOwner, sponsor, -1, j);
         }
     }
 
@@ -981,6 +983,7 @@ TER
 applyCreateAccountAttestations(
     ApplyView& view,
     RawView& rawView,
+    STTx const& tx,
     TIter attBegin,
     TIter attEnd,
     AccountID const& doorAccount,
@@ -1178,7 +1181,9 @@ applyCreateAccountAttestations(
             return tecINTERNAL;
 
         // Reserve was already checked
-        adjustOwnerCount(psb, sleDoor, 1, j);
+        auto const sponsor = getTxReserveSponsor(psb, tx);
+        adjustOwnerCount(psb, sleDoor, sponsor, 1, j);
+        addSponsorToLedgerEntry(createdSleClaimID, sponsor);
         psb.insert(createdSleClaimID);
         psb.update(sleDoor);
     }
@@ -1360,6 +1365,7 @@ attestationDoApply(ApplyContext& ctx)
         return applyCreateAccountAttestations(
             ctx.view(),
             ctx.rawView(),
+            ctx.tx,
             &*att,
             &*att + 1,
             thisDoor,
@@ -1547,7 +1553,9 @@ XChainCreateBridge::doApply()
         (*sleBridge)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sleBridge, sponsor);
 
     ctx_.view().insert(sleBridge);
     ctx_.view().update(sleAcct);
@@ -2123,7 +2131,9 @@ XChainCreateClaimID::doApply()
         (*sleClaimID)[sfOwnerNode] = *page;
     }
 
-    adjustOwnerCount(ctx_.view(), sleAcct, 1, ctx_.journal);
+    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    adjustOwnerCount(ctx_.view(), sleAcct, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(sleClaimID, sponsor);
 
     ctx_.view().insert(sleClaimID);
     ctx_.view().update(sleBridge);

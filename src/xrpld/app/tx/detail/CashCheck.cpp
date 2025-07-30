@@ -508,7 +508,8 @@ CashCheck::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), -1, viewJ);
+    auto const sponsor = getLedgerEntryReserveSponsor(psb, sleCheck);
+    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), sponsor, -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

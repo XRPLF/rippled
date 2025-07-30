@@ -123,7 +123,9 @@ DelegateSet::doApply()
 
         (*sle)[sfOwnerNode] = *page;
         ctx_.view().insert(sle);
-        adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
+        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        adjustOwnerCount(ctx_.view(), sleOwner, sponsor, 1, ctx_.journal);
+        addSponsorToLedgerEntry(sle, sponsor);
     }
 
     return tesSUCCESS;
@@ -152,7 +154,8 @@ DelegateSet::deleteDelegate(
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    adjustOwnerCount(view, sleOwner, -1, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
+    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
 
     view.erase(sle);
 

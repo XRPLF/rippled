@@ -116,6 +116,7 @@ TYPED_SFIELD(sfOracleDocumentID,         UINT32,    51)
 TYPED_SFIELD(sfPermissionValue,          UINT32,    52)
 TYPED_SFIELD(sfSponsoredOwnerCount,      UINT32,    53)
 TYPED_SFIELD(sfSponsoringOwnerCount,     UINT32,    54)
+TYPED_SFIELD(sfSponsoringAccountCount,   UINT32,    55)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)

@@ -178,6 +178,7 @@ MPTokenAuthorize::createMPToken(
 TER
 MPTokenAuthorize::authorize(
     ApplyView& view,
+    STTx const& tx,
     beast::Journal journal,
     MPTAuthorizeArgs const& args)
 {
@@ -208,7 +209,8 @@ MPTokenAuthorize::authorize(
                     false))
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
-            adjustOwnerCount(view, sleAcct, -1, journal);
+            auto const sponsor = getLedgerEntryReserveSponsor(view, sleMpt);
+            adjustOwnerCount(view, sleAcct, sponsor, -1, journal);
 
             view.erase(sleMpt);
             return tesSUCCESS;
@@ -243,7 +245,9 @@ MPTokenAuthorize::authorize(
         view.insert(mptoken);
 
         // Update owner count.
-        adjustOwnerCount(view, sleAcct, 1, journal);
+        auto const sponsor = getTxReserveSponsor(view, tx);
+        adjustOwnerCount(view, sleAcct, sponsor, 1, journal);
+        addSponsorToLedgerEntry(mptoken, sponsor);
 
         return tesSUCCESS;
     }
@@ -289,6 +293,7 @@ MPTokenAuthorize::doApply()
     auto const& tx = ctx_.tx;
     return authorize(
         ctx_.view(),
+        tx,
         ctx_.journal,
         {.priorBalance = mPriorBalance,
          .mptIssuanceID = tx[sfMPTokenIssuanceID],

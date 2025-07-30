@@ -178,7 +178,8 @@ InnerObjectFormats::InnerObjectFormats()
         {
             {sfAccount, soeREQUIRED},
             {sfFlags, soeREQUIRED},
-            {sfSignature, soeOPTIONAL},
+            {sfSigningPubKey, soeOPTIONAL},
+            {sfTxnSignature, soeOPTIONAL},
             {sfSigners, soeOPTIONAL},
         });
 }

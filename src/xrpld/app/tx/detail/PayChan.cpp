@@ -155,7 +155,8 @@ closeChannel(
         "ripple::closeChannel : minimum channel amount");
     (*sle)[sfBalance] =
         (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
-    adjustOwnerCount(view, sle, -1, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, slep);
+    adjustOwnerCount(view, sle, sponsor, -1, j);
     view.update(sle);
 
     // Remove PayChan from ledger
@@ -312,7 +313,10 @@ PayChanCreate::doApply()
 
     // Deduct owner's balance, increment owner count
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
-    adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
+    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+    adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
+    addSponsorToLedgerEntry(slep, sponsor);
+
     ctx_.view().update(sle);
 
     return tesSUCCESS;

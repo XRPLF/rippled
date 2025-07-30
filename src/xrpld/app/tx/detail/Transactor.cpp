@@ -164,19 +164,19 @@ preflight1(PreflightContext const& ctx)
         auto const sponsor = ctx.tx.getFieldObject(sfSponsor);
         if (sponsor[sfAccount] == ctx.tx[sfAccount])
         {
-            JLOG(ctx.j.debug()) << "preflight1: invalid sponsor account";
+            JLOG(ctx.j.fatal()) << "preflight1: invalid sponsor account";
             return temMALFORMED;
         }
         if (!(sponsor[sfFlags] & tfSponsorFee) &&
             !(sponsor[sfFlags] & tfSponsorReserve))
         {
-            JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
+            JLOG(ctx.j.fatal()) << "preflight1: invalid sponsor flags";
             return temMALFORMED;
         }
-        if (!sponsor.isFieldPresent(sfSignature) &&
+        if (!sponsor.isFieldPresent(sfTxnSignature) &&
             !sponsor.isFieldPresent(sfSigners))
         {
-            JLOG(ctx.j.debug()) << "preflight1: no sfSignature or sfSigners";
+            JLOG(ctx.j.fatal()) << "preflight1: no sfTxnSignature or sfSigners";
             return temMALFORMED;
         }
     }
@@ -558,7 +558,8 @@ Transactor::ticketDelete(
     }
 
     // Update the Ticket owner's reserve.
-    adjustOwnerCount(view, sleAccount, -1, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, sleTicket);
+    adjustOwnerCount(view, sleAccount, sponsor, -1, j);
 
     // Remove Ticket from ledger.
     view.erase(sleTicket);
@@ -645,7 +646,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
         STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
         return checkMultiSign(ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
     }
-    
+
     // if (ctx.tx.isFieldPresent(sfSponsor))
     // {
     //     // TODO: check the sponsor signature

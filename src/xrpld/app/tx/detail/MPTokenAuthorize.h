@@ -51,6 +51,7 @@ public:
     static TER
     authorize(
         ApplyView& view,
+        STTx const& tx,
         beast::Journal journal,
         MPTAuthorizeArgs const& args);
 

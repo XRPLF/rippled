@@ -174,7 +174,9 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        adjustOwnerCount(view(), sleIssuer, 1, j_);
+        auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+        adjustOwnerCount(view(), sleIssuer, sponsor, 1, j_);
+        addSponsorToLedgerEntry(sleCred, sponsor);
     }
 
     if (subject == account_)
@@ -392,8 +394,11 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    adjustOwnerCount(view(), sleIssuer, -1, j_);
-    adjustOwnerCount(view(), sleSubject, 1, j_);
+    auto const currentSponsor = getTxReserveSponsor(view(), ctx_.tx);
+    adjustOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
+    auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
+    adjustOwnerCount(view(), sleSubject, newSponsor, 1, j_);
+    addSponsorToLedgerEntry(sleCred, newSponsor);
 
     return tesSUCCESS;
 }

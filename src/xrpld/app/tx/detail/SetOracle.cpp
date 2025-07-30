@@ -188,7 +188,8 @@ adjustOwnerCount(ApplyContext& ctx, int count)
     if (auto const sleAccount =
             ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
-        adjustOwnerCount(ctx.view(), sleAccount, count, ctx.journal);
+        adjustOwnerCount(
+            ctx.view(), sleAccount, std::nullopt, count, ctx.journal);
         return true;
     }
 

@@ -206,7 +206,9 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, 1, j_);
+        auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+        adjustOwnerCount(view(), sleOwner, sponsor, 1, j_);
+        addSponsorToLedgerEntry(slePreauth, sponsor);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorize))
     {
@@ -270,7 +272,9 @@ DepositPreauth::doApply()
         slePreauth->setFieldU64(sfOwnerNode, *page);
 
         // If we succeeded, the new entry counts against the creator's reserve.
-        adjustOwnerCount(view(), sleOwner, 1, j_);
+        auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+        adjustOwnerCount(view(), sleOwner, sponsor, 1, j_);
+        addSponsorToLedgerEntry(slePreauth, sponsor);
     }
     else if (ctx_.tx.isFieldPresent(sfUnauthorizeCredentials))
     {
@@ -311,7 +315,8 @@ DepositPreauth::removeFromLedger(
     if (!sleOwner)
         return tefINTERNAL;
 
-    adjustOwnerCount(view, sleOwner, -1, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, slePreauth);
+    adjustOwnerCount(view, sleOwner, sponsor, -1, j);
 
     // Remove DepositPreauth from ledger.
     view.erase(slePreauth);

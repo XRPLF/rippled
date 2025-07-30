@@ -93,6 +93,7 @@ NFTokenCreateOffer::doApply()
     // Use implementation shared with NFTokenMint
     return nft::tokenOfferCreateApply(
         view(),
+        ctx_.tx,
         ctx_.tx[sfAccount],
         ctx_.tx[sfAmount],
         ctx_.tx[~sfDestination],

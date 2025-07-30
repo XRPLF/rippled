@@ -93,7 +93,11 @@ deleteSLE(
         }  // LCOV_EXCL_STOP
 
         if (isOwner)
-            adjustOwnerCount(view, sleAccount, -1, j);
+        {
+            auto const sponsor =
+                getLedgerEntryReserveSponsor(view, sleCredential);
+            adjustOwnerCount(view, sleAccount, sponsor, -1, j);
+        }
 
         return tesSUCCESS;
     };

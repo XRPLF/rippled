@@ -142,6 +142,7 @@ tokenOfferCreatePreclaim(
 TER
 tokenOfferCreateApply(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& acctID,
     STAmount const& amount,
     std::optional<AccountID> const& dest,

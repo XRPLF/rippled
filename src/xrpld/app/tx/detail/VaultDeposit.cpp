@@ -200,7 +200,12 @@ VaultDeposit::doApply()
     if ((vault->getFlags() & tfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, account_, mPriorBalance, j_);
+                ctx_.view(),
+                ctx_.tx,
+                mptIssuanceID,
+                account_,
+                mPriorBalance,
+                j_);
             !isTesSuccess(err))
             return err;
     }
@@ -212,6 +217,7 @@ VaultDeposit::doApply()
         {
             if (auto const err = MPTokenAuthorize::authorize(
                     view(),
+                    ctx_.tx,
                     ctx_.journal,
                     {.priorBalance = mPriorBalance,
                      .mptIssuanceID = mptIssuanceID->value(),
@@ -225,6 +231,7 @@ VaultDeposit::doApply()
         {
             if (auto const err = MPTokenAuthorize::authorize(
                     view(),
+                    ctx_.tx,
                     ctx_.journal,
                     {
                         .priorBalance = mPriorBalance,

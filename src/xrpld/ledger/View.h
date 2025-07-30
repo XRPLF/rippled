@@ -452,6 +452,17 @@ areCompatible(
     beast::Journal::Stream& s,
     char const* reason);
 
+std::optional<std::shared_ptr<SLE>>
+getTxReserveSponsor(ApplyView& view, STTx const& tx);
+
+std::optional<std::shared_ptr<SLE>>
+getLedgerEntryReserveSponsor(ApplyView& view, SLE::ref sle);
+
+void
+addSponsorToLedgerEntry(
+    std::shared_ptr<SLE> const& sle,
+    std::optional<std::shared_ptr<SLE>> const& sponsorSle);
+
 //------------------------------------------------------------------------------
 //
 // Modifiers
@@ -462,7 +473,8 @@ areCompatible(
 void
 adjustOwnerCount(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    std::shared_ptr<SLE> const& accountSle,
+    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
     std::int32_t amount,
     beast::Journal j);
 
@@ -470,11 +482,17 @@ inline void
 adjustOwnerCount(
     ApplyView& view,
     AccountID const& account,
+    std::optional<AccountID> const& sponsor,
     std::int32_t amount,
     beast::Journal j)
 {
     return adjustOwnerCount(
-        view, view.peek(keylet::account(account)), amount, j);
+        view,
+        view.peek(keylet::account(account)),
+        sponsor.has_value() ? view.peek(keylet::account(*sponsor))
+                            : std::optional<std::shared_ptr<SLE>>(),
+        amount,
+        j);
 }
 
 /** @{ */
@@ -590,6 +608,7 @@ addEmptyHolding(
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
@@ -641,6 +660,7 @@ trustCreate(
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal);
@@ -648,6 +668,7 @@ removeEmptyHolding(
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal);
@@ -655,13 +676,14 @@ removeEmptyHolding(
 [[nodiscard]] inline TER
 removeEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     Asset const& asset,
     beast::Journal journal)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            return removeEmptyHolding(view, accountID, issue, journal);
+            return removeEmptyHolding(view, tx, accountID, issue, journal);
         },
         asset.value());
 }
@@ -863,6 +885,7 @@ requireAuth(
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
     ApplyView& view,
+    STTx const& tx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,

@@ -112,7 +112,8 @@ VaultDelete::doApply()
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
-    if (auto ter = removeEmptyHolding(view(), vault->at(sfAccount), asset, j_);
+    if (auto ter = removeEmptyHolding(
+            view(), ctx_.tx, vault->at(sfAccount), asset, j_);
         !isTesSuccess(ter))
         return ter;
 
@@ -145,7 +146,8 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), pseudoAcct, -1, j_);
+    auto const mptSponsor = getLedgerEntryReserveSponsor(view(), mpt);
+    adjustOwnerCount(view(), pseudoAcct, mptSponsor, -1, j_);
 
     view().erase(mpt);
 
@@ -178,7 +180,8 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    adjustOwnerCount(view(), owner, -1, j_);
+    auto const vaultSponsor = getLedgerEntryReserveSponsor(view(), vault);
+    adjustOwnerCount(view(), owner, vaultSponsor, -1, j_);
 
     // Destroy the vault.
     view().erase(vault);

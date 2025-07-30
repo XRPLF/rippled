@@ -113,6 +113,7 @@ CreateTicket::doApply()
         txSeq != 0 && txSeq != (firstTicketSeq - 1))
         return tefINTERNAL;
 
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
     for (std::uint32_t i = 0; i < ticketCount; ++i)
     {
         std::uint32_t const curTicketSeq = firstTicketSeq + i;
@@ -122,12 +123,6 @@ CreateTicket::doApply()
         sleTicket->setAccountID(sfAccount, account_);
         sleTicket->setFieldU32(sfTicketSequence, curTicketSeq);
 
-        if (ctx_.tx.isFieldPresent(sfSponsor) &&
-            (ctx_.tx.getFieldObject(sfSponsor)[sfFlags] & tfSponsorReserve))
-        {
-            sleTicket->setAccountID(
-                sfSponsorAccount, ctx_.tx.getFieldObject(sfSponsor)[sfAccount]);
-        }
         view().insert(sleTicket);
 
         auto const page = view().dirInsert(
@@ -142,6 +137,7 @@ CreateTicket::doApply()
             return tecDIR_FULL;
 
         sleTicket->setFieldU64(sfOwnerNode, *page);
+        addSponsorToLedgerEntry(sleTicket, sponsor);
     }
 
     // Update the record of the number of Tickets this account owns.
@@ -151,22 +147,7 @@ CreateTicket::doApply()
     sleAccountRoot->setFieldU32(sfTicketCount, oldTicketCount + ticketCount);
 
     // Every added Ticket counts against the creator's reserve.
-    adjustOwnerCount(view(), sleAccountRoot, ticketCount, viewJ);
-
-    // Check reserve sponsorship
-    if (ctx_.tx.isFieldPresent(sfSponsor) &&
-        (ctx_.tx.getFieldObject(sfSponsor)[sfFlags] & tfSponsorReserve))
-    {
-        AccountID const& sponsor = ctx_.tx.getFieldObject(sfSponsor)[sfAccount];
-        auto const& sponsorSle = view().peek(keylet::account(sponsor));
-        sponsorSle->setFieldU32(
-            sfSponsoringOwnerCount,
-            sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ticketCount);
-        sleAccountRoot->setFieldU32(
-            sfSponsoredOwnerCount,
-            sleAccountRoot->getFieldU32(sfSponsoredOwnerCount) + ticketCount);
-        view().update(sponsorSle);
-    }
+    adjustOwnerCount(view(), sleAccountRoot, sponsor, ticketCount, viewJ);
 
     // TicketCreate is the only transaction that can cause an account root's
     // Sequence field to increase by more than one.  October 2018.

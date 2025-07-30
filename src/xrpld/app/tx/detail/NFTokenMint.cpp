@@ -331,6 +331,7 @@ NFTokenMint::doApply()
         // because a Mint is only allowed to create a sell offer.
         if (TER const ter = nft::tokenOfferCreateApply(
                 view(),
+                ctx_.tx,
                 ctx_.tx[sfAccount],
                 ctx_.tx[sfAmount],
                 ctx_.tx[~sfDestination],

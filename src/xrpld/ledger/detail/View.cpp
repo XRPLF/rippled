@@ -1021,6 +1021,40 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     return std::nullopt;
 }
 
+std::optional<std::shared_ptr<SLE>>
+getTxReserveSponsor(ApplyView& view, STTx const& tx)
+{
+    if (tx.isFieldPresent(sfSponsor))
+    {
+        auto const sponsorObj = tx.getFieldObject(sfSponsor);
+        auto const flags = sponsorObj.getFlags();
+        auto const sponsorID = sponsorObj.getAccountID(sfAccount);
+        if (flags & tfSponsorReserve)
+        {
+            return view.peek(keylet::account(sponsorID));
+        }
+    }
+    return std::nullopt;
+}
+
+std::optional<std::shared_ptr<SLE>>
+getLedgerEntryReserveSponsor(ApplyView& view, SLE::ref sle)
+{
+    if (sle->isFieldPresent(sfSponsorAccount))
+        return view.peek(keylet::account(sle->getAccountID(sfSponsorAccount)));
+    return std::nullopt;
+}
+
+void
+addSponsorToLedgerEntry(
+    std::shared_ptr<SLE> const& sle,
+    std::optional<std::shared_ptr<SLE>> const& sponsorSle)
+{
+    if (sponsorSle)
+        sle->setAccountID(
+            sfSponsorAccount, sponsorSle.value()->getAccountID(sfAccount));
+}
+
 //------------------------------------------------------------------------------
 //
 // Modifiers
@@ -1030,19 +1064,48 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
 void
 adjustOwnerCount(
     ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
+    std::shared_ptr<SLE> const& accountSle,
+    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
     std::int32_t amount,
     beast::Journal j)
 {
-    if (!sle)
+    if (!accountSle)
         return;
     XRPL_ASSERT(amount, "ripple::adjustOwnerCount : nonzero amount input");
-    std::uint32_t const current{sle->getFieldU32(sfOwnerCount)};
-    AccountID const id = (*sle)[sfAccount];
+
+    if (sponsorSle)
+    {
+        XRPL_ASSERT(sponsorSle, "ripple::adjustOwnerCount : sponsor not found");
+        {
+            // modify sponsor's SponsoringOwnerCount
+            std::uint32_t const current{
+                sponsorSle.value()->getFieldU32(sfSponsoringOwnerCount)};
+            AccountID const id = sponsorSle.value()->getAccountID(sfAccount);
+            std::uint32_t const adjusted =
+                confineOwnerCount(current, amount, id, j);
+            view.adjustOwnerCountHook(id, current, adjusted);
+            sponsorSle.value()->setFieldU32(sfSponsoringOwnerCount, adjusted);
+            view.update(sponsorSle.value());
+        }
+        {
+            // modify account's SponsoredOwnerCount
+            std::uint32_t const current{
+                accountSle->getFieldU32(sfSponsoredOwnerCount)};
+            AccountID const id = (*accountSle)[sfAccount];
+            std::uint32_t const adjusted =
+                confineOwnerCount(current, amount, id, j);
+            view.adjustOwnerCountHook(id, current, adjusted);
+            accountSle->setFieldU32(sfSponsoredOwnerCount, adjusted);
+            view.update(accountSle);
+        }
+        return;
+    }
+    std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
+    AccountID const id = (*accountSle)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
     view.adjustOwnerCountHook(id, current, adjusted);
-    sle->setFieldU32(sfOwnerCount, adjusted);
-    view.update(sle);
+    accountSle->setFieldU32(sfOwnerCount, adjusted);
+    view.update(accountSle);
 }
 
 std::function<void(SLE::ref)>
@@ -1201,6 +1264,7 @@ addEmptyHolding(
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     MPTIssue const& mptIssue,
@@ -1217,6 +1281,7 @@ addEmptyHolding(
 
     return MPTokenAuthorize::authorize(
         view,
+        tx,
         journal,
         {.priorBalance = priorBalance,
          .mptIssuanceID = mptID,
@@ -1330,7 +1395,7 @@ trustCreate(
     }
 
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    adjustOwnerCount(view, sleAccount, 1, j);
+    adjustOwnerCount(view, sleAccount, std::nullopt, 1, j);
 
     // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(
@@ -1345,6 +1410,7 @@ trustCreate(
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     Issue const& issue,
     beast::Journal journal)
@@ -1375,7 +1441,7 @@ removeEmptyHolding(
             view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
         if (!sleLowAccount)
             return tecINTERNAL;
-        adjustOwnerCount(view, sleLowAccount, -1, journal);
+        adjustOwnerCount(view, sleLowAccount, std::nullopt, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -1389,7 +1455,7 @@ removeEmptyHolding(
             view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
         if (!sleHighAccount)
             return tecINTERNAL;
-        adjustOwnerCount(view, sleHighAccount, -1, journal);
+        adjustOwnerCount(view, sleHighAccount, std::nullopt, -1, journal);
         // It's not really necessary to clear the reserve flag, since the line
         // is about to be deleted, but this will make the metadata reflect an
         // accurate state at the time of deletion.
@@ -1407,6 +1473,7 @@ removeEmptyHolding(
 [[nodiscard]] TER
 removeEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     MPTIssue const& mptIssue,
     beast::Journal journal)
@@ -1420,6 +1487,7 @@ removeEmptyHolding(
 
     return MPTokenAuthorize::authorize(
         view,
+        tx,
         journal,
         {.priorBalance = {},
          .mptIssuanceID = mptID,
@@ -1517,7 +1585,8 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         }
     }
 
-    adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, sle);
+    adjustOwnerCount(view, view.peek(keylet::account(owner)), sponsor, -1, j);
 
     view.erase(sle);
 
@@ -1611,7 +1680,11 @@ rippleCreditIOU(
         {
             // Clear the reserve of the sender, possibly delete the line!
             adjustOwnerCount(
-                view, view.peek(keylet::account(uSenderID)), -1, j);
+                view,
+                view.peek(keylet::account(uSenderID)),
+                std::nullopt,
+                -1,
+                j);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32(
@@ -2067,7 +2140,7 @@ updateTrustLine(
     {
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
-        adjustOwnerCount(view, sle, -1, j);
+        adjustOwnerCount(view, sle, std::nullopt, -1, j);
 
         // Clear reserve flag.
         state->setFieldU32(
@@ -2418,6 +2491,7 @@ requireAuth(
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
     ApplyView& view,
+    STTx const& tx,
     MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization
@@ -2499,6 +2573,7 @@ enforceMPTokenAuthorization(
             "ripple::enforceMPTokenAuthorization : new MPToken for domain");
         if (auto const err = MPTokenAuthorize::authorize(
                 view,
+                tx,
                 j,
                 {
                     .priorBalance = priorBalance,
@@ -2660,7 +2735,7 @@ deleteAMMTrustLine(
     if (!(sleState->getFlags() & uFlags))
         return tecINTERNAL;
 
-    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
+    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, std::nullopt, -1, j);
 
     return tesSUCCESS;
 }
