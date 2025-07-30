@@ -65,7 +65,10 @@ Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getBaseFee()
 {
     // relatively safe to assume the tx base fee won't be > 2^31-1 drops
-    return static_cast<int32_t>(ctx.view().fees().base.drops());
+    auto fee = ctx.view().fees().base.drops();
+    if (fee > std::numeric_limits<int32_t>::max())
+        return Unexpected(HostFunctionError::INTERNAL);
+    return static_cast<int32_t>(fee);
 }
 
 Expected<int32_t, HostFunctionError>
