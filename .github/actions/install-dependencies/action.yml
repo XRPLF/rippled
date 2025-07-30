@@ -1,4 +1,4 @@
-name: Install-dependencies
+name: Install Dependencies
 
 inputs:
   build_dir:
@@ -14,9 +14,7 @@ inputs:
     required: true
     type: string
 
-# Install the Conan profiles and log into the specified remote. We first remove
-# the remote if it already exists, which can occur on self-hosted runners where
-# the workspace is not cleaned up between runs.
+# Install the Conan dependencies and upload them to the specified remote.
 runs:
   using: composite
   steps:

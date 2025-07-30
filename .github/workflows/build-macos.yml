@@ -9,12 +9,8 @@ on:
         required: false
         type: string
         default: '.build'
-      conan_remote_name:
-        description: 'The name of the Conan remote to use.'
-        required: true
-        type: string
       conan_remote_url:
-        description: 'The URL of the Conan remote to use.'
+        description: 'The URL of the Conan endpoint to use. The OS will be added as a path to the URL.'
         required: true
         type: string
     secrets:
@@ -46,37 +42,37 @@ env:
   # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
   # duplication, we define it here using environment variables and create the
   # matrix in the first job.
-  STRATEGY_MATRIX_ARCHITECTURE: >-
-    [
-      {
-        "platform": "macos/arm64",
-        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
-      }
-    ]
-  STRATEGY_MATRIX_BUILD_TYPE: >-
-    [
-      "Debug",
-      "Release"
-    ]
-  STRATEGY_MATRIX_CMAKE_ARGS: >-
-    [
-      "-Dunity=OFF",
-      "-Dunity=ON"
-    ]
 #  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
 #      {
+#        "platform": "macos/arm64",
 #        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
 #      }
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
 #    [
+#      "Debug",
 #      "Release"
 #    ]
 #  STRATEGY_MATRIX_CMAKE_ARGS: >-
 #    [
-#      "-DCMAKE_POLICY_VERSION_MINIMUM=3.5 -Dunity=ON"
+#      "-Dunity=OFF",
+#      "-Dunity=ON"
 #    ]
+  STRATEGY_MATRIX_ARCHITECTURE: >-
+    [
+      {
+        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
+      }
+    ]
+  STRATEGY_MATRIX_BUILD_TYPE: >-
+    [
+      "Release"
+    ]
+  STRATEGY_MATRIX_CMAKE_ARGS: >-
+    [
+      "-Dunity=ON"
+    ]
   # We will only run MacOS on ARM64 in Debug with unity build for each commit.
   # All other configurations will be run when merging into a main branch.
   BUILD_ON_PR_COMMIT: >-
@@ -118,7 +114,7 @@ jobs:
         architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
         cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
-    if: ${{ contains(fromJSON('["develop", "release", "master"]'), github.ref_name) || contains(fromJSON(needs.generate-outputs.outputs.build_on_pr_commit), format('{0}|{1}|{2}', matrix.architecture.platform, matrix.build_type, matrix.cmake_args)) }}
+    #if: ${{ contains(fromJSON('["develop", "release", "master"]'), github.ref_name) || contains(fromJSON(needs.generate-outputs.outputs.build_on_pr_commit), format('{0}|{1}|{2}', matrix.architecture.platform, matrix.build_type, matrix.cmake_args)) }}
     runs-on: ${{ matrix.architecture.runner }}
     steps:
       - name: Checkout repository
@@ -149,7 +145,7 @@ jobs:
         uses: ./.github/actions/configure-conan
         with:
           conan_global_conf: ${{ inputs.conan_global_conf }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_name: 'macos'
           conan_remote_url: ${{ inputs.conan_remote_url }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
@@ -158,7 +154,7 @@ jobs:
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_name: 'macos'
       - name: Build and test the binary
         uses: ./.github/actions/build-test
         with:

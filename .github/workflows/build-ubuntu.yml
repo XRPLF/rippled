@@ -9,12 +9,8 @@ on:
         required: false
         type: string
         default: '.build'
-      conan_remote_name:
-        description: 'The name of the Conan remote to use.'
-        required: true
-        type: string
       conan_remote_url:
-        description: 'The URL of the Conan remote to use.'
+        description: 'The URL of the Conan endpoint to use. The OS will be added as a path to the URL.'
         required: true
         type: string
     secrets:
@@ -47,77 +43,15 @@ env:
   # duplication, we define it here using environment variables and create the
   # matrix in the first job. The matrix defined below should be kept in sync
   # with https://github.com/XRPLF/ci/blob/main/.github/workflows/ubuntu.yml.
-  STRATEGY_MATRIX_ARCHITECTURE: >-
-    [
-      {
-          "platform": "linux/amd64",
-          "runner": ["self-hosted", "Linux", "X64", "heavy"]
-      },
-      {
-          "platform": "linux/arm64",
-          "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
-      }
-    ]
-  STRATEGY_MATRIX_OS: >-
-    [
-        {
-            "distro": "ubuntu",
-            "release": "jammy",
-            "compiler_name": "gcc",
-            "compiler_version": "12"
-        },
-        {
-            "distro": "ubuntu",
-            "release": "noble",
-            "compiler_name": "gcc",
-            "compiler_version": "13"
-        },
-        {
-            "distro": "ubuntu",
-            "release": "noble",
-            "compiler_name": "gcc",
-            "compiler_version": "14"
-        },
-        {
-            "distro": "ubuntu",
-            "release": "noble",
-            "compiler_name": "clang",
-            "compiler_version": "16"
-        },
-        {
-            "distro": "ubuntu",
-            "release": "noble",
-            "compiler_name": "clang",
-            "compiler_version": "17"
-        },
-        {
-            "distro": "ubuntu",
-            "release": "noble",
-            "compiler_name": "clang",
-            "compiler_version": "18"
-        },
-        {
-            "distro": "ubuntu",
-            "release": "noble",
-            "compiler_name": "clang",
-            "compiler_version": "19"
-        }
-    ]
-  STRATEGY_MATRIX_BUILD_TYPE: >-
-    [
-      "Debug",
-      "Release"
-    ]
-  STRATEGY_MATRIX_CMAKE_ARGS: >-
-    [
-      "-Dunity=OFF",
-      "-Dunity=ON"
-    ]
 #  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
 #      {
 #          "platform": "linux/amd64",
 #          "runner": ["self-hosted", "Linux", "X64", "heavy"]
+#      },
+#      {
+#          "platform": "linux/arm64",
+#          "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
 #      }
 #    ]
 #  STRATEGY_MATRIX_OS: >-
@@ -127,6 +61,42 @@ env:
 #            "release": "jammy",
 #            "compiler_name": "gcc",
 #            "compiler_version": "12"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "gcc",
+#            "compiler_version": "13"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "gcc",
+#            "compiler_version": "14"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "clang",
+#            "compiler_version": "16"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "clang",
+#            "compiler_version": "17"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "clang",
+#            "compiler_version": "18"
+#        },
+#        {
+#            "distro": "ubuntu",
+#            "release": "noble",
+#            "compiler_name": "clang",
+#            "compiler_version": "19"
 #        }
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
@@ -136,8 +106,34 @@ env:
 #    ]
 #  STRATEGY_MATRIX_CMAKE_ARGS: >-
 #    [
+#      "-Dunity=OFF",
 #      "-Dunity=ON"
 #    ]
+  STRATEGY_MATRIX_ARCHITECTURE: >-
+    [
+      {
+          "platform": "linux/amd64",
+          "runner": ["self-hosted", "Linux", "X64", "heavy"]
+      }
+    ]
+  STRATEGY_MATRIX_OS: >-
+    [
+        {
+            "distro": "ubuntu",
+            "release": "jammy",
+            "compiler_name": "gcc",
+            "compiler_version": "12"
+        }
+    ]
+  STRATEGY_MATRIX_BUILD_TYPE: >-
+    [
+      "Debug",
+      "Release"
+    ]
+  STRATEGY_MATRIX_CMAKE_ARGS: >-
+    [
+      "-Dunity=ON"
+    ]
   # We will not run any build for a commit, only during merge.
   BUILD_ON_PR_COMMIT: []
 
@@ -178,7 +174,7 @@ jobs:
         os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
         cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
-    if: ${{ contains(fromJSON('["develop", "release", "master"]'), github.ref_name) || contains(fromJSON(needs.generate-outputs.outputs.build_on_pr_commit), format('{0}|{1}-{2}|{3}|{4}', matrix.architecture.platform, matrix.os.compiler_name, matrix.os.compiler_version, matrix.build_type, matrix.cmake_args)) }}
+    #if: ${{ contains(fromJSON('["develop", "release", "master"]'), github.ref_name) || contains(fromJSON(needs.generate-outputs.outputs.build_on_pr_commit), format('{0}|{1}-{2}|{3}|{4}', matrix.architecture.platform, matrix.os.compiler_name, matrix.os.compiler_version, matrix.build_type, matrix.cmake_args)) }}
     runs-on: ${{ matrix.architecture.runner }}
     container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
     steps:
@@ -210,7 +206,7 @@ jobs:
         uses: ./.github/actions/configure-conan
         with:
           conan_global_conf: ${{ inputs.conan_global_conf }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_name: ${{ matrix.os.distro }}-${{ matrix.os.release }}
           conan_remote_url: ${{ inputs.conan_remote_url }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
@@ -219,7 +215,7 @@ jobs:
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_name: ${{ matrix.os.distro }}-${{ matrix.os.release }}
       - name: Build and test the binary
         uses: ./.github/actions/build-test
         with:

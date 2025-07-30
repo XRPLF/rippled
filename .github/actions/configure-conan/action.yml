@@ -10,7 +10,7 @@ inputs:
     required: true
     type: string
   conan_remote_url:
-    description: 'The URL of the Conan remote to use.'
+    description: 'The URL of the Conan endpoint to use. The remote name will be added as a path to the URL.'
     required: true
     type: string
   conan_remote_username:
@@ -22,9 +22,11 @@ inputs:
     required: true
     type: string
 
-# Install the Conan profiles and log into the specified remote. We first remove
-# the remote if it already exists, which can occur on self-hosted runners where
-# the workspace is not cleaned up between runs.
+# Install the Conan profiles and log into the specified remote. We also add a
+# remote for recipes, which is used to fetch the recipes for building the
+# dependencies. We first remove the remotes if they already exists, which can
+# occur on self-hosted runners where the workspace is not cleaned up between
+# runs.
 runs:
   using: composite
   steps:
@@ -37,17 +39,27 @@ runs:
         conan profile show
         echo "Conan global configuration:"
         conan config show
-    - name: Add Conan remote
+    - name: Add Conan remote for recipes
+      shell: bash
+      run: |
+        REMOTE_NAME="recipes"
+        if conan remote list | grep -q "${REMOTE_NAME}"; then
+          conan remote remove ${REMOTE_NAME}
+          echo "Removed Conan remote '${REMOTE_NAME}'."
+        fi
+        conan remote add --index 0 ${REMOTE_NAME} ${{ inputs.conan_remote_url }}/${REMOTE_NAME}
+        echo "Added new conan remote '${REMOTE_NAME}' at ${{ inputs.conan_remote_url }}/${REMOTE_NAME}."
+    - name: Add Conan remote for packages
       shell: bash
       run: |
         if conan remote list | grep -q '${{ inputs.conan_remote_name }}'; then
-            conan remote remove ${{ inputs.conan_remote_name }}
-            echo "Removed Conan remote '${{ inputs.conan_remote_name }}'."
+          conan remote remove ${{ inputs.conan_remote_name }}
+          echo "Removed Conan remote '${{ inputs.conan_remote_name }}'."
         fi
-        conan remote add --index 0 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
-        echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
+        conan remote add --index 1 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}
+        echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}."
     - name: Log into Conan remote
       shell: bash
       run: |
-        conan remote login ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_username }} --password "${{ inputs.conan_remote_password }}"
+        conan remote login '*' ${{ inputs.conan_remote_username }} --password "${{ inputs.conan_remote_password }}"
         conan remote list-users

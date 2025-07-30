@@ -34,7 +34,6 @@ jobs:
 #      - check-levelization
     uses: ./.github/workflows/build-debian.yml
     with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
@@ -46,7 +45,6 @@ jobs:
 #      - check-levelization
     uses: ./.github/workflows/build-rhel.yml
     with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
@@ -58,7 +56,6 @@ jobs:
 #      - check-levelization
     uses: ./.github/workflows/build-ubuntu.yml
     with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
@@ -70,7 +67,6 @@ jobs:
 #      - check-levelization
     uses: ./.github/workflows/build-macos.yml
     with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
@@ -82,7 +78,6 @@ jobs:
 #      - check-levelization
     uses: ./.github/workflows/build-windows.yml
     with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
