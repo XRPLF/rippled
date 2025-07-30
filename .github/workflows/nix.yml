@@ -89,17 +89,20 @@ jobs:
           conan --version
           cmake --version
           env | sort
+          
+          ls $(conan config home)
+          cat $(conan config home)/settings.yml
       - name: configure Conan
         run: |
           echo "Installing Conan configuration and profile."
-          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
-          echo "Overriding default OS in profile by '${{ matrix.include.distro }}-${{ matrix.include.codename }}'"
+          echo "Overriding OS in profile by '${{ matrix.distro }}-${{ matrix.codename }}'"
           cat >> $(conan config home)/settings_user.yml <<EOT
           os:
-            ${{ matrix.include.distro }}-${{ matrix.include.codename }}:
+            ${{ matrix.distro }}-${{ matrix.codename }}:
           EOT
-          sed -i "s/os=Linux/os=${{ matrix.include.distro }}-${{ matrix.include.codename }}/1" $(conan config home)/profiles/default
+          sed -i "s/os=Linux/os=${{ matrix.distro }}-${{ matrix.codename }}/1" $(conan config home)/profiles/default
           echo "Conan profile:"
           conan profile show
           echo "Conan configuration:"
