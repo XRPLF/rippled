@@ -1279,11 +1279,11 @@ EscrowFinish::doApply()
         auto re =
             runEscrowWasm(wasm, funcName, {}, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
-        ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
         if (re.has_value())
         {
             auto reValue = re.value().result;
             // TODO: better error handling for this conversion
+            ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
             JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue)
                              << ", cost: " << re.value().cost;
             if (!reValue)
