@@ -1,8 +1,8 @@
 name: Check libXRPL compatibility with Clio
 env:
-  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
-  CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
-  CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+  CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
+  CONAN_REMOTE_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
+  CONAN_REMOTE_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 on:
   pull_request:
     paths:
@@ -34,6 +34,12 @@ jobs:
           wait-interval: 10
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Parse new version
+        id: version
+        shell: bash
+        run: |
+          echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" \
+            | awk -F '"' '{print $2}')" | tee ${GITHUB_OUTPUT}
       - name: Generate channel
         id: channel
         shell: bash
@@ -43,36 +49,26 @@ jobs:
         shell: bash
         run: |
           conan export . ${{ steps.channel.outputs.channel }}
-      - name: Add Ripple Conan remote
+      - name: Add Conan remote
         shell: bash
         run: |
           conan remote list
-          conan remote remove ripple || true
+          conan remote remove ubuntu-jammy || true
           # Do not quote the URL. An empty string will be accepted (with a non-fatal warning), but a missing argument will not.
-          conan remote add ripple ${{ vars.CONAN_REMOTE_URL }} --insert 0
-      - name: Parse new version
-        id: version
-        shell: bash
-        run: |
-          echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" \
-            | awk -F '"' '{print $2}')" | tee ${GITHUB_OUTPUT}
-      - name: Try to authenticate to Ripple Conan remote
+          conan remote add ubuntu-jammy ${{ env.CONAN_REMOTE_URL }}/ubuntu-jammy --insert 0
+      - name: Log into Conan remote
+        if: env.CONAN_REMOTE_URL != '' && env.CONAN_REMOTE_USERNAME != '' && env.CONAN_REMOTE_PASSWORD != ''
         id: remote
         shell: bash
         run: |
-          # `conan user` implicitly uses the environment variables CONAN_LOGIN_USERNAME_<REMOTE> and CONAN_PASSWORD_<REMOTE>.
-          # https://docs.conan.io/1/reference/commands/misc/user.html#using-environment-variables
-          # https://docs.conan.io/1/reference/env_vars.html#conan-login-username-conan-login-username-remote-name
-          # https://docs.conan.io/1/reference/env_vars.html#conan-password-conan-password-remote-name
-          echo outcome=$(conan user --remote ripple --password >&2 \
-            && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+          echo outcome=$(conan remote login ubuntu-jammy "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}" >&2 && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: Upload new package
         id: upload
         if: (steps.remote.outputs.outcome == 'success')
         shell: bash
         run: |
           echo "conan upload version ${{ steps.version.outputs.version }} on channel ${{ steps.channel.outputs.channel }}"
-          echo outcome=$(conan upload xrpl/${{ steps.version.outputs.version }}@${{ steps.channel.outputs.channel }} --remote ripple --confirm >&2 \
+          echo outcome=$(conan upload xrpl/${{ steps.version.outputs.version }}@${{ steps.channel.outputs.channel }} --remote ubuntu-jammy --confirm >&2 \
             && echo success || echo failure) | tee ${GITHUB_OUTPUT}
   notify_clio:
     name: Notify Clio

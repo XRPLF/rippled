@@ -14,7 +14,7 @@ runs:
         conan export --version 1.1.10 external/snappy
         conan export --version 4.0.3 external/soci
     - name: add Conan remotes
-      if: vars.CONAN_REMOTE_URL != ''
+      if: env.CONAN_REMOTE_URL != ''
       shell: bash
       run: |
         echo "Adding Conan remotes for recipes."
@@ -34,12 +34,12 @@ runs:
           echo "Added new conan remote '${{ inputs.remote_name }}' at ${CONAN_URL}/${{ inputs.remote_name }}."
         fi
     - name: Log into Conan remotes
-      if: vars.CONAN_REMOTE_URL != '' && secrets.CONAN_REMOTE_USERNAME != '' && secrets.CONAN_REMOTE_PASSWORD != ''
+      if: env.CONAN_REMOTE_URL != '' && env.CONAN_REMOTE_USERNAME != '' && env.CONAN_REMOTE_PASSWORD != ''
       id: remote
       shell: bash
       run: |
-        conan remote login recipes "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
-        conan remote login ${{ inputs.conan_remote_name }} "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
+        conan remote login recipes "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
+        conan remote login ${{ inputs.conan_remote_name }} "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
         conan remote list-users
     - name: list missing binaries
       id: binaries
