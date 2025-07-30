@@ -243,7 +243,8 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
     }
     auto const newDebtTotal = brokerSle->at(sfDebtTotal) + principalRequested;
-    if (brokerSle->at(sfDebtMaximum) < newDebtTotal)
+    if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
+        debtMaximum != 0 && debtMaximum < newDebtTotal)
     {
         JLOG(ctx.j.warn())
             << "Loan would exceed the maximum debt limit of the LoanBroker.";
