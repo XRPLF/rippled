@@ -19,19 +19,19 @@ runs:
       run: |
         echo "Adding Conan remotes for recipes."
         if conan remote list | grep -q "recipes"; then
-          conan remote update recipes --index 0 --url ${CONAN_URL}/recipes
-          echo "Updated Conan remote 'recipes' to ${CONAN_URL}/recipes."
+          conan remote update recipes --index 0 --url ${{ env.CONAN_REMOTE_URL }}/recipes
+          echo "Updated Conan remote 'recipes' to ${{ env.CONAN_REMOTE_URL }}/recipes."
         else
-          conan remote add --index 0 recipes ${CONAN_URL}/recipes
-          echo "Added new conan remote 'recipes' at ${CONAN_URL}/recipes."
+          conan remote add --index 0 recipes ${{ env.CONAN_REMOTE_URL }}/recipes
+          echo "Added new conan remote 'recipes' at ${{ env.CONAN_REMOTE_URL }}/recipes."
         fi
         echo "Adding Conan remotes for packages."
         if conan remote list | grep -q "${{ inputs.remote_name }}"; then
-          conan remote update ${{ inputs.remote_name }} --index 1 --url ${CONAN_URL}/${{ inputs.remote_name }}
-          echo "Updated Conan remote '${{ inputs.remote_name }}' to ${CONAN_URL}/${{ inputs.remote_name }}."
+          conan remote update ${{ inputs.remote_name }} --index 1 --url ${{ env.CONAN_REMOTE_URL }}/${{ inputs.remote_name }}
+          echo "Updated Conan remote '${{ inputs.remote_name }}' to ${{ env.CONAN_REMOTE_URL }}/${{ inputs.remote_name }}."
         else
-          conan remote add --index 1 ${{ inputs.remote_name }} ${CONAN_URL}/${{ inputs.remote_name }}
-          echo "Added new conan remote '${{ inputs.remote_name }}' at ${CONAN_URL}/${{ inputs.remote_name }}."
+          conan remote add --index 1 ${{ inputs.remote_name }} ${{ env.CONAN_REMOTE_URL }}/${{ inputs.remote_name }}
+          echo "Added new conan remote '${{ inputs.remote_name }}' at ${{ env.CONAN_REMOTE_URL }}/${{ inputs.remote_name }}."
         fi
     - name: Log into Conan remotes
       if: env.CONAN_REMOTE_URL != '' && env.CONAN_REMOTE_USERNAME != '' && env.CONAN_REMOTE_PASSWORD != ''
