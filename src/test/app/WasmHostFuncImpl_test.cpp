@@ -1401,7 +1401,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         auto const kp = generateKeyPair(KeyType::secp256k1, randomSeed());
         PublicKey const& pk = kp.first;
         SecretKey const& sk = kp.second;
-        std::string message = "hello signature";
+        std::string const& message = "hello signature";
         auto const sig = sign(pk, sk, Slice(message.data(), message.size()));
 
         // Should succeed for valid signature
@@ -1808,8 +1808,8 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         Env env{*this};
         // Mint NFT for env.master
-        uint32_t taxon = 12345;
-        uint256 nftId = token::getNextID(env, env.master, taxon);
+        uint32_t const taxon = 12345;
+        uint256 const nftId = token::getNextID(env, env.master, taxon);
         env(token::mint(env.master, taxon));
         env.close();
 
@@ -1847,8 +1847,8 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         Env env{*this};
 
-        uint32_t taxon = 54321;
-        uint256 nftId = token::getNextID(env, env.master, taxon);
+        uint32_t const taxon = 54321;
+        uint256 const nftId = token::getNextID(env, env.master, taxon);
         env(token::mint(env.master, taxon));
         env.close();
 
@@ -1873,7 +1873,8 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         Env env{*this};
 
         // Mint NFT with default flags
-        uint256 nftId = token::getNextID(env, env.master, 0u, tfTransferable);
+        uint256 const nftId =
+            token::getNextID(env, env.master, 0u, tfTransferable);
         env(token::mint(env.master, 0), txflags(tfTransferable));
         env.close();
 
@@ -1906,8 +1907,8 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         Env env{*this};
 
-        uint16_t transferFee = 250;
-        uint256 nftId =
+        uint16_t const transferFee = 250;
+        uint256 const nftId =
             token::getNextID(env, env.master, 0u, tfTransferable, transferFee);
         env(token::mint(env.master, 0),
             token::xferFee(transferFee),

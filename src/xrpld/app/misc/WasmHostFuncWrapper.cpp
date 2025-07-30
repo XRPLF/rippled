@@ -326,10 +326,11 @@ getLedgerAccountHash_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    return returnResult(rt, params, results, hf->getLedgerAccountHash(), index);
+    return returnResult(
+        runtime, params, results, hf->getLedgerAccountHash(), index);
 }
 
 wasm_trap_t*
@@ -339,11 +340,11 @@ getLedgerTransactionHash_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
     return returnResult(
-        rt, params, results, hf->getLedgerTransactionHash(), index);
+        runtime, params, results, hf->getLedgerTransactionHash(), index);
 }
 
 wasm_trap_t*
@@ -353,10 +354,10 @@ getBaseFee_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    return returnResult(rt, params, results, hf->getBaseFee(), index);
+    return returnResult(runtime, params, results, hf->getBaseFee(), index);
 }
 
 wasm_trap_t*
@@ -366,10 +367,10 @@ isAmendmentEnabled_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const slice = getDataSlice(rt, params, index);
+    auto const slice = getDataSlice(runtime, params, index);
     if (!slice)
     {
         return hfResult(results, slice.error());
@@ -378,7 +379,7 @@ isAmendmentEnabled_wrap(
     if (slice->size() == uint256::bytes)
     {
         return returnResult(
-            rt,
+            runtime,
             params,
             results,
             hf->isAmendmentEnabled(uint256::fromVoid(slice->data())),
@@ -388,7 +389,7 @@ isAmendmentEnabled_wrap(
     auto const str = std::string_view(
         reinterpret_cast<char const*>(slice->data()), slice->size());
     return returnResult(
-        rt, params, results, hf->isAmendmentEnabled(str), index);
+        runtime, params, results, hf->isAmendmentEnabled(str), index);
 }
 
 wasm_trap_t*
@@ -728,29 +729,29 @@ checkSignature_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const message = getDataSlice(rt, params, index);
+    auto const message = getDataSlice(runtime, params, index);
     if (!message)
     {
         return hfResult(results, message.error());
     }
 
-    auto const signature = getDataSlice(rt, params, index);
+    auto const signature = getDataSlice(runtime, params, index);
     if (!signature)
     {
         return hfResult(results, signature.error());
     }
 
-    auto const pubkey = getDataSlice(rt, params, index);
+    auto const pubkey = getDataSlice(runtime, params, index);
     if (!pubkey)
     {
         return hfResult(results, pubkey.error());
     }
 
     return returnResult(
-        rt,
+        runtime,
         params,
         results,
         hf->checkSignature(*message, *signature, *pubkey),
@@ -1198,16 +1199,17 @@ getNFTIssuer_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getDataUInt256(rt, params, index);
+    auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
     }
 
-    return returnResult(rt, params, results, hf->getNFTIssuer(*nftId), index);
+    return returnResult(
+        runtime, params, results, hf->getNFTIssuer(*nftId), index);
 }
 
 wasm_trap_t*
@@ -1217,16 +1219,17 @@ getNFTTaxon_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getDataUInt256(rt, params, index);
+    auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
     }
 
-    return returnResult(rt, params, results, hf->getNFTTaxon(*nftId), index);
+    return returnResult(
+        runtime, params, results, hf->getNFTTaxon(*nftId), index);
 }
 
 wasm_trap_t*
@@ -1236,16 +1239,17 @@ getNFTFlags_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getDataUInt256(rt, params, index);
+    auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
     }
 
-    return returnResult(rt, params, results, hf->getNFTFlags(*nftId), index);
+    return returnResult(
+        runtime, params, results, hf->getNFTFlags(*nftId), index);
 }
 
 wasm_trap_t*
@@ -1255,17 +1259,17 @@ getNFTTransferFee_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getDataUInt256(rt, params, index);
+    auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
     }
 
     return returnResult(
-        rt, params, results, hf->getNFTTransferFee(*nftId), index);
+        runtime, params, results, hf->getNFTTransferFee(*nftId), index);
 }
 
 wasm_trap_t*
@@ -1275,16 +1279,17 @@ getNFTSerial_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const nftId = getDataUInt256(rt, params, index);
+    auto const nftId = getDataUInt256(runtime, params, index);
     if (!nftId)
     {
         return hfResult(results, nftId.error());
     }
 
-    return returnResult(rt, params, results, hf->getNFTSerial(*nftId), index);
+    return returnResult(
+        runtime, params, results, hf->getNFTSerial(*nftId), index);
 }
 
 wasm_trap_t*
