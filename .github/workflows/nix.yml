@@ -96,7 +96,7 @@ jobs:
           echo "Conan profile:"
           conan profile show
           echo "Conan configuration:"
-          conan config show
+          conan config list
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
         run: tar -czf conan.tar.gz -C ${CONAN_HOME} .
