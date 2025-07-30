@@ -111,7 +111,8 @@ env:
       "-Dunity=ON"
     ]
   # We will not run any build for a commit, only during merge.
-  BUILD_ON_PR_COMMIT: []
+  BUILD_ON_PR_COMMIT: >-
+    []
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by
