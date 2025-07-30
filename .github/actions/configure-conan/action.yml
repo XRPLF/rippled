@@ -42,13 +42,12 @@ runs:
     - name: Add Conan remote for recipes
       shell: bash
       run: |
-        REMOTE_NAME="recipes"
-        if conan remote list | grep -q "${REMOTE_NAME}"; then
-          conan remote remove ${REMOTE_NAME}
-          echo "Removed Conan remote '${REMOTE_NAME}'."
+        if conan remote list | grep -q "recipes"; then
+          conan remote remove recipes
+          echo "Removed Conan remote 'recipes'."
         fi
-        conan remote add --index 0 ${REMOTE_NAME} ${{ inputs.conan_remote_url }}/${REMOTE_NAME}
-        echo "Added new conan remote '${REMOTE_NAME}' at ${{ inputs.conan_remote_url }}/${REMOTE_NAME}."
+        conan remote add --index 0 recipes ${{ inputs.conan_remote_url }}/recipes
+        echo "Added new conan remote 'recipes' at ${{ inputs.conan_remote_url }}/recipes."
     - name: Add Conan remote for packages
       shell: bash
       run: |
@@ -58,8 +57,9 @@ runs:
         fi
         conan remote add --index 1 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}
         echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}."
-    - name: Log into Conan remote
+    - name: Log into Conan remotes
       shell: bash
       run: |
-        conan remote login '*' ${{ inputs.conan_remote_username }} --password "${{ inputs.conan_remote_password }}"
+        conan remote login 'recipes' ${{ inputs.conan_remote_username }} --password "${{ inputs.conan_remote_password }}"
+        conan remote login '${{ inputs.conan_remote_name }}' ${{ inputs.conan_remote_username }} --password "${{ inputs.conan_remote_password }}"
         conan remote list-users
