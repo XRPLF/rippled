@@ -39,7 +39,7 @@ runs:
       shell: bash
       run: |
         conan remote login recipes "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
-        conan remote login ${{ inputs.conan_remote_name }} "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
+        conan remote login ${{ inputs.remote_name }} "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
         conan remote list-users
     - name: list missing binaries
       id: binaries
