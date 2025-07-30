@@ -138,6 +138,8 @@ env:
 #    [
 #      "-Dunity=ON"
 #    ]
+  # We will not run any build for a commit, only during merge.
+  BUILD_ON_PR_COMMIT: []
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by
@@ -150,11 +152,13 @@ jobs:
       - name: Generate outputs
         id: generate
         run: |
+          echo "build_on_pr_commit=$(jq -c <<< '${{ env.BUILD_ON_PR_COMMIT }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_architecture=$(jq -c <<< '${{ env.STRATEGY_MATRIX_ARCHITECTURE }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_os=$(jq -c <<< '${{ env.STRATEGY_MATRIX_OS }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_build_type=$(jq -c <<< '${{ env.STRATEGY_MATRIX_BUILD_TYPE }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_cmake_args=$(jq -c <<< '${{ env.STRATEGY_MATRIX_CMAKE_ARGS }}')" >> "$GITHUB_OUTPUT"
     outputs:
+      build_on_pr_commit: ${{ steps.generate.outputs.build_on_pr_commit }}
       conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
       strategy_matrix_architecture: ${{ steps.generate.outputs.strategy_matrix_architecture }}
       strategy_matrix_os: ${{ steps.generate.outputs.strategy_matrix_os }}
@@ -166,8 +170,6 @@ jobs:
   build-test:
     needs:
       - generate-outputs
-    runs-on: ${{ matrix.architecture.runner }}
-    container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -176,6 +178,9 @@ jobs:
         os: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_os) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
         cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
+    if: ${{ contains(fromJSON('["develop", "release", "master"]'), github.ref_name) || contains(fromJSON(needs.generate-outputs.outputs.build_on_pr_commit), format('{0}|{1}-{2}|{3}|{4}', matrix.architecture.platform, matrix.os.compiler_name, matrix.os.compiler_version, matrix.build_type, matrix.cmake_args)) }}
+    runs-on: ${{ matrix.architecture.runner }}
+    container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683

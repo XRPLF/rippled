@@ -49,7 +49,8 @@ env:
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
-        "runner": "windows-latest"
+        "platform": "windows/amd64",
+        "runner": ["windows-latest"]
       }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
@@ -76,6 +77,12 @@ env:
 #    [
 #      "-Dunity=ON"
 #    ]
+  # We will only run Windows on x64 in Debug with unity build for each commit.
+  # All other configurations will be run when merging into a main branch.
+  BUILD_ON_PR_COMMIT: >-
+    [
+      "windows-latest|Debug|-Dunity=ON"
+    ]
 
 jobs:
   # Generate the strategy matrix and expose environment variables to be used by
@@ -88,10 +95,12 @@ jobs:
       - name: Generate outputs
         id: generate
         run: |
+          echo "build_on_pr_commit=$(jq -c <<< '${{ env.BUILD_ON_PR_COMMIT }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_architecture=$(jq -c <<< '${{ env.STRATEGY_MATRIX_ARCHITECTURE }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_build_type=$(jq -c <<< '${{ env.STRATEGY_MATRIX_BUILD_TYPE }}')" >> "$GITHUB_OUTPUT"
           echo "strategy_matrix_cmake_args=$(jq -c <<< '${{ env.STRATEGY_MATRIX_CMAKE_ARGS }}')" >> "$GITHUB_OUTPUT"
     outputs:
+      build_on_pr_commit: ${{ steps.generate.outputs.build_on_pr_commit }}
       conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
       strategy_matrix_architecture: ${{ steps.generate.outputs.strategy_matrix_architecture }}
       strategy_matrix_build_type: ${{ steps.generate.outputs.strategy_matrix_build_type }}
@@ -102,7 +111,6 @@ jobs:
   build-test:
     needs:
       - generate-outputs
-    runs-on: ${{ matrix.architecture.runner }}
     strategy:
       fail-fast: false
       max-parallel: 4
@@ -110,6 +118,8 @@ jobs:
         architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
         build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
         cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
+    if: ${{ contains(fromJSON('["develop", "release", "master"]'), github.ref_name) || contains(fromJSON(needs.generate-outputs.outputs.build_on_pr_commit), format('{0}|{1}|{2}', matrix.architecture.platform, matrix.build_type, matrix.cmake_args)) }}
+    runs-on: ${{ matrix.architecture.runner }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683

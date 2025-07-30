@@ -33,8 +33,10 @@ runs:
       run: |
         echo "${{ inputs.conan_global_conf }}" >> $(conan config home)/global.conf
         conan config install conan/profiles/default -tf $(conan config home)/profiles/
-        echo "Installed Conan profile:"
+        echo "Conan profile:"
         conan profile show
+        echo "Conan global configuration:"
+        conan config show
     - name: Add Conan remote
       shell: bash
       run: |
