@@ -92,7 +92,7 @@ jobs:
           echo "Conan profile:"
           conan profile show
           echo "Conan configuration:"
-          conan config list
+          conan config show '*'
       - name: export custom recipes
         shell: bash
         run: |
