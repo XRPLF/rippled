@@ -37,8 +37,8 @@ runs:
         conan config install conan/profiles/default -tf $(conan config home)/profiles/
         echo "Conan profile:"
         conan profile show
-        echo "Conan global configuration:"
-        conan config show
+        echo "Conan configuration:"
+        conan config show '*'
     - name: Add Conan remote for recipes
       shell: bash
       run: |
