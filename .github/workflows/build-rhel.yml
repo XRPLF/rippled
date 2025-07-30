@@ -49,7 +49,7 @@ env:
       {
           "platform": "linux/amd64",
           "runner": ["self-hosted", "Linux", "X64", "heavy"]
-      },
+      }
 #      {
 #          "platform": "linux/arm64",
 #          "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
