@@ -103,14 +103,14 @@ public:
 };
 
 /** Match the number of items in the account's owner directory */
-class sponsoring_count
+class sponsoring_owners
 {
 private:
     Account account_;
     std::uint32_t value_;
 
 public:
-    sponsoring_count(Account const& account, std::uint32_t value)
+    sponsoring_owners(Account const& account, std::uint32_t value)
         : account_(account), value_(value)
     {
     }

@@ -91,9 +91,10 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 0));
+        env.require(owners(alice, 1));
         env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_count(sponsor, 1));
+        env.require(sponsoring_owners(alice, 0));
+        env.require(sponsoring_owners(sponsor, 1));
 
         // CheckCancel
         auto const checkId = keylet::check(alice, seq).key;
@@ -102,13 +103,18 @@ public:
 
         env.require(owners(alice, 0));
         env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_count(sponsor, 0));
+        env.require(sponsoring_owners(sponsor, 0));
 
         auto const seq2 = env.seq(alice);
         env(check::create(alice, bob, XRP(1)),
             sponsor::as(sponsor, tfSponsorReserve),
             sponsor::sig(sponsor));
         env.close();
+
+        env.require(owners(alice, 1));
+        env.require(sponsored_owners(alice, 1));
+        env.require(sponsoring_owners(alice, 0));
+        env.require(sponsoring_owners(sponsor, 1));
 
         // CheckCash
         auto const checkId2 = keylet::check(alice, seq2).key;
@@ -117,7 +123,7 @@ public:
 
         env.require(owners(alice, 0));
         env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_count(sponsor, 0));
+        env.require(sponsoring_owners(sponsor, 0));
 
         // printf(
         //     "meta: %s\n",
@@ -145,9 +151,10 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 0));
+        env.require(owners(alice, 1));
         env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_count(sponsor, 1));
+        env.require(sponsoring_owners(alice, 0));
+        env.require(sponsoring_owners(sponsor, 1));
 
         // OfferCancel
         env(offer_cancel(alice, seq));
@@ -155,9 +162,10 @@ public:
 
         env.require(owners(alice, 0));
         env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_count(sponsor, 0));
+        env.require(sponsoring_owners(alice, 0));
+        env.require(sponsoring_owners(sponsor, 0));
 
-        // TODO: test Execution
+        // TODO: test Offer Execution
     }
 
     void
@@ -178,17 +186,18 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 0));
+        env.require(owners(alice, 250));
         env.require(sponsored_owners(alice, 250));
-        env.require(sponsoring_count(sponsor, 250));
+        env.require(sponsoring_owners(alice, 0));
+        env.require(sponsoring_owners(sponsor, 250));
 
         // use a Ticket
         env(noop(alice), ticket::use(ticketSeq + 1));
         env.close();
 
-        env.require(owners(alice, 0));
+        env.require(owners(alice, 249));
         env.require(sponsored_owners(alice, 249));
-        env.require(sponsoring_count(sponsor, 249));
+        env.require(sponsoring_owners(sponsor, 249));
     }
 
     void
@@ -210,9 +219,11 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(issuer, 0));
+        env.require(owners(issuer, 1));
+        env.require(owners(subject, 0));
         env.require(sponsored_owners(issuer, 1));
-        env.require(sponsoring_count(sponsor, 1));
+        env.require(sponsored_owners(subject, 0));
+        env.require(sponsoring_owners(sponsor, 1));
 
         // CredentialsAccept
         env(credentials::accept(subject, issuer, "credType"),
@@ -221,10 +232,10 @@ public:
         env.close();
 
         env.require(owners(issuer, 0));
-        env.require(owners(subject, 0));
+        env.require(owners(subject, 1));
         env.require(sponsored_owners(issuer, 0));
         env.require(sponsored_owners(subject, 1));
-        env.require(sponsoring_count(sponsor, 1));
+        env.require(sponsoring_owners(sponsor, 1));
 
         // CredentialsDelete
         env(credentials::deleteCred(subject, subject, issuer, "credType"));
@@ -234,7 +245,7 @@ public:
         env.require(owners(subject, 0));
         env.require(sponsored_owners(issuer, 0));
         env.require(sponsored_owners(subject, 0));
-        env.require(sponsoring_count(sponsor, 0));
+        env.require(sponsoring_owners(sponsor, 0));
     }
 
     void
@@ -255,9 +266,9 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 0));
+        env.require(owners(alice, 1));
         env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_count(sponsor, 1));
+        env.require(sponsoring_owners(sponsor, 1));
 
         // delete
         env(delegate::set(alice, bob, {}));
@@ -265,7 +276,7 @@ public:
 
         env.require(owners(alice, 0));
         env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_count(sponsor, 0));
+        env.require(sponsoring_owners(sponsor, 0));
     }
 
     void
@@ -291,9 +302,9 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 0));
+        env.require(owners(alice, 1));
         env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_count(sponsor, 1));
+        env.require(sponsoring_owners(sponsor, 1));
 
         // DIDDelete
         env(did::del(alice));
@@ -301,7 +312,7 @@ public:
 
         env.require(owners(alice, 0));
         env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_count(sponsor, 0));
+        env.require(sponsoring_owners(sponsor, 0));
     }
 
     void
@@ -358,9 +369,9 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 0));
+        env.require(owners(alice, 1));
         env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_count(sponsor, 1));
+        env.require(sponsoring_owners(sponsor, 1));
 
         // Delete
         env(signers(alice, none));
@@ -368,7 +379,7 @@ public:
 
         env.require(owners(alice, 0));
         env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_count(sponsor, 0));
+        env.require(sponsoring_owners(sponsor, 0));
     }
 
     void

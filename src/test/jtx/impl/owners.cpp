@@ -63,7 +63,7 @@ sponsored_owners::operator()(Env& env) const
 }
 
 void
-sponsoring_count::operator()(Env& env) const
+sponsoring_owners::operator()(Env& env) const
 {
     env.test.expect(
         env.le(account_)->getFieldU32(sfSponsoringOwnerCount) == value_);

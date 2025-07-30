@@ -1089,6 +1089,7 @@ adjustOwnerCount(
         }
         {
             // modify account's SponsoredOwnerCount
+
             std::uint32_t const current{
                 accountSle->getFieldU32(sfSponsoredOwnerCount)};
             AccountID const id = (*accountSle)[sfAccount];
@@ -1098,7 +1099,6 @@ adjustOwnerCount(
             accountSle->setFieldU32(sfSponsoredOwnerCount, adjusted);
             view.update(accountSle);
         }
-        return;
     }
     std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
     AccountID const id = (*accountSle)[sfAccount];
