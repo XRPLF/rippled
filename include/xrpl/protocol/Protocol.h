@@ -146,6 +146,14 @@ static_assert(maxCoverRate == TenthBips32(100'000u));
     Valid values are between 0 and 100% inclusive.
 */
 TenthBips32 constexpr maxOverpaymentFee = percentageToTenthBips(100);
+static_assert(maxOverpaymentFee == TenthBips32(100'000u));
+
+/** Annualized interest rate of the Loan in 1/10 bips.
+ *
+ * Valid values are between 0 and 100% inclusive.
+ */
+TenthBips32 constexpr maxInterestRate = percentageToTenthBips(100);
+static_assert(maxInterestRate == TenthBips32(100'000u));
 
 /** The maximum premium added to the interest rate for late payments on a loan
  * in 1/10 bips.
@@ -153,6 +161,7 @@ TenthBips32 constexpr maxOverpaymentFee = percentageToTenthBips(100);
  * Valid values are between 0 and 100% inclusive.
  */
 TenthBips32 constexpr maxLateInterestRate = percentageToTenthBips(100);
+static_assert(maxLateInterestRate == TenthBips32(100'000u));
 
 /** The maximum close interest rate charged for repaying a loan early in 1/10
  * bips.
@@ -160,6 +169,7 @@ TenthBips32 constexpr maxLateInterestRate = percentageToTenthBips(100);
  * Valid values are between 0 and 100% inclusive.
  */
 TenthBips32 constexpr maxCloseInterestRate = percentageToTenthBips(100);
+static_assert(maxCloseInterestRate == TenthBips32(100'000u));
 
 /** The maximum overpayment interest rate charged on loan overpayments in 1/10
  * bips.
@@ -167,6 +177,7 @@ TenthBips32 constexpr maxCloseInterestRate = percentageToTenthBips(100);
  * Valid values are between 0 and 100% inclusive.
  */
 TenthBips32 constexpr maxOverpaymentInterestRate = percentageToTenthBips(100);
+static_assert(maxOverpaymentInterestRate == TenthBips32(100'000u));
 
 /** The maximum length of a URI inside an NFT */
 std::size_t constexpr maxTokenURILength = 256;

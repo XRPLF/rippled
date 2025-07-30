@@ -82,6 +82,8 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
+    if (!validNumericRange(tx[~sfInterestRate], maxInterestRate))
+        return temINVALID;
     if (!validNumericRange(tx[~sfOverpaymentFee], maxOverpaymentFee))
         return temINVALID;
     if (!validNumericRange(tx[~sfLateInterestRate], maxLateInterestRate))

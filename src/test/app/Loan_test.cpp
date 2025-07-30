@@ -748,6 +748,19 @@ class Loan_test : public beast::unit_test::suite
             loanSetFee,
             ter(temINVALID));
 
+        // sfInterestRate: good value, bad account
+        env(set(evan, broker.brokerID, principalRequest, startDate),
+            sig(sfCounterpartySignature, borrower),
+            interestRate(maxInterestRate),
+            loanSetFee,
+            ter(tefBAD_AUTH));
+        // sfInterestRate: too big
+        env(set(evan, broker.brokerID, principalRequest, startDate),
+            sig(sfCounterpartySignature, lender),
+            interestRate(maxInterestRate + 1),
+            loanSetFee,
+            ter(temINVALID));
+
         // sfLateInterestRate: good value, bad account
         env(set(evan, broker.brokerID, principalRequest, startDate),
             sig(sfCounterpartySignature, borrower),
