@@ -21,7 +21,7 @@ runs:
         if conan remote list | grep -q "recipes"; then
           conan remote update recipes --index 0 --url ${CONAN_URL}/recipes
           echo "Updated Conan remote 'recipes' to ${CONAN_URL}/recipes."
-        elif
+        else
           conan remote add --index 0 recipes ${CONAN_URL}/recipes
           echo "Added new conan remote 'recipes' at ${CONAN_URL}/recipes."
         fi
@@ -29,7 +29,7 @@ runs:
         if conan remote list | grep -q "${{ inputs.remote_name }}"; then
           conan remote update ${{ inputs.remote_name }} --index 1 --url ${CONAN_URL}/${{ inputs.remote_name }}
           echo "Updated Conan remote '${{ inputs.remote_name }}' to ${CONAN_URL}/${{ inputs.remote_name }}."
-        elif
+        else
           conan remote add --index 1 ${{ inputs.remote_name }} ${CONAN_URL}/${{ inputs.remote_name }}
           echo "Added new conan remote '${{ inputs.remote_name }}' at ${CONAN_URL}/${{ inputs.remote_name }}."
         fi
