@@ -44,15 +44,53 @@ env:
   # duplication, we define it here using environment variables and create the
   # matrix in the first job. The matrix defined below should be kept in sync
   # with https://github.com/XRPLF/ci/blob/main/.github/workflows/rhel.yml.
+  STRATEGY_MATRIX_ARCHITECTURE: >-
+    [
+      {
+          "platform": "linux/amd64",
+          "runner": ["self-hosted", "Linux", "X64", "heavy"]
+      },
+#      {
+#          "platform": "linux/arm64",
+#          "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
+#      }
+    ]
+  STRATEGY_MATRIX_OS: >-
+    [
+        {
+            "distro": "rhel",
+            "release": "9.6",
+            "compiler_name": "gcc",
+            "compiler_version": "13"
+        },
+        {
+            "distro": "rhel",
+            "release": "9.6",
+            "compiler_name": "gcc",
+            "compiler_version": "14"
+        },
+        {
+            "distro": "rhel",
+            "release": "9.6",
+            "compiler_name": "clang",
+            "compiler_version": "any"
+        }
+    ]
+  STRATEGY_MATRIX_BUILD_TYPE: >-
+    [
+      "Debug",
+      "Release"
+    ]
+  STRATEGY_MATRIX_CMAKE_ARGS: >-
+    [
+      "-Dunity=OFF",
+      "-Dunity=ON"
+    ]
 #  STRATEGY_MATRIX_ARCHITECTURE: >-
 #    [
 #      {
 #          "platform": "linux/amd64",
 #          "runner": ["self-hosted", "Linux", "X64", "heavy"]
-#      },
-#      {
-#          "platform": "linux/arm64",
-#          "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
 #      }
 #    ]
 #  STRATEGY_MATRIX_OS: >-
@@ -62,54 +100,16 @@ env:
 #            "release": "9.6",
 #            "compiler_name": "gcc",
 #            "compiler_version": "13"
-#        },
-#        {
-#            "distro": "rhel",
-#            "release": "9.6",
-#            "compiler_name": "gcc",
-#            "compiler_version": "14"
-#        },
-#        {
-#            "distro": "rhel",
-#            "release": "9.6",
-#            "compiler_name": "clang",
-#            "compiler_version": "any"
 #        }
 #    ]
 #  STRATEGY_MATRIX_BUILD_TYPE: >-
 #    [
-#      "Debug",
 #      "Release"
 #    ]
 #  STRATEGY_MATRIX_CMAKE_ARGS: >-
 #    [
-#      "-Dunity=OFF",
 #      "-Dunity=ON"
 #    ]
-  STRATEGY_MATRIX_ARCHITECTURE: >-
-    [
-      {
-          "platform": "linux/amd64",
-          "runner": ["self-hosted", "Linux", "X64", "heavy"]
-      }
-    ]
-  STRATEGY_MATRIX_OS: >-
-    [
-        {
-            "distro": "rhel",
-            "release": "9.6",
-            "compiler_name": "gcc",
-            "compiler_version": "13"
-        }
-    ]
-  STRATEGY_MATRIX_BUILD_TYPE: >-
-    [
-      "Release"
-    ]
-  STRATEGY_MATRIX_CMAKE_ARGS: >-
-    [
-      "-Dunity=ON"
-    ]
   # We will not run any build for a commit, only during merge.
   BUILD_ON_PR_COMMIT: >-
     []

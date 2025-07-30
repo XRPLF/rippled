@@ -42,37 +42,37 @@ env:
   # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
   # duplication, we define it here using environment variables and create the
   # matrix in the first job.
-#  STRATEGY_MATRIX_ARCHITECTURE: >-
-#    [
-#      {
-#        "platform": "macos/arm64",
-#        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
-#      }
-#    ]
-#  STRATEGY_MATRIX_BUILD_TYPE: >-
-#    [
-#      "Debug",
-#      "Release"
-#    ]
-#  STRATEGY_MATRIX_CMAKE_ARGS: >-
-#    [
-#      "-Dunity=OFF",
-#      "-Dunity=ON"
-#    ]
   STRATEGY_MATRIX_ARCHITECTURE: >-
     [
       {
+        "platform": "macos/arm64",
         "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
       }
     ]
   STRATEGY_MATRIX_BUILD_TYPE: >-
     [
+      "Debug",
       "Release"
     ]
   STRATEGY_MATRIX_CMAKE_ARGS: >-
     [
+      "-Dunity=OFF",
       "-Dunity=ON"
     ]
+#  STRATEGY_MATRIX_ARCHITECTURE: >-
+#    [
+#      {
+#        "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
+#      }
+#    ]
+#  STRATEGY_MATRIX_BUILD_TYPE: >-
+#    [
+#      "Release"
+#    ]
+#  STRATEGY_MATRIX_CMAKE_ARGS: >-
+#    [
+#      "-Dunity=ON"
+#    ]
   # We will only run MacOS on ARM64 in Debug with unity build for each commit.
   # All other configurations will be run when merging into a main branch.
   BUILD_ON_PR_COMMIT: >-
