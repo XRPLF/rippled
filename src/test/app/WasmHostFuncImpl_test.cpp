@@ -145,6 +145,112 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         if (BEAST_EXPECT(result.has_value()))
             BEAST_EXPECT(result.value() == env.current()->info().parentHash);
     }
+
+    void
+    testGetLedgerAccountHash()
+    {
+        testcase("getLedgerAccountHash");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const result = hfs.getLedgerAccountHash();
+        if (BEAST_EXPECT(result.has_value()))
+            BEAST_EXPECT(result.value() == env.current()->info().accountHash);
+    }
+
+    void
+    testGetLedgerTransactionHash()
+    {
+        testcase("getLedgerTransactionHash");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const result = hfs.getLedgerTransactionHash();
+        if (BEAST_EXPECT(result.has_value()))
+            BEAST_EXPECT(result.value() == env.current()->info().txHash);
+    }
+
+    void
+    testGetBaseFee()
+    {
+        testcase("getBaseFee");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const result = hfs.getBaseFee();
+        if (BEAST_EXPECT(result.has_value()))
+            BEAST_EXPECT(result.value() == env.current()->fees().base.drops());
+    }
+
+    void
+    testIsAmendmentEnabled()
+    {
+        testcase("isAmendmentEnabled");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Use featureSmartEscrow for testing
+        auto const amendmentId = featureSmartEscrow;
+
+        // Test by id
+        {
+            auto const result = hfs.isAmendmentEnabled(amendmentId);
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(result.value() == 1);
+        }
+
+        // Test by name
+        std::string const amendmentName = "SmartEscrow";
+        {
+            auto const result = hfs.isAmendmentEnabled(amendmentName);
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(result.value() == 1);
+        }
+
+        // Test with a fake amendment id (all zeros)
+        uint256 fakeId;
+        {
+            auto const result = hfs.isAmendmentEnabled(fakeId);
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(result.value() == 0);
+        }
+
+        // Test with a fake amendment name
+        std::string fakeName = "FakeAmendment";
+        {
+            auto const result = hfs.isAmendmentEnabled(fakeName);
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(result.value() == 0);
+        }
+    }
+
     void
     testCacheLedgerObj()
     {
@@ -1256,24 +1362,109 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         // Should succeed for small data
         std::vector<uint8_t> data(10, 0x42);
-        auto result = hfs.updateData(Slice(data.data(), data.size()));
+        auto const result = hfs.updateData(Slice(data.data(), data.size()));
         BEAST_EXPECT(result.has_value() && result.value() == 0);
 
         // Should fail for too large data
         std::vector<uint8_t> bigData(
             1024 * 1024 + 1, 0x42);  // > maxWasmDataLength
-        auto tooBig = hfs.updateData(Slice(bigData.data(), bigData.size()));
+        auto const tooBig =
+            hfs.updateData(Slice(bigData.data(), bigData.size()));
         if (BEAST_EXPECT(!tooBig.has_value()))
             BEAST_EXPECT(
                 tooBig.error() == HostFunctionError::DATA_FIELD_TOO_LARGE);
 
         // Should fail if ledger object not found (use a bogus keylet)
-        auto bogusKeylet = keylet::escrow(env.master, 999999);
+        auto const bogusKeylet = keylet::escrow(env.master, 999999);
         WasmHostFunctionsImpl hfs2(ac, bogusKeylet);
-        auto notFound = hfs2.updateData(Slice(data.data(), data.size()));
+        auto const notFound = hfs2.updateData(Slice(data.data(), data.size()));
         if (BEAST_EXPECT(!notFound.has_value()))
             BEAST_EXPECT(
                 notFound.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    }
+
+    void
+    testCheckSignature()
+    {
+        testcase("checkSignature");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Generate a keypair and sign a message
+        auto const kp = generateKeyPair(KeyType::secp256k1, randomSeed());
+        PublicKey const& pk = kp.first;
+        SecretKey const& sk = kp.second;
+        std::string message = "hello signature";
+        auto const sig = sign(pk, sk, Slice(message.data(), message.size()));
+
+        // Should succeed for valid signature
+        {
+            auto const result = hfs.checkSignature(
+                Slice(message.data(), message.size()),
+                Slice(sig.data(), sig.size()),
+                Slice(pk.data(), pk.size()));
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(result.value() == 1);
+        }
+
+        // Should fail for invalid signature
+        {
+            std::string badSig(sig.size(), 0xFF);
+            auto const result = hfs.checkSignature(
+                Slice(message.data(), message.size()),
+                Slice(badSig.data(), badSig.size()),
+                Slice(pk.data(), pk.size()));
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(result.value() == 0);
+        }
+
+        // Should fail for invalid public key
+        {
+            std::string badPk(pk.size(), 0x00);
+            auto const result = hfs.checkSignature(
+                Slice(message.data(), message.size()),
+                Slice(sig.data(), sig.size()),
+                Slice(badPk.data(), badPk.size()));
+            BEAST_EXPECT(!result.has_value());
+            BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
+        }
+
+        // Should fail for empty public key
+        {
+            auto const result = hfs.checkSignature(
+                Slice(message.data(), message.size()),
+                Slice(sig.data(), sig.size()),
+                Slice(nullptr, 0));
+            BEAST_EXPECT(!result.has_value());
+            BEAST_EXPECT(result.error() == HostFunctionError::INVALID_PARAMS);
+        }
+
+        // Should fail for empty signature
+        {
+            auto const result = hfs.checkSignature(
+                Slice(message.data(), message.size()),
+                Slice(nullptr, 0),
+                Slice(pk.data(), pk.size()));
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(result.value() == 0);
+        }
+
+        // Should fail for empty message
+        {
+            auto const result = hfs.checkSignature(
+                Slice(nullptr, 0),
+                Slice(sig.data(), sig.size()),
+                Slice(pk.data(), pk.size()));
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(result.value() == 0);
+        }
     }
 
     void
@@ -1291,7 +1482,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
         std::string data = "hello world";
-        auto result =
+        auto const result =
             hfs.computeSha512HalfHash(Slice(data.data(), data.size()));
         BEAST_EXPECT(result.has_value());
 
@@ -1570,45 +1761,212 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         // Should succeed for valid NFT
         {
-            auto nftResult = hfs.getNFT(alice.id(), nftId);
-            if (BEAST_EXPECT(nftResult.has_value()))
+            auto const result = hfs.getNFT(alice.id(), nftId);
+            if (BEAST_EXPECT(result.has_value()))
                 BEAST_EXPECT(std::equal(
-                    nftResult.value().begin(),
-                    nftResult.value().end(),
-                    uri.data()));
+                    result.value().begin(), result.value().end(), uri.data()));
         }
 
         // Should fail for invalid account
         {
-            auto nftResult = hfs.getNFT(xrpAccount(), nftId);
-            if (BEAST_EXPECT(!nftResult.has_value()))
+            auto const result = hfs.getNFT(xrpAccount(), nftId);
+            if (BEAST_EXPECT(!result.has_value()))
                 BEAST_EXPECT(
-                    nftResult.error() == HostFunctionError::INVALID_ACCOUNT);
+                    result.error() == HostFunctionError::INVALID_ACCOUNT);
         }
 
         // Should fail for invalid nftId
         {
-            auto nftResult = hfs.getNFT(alice.id(), uint256());
-            if (BEAST_EXPECT(!nftResult.has_value()))
+            auto const result = hfs.getNFT(alice.id(), uint256());
+            if (BEAST_EXPECT(!result.has_value()))
                 BEAST_EXPECT(
-                    nftResult.error() == HostFunctionError::INVALID_PARAMS);
+                    result.error() == HostFunctionError::INVALID_PARAMS);
         }
 
         // Should fail for invalid nftId
         {
             auto const badId = token::getNextID(env, alice, 0u, 1u);
-            auto nftResult = hfs.getNFT(alice.id(), badId);
-            if (BEAST_EXPECT(!nftResult.has_value()))
+            auto const result = hfs.getNFT(alice.id(), badId);
+            if (BEAST_EXPECT(!result.has_value()))
                 BEAST_EXPECT(
-                    nftResult.error() ==
-                    HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+                    result.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
         }
 
         {
-            auto nftResult = hfs.getNFT(alice.id(), nftId2);
-            if (BEAST_EXPECT(!nftResult.has_value()))
+            auto const result = hfs.getNFT(alice.id(), nftId2);
+            if (BEAST_EXPECT(!result.has_value()))
                 BEAST_EXPECT(
-                    nftResult.error() == HostFunctionError::FIELD_NOT_FOUND);
+                    result.error() == HostFunctionError::FIELD_NOT_FOUND);
+        }
+    }
+
+    void
+    testGetNFTIssuer()
+    {
+        testcase("getNFTIssuer");
+        using namespace test::jtx;
+
+        Env env{*this};
+        // Mint NFT for env.master
+        uint32_t taxon = 12345;
+        uint256 nftId = token::getNextID(env, env.master, taxon);
+        env(token::mint(env.master, taxon));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        // Should succeed for valid NFT id
+        {
+            auto const result = hfs.getNFTIssuer(nftId);
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(std::equal(
+                    result.value().begin(),
+                    result.value().end(),
+                    env.master.id().data()));
+        }
+
+        // Should fail for zero NFT id
+        {
+            auto const result = hfs.getNFTIssuer(uint256());
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::INVALID_PARAMS);
+        }
+    }
+
+    void
+    testGetNFTTaxon()
+    {
+        testcase("getNFTTaxon");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        uint32_t taxon = 54321;
+        uint256 nftId = token::getNextID(env, env.master, taxon);
+        env(token::mint(env.master, taxon));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto const result = hfs.getNFTTaxon(nftId);
+        if (BEAST_EXPECT(result.has_value()))
+            BEAST_EXPECT(result.value() == taxon);
+    }
+
+    void
+    testGetNFTFlags()
+    {
+        testcase("getNFTFlags");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        // Mint NFT with default flags
+        uint256 nftId = token::getNextID(env, env.master, 0u, tfTransferable);
+        env(token::mint(env.master, 0), txflags(tfTransferable));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        {
+            auto const result = hfs.getNFTFlags(nftId);
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(result.value() == tfTransferable);
+        }
+
+        // Should return 0 for zero NFT id
+        {
+            auto const result = hfs.getNFTFlags(uint256());
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(result.value() == 0);
+        }
+    }
+
+    void
+    testGetNFTTransferFee()
+    {
+        testcase("getNFTTransferFee");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        uint16_t transferFee = 250;
+        uint256 nftId =
+            token::getNextID(env, env.master, 0u, tfTransferable, transferFee);
+        env(token::mint(env.master, 0),
+            token::xferFee(transferFee),
+            txflags(tfTransferable));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        {
+            auto const result = hfs.getNFTTransferFee(nftId);
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(result.value() == transferFee);
+        }
+
+        // Should return 0 for zero NFT id
+        {
+            auto const result = hfs.getNFTTransferFee(uint256());
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(result.value() == 0);
+        }
+    }
+
+    void
+    testGetNFTSerial()
+    {
+        testcase("getNFTSerial");
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        // Mint NFT with serial 0
+        uint256 const nftId = token::getNextID(env, env.master, 0u);
+        auto const serial = env.seq(env.master);
+        env(token::mint(env.master));
+        env.close();
+
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        {
+            auto const result = hfs.getNFTSerial(nftId);
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(result.value() == serial);
+        }
+
+        // Should return 0 for zero NFT id
+        {
+            auto const result = hfs.getNFTSerial(uint256());
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(result.value() == 0);
         }
     }
 
@@ -1629,11 +1987,11 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         std::string msg = "test trace";
         std::string data = "abc";
         auto const slice = Slice(data.data(), data.size());
-        auto result = hfs.trace(msg, slice, false);
+        auto const result = hfs.trace(msg, slice, false);
         BEAST_EXPECT(result.has_value());
         BEAST_EXPECT(result.value() == msg.size() + data.size());
 
-        auto resultHex = hfs.trace(msg, slice, true);
+        auto const resultHex = hfs.trace(msg, slice, true);
         BEAST_EXPECT(resultHex.has_value());
         BEAST_EXPECT(resultHex.value() == msg.size() + data.size() * 2);
     }
@@ -1654,7 +2012,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         std::string msg = "trace number";
         int64_t num = 123456789;
-        auto result = hfs.traceNum(msg, num);
+        auto const result = hfs.traceNum(msg, num);
         BEAST_EXPECT(result.has_value());
         BEAST_EXPECT(result.value() == msg.size() + sizeof(num));
     }
@@ -1665,6 +2023,10 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         testGetLedgerSqn();
         testGetParentLedgerTime();
         testGetParentLedgerHash();
+        testGetLedgerAccountHash();
+        testGetLedgerTransactionHash();
+        testGetBaseFee();
+        testIsAmendmentEnabled();
         testCacheLedgerObj();
         testGetTxField();
         testGetCurrentLedgerObjField();
@@ -1679,9 +2041,15 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         testGetCurrentLedgerObjNestedArrayLen();
         testGetLedgerObjNestedArrayLen();
         testUpdateData();
+        testCheckSignature();
         testComputeSha512HalfHash();
         testKeyletFunctions();
         testGetNFT();
+        testGetNFTIssuer();
+        testGetNFTTaxon();
+        testGetNFTFlags();
+        testGetNFTTransferFee();
+        testGetNFTSerial();
         testTrace();
         testTraceNum();
     }
