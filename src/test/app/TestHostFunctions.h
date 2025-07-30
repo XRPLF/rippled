@@ -307,6 +307,15 @@ public:
         return 0;
     }
 
+    Expected<int32_t, HostFunctionError>
+    checkSignature(
+        Slice const& message,
+        Slice const& signature,
+        Slice const& pubkey) override
+    {
+        return 1;
+    }
+
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override
     {
@@ -363,6 +372,36 @@ public:
 
         std::string s = "https://ripple.com";
         return Bytes(s.begin(), s.end());
+    }
+
+    Expected<Bytes, HostFunctionError>
+    getNFTIssuer(uint256 const& nftId) override
+    {
+        return Bytes(accountID_.begin(), accountID_.end());
+    }
+
+    Expected<std::uint32_t, HostFunctionError>
+    getNFTTaxon(uint256 const& nftId) override
+    {
+        return 4;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getNFTFlags(uint256 const& nftId) override
+    {
+        return 8;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getNFTTransferFee(uint256 const& nftId) override
+    {
+        return 10;
+    }
+
+    Expected<std::uint32_t, HostFunctionError>
+    getNFTSerial(uint256 const& nftId) override
+    {
+        return 4;
     }
 
     Expected<int32_t, HostFunctionError>
