@@ -161,7 +161,8 @@ public:
     getGasUsed() const
     {
         XRPL_ASSERT(
-            hasGasUsed(), "ripple::TxMeta::getGasUsed : non-null batch id");
+            hasGasUsed(),
+            "ripple::TxMeta::getGasUsed : non-null gas used field");
         return *gasUsed_;
     }
 
@@ -171,6 +172,27 @@ public:
         return static_cast<bool>(gasUsed_);
     }
 
+    void
+    setWasmReturnCode(std::uint32_t const& wasmReturnCode)
+    {
+        wasmReturnCode_ = wasmReturnCode;
+    }
+
+    std::uint32_t
+    getWasmReturnCode() const
+    {
+        XRPL_ASSERT(
+            hasWasmReturnCode(),
+            "ripple::TxMeta::getWasmReturnCode : non-null wasm return code");
+        return *wasmReturnCode_;
+    }
+
+    bool
+    hasWasmReturnCode() const
+    {
+        return static_cast<bool>(wasmReturnCode_);
+    }
+
 private:
     uint256 mTransactionID;
     std::uint32_t mLedger;
@@ -178,8 +200,9 @@ private:
     int mResult;
 
     std::optional<STAmount> mDelivered;
-    std::optional<std::uint32_t> gasUsed_;
     std::optional<uint256> parentBatchId_;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<std::int32_t> wasmReturnCode_;
 
     STArray mNodes;
 };

@@ -71,6 +71,8 @@ class STCurrency;
     STYPE(STI_VL, 7)                              \
     STYPE(STI_ACCOUNT, 8)                         \
     STYPE(STI_NUMBER, 9)                          \
+    STYPE(STI_INT32, 10)                          \
+    STYPE(STI_INT64, 11)                          \
                                                   \
     /* 10-13 are reserved */                      \
     STYPE(STI_OBJECT, 14)                         \
@@ -351,6 +353,9 @@ using SF_UINT192 = TypedField<STBitString<192>>;
 using SF_UINT256 = TypedField<STBitString<256>>;
 using SF_UINT384 = TypedField<STBitString<384>>;
 using SF_UINT512 = TypedField<STBitString<512>>;
+
+using SF_INT32 = TypedField<STInteger<std::int32_t>>;
+using SF_INT64 = TypedField<STInteger<std::int64_t>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
