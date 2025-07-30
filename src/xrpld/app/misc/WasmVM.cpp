@@ -77,6 +77,19 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
         WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
         WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
+        WASM_IMPORT_FUNC2(i, traceFloat, "trace_opaque_float", hfs,                                                500);
+
+        WASM_IMPORT_FUNC2(i, floatFromInt, "float_from_int", hfs,                                                 1000);
+        WASM_IMPORT_FUNC2(i, floatFromUint, "float_from_uint", hfs,                                               1000);
+        WASM_IMPORT_FUNC2(i, floatSet, "float_set", hfs,                                                          1000);
+        WASM_IMPORT_FUNC2(i, floatCompare, "float_compare", hfs,                                                  1000);
+        WASM_IMPORT_FUNC2(i, floatAdd, "float_add", hfs,                                                          1000);
+        WASM_IMPORT_FUNC2(i, floatSubtract, "float_subtract", hfs,                                                1000);
+        WASM_IMPORT_FUNC2(i, floatMultiply, "float_multiply", hfs,                                                1000);
+        WASM_IMPORT_FUNC2(i, floatDivide, "float_divide", hfs,                                                    1000);
+        WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                        1000);
+        WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                        1000);
+        WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                          1000);
 
         // clang-format on
     }

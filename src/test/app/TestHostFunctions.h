@@ -26,6 +26,7 @@
 #include <xrpld/ledger/detail/ApplyViewBase.h>
 
 namespace ripple {
+
 namespace test {
 
 struct TestLedgerDataProvider : public HostFunctions
@@ -377,6 +378,89 @@ public:
         j << std::endl;
 #endif
         return msg.size() + sizeof(data);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    traceFloat(std::string_view const& msg, Slice const& data) override
+    {
+#ifdef DEBUG_OUTPUT
+        auto& j = std::cerr;
+#else
+        auto j = getJournal().trace();
+#endif
+        auto const s = floatToString(data);
+        j << "WAMR TRACE FLOAT: " << msg << " " << s;
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
+        return msg.size() + s.size();
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatFromInt(int64_t x, int32_t mode) override
+    {
+        return floatFromIntImpl(x, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatFromUint(uint64_t x, int32_t mode) override
+    {
+        return floatFromUintImpl(x, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override
+    {
+        return floatSetImpl(mantissa, exponent, mode);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    floatCompare(Slice const& x, Slice const& y) override
+    {
+        return floatCompareImpl(x, y);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatAdd(Slice const& x, Slice const& y, int32_t mode) override
+    {
+        return floatAddImpl(x, y, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatSubtract(Slice const& x, Slice const& y, int32_t mode) override
+    {
+        return floatSubtractImpl(x, y, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatMultiply(Slice const& x, Slice const& y, int32_t mode) override
+    {
+        return floatMultiplyImpl(x, y, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatDivide(Slice const& x, Slice const& y, int32_t mode) override
+    {
+        return floatDivideImpl(x, y, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatRoot(Slice const& x, int32_t n, int32_t mode) override
+    {
+        return floatRootImpl(x, n, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatPower(Slice const& x, int32_t n, int32_t mode) override
+    {
+        return floatPowerImpl(x, n, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatLog(Slice const& x, int32_t mode) override
+    {
+        return floatLogImpl(x, mode);
     }
 };
 
