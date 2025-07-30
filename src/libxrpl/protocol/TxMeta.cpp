@@ -209,6 +209,42 @@ TxMeta::getAffectedAccounts() const
     return list;
 }
 
+boost::container::flat_set<MPTID>
+TxMeta::getAffectedMPTs() const
+{
+    boost::container::flat_set<MPTID> list;
+    list.reserve(10);
+
+    for (auto const& it : mNodes)
+    {
+        int index = it.getFieldIndex(
+            (it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
+
+        if (index != -1)
+        {
+            auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
+            XRPL_ASSERT(
+                inner,
+                "ripple::getAffectedMPTs : STObject type cast succeeded");
+            if (inner)
+            {
+                for (auto const& field : *inner)
+                {
+                    if (field.getFName() == sfMPTokenIssuanceID)
+                    {
+                        auto mptID =
+                            dynamic_cast<STBitString<192> const*>(&field);
+                        if (mptID != nullptr)
+                            list.insert(mptID->value());
+                    }
+                }
+            }
+        }
+    }
+
+    return list;
+}
+
 STObject&
 TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 {

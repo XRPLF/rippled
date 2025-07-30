@@ -60,6 +60,9 @@ InfoSub::~InfoSub()
     if (!normalSubscriptions_.empty())
         m_source.unsubAccountInternal(mSeq, normalSubscriptions_, false);
 
+    if (!mptSubscriptions_.empty())
+        m_source.unsubMPTInternal(mSeq, mptSubscriptions_);
+
     for (auto const& account : accountHistorySubscriptions_)
         m_source.unsubAccountHistoryInternal(mSeq, account, false);
 }
@@ -147,6 +150,22 @@ InfoSub::getApiVersion() const noexcept
     XRPL_ASSERT(
         apiVersion_ > 0, "ripple::InfoSub::getApiVersion : valid API version");
     return apiVersion_;
+}
+
+void
+InfoSub::insertSubMPTInfo(MPTID const& mptID)
+{
+    std::lock_guard sl(mLock);
+
+    mptSubscriptions_.insert(mptID);
+}
+
+void
+InfoSub::deleteSubMPTInfo(MPTID const& mptID)
+{
+    std::lock_guard sl(mLock);
+
+    mptSubscriptions_.erase(mptID);
 }
 
 }  // namespace ripple

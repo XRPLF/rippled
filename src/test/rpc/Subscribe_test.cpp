@@ -27,6 +27,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <tuple>
@@ -1585,6 +1586,173 @@ public:
     }
 
     void
+    testSubMPT()
+    {
+        // subscribe to multiple MPTs
+        testcase("SubMPT");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const dan{"dan"};
+
+        auto wsc = makeWSClient(env.app().config());
+
+        MPTTester mptAlice(env, alice, {.holders = {bob}});
+        MPTTester mptCarol(env, carol, {.holders = {dan}});
+
+        // Transfer fee is 10%
+        mptAlice.create(
+            {.transferFee = 10'000,
+             .ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer});
+        mptCarol.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+
+        Json::Value stream;
+        stream = Json::objectValue;
+        stream[jss::mpt_issuance_ids] = Json::arrayValue;
+        stream[jss::mpt_issuance_ids].append(to_string(mptAlice.issuanceID()));
+        stream[jss::mpt_issuance_ids].append(to_string(mptCarol.issuanceID()));
+        auto jv = wsc->invoke("subscribe", stream);
+        BEAST_EXPECT(jv[jss::status] == "success");
+
+        // bob create MPToken
+        mptAlice.authorize({.account = bob});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::close_time_iso] == "2000-01-01T00:00:50Z" &&
+                jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::ledger_index] == 7 &&
+                jv[jss::transaction][jss::Account] ==
+                "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK" &&
+                jv[jss::transaction][jss::Fee] == "10" &&
+                jv[jss::transaction][jss::Flags] == 0 &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::Sequence] == 4 &&
+                jv[jss::transaction][jss::TransactionType] ==
+                "MPTokenAuthorize" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // dan create MPToken
+        mptCarol.authorize({.account = dan});
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::close_time_iso] == "2000-01-01T00:01:00Z" &&
+                jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::ledger_index] == 8 &&
+                jv[jss::transaction][jss::Account] ==
+                "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
+                jv[jss::transaction][jss::Fee] == "10" &&
+                jv[jss::transaction][jss::Flags] == 0 &&
+                jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Sequence] == 5 &&
+                jv[jss::transaction][jss::TransactionType] ==
+                "MPTokenAuthorize" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        env.close();
+
+        // subscribe stream sees alice's MPT
+        mptAlice.pay(alice, bob, 2000);
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::close_time_iso] == "2000-01-01T00:01:20Z" &&
+                jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::ledger_index] == 10 &&
+                jv[jss::transaction][jss::Account] ==
+                "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn" &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "2000" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "2000" &&
+                jv[jss::transaction][jss::Destination] ==
+                "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK" &&
+                jv[jss::transaction][jss::Fee] == "10" &&
+                jv[jss::transaction][jss::Flags] == 2147483648u &&
+                jv[jss::transaction][jss::Sequence] == 5 &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        env.close();
+
+        // subscribe stream sees carol's MPT
+        mptCarol.pay(carol, dan, 1000);
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::close_time_iso] == "2000-01-01T00:01:40Z" &&
+                jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::ledger_index] == 12 &&
+                jv[jss::transaction][jss::Account] ==
+                "rH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW" &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "1000" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "1000" &&
+                jv[jss::transaction][jss::Destination] ==
+                "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
+                jv[jss::transaction][jss::Fee] == "10" &&
+                jv[jss::transaction][jss::Flags] == 2147483648u &&
+                jv[jss::transaction][jss::Sequence] == 6 &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+
+        // unsub alice's MPT from the stream
+        Json::Value unsubStream;
+        unsubStream = Json::objectValue;
+        unsubStream[jss::mpt_issuance_ids] = Json::arrayValue;
+        unsubStream[jss::mpt_issuance_ids].append(
+            to_string(mptAlice.issuanceID()));
+        auto unsubJv = wsc->invoke("unsubscribe", unsubStream);
+        BEAST_EXPECT(unsubJv[jss::status] == "success");
+
+        // bob pays alice, this txn should no longer be sent by the stream
+        mptAlice.pay(bob, alice, 500);
+
+        // we don't expect to find alice's mpt in the stream
+        BEAST_EXPECT(!wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptAlice.issuanceID());
+        }));
+
+        // this txn should be seen
+        mptCarol.pay(dan, carol, 100);
+
+        // only carol's MPT txn will be seen
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            return jv[jss::close_time_iso] == "2000-01-01T00:02:00Z" &&
+                jv[jss::engine_result] == "tesSUCCESS" &&
+                jv[jss::ledger_index] == 14 &&
+                jv[jss::transaction][jss::Account] ==
+                "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
+                jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "100" &&
+                jv[jss::transaction][jss::DeliverMax][jss::mpt_issuance_id] ==
+                to_string(mptCarol.issuanceID()) &&
+                jv[jss::transaction][jss::DeliverMax][jss::value] == "100" &&
+                jv[jss::transaction][jss::Destination] ==
+                "rH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW" &&
+                jv[jss::transaction][jss::Fee] == "10" &&
+                jv[jss::transaction][jss::Flags] == 2147483648u &&
+                jv[jss::transaction][jss::Sequence] == 6 &&
+                jv[jss::transaction][jss::TransactionType] == "Payment" &&
+                jv[jss::type] == "mptTransaction";
+        }));
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1605,6 +1773,7 @@ public:
         testSubBookChanges();
         testNFToken(all);
         testNFToken(all - featureNFTokenMintOffer);
+        testSubMPT();
     }
 };
 
