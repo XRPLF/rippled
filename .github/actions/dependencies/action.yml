@@ -2,6 +2,8 @@ name: dependencies
 inputs:
   configuration:
     required: true
+  os:
+    required: false
 # An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
@@ -35,7 +37,7 @@ runs:
       # Print the list of dependencies that would need to be built locally.
       # A non-empty list means we have "failed" to cache binaries remotely.
       run: |
-        echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
+        echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} ${{ inputs.os && '--settings os=' || '' }}${{ inputs.os }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
     - name: install dependencies
       shell: bash
       run: |
@@ -47,4 +49,5 @@ runs:
           --options:host "&:tests=True" \
           --options:host "&:xrpld=True" \
           --settings:all build_type=${{ inputs.configuration }} \
+          ${{ inputs.os && '--settings:all os=' || '' }}${{ inputs.os }} \
           ..

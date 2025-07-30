@@ -91,17 +91,8 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
-          echo "Installing Conan configuration and profile."
           echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
-          echo "Overriding OS in profile by '${{ matrix.distro }}-${{ matrix.codename }}'"
-          cat >> $(conan config home)/settings_user.yml <<EOT
-          os:
-            ${{ matrix.distro }}-${{ matrix.codename }}:
-          EOT
-          cat $(conan config home)/profiles/default
-          sed -i "s/os=Linux/os=${{ matrix.distro }}-${{ matrix.codename }}/g" $(conan config home)/profiles/default
-          cat $(conan config home)/profiles/default
           echo "Conan profile:"
           conan profile show
           echo "Conan configuration:"
@@ -113,6 +104,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
+          os: ${{ matrix.distro }}-${{ matrix.codename }}
       - name: upload archive
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -170,6 +162,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
+          os: ${{ matrix.distro }}-${{ matrix.codename }}
       - name: build
         uses: ./.github/actions/build
         with:
@@ -231,6 +224,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
+          os: ubuntu-jammy
       - name: build
         uses: ./.github/actions/build
         with:
@@ -281,6 +275,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
+          os: ubuntu-jammy
       - name: build
         uses: ./.github/actions/build
         with:
@@ -351,6 +346,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ env.configuration }}
+          os: ubuntu-jammy
       - name: export
         run: |
           conan export . --version head
@@ -360,6 +356,7 @@ jobs:
           mkdir ${build_dir} && cd ${build_dir}
           conan install .. \
             --settings:all build_type=${configuration} \
+            --settings:all os=ubuntu-jammy \
             --output-folder . \
             --build missing
           cmake .. \
@@ -400,6 +397,7 @@ jobs:
           uses: ./.github/actions/dependencies
           with:
             configuration: Debug
+            os: debian-bookworm
 
         - name: prepare environment
           run: |
