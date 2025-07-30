@@ -31,6 +31,23 @@ class Sponsor_test : public beast::unit_test::suite
 {
 public:
     void
+    testDisabled()
+    {
+        testcase("Disabled");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments() - featureSponsor};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, sponsor);
+
+        env(noop(alice),
+            fee(XRP(1)),
+            sponsor::as(sponsor),
+            sponsor::sig(sponsor),
+            ter(temDISABLED));
+    }
+
+    void
     testSponsorFee()
     {
         using namespace test::jtx;
@@ -423,6 +440,7 @@ public:
     void
     run() override
     {
+        testDisabled();
         testSponsorFee();
         testSponsorAccount();
         testSponsorReserve();
