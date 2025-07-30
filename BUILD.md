@@ -172,14 +172,6 @@ which allows you to statically link it with GCC, if you want.
 conan export --version 1.1.10 external/snappy
 ```
 
-Export our [Conan recipe for RocksDB](./external/rocksdb).
-It does not override paths to dependencies when building with Visual Studio.
-
-```
-# Conan 2.x
-conan export --version 9.7.3 external/rocksdb
-```
-
 Export our [Conan recipe for SOCI](./external/soci).
 It patches their CMake to correctly import its dependencies.
 
@@ -390,10 +382,7 @@ and can be helpful for detecting `#include` omissions.
 After any updates or changes to dependencies, you may need to do the following:
 
 1. Remove your build directory.
-2. Remove the Conan cache:
-   ```
-   rm -rf ~/.conan/data
-   ```
+2. Remove the Conan cache: `conan remove "*" -c`
 3. Re-run [conan install](#build-and-test).
 
 ### 'protobuf/port_def.inc' file not found
@@ -411,50 +400,6 @@ For example, if you want to build Debug:
 
 1. For conan install, pass `--settings build_type=Debug`
 2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
-
-### no std::result_of
-
-If your compiler version is recent enough to have removed `std::result_of` as
-part of C++20, e.g. Apple Clang 15.0, then you might need to add a preprocessor
-definition to your build.
-
-```
-conan profile update 'options.boost:extra_b2_flags="define=BOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'conf.tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-```
-
-### call to 'async_teardown' is ambiguous
-
-If you are compiling with an early version of Clang 16, then you might hit
-a [regression][6] when compiling C++20 that manifests as an [error in a Boost
-header][7]. You can workaround it by adding this preprocessor definition:
-
-```
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-```
-
-### recompile with -fPIC
-
-If you get a linker error suggesting that you recompile Boost with
-position-independent code, such as:
-
-```
-/usr/bin/ld.gold: error: /home/username/.conan/data/boost/1.77.0/_/_/package/.../lib/libboost_container.a(alloc_lib.o):
-  requires unsupported dynamic reloc 11; recompile with -fPIC
-```
-
-Conan most likely downloaded a bad binary distribution of the dependency.
-This seems to be a [bug][1] in Conan just for Boost 1.77.0 compiled with GCC
-for Linux. The solution is to build the dependency locally by passing
-`--build boost` when calling `conan install`.
-
-```
-conan install --build boost ...
-```
 
 ## Add a Dependency
 

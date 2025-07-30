@@ -17,6 +17,9 @@ add_library(ed25519 STATIC
 )
 add_library(ed25519::ed25519 ALIAS ed25519)
 target_link_libraries(ed25519 PUBLIC OpenSSL::SSL)
+if(NOT MSVC)
+  target_compile_options(ed25519 PRIVATE -Wno-implicit-fallthrough)
+endif()
 
 include(GNUInstallDirs)
 

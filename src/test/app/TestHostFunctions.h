@@ -26,6 +26,7 @@
 #include <xrpld/ledger/detail/ApplyViewBase.h>
 
 namespace ripple {
+
 namespace test {
 
 struct TestLedgerDataProvider : public HostFunctions
@@ -69,9 +70,7 @@ public:
     TestHostFunctions(test::jtx::Env& env, int cd = 0)
         : env_(env), clock_drift_(cd)
     {
-        auto opt = parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
-        if (opt)
-            accountID_ = *opt;
+        accountID_ = env_.master.id();
         std::string t = "10000";
         data_ = Bytes{t.begin(), t.end()};
     }
@@ -165,12 +164,15 @@ public:
     Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override
     {
-        // auto const& sn = fname.getName();
         if (fname == sfBalance)
         {
             int64_t x = 10'000;
             uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
             return Bytes{p, p + sizeof(x)};
+        }
+        else if (fname == sfAccount)
+        {
+            return Bytes(accountID_.begin(), accountID_.end());
         }
         return data_;
     }
@@ -178,6 +180,15 @@ public:
     Expected<Bytes, HostFunctionError>
     getTxNestedField(Slice const& locator) override
     {
+        if (locator.size() == 4)
+        {
+            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const sfield = l[0];
+            if (sfield == sfAccount.fieldCode)
+            {
+                return Bytes(accountID_.begin(), accountID_.end());
+            }
+        }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
                              0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
@@ -188,6 +199,15 @@ public:
     Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjNestedField(Slice const& locator) override
     {
+        if (locator.size() == 4)
+        {
+            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const sfield = l[0];
+            if (sfield == sfAccount.fieldCode)
+            {
+                return Bytes(accountID_.begin(), accountID_.end());
+            }
+        }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
                              0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
@@ -198,6 +218,15 @@ public:
     Expected<Bytes, HostFunctionError>
     getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
     {
+        if (locator.size() == 4)
+        {
+            int32_t const* l = reinterpret_cast<int32_t const*>(locator.data());
+            int32_t const sfield = l[0];
+            if (sfield == sfAccount.fieldCode)
+            {
+                return Bytes(accountID_.begin(), accountID_.end());
+            }
+        }
         uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
                              0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
                              0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
@@ -349,6 +378,89 @@ public:
         j << std::endl;
 #endif
         return msg.size() + sizeof(data);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    traceFloat(std::string_view const& msg, Slice const& data) override
+    {
+#ifdef DEBUG_OUTPUT
+        auto& j = std::cerr;
+#else
+        auto j = getJournal().trace();
+#endif
+        auto const s = floatToString(data);
+        j << "WAMR TRACE FLOAT: " << msg << " " << s;
+
+#ifdef DEBUG_OUTPUT
+        j << std::endl;
+#endif
+        return msg.size() + s.size();
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatFromInt(int64_t x, int32_t mode) override
+    {
+        return floatFromIntImpl(x, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatFromUint(uint64_t x, int32_t mode) override
+    {
+        return floatFromUintImpl(x, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) override
+    {
+        return floatSetImpl(mantissa, exponent, mode);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    floatCompare(Slice const& x, Slice const& y) override
+    {
+        return floatCompareImpl(x, y);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatAdd(Slice const& x, Slice const& y, int32_t mode) override
+    {
+        return floatAddImpl(x, y, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatSubtract(Slice const& x, Slice const& y, int32_t mode) override
+    {
+        return floatSubtractImpl(x, y, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatMultiply(Slice const& x, Slice const& y, int32_t mode) override
+    {
+        return floatMultiplyImpl(x, y, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatDivide(Slice const& x, Slice const& y, int32_t mode) override
+    {
+        return floatDivideImpl(x, y, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatRoot(Slice const& x, int32_t n, int32_t mode) override
+    {
+        return floatRootImpl(x, n, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatPower(Slice const& x, int32_t n, int32_t mode) override
+    {
+        return floatPowerImpl(x, n, mode);
+    }
+
+    Expected<Bytes, HostFunctionError>
+    floatLog(Slice const& x, int32_t mode) override
+    {
+        return floatLogImpl(x, mode);
     }
 };
 

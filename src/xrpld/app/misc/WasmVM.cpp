@@ -53,6 +53,7 @@ getReadOnlyWasmFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, getTxNestedArrayLen, "get_tx_nested_array_len", hfs,                                   70);
     WASM_IMPORT_FUNC2(i, getCurrentLedgerObjNestedArrayLen, "get_current_ledger_obj_nested_array_len",  hfs,    70);
     WASM_IMPORT_FUNC2(i, getLedgerObjNestedArrayLen, "get_ledger_obj_nested_array_len", hfs,                    70);
+    WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs,                                                      1000);
     WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                   2000);
     WASM_IMPORT_FUNC2(i, accountKeylet, "account_keylet", hfs,                                                 350);
     WASM_IMPORT_FUNC2(i, checkKeylet, "check_keylet", hfs,                                                     350);
@@ -71,6 +72,19 @@ getReadOnlyWasmFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
     WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
     WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
+    WASM_IMPORT_FUNC2(i, traceFloat, "trace_opaque_float", hfs,                                                500);
+
+    WASM_IMPORT_FUNC2(i, floatFromInt, "float_from_int", hfs,                                                 1000);
+    WASM_IMPORT_FUNC2(i, floatFromUint, "float_from_uint", hfs,                                               1000);
+    WASM_IMPORT_FUNC2(i, floatSet, "float_set", hfs,                                                          1000);
+    WASM_IMPORT_FUNC2(i, floatCompare, "float_compare", hfs,                                                  1000);
+    WASM_IMPORT_FUNC2(i, floatAdd, "float_add", hfs,                                                          1000);
+    WASM_IMPORT_FUNC2(i, floatSubtract, "float_subtract", hfs,                                                1000);
+    WASM_IMPORT_FUNC2(i, floatMultiply, "float_multiply", hfs,                                                1000);
+    WASM_IMPORT_FUNC2(i, floatDivide, "float_divide", hfs,                                                    1000);
+    WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                        1000);
+    WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                        1000);
+    WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                          1000);
     // clang-format on
 }
 

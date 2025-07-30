@@ -1,5 +1,5 @@
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 88a1642b..aeb29912 100644
+index 88a1642b..e9eab7ec 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,7 +1,7 @@
@@ -11,6 +11,15 @@ index 88a1642b..aeb29912 100644
  
  option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
  
+@@ -170,7 +170,7 @@ if (MINGW)
+ endif ()
+ 
+ if (WIN32)
+-  target_link_libraries(vmlib PRIVATE ntdll)
++  target_link_libraries(vmlib PUBLIC ntdll)
+ endif()
+ 
+ set (WAMR_PUBLIC_HEADERS
 diff --git a/core/iwasm/aot/aot_runtime.c b/core/iwasm/aot/aot_runtime.c
 index b2c9ed62..87947a18 100644
 --- a/core/iwasm/aot/aot_runtime.c
@@ -389,7 +398,7 @@ index ddc0b15b..3a707878 100644
  
  #if WASM_ENABLE_TAGS != 0
 diff --git a/core/iwasm/interpreter/wasm_interp_classic.c b/core/iwasm/interpreter/wasm_interp_classic.c
-index 1e98b0fa..db6278c5 100644
+index 1e98b0fa..e77fdfcd 100644
 --- a/core/iwasm/interpreter/wasm_interp_classic.c
 +++ b/core/iwasm/interpreter/wasm_interp_classic.c
 @@ -1569,13 +1569,14 @@ get_global_addr(uint8 *global_data, WASMGlobalInstance *global)
@@ -406,7 +415,7 @@ index 1e98b0fa..db6278c5 100644
 +#define CHECK_INSTRUCTION_LIMIT()                                     \
 +    do {                                                              \
 +        --instructions_left;                                          \
-+        if (instructions_left <= 0) {                                 \
++        if (instructions_left < 0) {                                  \
 +            wasm_set_exception(module, "instruction limit exceeded"); \
 +            goto got_exception;                                       \
 +        }                                                             \

@@ -49,20 +49,33 @@ WasmHostFunctionsImpl::getParentLedgerHash()
 }
 
 Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::normalizeCacheIndex(int32_t cacheIdx)
+{
+    --cacheIdx;
+    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    if (!cache[cacheIdx])
+        return Unexpected(HostFunctionError::EMPTY_SLOT);
+    return cacheIdx;
+}
+
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 {
     auto const& keylet = keylet::unchecked(objId);
     if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
         return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
 
-    if (!cacheIdx)
+    if (cacheIdx == 0)
     {
         for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
             if (!cache[cacheIdx])
                 break;
     }
     else
-        --cacheIdx;
+    {
+        cacheIdx--;  // convert to 0-based index
+    }
 
     if (cacheIdx >= MAX_CACHE)
         return Unexpected(HostFunctionError::SLOTS_FULL);
@@ -70,7 +83,7 @@ WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
     cache[cacheIdx] = ctx.view().read(keylet);
     if (!cache[cacheIdx])
         return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    return cacheIdx + 1;
+    return cacheIdx + 1;  // return 1-based index
 }
 
 static Expected<Bytes, HostFunctionError>
@@ -83,10 +96,12 @@ getAnyFieldData(STBase const* obj)
     auto const stype = obj->getSType();
     switch (stype)
     {
+        // LCOV_EXCL_START
         case STI_UNKNOWN:
         case STI_NOTPRESENT:
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
             break;
+        // LCOV_EXCL_STOP
         case STI_OBJECT:
         case STI_ARRAY:
             return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
@@ -104,7 +119,7 @@ getAnyFieldData(STBase const* obj)
             auto const* issue(static_cast<STIssue const*>(obj));
             Asset const& asset(issue->value());
             // XRP and IOU will be processed by serializer
-            if (!asset.holds<Issue>())
+            if (asset.holds<MPTIssue>())
             {
                 // MPT
                 auto const& mptIssue = asset.get<MPTIssue>();
@@ -119,12 +134,13 @@ getAnyFieldData(STBase const* obj)
             return Bytes{data.begin(), data.end()};
         }
         break;
-        case STI_UINT256: {
-            auto const* num(static_cast<STBitString<256> const*>(obj));
-            auto const& data = num->value();
-            return Bytes{data.begin(), data.end()};
+        case STI_UINT16: {
+            auto const& num(static_cast<STInteger<std::uint16_t> const*>(obj));
+            std::uint16_t const data = num->value();
+            auto const* b = reinterpret_cast<uint8_t const*>(&data);
+            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+            return Bytes{b, e};
         }
-        break;
         case STI_UINT32: {
             auto const* num(static_cast<STInteger<std::uint32_t> const*>(obj));
             std::uint32_t const data = num->value();
@@ -133,8 +149,14 @@ getAnyFieldData(STBase const* obj)
             return Bytes{b, e};
         }
         break;
+        case STI_UINT256: {
+            auto const* num(static_cast<STBitString<256> const*>(obj));
+            auto const& data = num->value();
+            return Bytes{data.begin(), data.end()};
+        }
+        break;
         default:
-            break;
+            break;  // default to serializer
     }
 
     Serializer msg;
@@ -153,21 +175,19 @@ WasmHostFunctionsImpl::getTxField(SField const& fname)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    return getAnyFieldData(sle->peekAtPField(fname));
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
+    return getAnyFieldData(sle.value()->peekAtPField(fname));
 }
 
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
 {
-    --cacheIdx;
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-    return getAnyFieldData(cache[cacheIdx]->peekAtPField(fname));
+    auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
+    if (!normalizedIdx.has_value())
+        return Unexpected(normalizedIdx.error());
+    return getAnyFieldData(cache[normalizedIdx.value()]->peekAtPField(fname));
 }
 
 static inline bool
@@ -178,20 +198,20 @@ noField(STBase const* field)
 }
 
 static Expected<STBase const*, HostFunctionError>
-locateField(STObject const& obj, Slice const& loc)
+locateField(STObject const& obj, Slice const& locator)
 {
-    if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
+    if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
         return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
-    int32_t const* l = reinterpret_cast<int32_t const*>(loc.data());
-    int32_t const sz = loc.size() / 4;
+    int32_t const* locPtr = reinterpret_cast<int32_t const*>(locator.data());
+    int32_t const locSize = locator.size() / 4;
     STBase const* field = nullptr;
-    auto const& m = SField::getKnownCodeToField();
+    auto const& knownSFields = SField::getKnownCodeToField();
 
     {
-        int32_t const c = l[0];
-        auto const it = m.find(c);
-        if (it == m.end())
+        int32_t const sfieldCode = locPtr[0];
+        auto const it = knownSFields.find(sfieldCode);
+        if (it == knownSFields.end())
             return Unexpected(HostFunctionError::INVALID_FIELD);
 
         auto const& fname(*it->second);
@@ -200,23 +220,23 @@ locateField(STObject const& obj, Slice const& loc)
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
     }
 
-    for (int i = 1; i < sz; ++i)
+    for (int i = 1; i < locSize; ++i)
     {
-        int32_t const c = l[i];
+        int32_t const sfieldCode = locPtr[i];
 
         if (STI_ARRAY == field->getSType())
         {
             auto const* arr = static_cast<STArray const*>(field);
-            if (c >= arr->size())
+            if (sfieldCode >= arr->size())
                 return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-            field = &(arr->operator[](c));
+            field = &(arr->operator[](sfieldCode));
         }
         else if (STI_OBJECT == field->getSType())
         {
             auto const* o = static_cast<STObject const*>(field);
 
-            auto const it = m.find(c);
-            if (it == m.end())
+            auto const it = knownSFields.find(sfieldCode);
+            if (it == knownSFields.end())
                 return Unexpected(HostFunctionError::INVALID_FIELD);
 
             auto const& fname(*it->second);
@@ -247,11 +267,11 @@ WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
 
-    auto const r = locateField(*sle, locator);
+    auto const r = locateField(*sle.value(), locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -263,14 +283,11 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
     int32_t cacheIdx,
     Slice const& locator)
 {
-    --cacheIdx;
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
+    if (!normalizedIdx.has_value())
+        return Unexpected(normalizedIdx.error());
 
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-
-    auto const r = locateField(*cache[cacheIdx], locator);
+    auto const r = locateField(*cache[normalizedIdx.value()], locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -288,7 +305,7 @@ WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -300,16 +317,16 @@ WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
     if (fname.fieldType != STI_ARRAY)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
 
-    auto const* field = sle->peekAtPField(fname);
+    auto const* field = sle.value()->peekAtPField(fname);
     if (noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -323,18 +340,17 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
     if (fname.fieldType != STI_ARRAY)
         return Unexpected(HostFunctionError::NO_ARRAY);
 
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
+    if (!normalizedIdx.has_value())
+        return Unexpected(normalizedIdx.error());
 
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-
-    auto const* field = cache[cacheIdx]->peekAtPField(fname);
+    auto const* field = cache[normalizedIdx.value()]->peekAtPField(fname);
     if (noField(field))
         return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
     if (field->getSType() != STI_ARRAY)
-        return Unexpected(HostFunctionError::NO_ARRAY);
+        return Unexpected(HostFunctionError::NO_ARRAY);  // LCOV_EXCL_LINE
+
     int32_t const sz = static_cast<STArray const*>(field)->size();
 
     return sz;
@@ -358,10 +374,10 @@ WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
 {
-    auto const sle = ctx.view().read(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    auto const r = locateField(*sle, locator);
+    auto const sle = getCurrentLedgerObj();
+    if (!sle.has_value())
+        return Unexpected(sle.error());
+    auto const r = locateField(*sle.value(), locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -378,14 +394,11 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     int32_t cacheIdx,
     Slice const& locator)
 {
-    --cacheIdx;
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+    auto const normalizedIdx = normalizeCacheIndex(cacheIdx);
+    if (!normalizedIdx.has_value())
+        return Unexpected(normalizedIdx.error());
 
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-
-    auto const r = locateField(*cache[cacheIdx], locator);
+    auto const r = locateField(*cache[normalizedIdx.value()], locator);
     if (!r)
         return Unexpected(r.error());
 
@@ -557,8 +570,6 @@ WasmHostFunctionsImpl::paychanKeylet(
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
     if (account == destination)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
-    if (seq == 0)
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
     auto const keylet = keylet::payChan(account, destination, seq);
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
@@ -641,6 +652,546 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 #endif
     j << "WAMR TRACE NUM(" << leKey.key << "): " << msg << " " << data;
     return msg.size() + sizeof(data);
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::traceFloat(
+    std::string_view const& msg,
+    Slice const& data)
+{
+#ifdef DEBUG_OUTPUT
+    auto j = getJournal().error();
+#else
+    auto j = getJournal().trace();
+#endif
+    auto const s = floatToString(data);
+    j << "WAMR TRACE FLOAT(" << leKey.key << "): " << msg << " " << s;
+    return msg.size() + s.size();
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromInt(int64_t x, int32_t mode)
+{
+    return floatFromIntImpl(x, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatFromUint(uint64_t x, int32_t mode)
+{
+    return floatFromUintImpl(x, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatSet(
+    int64_t mantissa,
+    int32_t exponent,
+    int32_t mode)
+{
+    return floatSetImpl(mantissa, exponent, mode);
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::floatCompare(Slice const& x, Slice const& y)
+{
+    return floatCompareImpl(x, y);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatAdd(Slice const& x, Slice const& y, int32_t mode)
+{
+    return floatAddImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatSubtract(
+    Slice const& x,
+    Slice const& y,
+    int32_t mode)
+{
+    return floatSubtractImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatMultiply(
+    Slice const& x,
+    Slice const& y,
+    int32_t mode)
+{
+    return floatMultiplyImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatDivide(Slice const& x, Slice const& y, int32_t mode)
+{
+    return floatDivideImpl(x, y, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatRoot(Slice const& x, int32_t n, int32_t mode)
+{
+    return floatRootImpl(x, n, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatPower(Slice const& x, int32_t n, int32_t mode)
+{
+    return floatPowerImpl(x, n, mode);
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode)
+{
+    return floatLogImpl(x, mode);
+}
+
+class Number2 : public Number
+{
+    bool good_;
+
+    enum Issue { XRP, MPT, IOU };
+    Issue issue_;
+
+public:
+    Number2(Slice const& data) : Number(0), good_(false), issue_(IOU)
+    {
+        if (data.size() != 8)
+            return;
+
+        uint64_t const v = SerialIter(data).get64();
+        int const neg = (v & STAmount::cPositive) ? 1 : -1;
+
+        Number x;
+
+        if (v & STAmount::cIssuedCurrency)
+        {
+            // IOU
+            int32_t const e =
+                static_cast<uint8_t>((v >> (64 - 10)) & ((1ull << 8) - 1));
+            int64_t const m = neg * (v & ((1ull << 54) - 1));
+            x = !m ? Number() : Number(m, e - 97);
+            if (m && (x.exponent() > 80 || x.exponent() < -96))
+                return;  // invalid number
+            issue_ = IOU;
+        }
+        else if (v & STAmount::cMPToken)
+        {
+            // MPT
+            int64_t const m = neg * (v & ((1ull << 61) - 1));
+            x = !m ? Number() : Number(m);
+            issue_ = MPT;
+        }
+        else
+        {
+            // XRP
+            int64_t const m = neg * (v & ((1ull << 61) - 1));
+            x = !m ? Number() : Number(m);
+            issue_ = XRP;
+        }
+
+        *static_cast<Number*>(this) = x;
+        good_ = true;
+    }
+
+    Number2(int64_t x) : Number(x), good_(true), issue_(IOU)
+    {
+    }
+
+    Number2(uint64_t x) : Number(0), good_(false), issue_(IOU)
+    {
+        if (x <=
+            std::numeric_limits<
+                std::invoke_result_t<decltype(&Number::mantissa), Number>>::
+                max())
+            *static_cast<Number*>(this) = Number(x);
+        else
+        {
+            *static_cast<Number*>(this) = Number(x / 10, 1) + Number(x % 10);
+        }
+
+        good_ = true;
+    }
+
+    Number2(int64_t mantissa, int32_t exponent)
+        : Number(mantissa, exponent), good_(true), issue_(IOU)
+    {
+    }
+
+    Number2(Number const& n) : Number(n), good_(true), issue_(IOU)
+    {
+    }
+
+    operator bool() const
+    {
+        return good_;
+    }
+
+    Expected<Bytes, HostFunctionError>
+    toBytes() const
+    {
+        uint64_t v = mantissa() >= 0 ? STAmount::cPositive : 0;
+
+        if (issue_ == IOU)
+        {
+            v |= STAmount::cIssuedCurrency;
+
+            if (!mantissa())
+            {
+                if (exponent() != std::numeric_limits<int>::lowest())
+                    return Unexpected(
+                        HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            }
+            else if (exponent() > 80 || exponent() < -96)
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
+            uint64_t absM = mantissa() >= 0 ? mantissa() : -mantissa();
+            if (absM > ((1ull << 54) - 1))
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
+            v |= absM;
+
+            int const e = (!mantissa() ? 0 : exponent()) + 97;
+            v |= ((uint64_t)e) << 54;
+        }
+        else if (issue_ == MPT)
+        {
+            v |= STAmount::cMPToken;
+            uint64_t x = toUInt(61);
+            if (x == std::numeric_limits<uint64_t>::max())
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            v |= x;
+        }
+        else
+        {
+            uint64_t x = toUInt(61);
+            if (x == std::numeric_limits<uint64_t>::max())
+                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            v |= x;
+        }
+
+        Serializer msg;
+        msg.add64(v);
+        auto const data = msg.getData();
+        return data;
+    }
+
+protected:
+    uint64_t
+    toUInt(unsigned bits) const
+    {
+        if (bits >= sizeof(uint64_t) * 8)
+            return std::numeric_limits<uint64_t>::max();
+
+        uint64_t maxV = (1ull << bits) - 1;
+        uint64_t absM = mantissa() >= 0 ? mantissa() : -mantissa();
+
+        if (!absM)
+            return 0;
+        else if (exponent() < 0)
+        {
+            for (int i = 0; i > exponent(); --i)
+            {
+                if (absM < 10)
+                    return std::numeric_limits<uint64_t>::max();  // underflow
+                absM /= 10;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < exponent(); ++i)
+            {
+                if (absM > maxV / 10)
+                    return std::numeric_limits<uint64_t>::max();  // overflow
+                absM *= 10;
+            }
+        }
+
+        return absM > maxV ? std::numeric_limits<uint64_t>::max() : absM;
+    }
+};
+
+struct SetRound
+{
+    Number::rounding_mode oldMode_;
+    bool good_;
+
+    SetRound(int32_t mode) : oldMode_(Number::getround()), good_(false)
+    {
+        if (mode < Number::rounding_mode::to_nearest ||
+            mode > Number::rounding_mode::upward)
+            return;
+
+        Number::setround(static_cast<Number::rounding_mode>(mode));
+        good_ = true;
+    }
+
+    ~SetRound()
+    {
+        Number::setround(oldMode_);
+    }
+
+    operator bool() const
+    {
+        return good_;
+    }
+};
+
+std::string
+floatToString(Slice const& data)
+{
+    Number2 const num(data);
+    if (!num)
+    {
+        std::string hex;
+        hex.reserve(data.size() * 2);
+        boost::algorithm::hex(
+            data.begin(), data.end(), std::back_inserter(hex));
+        return "Invalid data: " + hex;
+    }
+
+    auto const s = to_string(num);
+    return s;
+}
+
+Expected<Bytes, HostFunctionError>
+floatFromIntImpl(int64_t x, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 num(x);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        return num.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatFromUintImpl(uint64_t x, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 num(x);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        return num.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 num(mantissa, exponent);
+        if (!num)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        return num.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<int32_t, HostFunctionError>
+floatCompareImpl(Slice const& x, Slice const& y)
+{
+    try
+    {
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        return xx < yy ? 2 : (xx == yy ? 0 : 1);
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 res = xx + yy;
+        return res.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 res = xx - yy;
+        return res.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 res = xx * yy;
+        return res.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 yy(y);
+        if (!yy)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 res = xx / yy;
+        return res.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatRootImpl(Slice const& x, int32_t n, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 const res(root(xx, n));
+
+        return res.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        if (xx == Number() && !n)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+        Number2 const res(power(xx, n, 1));
+
+        return res.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+}
+
+Expected<Bytes, HostFunctionError>
+floatLogImpl(Slice const& x, int32_t mode)
+{
+    try
+    {
+        SetRound rm(mode);
+        if (!rm)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        Number2 xx(x);
+        if (!xx)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+        Number2 const res(lg(xx));
+
+        return res.toBytes();
+    }
+    catch (...)
+    {
+    }
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
 }  // namespace ripple
