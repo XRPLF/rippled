@@ -60,7 +60,7 @@ public:
      * @details This function acts as the primary public interface for
      * controlling a validator's squelch state. Based on the `squelch` flag, it
      * either adds a new squelch entry for the specified duration or removes an
-     * existing one.
+     * existing one. This function also clears all expired squelches.
      *
      * @param validator The public key of the validator to manage.
      * @param squelch If `true`, the validator will be squelched. If `false`,
@@ -75,22 +75,24 @@ public:
         std::chrono::seconds duration);
 
     /**
-     * @brief Checks if a validator is currently squelched, cleaning up expired
-     * entries.
+     * @brief Checks if a validator is currently squelched.
      *
-     * @details This function performs two roles: it first checks if the
-     * validator's squelch period has expired and, if so, removes the entry from
-     * the store. It then returns the current squelch status.
-     *
-     * @note Because this function has the side effect of removing expired
-     * entries, its result reflects the state *after* the potential cleanup.
+     * @details This function checks if the validator's squelch has expired.
      *
      * @param validator The public key of the validator to check.
      * @return `true` if a non-expired squelch entry exists for the
      * validator, `false` otherwise.
      */
     bool
-    expireAndIsSquelched(PublicKey const& validator);
+    isSquelched(PublicKey const& validator) const;
+
+    // The following field is protected for unit tests.
+protected:
+    /**
+     * @brief The core data structure mapping a validator's public key to the
+     * time point when their squelch expires.
+     */
+    hash_map<PublicKey, time_point> squelched_;
 
 private:
     /**
@@ -120,10 +122,12 @@ private:
     remove(PublicKey const& validator);
 
     /**
-     * @brief The core data structure mapping a validator's public key to the
-     * time point when their squelch expires.
+     * @brief Internal implementation to remove all expired squelches.
+     *
+     * @details Erases all squelch entries whose expiration is in the past.
      */
-    hash_map<PublicKey, time_point> squelched_;
+    void
+    removeExpired();
 
     /**
      * @brief The logging interface used by this store.

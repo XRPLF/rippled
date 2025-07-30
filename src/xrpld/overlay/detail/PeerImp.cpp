@@ -29,6 +29,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
@@ -43,8 +44,6 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
-
-#include "xrpld/overlay/Peer.h"
 
 #include <algorithm>
 #include <chrono>
@@ -251,7 +250,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         return;
 
     auto const validator = m->getValidatorKey();
-    if (validator && expireAndIsSquelched(*validator))
+    if (validator && isSquelched(*validator))
     {
         overlay_.reportOutboundTraffic(
             TrafficCount::category::squelch_suppressed,
@@ -575,9 +574,9 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 }
 
 bool
-PeerImp::expireAndIsSquelched(PublicKey const& validator)
+PeerImp::isSquelched(PublicKey const& validator) const
 {
-    return squelchStore_.expireAndIsSquelched(validator);
+    return squelchStore_.isSquelched(validator);
 }
 
 //------------------------------------------------------------------------------

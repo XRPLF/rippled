@@ -440,13 +440,12 @@ public:
         return txReduceRelayEnabled_;
     }
 
-    /** Check if a given validator is squelched. If the validator is no longer
-     * squelched, clear the squelch entry.
+    /** Check if a given validator is squelched.
      * @param validator Validator's public key
      * @return true if squelch exists and it is not expired. False otherwise.
      */
     bool
-    expireAndIsSquelched(PublicKey const& validator);
+    isSquelched(PublicKey const& validator) const;
 
 private:
     void

@@ -885,6 +885,7 @@ protected:
         {
             count = 0;
             peers.clear();
+            lastMessage = time_point{};
         }
     };
 

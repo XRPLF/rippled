@@ -19,13 +19,12 @@
 
 #include <test/jtx/Env.h>
 
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/Slot.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SecretKey.h>
-
-#include "xrpld/overlay/Peer.h"
 
 #include <chrono>
 #include <cstdint>

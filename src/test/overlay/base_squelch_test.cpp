@@ -483,7 +483,7 @@ public:
     {
         auto validator = m->getValidatorKey();
         assert(validator);
-        if (squelchStore_.expireAndIsSquelched(*validator))
+        if (squelchStore_.isSquelched(*validator))
             return;
 
         overlay_.updateSlotAndSquelch({}, *validator, id(), f);

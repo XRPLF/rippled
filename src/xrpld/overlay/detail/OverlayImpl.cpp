@@ -1518,7 +1518,7 @@ OverlayImpl::handleUntrustedSquelch(PublicKey const& validator)
     auto total = 0;
     for_each([&](std::shared_ptr<PeerImp>&& p) {
         ++total;
-        if (p->expireAndIsSquelched(validator))
+        if (p->isSquelched(validator))
             ++count;
     });
 

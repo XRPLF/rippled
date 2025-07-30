@@ -27,7 +27,7 @@
 
 #include <chrono>
 #include <unordered_map>
-#include <utility>
+#include <vector>
 
 namespace ripple {
 
@@ -39,6 +39,10 @@ SquelchStore::handleSquelch(
     bool squelch,
     std::chrono::seconds duration)
 {
+    // Remove all expired squelches. This call is here, as it is on the least
+    // critical execution path, that does not require periodic cleanup calls.
+    removeExpired();
+
     if (squelch)
     {
         // This should never trigger. The squelh duration is validated in
@@ -61,7 +65,7 @@ SquelchStore::handleSquelch(
 }
 
 bool
-SquelchStore::expireAndIsSquelched(PublicKey const& validator)
+SquelchStore::isSquelched(PublicKey const& validator) const
 {
     auto const now = clock_.now();
 
@@ -69,13 +73,7 @@ SquelchStore::expireAndIsSquelched(PublicKey const& validator)
     if (it == squelched_.end())
         return false;
 
-    if (it->second > now)
-        return true;
-
-    // erase the entry if the squelch expired
-    squelched_.erase(it);
-
-    return false;
+    return it->second > now;
 }
 
 void
@@ -90,6 +88,14 @@ void
 SquelchStore::remove(PublicKey const& validator)
 {
     squelched_.erase(validator);
+}
+
+void
+SquelchStore::removeExpired()
+{
+    auto const now = clock_.now();
+    std::erase_if(
+        squelched_, [&](auto const& entry) { return entry.second < now; });
 }
 
 }  // namespace reduce_relay
