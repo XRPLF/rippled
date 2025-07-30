@@ -84,8 +84,10 @@ jobs:
         run: |
           echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
+          echo "Conan profile:"
           conan profile show
-          conan config show 'core*'
+          echo "Conan configuration:"
+          conan config show
       - name: export custom recipes
         shell: bash
         run: |
