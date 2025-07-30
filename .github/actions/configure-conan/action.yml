@@ -53,7 +53,7 @@ runs:
       shell: bash
       run: |
         if conan remote list | grep -q '${{ inputs.conan_remote_name }}'; then
-          conan remote update --index 1 -- url ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_name }}
+          conan remote update --index 1 --url ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_name }}
           echo "Updated Conan remote '${{ inputs.conan_remote_name }}' to ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}."
         else
           conan remote add --index 1 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}
