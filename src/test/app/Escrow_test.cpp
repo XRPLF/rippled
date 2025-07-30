@@ -296,7 +296,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             testcase("Implied Finish Time (without fix1571)");
 
-            Env env(*this, testable_amendments() - fix1571);
+            Env env(*this, features - fix1571);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
@@ -1696,7 +1696,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testCreateFinishFunctionPreflight()
+    testCreateFinishFunctionPreflight(FeatureBitset features)
     {
         testcase("Test preflight checks involving FinishFunction");
 
@@ -1712,7 +1712,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // featureSmartEscrow disabled
-            Env env(*this, testable_amendments() - featureSmartEscrow);
+            Env env(*this, features - featureSmartEscrow);
             env.fund(XRP(5000), alice, carol);
             XRPAmount const txnFees = env.current()->fees().base + 1000;
             auto escrowCreate = escrow::create(alice, carol, XRP(1000));
@@ -1726,10 +1726,13 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // FinishFunction > max length
-            Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->FEES.extension_size_limit = 10;  // 10 bytes
-                return cfg;
-            }));
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.extension_size_limit = 10;  // 10 bytes
+                    return cfg;
+                }),
+                features);
             XRPAmount const txnFees = env.current()->fees().base + 1000;
             // create escrow
             env.fund(XRP(5000), alice, carol);
@@ -1746,10 +1749,13 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
         }
 
-        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->START_UP = Config::FRESH;
-            return cfg;
-        }));
+        Env env(
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->START_UP = Config::FRESH;
+                return cfg;
+            }),
+            features);
         XRPAmount const txnFees = env.current()->fees().base * 10 + 1000;
         // create escrow
         env.fund(XRP(5000), alice, carol);
@@ -1866,7 +1872,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testFinishWasmFailures()
+    testFinishWasmFailures(FeatureBitset features)
     {
         testcase("EscrowFinish Smart Escrow failures");
 
@@ -1882,7 +1888,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // featureSmartEscrow disabled
-            Env env(*this, testable_amendments() - featureSmartEscrow);
+            Env env(*this, features - featureSmartEscrow);
             env.fund(XRP(5000), alice, carol);
             XRPAmount const txnFees = env.current()->fees().base + 1000;
             env(escrow::finish(carol, alice, 1),
@@ -1894,10 +1900,13 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // ComputationAllowance > max compute limit
-            Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->FEES.extension_compute_limit = 1'000;  // in gas
-                return cfg;
-            }));
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.extension_compute_limit = 1'000;  // in gas
+                    return cfg;
+                }),
+                features);
             env.fund(XRP(5000), alice, carol);
             // Run past the flag ledger so that a Fee change vote occurs and
             // updates FeeSettings. (It also activates all supported
@@ -1914,7 +1923,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             uint32_t const allowance = 5'664;
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
             XRPAmount const createFee = env.current()->fees().base + 1000;
@@ -1943,7 +1952,7 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
         }
 
-        Env env(*this);
+        Env env(*this, features);
 
         // Run past the flag ledger so that a Fee change vote occurs and
         // updates FeeSettings. (It also activates all supported
@@ -2015,7 +2024,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testFinishFunction()
+    testFinishFunction(FeatureBitset features)
     {
         testcase("Example escrow function");
 
@@ -2032,7 +2041,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // basic FinishFunction situation
-            Env env(*this);
+            Env env(*this, features);
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
@@ -2094,7 +2103,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // FinishFunction + Condition
-            Env env(*this);
+            Env env(*this, features);
             env.fund(XRP(5000), alice, carol);
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             auto const seq = env.seq(alice);
@@ -2163,7 +2172,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // FinishFunction + FinishAfter
-            Env env(*this);
+            Env env(*this, features);
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
@@ -2211,7 +2220,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // FinishFunction + FinishAfter #2
-            Env env(*this);
+            Env env(*this, features);
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
@@ -2263,7 +2272,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testAllHostFunctions()
+    testAllHostFunctions(FeatureBitset features)
     {
         testcase("Test all host functions");
 
@@ -2277,7 +2286,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         {
-            Env env(*this);
+            Env env(*this, features);
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
@@ -2329,7 +2338,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testKeyletHostFunctions()
+    testKeyletHostFunctions(FeatureBitset features)
     {
         testcase("Test all keylet host functions");
 
@@ -2419,13 +2428,13 @@ struct Escrow_test : public beast::unit_test::suite
         testConsequences(features);
         testEscrowWithTickets(features);
         testCredentials(features);
-        testCreateFinishFunctionPreflight();
-        testFinishWasmFailures();
-        testFinishFunction();
+        testCreateFinishFunctionPreflight(features);
+        testFinishWasmFailures(features);
+        testFinishFunction(features);
 
         // TODO: Update module with new host functions
-        testAllHostFunctions();
-        testKeyletHostFunctions();
+        testAllHostFunctions(features);
+        testKeyletHostFunctions(features);
     }
 
 public:
