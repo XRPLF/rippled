@@ -127,8 +127,7 @@ public:
     Expected<int32_t, HostFunctionError>
     getBaseFee() override
     {
-        // relatively safe to assume the tx base fee won't be > 2^31-1 drops
-        return static_cast<int32_t>(env_.current()->fees().base.drops());
+        return 10;
     }
 
     Expected<int32_t, HostFunctionError>
