@@ -231,12 +231,17 @@ Transactor::preflight2(PreflightContext const& ctx)
         // regardless of success or failure
         return *ret;
 
-    auto const sigValid = checkValidity(
-        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
-    if (sigValid.first == Validity::SigBad)
+    // Skip signature check on batch inner transactions
+    if (!ctx.tx.isFlag(tfInnerBatchTxn) || !ctx.rules.enabled(featureBatch))
     {
-        JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
-        return temINVALID;  // LCOV_EXCL_LINE
+        auto const sigValid = checkValidity(
+            ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+        if (sigValid.first == Validity::SigBad)
+        {
+            JLOG(ctx.j.debug())
+                << "preflight2: bad signature. " << sigValid.second;
+            return temINVALID;  // LCOV_EXCL_LINE
+        }
     }
     return tesSUCCESS;
 }
@@ -649,10 +654,20 @@ Transactor::checkSign(
     AccountID const& idAccount,
     STObject const& sigObject)
 {
+    {
+        auto const sle = ctx.view.read(keylet::account(idAccount));
+
+        if (ctx.view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
+    }
+
     auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     // Ignore signature check on batch inner transactions
-    if (sigObject.isFlag(tfInnerBatchTxn) &&
-        ctx.view.rules().enabled(featureBatch))
+    if (ctx.parentBatchId && ctx.view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
         if (sigObject.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||

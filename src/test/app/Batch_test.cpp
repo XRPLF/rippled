@@ -2313,9 +2313,12 @@ class Batch_test : public beast::unit_test::suite
             Serializer s;
             parsed.object->add(s);
             auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
-            BEAST_EXPECT(
-                jrr[jss::status] == "success" &&
-                jrr[jss::engine_result] == "temINVALID_FLAG");
+            BEAST_EXPECTS(
+                jrr[jss::status] == "error" &&
+                    jrr[jss::error] == "invalidTransaction" &&
+                    jrr[jss::error_exception] ==
+                        "fails local checks: Empty SigningPubKey.",
+                to_string(jrr));
 
             env.close();
         }
@@ -2550,6 +2553,242 @@ class Batch_test : public beast::unit_test::suite
             // Alice still exists; Bob is unchanged
             BEAST_EXPECT(env.le(keylet::account(alice)));
             BEAST_EXPECT(env.balance(bob) == preBob);
+        }
+    }
+
+    void
+    testLoan(FeatureBitset features)
+    {
+        testcase("loan");
+
+        using namespace test::jtx;
+
+        test::jtx::Env env{
+            *this,
+            envconfig(),
+            features | featureSingleAssetVault | featureLendingProtocol |
+                featureMPTokensV1};
+
+        Account const issuer{"issuer"};
+        // For simplicity, lender will be the sole actor for the vault &
+        // brokers.
+        Account const lender{"lender"};
+        // Borrower only wants to borrow
+        Account const borrower{"borrower"};
+
+        // Fund the accounts and trust lines with the same amount so that tests
+        // can use the same values regardless of the asset.
+        env.fund(XRP(100'000), issuer, noripple(lender, borrower));
+        env.close();
+
+        // Just use an XRP asset
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+
+        Vault vault{env};
+
+        auto const deposit = asset(50'000);
+        auto const debtMaximumValue = asset(25'000).value();
+        auto const coverDepositValue = asset(1000).value();
+
+        auto [tx, vaultKeylet] =
+            vault.create({.owner = lender, .asset = asset});
+        env(tx);
+        env.close();
+        BEAST_EXPECT(env.le(vaultKeylet));
+
+        env(vault.deposit(
+            {.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
+        env.close();
+
+        auto const brokerKeylet =
+            keylet::loanbroker(lender.id(), env.seq(lender));
+
+        {
+            using namespace loanBroker;
+            env(set(lender, vaultKeylet.key),
+                managementFeeRate(TenthBips16(100)),
+                debtMaximum(debtMaximumValue),
+                coverRateMinimum(TenthBips32(percentageToTenthBips(10))),
+                coverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
+
+            env(coverDeposit(lender, brokerKeylet.key, coverDepositValue));
+
+            env.close();
+        }
+
+        {
+            using namespace loan;
+            using namespace std::chrono_literals;
+
+            auto const lenderSeq = env.seq(lender);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
+            {
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    temBAD_SIGNATURE,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender,
+                                brokerKeylet.key,
+                                asset(1000).value(),
+                                env.now() + 3600s),
+                            // Not allowed to include the counterparty signature
+                            sig(sfCounterpartySignature, borrower),
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        draw(
+                            lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
+            }
+            {
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    telENV_RPC_FAILED,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender,
+                                brokerKeylet.key,
+                                asset(1000).value(),
+                                env.now() + 3600s),
+                            // Must include a CounterpartySignature field.
+                            // Transaction will not even parse at the RPC layer
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        draw(
+                            lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
+            }
+            {
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    temINVALID_INNER_BATCH,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender,
+                                brokerKeylet.key,
+                                asset(1000).value(),
+                                env.now() + 3600s),
+                            json(sfCounterpartySignature, Json::objectValue),
+                            // Counterparty must be set
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        draw(
+                            lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
+            }
+            {
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    temBAD_SIGNER,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender,
+                                brokerKeylet.key,
+                                asset(1000).value(),
+                                env.now() + 3600s),
+                            // Counterparty must sign the outer transaction
+                            counterparty(borrower.id()),
+                            json(sfCounterpartySignature, Json::objectValue),
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        draw(
+                            lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2));
+            }
+            {
+                // LoanSet normally charges at least 2x base fee, but since the
+                // signature check is done by the batch, it only charges the
+                // base fee.
+                auto const batchFee = batch::calcBatchFee(env, 1, 2);
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    tesSUCCESS,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender,
+                                brokerKeylet.key,
+                                asset(1000).value(),
+                                env.now() + 3600s),
+                            counterparty(borrower.id()),
+                            json(sfCounterpartySignature, Json::objectValue),
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        draw(
+                            // However, this inner transaction will fail,
+                            // because the lender is not allowed to draw the
+                            // transaction
+                            lender,
+                            loanKeylet.key,
+                            STAmount{asset, asset(500).value()}),
+                        lenderSeq + 2),
+                    batch::sig(borrower));
+            }
+            env.close();
+            BEAST_EXPECT(env.le(brokerKeylet));
+            BEAST_EXPECT(!env.le(loanKeylet));
+            {
+                // LoanSet normally charges at least 2x base fee, but since the
+                // signature check is done by the batch, it only charges the
+                // base fee.
+                auto const lenderSeq = env.seq(lender);
+                auto const batchFee = batch::calcBatchFee(env, 1, 2);
+                auto const [txIDs, batchID] = submitBatch(
+                    env,
+                    tesSUCCESS,
+                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
+                    batch::inner(
+                        env.json(
+                            set(lender,
+                                brokerKeylet.key,
+                                asset(1000).value(),
+                                env.now() + 3600s),
+                            counterparty(borrower.id()),
+                            json(sfCounterpartySignature, Json::objectValue),
+                            sig(none),
+                            fee(none),
+                            seq(none)),
+                        lenderSeq + 1),
+                    batch::inner(
+                        manage(lender, loanKeylet.key, tfLoanImpair),
+                        lenderSeq + 2),
+                    batch::sig(borrower));
+            }
+            env.close();
+            BEAST_EXPECT(env.le(brokerKeylet));
+            if (auto const sleLoan = env.le(loanKeylet); BEAST_EXPECT(sleLoan))
+            {
+                BEAST_EXPECT(sleLoan->isFlag(lsfLoanImpaired));
+            }
         }
     }
 
@@ -4147,6 +4386,7 @@ class Batch_test : public beast::unit_test::suite
         testAccountActivation(features);
         testAccountSet(features);
         testAccountDelete(features);
+        testLoan(features);
         testObjectCreateSequence(features);
         testObjectCreateTicket(features);
         testObjectCreate3rdParty(features);
