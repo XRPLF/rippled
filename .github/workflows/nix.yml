@@ -356,7 +356,6 @@ jobs:
           mkdir ${build_dir} && cd ${build_dir}
           conan install .. \
             --settings:all build_type=${configuration} \
-            --settings:all os=ubuntu-jammy \
             --output-folder . \
             --build missing
           cmake .. \

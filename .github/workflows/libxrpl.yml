@@ -1,8 +1,9 @@
 name: Check libXRPL compatibility with Clio
 env:
   CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
-  CONAN_REMOTE_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
-  CONAN_REMOTE_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+  CONAN_REMOTE_NAME: ubuntu-jammy
+  CONAN_LOGIN_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
+  CONAN_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 on:
   pull_request:
     paths:
@@ -53,23 +54,30 @@ jobs:
         shell: bash
         run: |
           conan remote list
-          conan remote remove ubuntu-jammy || true
+          conan remote remove ${{ env.CONAN_REMOTE_NAME }} || true
           # Do not quote the URL. An empty string will be accepted (with a non-fatal warning), but a missing argument will not.
-          conan remote add ubuntu-jammy ${{ env.CONAN_REMOTE_URL }}/ubuntu-jammy --insert 0
+          conan remote add ${{ env.CONAN_REMOTE_NAME }} ${{ env.CONAN_REMOTE_URL }}/${{ env.CONAN_REMOTE_NAME }} --insert 0
       - name: Log into Conan remote
-        if: env.CONAN_REMOTE_URL != '' && env.CONAN_REMOTE_USERNAME != '' && env.CONAN_REMOTE_PASSWORD != ''
+        if: env.CONAN_REMOTE_URL != '' && env.CONAN_LOGIN_USERNAME != '' && env.CONAN_PASSWORD != ''
         id: remote
         shell: bash
         run: |
-          echo outcome=$(conan remote login ubuntu-jammy "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}" >&2 && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+          # `conan user` implicitly uses the environment variables CONAN_LOGIN_USERNAME_<REMOTE> and CONAN_PASSWORD_<REMOTE>,
+          # with <REMOTE> being the name of the remote. If not set it will fallback to the global variables
+          # CONAN_LOGIN_USERNAME and CONAN_PASSWORD.
+          # https://docs.conan.io/1/reference/commands/misc/user.html#using-environment-variables
+          # https://docs.conan.io/1/reference/env_vars.html#conan-login-username-conan-login-username-remote-name
+          # https://docs.conan.io/1/reference/env_vars.html#conan-password-conan-password-remote-name
+          echo outcome=$(conan user --remote ${{ env.CONAN_REMOTE_NAME }} --password >&2 && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: Upload new package
         id: upload
         if: (steps.remote.outputs.outcome == 'success')
         shell: bash
         run: |
           echo "conan upload version ${{ steps.version.outputs.version }} on channel ${{ steps.channel.outputs.channel }}"
-          echo outcome=$(conan upload xrpl/${{ steps.version.outputs.version }}@${{ steps.channel.outputs.channel }} --remote ubuntu-jammy --confirm >&2 \
+          echo outcome=$(conan upload xrpl/${{ steps.version.outputs.version }}@${{ steps.channel.outputs.channel }} --remote ${{ env.CONAN_REMOTE_NAME }} --confirm >&2 \
             && echo success || echo failure) | tee ${GITHUB_OUTPUT}
+
   notify_clio:
     name: Notify Clio
     runs-on: ubuntu-latest
