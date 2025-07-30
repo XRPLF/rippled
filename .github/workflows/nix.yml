@@ -91,8 +91,15 @@ jobs:
           env | sort
       - name: configure Conan
         run: |
+          echo "Installing Conan configuration and profile."
           echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
+          echo "Overriding default OS in profile by '${{ matrix.include.distro }}-${{ matrix.include.codename }}'"
+          cat >> $(conan config home)/settings_user.yml <<EOT
+          os:
+            ${{ matrix.include.distro }}-${{ matrix.include.codename }}:
+          EOT
+          sed -i "s/os=Linux/os=${{ matrix.include.distro }}-${{ matrix.include.codename }}/1" $(conan config home)/profiles/default
           echo "Conan profile:"
           conan profile show
           echo "Conan configuration:"
