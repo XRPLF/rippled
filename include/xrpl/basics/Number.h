@@ -342,6 +342,10 @@ abs(Number x) noexcept
 Number
 power(Number const& f, unsigned n);
 
+// logarithm with base 10
+Number
+lg(Number const& value);
+
 // Returns f^(1/d)
 // Uses Newton–Raphson iterations until the result stops changing
 // to find the root of the polynomial g(x) = x^d - f

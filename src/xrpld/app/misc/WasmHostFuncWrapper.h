@@ -389,4 +389,113 @@ using traceNum_proto = int32_t(uint8_t const*, int32_t, int64_t);
 wasm_trap_t*
 traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
+using traceFloat_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+traceFloat_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatFromInt_proto = int32_t(int64_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatFromInt_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatFromUint_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatFromUint_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatSet_proto = int32_t(int32_t, int64_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using floatCompare_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+floatCompare_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatAdd_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t,
+    int32_t);
+wasm_trap_t*
+floatAdd_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using floatSubtract_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t,
+    int32_t);
+wasm_trap_t*
+floatSubtract_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatMultiply_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t,
+    int32_t);
+wasm_trap_t*
+floatMultiply_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatDivide_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t,
+    int32_t);
+wasm_trap_t*
+floatDivide_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatRoot_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatRoot_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatPower_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatPower_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using floatLog_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
+wasm_trap_t*
+floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
 }  // namespace ripple

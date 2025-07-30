@@ -510,6 +510,31 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testFloat()
+    {
+        testcase("float point");
+
+        std::string const funcName("finish");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        {
+            std::string const wasmHex = floatHex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            TestHostFunctions hf(env, 0);
+            auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result && (re->cost == 91'412));
+            }
+            env.close();
+        }
+    }
+
+    void
     perfTest()
     {
         testcase("Perf test host functions");
@@ -656,6 +681,7 @@ struct Wasm_test : public beast::unit_test::suite
         testHFCost();
 
         testEscrowWasmDN();
+        testFloat();
 
         testCodecovWasm();
 
