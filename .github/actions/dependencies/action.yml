@@ -3,7 +3,7 @@ inputs:
   configuration:
     required: true
   remote_name:
-    required: false
+    required: true
 # An implicit input is the environment variable `build_dir`.
 runs:
   using: composite
