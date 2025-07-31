@@ -1261,7 +1261,10 @@ class Simulate_test : public beast::unit_test::suite
                                 "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
                             BEAST_EXPECT(
-                                finalFields[sfBalance] == "99999999399999980");
+                                finalFields[sfBalance] ==
+                                (XRP(99999999400) -
+                                 env.current()->fees().base * 2)
+                                    .getJson());
                         }
                         auto const aliceNode =
                             metadata[sfAffectedNodes.jsonName][1u];
@@ -1273,7 +1276,10 @@ class Simulate_test : public beast::unit_test::suite
                                 modifiedNode[sfLedgerEntryType] ==
                                 "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(finalFields[sfBalance] == "599999990");
+                            BEAST_EXPECT(
+                                finalFields[sfBalance] ==
+                                (XRP(600) - env.current()->fees().base)
+                                    .getJson());
                         }
                     }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
