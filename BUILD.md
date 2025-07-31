@@ -118,6 +118,20 @@ refer to the provided `conan/profiles/default` profile for inspiration, and you
 may also need to apply the required [tweaks](#conan-profile-tweaks) to this
 default profile.
 
+### Add remote
+
+The recipes in Conan Center occasionally need to be patched for compatibility
+with the latest version of `rippled`. We maintain a fork of the Conan Center
+[here](https://github.com/XRPLF/conan-center-index/) containing the patches.
+
+To ensure our patched recipes are used, you must add our Conan remote at a
+higher index than the default Conan Center remote, so it is consulted first. You
+can do this by running:
+
+```bash
+conan remote add --index 0 xrplf "https://conan.ripplex.io"
+```
+
 ### Conan profile tweaks
 
 #### Missing compiler version
