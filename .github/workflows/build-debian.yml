@@ -141,11 +141,6 @@ env:
 #    ]
   # We will only run Debian Bookworm on x64 in Debug with unity build for each
   # PR commit. All configurations will be run when merging into a main branch.
-  # Note that we will also enable special features as follows:
-  # GCC 13: reference fee=500
-  # GCC 14: codecov
-  # Clang 17: reference fee=1000
-  # Clang 18: voidstar
   BUILD_ON_PR_COMMIT: >-
     [
       "linux/amd64|gcc-12|Debug|-Dunity=ON",
@@ -233,30 +228,12 @@ jobs:
           conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
-      - name: Determine CMake args
-        run: |
-          echo "Determining CMake args."
-          CMAKE_ARGS="${{ matrix.cmake_args }}"
-          if [[ "${{ matrix.os.compiler_name }}" == "gcc" && "${{ matrix.os.compiler_version }}" == "13" && "${{ matrix.build_type }}" == "Debug" ]]; then
-            CMAKE_ARGS="${CMAKE_ARGS} -Dreference_fee=500"
-          elif [[ "${{ matrix.os.compiler_name }}" == "gcc" && "${{ matrix.os.compiler_version }}" == "14" && "${{ matrix.build_type }}" == "Debug" ]]; then
-            CMAKE_ARGS="${CMAKE_ARGS} -Dcodecov=ON"
-          elif [[ "${{ matrix.os.compiler_name }}" == "clang" && "${{ matrix.os.compiler_version }}" == "17" && "${{ matrix.build_type }}" == "Debug" ]]; then
-            CMAKE_ARGS="${CMAKE_ARGS} -Dreference_fee=1000"
-          elif [[ "${{ matrix.os.compiler_name }}" == "clang" && "${{ matrix.os.compiler_version }}" == "18" && "${{ matrix.build_type }}" == "Debug" ]]; then
-            CMAKE_ARGS="${CMAKE_ARGS} -Dvoidstar=ON"
-          fi
-          echo "CMAKE_ARGS=${CMAKE_ARGS}" >> "$GITHUB_ENV"
       - name: Build and test the binary
         uses: ./.github/actions/build-test
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
-          cmake_args: ${{ env.CMAKE_ARGS }}
+          cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Ninja'
           cmake_target: 'all'
           os: 'Linux'
-      - name: Verify voidstar
-        working-directory: ${{ inputs.build_dir }}
-        # TODO: Fail the job if the binary is not linked with libvoidstar.
-        run: ./rippled --version | grep libvoidstar

@@ -155,7 +155,7 @@ jobs:
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
-          conan_remote_name: 'macos'
+          conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
       - name: Build and test the binary

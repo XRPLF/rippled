@@ -36,6 +36,31 @@ inputs:
 runs:
   using: composite
   steps:
+    # We will enable additional CMake args as follows:
+    # - All builds will have the `werr`, `tests` and `xrpld` options enabled.
+    # - All builds except GCC 12 and Clang 16: wextra
+    # - All release builds: assert
+    # - Debian Bookworm in Debug using GCC 13: reference fee=500
+    # - Debian Bookworm in Debug using GCC 14: codecov
+    # - Debian Bookworm in Debug using Clang 17: reference fee=1000
+    # - Debian Bookworm in Debug using Clang 18: voidstar
+    - name: Determine CMake args
+      run: |
+        echo "Determining CMake args."
+        CMAKE_ARGS="${{ matrix.cmake_args }} -Dwerr=ON -Dtests=ON -Dxrpld=ON"
+        if [[ "${{ matrix.os.compiler_name }}" != "gcc" && "${{ matrix.os.compiler_name }}" != "clang-16" ]]; then
+          CMAKE_ARGS="${CMAKE_ARGS} -Dwextra=ON"
+        fi
+        if [[ "${{ matrix.os.compiler_name }}" == "gcc" && "${{ matrix.os.compiler_version }}" == "13" && "${{ matrix.build_type }}" == "Debug" ]]; then
+          CMAKE_ARGS="${CMAKE_ARGS} -Dreference_fee=500"
+        elif [[ "${{ matrix.os.compiler_name }}" == "gcc" && "${{ matrix.os.compiler_version }}" == "14" && "${{ matrix.build_type }}" == "Debug" ]]; then
+          CMAKE_ARGS="${CMAKE_ARGS} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS='-O0' -DCMAKE_CXX_FLAGS='-O0'"
+        elif [[ "${{ matrix.os.compiler_name }}" == "clang" && "${{ matrix.os.compiler_version }}" == "17" && "${{ matrix.build_type }}" == "Debug" ]]; then
+          CMAKE_ARGS="${CMAKE_ARGS} -Dreference_fee=1000"
+        elif [[ "${{ matrix.os.compiler_name }}" == "clang" && "${{ matrix.os.compiler_version }}" == "18" && "${{ matrix.build_type }}" == "Debug" ]]; then
+          CMAKE_ARGS="${CMAKE_ARGS} -Dvoidstar=ON"
+        fi
+        echo "CMAKE_ARGS=${CMAKE_ARGS}" >> "$GITHUB_ENV"
     - name: Configure CMake
       shell: bash
       working-directory: ${{ inputs.build_dir }}
@@ -44,9 +69,7 @@ runs:
           ${{ inputs.cmake_generator && format('-G "{0}"', inputs.cmake_generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
-          -Dtests=TRUE \
-          -Dxrpld=TRUE \
-          ${{ inputs.cmake_args }} \
+          ${{ env.CMAKE_ARGS }} \
           ..
     - name: Build the binary
       shell: bash
@@ -74,3 +97,7 @@ runs:
       run: |
         ./rippled --unittest --unittest-jobs $(nproc)
         ctest -j $(nproc) --output-on-failure
+    - name: Verify voidstar
+      if: ${{ contains(env.CMAKE_ARGS, '-Dvoidstar=ON') }}
+      working-directory: ${{ inputs.build_dir }}
+      run: ./rippled --version | grep libvoidstar

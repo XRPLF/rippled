@@ -44,7 +44,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          cmake -Donly_docs=TRUE ..
+          cmake -Donly_docs=ON ..
           cmake --build . --target docs --parallel $(nproc)
       - name: Publish documentation
         uses: peaceiris/actions-gh-pages@v4
