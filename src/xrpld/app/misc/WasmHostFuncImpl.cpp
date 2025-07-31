@@ -64,7 +64,6 @@ WasmHostFunctionsImpl::getLedgerTransactionHash()
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getBaseFee()
 {
-    // relatively safe to assume the tx base fee won't be > 2^31-1 drops
     auto fee = ctx.view().fees().base.drops();
     if (fee > std::numeric_limits<int32_t>::max())
         return Unexpected(HostFunctionError::INTERNAL);
