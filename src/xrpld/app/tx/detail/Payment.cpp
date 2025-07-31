@@ -316,7 +316,7 @@ Payment::preclaim(PreclaimContext const& ctx)
             // transaction would succeed.
             return telNO_DST_PARTIAL;
         }
-        else if (dstAmount < STAmount(ctx.view.fees().accountReserve(0)))
+        else if (dstAmount < STAmount(ctx.view.fees().reserve))
         {
             // accountReserve is the minimum amount that an account can have.
             // Reserve is not scaled by load.
@@ -608,6 +608,7 @@ Payment::doApply()
     auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
 
     // This is the total reserve in drops.
+    // TODO: TEQU
     auto const reserve = view().fees().accountReserve(ownerCount);
 
     // mPriorBalance is the balance on the sending account BEFORE the
@@ -659,7 +660,7 @@ Payment::doApply()
         // to get the account un-wedged.
 
         // Get the base reserve.
-        XRPAmount const dstReserve{view().fees().accountReserve(0)};
+        XRPAmount const dstReserve{view().fees().reserve};
 
         if (dstAmount > dstReserve ||
             sleDst->getFieldAmount(sfBalance) > dstReserve)

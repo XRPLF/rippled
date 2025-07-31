@@ -630,7 +630,7 @@ xrpLiquid(
 
     // AMMs have no reserve requirement
     auto const reserve = sle->isFieldPresent(sfAMMID)
-        ? XRPAmount{0}
+        ? XRPAmount{0}  // TODO: TEQU
         : view.fees().accountReserve(ownerCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
