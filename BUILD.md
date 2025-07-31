@@ -184,10 +184,8 @@ Export our [Conan recipe for WAMR](./external/wamr).
 It add metering and expose some internal structures.
 
 ```
-# Conan 1.x
-conan export external/wamr wamr/2.3.1@
 # Conan 2.x
-conan export --version 2.3.1 external/wamr
+conan export --version 2.4.1 external/wamr
 ```
 
 ### Build and Test
