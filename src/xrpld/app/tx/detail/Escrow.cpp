@@ -1282,6 +1282,11 @@ EscrowFinish::doApply()
         if (re.has_value())
         {
             auto reValue = re.value().result;
+            if (auto const data = ledgerDataProvider.data; data.has_value())
+            {
+                auto const dataValue = *data;
+                slep->setFieldVL(sfData, dataValue);
+            }
             // TODO: better error handling for this conversion
             ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
             JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue)
