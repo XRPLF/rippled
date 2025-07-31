@@ -1216,6 +1216,7 @@ isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,

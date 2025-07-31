@@ -188,7 +188,8 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_);
+    if (auto ter =
+            addEmptyHolding(view(), tx, pseudoId, mPriorBalance, asset, j_);
         !isTesSuccess(ter))
         return ter;
 

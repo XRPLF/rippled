@@ -600,6 +600,7 @@ isPseudoAccount(ReadView const& view, AccountID accountId)
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Issue const& issue,
@@ -617,6 +618,7 @@ addEmptyHolding(
 [[nodiscard]] inline TER
 addEmptyHolding(
     ApplyView& view,
+    STTx const& tx,
     AccountID const& accountID,
     XRPAmount priorBalance,
     Asset const& asset,
@@ -625,7 +627,7 @@ addEmptyHolding(
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
             return addEmptyHolding(
-                view, accountID, priorBalance, issue, journal);
+                view, tx, accountID, priorBalance, issue, journal);
         },
         asset.value());
 }
