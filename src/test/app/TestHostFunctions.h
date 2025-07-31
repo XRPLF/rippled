@@ -20,6 +20,7 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
+#include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -110,6 +111,36 @@ public:
     getParentLedgerHash() override
     {
         return env_.current()->info().parentHash;
+    }
+
+    Expected<Hash, HostFunctionError>
+    getLedgerAccountHash() override
+    {
+        return env_.current()->info().accountHash;
+    }
+
+    Expected<Hash, HostFunctionError>
+    getLedgerTransactionHash() override
+    {
+        return env_.current()->info().txHash;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getBaseFee() override
+    {
+        return 10;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(uint256 const& amendmentId) override
+    {
+        return 1;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(std::string_view const& amendmentName) override
+    {
+        return 1;
     }
 
     virtual Expected<int32_t, HostFunctionError>
@@ -276,6 +307,15 @@ public:
         return 0;
     }
 
+    Expected<int32_t, HostFunctionError>
+    checkSignature(
+        Slice const& message,
+        Slice const& signature,
+        Slice const& pubkey) override
+    {
+        return 1;
+    }
+
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override
     {
@@ -332,6 +372,36 @@ public:
 
         std::string s = "https://ripple.com";
         return Bytes(s.begin(), s.end());
+    }
+
+    Expected<Bytes, HostFunctionError>
+    getNFTIssuer(uint256 const& nftId) override
+    {
+        return Bytes(accountID_.begin(), accountID_.end());
+    }
+
+    Expected<std::uint32_t, HostFunctionError>
+    getNFTTaxon(uint256 const& nftId) override
+    {
+        return 4;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getNFTFlags(uint256 const& nftId) override
+    {
+        return 8;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getNFTTransferFee(uint256 const& nftId) override
+    {
+        return 10;
+    }
+
+    Expected<std::uint32_t, HostFunctionError>
+    getNFTSerial(uint256 const& nftId) override
+    {
+        return 4;
     }
 
     Expected<int32_t, HostFunctionError>

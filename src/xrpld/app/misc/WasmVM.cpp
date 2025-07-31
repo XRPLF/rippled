@@ -27,6 +27,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
 #include <memory>
@@ -45,6 +46,10 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
         WASM_IMPORT_FUNC2(i, getParentLedgerTime, "get_parent_ledger_time", hfs,                                    60);
         WASM_IMPORT_FUNC2(i, getParentLedgerHash, "get_parent_ledger_hash", hfs,                                    60);
+        WASM_IMPORT_FUNC2(i, getLedgerAccountHash, "get_ledger_account_hash", hfs,                                  60);
+        WASM_IMPORT_FUNC2(i, getLedgerTransactionHash, "get_ledger_tx_hash", hfs,                                   60);
+        WASM_IMPORT_FUNC2(i, getBaseFee, "get_base_fee", hfs,                                                       60);
+        WASM_IMPORT_FUNC2(i, isAmendmentEnabled, "amendment_enabled", hfs,                                          60);
         WASM_IMPORT_FUNC2(i, cacheLedgerObj, "cache_ledger_obj", hfs,                                             5000);
         WASM_IMPORT_FUNC2(i, getTxField, "get_tx_field", hfs,                                                       70);
         WASM_IMPORT_FUNC2(i, getCurrentLedgerObjField, "get_current_ledger_obj_field", hfs,                         70);
@@ -59,6 +64,7 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, getCurrentLedgerObjNestedArrayLen, "get_current_ledger_obj_nested_array_len",  hfs,    70);
         WASM_IMPORT_FUNC2(i, getLedgerObjNestedArrayLen, "get_ledger_obj_nested_array_len", hfs,                    70);
         WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs,                                                      1000);
+        WASM_IMPORT_FUNC2(i, checkSignature, "check_sig", hfs,                                                    2000);
         WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                   2000);
         WASM_IMPORT_FUNC2(i, accountKeylet, "account_keylet", hfs,                                                 350);
         WASM_IMPORT_FUNC2(i, checkKeylet, "check_keylet", hfs,                                                     350);
@@ -75,6 +81,11 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, signersKeylet, "signers_keylet", hfs,                                                 350);
         WASM_IMPORT_FUNC2(i, ticketKeylet, "ticket_keylet", hfs,                                                   350);
         WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
+        WASM_IMPORT_FUNC2(i, getNFTIssuer, "get_nft_issuer", hfs,                                                   60);
+        WASM_IMPORT_FUNC2(i, getNFTTaxon, "get_nft_taxon", hfs,                                                     60);
+        WASM_IMPORT_FUNC2(i, getNFTFlags, "get_nft_flags", hfs,                                                     60);
+        WASM_IMPORT_FUNC2(i, getNFTTransferFee, "get_nft_transfer_fee", hfs,                                        60);
+        WASM_IMPORT_FUNC2(i, getNFTSerial, "get_nft_serial", hfs,                                                   60);
         WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
         WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
         WASM_IMPORT_FUNC2(i, traceFloat, "trace_opaque_float", hfs,                                                500);
