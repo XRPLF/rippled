@@ -1422,11 +1422,11 @@ void
 OverlayImpl::squelchAll(
     PublicKey const& validator,
     uint32_t squelchDuration,
-    std::function<void(Peer::id_t)> callback)
+    std::function<void(Peer::id_t)> report)
 {
     for_each([&](std::shared_ptr<PeerImp>&& p) {
         p->send(makeSquelchMessage(validator, true, squelchDuration));
-        callback(p->id());
+        report(p->id());
     });
 }
 

@@ -103,13 +103,13 @@ public:
      * to register that a (validator,peer) was squelched
      * @param validator Public key of the source validator
      * @param duration Squelch duration in seconds
-     * @param callback a callback to register that a validator was squelched
+     * @param report a callback to register that a validator was squelched
      */
     virtual void
     squelchAll(
         PublicKey const& validator,
         std::uint32_t duration,
-        std::function<void(Peer::id_t)> callback) = 0;
+        std::function<void(Peer::id_t)> report) = 0;
 
     /** Unsquelch handler
      * @param validator Public key of the source validator
@@ -232,14 +232,14 @@ private:
      *
      * @param validator The public key of the validator this slot represents.
      * @param id The ID of the peer that relayed the message.
-     * @param callback A function to call if a squelch action is intentionally
+     * @param report A function to call if a squelch action is intentionally
      * ignored during the process.
      */
     void
     update(
         PublicKey const& validator,
         Peer::id_t id,
-        ignored_squelch_callback callback);
+        ignored_squelch_callback report);
 
     /**
      * @brief Handles the removal of a peer from the slot.
@@ -531,7 +531,7 @@ public:
      * @param key The unique hash of the message.
      * @param validator The public key of the untrusted validator.
      * @param id The ID of the peer that relayed the message.
-     * @param callback A function to call if the slot intentionally ignores a
+     * @param report A function to call if the slot intentionally ignores a
      * squelch action (not used in this specific logic path).
      */
     void
@@ -539,7 +539,7 @@ public:
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t id,
-        typename Slot::ignored_squelch_callback callback);
+        typename Slot::ignored_squelch_callback report);
 
     /** Calls Slot::update of Slot associated with the validator, with a
      * noop callback.
@@ -583,7 +583,7 @@ public:
      * @param key The unique hash of the message, used for deduplication.
      * @param validator The public key of the validator.
      * @param id The ID of the peer that relayed the message.
-     * @param callback A function to call if the slot intentionally ignores a
+     * @param report A function to call if the slot intentionally ignores a
      * squelch action.
      * @param isTrusted `true` if the message is from a trusted validator.
      */
@@ -592,7 +592,7 @@ public:
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t id,
-        typename Slot::ignored_squelch_callback callback,
+        typename Slot::ignored_squelch_callback report,
         bool isTrusted);
 
     /**

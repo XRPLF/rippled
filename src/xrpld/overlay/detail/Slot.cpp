@@ -65,7 +65,7 @@ void
 Slot::update(
     PublicKey const& validator,
     Peer::id_t id,
-    ignored_squelch_callback callback)
+    ignored_squelch_callback report)
 {
     using namespace std::chrono;
     auto const now = clock_.now();
@@ -104,7 +104,7 @@ Slot::update(
 
     // report if we received a message from a squelched peer
     if (peer.state == PeerState::Squelched)
-        callback();
+        report();
 
     if (getState() != SlotState::Counting || peer.state == PeerState::Squelched)
         return;
