@@ -86,12 +86,16 @@ compareAccountCandidate(
     AccountCandidate const& first,
     AccountCandidate const& second)
 {
-    if (first.priority < second.priority)
-        return false;
+    // Primary sort key: priority descending
+    if (first.priority != second.priority)
+        return first.priority > second.priority;
 
-    if (first.account > second.account)
-        return true;
+    // Secondary sort key: account descending
+    if (first.account != second.account)
+        return first.account > second.account;
 
+    // Tertiary sort key (tie-breaker): (priority ^ seq) ascending
+    // Note: The primary and secondary keys are equal here.
     return (first.priority ^ seq) < (second.priority ^ seq);
 }
 

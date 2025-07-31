@@ -936,15 +936,13 @@ AMMWithdraw::equalWithdrawLimit(
     std::uint16_t tfee)
 {
     auto frac = Number{amount} / amountBalance;
-    auto amount2Withdraw =
-        getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
     auto tokensAdj =
         getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::No);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
         return {tecAMM_INVALID_TOKENS, STAmount{}};
     // factor in the adjusted tokens
     frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
-    amount2Withdraw =
+    auto const amount2Withdraw =
         getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
     if (amount2Withdraw <= amount2)
     {

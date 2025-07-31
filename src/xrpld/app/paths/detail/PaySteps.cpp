@@ -60,7 +60,8 @@ checkNear(MPTAmount const& expected, MPTAmount const& actual)
         return true;
     Number ratTol = Number(1, -3);
     Number const diff = abs(expected.value() - actual.value());
-    auto const r = diff / std::max(expected, actual);
+    auto const r =
+        diff / std::max(std::abs(expected.value()), std::abs(actual.value()));
     return r <= ratTol;
 }
 
