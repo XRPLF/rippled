@@ -14,7 +14,7 @@ required_conan_version = ">=1.55.0"
 
 class WamrConan(ConanFile):
     name = "wamr"
-    version = "2.3.1"
+    version = "2.4.1"
     license = "Apache License v2.0"
     url = "https://github.com/bytecodealliance/wasm-micro-runtime.git"
     description = "Webassembly micro runtime"
@@ -42,7 +42,7 @@ class WamrConan(ConanFile):
         git = Git(self)
         git.fetch_commit(
             url="https://github.com/bytecodealliance/wasm-micro-runtime.git",
-            commit="2a303861cc916dc182b7fecaa0aacc1b797e7ac6",
+            commit="b124f70345d712bead5c0c2393acb2dc583511de",
         )
         # get(self, **self.conan_data["sources"][self.version], strip_root=True)
 

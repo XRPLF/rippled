@@ -31,7 +31,7 @@ class Xrpl(ConanFile):
         'openssl/1.1.1w',
         'soci/4.0.3',
         'zlib/1.3.1',
-        'wamr/2.3.1',
+        'wamr/2.4.1',
     ]
 
     test_requires = [
