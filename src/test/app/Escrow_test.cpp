@@ -2075,6 +2075,8 @@ struct Escrow_test : public beast::unit_test::suite
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
+                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             }
@@ -2140,6 +2142,8 @@ struct Escrow_test : public beast::unit_test::suite
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
+                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2189,6 +2193,8 @@ struct Escrow_test : public beast::unit_test::suite
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
+                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             }
@@ -2237,6 +2243,8 @@ struct Escrow_test : public beast::unit_test::suite
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
+                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2303,6 +2311,8 @@ struct Escrow_test : public beast::unit_test::suite
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 39'596);
+                if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
+                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
