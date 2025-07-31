@@ -325,11 +325,7 @@ checkIsCurrentLedger(Json::Value const params)
         auto const& ledgerIndex = params[jss::ledger_index];
         if (!ledgerIndex.isNull())
         {
-            if (ledgerIndex == RPC::LedgerShortcut::CURRENT)
-            {
-                return true;
-            }
-            return false;
+            return ledgerIndex == RPC::LedgerShortcut::CURRENT;
         }
     }
     if (params.isMember(jss::ledger_hash))

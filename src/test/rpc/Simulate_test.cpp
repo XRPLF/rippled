@@ -1245,23 +1245,37 @@ class Simulate_test : public beast::unit_test::suite
                 {
                     Json::Value const metadata = getJsonMetadata(result);
 
-                    // if (BEAST_EXPECT(
-                    //         metadata.isMember(sfAffectedNodes.jsonName)))
-                    // {
-                    //     BEAST_EXPECT(
-                    //         metadata[sfAffectedNodes.jsonName].size() == 1);
-                    //     auto node = metadata[sfAffectedNodes.jsonName][0u];
-                    //     if (BEAST_EXPECT(
-                    //             node.isMember(sfModifiedNode.jsonName)))
-                    //     {
-                    //         auto modifiedNode = node[sfModifiedNode];
-                    //         BEAST_EXPECT(
-                    //             modifiedNode[sfLedgerEntryType] ==
-                    //             "AccountRoot");
-                    //         auto finalFields = modifiedNode[sfFinalFields];
-                    //         BEAST_EXPECT(finalFields[sfDomain] == newDomain);
-                    //     }
-                    // }
+                    if (BEAST_EXPECT(
+                            metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        BEAST_EXPECT(
+                            metadata[sfAffectedNodes.jsonName].size() == 2);
+                        auto const masterMode =
+                            metadata[sfAffectedNodes.jsonName][0u];
+                        if (BEAST_EXPECT(
+                                masterMode.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = masterMode[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(
+                                finalFields[sfBalance] == "99999999399999980");
+                        }
+                        auto const aliceNode =
+                            metadata[sfAffectedNodes.jsonName][1u];
+                        if (BEAST_EXPECT(
+                                aliceNode.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = aliceNode[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(finalFields[sfBalance] == "599999990");
+                        }
+                    }
                     BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
                     BEAST_EXPECT(
                         metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
