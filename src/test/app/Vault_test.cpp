@@ -1768,6 +1768,18 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(100)});
                 env(tx, ter(tecNO_AUTH));
 
+                // Withdrawal to other (authorized) accounts doesn't work.
+                // Issuer would have to VaultClawback
+                tx[sfDestination] = issuer.human();
+                env(tx, ter(tecNO_AUTH));
+                tx[sfDestination] = owner.human();
+                env(tx, ter(tecNO_AUTH));
+                env.close();
+
+                // Issuer reauthorizes
+                mptt.authorize({.account = issuer, .holder = depositor});
+                env.close();
+
                 // Withdrawal to other (authorized) accounts works
                 tx[sfDestination] = issuer.human();
                 env(tx);
@@ -1775,6 +1787,13 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
             }
+
+            // Re-unauthorize
+            mptt.authorize(
+                {.account = issuer,
+                 .holder = depositor,
+                 .flags = tfMPTUnauthorize});
+            env.close();
 
             {
                 // Cannot deposit some more
@@ -2154,6 +2173,7 @@ class Vault_test : public beast::unit_test::suite
             // transfer fees ignored on withdraw
             BEAST_EXPECT(env.balance(owner, issue) == asset(120));
             BEAST_EXPECT(vaultBalance(keylet) == asset(30));
+            BEAST_EXPECT(env.balance(charlie, issue) == asset(0));
 
             {
                 auto tx = vault.withdraw(
