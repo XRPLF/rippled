@@ -41,11 +41,11 @@ runs:
       shell: bash
       run: |
         if conan remote list | grep -q '${{ inputs.conan_remote_name }}'; then
-          conan remote update --index 0 --url ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_name }}
-          echo "Updated Conan remote '${{ inputs.conan_remote_name }}' to ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}."
+          conan remote update --index 0 --url ${{ inputs.conan_remote_url }} ${{ inputs.conan_remote_name }}
+          echo "Updated Conan remote '${{ inputs.conan_remote_name }}' to ${{ inputs.conan_remote_url }}."
         else
-          conan remote add --index 0 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}
-          echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}/${{ inputs.conan_remote_name }}."
+          conan remote add --index 0 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+          echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
         fi
     - name: Log into Conan remote
       shell: bash
