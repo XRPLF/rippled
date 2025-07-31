@@ -84,8 +84,8 @@ shouldCloseLedger(
                             agree
     @param stalled the network appears to be stalled, where
            neither we nor our peers have changed their vote on any disputes in a
-           while. This is undesirable, and will cause us to end consensus
-           without 80% agreement.
+           while. This is undesirable, and should be rare, and will cause us to
+           end consensus without 80% agreement.
     @param parms            Consensus constant parameters
     @param proposing        whether we should count ourselves
     @param j                journal for logging
@@ -93,7 +93,7 @@ shouldCloseLedger(
 */
 ConsensusState
 checkConsensus(
-    bool sufficientProposers,
+    std::size_t prevProposers,
     std::size_t currentProposers,
     std::size_t currentAgree,
     std::size_t currentFinished,
@@ -1712,10 +1712,10 @@ Consensus<Adaptor>::haveConsensus(
                      << ", disagree=" << disagree;
 
     ConsensusParms const& parms = adaptor_.parms();
-    bool const sufficientProposers =
-        (agree + disagree) >= (prevProposers_ * 3 / 4);
-    // Stalling is BAD
-    bool const stalled = sufficientProposers && haveCloseTimeConsensus_ &&
+    // Stalling is BAD. It means that we have a consensus on the close time, so
+    // peers are talking, but we have disputed transactions that peers are
+    // unable or unwilling to come to agreement on one way or the other.
+    bool const stalled = haveCloseTimeConsensus_ &&
         !result_->disputes.empty() &&
         std::ranges::all_of(result_->disputes,
                             [this, &parms](auto const& dispute) {
@@ -1726,15 +1726,17 @@ Consensus<Adaptor>::haveConsensus(
                             });
     if (stalled)
     {
-        CLOG(clog) << "Consensus detects as stalled with " << (agree + disagree)
-                   << "/" << prevProposers_ << " proposers, and "
-                   << result_->disputes.size()
-                   << " stalled disputed transactions.";
+        std::stringstream ss;
+        ss << "Consensus detects as stalled with " << (agree + disagree) << "/"
+           << prevProposers_ << " proposers, and " << result_->disputes.size()
+           << " stalled disputed transactions.";
+        JLOG(j_.error()) << ss.str();
+        CLOG(clog) << ss.str();
     }
 
     // Determine if we actually have consensus or not
     result_->state = checkConsensus(
-        sufficientProposers,
+        prevProposers_,
         agree + disagree,
         agree,
         currentFinished,

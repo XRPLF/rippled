@@ -139,11 +139,11 @@ checkConsensusReached(
         return false;
     }
 
-    // We only get stalled when every disputed transaction unequivocally has 80%
-    // (minConsensusPct) agreement, either for or against. That is: either under
-    // 20% or over 80% consensus (repectively "nay" or "yay"). This prevents
-    // manipulation by a minority of byzantine peers of which transactions make
-    // the cut to get into the ledger.
+    // We only get stalled when there are disputed transactions and all of them
+    // unequivocally have 80% (minConsensusPct) agreement, either for or
+    // against. That is: either under 20% or over 80% consensus (repectively
+    // "nay" or "yay"). This prevents manipulation by a minority of byzantine
+    // peers of which transactions make the cut to get into the ledger.
     if (stalled)
     {
         CLOG(clog) << "consensus stalled. ";
@@ -175,7 +175,7 @@ checkConsensusReached(
 
 ConsensusState
 checkConsensus(
-    bool sufficientProposers,
+    std::size_t prevProposers,
     std::size_t currentProposers,
     std::size_t currentAgree,
     std::size_t currentFinished,
@@ -188,8 +188,8 @@ checkConsensus(
     std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "checkConsensus: prop=" << currentProposers << "/"
-               << (sufficientProposers ? "sufficient" : "insufficient")
-               << " agree=" << currentAgree << " validated=" << currentFinished
+               << prevProposers << " agree=" << currentAgree
+               << " validated=" << currentFinished
                << " time=" << currentAgreeTime.count() << "/"
                << previousAgreeTime.count() << " proposing? " << proposing
                << " minimum duration to reach consensus: "
@@ -205,7 +205,7 @@ checkConsensus(
         return ConsensusState::No;
     }
 
-    if (!sufficientProposers)
+    if (currentProposers < (prevProposers * 3 / 4))
     {
         // Less than 3/4 of the last ledger's proposers are present; don't
         // rush: we may need more time.
