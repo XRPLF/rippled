@@ -2547,6 +2547,24 @@ requireAuth(
                 !isTesSuccess(err))
                 return err;
         }
+
+        // requireAuth is also recursive if the _account_ is a vault
+        auto const sleAccount = view.read(keylet::account(account));
+        if (!sleAccount)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        if (sleAccount->isFieldPresent(sfVaultID))
+        {
+            auto const sleVault =
+                view.read(keylet::vault(sleAccount->getFieldH256(sfVaultID)));
+            if (!sleVault)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+            auto const ownerAcct = sleVault->getAccountID(sfOwner);
+            if (auto const err =
+                    requireAuth(view, mptIssue, ownerAcct, authType, depth + 1);
+                !isTesSuccess(err))
+                return err;
+        }
     }
 
     auto const mptokenID = keylet::mptoken(mptID.key, account);
