@@ -20,8 +20,6 @@
 #ifndef RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 #define RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 
-#include <xrpld/overlay/Peer.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>

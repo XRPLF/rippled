@@ -34,6 +34,7 @@
 #include <cstddef>
 #include <optional>
 #include <sstream>
+#include <string>
 
 namespace ripple {
 namespace reduce_relay {
@@ -309,6 +310,19 @@ Slot::initCounting()
     }
 }
 
+std::string
+Slot::formatLogMessage(PublicKey const& validator, std::optional<Peer::id_t> id)
+    const
+{
+    std::stringstream ss;
+    ss << "validator: " << toBase58(TokenType::NodePublic, validator);
+    if (id)
+        ss << " peer: " << *id;
+    ss << " trusted: " << isTrusted_;
+    ss << " slot_state: " << to_string(getState());
+    return ss.str();
+}
+
 // --------------------------------- Slots --------------------------------- //
 
 bool
@@ -377,7 +391,7 @@ Slots::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     Peer::id_t id,
-    typename Slot::ignored_squelch_callback callback,
+    typename Slot::ignored_squelch_callback report,
     bool isTrusted)
 {
     if (expireAndIsPeerMessageCached(key, id))
@@ -401,7 +415,7 @@ Slots::updateSlotAndSquelch(
                               clock_)))
                       .first;
 
-        it->second.update(validator, id, callback);
+        it->second.update(validator, id, report);
     }
     else
     {
@@ -412,7 +426,7 @@ Slots::updateSlotAndSquelch(
         if (it == untrustedSlots_.end())
             return;
 
-        it->second.update(validator, id, callback);
+        it->second.update(validator, id, report);
     }
 }
 
@@ -421,21 +435,21 @@ Slots::updateUntrustedValidatorSlot(
     uint256 const& key,
     PublicKey const& validator,
     Peer::id_t id,
-    typename Slot::ignored_squelch_callback callback)
+    typename Slot::ignored_squelch_callback report)
 {
     // We received a message from an already selected validator
     // we can ignore this message
     if (untrustedSlots_.find(validator) != untrustedSlots_.end())
         return;
 
-    // We received a message from an already squelched validator.
+    // Did we receive a message from an already squelched validator?
     // This could happen in few cases:
     //      1. It happened so that the squelch for a particular peer expired
     //      before our local squelch.
     //      2. We receive a message from a new peer that did not receive the
     //      squelch request.
     //      3. The peer is ignoring our squelch request and we have not sent
-    //      the controll message in a while.
+    //      the control message in a while.
     // In all of these cases we can only send them a squelch request again.
     if (expireAndIsValidatorSquelched(validator))
     {

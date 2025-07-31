@@ -29,7 +29,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Cluster.h>
-#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
@@ -2396,14 +2395,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 TrafficCount::category::validation_untrusted,
                 Message::messageSize(*m));
 
-            overlay_.updateUntrustedValidatorSlot(
-                key, val->getSignerPublic(), id_);
-
             // If the operator has specified that untrusted validations be
             // dropped then this happens here I.e. before further wasting CPU
             // verifying the signature of an untrusted key
+            // TODO: Deprecate RELAY_UNTRUSTED_VALIDATIONS config once enhanced
+            // squelching is the defacto routing algorithm.
             if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
                 return;
+
+            overlay_.updateUntrustedValidatorSlot(
+                key, val->getSignerPublic(), id_);
         }
 
         if (!isTrusted && (tracking_.load() == Tracking::diverged))

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/SquelchStore.h>
 
@@ -27,7 +26,6 @@
 
 #include <chrono>
 #include <unordered_map>
-#include <vector>
 
 namespace ripple {
 
@@ -45,7 +43,7 @@ SquelchStore::handleSquelch(
 
     if (squelch)
     {
-        // This should never trigger. The squelh duration is validated in
+        // This should never trigger. The squelch duration is validated in
         // PeerImp.onMessage(TMSquelch). However, if somehow invalid duration is
         // passed, log is as an error
         if ((duration < reduce_relay::MIN_UNSQUELCH_EXPIRE ||
