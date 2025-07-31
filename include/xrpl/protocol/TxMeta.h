@@ -173,7 +173,7 @@ public:
     }
 
     void
-    setWasmReturnCode(std::uint32_t const& wasmReturnCode)
+    setWasmReturnCode(std::int32_t const& wasmReturnCode)
     {
         wasmReturnCode_ = wasmReturnCode;
     }
