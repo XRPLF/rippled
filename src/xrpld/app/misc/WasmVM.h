@@ -34,6 +34,8 @@ static std::string_view const W_ALLOC = "allocate";
 static std::string_view const W_DEALLOC = "deallocate";
 static std::string_view const W_PROC_EXIT = "proc_exit";
 
+static std::string_view const ESCROW_FUNCTION_CALL = "finish";
+
 uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
 
 class WamrEngine;
@@ -92,7 +94,7 @@ createWasmImport(HostFunctions* hfs);
 Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
-    std::string_view funcName,
+    std::string_view funcName = ESCROW_FUNCTION_CALL,
     std::vector<WasmParam> const& params = {},
     HostFunctions* hfs = nullptr,
     int64_t gasLimit = -1,
@@ -101,7 +103,7 @@ runEscrowWasm(
 NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
-    std::string_view funcName,
+    std::string_view funcName = ESCROW_FUNCTION_CALL,
     std::vector<WasmParam> const& params = {},
     HostFunctions* hfs = nullptr,
     beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
