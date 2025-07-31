@@ -1,0 +1,76 @@
+name: Build and Test (Linux and MacOS)
+
+inputs:
+  build_dir:
+    description: 'The directory where to build.'
+    required: true
+    type: string
+  build_type:
+    description: 'The build type to use.'
+    required: true
+    type: string
+  cmake_args:
+    description: 'Additional arguments to pass to CMake.'
+    required: false
+    type: string
+  cmake_generator:
+    description: 'The CMake generator to use for the build.'
+    required: true
+    type: string
+  cmake_target:
+    description: 'The CMake target to build.'
+    required: true
+    type: string
+  os:
+    description: 'A string representing which operating system is used.'
+    required: true
+    type: choice
+    options:
+      - Linux
+      - MacOS
+      - Windows
+
+# Install the Conan profiles and log into the specified remote. We first remove
+# the remote if it already exists, which can occur on self-hosted runners where
+# the workspace is not cleaned up between runs.
+runs:
+  using: composite
+  steps:
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}
+      run: |
+        cmake \
+          ${{ inputs.cmake_generator && format('-G "{0}"', inputs.cmake_generator) || '' }} \
+          -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+          -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+          -Dtests=TRUE \
+          -Dxrpld=TRUE \
+          ${{ inputs.cmake_args }} \
+          ..
+    - name: Build the binary
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}
+      run: |
+        cmake --build . \
+              --config ${{ inputs.build_type }} \
+              --parallel $(nproc) \
+              --target ${{ inputs.cmake_target }}
+    - name: Check linking
+      if: ${{ inputs.os == 'Linux' }}
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}
+      run: |
+        ldd ./rippled
+        if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+          echo 'The binary is statically linked.'
+        else
+          echo 'The binary is dynamically linked.'
+        exit 1
+        fi
+    - name: Test the binary
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'Windows' && inputs.build_type || '' }}
+      run: |
+        ./rippled --unittest --unittest-jobs $(nproc)
+        ctest -j $(nproc) --output-on-failure

@@ -1,0 +1,90 @@
+# This workflow runs all workflows to check, build and test the project on
+# various Linux flavors, as well as MacOS and Windows.
+name: Main
+
+# This workflow is triggered on every push to the repository, including pull
+# requests. However, it will not run if the pull request is a draft unless it
+# has the 'DraftRunCI' label. As GitHub Actions does not support such `if`
+# conditions here, the individual jobs will check the pull request state and
+# labels to determine whether to run or not. The workflows called by the jobs
+# may also have their own conditions to partially or completely skip execution
+# as needed.
+on: push
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+#  check-clang-format:
+#    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+#    uses: ./.github/workflows/check-clang-format.yml
+#
+#  check-levelization:
+#    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+#    uses: ./.github/workflows/check-levelization.yml
+
+  debian:
+#    needs:
+#      - check-clang-format
+#      - check-levelization
+    uses: ./.github/workflows/build-debian.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  rhel:
+#    needs:
+#      - check-clang-format
+#      - check-levelization
+    uses: ./.github/workflows/build-rhel.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  ubuntu:
+#    needs:
+#      - check-clang-format
+#      - check-levelization
+    uses: ./.github/workflows/build-ubuntu.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  macos:
+#    needs:
+#      - check-clang-format
+#      - check-levelization
+    uses: ./.github/workflows/build-macos.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  windows:
+#    needs:
+#      - check-clang-format
+#      - check-levelization
+    uses: ./.github/workflows/build-windows.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+

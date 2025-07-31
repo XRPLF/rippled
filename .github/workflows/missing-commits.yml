@@ -1,60 +1,66 @@
-name: missing-commits
+name: Check for missing commits
 
+# TODO: Use `workflow_run` to trigger this workflow after checks have completed.
+# This can only be done if the `checks` workflow already exists on the default
+# branch (i.e. `develop`), so we cannot do this yet.
+# See https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run.
 on:
   push:
     branches:
-      # Only check that the branches are up to date when updating the
-      # relevant branches.
       - develop
       - release
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  up_to_date:
-    runs-on: ubuntu-24.04
+  check:
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       with:
         fetch-depth: 0
     - name: Check for missing commits
-      id: commits
       env:
-        SUGGESTION: |
+        MESSAGE: |
 
-          If you are reading this, then the commits indicated above are
-          missing from "develop" and/or "release". Do a reverse-merge
-          as soon as possible. See CONTRIBUTING.md for instructions.
+          If you are reading this, then the commits indicated above are missing
+          from the "develop" and/or "release" branch. Do a reverse-merge as soon
+          as possible. See CONTRIBUTING.md for instructions.
       run: |
         set -o pipefail
-        # Branches ordered by how "canonical" they are. Every commit in
-        # one branch should be in all the branches behind it
-        order=( master release develop )
+        # Branches are ordered by how "canonical" they are. Every commit in one
+        # branch should be in all the branches behind it.
+        order=(master release develop)
         branches=()
-        for branch in "${order[@]}"
-        do
-          # Check that the branches exist so that this job will work on
-          # forked repos, which don't necessarily have master and
-          # release branches.
+        for branch in "${order[@]}"; do
+          # Check that the branches exist so that this job will work on forked
+          # repos, which don't necessarily have master and release branches.
+          echo "Checking if ${branch} exists."
           if git ls-remote --exit-code --heads origin \
-            refs/heads/${branch} > /dev/null
-          then
-            branches+=( origin/${branch} )
+            refs/heads/${branch} > /dev/null; then
+            branches+=(origin/${branch})
           fi
         done
 
         prior=()
-        for branch in "${branches[@]}"
-        do
-          if [[ ${#prior[@]} -ne 0 ]]
-          then
-            echo "Checking ${prior[@]} for commits missing from ${branch}"
+        for branch in "${branches[@]}"; do
+          if [[ ${#prior[@]} -ne 0 ]]; then
+            echo "Checking ${prior[@]} for commits missing from ${branch}."
             git log --oneline --no-merges "${prior[@]}" \
               ^$branch | tee -a "missing-commits.txt"
             echo
           fi
-          prior+=( "${branch}" )
+          prior+=("${branch}")
         done
-        if [[ $( cat missing-commits.txt | wc -l ) -ne 0 ]]
-        then
-          echo "${SUGGESTION}"
+        
+        if [[ $(cat missing-commits.txt | wc -l) -ne 0 ]]; then
+          echo "${MESSAGE}"
           exit 1
         fi
