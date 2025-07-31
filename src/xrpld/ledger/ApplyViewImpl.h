@@ -76,7 +76,7 @@ public:
     }
 
     void
-    setGasUsed(std::uint32_t const& gasUsed)
+    setGasUsed(std::optional<std::uint32_t> const gasUsed)
     {
         gasUsed_ = gasUsed;
     }
