@@ -20,8 +20,6 @@ concurrency:
 # to pollute conan/profiles directory with settings which might not work for others
 env:
   CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
-  CONAN_REMOTE_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
-  CONAN_REMOTE_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{ os.cpu_count() }}
     core.upload:parallel={{ os.cpu_count() }}
@@ -126,7 +124,7 @@ jobs:
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}:${{ matrix.compiler }}
     env:
       build_dir: .build
     steps:
