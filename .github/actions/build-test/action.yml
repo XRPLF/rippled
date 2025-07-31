@@ -57,7 +57,7 @@ runs:
               --parallel $(nproc) \
               --target ${{ inputs.cmake_target }}
     - name: Check linking
-      if: inputs.os == 'Linux'
+      if: ${{ inputs.os == 'Linux' }}
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
