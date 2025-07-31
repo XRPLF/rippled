@@ -25,6 +25,7 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
@@ -35,7 +36,10 @@
 namespace ripple {
 
 static Expected<std::uint32_t, Json::Value>
-getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
+getAutofillSequence(
+    Json::Value const& tx_json,
+    RPC::JsonContext& context,
+    std::shared_ptr<ReadView const> lpLedger)
 {
     // autofill Sequence
     bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
@@ -54,8 +58,7 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
             rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
     }
     std::shared_ptr<SLE const> const sle =
-        context.app.openLedger().current()->read(
-            keylet::account(*srcAddressID));
+        lpLedger->read(keylet::account(*srcAddressID));
     if (!hasTicketSeq && !sle)
     {
         JLOG(context.app.journal("Simulate").debug())
@@ -64,28 +67,45 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
 
         return Unexpected(rpcError(rpcSRC_ACT_NOT_FOUND));
     }
+    if (hasTicketSeq)
+    {
+        return 0;
+    }
+    if (!lpLedger->open())
+        return sle->getFieldU32(sfSequence);
 
-    return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(sle).value();
+    return context.app.getTxQ().nextQueuableSeq(sle).value();
 }
 
 static std::optional<Json::Value>
-autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
+autofillTx(
+    Json::Value& tx_json,
+    RPC::JsonContext& context,
+    std::shared_ptr<ReadView const> lpLedger)
 {
     if (!tx_json.isMember(jss::Fee))
     {
         // autofill Fee
         // Must happen after all the other autofills happen
         // Error handling/messaging works better that way
-        auto feeOrError = RPC::getCurrentNetworkFee(
-            context.role,
-            context.app.config(),
-            context.app.getFeeTrack(),
-            context.app.getTxQ(),
-            context.app,
-            tx_json);
-        if (feeOrError.isMember(jss::error))
-            return feeOrError;
-        tx_json[jss::Fee] = feeOrError;
+        if (lpLedger->open())
+        {
+            auto feeOrError = RPC::getCurrentNetworkFee(
+                context.role,
+                context.app.config(),
+                context.app.getFeeTrack(),
+                context.app.getTxQ(),
+                context.app,
+                tx_json);
+            if (feeOrError.isMember(jss::error))
+                return feeOrError;
+            tx_json[jss::Fee] = feeOrError;
+        }
+        else
+        {
+            // can't calculate server load for a past ledger
+            tx_json[jss::Fee] = lpLedger->fees().base.jsonClipped();
+        }
     }
 
     if (!tx_json.isMember(jss::SigningPubKey))
@@ -139,7 +159,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 
     if (!tx_json.isMember(jss::Sequence))
     {
-        auto const seq = getAutofillSequence(tx_json, context);
+        auto const seq = getAutofillSequence(tx_json, context, lpLedger);
         if (!seq)
             return seq.error();
         tx_json[sfSequence.jsonName] = *seq;
@@ -218,11 +238,14 @@ getTxJsonFromParams(Json::Value const& params)
 }
 
 static Json::Value
-simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
+simulateTxn(
+    RPC::JsonContext& context,
+    std::shared_ptr<Transaction> transaction,
+    std::shared_ptr<ReadView const> lpLedger)
 {
     Json::Value jvResult;
     // Process the transaction
-    OpenView view = *context.app.openLedger().current();
+    OpenView view = OpenView(&*lpLedger);
     auto const result = context.app.getTxQ().apply(
         context.app,
         view,
@@ -298,8 +321,6 @@ doSimulate(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeMediumBurdenRPC;
 
-    Json::Value tx_json;  // the tx as a JSON
-
     // check validity of `binary` param
     if (context.params.isMember(jss::binary) &&
         !context.params[jss::binary].isBool())
@@ -316,13 +337,18 @@ doSimulate(RPC::JsonContext& context)
         }
     }
 
+    std::shared_ptr<ReadView const> lpLedger;
+    auto jvResult = RPC::lookupLedger(lpLedger, context);
+    if (!lpLedger)
+        return jvResult;
+
     // get JSON equivalent of transaction
-    tx_json = getTxJsonFromParams(context.params);
+    Json::Value tx_json = getTxJsonFromParams(context.params);
     if (tx_json.isMember(jss::error))
         return tx_json;
 
     // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
-    if (auto error = autofillTx(tx_json, context))
+    if (auto error = autofillTx(tx_json, context, lpLedger))
         return *error;
 
     STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
@@ -352,7 +378,7 @@ doSimulate(RPC::JsonContext& context)
     // Actually run the transaction through the transaction processor
     try
     {
-        return simulateTxn(context, transaction);
+        return simulateTxn(context, transaction, lpLedger);
     }
     // LCOV_EXCL_START this is just in case, so rippled doesn't crash
     catch (std::exception const& e)
