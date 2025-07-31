@@ -91,6 +91,21 @@ public:
     Expected<Hash, HostFunctionError>
     getParentLedgerHash() override;
 
+    Expected<Hash, HostFunctionError>
+    getLedgerAccountHash() override;
+
+    Expected<Hash, HostFunctionError>
+    getLedgerTransactionHash() override;
+
+    Expected<int32_t, HostFunctionError>
+    getBaseFee() override;
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(uint256 const& amendmentId) override;
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(std::string_view const& amendmentName) override;
+
     Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const& objId, int32_t cacheIdx) override;
 
@@ -132,6 +147,12 @@ public:
 
     Expected<int32_t, HostFunctionError>
     updateData(Slice const& data) override;
+
+    Expected<int32_t, HostFunctionError>
+    checkSignature(
+        Slice const& message,
+        Slice const& signature,
+        Slice const& pubkey) override;
 
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override;
@@ -191,6 +212,21 @@ public:
 
     Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) override;
+
+    Expected<Bytes, HostFunctionError>
+    getNFTIssuer(uint256 const& nftId) override;
+
+    Expected<std::uint32_t, HostFunctionError>
+    getNFTTaxon(uint256 const& nftId) override;
+
+    Expected<int32_t, HostFunctionError>
+    getNFTFlags(uint256 const& nftId) override;
+
+    Expected<int32_t, HostFunctionError>
+    getNFTTransferFee(uint256 const& nftId) override;
+
+    Expected<std::uint32_t, HostFunctionError>
+    getNFTSerial(uint256 const& nftId) override;
 
     Expected<int32_t, HostFunctionError>
     trace(std::string_view const& msg, Slice const& data, bool asHex) override;
