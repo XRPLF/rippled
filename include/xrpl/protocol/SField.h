@@ -74,7 +74,7 @@ class STCurrency;
     STYPE(STI_INT32, 10)                          \
     STYPE(STI_INT64, 11)                          \
                                                   \
-    /* 10-13 are reserved */                      \
+    /* 12-13 are reserved */                      \
     STYPE(STI_OBJECT, 14)                         \
     STYPE(STI_ARRAY, 15)                          \
                                                   \
