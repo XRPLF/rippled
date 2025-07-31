@@ -93,18 +93,24 @@ class Simulate_test : public beast::unit_test::suite
         Json::Value const& tx,
         std::function<void(Json::Value const&, Json::Value const&)> const&
             validate,
-        bool testSerialized = true)
+        bool testSerialized = true,
+        Json::Value const& extraParams = Json::objectValue)
     {
         env.close();
 
-        Json::Value params;
+        Json::Value params(extraParams);
         params[jss::tx_json] = tx;
         validate(env.rpc("json", "simulate", to_string(params)), tx);
 
         params[jss::binary] = true;
         validate(env.rpc("json", "simulate", to_string(params)), tx);
-        validate(env.rpc("simulate", to_string(tx)), tx);
-        validate(env.rpc("simulate", to_string(tx), "binary"), tx);
+        if (extraParams.size() == 0)
+        {
+            // haven't added support to CLI mode for ledger_index/ledger_hash
+            // yet
+            validate(env.rpc("simulate", to_string(tx)), tx);
+            validate(env.rpc("simulate", to_string(tx), "binary"), tx);
+        }
 
         if (testSerialized)
         {
@@ -116,14 +122,17 @@ class Simulate_test : public beast::unit_test::suite
                 strHex(parsed.object->getSerializer().peekData());
             if (BEAST_EXPECT(parsed.object.has_value()))
             {
-                Json::Value params;
+                Json::Value params(extraParams);
                 params[jss::tx_blob] = tx_blob;
                 validate(env.rpc("json", "simulate", to_string(params)), tx);
                 params[jss::binary] = true;
                 validate(env.rpc("json", "simulate", to_string(params)), tx);
             }
-            validate(env.rpc("simulate", tx_blob), tx);
-            validate(env.rpc("simulate", tx_blob, "binary"), tx);
+            if (extraParams.size() == 0)
+            {
+                validate(env.rpc("simulate", tx_blob), tx);
+                validate(env.rpc("simulate", tx_blob, "binary"), tx);
+            }
         }
 
         BEAST_EXPECTS(
@@ -158,9 +167,11 @@ class Simulate_test : public beast::unit_test::suite
             // No params
             Json::Value const params = Json::objectValue;
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 resp[jss::result][jss::error_message] ==
-                "Neither `tx_blob` nor `tx_json` included.");
+                    "None of `tx_blob`, `tx_json`, `tx_hash`, or `ctid` "
+                    "included.",
+                resp.toStyledString());
         }
         {
             // Providing both `tx_json` and `tx_blob`
@@ -1186,6 +1197,134 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testSuccessfulPastLedger()
+    {
+        testcase("Successful past transaction");
+
+        using namespace jtx;
+        Env env{*this};
+        Account const alice{"alice"};
+        auto const netID = env.app().config().NETWORK_ID;
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        auto const ledgerSeq = env.current()->info().seq;
+        auto const aliceSeq = env.seq(alice);
+        env.close();
+
+        Json::Value tx = pay(alice, env.master, XRP(700));
+        env(tx);
+        auto const txHash = to_string(env.tx()->getTransactionID());
+        auto const ctid = *RPC::encodeCTID(env.current()->info().seq, 0, netID);
+        env.close();
+
+        {
+            // tx should fail in the current ledger
+            Json::Value request = Json::objectValue;
+            request[jss::tx_json] = tx;
+            auto const result = env.rpc("json", "simulate", to_string(request));
+            BEAST_EXPECTS(
+                result[jss::result][jss::engine_result] ==
+                    "tecUNFUNDED_PAYMENT",
+                result.toStyledString());
+        }
+
+        {
+            auto validateOutput = [&](Json::Value const& resp,
+                                      Json::Value const& tx) {
+                auto result = resp[jss::result];
+                checkBasicReturnValidity(
+                    result, tx, aliceSeq, env.current()->fees().base);
+
+                BEAST_EXPECTS(
+                    result[jss::engine_result] == "tesSUCCESS",
+                    result.toStyledString());
+                BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+
+                if (BEAST_EXPECT(
+                        result.isMember(jss::meta) ||
+                        result.isMember(jss::meta_blob)))
+                {
+                    Json::Value const metadata = getJsonMetadata(result);
+
+                    if (BEAST_EXPECT(
+                            metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        BEAST_EXPECT(
+                            metadata[sfAffectedNodes.jsonName].size() == 2);
+                        auto const masterMode =
+                            metadata[sfAffectedNodes.jsonName][0u];
+                        if (BEAST_EXPECT(
+                                masterMode.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = masterMode[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECTS(
+                                finalFields[sfBalance] ==
+                                    (XRP(99999999700) -
+                                     env.current()->fees().base * 2)
+                                        .getJson(),
+                                metadata.toStyledString());
+                        }
+                        auto const aliceNode =
+                            metadata[sfAffectedNodes.jsonName][1u];
+                        if (BEAST_EXPECT(
+                                aliceNode.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = aliceNode[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(
+                                finalFields[sfBalance] ==
+                                (XRP(300) - env.current()->fees().base)
+                                    .getJson());
+                        }
+                    }
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                }
+            };
+
+            // test with autofill
+            Json::Value extraParams = Json::objectValue;
+            extraParams[jss::ledger_index] = ledgerSeq;
+            testTx(env, tx, validateOutput, true, extraParams);
+
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = aliceSeq;
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+
+            // test without autofill
+            testTx(env, tx, validateOutput, true, extraParams);
+
+            // test with hash
+            {
+                Json::Value params(extraParams);
+                params[jss::tx_hash] = txHash;
+                validateOutput(
+                    env.rpc("json", "simulate", to_string(params)), tx);
+            }
+            // test with ctid
+            {
+                Json::Value params(extraParams);
+                params[jss::ctid] = ctid;
+                validateOutput(
+                    env.rpc("json", "simulate", to_string(params)), tx);
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -1202,6 +1341,7 @@ public:
         testMultisignedBadPubKey();
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
+        testSuccessfulPastLedger();
     }
 };
 
