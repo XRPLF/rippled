@@ -386,6 +386,11 @@ isAmendmentEnabled_wrap(
             index);
     }
 
+    if (slice->size() > 64)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
     auto const str = std::string_view(
         reinterpret_cast<char const*>(slice->data()), slice->size());
     return returnResult(
