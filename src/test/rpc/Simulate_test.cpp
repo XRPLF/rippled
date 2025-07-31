@@ -167,9 +167,11 @@ class Simulate_test : public beast::unit_test::suite
             // No params
             Json::Value const params = Json::objectValue;
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 resp[jss::result][jss::error_message] ==
-                "Neither `tx_blob` nor `tx_json` included.");
+                    "None of `tx_blob`, `tx_json`, `tx_hash`, or `ctid` "
+                    "included.",
+                resp.toStyledString());
         }
         {
             // Providing both `tx_json` and `tx_blob`
@@ -1203,16 +1205,20 @@ class Simulate_test : public beast::unit_test::suite
         using namespace jtx;
         Env env{*this};
         Account const alice{"alice"};
+        auto const netID = env.app().config().NETWORK_ID;
         env.fund(XRP(1000), alice);
         env.close();
+
         auto const ledgerSeq = env.current()->info().seq;
         auto const aliceSeq = env.seq(alice);
         env.close();
 
-        env(pay(alice, env.master, XRP(700)));
+        Json::Value tx = pay(alice, env.master, XRP(700));
+        env(tx);
+        auto const txHash = to_string(env.tx()->getTransactionID());
+        auto const ctid = *RPC::encodeCTID(env.current()->info().seq, 0, netID);
         env.close();
 
-        Json::Value tx = pay(alice, env.master, XRP(400));
         {
             // tx should fail in the current ledger
             Json::Value request = Json::objectValue;
@@ -1260,11 +1266,12 @@ class Simulate_test : public beast::unit_test::suite
                                 modifiedNode[sfLedgerEntryType] ==
                                 "AccountRoot");
                             auto finalFields = modifiedNode[sfFinalFields];
-                            BEAST_EXPECT(
+                            BEAST_EXPECTS(
                                 finalFields[sfBalance] ==
-                                (XRP(99999999400) -
-                                 env.current()->fees().base * 2)
-                                    .getJson());
+                                    (XRP(99999999700) -
+                                     env.current()->fees().base * 2)
+                                        .getJson(),
+                                metadata.toStyledString());
                         }
                         auto const aliceNode =
                             metadata[sfAffectedNodes.jsonName][1u];
@@ -1278,7 +1285,7 @@ class Simulate_test : public beast::unit_test::suite
                             auto finalFields = modifiedNode[sfFinalFields];
                             BEAST_EXPECT(
                                 finalFields[sfBalance] ==
-                                (XRP(600) - env.current()->fees().base)
+                                (XRP(300) - env.current()->fees().base)
                                     .getJson());
                         }
                     }
@@ -1298,8 +1305,23 @@ class Simulate_test : public beast::unit_test::suite
             tx[sfSequence] = aliceSeq;
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
-            // // test without autofill
+            // test without autofill
             testTx(env, tx, validateOutput, true, extraParams);
+
+            // test with hash
+            {
+                Json::Value params(extraParams);
+                params[jss::tx_hash] = txHash;
+                validateOutput(
+                    env.rpc("json", "simulate", to_string(params)), tx);
+            }
+            // test with ctid
+            {
+                Json::Value params(extraParams);
+                params[jss::ctid] = ctid;
+                validateOutput(
+                    env.rpc("json", "simulate", to_string(params)), tx);
+            }
         }
     }
 

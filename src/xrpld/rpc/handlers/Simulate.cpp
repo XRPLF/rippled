@@ -19,10 +19,12 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/tx/apply.h>
+#include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -179,8 +181,98 @@ autofillTx(
 }
 
 static Json::Value
-getTxJsonFromParams(Json::Value const& params)
+getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
 {
+    auto const params = context.params;
+    uint256 hash;
+    if (params.isMember(jss::tx_hash))
+    {
+        auto const tx_hash = params[jss::tx_hash];
+        if (!tx_hash.isString())
+        {
+            return RPC::invalid_field_error(jss::tx_hash);
+        }
+        if (isCurrentLedger)
+        {
+            return RPC::make_param_error(
+                "Cannot use `tx_hash` without `ledger_index` or "
+                "`ledger_hash`.");
+        }
+        if (!hash.parseHex(context.params[jss::tx_hash].asString()))
+            return RPC::invalid_field_error(jss::tx_hash);
+    }
+    else if (params.isMember(jss::ctid))
+    {
+        auto const ctid = params[jss::ctid];
+        if (!ctid.isString())
+        {
+            return RPC::invalid_field_error(jss::ctid);
+        }
+        if (isCurrentLedger)
+        {
+            return RPC::make_param_error(
+                "Cannot use `ctid` without `ledger_index` or `ledger_hash`.");
+        }
+        auto decodedCTID =
+            RPC::decodeCTID(context.params[jss::ctid].asString());
+        auto const [lgr_seq, txn_idx, net_id] = *decodedCTID;
+        if (!ctid)
+        {
+            return RPC::invalid_field_error(jss::ctid);
+        }
+        if (auto const optHash =
+                context.app.getLedgerMaster().txnIdFromIndex(lgr_seq, txn_idx);
+            optHash)
+        {
+            hash = *optHash;
+        }
+        else
+        {
+            return RPC::make_error(rpcTXN_NOT_FOUND);
+        }
+    }
+    if (!hash)
+    {
+        return RPC::make_param_error(
+            "None of `tx_blob`, `tx_json`, `tx_hash`, or `ctid` included.");
+    }
+    using TxPair =
+        std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
+    auto ec{rpcSUCCESS};
+    std::variant<TxPair, TxSearched> v =
+        context.app.getMasterTransaction().fetch(hash, ec);
+    if (auto e = std::get_if<TxSearched>(&v))
+    {
+        return RPC::make_error(rpcTXN_NOT_FOUND);
+    }
+
+    auto [txn, _meta] = std::get<TxPair>(v);
+    Json::Value tx_json = txn->getJson(JsonOptions::none);
+    for (auto const field :
+         {jss::SigningPubKey,
+          jss::TxnSignature,
+          jss::ctid,
+          jss::hash,
+          jss::inLedger,
+          jss::ledger_index})
+    {
+        if (tx_json.isMember(field))
+            tx_json.removeMember(field);
+    }
+    if (tx_json.isMember(jss::Signers))
+    {
+        for (auto& signer : tx_json[jss::Signers])
+        {
+            signer[jss::Signer].removeMember(jss::TxnSignature);
+        }
+    }
+    return tx_json;
+}
+
+static Json::Value
+getTxJsonFromParams(RPC::JsonContext& context, bool const isCurrentLedger)
+{
+    auto const params = context.params;
     Json::Value tx_json;
 
     if (params.isMember(jss::tx_blob))
@@ -222,8 +314,15 @@ getTxJsonFromParams(Json::Value const& params)
     }
     else
     {
-        return RPC::make_param_error(
-            "Neither `tx_blob` nor `tx_json` included.");
+        auto const result = getTxJsonFromHistory(context, isCurrentLedger);
+        if (result.isMember(jss::error))
+        {
+            return result;
+        }
+        else
+        {
+            tx_json = result;
+        }
     }
 
     // basic sanity checks for transaction shape
@@ -368,7 +467,7 @@ doSimulate(RPC::JsonContext& context)
     bool const isCurrentLedger = checkIsCurrentLedger(context.params);
 
     // get JSON equivalent of transaction
-    Json::Value tx_json = getTxJsonFromParams(context.params);
+    Json::Value tx_json = getTxJsonFromParams(context, isCurrentLedger);
     if (tx_json.isMember(jss::error))
         return tx_json;
 
