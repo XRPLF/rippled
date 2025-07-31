@@ -108,9 +108,9 @@ public:
 
     /** Sets the gas used in the metadata */
     void
-    setGasUsed(std::uint32_t const& gasUsed)
+    setGasUsed(std::uint32_t const gasUsed)
     {
-        view_->setGasUsed(gasUsed);
+        gasUsed_ = gasUsed;
     }
 
     /** Sets the gas used in the metadata */
@@ -118,7 +118,6 @@ public:
     setWasmReturnCode(std::int32_t const wasmReturnCode)
     {
         wasmReturnCode_ = wasmReturnCode;
-        // view_->setWasmReturnCode(wasmReturnCode);
     }
 
     /** Discard changes and start fresh. */
@@ -172,6 +171,7 @@ private:
 
     // The ID of the batch transaction we are executing under, if seated.
     std::optional<uint256 const> parentBatchId_;
+    std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> wasmReturnCode_;
 };
 
