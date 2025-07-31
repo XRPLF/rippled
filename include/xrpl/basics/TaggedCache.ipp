@@ -403,7 +403,7 @@ template <
     class KeyEqual,
     class Mutex>
 template <class R>
-inline bool
+inline std::pair<bool, SharedPointerType>
 TaggedCache<
     Key,
     T,
@@ -415,7 +415,7 @@ TaggedCache<
     Mutex>::
     canonicalize(
         key_type const& key,
-        SharedPointerType& data,
+        SharedPointerType const& data,
         R&& replaceCallback)
 {
     // Return canonical value, store if needed, refresh in cache
@@ -431,7 +431,7 @@ TaggedCache<
             std::forward_as_tuple(key),
             std::forward_as_tuple(m_clock.now(), data));
         ++m_cache_count;
-        return false;
+        return std::make_pair(false, data);
     }
 
     Entry& entry = cit->second;
@@ -457,12 +457,7 @@ TaggedCache<
         {
             entry.ptr = data;
         }
-        else
-        {
-            data = entry.ptr.getStrong();
-        }
-
-        return true;
+        return std::make_pair(true, entry.ptr.getStrong());
     }
 
     auto cachedData = entry.lock();
@@ -473,20 +468,14 @@ TaggedCache<
         {
             entry.ptr = data;
         }
-        else
-        {
-            entry.ptr.convertToStrong();
-            data = cachedData;
-        }
-
+        entry.ptr.convertToStrong();
         ++m_cache_count;
-        return true;
+        return std::make_pair(true, entry.ptr.getStrong());
     }
 
     entry.ptr = data;
     ++m_cache_count;
-
-    return false;
+    return std::make_pair(false, data);
 }
 
 template <
@@ -512,8 +501,9 @@ TaggedCache<
         key_type const& key,
         SharedPointerType const& data)
 {
-    return canonicalize(
-        key, const_cast<SharedPointerType&>(data), []() { return true; });
+    auto [alreadyExists, _] = canonicalize(
+        key, data, []() { return true; });
+    return alreadyExists;
 }
 
 template <
@@ -537,7 +527,9 @@ TaggedCache<
     Mutex>::
     canonicalize_replace_client(key_type const& key, SharedPointerType& data)
 {
-    return canonicalize(key, data, []() { return false; });
+    auto [alreadyExists, itemInCache] = canonicalize(key, data, []() { return false; });
+    data = itemInCache;
+    return alreadyExists;
 }
 
 template <
