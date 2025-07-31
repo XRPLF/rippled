@@ -6,25 +6,23 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: export custom recipes
-      shell: bash
-    - name: add Ripple Conan remote
+    - name: add Conan remote
       if: env.CONAN_URL != ''
       shell: bash
       run: |
-        if conan remote list | grep -q "ripple"; then
-            conan remote remove ripple
-            echo "Removed conan remote ripple"
+        if conan remote list | grep -q "xrplf"; then
+            conan remote remove xrplf
+            echo "Removed conan remote xrplf"
         fi
-        conan remote add --index 0 ripple "${CONAN_URL}"
-        echo "Added conan remote ripple at ${CONAN_URL}"
-    - name: try to authenticate to Ripple Conan remote
-      if: env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
+        conan remote add --index 0 xrplf "${CONAN_URL}"
+        echo "Added conan remote xrplf at ${CONAN_URL}"
+    - name: try to authenticate to Conan remote
+      if: env.CONAN_LOGIN_USERNAME_XRPLF != '' && env.CONAN_PASSWORD_XRPLF != ''
       id: remote
       shell: bash
       run: |
-        echo "Authenticating to ripple remote..."
-        conan remote auth ripple --force
+        echo "Authenticating to xrplf remote..."
+        conan remote auth xrplf --force
         conan remote list-users
     - name: list missing binaries
       id: binaries
