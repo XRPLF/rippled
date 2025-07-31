@@ -21,7 +21,7 @@ concurrency:
 # This part of Conan configuration is specific to this workflow only; we do not want
 # to pollute conan/profiles directory with settings which might not work for others
 env:
-  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+  CONAN_URL: https://conan.ripplex.io
   CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
   CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
   CONAN_GLOBAL_CONF: |
@@ -85,11 +85,6 @@ jobs:
           echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
-      - name: export custom recipes
-        shell: bash
-        run: |
-          conan export --version 1.1.10 external/snappy
-          conan export --version 4.0.3 external/soci
       - name: add Ripple Conan remote
         if: env.CONAN_URL != ''
         shell: bash
