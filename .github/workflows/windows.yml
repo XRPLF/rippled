@@ -79,7 +79,7 @@ jobs:
       - name: configure Conan
         shell: bash
         run: |
-          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          echo "${{ env.CONAN_GLOBAL_CONF }}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           echo "Conan profile:"
           conan profile show
@@ -107,6 +107,6 @@ jobs:
         shell: bash
         if: ${{ matrix.configuration.tests }}
         run: |
-          cd ${build_dir}/${{ matrix.configuration.type }}
+          cd ${{ env.build_dir }}/${{ matrix.configuration.type }}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure

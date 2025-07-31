@@ -157,7 +157,7 @@ jobs:
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: check linking
         run: |
-          cd ${build_dir}
+          cd ${{ env.build_dir }}
           ldd ./rippled
           if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
             echo 'The binary is statically linked.'
@@ -167,7 +167,7 @@ jobs:
           fi
       - name: test
         run: |
-          cd ${build_dir}
+          cd ${{ env.build_dir }}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure
 
@@ -219,7 +219,7 @@ jobs:
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
-          cd ${build_dir}
+          cd ${{ env.build_dir }}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure
 
@@ -279,7 +279,7 @@ jobs:
       - name: move coverage report
         shell: bash
         run: |
-          mv "${build_dir}/coverage.xml" ./
+          mv "${{ env.build_dir }}/coverage.xml" ./
       - name: archive coverage report
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
@@ -343,14 +343,14 @@ jobs:
       - name: build
         run: |
           cd tests/conan
-          mkdir ${build_dir} && cd ${build_dir}
+          mkdir ${{ env.build_dir }} && cd ${{ env.build_dir }}
           conan install .. \
-            --settings:all build_type=${configuration} \
+            --settings:all build_type=${{ matrix.configuration }} \
             --output-folder . \
             --build missing
           cmake .. \
-            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=./build/${configuration}/generators/conan_toolchain.cmake \
-            -DCMAKE_BUILD_TYPE=${configuration}
+            -DCMAKE_TOOLCHAIN_FILE:FILEPATH=./build/${{ matrix.configuration }}/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
           cmake --build .
           ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
 
@@ -361,7 +361,7 @@ jobs:
         distro:
           - debian-bookworm
         compiler:
-          - clang-162
+          - clang-16
         configuration:
           - Debug
     needs: dependencies
@@ -394,9 +394,9 @@ jobs:
             remote_name: ${{ matrix.distro }}
         - name: prepare environment
           run: |
-            mkdir -p ${build_dir}
+            mkdir -p ${{ env.build_dir }}
             echo "SOURCE_DIR=$(pwd)" >> $GITHUB_ENV
-            echo "BUILD_DIR=$(pwd)/${build_dir}" >> $GITHUB_ENV
+            echo "BUILD_DIR=$(pwd)/${{ env.build_dir }}" >> $GITHUB_ENV
         - name: build with instrumentation
           run: |
             cd ${BUILD_DIR}

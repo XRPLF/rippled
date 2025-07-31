@@ -37,9 +37,7 @@ jobs:
           - Release
     runs-on: [self-hosted, macOS, mac-runner-m1]
     env:
-      # The `build` action requires these variables.
       build_dir: .build
-      NUM_PROCESSORS: 12
     steps:
       - name: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -82,7 +80,7 @@ jobs:
           clang --version
       - name: configure Conan
         run : |
-          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          echo "${{ env.CONAN_GLOBAL_CONF }}" >> $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           echo "Conan profile:"
           conan profile show
@@ -109,6 +107,6 @@ jobs:
           n=$(nproc)
           echo "Using $n test jobs"
 
-          cd ${build_dir}
+          cd ${{ env.build_dir }}
           ./rippled --unittest --unittest-jobs $n
           ctest -j $n --output-on-failure
