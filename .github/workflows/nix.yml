@@ -67,13 +67,16 @@ jobs:
         configuration:
           - Debug
           - Release
+        exclude:
+          - compiler: gcc
+            platform: debian-bookworm
+          - compiler: clang
+            platform: ubuntu-jammy
         include:
           - compiler: gcc
             compiler_version: 12
-            platform: ubuntu-jammy
           - compiler: clang
             compiler_version: 16
-            platform: debian-bookworm
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/${{ matrix.platform }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     steps:
@@ -123,13 +126,16 @@ jobs:
         configuration:
           - Debug
           - Release
+        exclude:
+          - compiler: gcc
+            platform: debian-bookworm
+          - compiler: clang
+            platform: ubuntu-jammy
         include:
           - compiler: gcc
             compiler_version: 12
-            platform: ubuntu-jammy
           - compiler: clang
             compiler_version: 16
-            platform: debian-bookworm
         cmake-args:
           -
           - "-Dunity=ON"
