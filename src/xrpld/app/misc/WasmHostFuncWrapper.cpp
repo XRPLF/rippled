@@ -381,7 +381,7 @@ isAmendmentEnabled_wrap(
         if (auto ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data()));
             *ret == 1)
         {
-            return returnResult(runtime, params, results, ret, index)
+            return returnResult(runtime, params, results, ret, index);
         }
     }
 
