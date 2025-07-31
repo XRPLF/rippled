@@ -37,6 +37,28 @@
 
 namespace ripple {
 
+namespace detail {
+template <typename T>
+constexpr bool IsStatelessLambdaV = std::is_empty_v<T> && std::is_constructible_v<T>;
+
+template<class Lambda, int=(Lambda{}(), 0)>
+constexpr std::true_type IsConstexpr(Lambda);
+constexpr std::false_type IsConstexpr(...);
+
+template <typename T>
+constexpr bool IsConstexprInvocableV = IsStatelessLambdaV<T> && decltype(IsConstexpr(T{})){};
+
+template <typename Lambda, bool ConstInvocable = IsConstexprInvocableV<Lambda>>
+constexpr bool ShouldTakeConstReferenceV = false;
+
+template <typename Lambda>
+constexpr bool ShouldTakeConstReferenceV<Lambda, true> = Lambda{}();
+
+template <typename Lambda>
+constexpr bool ShouldTakeConstReferenceV<Lambda, false> = true;
+
+}
+
 /** Map/cache combination.
     This class implements a cache and a map. The cache keeps objects alive
     in the map. The map allows multiple code paths that reference objects
@@ -118,6 +140,15 @@ public:
     del(key_type const& key, bool valid);
 
 public:
+
+    // We take a const reference if R (the replaceCallback) is a stateless
+    // lambda and can be evaluated at compile time, and it's evaluated to true,
+    // because there's no chance to update the parameter.
+    template <class R>
+    using SharedPointerTypeReference = std::conditional_t<
+        detail::ShouldTakeConstReferenceV<R>,
+        SharedPointerType const&,
+        SharedPointerType&>;
     /** Replace aliased objects with originals.
 
         Due to concurrency it is possible for two separate objects with
@@ -127,7 +158,7 @@ public:
 
         @param key The key corresponding to the object
         @param data A shared pointer to the data corresponding to the object.
-        @param replace Function that decides if cache should be replaced
+        @param replaceCallback Function that decides if cache should be replaced
 
         @return `true` If the key already existed.
     */
@@ -135,7 +166,7 @@ public:
     bool
     canonicalize(
         key_type const& key,
-        SharedPointerType& data,
+        SharedPointerTypeReference<R> data,
         R&& replaceCallback);
 
     bool

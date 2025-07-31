@@ -415,7 +415,7 @@ TaggedCache<
     Mutex>::
     canonicalize(
         key_type const& key,
-        SharedPointerType& data,
+        SharedPointerTypeReference<R> data,
         R&& replaceCallback)
 {
     // Return canonical value, store if needed, refresh in cache
@@ -457,7 +457,7 @@ TaggedCache<
         {
             entry.ptr = data;
         }
-        else
+        else if constexpr (std::assignable_from<decltype(data), decltype(entry.ptr.getStrong())>)
         {
             data = entry.ptr.getStrong();
         }
@@ -473,7 +473,7 @@ TaggedCache<
         {
             entry.ptr = data;
         }
-        else
+        else if constexpr (std::assignable_from<decltype(data), decltype(entry.ptr.getStrong())>)
         {
             entry.ptr.convertToStrong();
             data = cachedData;
@@ -513,7 +513,7 @@ TaggedCache<
         SharedPointerType const& data)
 {
     return canonicalize(
-        key, const_cast<SharedPointerType&>(data), []() { return true; });
+        key, data, []() { return true; });
 }
 
 template <
