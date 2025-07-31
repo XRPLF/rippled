@@ -417,11 +417,7 @@ WasmHostFunctionsImpl::updateData(Slice const& data)
     {
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
-    auto sle = ctx.view().peek(leKey);
-    if (!sle)
-        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-    sle->setFieldVL(sfData, data);
-    ctx.view().update(sle);
+    data_ = data;
     return 0;
 }
 
