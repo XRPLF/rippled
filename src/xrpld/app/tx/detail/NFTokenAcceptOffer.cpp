@@ -466,10 +466,13 @@ NFTokenAcceptOffer::transferNFToken(
         auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
         if (buyerOwnerCountAfter > buyerOwnerCountBefore)
         {
-            if (auto const reserve =
-                    view().fees().accountReserve(buyerOwnerCountAfter);
-                buyerBalance < reserve)
-                return tecINSUFFICIENT_RESERVE;
+            auto const sponsor = account_ == buyer
+                ? getTxReserveSponsor(ctx_.view(), ctx_.tx)
+                : std::optional<std::shared_ptr<SLE const>>();
+            if (auto const ret = checkInsufficientReserve(
+                    ctx_.view(), sleBuyer, buyerBalance, sponsor, 0);
+                !isTesSuccess(ret))
+                return ret;
         }
     }
 

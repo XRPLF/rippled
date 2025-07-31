@@ -1021,6 +1021,43 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     return std::nullopt;
 }
 
+TER
+checkInsufficientReserve(
+    ReadView const& view,
+    std::shared_ptr<SLE const> accSle,
+    STAmount const& accBalance,
+    std::optional<std::shared_ptr<SLE const>> const& _sponsorSle,
+    std::int32_t ownerCountDelta)
+{
+    if (_sponsorSle.has_value())
+    {
+        auto const sponsorSle = _sponsorSle.value();
+        auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
+        STAmount const sponsorReserve{view.fees().accountReserve(
+            sponsorSle->getFieldU32(sfOwnerCount),
+            sponsorSle->getFieldU32(sfSponsoredOwnerCount),
+            sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ownerCountDelta,
+            sponsorSle->isFieldPresent(sfSponsor),
+            sponsorSle->getFieldU32(sfSponsoringAccountCount))};
+
+        if (sponsorBalance < sponsorReserve)
+            return tecINSUFFICIENT_RESERVE;
+    }
+    else
+    {
+        STAmount const reserve{view.fees().accountReserve(
+            accSle->getFieldU32(sfOwnerCount) + ownerCountDelta,
+            accSle->getFieldU32(sfSponsoredOwnerCount),
+            accSle->getFieldU32(sfSponsoringOwnerCount),
+            accSle->isFieldPresent(sfSponsor),
+            accSle->getFieldU32(sfSponsoringAccountCount))};
+
+        if (accBalance < reserve)
+            return tecINSUFFICIENT_RESERVE;
+    }
+    return tesSUCCESS;
+}
+
 std::optional<std::shared_ptr<SLE>>
 getTxReserveSponsor(ApplyView& view, STTx const& tx)
 {
@@ -1037,8 +1074,24 @@ getTxReserveSponsor(ApplyView& view, STTx const& tx)
     return std::nullopt;
 }
 
+std::optional<std::shared_ptr<SLE const>>
+getTxReserveSponsor(ReadView const& view, STTx const& tx)
+{
+    if (tx.isFieldPresent(sfSponsor))
+    {
+        auto const sponsorObj = tx.getFieldObject(sfSponsor);
+        auto const flags = sponsorObj.getFlags();
+        auto const sponsorID = sponsorObj.getAccountID(sfAccount);
+        if (flags & tfSponsorReserve)
+        {
+            return view.read(keylet::account(sponsorID));
+        }
+    }
+    return std::nullopt;
+}
+
 std::optional<std::shared_ptr<SLE>>
-getLedgerEntryReserveSponsor(ApplyView& view, SLE::ref sle)
+getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> sle)
 {
     if (sle->isFieldPresent(sfSponsorAccount))
         return view.peek(keylet::account(sle->getAccountID(sfSponsorAccount)));

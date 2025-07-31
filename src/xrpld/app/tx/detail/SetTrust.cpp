@@ -402,9 +402,7 @@ SetTrust::doApply()
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
 
-    XRPAmount const reserveCreate(
-        (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                          : view().fees().accountReserve(uOwnerCount + 1));
+    bool const freeTrustLine = uOwnerCount < 2;
 
     std::uint32_t uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(
@@ -454,6 +452,8 @@ SetTrust::doApply()
 
     SLE::pointer sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));
+
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
 
     if (sleRippleState)
     {
@@ -678,7 +678,9 @@ SetTrust::doApply()
                 view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
-        else if (bReserveIncrease && mPriorBalance < reserveCreate)
+        else if (auto const ret = checkInsufficientReserve(
+                     view(), sle, mPriorBalance, sponsor, 0);
+                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
                                 "add trust line.";
@@ -707,8 +709,14 @@ SetTrust::doApply()
             << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (mPriorBalance < reserveCreate)  // Reserve is not scaled by
-                                             // load.
+    else if (auto const ret = checkInsufficientReserve(
+                 ctx_.view(),
+                 sle,
+                 mPriorBalance,
+                 sponsor,
+                 1);
+             !freeTrustLine &&
+             !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";

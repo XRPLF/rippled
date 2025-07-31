@@ -225,13 +225,14 @@ MPTokenAuthorize::authorize(
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
-        XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                              : view.fees().accountReserve(uOwnerCount + 1));
-
-        if (args.priorBalance < reserveCreate)
-            return tecINSUFFICIENT_RESERVE;
+        auto const sponsor = getTxReserveSponsor(view, tx);
+        if (sleAcct->getFieldU32(sfOwnerCount) >= 2)
+        {
+            if (auto const ret = checkInsufficientReserve(
+                    view, sleAcct, args.priorBalance, sponsor, 1);
+                !isTesSuccess(ret))
+                return ret;
+        }
 
         auto const mptokenKey =
             keylet::mptoken(args.mptIssuanceID, args.account);
@@ -245,7 +246,6 @@ MPTokenAuthorize::authorize(
         view.insert(mptoken);
 
         // Update owner count.
-        auto const sponsor = getTxReserveSponsor(view, tx);
         adjustOwnerCount(view, sleAcct, sponsor, 1, journal);
         addSponsorToLedgerEntry(mptoken, sponsor);
 

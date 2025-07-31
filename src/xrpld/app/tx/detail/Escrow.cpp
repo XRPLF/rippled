@@ -495,16 +495,21 @@ EscrowCreate::doApply()
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
-    auto const reserve =
-        ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret = checkInsufficientReserve(
+            ctx_.view(), sle, mSourceBalance, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
-    if (mSourceBalance < reserve)
-        return tecINSUFFICIENT_RESERVE;
-
-    // Check reserve and funds availability
     if (isXRP(amount))
     {
-        if (mSourceBalance < reserve + STAmount(amount).xrp())
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                sle,
+                mSourceBalance - STAmount(amount).xrp(),
+                std::optional<std::shared_ptr<SLE const>>(),
+                1);
+            !isTesSuccess(ret))
             return tecUNFUNDED;
     }
 
@@ -599,7 +604,6 @@ EscrowCreate::doApply()
     }
 
     // increment owner count
-    auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
     adjustOwnerCount(ctx_.view(), sle, sponsor, 1, ctx_.journal);
     addSponsorToLedgerEntry(slep, sponsor);
     ctx_.view().update(sle);
@@ -841,8 +845,10 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
     {
         // Can the account cover the trust line's reserve?
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            xrpBalance < view.fees().accountReserve(ownerCount + 1))
+        auto const sponsor = getTxReserveSponsor(view, tx);
+        if (auto const ret =
+                checkInsufficientReserve(view, sleDest, xrpBalance, sponsor, 1);
+            !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficent reserve to create line.";
@@ -968,11 +974,11 @@ escrowUnlockApplyHelper<MPTIssue>(
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
         createAsset && !receiverIssuer)
     {
-        if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            xrpBalance < view.fees().accountReserve(ownerCount + 1))
-        {
-            return tecINSUFFICIENT_RESERVE;
-        }
+        auto const sponsor = getTxReserveSponsor(view, tx);
+        if (auto const ret =
+                checkInsufficientReserve(view, sleDest, xrpBalance, sponsor, 1);
+            !isTesSuccess(ret))
+            return ret;
 
         if (auto const ter =
                 MPTokenAuthorize::createMPToken(view, mptID, receiver, 0);
@@ -982,7 +988,6 @@ escrowUnlockApplyHelper<MPTIssue>(
         }
 
         // update owner count.
-        auto const sponsor = getTxReserveSponsor(view, tx);
         adjustOwnerCount(view, sleDest, sponsor, 1, journal);
         addSponsorToLedgerEntry(sleDest, sponsor);
     }

@@ -452,11 +452,22 @@ areCompatible(
     beast::Journal::Stream& s,
     char const* reason);
 
+TER
+checkInsufficientReserve(
+    ReadView const& view,
+    std::shared_ptr<SLE const> accSle,
+    STAmount const& accBalance,
+    std::optional<std::shared_ptr<SLE const>> const& _sponsorSle,
+    std::int32_t ownerCountDelta);
+
 std::optional<std::shared_ptr<SLE>>
 getTxReserveSponsor(ApplyView& view, STTx const& tx);
 
+std::optional<std::shared_ptr<SLE const>>
+getTxReserveSponsor(ReadView const& view, STTx const& tx);
+
 std::optional<std::shared_ptr<SLE>>
-getLedgerEntryReserveSponsor(ApplyView& view, SLE::ref sle);
+getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> sle);
 
 void
 addSponsorToLedgerEntry(

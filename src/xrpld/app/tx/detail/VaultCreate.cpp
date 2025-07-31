@@ -177,9 +177,10 @@ VaultCreate::doApply()
     auto const sponsor = getTxReserveSponsor(view(), tx);
     adjustOwnerCount(view(), owner, sponsor, 1, j_);
     addSponsorToLedgerEntry(vault, sponsor);
-    auto ownerCount = owner->at(sfOwnerCount);
-    if (mPriorBalance < view().fees().accountReserve(ownerCount))
-        return tecINSUFFICIENT_RESERVE;
+    if (auto const ret =
+            checkInsufficientReserve(view(), owner, mPriorBalance, sponsor, 0);
+        !isTesSuccess(ret))
+        return ret;
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)

@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/check.h>
 #include <test/jtx/did.h>
 #include <test/jtx/sponsor.h>
@@ -99,7 +100,20 @@ public:
         Account const bob("bob");
         Account const sponsor("sponsor");
 
-        env.fund(XRP(10000), alice, bob, sponsor);
+        auto const reserve = env.current()->fees().reserve;
+        auto const increment = env.current()->fees().increment;
+
+        env.fund(XRP(10000), alice, bob);
+        env.fund(drops(reserve) + drops(increment) - drops(1), sponsor);
+
+        // check sponsor balance
+        env(check::create(alice, bob, XRP(1)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            sponsor::sig(sponsor),
+            ter(tecINSUFFICIENT_RESERVE));
+
+        env(pay(alice, sponsor, drops(1)));
+        env.close();
 
         // CheckCreate
         auto const seq = env.seq(alice);

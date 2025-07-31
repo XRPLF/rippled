@@ -99,11 +99,11 @@ DelegateSet::doApply()
         return tesSUCCESS;
     }
 
-    STAmount const reserve{ctx_.view().fees().accountReserve(
-        sleOwner->getFieldU32(sfOwnerCount) + 1)};
-
-    if (mPriorBalance < reserve)
-        return tecINSUFFICIENT_RESERVE;
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret = checkInsufficientReserve(
+            view(), sleOwner, mPriorBalance, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
     if (!permissions.empty())
@@ -123,7 +123,6 @@ DelegateSet::doApply()
 
         (*sle)[sfOwnerNode] = *page;
         ctx_.view().insert(sle);
-        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
         adjustOwnerCount(ctx_.view(), sleOwner, sponsor, 1, ctx_.journal);
         addSponsorToLedgerEntry(sle, sponsor);
     }

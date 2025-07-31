@@ -148,12 +148,11 @@ CredentialCreate::doApply()
     if (!sleIssuer)
         return tefINTERNAL;
 
-    {
-        STAmount const reserve{view().fees().accountReserve(
-            sleIssuer->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret = checkInsufficientReserve(
+            view(), sleIssuer, mPriorBalance, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     sleCred->setAccountID(sfSubject, subject);
     sleCred->setAccountID(sfIssuer, account_);
@@ -174,7 +173,6 @@ CredentialCreate::doApply()
             return tecDIR_FULL;
         sleCred->setFieldU64(sfIssuerNode, *page);
 
-        auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
         adjustOwnerCount(view(), sleIssuer, sponsor, 1, j_);
         addSponsorToLedgerEntry(sleCred, sponsor);
     }
@@ -372,12 +370,11 @@ CredentialAccept::doApply()
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;
 
-    {
-        STAmount const reserve{view().fees().accountReserve(
-            sleSubject->getFieldU32(sfOwnerCount) + 1)};
-        if (mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret = checkInsufficientReserve(
+            view(), sleSubject, mPriorBalance, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
@@ -394,8 +391,7 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    auto const currentSponsor = getTxReserveSponsor(view(), ctx_.tx);
-    adjustOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
+    adjustOwnerCount(view(), sleIssuer, sponsor, -1, j_);
     auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
     adjustOwnerCount(view(), sleSubject, newSponsor, 1, j_);
     addSponsorToLedgerEntry(sleCred, newSponsor);

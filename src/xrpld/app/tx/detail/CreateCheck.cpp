@@ -177,13 +177,11 @@ CreateCheck::doApply()
     // A check counts against the reserve of the issuing account, but we
     // check the starting balance because we want to allow dipping into the
     // reserve to pay fees.
-    {
-        STAmount const reserve{
-            view().fees().accountReserve(sle->getFieldU32(sfOwnerCount) + 1)};
-
-        if (mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    if (auto const ret =
+            checkInsufficientReserve(view(), sle, mPriorBalance, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     // Note that we use the value from the sequence or ticket as the
     // Check sequence.  For more explanation see comments in SeqProxy.h.
@@ -243,7 +241,6 @@ CreateCheck::doApply()
         sleCheck->setFieldU64(sfOwnerNode, *page);
     }
     // If we succeeded, the new entry counts against the creator's reserve.
-    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
     adjustOwnerCount(view(), sle, sponsor, 1, viewJ);
     addSponsorToLedgerEntry(sleCheck, sponsor);
     return tesSUCCESS;

@@ -88,14 +88,12 @@ addSLE(
         return tefINTERNAL;
 
     // Check reserve availability for new object creation
-    {
-        auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-        auto const reserve =
-            ctx.view().fees().accountReserve((*sleAccount)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
-    }
+    auto const sponsor = getTxReserveSponsor(ctx.view(), ctx.tx);
+    auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
+    if (auto const ret = checkInsufficientReserve(
+            ctx.view(), sleAccount, balance, sponsor, 1);
+        !isTesSuccess(ret))
+        return ret;
 
     // Add ledger object to ledger
     ctx.view().insert(sle);
@@ -108,7 +106,6 @@ addSLE(
             return tecDIR_FULL;
         (*sle)[sfOwnerNode] = *page;
     }
-    auto const sponsor = getTxReserveSponsor(ctx.view(), ctx.tx);
     adjustOwnerCount(ctx.view(), sleAccount, sponsor, 1, ctx.journal);
     addSponsorToLedgerEntry(sle, sponsor);
     ctx.view().update(sleAccount);

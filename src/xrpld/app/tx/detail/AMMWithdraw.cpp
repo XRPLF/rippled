@@ -339,6 +339,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (subTxType & tfTwoAsset)
             return equalWithdrawLimit(
                 sb,
+                ctx_.tx,
                 *ammSle,
                 ammAccountID,
                 amountBalance,
@@ -350,6 +351,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (subTxType & tfOneAssetLPToken || subTxType & tfOneAssetWithdrawAll)
             return singleWithdrawTokens(
                 sb,
+                ctx_.tx,
                 *ammSle,
                 ammAccountID,
                 amountBalance,
@@ -360,6 +362,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (subTxType & tfLimitLPToken)
             return singleWithdrawEPrice(
                 sb,
+                ctx_.tx,
                 *ammSle,
                 ammAccountID,
                 amountBalance,
@@ -370,6 +373,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         if (subTxType & tfSingleAsset)
             return singleWithdraw(
                 sb,
+                ctx_.tx,
                 *ammSle,
                 ammAccountID,
                 amountBalance,
@@ -380,6 +384,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         {
             return equalWithdrawTokens(
                 sb,
+                ctx_.tx,
                 *ammSle,
                 ammAccountID,
                 amountBalance,
@@ -435,6 +440,7 @@ AMMWithdraw::doApply()
 std::pair<TER, STAmount>
 AMMWithdraw::withdraw(
     Sandbox& view,
+    STTx const& tx,
     SLE const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
@@ -448,6 +454,7 @@ AMMWithdraw::withdraw(
     STAmount newLPTokenBalance;
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) = withdraw(
         view,
+        tx,
         ammSle,
         ammAccount,
         account_,
@@ -467,6 +474,7 @@ AMMWithdraw::withdraw(
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMWithdraw::withdraw(
     Sandbox& view,
+    STTx const& tx,
     SLE const& ammSle,
     AccountID const& ammAccount,
     AccountID const& account,
@@ -591,13 +599,18 @@ AMMWithdraw::withdraw(
             auto const balance = (*sleAccount)[sfBalance].xrp();
             std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
 
-            // See also SetTrust::doApply()
-            XRPAmount const reserve(
-                (ownerCount < 2) ? XRPAmount(beast::zero)
-                                 : view.fees().accountReserve(ownerCount + 1));
-
-            if (std::max(priorBalance, balance) < reserve)
-                return tecINSUFFICIENT_RESERVE;
+            if (ownerCount >= 2)
+            {
+                auto const sponsor = getTxReserveSponsor(view, tx);
+                if (auto const ret = checkInsufficientReserve(
+                        view,
+                        sleAccount,
+                        std::max(priorBalance, balance),
+                        sponsor,
+                        1);
+                    !isTesSuccess(ret))
+                    return ret;
+            }
         }
         return tesSUCCESS;
     };
@@ -685,6 +698,7 @@ adjustLPTokensIn(
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawTokens(
     Sandbox& view,
+    STTx const& tx,
     SLE const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
@@ -699,6 +713,7 @@ AMMWithdraw::equalWithdrawTokens(
     std::tie(ter, newLPTokenBalance, std::ignore, std::ignore) =
         equalWithdrawTokens(
             view,
+            tx,
             ammSle,
             account_,
             ammAccount,
@@ -749,6 +764,7 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
 std::tuple<TER, STAmount, STAmount, std::optional<STAmount>>
 AMMWithdraw::equalWithdrawTokens(
     Sandbox& view,
+    STTx const& tx,
     SLE const& ammSle,
     AccountID const account,
     AccountID const& ammAccount,
@@ -770,6 +786,7 @@ AMMWithdraw::equalWithdrawTokens(
         {
             return withdraw(
                 view,
+                tx,
                 ammSle,
                 ammAccount,
                 account,
@@ -805,6 +822,7 @@ AMMWithdraw::equalWithdrawTokens(
 
         return withdraw(
             view,
+            tx,
             ammSle,
             ammAccount,
             account,
@@ -857,6 +875,7 @@ AMMWithdraw::equalWithdrawTokens(
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawLimit(
     Sandbox& view,
+    STTx const& tx,
     SLE const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
@@ -881,6 +900,7 @@ AMMWithdraw::equalWithdrawLimit(
     {
         return withdraw(
             view,
+            tx,
             ammSle,
             ammAccount,
             amountBalance,
@@ -914,6 +934,7 @@ AMMWithdraw::equalWithdrawLimit(
         return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
     return withdraw(
         view,
+        tx,
         ammSle,
         ammAccount,
         amountBalance,
@@ -932,6 +953,7 @@ AMMWithdraw::equalWithdrawLimit(
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdraw(
     Sandbox& view,
+    STTx const& tx,
     SLE const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
@@ -958,6 +980,7 @@ AMMWithdraw::singleWithdraw(
         return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     return withdraw(
         view,
+        tx,
         ammSle,
         ammAccount,
         amountBalance,
@@ -981,6 +1004,7 @@ AMMWithdraw::singleWithdraw(
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawTokens(
     Sandbox& view,
+    STTx const& tx,
     SLE const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
@@ -1000,6 +1024,7 @@ AMMWithdraw::singleWithdrawTokens(
     {
         return withdraw(
             view,
+            tx,
             ammSle,
             ammAccount,
             amountBalance,
@@ -1035,6 +1060,7 @@ AMMWithdraw::singleWithdrawTokens(
 std::pair<TER, STAmount>
 AMMWithdraw::singleWithdrawEPrice(
     Sandbox& view,
+    STTx const& tx,
     SLE const& ammSle,
     AccountID const& ammAccount,
     STAmount const& amountBalance,
@@ -1080,6 +1106,7 @@ AMMWithdraw::singleWithdrawEPrice(
     {
         return withdraw(
             view,
+            tx,
             ammSle,
             ammAccount,
             amountBalance,

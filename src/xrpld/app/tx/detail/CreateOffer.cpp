@@ -813,10 +813,10 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tefINTERNAL, false};
 
     {
-        XRPAmount reserve =
-            sb.fees().accountReserve(sleCreator->getFieldU32(sfOwnerCount) + 1);
-
-        if (mPriorBalance < reserve)
+        auto const sponsor = getTxReserveSponsor(sb, ctx_.tx);
+        if (auto const ret = checkInsufficientReserve(
+                sb, sleCreator, mPriorBalance, sponsor, 1);
+            !isTesSuccess(ret))
         {
             // If we are here, the signing account had an insufficient reserve
             // *prior* to our processing. If something actually crossed, then

@@ -352,9 +352,15 @@ NFTokenMint::doApply()
             view().read(keylet::account(account_))->getFieldU32(sfOwnerCount);
         ownerCountAfter > ownerCountBefore)
     {
-        if (auto const reserve = view().fees().accountReserve(ownerCountAfter);
-            mPriorBalance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                view().read(keylet::account(account_)),
+                mPriorBalance,
+                sponsor,
+                0);
+            !isTesSuccess(ret))
+            return ret;
     }
     return tesSUCCESS;
 }

@@ -1066,11 +1066,11 @@ applyCreateAccountAttestations(
 
             // Check reserve
             auto const balance = (*sleDoor)[sfBalance];
-            auto const reserve =
-                psb.fees().accountReserve((*sleDoor)[sfOwnerCount] + 1);
-
-            if (balance < reserve)
-                return Unexpected(tecINSUFFICIENT_RESERVE);
+            auto const sponsor = std::optional<std::shared_ptr<SLE const>>();
+            if (auto const ret =
+                    checkInsufficientReserve(psb, sleDoor, balance, sponsor, 1);
+                !isTesSuccess(ret))
+                return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
         }
 
         std::vector<Attestations::AttestationCreateAccount> atts;
@@ -1507,11 +1507,11 @@ XChainCreateBridge::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve =
-            ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (auto const ret =
+                checkInsufficientReserve(ctx.view, sleAcc, balance, sponsor, 1);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     return tesSUCCESS;
@@ -2074,11 +2074,11 @@ XChainCreateClaimID::preclaim(PreclaimContext const& ctx)
             return terNO_ACCOUNT;
 
         auto const balance = (*sleAcc)[sfBalance];
-        auto const reserve =
-            ctx.view.fees().accountReserve((*sleAcc)[sfOwnerCount] + 1);
-
-        if (balance < reserve)
-            return tecINSUFFICIENT_RESERVE;
+        auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
+        if (auto const ret =
+                checkInsufficientReserve(ctx.view, sleAcc, balance, sponsor, 1);
+            !isTesSuccess(ret))
+            return ret;
     }
 
     return tesSUCCESS;
