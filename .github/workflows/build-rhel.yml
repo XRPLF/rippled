@@ -21,10 +21,10 @@ on:
     secrets:
       conan_remote_username:
         description: 'The username for logging into the Conan remote.'
-        required: true
+        required: false
       conan_remote_password:
         description: 'The password for logging into the Conan remote.'
-        required: true
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-rhel
@@ -188,14 +188,14 @@ jobs:
           conan_global_conf: ${{ inputs.conan_global_conf }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_url: ${{ inputs.conan_remote_url }}
-          conan_remote_username: ${{ secrets.conan_remote_username }}
-          conan_remote_password: ${{ secrets.conan_remote_password }}
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
-          conan_remote_name: ${{ matrix.os.distro }}-${{ matrix.os.release }}
+          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_username: ${{ secrets.conan_remote_username }}
+          conan_remote_password: ${{ secrets.conan_remote_password }}
       - name: Build and test the binary
         uses: ./.github/actions/build-test
         with:

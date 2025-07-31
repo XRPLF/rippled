@@ -13,8 +13,18 @@ inputs:
     description: 'The name of the Conan remote to use.'
     required: true
     type: string
+  conan_remote_username:
+    description: 'The username for logging into the Conan remote.'
+    required: false
+    type: string
+  conan_remote_password:
+    description: 'The password for logging into the Conan remote.'
+    required: false
+    type: string
 
-# Install the Conan dependencies and upload them to the specified remote.
+# Install the Conan dependencies and upload them to the specified remote. The
+# login and upload steps are skipped if the Conan credentials are not provided,
+# which will be the case for forked repositories.
 runs:
   using: composite
   steps:
@@ -30,6 +40,13 @@ runs:
           --options:host '&:xrpld=True' \
           --settings:all build_type=${{ inputs.build_type }} \
           ..
+    - name: Log into Conan remote
+      shell: bash
+      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
+      run: |
+        conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
+        conan remote list-users
     - name: Upload Conan dependencies
       shell: bash
+      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
       run: conan upload '*' --confirm --check --force --remote ${{ inputs.conan_remote_name }}

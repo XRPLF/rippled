@@ -124,13 +124,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Check configuration
-        run: |
-          echo "Checking path"
-          $env:PATH -split ';' | Sort-Object
-
-          echo "Checking environment variables."
-          ls env:
+#      - name: Check configuration
+#        run: |
+#          echo "Checking path"
+#          $env:PATH -split ';' | Sort-Object
+#
+#          echo "Checking environment variables."
+#          ls env:
       - name: choose Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
@@ -150,14 +150,14 @@ jobs:
           conan_global_conf: ${{ inputs.conan_global_conf }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_url: ${{ inputs.conan_remote_url }}
-          conan_remote_username: ${{ secrets.conan_remote_username }}
-          conan_remote_password: ${{ secrets.conan_remote_password }}
       - name: Install dependencies
         uses: ./.github/actions/install-dependencies
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           conan_remote_name: 'windows'
+          conan_remote_username: ${{ secrets.conan_remote_username }}
+          conan_remote_password: ${{ secrets.conan_remote_password }}
       - name: Build and test the binary
         uses: ./.github/actions/build-test
         with:
