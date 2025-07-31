@@ -378,12 +378,11 @@ isAmendmentEnabled_wrap(
 
     if (slice->size() == uint256::bytes)
     {
-        return returnResult(
-            runtime,
-            params,
-            results,
-            hf->isAmendmentEnabled(uint256::fromVoid(slice->data())),
-            index);
+        if (auto ret = hf->isAmendmentEnabled(uint256::fromVoid(slice->data()));
+            *ret == 1)
+        {
+            return returnResult(runtime, params, results, ret, index)
+        }
     }
 
     if (slice->size() > 64)
