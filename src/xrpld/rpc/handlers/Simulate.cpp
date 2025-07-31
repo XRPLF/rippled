@@ -241,7 +241,7 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
     auto ec{rpcSUCCESS};
     std::variant<TxPair, TxSearched> v =
         context.app.getMasterTransaction().fetch(hash, ec);
-    if (auto e = std::get_if<TxSearched>(&v))
+    if (std::get_if<TxSearched>(&v))
     {
         return RPC::make_error(rpcTXN_NOT_FOUND);
     }
