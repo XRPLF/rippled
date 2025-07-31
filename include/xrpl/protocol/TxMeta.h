@@ -178,7 +178,7 @@ public:
         wasmReturnCode_ = wasmReturnCode;
     }
 
-    std::uint32_t
+    std::int32_t
     getWasmReturnCode() const
     {
         XRPL_ASSERT(

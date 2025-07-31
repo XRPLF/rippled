@@ -61,7 +61,6 @@ ApplyContext::apply(TER ter)
 {
     if (wasmReturnCode_.has_value())
     {
-        // If we have a wasm return code, we set it in the view.
         view_->setWasmReturnCode(*wasmReturnCode_);
     }
     return view_->apply(

@@ -135,9 +135,9 @@ ApplyStateTable::apply(
             meta.setDeliveredAmount(*deliver);
         if (parentBatchId)
             meta.setParentBatchId(*parentBatchId);
-        if (gasUsed)
+        if (gasUsed.has_value())
             meta.setGasUsed(*gasUsed);
-        if (wasmReturnCode)
+        if (wasmReturnCode.has_value())
             meta.setWasmReturnCode(*wasmReturnCode);
         Mods newMod;
         for (auto& item : items_)

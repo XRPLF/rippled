@@ -115,9 +115,10 @@ public:
 
     /** Sets the gas used in the metadata */
     void
-    setWasmReturnCode(std::uint32_t const& wasmReturnCode)
+    setWasmReturnCode(std::int32_t const wasmReturnCode)
     {
         wasmReturnCode_ = wasmReturnCode;
+        // view_->setWasmReturnCode(wasmReturnCode);
     }
 
     /** Discard changes and start fresh. */
