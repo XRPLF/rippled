@@ -34,6 +34,7 @@ env:
   # downloads, uploads, and build jobs. The verbosity is set to verbose to
   # provide more information during the build process.
   CONAN_GLOBAL_CONF: |
+    core:non_interactive=True
     core.download:parallel={{ os.cpu_count() }}
     core.upload:parallel={{ os.cpu_count() }}
     tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
@@ -195,7 +196,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Check configuration
-        shell: bash
         run: |
           echo "Checking path"
           echo ${PATH} | tr ':' '\n'
@@ -203,7 +203,6 @@ jobs:
           echo "Checking environment variables."
           env | sort
       - name: Check versions
-        shell: bash
         run: |
           echo "Checking CMake version."
           cmake --version
@@ -235,7 +234,7 @@ jobs:
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
-          cmake_args: ${{ matrix.cmake_args }}
+          cmake_args: ${{ matrix.cmake_args }} ${{ matrix.os.compiler_name == 'gcc' && matrix.os.compiler_version == '13' && '-Dreference_fee=500' || '' }} ${{ matrix.os.compiler_name == 'gcc' && matrix.os.compiler_version == '14' && '-Dcodecov=ON' || '' }} ${{ matrix.os.compiler_name == 'clang' && matrix.os.compiler_version == '17' && '-Dreference_fee=1000' || '' }} ${{ matrix.os.compiler_name == 'clang' && matrix.os.compiler_version == '18' && '-Dinstrumentation=ON' || '' }}
           cmake_generator: 'Ninja'
           cmake_target: 'all'
           os: 'Linux'

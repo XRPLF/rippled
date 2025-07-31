@@ -34,6 +34,7 @@ env:
   # downloads, uploads, and build jobs. The verbosity is set to verbose to
   # provide more information during the build process.
   CONAN_GLOBAL_CONF: |
+    core:non_interactive=True
     core.download:parallel={{ os.cpu_count() }}
     core.upload:parallel={{ os.cpu_count() }}
     tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
@@ -182,7 +183,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Check configuration
-        shell: bash
         run: |
           echo "Checking path"
           echo ${PATH} | tr ':' '\n'
@@ -190,7 +190,6 @@ jobs:
           echo "Checking environment variables."
           env | sort
       - name: Check versions
-        shell: bash
         run: |
           echo "Checking CMake version."
           cmake --version
