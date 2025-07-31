@@ -33,14 +33,6 @@ runs:
           conan remote add --index 1 ${{ inputs.remote_name }} ${{ env.CONAN_REMOTE_URL }}/${{ inputs.remote_name }}
           echo "Added new conan remote '${{ inputs.remote_name }}' at ${{ env.CONAN_REMOTE_URL }}/${{ inputs.remote_name }}."
         fi
-    - name: Log into Conan remotes
-      if: env.CONAN_REMOTE_URL != '' && env.CONAN_REMOTE_USERNAME != '' && env.CONAN_REMOTE_PASSWORD != ''
-      id: remote
-      shell: bash
-      run: |
-        conan remote login recipes "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
-        conan remote login ${{ inputs.remote_name }} "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
-        conan remote list-users
     - name: list missing binaries
       id: binaries
       shell: bash
