@@ -39,7 +39,8 @@ static Expected<std::uint32_t, Json::Value>
 getAutofillSequence(
     Json::Value const& tx_json,
     RPC::JsonContext& context,
-    std::shared_ptr<ReadView const> lpLedger)
+    std::shared_ptr<ReadView const> lpLedger,
+    bool const isCurrentLedger)
 {
     // autofill Sequence
     bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
@@ -59,7 +60,11 @@ getAutofillSequence(
     }
     std::shared_ptr<SLE const> const sle =
         lpLedger->read(keylet::account(*srcAddressID));
-    if (!hasTicketSeq && !sle)
+    if (hasTicketSeq)
+    {
+        return 0;
+    }
+    if (!sle)
     {
         JLOG(context.app.journal("Simulate").debug())
             << "Failed to find source account "
@@ -67,11 +72,7 @@ getAutofillSequence(
 
         return Unexpected(rpcError(rpcSRC_ACT_NOT_FOUND));
     }
-    if (hasTicketSeq)
-    {
-        return 0;
-    }
-    if (!lpLedger->open())
+    if (!isCurrentLedger)
         return sle->getFieldU32(sfSequence);
 
     return context.app.getTxQ().nextQueuableSeq(sle).value();
@@ -81,14 +82,15 @@ static std::optional<Json::Value>
 autofillTx(
     Json::Value& tx_json,
     RPC::JsonContext& context,
-    std::shared_ptr<ReadView const> lpLedger)
+    std::shared_ptr<ReadView const> lpLedger,
+    bool const isCurrentLedger)
 {
     if (!tx_json.isMember(jss::Fee))
     {
         // autofill Fee
         // Must happen after all the other autofills happen
         // Error handling/messaging works better that way
-        if (lpLedger->open())
+        if (isCurrentLedger)
         {
             auto feeOrError = RPC::getCurrentNetworkFee(
                 context.role,
@@ -159,7 +161,8 @@ autofillTx(
 
     if (!tx_json.isMember(jss::Sequence))
     {
-        auto const seq = getAutofillSequence(tx_json, context, lpLedger);
+        auto const seq =
+            getAutofillSequence(tx_json, context, lpLedger, isCurrentLedger);
         if (!seq)
             return seq.error();
         tx_json[sfSequence.jsonName] = *seq;
@@ -241,11 +244,13 @@ static Json::Value
 simulateTxn(
     RPC::JsonContext& context,
     std::shared_ptr<Transaction> transaction,
-    std::shared_ptr<ReadView const> lpLedger)
+    std::shared_ptr<ReadView const> lpLedger,
+    bool const isCurrentLedger)
 {
     Json::Value jvResult;
     // Process the transaction
-    OpenView view = OpenView(&*lpLedger);
+    OpenView view = isCurrentLedger ? *context.app.openLedger().current()
+                                    : OpenView(&*lpLedger);
     auto const result = context.app.getTxQ().apply(
         context.app,
         view,
@@ -312,6 +317,29 @@ simulateTxn(
     return jvResult;
 }
 
+bool
+checkIsCurrentLedger(Json::Value const params)
+{
+    if (params.isMember(jss::ledger_index))
+    {
+        auto const& ledgerIndex = params[jss::ledger_index];
+        if (!ledgerIndex.isNull())
+        {
+            if (ledgerIndex == RPC::LedgerShortcut::CURRENT)
+            {
+                return true;
+            }
+            return false;
+        }
+    }
+    if (params.isMember(jss::ledger_hash))
+    {
+        if (!params[jss::ledger_hash].isNull())
+            return false;
+    }
+    return true;
+}
+
 // {
 //   tx_blob: <string> XOR tx_json: <object>,
 //   binary: <bool>
@@ -341,6 +369,7 @@ doSimulate(RPC::JsonContext& context)
     auto jvResult = RPC::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
+    bool const isCurrentLedger = checkIsCurrentLedger(context.params);
 
     // get JSON equivalent of transaction
     Json::Value tx_json = getTxJsonFromParams(context.params);
@@ -348,7 +377,7 @@ doSimulate(RPC::JsonContext& context)
         return tx_json;
 
     // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
-    if (auto error = autofillTx(tx_json, context, lpLedger))
+    if (auto error = autofillTx(tx_json, context, lpLedger, isCurrentLedger))
         return *error;
 
     STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
@@ -378,7 +407,7 @@ doSimulate(RPC::JsonContext& context)
     // Actually run the transaction through the transaction processor
     try
     {
-        return simulateTxn(context, transaction, lpLedger);
+        return simulateTxn(context, transaction, lpLedger, isCurrentLedger);
     }
     // LCOV_EXCL_START this is just in case, so rippled doesn't crash
     catch (std::exception const& e)
