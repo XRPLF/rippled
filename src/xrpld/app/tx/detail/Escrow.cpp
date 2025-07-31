@@ -1284,7 +1284,8 @@ EscrowFinish::doApply()
             auto reValue = re.value().result;
             if (auto const data = ledgerDataProvider.data; data.has_value())
             {
-                slep->setFieldVL(sfData, data);
+                auto const dataValue = *data;
+                slep->setFieldVL(sfData, dataValue);
             }
             // TODO: better error handling for this conversion
             ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
