@@ -24,9 +24,16 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
 
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -1604,6 +1611,317 @@ class Invariants_test : public beast::unit_test::suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
     }
 
+    void
+    testVault()
+    {
+        using namespace test::jtx;
+        testcase << "Vault";
+
+        doInvariantCheck(
+            {"vault deletion succeeded without deleting a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"deleted vault must also delete shares"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                ac.view().erase(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"deleted vault must have no shares outstanding",
+             "deleted vault must have no assets outstanding",
+             "deleted vault must have no assets available"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                ac.view().erase(sleVault);
+                ac.view().erase(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DELETE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                env(vault.deposit(
+                    {.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+
+        // Note, ttVAULT_SET is allowed not to modify a vault.
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating or creating a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating or creating a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating or creating a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating or creating a vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CLAWBACK, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"updated vault must have shares"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsMaximum] = 200;
+                ac.view().update(sleVault);
+
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                ac.view().erase(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, _] = vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault operation succeeded without updating shares"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsTotal] = 9;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                env(vault.deposit(
+                    {.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+
+        doInvariantCheck(
+            {"updated zero sized vault must have no shares outstanding ",
+             "updated zero sized vault must have no assets available"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                (*sleVault)[sfAssetsTotal] = 0;
+                ac.view().update(sleVault);
+                (*sleShares)[sfOutstandingAmount] = 9;
+                ac.view().update(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                env(vault.deposit(
+                    {.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+
+        doInvariantCheck(
+            {"vault size must be positive"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                (*sleVault)[sfAssetsTotal] = Number(-1, 0);
+                ac.view().update(sleVault);
+                (*sleShares)[sfOutstandingAmount] = 9;
+                ac.view().update(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                env(vault.deposit(
+                    {.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+
+        doInvariantCheck(
+            {"shares outstanding must be greater than zero",
+             "assets available must not be greater than assets outstanding",
+             "updated zero sized vault must have no assets outstanding",
+             "updated zero sized vault must have no assets available"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                auto const old = (*sleVault)[sfAssetsAvailable];
+                (*sleVault)[sfAssetsAvailable] = old * 2;
+                ac.view().update(sleVault);
+                (*sleShares)[sfOutstandingAmount] = 0;
+                ac.view().update(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                env(vault.deposit(
+                    {.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+
+        doInvariantCheck(
+            {"shares outstanding must not be greater than assets outstanding"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                (*sleVault)[sfAssetsAvailable] = 2;
+                ac.view().update(sleVault);
+                auto const old = (*sleShares)[sfOutstandingAmount];
+                (*sleShares)[sfOutstandingAmount] = old * 2;
+                ac.view().update(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_WITHDRAW, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                env(vault.deposit(
+                    {.depositor = A1, .id = keylet.key, .amount = XRP(10)}));
+                return true;
+            });
+    }
+
 public:
     void
     run() override
@@ -1623,6 +1941,7 @@ public:
         testNFTokenPageInvariants();
         testPermissionedDomainInvariants();
         testPermissionedDEX();
+        testVault();
     }
 };
 
