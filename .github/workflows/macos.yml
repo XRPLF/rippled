@@ -34,8 +34,6 @@ jobs:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       matrix:
-        platform:
-          - macos
         generator:
           - Ninja
         configuration:

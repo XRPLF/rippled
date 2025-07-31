@@ -97,7 +97,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration.type }}
-          remote_name: windows
+          remote_name: ${{ matrix.platform }}
       - name: build
         uses: ./.github/actions/build
         with:

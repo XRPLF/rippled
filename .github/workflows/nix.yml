@@ -57,25 +57,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux
         compiler:
-          - gcc
-          - clang
+          - gcc-12
+          - clang-16
         configuration:
           - Debug
           - Release
         include:
-          - compiler: gcc
-            compiler_version: 12
-            distro: ubuntu
-            codename: jammy
-          - compiler: clang
-            compiler_version: 16
-            distro: debian
-            codename: bookworm
+          - compiler: gcc-12
+            distro: ubuntu-jammy
+          - compiler: clang-16
+            distro: debian-bookworm
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}:${{ matrix.compiler }}
     env:
       build_dir: .build
     steps:
@@ -85,7 +79,7 @@ jobs:
         run: |
           echo ${PATH} | tr ':' '\n'
           lsb_release -a || true
-          ${{ matrix.compiler }}-${{ matrix.compiler_version }} --version
+          ${{ matrix.compiler }} --version
           conan --version
           cmake --version
           env | sort
@@ -104,11 +98,11 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          remote_name: ${{ matrix.distro }}-${{ matrix.codename }}
+          remote_name: ${{ matrix.distro }}
       - name: upload archive
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: ${{ matrix.distro }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: conan.tar.gz
           if-no-files-found: error
 
@@ -116,36 +110,30 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux
         compiler:
-          - gcc
-          - clang
+          - gcc-12
+          - clang-16
         configuration:
           - Debug
           - Release
         include:
-          - compiler: gcc
-            compiler_version: 12
-            distro: ubuntu
-            codename: jammy
-          - compiler: clang
-            compiler_version: 16
-            distro: debian
-            codename: bookworm
+          - compiler: gcc-12
+            distro: ubuntu-jammy
+          - compiler: clang-16
+            distro: debian-bookworm
         cmake-args:
           -
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}
     env:
       build_dir: .build
     steps:
       - name: download cache
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: ${{ matrix.distro }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
           mkdir -p ${CONAN_HOME}
@@ -162,7 +150,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          remote_name: ${{ matrix.distro }}-${{ matrix.codename }}
+          remote_name: ${{ matrix.distro }}
       - name: build
         uses: ./.github/actions/build
         with:
@@ -189,10 +177,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux
+        distro:
+          - ubuntu-jammy
         compiler:
-          - gcc
+          - gcc-12
         configuration:
           - Debug
         cmake-args:
@@ -200,14 +188,14 @@ jobs:
           - "-DUNIT_TEST_REFERENCE_FEE=1000"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}:${{ matrix.compiler }}
     env:
       build_dir: .build
     steps:
       - name: download cache
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: ${{ matrix.distro }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
           mkdir -p ${CONAN_HOME}
@@ -224,7 +212,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          remote_name: ubuntu-jammy
+          remote_name: ${{ matrix.distro }}
       - name: build
         uses: ./.github/actions/build
         with:
@@ -241,22 +229,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux
+        distro:
+          - ubuntu-jammy
         compiler:
-          - gcc
+          - gcc-12
         configuration:
           - Debug
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}:${{ matrix.compiler }}
     env:
       build_dir: .build
     steps:
       - name: download cache
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: ${{ matrix.distro }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
           mkdir -p ${CONAN_HOME}
@@ -275,7 +263,7 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-          remote_name: ubuntu-jammy
+          remote_name: ${{ matrix.distro }}
       - name: build
         uses: ./.github/actions/build
         with:
@@ -315,21 +303,25 @@ jobs:
           attempt_delay: 210000 # in milliseconds
 
   conan:
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          - ubuntu-jammy
+        compiler:
+          - gcc-12
+        configuration:
+          - Release
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container:
-      image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}:${{ matrix.compiler }}
     env:
       build_dir: .build
-      platform: linux
-      compiler: gcc
-      compiler_version: 12
-      configuration: Release
     steps:
       - name: download cache
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: ${{ env.platform }}-${{ env.compiler }}-${{ env.configuration }}
+          name: ${{ matrix.distro }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
           mkdir -p ${CONAN_HOME}
@@ -345,8 +337,8 @@ jobs:
       - name: dependencies
         uses: ./.github/actions/dependencies
         with:
-          configuration: ${{ env.configuration }}
-          remote_name: ubuntu-jammy
+          configuration: ${{ matrix.configuration }}
+          remote_name: ${{ matrix.distro }}
       - name: export
         run: |
           conan export . --version head
@@ -365,22 +357,29 @@ jobs:
           ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
 
   instrumentation-build:
+    strategy:
+      fail-fast: false
+      matrix:
+        distro:
+          - debian-bookworm
+        compiler:
+          - clang-162
+        configuration:
+          - Debug
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/ci/debian-bookworm:clang-16
+    container: ghcr.io/xrplf/ci/${{ matrix.distro }}:${{ matrix.compiler }}
     env:
       build_dir: .build
     steps:
         - name: download cache
           uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
           with:
-            name: linux-clang-Debug
-
+            name: ${{ matrix.distro }}-${{ matrix.compiler }}-${{ matrix.configuration }}
         - name: extract cache
           run: |
             mkdir -p ${CONAN_HOME}
             tar -xzf conan.tar.gz -C ${CONAN_HOME}
-
         - name: check environment
           run: |
             echo ${PATH} | tr ':' '\n'
@@ -388,22 +387,18 @@ jobs:
             cmake --version
             env | sort
             ls ${CONAN_HOME}
-
         - name: checkout
           uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-
         - name: dependencies
           uses: ./.github/actions/dependencies
           with:
-            configuration: Debug
-            remote_name: debian-bookworm
-
+            configuration: ${{ matrix.configuration }}
+            remote_name: ${{ matrix.distro }}
         - name: prepare environment
           run: |
             mkdir -p ${build_dir}
             echo "SOURCE_DIR=$(pwd)" >> $GITHUB_ENV
             echo "BUILD_DIR=$(pwd)/${build_dir}" >> $GITHUB_ENV
-
         - name: build with instrumentation
           run: |
             cd ${BUILD_DIR}
@@ -417,12 +412,10 @@ jobs:
               -DSECP256K1_BUILD_EXHAUSTIVE_TESTS=OFF \
               -DCMAKE_TOOLCHAIN_FILE=${BUILD_DIR}/build/generators/conan_toolchain.cmake
             cmake --build .  --parallel $(nproc)
-
         - name: verify instrumentation enabled
           run: |
             cd ${BUILD_DIR}
             ./rippled --version | grep libvoidstar
-
         - name: run unit tests
           run: |
             cd ${BUILD_DIR}
