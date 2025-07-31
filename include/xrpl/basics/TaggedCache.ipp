@@ -501,8 +501,7 @@ TaggedCache<
         key_type const& key,
         SharedPointerType const& data)
 {
-    auto [alreadyExists, _] = canonicalize(
-        key, data, []() { return true; });
+    auto [alreadyExists, _] = canonicalize(key, data, []() { return true; });
     return alreadyExists;
 }
 
@@ -527,7 +526,8 @@ TaggedCache<
     Mutex>::
     canonicalize_replace_client(key_type const& key, SharedPointerType& data)
 {
-    auto [alreadyExists, itemInCache] = canonicalize(key, data, []() { return false; });
+    auto [alreadyExists, itemInCache] =
+        canonicalize(key, data, []() { return false; });
     data = itemInCache;
     return alreadyExists;
 }

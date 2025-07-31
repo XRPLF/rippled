@@ -130,7 +130,7 @@ public:
         @param replaceCallback Function that decides if cache should be replaced
 
         @return First item: `true` If the key already existed; Second item: The
-        in the cache.
+        canonicalized item.
     */
     template <class R>
     std::pair<bool, SharedPointerType>
