@@ -1,0 +1,6 @@
+XRPL Network Daemon
+=======================
+The core server that runs the the peer-to-peer network which processes transactions and reaches a consensus on
+their outcome.
+
+Read more at https://xrpl.org/docs
