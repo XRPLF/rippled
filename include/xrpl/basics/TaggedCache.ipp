@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
 
 namespace ripple {
 
