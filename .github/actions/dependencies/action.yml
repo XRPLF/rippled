@@ -10,7 +10,6 @@ runs:
       shell: bash
       run: |
         conan export --version 1.1.10 external/snappy
-        conan export --version 9.7.3 external/rocksdb
         conan export --version 4.0.3 external/soci
     - name: add Ripple Conan remote
       if: env.CONAN_URL != ''
@@ -22,7 +21,6 @@ runs:
         fi
         conan remote add --index 0 ripple "${CONAN_URL}"
         echo "Added conan remote ripple at ${CONAN_URL}"
-
     - name: try to authenticate to Ripple Conan remote
       if: env.CONAN_LOGIN_USERNAME_RIPPLE != '' && env.CONAN_PASSWORD_RIPPLE != ''
       id: remote
@@ -31,7 +29,6 @@ runs:
         echo "Authenticating to ripple remote..."
         conan remote auth ripple --force
         conan remote list-users
-
     - name: list missing binaries
       id: binaries
       shell: bash
@@ -46,7 +43,7 @@ runs:
         cd ${build_dir}
         conan install \
           --output-folder . \
-          --build missing \
+          --build '*' \
           --options:host "&:tests=True" \
           --options:host "&:xrpld=True" \
           --settings:all build_type=${{ inputs.configuration }} \

@@ -671,12 +671,12 @@ isMemoOkay(STObject const& st, std::string& reason)
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                     "abcdefghijklmnopqrstuvwxyz");
 
-                for (char c : symbols)
+                for (unsigned char c : symbols)
                     a[c] = 1;
                 return a;
             }();
 
-            for (auto c : *optData)
+            for (unsigned char c : *optData)
             {
                 if (!allowedSymbols[c])
                 {
