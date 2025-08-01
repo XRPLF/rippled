@@ -483,6 +483,19 @@ class Simulate_test : public beast::unit_test::suite
                 "Cannot use `ctid` without `ledger_index` or `ledger_hash`.");
         }
         {
+            // invalid ledger_hash
+            Json::Value params;
+            params[jss::tx_hash] = "ABCDEF";
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error_message] ==
+                    "Invalid field 'tx_hash'.",
+                resp.toStyledString());
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_code] == rpcINVALID_PARAMS);
+        }
+        {
             // tx_hash not found
             Json::Value params;
             params[jss::tx_hash] = std::string(64, 'A');
