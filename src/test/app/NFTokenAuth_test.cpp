@@ -21,6 +21,8 @@
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
+#include <xrpl/protocol/TER.h>
+
 namespace ripple {
 
 class NFTokenAuth_test : public beast::unit_test::suite
@@ -141,10 +143,12 @@ public:
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
+            auto const code = features[fixEnforceTrustlineAuth]
+                ? ter(tecUNFUNDED_OFFER)
+                : ter(tecNO_AUTH);
+
             // test: check that buyer can't make an offer even with balance
-            env(token::createOffer(A1, nftID, USD(10)),
-                token::owner(A2),
-                ter(tecNO_AUTH));
+            env(token::createOffer(A1, nftID, USD(10)), token::owner(A2), code);
         }
         else
         {
@@ -207,8 +211,11 @@ public:
         env.app().openLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
+            auto const code = features[fixEnforceTrustlineAuth]
+                ? ter(tecINSUFFICIENT_FUNDS)
+                : ter(tecNO_AUTH);
             // test: check that offer can't be accepted even with balance
-            env(token::acceptBuyOffer(A2, buyIdx), ter(tecNO_AUTH));
+            env(token::acceptBuyOffer(A2, buyIdx), code);
         }
     }
 
@@ -333,7 +340,10 @@ public:
         env.app().openLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
-            env(token::acceptSellOffer(A1, sellIdx), ter(tecNO_AUTH));
+            auto const code = features[fixEnforceTrustlineAuth]
+                ? ter(tecINSUFFICIENT_FUNDS)
+                : ter(tecNO_AUTH);
+            env(token::acceptSellOffer(A1, sellIdx), code);
         }
     }
 
@@ -456,10 +466,13 @@ public:
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
+            auto const code = features[fixEnforceTrustlineAuth]
+                ? ter(tecINSUFFICIENT_FUNDS)
+                : ter(tecNO_AUTH);
             // test: G1 requires authorization of A2
             env(token::brokerOffers(broker, buyIdx, sellIdx),
                 token::brokerFee(USD(1)),
-                ter(tecNO_AUTH));
+                code);
             env.close();
         }
     }
@@ -602,7 +615,9 @@ public:
         static FeatureBitset const all{testable_amendments()};
 
         static std::array const features = {
-            all - fixEnforceNFTokenTrustlineV2, all};
+            all - fixEnforceNFTokenTrustlineV2 - fixEnforceTrustlineAuth,
+            all - fixEnforceTrustlineAuth,
+            all};
 
         for (auto const feature : features)
         {

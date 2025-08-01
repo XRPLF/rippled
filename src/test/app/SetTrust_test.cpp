@@ -19,6 +19,8 @@
 
 #include <test/jtx.h>
 
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -371,14 +373,14 @@ public:
     }
 
     void
-    testAuthFlagTrustLines()
+    testAuthFlagTrustLines(FeatureBitset features)
     {
         testcase(
             "Ensure that authorised trust lines do not allow payments "
             "from unauthorised counter-parties");
 
         using namespace jtx;
-        Env env{*this};
+        Env env{*this, features};
 
         auto const bob = Account{"bob"};
         auto const alice = Account{"alice"};
@@ -394,8 +396,11 @@ public:
         env(trust(bob, alice["USD"](100)));
         env.close();
 
+        auto const code = features[fixEnforceTrustlineAuth] ? ter(tecNO_AUTH)
+                                                            : ter(tecPATH_DRY);
+
         // send a payment from alice to bob, validate that the payment fails
-        env(pay(alice, bob, alice["USD"](10)), ter(tecPATH_DRY));
+        env(pay(alice, bob, alice["USD"](10)), code);
         env.close();
     }
 
@@ -517,7 +522,7 @@ public:
                     ? features | disallowIncoming
                     : (features | disallowIncoming) - fixDisallowIncomingV1;
 
-                Env env{*this, amend};
+                Env env{*this, amend - fixEnforceTrustlineAuth};
                 auto const dist = Account("dist");
                 auto const gw = Account("gw");
                 auto const USD = gw["USD"];
@@ -639,7 +644,7 @@ public:
         testTrustLineResetWithAuthFlag();
         testTrustLineDelete();
         testExceedTrustLineLimit();
-        testAuthFlagTrustLines();
+        testAuthFlagTrustLines(features);
         testTrustLineLimitsWithRippling();
     }
 
@@ -649,7 +654,8 @@ public:
     {
         using namespace test::jtx;
         auto const sa = testable_amendments();
-        testWithFeats(sa - disallowIncoming);
+        testWithFeats(sa - disallowIncoming - fixEnforceTrustlineAuth);
+        testWithFeats(sa - fixEnforceTrustlineAuth);
         testWithFeats(sa);
     }
 };
