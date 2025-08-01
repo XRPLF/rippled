@@ -52,6 +52,27 @@ parseIndex(Json::Value const& params, Json::Value& jvResult)
 }
 
 static std::optional<uint256>
+parseHashes(Json::Value const& params, Json::Value& jvResult)
+{
+    if (params.isUInt() || params.isInt() || params.isString())
+    {
+        // If the index doesn't parse as a UInt, throw
+        auto const index = params.asUInt();
+
+        auto const keylet = keylet::skip(index);
+        return keylet.key;
+    }
+    else
+    {
+        // Any type that can't reasonably be interpreted as a UInt will
+        // return the "short" skip list, which contains hashes since
+        // the last flag ledger.
+        auto const keylet = keylet::skip();
+        return keylet.key;
+    }
+}
+
+static std::optional<uint256>
 parseAccountRoot(Json::Value const& params, Json::Value& jvResult)
 {
     auto const account = parseBase58<AccountID>(params.asString());
@@ -936,6 +957,21 @@ struct LedgerEntry
     LedgerEntryType expectedType;
 };
 
+// Helper function to return a LedgerEntry for objects that have a fixed
+// location. That is, they don't take parameters to compute the index.
+// e.g. amendments, fees, negative UNL, etc.
+static LedgerEntry
+fixed(
+    Json::StaticString const& fieldName,
+    Keylet const& keylet,
+    LedgerEntryType expectedType)
+{
+    return {
+        fieldName,
+        [&keylet](Json::Value const&, Json::Value&) { return keylet.key; },
+        expectedType};
+}
+
 // {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
@@ -953,7 +989,7 @@ doLedgerEntry(RPC::JsonContext& context)
     static auto ledgerEntryParsers = std::to_array<LedgerEntry>({
         {jss::index, parseIndex, ltANY},
         {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
-        // TODO: add amendments
+        fixed(jss::amendments, keylet::amendments(), ltAMENDMENTS),
         {jss::amm, parseAMM, ltAMM},
         {jss::bridge, parseBridge, ltBRIDGE},
         {jss::check, parseCheck, ltCHECK},
@@ -963,12 +999,13 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::did, parseDID, ltDID},
         {jss::directory, parseDirectory, ltDIR_NODE},
         {jss::escrow, parseEscrow, ltESCROW},
-        // TODO: add fee, hashes
+        fixed(jss::fee, keylet::fees(), ltFEE_SETTINGS),
+        {jss::hashes, parseHashes, ltLEDGER_HASHES},
         {jss::mpt_issuance, parseMPTokenIssuance, ltMPTOKEN_ISSUANCE},
         {jss::mptoken, parseMPToken, ltMPTOKEN},
         // TODO: add NFT Offers
         {jss::nft_page, parseNFTokenPage, ltNFTOKEN_PAGE},
-        // TODO: add NegativeUNL
+        fixed(jss::nunl, keylet::negativeUNL(), ltNEGATIVE_UNL),
         {jss::offer, parseOffer, ltOFFER},
         {jss::oracle, parseOracle, ltORACLE},
         {jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
