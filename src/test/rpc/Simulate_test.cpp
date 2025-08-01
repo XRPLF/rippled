@@ -1446,23 +1446,51 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testMultipleTransactions()
+    {
+        testcase("Multiple transactions");
+
+        using namespace jtx;
+        Env env{*this};
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        Json::Value tx1;
+        tx1[jss::tx_json] = pay(alice, env.master, XRP(700));
+        Json::Value tx2;
+        tx2[jss::tx_json] = pay(alice, env.master, XRP(200));
+
+        Json::Value params = Json::objectValue;
+        Json::Value txs = Json::arrayValue;
+        txs.append(tx1);
+        txs.append(tx2);
+        params[jss::transactions] = txs;
+
+        auto const result = env.rpc("json", "simulate", to_string(params));
+        std::cout << result.toStyledString() << std::endl;
+    }
+
 public:
     void
     run() override
     {
-        testParamErrors();
-        testFeeError();
-        testInvalidTransactionType();
-        testSuccessfulTransaction();
-        testTransactionNonTecFailure();
-        testTransactionTecFailure();
-        testSuccessfulTransactionMultisigned();
-        testTransactionSigningFailure();
-        testInvalidSingleAndMultiSigningTransaction();
-        testMultisignedBadPubKey();
-        testDeleteExpiredCredentials();
-        testSuccessfulTransactionNetworkID();
-        testSuccessfulPastLedger();
+        // testParamErrors();
+        // testFeeError();
+        // testInvalidTransactionType();
+        // testSuccessfulTransaction();
+        // testTransactionNonTecFailure();
+        // testTransactionTecFailure();
+        // testSuccessfulTransactionMultisigned();
+        // testTransactionSigningFailure();
+        // testInvalidSingleAndMultiSigningTransaction();
+        // testMultisignedBadPubKey();
+        // testDeleteExpiredCredentials();
+        // testSuccessfulTransactionNetworkID();
+        // testSuccessfulPastLedger();
+        testMultipleTransactions();
     }
 };
 
