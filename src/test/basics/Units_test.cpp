@@ -17,13 +17,13 @@
 */
 
 #include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/Units.h>
 
 namespace ripple {
 namespace test {
 
-class feeunits_test : public beast::unit_test::suite
+class units_test : public beast::unit_test::suite
 {
 private:
     void
@@ -35,16 +35,16 @@ private:
             XRPAmount x{100};
             BEAST_EXPECT(x.drops() == 100);
             BEAST_EXPECT(
-                (std::is_same_v<decltype(x)::unit_type, feeunit::dropTag>));
+                (std::is_same_v<decltype(x)::unit_type, unit::dropTag>));
             auto y = 4u * x;
             BEAST_EXPECT(y.value() == 400);
             BEAST_EXPECT(
-                (std::is_same_v<decltype(y)::unit_type, feeunit::dropTag>));
+                (std::is_same_v<decltype(y)::unit_type, unit::dropTag>));
 
             auto z = 4 * y;
             BEAST_EXPECT(z.value() == 1600);
             BEAST_EXPECT(
-                (std::is_same_v<decltype(z)::unit_type, feeunit::dropTag>));
+                (std::is_same_v<decltype(z)::unit_type, unit::dropTag>));
 
             FeeLevel32 f{10};
             FeeLevel32 baseFee{100};
@@ -55,7 +55,7 @@ private:
             BEAST_EXPECT(drops.value() == 1000);
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>::unit_type,
-                          feeunit::dropTag>));
+                          unit::dropTag>));
 
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>,
@@ -65,11 +65,11 @@ private:
             XRPAmount x{100};
             BEAST_EXPECT(x.value() == 100);
             BEAST_EXPECT(
-                (std::is_same_v<decltype(x)::unit_type, feeunit::dropTag>));
+                (std::is_same_v<decltype(x)::unit_type, unit::dropTag>));
             auto y = 4u * x;
             BEAST_EXPECT(y.value() == 400);
             BEAST_EXPECT(
-                (std::is_same_v<decltype(y)::unit_type, feeunit::dropTag>));
+                (std::is_same_v<decltype(y)::unit_type, unit::dropTag>));
 
             FeeLevel64 f{10};
             FeeLevel64 baseFee{100};
@@ -80,7 +80,7 @@ private:
             BEAST_EXPECT(drops.value() == 1000);
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>::unit_type,
-                          feeunit::dropTag>));
+                          unit::dropTag>));
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>,
                           XRPAmount>));
@@ -89,12 +89,12 @@ private:
             FeeLevel64 x{1024};
             BEAST_EXPECT(x.value() == 1024);
             BEAST_EXPECT(
-                (std::is_same_v<decltype(x)::unit_type, feeunit::feelevelTag>));
+                (std::is_same_v<decltype(x)::unit_type, unit::feelevelTag>));
             std::uint64_t m = 4;
             auto y = m * x;
             BEAST_EXPECT(y.value() == 4096);
             BEAST_EXPECT(
-                (std::is_same_v<decltype(y)::unit_type, feeunit::feelevelTag>));
+                (std::is_same_v<decltype(y)::unit_type, unit::feelevelTag>));
 
             XRPAmount basefee{10};
             FeeLevel64 referencefee{256};
@@ -105,7 +105,7 @@ private:
             BEAST_EXPECT(drops.value() == 40);
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>::unit_type,
-                          feeunit::dropTag>));
+                          unit::dropTag>));
             BEAST_EXPECT((std::is_same_v<
                           std::remove_reference_t<decltype(*drops)>,
                           XRPAmount>));
@@ -181,7 +181,7 @@ private:
     void
     testFunctions()
     {
-        // Explicitly test every defined function for the TaggedFee class
+        // Explicitly test every defined function for the ValueUnit class
         // since some of them are templated, but not used anywhere else.
         using FeeLevel32 = FeeLevel<std::uint32_t>;
 
@@ -191,8 +191,8 @@ private:
                 return FeeLevel64{x};
             };
 
+            [[maybe_unused]]
             FeeLevel64 defaulted;
-            (void)defaulted;
             FeeLevel64 test{0};
             BEAST_EXPECT(test.fee() == 0);
 
@@ -278,8 +278,8 @@ private:
                 return FeeLevelDouble{x};
             };
 
+            [[maybe_unused]]
             FeeLevelDouble defaulted;
-            (void)defaulted;
             FeeLevelDouble test{0};
             BEAST_EXPECT(test.fee() == 0);
 
@@ -371,7 +371,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(feeunits, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(units, ripple_basics, ripple);
 
 }  // namespace test
 }  // namespace ripple

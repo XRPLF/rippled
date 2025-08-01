@@ -305,8 +305,8 @@ public:
                       static_cast<int>(std::thread::hardware_concurrency());
 
                   // Be more aggressive about the number of threads to use
-                  // for the job queue if the server is configured as "large"
-                  // or "huge" if there are enough cores.
+                  // for the job queue if the server is configured as
+                  // "large" or "huge" if there are enough cores.
                   if (config->NODE_SIZE >= 4 && count >= 16)
                       count = 6 + std::min(count, 8);
                   else if (config->NODE_SIZE >= 3 && count >= 8)
