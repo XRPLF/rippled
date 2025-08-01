@@ -111,8 +111,15 @@ TER
 SponsorTransfer::preclaim(PreclaimContext const& ctx)
 {
     auto const index = ctx.tx[~sfLedgerIndex];
+    auto const newSponsor = getTxReserveSponsor(ctx.view, ctx.tx);
 
-    if (index)
+    bool const isObjectSponsor = index != std::nullopt;
+
+    auto const accSle = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
+    if (!accSle)
+        return tecINTERNAL;
+
+    if (isObjectSponsor)
     {
         auto const sle = ctx.view.read(keylet::unchecked(*index));
         if (!sle)
@@ -123,33 +130,64 @@ SponsorTransfer::preclaim(PreclaimContext const& ctx)
         if (!owner)
             return tecNO_PERMISSION;
 
-        if (sle->isFieldPresent(sfSponsorAccount))
+        if (newSponsor)
         {
-            auto const sponsor = sle->getAccountID(sfSponsorAccount);
-            if (sponsor == owner)
-                return tecNO_PERMISSION;
-
-            // TODO: check reserve
+            if (sle->isFieldPresent(sfSponsorAccount))
+            {
+                // transfer sponsor
+                if ((*newSponsor)->getAccountID(sfAccount) == owner)
+                    return tecNO_PERMISSION;
+            }
         }
         else
         {
-            // TODO: check reserve
+            // dissolve sponsor
+            // check object is sponsored
+            if (!sle->isFieldPresent(sfSponsorAccount))
+                return tecNO_PERMISSION;
         }
+
+        // check account have sufficient balance
+        if (auto const ter = checkInsufficientReserve(
+                ctx.view,
+                accSle,
+                accSle->getFieldAmount(sfBalance),
+                newSponsor,
+                // TODO: address variable ownerCount like PriceOracle
+                1);
+            !isTesSuccess(ter))
+            return ter;
     }
     else
     {
-        auto const accSle = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
-        if (!accSle)
-            return tecINTERNAL;
-
-        if (accSle->isFieldPresent(sfSponsorAccount))
+        if (newSponsor)
         {
-            // TODO: check reserve
+            if (accSle->isFieldPresent(sfSponsorAccount))
+            {
+                // check not same account
+                if ((*newSponsor)->getAccountID(sfAccount) ==
+                    accSle->getAccountID(sfAccount))
+                    return tecNO_PERMISSION;
+            }
         }
         else
         {
-            // TODO: check reserve
+            // dissolve sponsor
+            // check account is sponsored
+            if (!accSle->isFieldPresent(sfSponsorAccount))
+                return tecNO_PERMISSION;
         }
+
+        // check account have sufficient balance
+        if (auto const ter = checkInsufficientReserve(
+                ctx.view,
+                accSle,
+                accSle->getFieldAmount(sfBalance),
+                newSponsor,
+                0,
+                1);
+            !isTesSuccess(ter))
+            return ter;
     }
 
     return tesSUCCESS;
@@ -161,12 +199,13 @@ SponsorTransfer::doApply()
     auto const& tx = ctx_.tx;
 
     auto const index = tx[~sfLedgerIndex];
+    bool const isObjectSponsor = index != std::nullopt;
 
     auto const accSle = view().peek(keylet::account(account_));
     if (!accSle)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    if (index)
+    if (isObjectSponsor)
     {
         // transfer object sponsor
         auto const objSle = view().peek(keylet::unchecked(*index));

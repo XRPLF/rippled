@@ -1027,7 +1027,8 @@ checkInsufficientReserve(
     std::shared_ptr<SLE const> accSle,
     STAmount const& accBalance,
     std::optional<std::shared_ptr<SLE const>> const& _sponsorSle,
-    std::int32_t ownerCountDelta)
+    std::int32_t ownerCountDelta,
+    std::int32_t accountCountDelta)
 {
     if (_sponsorSle.has_value())
     {
@@ -1037,8 +1038,9 @@ checkInsufficientReserve(
             sponsorSle->getFieldU32(sfOwnerCount),
             sponsorSle->getFieldU32(sfSponsoredOwnerCount),
             sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ownerCountDelta,
-            sponsorSle->isFieldPresent(sfSponsor),
-            sponsorSle->getFieldU32(sfSponsoringAccountCount))};
+            sponsorSle->isFieldPresent(sfSponsorAccount),
+            sponsorSle->getFieldU32(sfSponsoringAccountCount) +
+                accountCountDelta)};
 
         if (sponsorBalance < sponsorReserve)
             return tecINSUFFICIENT_RESERVE;
@@ -1049,8 +1051,8 @@ checkInsufficientReserve(
             accSle->getFieldU32(sfOwnerCount) + ownerCountDelta,
             accSle->getFieldU32(sfSponsoredOwnerCount),
             accSle->getFieldU32(sfSponsoringOwnerCount),
-            accSle->isFieldPresent(sfSponsor),
-            accSle->getFieldU32(sfSponsoringAccountCount))};
+            accSle->isFieldPresent(sfSponsorAccount),
+            accSle->getFieldU32(sfSponsoringAccountCount) + accountCountDelta)};
 
         if (accBalance < reserve)
             return tecINSUFFICIENT_RESERVE;

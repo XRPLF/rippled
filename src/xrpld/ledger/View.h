@@ -458,7 +458,8 @@ checkInsufficientReserve(
     std::shared_ptr<SLE const> accSle,
     STAmount const& accBalance,
     std::optional<std::shared_ptr<SLE const>> const& _sponsorSle,
-    std::int32_t ownerCountDelta);
+    std::int32_t ownerCountDelta,
+    std::int32_t accountCountDelta = 0);
 
 std::optional<std::shared_ptr<SLE>>
 getTxReserveSponsor(ApplyView& view, STTx const& tx);

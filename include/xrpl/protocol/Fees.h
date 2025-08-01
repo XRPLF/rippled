@@ -53,7 +53,6 @@ struct Fees
         bool isAccountSponsored = false,
         std::size_t sponsoringAccountCount = 0) const
     {
-        // return reserve + ownerCount * increment;
         return (isAccountSponsored ? XRPAmount(0) : reserve) +
             increment *
             (ownerCount + sponsoringOwnerCount - sponsoredOwnerCount) +

@@ -63,7 +63,17 @@ public:
             Account const alice("alice");
             Account const sponsor1("sponsor1");
             Account const sponsor2("sponsor2");
-            env.fund(XRP(10000), alice, sponsor1, sponsor2);
+            env.fund(XRP(10000), alice);
+            env.fund(env.current()->fees().reserve * 2 - 1, sponsor1, sponsor2);
+            env.close();
+
+            env(sponsor::transfer(alice),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sponsor::sig(sponsor1),
+                ter(tecINSUFFICIENT_RESERVE));
+
+            env(pay(alice, sponsor1, drops(1)));
+            env.close();
 
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor1, tfSponsorReserve),
@@ -83,6 +93,14 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice),
                 sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2),
+                ter(tecINSUFFICIENT_RESERVE));
+
+            env(pay(alice, sponsor2, drops(1)));
+            env.close();
+
+            env(sponsor::transfer(alice),
+                sponsor::as(sponsor2, tfSponsorReserve),
                 sponsor::sig(sponsor2));
             env.close();
 
@@ -100,6 +118,21 @@ public:
             BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
 
             // dissolve sponsor
+            env(pay(alice,
+                    sponsor2,
+                    (env.balance(alice).value() -
+                     env.current()->fees().reserve - XRP(1) + drops(1))),
+                fee(XRP(1)));
+            env.close();
+
+            env.require(
+                balance(alice, env.current()->fees().reserve - drops(1)));
+            env(sponsor::transfer(alice), ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            env(pay(sponsor2, alice, XRP(1)));
+            env.close();
+
             env(sponsor::transfer(alice));
             env.close();
 
@@ -122,7 +155,13 @@ public:
             Account const bob("bob");
             Account const sponsor1("sponsor1");
             Account const sponsor2("sponsor2");
-            env.fund(XRP(10000), alice, bob, sponsor1, sponsor2);
+            env.fund(XRP(10000), alice, bob);
+            env.fund(
+                env.current()->fees().reserve +
+                    env.current()->fees().increment - drops(1),
+                sponsor1,
+                sponsor2);
+            env.close();
 
             auto const seq = env.seq(alice);
             env(check::create(alice, bob, XRP(1)));
@@ -130,6 +169,15 @@ public:
 
             auto const checkId = keylet::check(alice, seq).key;
             BEAST_EXPECT(env.le(keylet::unchecked(checkId)) != nullptr);
+
+            env(sponsor::transfer(alice, checkId),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sponsor::sig(sponsor1),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            env(pay(alice, sponsor1, drops(1)));
+            env.close();
 
             env(sponsor::transfer(alice, checkId),
                 sponsor::as(sponsor1, tfSponsorReserve),
@@ -150,6 +198,14 @@ public:
             // transfer sponsor
             env(sponsor::transfer(alice, checkId),
                 sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2),
+                ter(tecINSUFFICIENT_RESERVE));
+
+            env(pay(alice, sponsor2, drops(1)));
+            env.close();
+
+            env(sponsor::transfer(alice, checkId),
+                sponsor::as(sponsor2, tfSponsorReserve),
                 sponsor::sig(sponsor2));
             env.close();
 
@@ -167,6 +223,21 @@ public:
             BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
 
             // dissolve sponsor
+            env(pay(alice,
+                    sponsor2,
+                    (env.balance(alice).value() -
+                     env.current()->fees().reserve -
+                     env.current()->fees().increment - XRP(1) + drops(1))),
+                fee(XRP(1)));
+            env.close();
+
+            env(sponsor::transfer(alice, checkId),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            env(pay(sponsor2, alice, XRP(1)));
+            env.close();
+
             env(sponsor::transfer(alice, checkId));
             env.close();
 
