@@ -22,6 +22,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/check.h>
 #include <test/jtx/did.h>
+#include <test/jtx/owners.h>
 #include <test/jtx/sponsor.h>
 
 #include <xrpl/protocol/Feature.h>
@@ -46,6 +47,141 @@ public:
             sponsor::as(sponsor),
             sponsor::sig(sponsor),
             ter(temDISABLED));
+
+        env(sponsor::transfer(alice), ter(temDISABLED));
+    }
+
+    void
+    testTransferSponsor()
+    {
+        testcase("Transfer Sponsor");
+        using namespace test::jtx;
+
+        {
+            // sponsor account
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const sponsor1("sponsor1");
+            Account const sponsor2("sponsor2");
+            env.fund(XRP(10000), alice, sponsor1, sponsor2);
+
+            env(sponsor::transfer(alice),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sponsor::sig(sponsor1));
+            env.close();
+
+            env.require(sponsored_owners(alice, 0));
+            env.require(sponsored_owners(sponsor1, 0));
+            env.require(sponsoring_owners(alice, 0));
+            env.require(sponsoring_owners(sponsor1, 0));
+            env.require(sponsoring_account_count(alice, 0));
+            env.require(sponsoring_account_count(sponsor1, 1));
+            auto const sle1 = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle1->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(sle1->getAccountID(sfSponsorAccount) == sponsor1.id());
+
+            // transfer sponsor
+            env(sponsor::transfer(alice),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            env.require(sponsored_owners(alice, 0));
+            env.require(sponsored_owners(sponsor1, 0));
+            env.require(sponsored_owners(sponsor2, 0));
+            env.require(sponsoring_owners(alice, 0));
+            env.require(sponsoring_owners(sponsor1, 0));
+            env.require(sponsoring_owners(sponsor2, 0));
+            env.require(sponsoring_account_count(alice, 0));
+            env.require(sponsoring_account_count(sponsor1, 0));
+            env.require(sponsoring_account_count(sponsor2, 1));
+            auto const sle2 = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle2->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
+
+            // dissolve sponsor
+            env(sponsor::transfer(alice));
+            env.close();
+
+            env.require(sponsored_owners(alice, 0));
+            env.require(sponsored_owners(sponsor1, 0));
+            env.require(sponsored_owners(sponsor2, 0));
+            env.require(sponsoring_owners(alice, 0));
+            env.require(sponsoring_owners(sponsor1, 0));
+            env.require(sponsoring_owners(sponsor2, 0));
+            env.require(sponsoring_account_count(alice, 0));
+            env.require(sponsoring_account_count(sponsor1, 0));
+            env.require(sponsoring_account_count(sponsor2, 0));
+            auto const sle3 = env.le(keylet::account(alice));
+            BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
+        }
+        {
+            // sponsor object
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor1("sponsor1");
+            Account const sponsor2("sponsor2");
+            env.fund(XRP(10000), alice, bob, sponsor1, sponsor2);
+
+            auto const seq = env.seq(alice);
+            env(check::create(alice, bob, XRP(1)));
+            env.close();
+
+            auto const checkId = keylet::check(alice, seq).key;
+            BEAST_EXPECT(env.le(keylet::unchecked(checkId)) != nullptr);
+
+            env(sponsor::transfer(alice, checkId),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sponsor::sig(sponsor1));
+            env.close();
+
+            env.require(owners(alice, 1));
+            env.require(sponsored_owners(alice, 1));
+            env.require(sponsored_owners(sponsor1, 0));
+            env.require(sponsoring_owners(alice, 0));
+            env.require(sponsoring_owners(sponsor1, 1));
+            env.require(sponsoring_account_count(alice, 0));
+            env.require(sponsoring_account_count(sponsor1, 0));
+            auto const sle1 = env.le(keylet::unchecked(checkId));
+            BEAST_EXPECT(sle1->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(sle1->getAccountID(sfSponsorAccount) == sponsor1.id());
+
+            // transfer sponsor
+            env(sponsor::transfer(alice, checkId),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            env.require(sponsored_owners(alice, 1));
+            env.require(sponsored_owners(sponsor1, 0));
+            env.require(sponsored_owners(sponsor2, 0));
+            env.require(sponsoring_owners(alice, 0));
+            env.require(sponsoring_owners(sponsor1, 0));
+            env.require(sponsoring_owners(sponsor2, 1));
+            env.require(sponsoring_account_count(alice, 0));
+            env.require(sponsoring_account_count(sponsor1, 0));
+            env.require(sponsoring_account_count(sponsor2, 0));
+            auto const sle2 = env.le(keylet::unchecked(checkId));
+            BEAST_EXPECT(sle2->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
+
+            // dissolve sponsor
+            env(sponsor::transfer(alice, checkId));
+            env.close();
+
+            env.require(sponsored_owners(alice, 0));
+            env.require(sponsored_owners(sponsor1, 0));
+            env.require(sponsored_owners(sponsor2, 0));
+            env.require(sponsoring_owners(alice, 0));
+            env.require(sponsoring_owners(sponsor1, 0));
+            env.require(sponsoring_owners(sponsor2, 0));
+            env.require(sponsoring_account_count(alice, 0));
+            env.require(sponsoring_account_count(sponsor1, 0));
+            env.require(sponsoring_account_count(sponsor2, 0));
+            auto const sle3 = env.le(keylet::unchecked(checkId));
+            BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
+        }
     }
 
     void
@@ -455,6 +591,7 @@ public:
     run() override
     {
         testDisabled();
+        testTransferSponsor();
         testSponsorFee();
         testSponsorAccount();
         testSponsorReserve();

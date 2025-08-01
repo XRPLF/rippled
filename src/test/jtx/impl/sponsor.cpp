@@ -30,21 +30,13 @@ namespace jtx {
 namespace sponsor {
 
 Json::Value
-transferAccount(jtx::Account const& account)
+transfer(jtx::Account const& account, std::optional<uint256> const& index)
 {
     Json::Value jv;
-    jv[jss::TransactionType] = "SponsorTransfer";
-    jv[sfSponsor.jsonName] = account.human();
-
-    return jv;
-}
-
-Json::Value
-transferObject(uint256 const& id)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = "SponsorTransfer";
-    jv[sfLedgerIndex.jsonName] = to_string(id);
+    jv[jss::TransactionType] = jss::SponsorTransfer;
+    jv[jss::Account] = account.human();
+    if (index)
+        jv[sfLedgerIndex.jsonName] = to_string(*index);
     return jv;
 }
 

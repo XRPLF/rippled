@@ -30,11 +30,10 @@ namespace jtx {
 
 namespace sponsor {
 
-// Json::Value
-// transferAccount(jtx::Account const& account);
-
-// Json::Value
-// transferObject(uint256 const& id);
+Json::Value
+transfer(
+    jtx::Account const& account,
+    std::optional<uint256> const& index = std::nullopt);
 
 struct as
 {
