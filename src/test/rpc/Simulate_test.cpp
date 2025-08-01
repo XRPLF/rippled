@@ -438,6 +438,113 @@ class Simulate_test : public beast::unit_test::suite
                 resp[jss::result][jss::error_message] ==
                 "Transaction should not be signed.");
         }
+        {
+            // non-string CTID
+            Json::Value params;
+            params[jss::ctid] = 1;
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'ctid'.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_code] == rpcINVALID_PARAMS);
+        }
+        // non-string tx hash
+        {
+            // Non-string tx_hash
+            Json::Value params;
+            params[jss::tx_hash] = 12345;
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'tx_hash'.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_code] == rpcINVALID_PARAMS);
+        }
+        {
+            // tx_hash with missing ledger_index/ledger_hash (current ledger)
+            Json::Value params;
+            params[jss::tx_hash] = "ABCDEF1234567890";
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot use `tx_hash` without `ledger_index` or "
+                "`ledger_hash`.");
+        }
+        {
+            // ctid with missing ledger_index/ledger_hash (current ledger)
+            Json::Value params;
+            params[jss::ctid] = "ABCDEF1234567890";
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot use `ctid` without `ledger_index` or `ledger_hash`.");
+        }
+        {
+            // tx_hash not found
+            Json::Value params;
+            params[jss::tx_hash] = std::string(64, 'A');
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error_message] ==
+                    "Transaction not found.",
+                resp.toStyledString());
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_code] == rpcTXN_NOT_FOUND);
+        }
+        {
+            // ctid not found
+            Json::Value params;
+            params[jss::ctid] = "ABCDEF1234567890";
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Transaction not found.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_code] == rpcTXN_NOT_FOUND);
+        }
+        {
+            // Unknown field in tx_json
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            tx_json["UnknownField"] = "value";
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Field 'tx_json.UnknownField' is unknown.");
+        }
+        {
+            // TicketSequence autofill returns 0
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            tx_json[sfTicketSequence.jsonName] = 1;
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::tx_json][sfSequence.jsonName] == 0);
+        }
+        {
+            // Invalid ledger_index type
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            params[jss::ledger_index] = Json::arrayValue;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'ledger_index'.");
+        }
     }
 
     void

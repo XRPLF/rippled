@@ -354,36 +354,18 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 
 template <class T>
 Status
-ledgerFromRequest(T& ledger, JsonContext& context)
+ledgerFromHash(T& ledger, Json::Value hash, JsonContext& context)
 {
-    ledger.reset();
+    uint256 ledgerHash;
+    if (!ledgerHash.parseHex(hash.asString()))
+        return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
+    return getLedger(ledger, ledgerHash, context);
+}
 
-    auto& params = context.params;
-
-    auto indexValue = params[jss::ledger_index];
-    auto hashValue = params[jss::ledger_hash];
-
-    // We need to support the legacy "ledger" field.
-    auto& legacyLedger = params[jss::ledger];
-    if (legacyLedger)
-    {
-        if (legacyLedger.asString().size() > 12)
-            hashValue = legacyLedger;
-        else
-            indexValue = legacyLedger;
-    }
-
-    if (hashValue)
-    {
-        if (!hashValue.isString())
-            return {rpcINVALID_PARAMS, "ledgerHashNotString"};
-
-        uint256 ledgerHash;
-        if (!ledgerHash.parseHex(hashValue.asString()))
-            return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
-        return getLedger(ledger, ledgerHash, context);
-    }
-
+template <class T>
+Status
+ledgerFromIndex(T& ledger, Json::Value indexValue, JsonContext& context)
+{
     auto const index = indexValue.asString();
 
     if (index == "current" || index.empty())
@@ -400,6 +382,65 @@ ledgerFromRequest(T& ledger, JsonContext& context)
         return getLedger(ledger, iVal, context);
 
     return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+}
+
+template <class T>
+Status
+ledgerFromRequest(T& ledger, JsonContext& context)
+{
+    ledger.reset();
+
+    auto& params = context.params;
+    auto const hasLedger = context.params.isMember(jss::ledger);
+    auto const hasHash = context.params.isMember(jss::ledger_hash);
+    auto const hasIndex = context.params.isMember(jss::ledger_index);
+
+    if ((hasLedger + hasHash + hasIndex) > 1)
+    {
+        return {
+            rpcINVALID_PARAMS,
+            "Only one of `ledger`, `ledger_hash`, or "
+            "`ledger_index` can be specified."};
+    }
+
+    // We need to support the legacy "ledger" field.
+    if (hasLedger)
+    {
+        auto& legacyLedger = params[jss::ledger];
+        if (!legacyLedger.isString() && !legacyLedger.isUInt() &&
+            !legacyLedger.isInt())
+        {
+            return {rpcINVALID_PARAMS, invalid_field_message(jss::ledger)};
+        }
+        if (legacyLedger.asString().size() > 12)
+            return ledgerFromHash(ledger, legacyLedger, context);
+        else
+            return ledgerFromIndex(ledger, legacyLedger, context);
+    }
+
+    if (hasHash)
+    {
+        auto const& ledgerHash = params[jss::ledger_hash];
+        if (!ledgerHash.isString())
+            return {rpcINVALID_PARAMS, invalid_field_message(jss::ledger_hash)};
+        return ledgerFromHash(ledger, ledgerHash, context);
+    }
+
+    if (hasIndex)
+    {
+        auto const& ledgerIndex = params[jss::ledger_index];
+        if (!ledgerIndex.isString() && !ledgerIndex.isUInt() &&
+            !ledgerIndex.isInt())
+        {
+            return {
+                rpcINVALID_PARAMS, invalid_field_message(jss::ledger_index)};
+        }
+        return ledgerFromIndex(ledger, ledgerIndex, context);
+    }
+
+    // nothing specified, `index` has a default setting
+    // TODO: more cleanup in this file needed
+    return ledgerFromIndex(ledger, Json::nullValue, context);
 }
 }  // namespace
 
