@@ -44,6 +44,34 @@ getParentLedgerHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using getLedgerAccountHash_proto = int32_t(uint8_t*, int32_t);
+wasm_trap_t*
+getLedgerAccountHash_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getLedgerTransactionHash_proto = int32_t(uint8_t*, int32_t);
+wasm_trap_t*
+getLedgerTransactionHash_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getBaseFee_proto = int32_t();
+wasm_trap_t*
+getBaseFee_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using isAmendmentEnabled_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+isAmendmentEnabled_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using cacheLedgerObj_proto = int32_t(uint8_t const*, int32_t, int32_t);
 wasm_trap_t*
 cacheLedgerObj_wrap(
@@ -143,6 +171,19 @@ getLedgerObjNestedArrayLen_wrap(
 using updateData_proto = int32_t(uint8_t const*, int32_t);
 wasm_trap_t*
 updateData_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using checkSignature_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t);
+wasm_trap_t*
+checkSignature_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
@@ -303,6 +344,41 @@ using getNFT_proto = int32_t(
     int32_t);
 wasm_trap_t*
 getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using getNFTIssuer_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getNFTIssuer_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getNFTTaxon_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getNFTTaxon_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getNFTFlags_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+getNFTFlags_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getNFTTransferFee_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+getNFTTransferFee_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getNFTSerial_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getNFTSerial_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
 
 using trace_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
