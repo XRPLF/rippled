@@ -647,6 +647,18 @@ STObject::getFieldH256(SField const& field) const
     return getFieldByValue<STUInt256>(field);
 }
 
+std::int32_t
+STObject::getFieldI32(SField const& field) const
+{
+    return getFieldByValue<STInt32>(field);
+}
+
+std::int64_t
+STObject::getFieldI64(SField const& field) const
+{
+    return getFieldByValue<STInt64>(field);
+}
+
 AccountID
 STObject::getAccountID(SField const& field) const
 {
@@ -759,6 +771,18 @@ void
 STObject::setFieldH256(SField const& field, uint256 const& v)
 {
     setFieldUsingSetValue<STUInt256>(field, v);
+}
+
+void
+STObject::setFieldI32(SField const& field, std::int32_t v)
+{
+    setFieldUsingSetValue<STInt32>(field, v);
+}
+
+void
+STObject::setFieldI64(SField const& field, std::int64_t v)
+{
+    setFieldUsingSetValue<STInt64>(field, v);
 }
 
 void
