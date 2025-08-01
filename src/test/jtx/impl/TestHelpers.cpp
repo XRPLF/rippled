@@ -56,6 +56,24 @@ ownerCount(Env const& env, Account const& account)
     return env.ownerCount(account);
 }
 
+std::uint32_t
+sponsoredOwnerCount(Env const& env, Account const& account)
+{
+    return env.sponsoredOwnerCount(account);
+}
+
+std::uint32_t
+sponsoringOwnerCount(Env const& env, Account const& account)
+{
+    return env.sponsoringOwnerCount(account);
+}
+
+std::uint32_t
+sponsoringAccountCount(Env const& env, Account const& account)
+{
+    return env.sponsoringAccountCount(account);
+}
+
 /* Path finding */
 /******************************************************************************/
 void

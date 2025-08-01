@@ -80,12 +80,12 @@ public:
                 sponsor::sig(sponsor1));
             env.close();
 
-            env.require(sponsored_owners(alice, 0));
-            env.require(sponsored_owners(sponsor1, 0));
-            env.require(sponsoring_owners(alice, 0));
-            env.require(sponsoring_owners(sponsor1, 0));
-            env.require(sponsoring_account_count(alice, 0));
-            env.require(sponsoring_account_count(sponsor1, 1));
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 1);
             auto const sle1 = env.le(keylet::account(alice));
             BEAST_EXPECT(sle1->isFieldPresent(sfSponsorAccount));
             BEAST_EXPECT(sle1->getAccountID(sfSponsorAccount) == sponsor1.id());
@@ -104,15 +104,15 @@ public:
                 sponsor::sig(sponsor2));
             env.close();
 
-            env.require(sponsored_owners(alice, 0));
-            env.require(sponsored_owners(sponsor1, 0));
-            env.require(sponsored_owners(sponsor2, 0));
-            env.require(sponsoring_owners(alice, 0));
-            env.require(sponsoring_owners(sponsor1, 0));
-            env.require(sponsoring_owners(sponsor2, 0));
-            env.require(sponsoring_account_count(alice, 0));
-            env.require(sponsoring_account_count(sponsor1, 0));
-            env.require(sponsoring_account_count(sponsor2, 1));
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
             auto const sle2 = env.le(keylet::account(alice));
             BEAST_EXPECT(sle2->isFieldPresent(sfSponsorAccount));
             BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
@@ -125,8 +125,8 @@ public:
                 fee(XRP(1)));
             env.close();
 
-            env.require(
-                balance(alice, env.current()->fees().reserve - drops(1)));
+            BEAST_EXPECT(
+                env.balance(alice) == env.current()->fees().reserve - drops(1));
             env(sponsor::transfer(alice), ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
@@ -136,15 +136,15 @@ public:
             env(sponsor::transfer(alice));
             env.close();
 
-            env.require(sponsored_owners(alice, 0));
-            env.require(sponsored_owners(sponsor1, 0));
-            env.require(sponsored_owners(sponsor2, 0));
-            env.require(sponsoring_owners(alice, 0));
-            env.require(sponsoring_owners(sponsor1, 0));
-            env.require(sponsoring_owners(sponsor2, 0));
-            env.require(sponsoring_account_count(alice, 0));
-            env.require(sponsoring_account_count(sponsor1, 0));
-            env.require(sponsoring_account_count(sponsor2, 0));
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             auto const sle3 = env.le(keylet::account(alice));
             BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
         }
@@ -184,13 +184,13 @@ public:
                 sponsor::sig(sponsor1));
             env.close();
 
-            env.require(owners(alice, 1));
-            env.require(sponsored_owners(alice, 1));
-            env.require(sponsored_owners(sponsor1, 0));
-            env.require(sponsoring_owners(alice, 0));
-            env.require(sponsoring_owners(sponsor1, 1));
-            env.require(sponsoring_account_count(alice, 0));
-            env.require(sponsoring_account_count(sponsor1, 0));
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 1);
+            BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
             auto const sle1 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(sle1->isFieldPresent(sfSponsorAccount));
             BEAST_EXPECT(sle1->getAccountID(sfSponsorAccount) == sponsor1.id());
@@ -209,15 +209,15 @@ public:
                 sponsor::sig(sponsor2));
             env.close();
 
-            env.require(sponsored_owners(alice, 1));
-            env.require(sponsored_owners(sponsor1, 0));
-            env.require(sponsored_owners(sponsor2, 0));
-            env.require(sponsoring_owners(alice, 0));
-            env.require(sponsoring_owners(sponsor1, 0));
-            env.require(sponsoring_owners(sponsor2, 1));
-            env.require(sponsoring_account_count(alice, 0));
-            env.require(sponsoring_account_count(sponsor1, 0));
-            env.require(sponsoring_account_count(sponsor2, 0));
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             auto const sle2 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(sle2->isFieldPresent(sfSponsorAccount));
             BEAST_EXPECT(sle2->getAccountID(sfSponsorAccount) == sponsor2.id());
@@ -241,15 +241,15 @@ public:
             env(sponsor::transfer(alice, checkId));
             env.close();
 
-            env.require(sponsored_owners(alice, 0));
-            env.require(sponsored_owners(sponsor1, 0));
-            env.require(sponsored_owners(sponsor2, 0));
-            env.require(sponsoring_owners(alice, 0));
-            env.require(sponsoring_owners(sponsor1, 0));
-            env.require(sponsoring_owners(sponsor2, 0));
-            env.require(sponsoring_account_count(alice, 0));
-            env.require(sponsoring_account_count(sponsor1, 0));
-            env.require(sponsoring_account_count(sponsor2, 0));
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 0);
             auto const sle3 = env.le(keylet::unchecked(checkId));
             BEAST_EXPECT(!sle3->isFieldPresent(sfSponsorAccount));
         }
@@ -293,8 +293,8 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_account_count(sponsor, 1));
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
     }
 
     void
@@ -329,19 +329,19 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 1));
-        env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 1));
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
         // CheckCancel
         auto const checkId = keylet::check(alice, seq).key;
         env(check::cancel(alice, checkId));
         env.close();
 
-        env.require(owners(alice, 0));
-        env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 0));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
         auto const seq2 = env.seq(alice);
         env(check::create(alice, bob, XRP(1)),
@@ -349,23 +349,19 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 1));
-        env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 1));
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
         // CheckCash
         auto const checkId2 = keylet::check(alice, seq2).key;
         env(check::cash(bob, checkId2, XRP(1)));
         env.close();
 
-        env.require(owners(alice, 0));
-        env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 0));
-
-        // printf(
-        //     "meta: %s\n",
-        //     env.meta()->getJson(JsonOptions::none).toStyledString().c_str());
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
     }
 
     void
@@ -389,19 +385,19 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 1));
-        env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 1));
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
         // OfferCancel
         env(offer_cancel(alice, seq));
         env.close();
 
-        env.require(owners(alice, 0));
-        env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 0));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
         // TODO: test Offer Execution
     }
@@ -424,18 +420,18 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 250));
-        env.require(sponsored_owners(alice, 250));
-        env.require(sponsoring_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 250));
+        BEAST_EXPECT(ownerCount(env, alice) == 250);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 250);
+        BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 250);
 
         // use a Ticket
         env(noop(alice), ticket::use(ticketSeq + 1));
         env.close();
 
-        env.require(owners(alice, 249));
-        env.require(sponsored_owners(alice, 249));
-        env.require(sponsoring_owners(sponsor, 249));
+        BEAST_EXPECT(ownerCount(env, alice) == 249);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 249);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
     }
 
     void
@@ -457,11 +453,11 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(issuer, 1));
-        env.require(owners(subject, 0));
-        env.require(sponsored_owners(issuer, 1));
-        env.require(sponsored_owners(subject, 0));
-        env.require(sponsoring_owners(sponsor, 1));
+        BEAST_EXPECT(ownerCount(env, issuer) == 1);
+        BEAST_EXPECT(ownerCount(env, subject) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
         // CredentialsAccept
         env(credentials::accept(subject, issuer, "credType"),
@@ -469,21 +465,21 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(issuer, 0));
-        env.require(owners(subject, 1));
-        env.require(sponsored_owners(issuer, 0));
-        env.require(sponsored_owners(subject, 1));
-        env.require(sponsoring_owners(sponsor, 1));
+        BEAST_EXPECT(ownerCount(env, issuer) == 0);
+        BEAST_EXPECT(ownerCount(env, subject) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
         // CredentialsDelete
         env(credentials::deleteCred(subject, subject, issuer, "credType"));
         env.close();
 
-        env.require(owners(issuer, 0));
-        env.require(owners(subject, 0));
-        env.require(sponsored_owners(issuer, 0));
-        env.require(sponsored_owners(subject, 0));
-        env.require(sponsoring_owners(sponsor, 0));
+        BEAST_EXPECT(ownerCount(env, issuer) == 0);
+        BEAST_EXPECT(ownerCount(env, subject) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
     }
 
     void
@@ -504,17 +500,17 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 1));
-        env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_owners(sponsor, 1));
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
         // delete
         env(delegate::set(alice, bob, {}));
         env.close();
 
-        env.require(owners(alice, 0));
-        env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 0));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
     }
 
     void
@@ -540,17 +536,17 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 1));
-        env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_owners(sponsor, 1));
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
         // DIDDelete
         env(did::del(alice));
         env.close();
 
-        env.require(owners(alice, 0));
-        env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 0));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
     }
 
     void
@@ -607,17 +603,17 @@ public:
             sponsor::sig(sponsor));
         env.close();
 
-        env.require(owners(alice, 1));
-        env.require(sponsored_owners(alice, 1));
-        env.require(sponsoring_owners(sponsor, 1));
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
         // Delete
         env(signers(alice, none));
         env.close();
 
-        env.require(owners(alice, 0));
-        env.require(sponsored_owners(alice, 0));
-        env.require(sponsoring_owners(sponsor, 0));
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
     }
 
     void
