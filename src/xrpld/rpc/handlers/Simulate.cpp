@@ -187,6 +187,13 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
     uint256 hash;
     if (params.isMember(jss::tx_hash))
     {
+        if (params.isMember(jss::tx_blob) || params.isMember(jss::tx_json) ||
+            params.isMember(jss::ctid))
+        {
+            return RPC::make_param_error(
+                "Cannot include 'tx_hash' with 'ctid'.");
+        }
+
         auto const tx_hash = params[jss::tx_hash];
         if (!tx_hash.isString())
         {
@@ -270,20 +277,24 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
 }
 
 static Json::Value
-getTxJsonFromParams(RPC::JsonContext& context, bool const isCurrentLedger)
+getTxJsonFromParams(
+    RPC::JsonContext& context,
+    Json::Value txInput,
+    bool const isCurrentLedger)
 {
-    auto const params = context.params;
     Json::Value tx_json;
 
-    if (params.isMember(jss::tx_blob))
+    if (txInput.isMember(jss::tx_blob))
     {
-        if (params.isMember(jss::tx_json))
+        if (txInput.isMember(jss::tx_json) || txInput.isMember(jss::tx_hash) ||
+            txInput.isMember(jss::ctid))
         {
             return RPC::make_param_error(
-                "Can only include one of `tx_blob` and `tx_json`.");
+                "Cannot include 'tx_blob' with 'tx_json', 'tx_hash', or "
+                "'ctid'.");
         }
 
-        auto const tx_blob = params[jss::tx_blob];
+        auto const tx_blob = txInput[jss::tx_blob];
         if (!tx_blob.isString())
         {
             return RPC::invalid_field_error(jss::tx_blob);
@@ -304,9 +315,15 @@ getTxJsonFromParams(RPC::JsonContext& context, bool const isCurrentLedger)
             return RPC::invalid_field_error(jss::tx_blob);
         }
     }
-    else if (params.isMember(jss::tx_json))
+    else if (txInput.isMember(jss::tx_json))
     {
-        tx_json = params[jss::tx_json];
+        if (txInput.isMember(jss::tx_hash) || txInput.isMember(jss::ctid))
+        {
+            return RPC::make_param_error(
+                "Cannot include 'tx_json' with 'tx_hash' or 'ctid'.");
+        }
+
+        tx_json = txInput[jss::tx_json];
         if (!tx_json.isObject())
         {
             return RPC::object_field_error(jss::tx_json);
@@ -342,78 +359,89 @@ getTxJsonFromParams(RPC::JsonContext& context, bool const isCurrentLedger)
 static Json::Value
 simulateTxn(
     RPC::JsonContext& context,
-    std::shared_ptr<Transaction> transaction,
+    std::vector<std::shared_ptr<Transaction>> transactions,
     std::shared_ptr<ReadView const> lpLedger,
     bool const isCurrentLedger)
 {
-    Json::Value jvResult;
+    Json::Value jvFinalResult;
+    jvFinalResult[jss::transactions] = Json::arrayValue;
     // Process the transaction
     OpenView view = isCurrentLedger ? *context.app.openLedger().current()
                                     : OpenView(&*lpLedger);
-    auto const result = context.app.getTxQ().apply(
-        context.app,
-        view,
-        transaction->getSTransaction(),
-        tapDRY_RUN,
-        context.j);
-
-    jvResult[jss::applied] = result.applied;
-    jvResult[jss::ledger_index] = view.seq();
-
-    bool const isBinaryOutput = context.params.get(jss::binary, false).asBool();
-
-    // Convert the TER to human-readable values
-    std::string token;
-    std::string message;
-    if (transResultInfo(result.ter, token, message))
+    for (auto const& transaction : transactions)
     {
-        // Engine result
-        jvResult[jss::engine_result] = token;
-        jvResult[jss::engine_result_code] = result.ter;
-        jvResult[jss::engine_result_message] = message;
-    }
-    else
-    {
-        // shouldn't be hit
-        // LCOV_EXCL_START
-        jvResult[jss::engine_result] = "unknown";
-        jvResult[jss::engine_result_code] = result.ter;
-        jvResult[jss::engine_result_message] = "unknown";
-        // LCOV_EXCL_STOP
-    }
+        Json::Value jvResult;
+        auto const result = context.app.getTxQ().apply(
+            context.app,
+            view,
+            transaction->getSTransaction(),
+            tapDRY_RUN,
+            context.j);
 
-    if (token == "tesSUCCESS")
-    {
-        jvResult[jss::engine_result_message] =
-            "The simulated transaction would have been applied.";
-    }
+        jvResult[jss::applied] = result.applied;
+        jvResult[jss::ledger_index] = view.seq();
 
-    if (result.metadata)
-    {
-        if (isBinaryOutput)
+        bool const isBinaryOutput =
+            context.params.get(jss::binary, false).asBool();
+
+        // Convert the TER to human-readable values
+        std::string token;
+        std::string message;
+        if (transResultInfo(result.ter, token, message))
         {
-            auto const metaBlob =
-                result.metadata->getAsObject().getSerializer().getData();
-            jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
+            // Engine result
+            jvResult[jss::engine_result] = token;
+            jvResult[jss::engine_result_code] = result.ter;
+            jvResult[jss::engine_result_message] = message;
         }
         else
         {
-            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
+            // shouldn't be hit
+            // LCOV_EXCL_START
+            jvResult[jss::engine_result] = "unknown";
+            jvResult[jss::engine_result_code] = result.ter;
+            jvResult[jss::engine_result_message] = "unknown";
+            // LCOV_EXCL_STOP
         }
-    }
 
-    if (isBinaryOutput)
-    {
-        auto const txBlob =
-            transaction->getSTransaction()->getSerializer().getData();
-        jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
-    }
-    else
-    {
-        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
-    }
+        if (token == "tesSUCCESS")
+        {
+            jvResult[jss::engine_result_message] =
+                "The simulated transaction would have been applied.";
+        }
 
-    return jvResult;
+        if (result.metadata)
+        {
+            if (isBinaryOutput)
+            {
+                auto const metaBlob =
+                    result.metadata->getAsObject().getSerializer().getData();
+                jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
+            }
+            else
+            {
+                jvResult[jss::meta] =
+                    result.metadata->getJson(JsonOptions::none);
+            }
+        }
+
+        if (isBinaryOutput)
+        {
+            auto const txBlob =
+                transaction->getSTransaction()->getSerializer().getData();
+            jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
+        }
+        else
+        {
+            jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
+        }
+        jvFinalResult[jss::transactions].append(jvResult);
+    }
+    if (jvFinalResult[jss::transactions].size() == 1)
+    {
+        jvFinalResult = jvFinalResult[jss::transactions][0u];
+    }
+    return jvFinalResult;
 }
 
 bool
@@ -433,6 +461,49 @@ checkIsCurrentLedger(Json::Value const params)
             return false;
     }
     return true;
+}
+
+Expected<std::shared_ptr<Transaction>, Json::Value>
+processTransaction(
+    RPC::JsonContext& context,
+    Json::Value txInput,
+    std::shared_ptr<ReadView const> lpLedger,
+    bool const isCurrentLedger)
+{
+    // get JSON equivalent of transaction
+    Json::Value tx_json =
+        getTxJsonFromParams(context, txInput, isCurrentLedger);
+    if (tx_json.isMember(jss::error))
+        return Unexpected(tx_json);
+
+    // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
+    if (auto error = autofillTx(tx_json, context, lpLedger, isCurrentLedger))
+        return Unexpected(*error);
+
+    STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
+    if (!parsed.object.has_value())
+        return Unexpected(parsed.error);
+
+    std::shared_ptr<STTx const> stTx;
+    try
+    {
+        stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
+    }
+    catch (std::exception& e)
+    {
+        Json::Value jvResult = Json::objectValue;
+        jvResult[jss::error] = "invalidTransaction";
+        jvResult[jss::error_exception] = e.what();
+        return Unexpected(jvResult);
+    }
+
+    if (stTx->getTxnType() == ttBATCH)
+    {
+        return Unexpected(RPC::make_error(rpcNOT_IMPL));
+    }
+
+    std::string reason;
+    return std::make_shared<Transaction>(stTx, reason, context.app);
 }
 
 // {
@@ -460,49 +531,49 @@ doSimulate(RPC::JsonContext& context)
         }
     }
 
+    if (context.params.isMember(jss::transactions) &&
+        (context.params.isMember(jss::tx_json) ||
+         context.params.isMember(jss::tx_blob) ||
+         context.params.isMember(jss::tx_hash) ||
+         context.params.isMember(jss::ctid)))
+    {
+        return RPC::make_param_error(
+            "Cannot include 'transactions' with 'tx_json', 'tx_blob', "
+            "'tx_hash', or 'ctid'.");
+    }
+
     std::shared_ptr<ReadView const> lpLedger;
     auto jvResult = RPC::lookupLedger(lpLedger, context);
     if (!lpLedger)
         return jvResult;
     bool const isCurrentLedger = checkIsCurrentLedger(context.params);
 
-    // get JSON equivalent of transaction
-    Json::Value tx_json = getTxJsonFromParams(context, isCurrentLedger);
-    if (tx_json.isMember(jss::error))
-        return tx_json;
-
-    // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
-    if (auto error = autofillTx(tx_json, context, lpLedger, isCurrentLedger))
-        return *error;
-
-    STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
-    if (!parsed.object.has_value())
-        return parsed.error;
-
-    std::shared_ptr<STTx const> stTx;
-    try
+    auto transactions = std::vector<std::shared_ptr<Transaction>>{};
+    if (context.params.isMember(jss::transactions))
     {
-        stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
+        // TODO: bunch of additional checks
+        for (auto const& txInput : context.params[jss::transactions])
+        {
+            auto transaction =
+                processTransaction(context, txInput, lpLedger, isCurrentLedger);
+            if (!transaction)
+                return transaction.error();
+            transactions.push_back(transaction.value());
+        }
     }
-    catch (std::exception& e)
+    else
     {
-        Json::Value jvResult = Json::objectValue;
-        jvResult[jss::error] = "invalidTransaction";
-        jvResult[jss::error_exception] = e.what();
-        return jvResult;
+        // single transaction
+        auto transaction = processTransaction(
+            context, context.params, lpLedger, isCurrentLedger);
+        if (!transaction)
+            return transaction.error();
+        transactions.push_back(transaction.value());
     }
-
-    if (stTx->getTxnType() == ttBATCH)
-    {
-        return RPC::make_error(rpcNOT_IMPL);
-    }
-
-    std::string reason;
-    auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
     // Actually run the transaction through the transaction processor
     try
     {
-        return simulateTxn(context, transaction, lpLedger, isCurrentLedger);
+        return simulateTxn(context, transactions, lpLedger, isCurrentLedger);
     }
     // LCOV_EXCL_START this is just in case, so rippled doesn't crash
     catch (std::exception const& e)

@@ -182,7 +182,8 @@ class Simulate_test : public beast::unit_test::suite
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
-                "Can only include one of `tx_blob` and `tx_json`.");
+                "Cannot include 'tx_blob' with 'tx_json', 'tx_hash', or "
+                "'ctid'.");
         }
         {
             // `binary` isn't a boolean
