@@ -37,7 +37,7 @@ namespace ripple {
 // We're prepared for there to be multiple signer lists in the future,
 // but we don't need them yet.  So for the time being we're manually
 // setting the sfSignerListID to zero in all cases.
-static std::uint32_t const defaultSignerListID_ = 0;
+static std::uint32_t const DEFAULT_SIGNER_LIST_ID = 0;
 
 std::tuple<
     NotTEC,
@@ -424,8 +424,12 @@ SetSignerList::writeSignersToSLE(
     std::uint32_t flags) const
 {
     // Assign the quorum, default SignerListID, and flags.
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        ledgerEntry->setFieldU32(sfOwner, account_);
+    }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
-    ledgerEntry->setFieldU32(sfSignerListID, defaultSignerListID_);
+    ledgerEntry->setFieldU32(sfSignerListID, DEFAULT_SIGNER_LIST_ID);
     if (flags)  // Only set flags if they are non-default (default is zero).
         ledgerEntry->setFieldU32(sfFlags, flags);
 
