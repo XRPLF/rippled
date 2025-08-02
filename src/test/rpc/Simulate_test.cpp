@@ -1459,9 +1459,11 @@ class Simulate_test : public beast::unit_test::suite
         env.close();
 
         Json::Value tx1;
-        tx1[jss::tx_json] = pay(alice, env.master, XRP(700));
+        tx1[jss::tx_json] = pay(alice, env.master, XRP(500));
         Json::Value tx2;
         tx2[jss::tx_json] = pay(alice, env.master, XRP(200));
+        // TODO: fix sequence autofilling
+        tx2[jss::tx_json][jss::Sequence] = env.seq(alice) + 1;
 
         Json::Value params = Json::objectValue;
         Json::Value txs = Json::arrayValue;
@@ -1477,19 +1479,19 @@ public:
     void
     run() override
     {
-        // testParamErrors();
-        // testFeeError();
-        // testInvalidTransactionType();
-        // testSuccessfulTransaction();
-        // testTransactionNonTecFailure();
-        // testTransactionTecFailure();
-        // testSuccessfulTransactionMultisigned();
-        // testTransactionSigningFailure();
-        // testInvalidSingleAndMultiSigningTransaction();
-        // testMultisignedBadPubKey();
-        // testDeleteExpiredCredentials();
-        // testSuccessfulTransactionNetworkID();
-        // testSuccessfulPastLedger();
+        testParamErrors();
+        testFeeError();
+        testInvalidTransactionType();
+        testSuccessfulTransaction();
+        testTransactionNonTecFailure();
+        testTransactionTecFailure();
+        testSuccessfulTransactionMultisigned();
+        testTransactionSigningFailure();
+        testInvalidSingleAndMultiSigningTransaction();
+        testMultisignedBadPubKey();
+        testDeleteExpiredCredentials();
+        testSuccessfulTransactionNetworkID();
+        testSuccessfulPastLedger();
         testMultipleTransactions();
     }
 };

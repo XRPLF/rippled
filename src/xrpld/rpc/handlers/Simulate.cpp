@@ -22,7 +22,6 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
@@ -365,21 +364,32 @@ simulateTxn(
 {
     Json::Value jvFinalResult;
     jvFinalResult[jss::transactions] = Json::arrayValue;
-    // Process the transaction
-    OpenView view = isCurrentLedger ? *context.app.openLedger().current()
-                                    : OpenView(&*lpLedger);
+
+    OpenView origView = OpenView(&*lpLedger);
+    OpenView view(batch_view, origView);
     for (auto const& transaction : transactions)
     {
+        OpenView perTxView(batch_view, view);
         Json::Value jvResult;
-        auto const result = context.app.getTxQ().apply(
+        /***************************************
+         * SECURITY NOTE: This technically applies the transaction to the view.
+         * However, since the `view` is a copy of the ledger it's being applied
+         * to, and is thrown away immediately after the simulated transactions
+         * are processed, the original ledger remains unchanged. Therefore, you
+         * cannot use `simulate` to bypass signature checks and submit
+         * transactions/modify the current ledger directly.
+         ***************************************/
+        auto const result = apply(
             context.app,
-            view,
-            transaction->getSTransaction(),
+            perTxView,
+            *transaction->getSTransaction(),
             tapDRY_RUN,
             context.j);
+        if (isTesSuccess(result.ter) || isTecClaim(result.ter))
+            perTxView.apply(view);
 
         jvResult[jss::applied] = result.applied;
-        jvResult[jss::ledger_index] = view.seq();
+        jvResult[jss::ledger_index] = perTxView.seq();
 
         bool const isBinaryOutput =
             context.params.get(jss::binary, false).asBool();
@@ -507,7 +517,10 @@ processTransaction(
 }
 
 // {
-//   tx_blob: <string> XOR tx_json: <object>,
+//   tx_blob: <string> XOR tx_json: <object> XOR tx_hash: <string> XOR ctid:
+//   <string> XOR
+//       transactions: [ <object> ] // array of objects with one of
+//       tx_json/tx_blob/tx_hash/ctid,
 //   binary: <bool>
 // }
 Json::Value
