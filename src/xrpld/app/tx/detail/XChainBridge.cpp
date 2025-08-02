@@ -1163,6 +1163,10 @@ applyCreateAccountAttestations(
             attBegin->createCount;
         createdSleClaimID->setFieldArray(
             sfXChainCreateAccountAttestations, curAtts.toSTArray());
+        if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*createdSleClaimID)[sfSequence] = ctx_.tx.getSeqValue();
+        }
 
         // Add to owner directory of the door account
         auto const page = psb.dirInsert(
@@ -2111,6 +2115,10 @@ XChainCreateClaimID::doApply()
     (*sleClaimID)[sfSignatureReward] = reward;
     sleClaimID->setFieldArray(
         sfXChainClaimAttestations, STArray{sfXChainClaimAttestations});
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        (*sleClaimID)[sfSequence] = ctx_.tx.getSeqValue();
+    }
 
     // Add to owner directory
     {
