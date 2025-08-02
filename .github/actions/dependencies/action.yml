@@ -16,14 +16,6 @@ runs:
         fi
         conan remote add --index 0 xrplf "${CONAN_URL}"
         echo "Added conan remote xrplf at ${CONAN_URL}"
-    - name: try to authenticate to Conan remote
-      if: env.CONAN_LOGIN_USERNAME_XRPLF != '' && env.CONAN_PASSWORD_XRPLF != ''
-      id: remote
-      shell: bash
-      run: |
-        echo "Authenticating to xrplf remote..."
-        conan remote auth xrplf --force
-        conan remote list-users
     - name: list missing binaries
       id: binaries
       shell: bash

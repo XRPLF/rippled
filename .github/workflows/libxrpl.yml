@@ -1,8 +1,8 @@
 name: Check libXRPL compatibility with Clio
 env:
   CONAN_URL: https://conan.ripplex.io
-  CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
-  CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+  CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.CONAN_USERNAME }}
+  CONAN_PASSWORD_XRPLF: ${{ secrets.CONAN_TOKEN }}
 on:
   pull_request:
     paths:
@@ -43,20 +43,20 @@ jobs:
         shell: bash
         run: |
           conan export . ${{ steps.channel.outputs.channel }}
-      - name: Add Ripple Conan remote
+      - name: Add Conan remote
         shell: bash
         run: |
           conan remote list
-          conan remote remove ripple || true
+          conan remote remove xrplf || true
           # Do not quote the URL. An empty string will be accepted (with a non-fatal warning), but a missing argument will not.
-          conan remote add ripple ${{ env.CONAN_URL }} --insert 0
+          conan remote add xrplf ${{ env.CONAN_URL }} --insert 0
       - name: Parse new version
         id: version
         shell: bash
         run: |
           echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" \
             | awk -F '"' '{print $2}')" | tee ${GITHUB_OUTPUT}
-      - name: Try to authenticate to Ripple Conan remote
+      - name: Try to authenticate to Conan remote
         id: remote
         shell: bash
         run: |
@@ -64,7 +64,7 @@ jobs:
           # https://docs.conan.io/1/reference/commands/misc/user.html#using-environment-variables
           # https://docs.conan.io/1/reference/env_vars.html#conan-login-username-conan-login-username-remote-name
           # https://docs.conan.io/1/reference/env_vars.html#conan-password-conan-password-remote-name
-          echo outcome=$(conan user --remote ripple --password >&2 \
+          echo outcome=$(conan user --remote xrplf --password >&2 \
             && echo success || echo failure) | tee ${GITHUB_OUTPUT}
       - name: Upload new package
         id: upload
