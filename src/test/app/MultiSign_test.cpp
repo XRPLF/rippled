@@ -1702,6 +1702,7 @@ public:
         env.close();
     }
 
+    void
     testSignerListObject(FeatureBitset features)
     {
         testcase("SignerList Object");
@@ -1718,13 +1719,16 @@ public:
         env.close();
 
         // Verify that the SignerList object was created correctly.
-        auto const& sl = env.le(keylet::signers(alice.id()));
-        BEAST_EXPECT(sl);
-        BEAST_EXPECT(sl.getFieldArray(sfSigners).size() == 2);
+        auto const& sle = env.le(keylet::signers(alice.id()));
+        BEAST_EXPECT(sle);
+        BEAST_EXPECT(sle->getFieldArray(sfSignerEntries).size() == 2);
         if (features[fixIncludeKeyletFields])
         {
-            BEAST_EXPECT(sl.isFieldPresent(sfOwner));
-            BEAST_EXPECT(sl[sfOwner] == alice.id());
+            BEAST_EXPECT((*sle)[sfOwner] == alice.id());
+        }
+        else
+        {
+            BEAST_EXPECT(!sle->isFieldPresent(sfOwner));
         }
     }
 

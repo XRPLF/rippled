@@ -284,7 +284,7 @@ SetOracle::doApply()
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
         if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
         {
-            (*slep)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
         }
         sle->setFieldVL(sfProvider, ctx_.tx[sfProvider]);
         if (ctx_.tx.isFieldPresent(sfURI))

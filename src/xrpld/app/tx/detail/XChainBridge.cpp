@@ -990,6 +990,7 @@ applyCreateAccountAttestations(
     STXChainBridge::ChainType const srcChain,
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     std::uint32_t quorum,
+    std::uint32_t seq,
     beast::Journal j)
 {
     if (attBegin == attEnd)
@@ -1163,9 +1164,9 @@ applyCreateAccountAttestations(
             attBegin->createCount;
         createdSleClaimID->setFieldArray(
             sfXChainCreateAccountAttestations, curAtts.toSTArray());
-        if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        if (view.rules().enabled(fixIncludeKeyletFields))
         {
-            (*createdSleClaimID)[sfSequence] = ctx_.tx.getSeqValue();
+            (*createdSleClaimID)[sfSequence] = seq;
         }
 
         // Add to owner directory of the door account
@@ -1373,6 +1374,7 @@ attestationDoApply(ApplyContext& ctx)
             srcChain,
             signersList,
             quorum,
+            ctx.tx.getSeqValue(),
             ctx.journal);
     }
 }

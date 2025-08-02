@@ -426,7 +426,7 @@ SetSignerList::writeSignersToSLE(
     // Assign the quorum, default SignerListID, and flags.
     if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
     {
-        ledgerEntry->setFieldU32(sfOwner, account_);
+        ledgerEntry->setAccountID(sfOwner, account_);
     }
     ledgerEntry->setFieldU32(sfSignerQuorum, quorum_);
     ledgerEntry->setFieldU32(sfSignerListID, DEFAULT_SIGNER_LIST_ID);
