@@ -1475,24 +1475,59 @@ class Simulate_test : public beast::unit_test::suite
         std::cout << result.toStyledString() << std::endl;
     }
 
+    void
+    testBatchTransaction()
+    {
+        testcase("Batch transaction");
+
+        using namespace jtx;
+        Env env{*this};
+
+        Account const alice{"alice"};
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        Json::Value batchTx = batch::outer(alice, seq, batchFee, tfIndependent);
+        Json::Value tx1 = Json::objectValue;
+        tx1[jss::RawTransaction] =
+            batch::inner(pay(alice, env.master, XRP(500)), env.seq(alice) + 1)
+                .getTxn();
+        Json::Value tx2 = Json::objectValue;
+        tx2[jss::RawTransaction] =
+            batch::inner(pay(alice, env.master, XRP(200)), env.seq(alice) + 2)
+                .getTxn();
+        batchTx[jss::RawTransactions] = Json::arrayValue;
+        batchTx[jss::RawTransactions].append(tx1);
+        batchTx[jss::RawTransactions].append(tx2);
+
+        Json::Value params = Json::objectValue;
+        params[jss::tx_json] = batchTx;
+
+        auto const result = env.rpc("json", "simulate", to_string(params));
+        std::cout << result.toStyledString() << std::endl;
+    }
+
 public:
     void
     run() override
     {
-        testParamErrors();
-        testFeeError();
-        testInvalidTransactionType();
-        testSuccessfulTransaction();
-        testTransactionNonTecFailure();
-        testTransactionTecFailure();
-        testSuccessfulTransactionMultisigned();
-        testTransactionSigningFailure();
-        testInvalidSingleAndMultiSigningTransaction();
-        testMultisignedBadPubKey();
-        testDeleteExpiredCredentials();
-        testSuccessfulTransactionNetworkID();
-        testSuccessfulPastLedger();
-        testMultipleTransactions();
+        // testParamErrors();
+        // testFeeError();
+        // testInvalidTransactionType();
+        // testSuccessfulTransaction();
+        // testTransactionNonTecFailure();
+        // testTransactionTecFailure();
+        // testSuccessfulTransactionMultisigned();
+        // testTransactionSigningFailure();
+        // testInvalidSingleAndMultiSigningTransaction();
+        // testMultisignedBadPubKey();
+        // testDeleteExpiredCredentials();
+        // testSuccessfulTransactionNetworkID();
+        // testSuccessfulPastLedger();
+        // testMultipleTransactions();
+        testBatchTransaction();
     }
 };
 

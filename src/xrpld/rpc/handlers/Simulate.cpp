@@ -356,21 +356,87 @@ getTxJsonFromParams(
 }
 
 static Json::Value
+processResult(
+    ApplyResult const& result,
+    // easier to type as this due to sfRawTransactions in batch transactions
+    STObject const& transaction,
+    bool const isBinaryOutput,
+    LedgerIndex const seq)
+{
+    Json::Value jvResult = Json::objectValue;
+    jvResult[jss::applied] = result.applied;
+    jvResult[jss::ledger_index] = seq;
+
+    // Convert the TER to human-readable values
+    std::string token;
+    std::string message;
+    if (transResultInfo(result.ter, token, message))
+    {
+        // Engine result
+        jvResult[jss::engine_result] = token;
+        jvResult[jss::engine_result_code] = result.ter;
+        jvResult[jss::engine_result_message] = message;
+    }
+    else
+    {
+        // shouldn't be hit
+        // LCOV_EXCL_START
+        jvResult[jss::engine_result] = "unknown";
+        jvResult[jss::engine_result_code] = result.ter;
+        jvResult[jss::engine_result_message] = "unknown";
+        // LCOV_EXCL_STOP
+    }
+
+    if (token == "tesSUCCESS")
+    {
+        jvResult[jss::engine_result_message] =
+            "The simulated transaction would have been applied.";
+    }
+
+    if (result.metadata)
+    {
+        if (isBinaryOutput)
+        {
+            auto const metaBlob =
+                result.metadata->getAsObject().getSerializer().getData();
+            jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
+        }
+        else
+        {
+            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
+        }
+    }
+
+    if (isBinaryOutput)
+    {
+        auto const txBlob = transaction.getSerializer().getData();
+        jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
+    }
+    else
+    {
+        jvResult[jss::tx_json] = transaction.getJson(JsonOptions::none);
+    }
+    return jvResult;
+}
+
+static Json::Value
 simulateTxn(
     RPC::JsonContext& context,
     std::vector<std::shared_ptr<Transaction>> transactions,
     std::shared_ptr<ReadView const> lpLedger,
     bool const isCurrentLedger)
 {
-    Json::Value jvFinalResult;
-    jvFinalResult[jss::transactions] = Json::arrayValue;
+    Json::Value jvTransactions = Json::arrayValue;
+    std::vector<ApplyResult> results;
+    bool const isBinaryOutput = context.params.get(jss::binary, false).asBool();
 
     OpenView origView = OpenView(&*lpLedger);
     OpenView view(batch_view, origView);
+    LedgerIndex const seq = view.seq();
     for (auto const& transaction : transactions)
     {
         OpenView perTxView(batch_view, view);
-        Json::Value jvResult;
+        auto const txn = *transaction->getSTransaction();
         /***************************************
          * SECURITY NOTE: This technically applies the transaction to the view.
          * However, since the `view` is a copy of the ledger it's being applied
@@ -379,78 +445,41 @@ simulateTxn(
          * cannot use `simulate` to bypass signature checks and submit
          * transactions/modify the current ledger directly.
          ***************************************/
-        auto const result = apply(
-            context.app,
-            perTxView,
-            *transaction->getSTransaction(),
-            tapDRY_RUN,
-            context.j);
+        auto const result =
+            apply(context.app, perTxView, txn, tapDRY_RUN, context.j);
         if (isTesSuccess(result.ter) || isTecClaim(result.ter))
             perTxView.apply(view);
+        jvTransactions.append(processResult(result, txn, isBinaryOutput, seq));
 
-        jvResult[jss::applied] = result.applied;
-        jvResult[jss::ledger_index] = perTxView.seq();
-
-        bool const isBinaryOutput =
-            context.params.get(jss::binary, false).asBool();
-
-        // Convert the TER to human-readable values
-        std::string token;
-        std::string message;
-        if (transResultInfo(result.ter, token, message))
+        if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
         {
-            // Engine result
-            jvResult[jss::engine_result] = token;
-            jvResult[jss::engine_result_code] = result.ter;
-            jvResult[jss::engine_result_message] = message;
-        }
-        else
-        {
-            // shouldn't be hit
-            // LCOV_EXCL_START
-            jvResult[jss::engine_result] = "unknown";
-            jvResult[jss::engine_result_code] = result.ter;
-            jvResult[jss::engine_result_message] = "unknown";
-            // LCOV_EXCL_STOP
-        }
+            OpenView wholeBatchView(batch_view, view);
 
-        if (token == "tesSUCCESS")
-        {
-            jvResult[jss::engine_result_message] =
-                "The simulated transaction would have been applied.";
-        }
-
-        if (result.metadata)
-        {
-            if (isBinaryOutput)
+            if (auto const batchResults = applyBatchTransactions(
+                    context.app, wholeBatchView, txn, tapDRY_RUN, context.j);
+                batchResults)
             {
-                auto const metaBlob =
-                    result.metadata->getAsObject().getSerializer().getData();
-                jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
-            }
-            else
-            {
-                jvResult[jss::meta] =
-                    result.metadata->getJson(JsonOptions::none);
+                for (int i = 0; i < batchResults->size(); ++i)
+                {
+                    auto const& innerResult = (*batchResults)[i];
+                    // TODO: bad, doesn't handle skipping some inner txs
+                    jvTransactions.append(processResult(
+                        innerResult,
+                        txn.getFieldArray(sfRawTransactions)[i],
+                        isBinaryOutput,
+                        seq));
+                }
+                wholeBatchView.apply(view);
             }
         }
-
-        if (isBinaryOutput)
-        {
-            auto const txBlob =
-                transaction->getSTransaction()->getSerializer().getData();
-            jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
-        }
-        else
-        {
-            jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
-        }
-        jvFinalResult[jss::transactions].append(jvResult);
     }
-    if (jvFinalResult[jss::transactions].size() == 1)
+
+    if (jvTransactions.size() == 1)
     {
-        jvFinalResult = jvFinalResult[jss::transactions][0u];
+        return jvTransactions[0u];
     }
+    Json::Value jvFinalResult = Json::objectValue;
+    jvFinalResult[jss::transactions] = jvTransactions;
     return jvFinalResult;
 }
 
@@ -507,10 +536,10 @@ processTransaction(
         return Unexpected(jvResult);
     }
 
-    if (stTx->getTxnType() == ttBATCH)
-    {
-        return Unexpected(RPC::make_error(rpcNOT_IMPL));
-    }
+    // if (stTx->getTxnType() == ttBATCH)
+    // {
+    //     return Unexpected(RPC::make_error(rpcNOT_IMPL));
+    // }
 
     std::string reason;
     return std::make_shared<Transaction>(stTx, reason, context.app);
