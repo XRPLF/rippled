@@ -120,6 +120,7 @@ LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
 // All fields are soeREQUIRED because there is always a SignerEntries.
 // If there are no SignerEntries the node is deleted.
 LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
+    {sfOwner,                soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},
     {sfSignerQuorum,         soeREQUIRED},
     {sfSignerEntries,        soeREQUIRED},
@@ -188,7 +189,7 @@ LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
     {sfNFTokenID,            soeOPTIONAL},
     {sfPreviousTxnID,        soeOPTIONAL},
     {sfPreviousTxnLgrSeq,    soeOPTIONAL},
-    {sfDomainID,             soeOPTIONAL}
+    {sfDomainID,             soeOPTIONAL}   // order book directories
 }))
 
 /** The ledger object which lists details about amendments on the network.
@@ -273,6 +274,7 @@ LEDGER_ENTRY_DUPLICATE(ltDEPOSIT_PREAUTH, 0x0070, DepositPreauth, deposit_preaut
 */
 LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_claim_id, ({
     {sfAccount,                 soeREQUIRED},
+    {sfSequence,                soeOPTIONAL},
     {sfXChainBridge,            soeREQUIRED},
     {sfXChainClaimID,           soeREQUIRED},
     {sfOtherChainSource,        soeREQUIRED},
@@ -329,6 +331,7 @@ LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
 */
 LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAccountClaimID, xchain_owned_create_account_claim_id, ({
     {sfAccount,                         soeREQUIRED},
+    {sfSequence,                        soeOPTIONAL},
     {sfXChainBridge,                    soeREQUIRED},
     {sfXChainAccountCreateCount,        soeREQUIRED},
     {sfXChainCreateAccountAttestations, soeREQUIRED},
@@ -343,6 +346,7 @@ LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAc
  */
 LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
     {sfAccount,              soeREQUIRED},
+    {sfSequence,             soeOPTIONAL},
     {sfDestination,          soeREQUIRED},
     {sfAmount,               soeREQUIRED},
     {sfCondition,            soeOPTIONAL},
@@ -365,6 +369,7 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
 LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
     {sfAccount,              soeREQUIRED},
     {sfDestination,          soeREQUIRED},
+    {sfSequence,             soeOPTIONAL},
     {sfAmount,               soeREQUIRED},
     {sfBalance,              soeREQUIRED},
     {sfPublicKey,            soeREQUIRED},
@@ -432,6 +437,7 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
  */
 LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, oracle, ({
     {sfOwner,                soeREQUIRED},
+    {sfOracleDocumentID,     soeOPTIONAL},
     {sfProvider,             soeREQUIRED},
     {sfPriceDataSeries,      soeREQUIRED},
     {sfAssetClass,           soeREQUIRED},
