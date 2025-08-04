@@ -348,7 +348,7 @@ template <typename T>
 concept IsInnerObjectTypePair = requires {
     std::same_as<decltype(T::Field), SFieldNames>;
     typename T::InnerObjectType;
-} ||  std::is_same_v<T, void>;
+} || std::is_same_v<T, void>;
 
 // Those `GetInnerObjectStruct` classes iterate through each item in the array,
 // and then return the type that the corresponding field name is equal to the
