@@ -53,6 +53,33 @@ minimum required (see [BUILD.md][]).
 clang --version
 ```
 
+### Install Xcode Specific Version (Optional)
+
+If you develop other applications using XCode you might be consistantly updating to the newest version of Apple Clang. This will likely cause issues building rippled. You may want to install a specific version of Xcode:
+
+1. **Download Xcode**
+
+   - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)
+   - Sign in with your Apple Developer account
+   - Search for an Xcode version that includes **Apple Clang (Expected Version)**
+   - Download the `.xip` file
+
+2. **Install and Configure Xcode**
+
+   ```bash
+   # Extract the .xip file and rename for version management
+   # Example: Xcode_16.2.app
+
+   # Move to Applications directory
+   sudo mv Xcode_16.2.app /Applications/
+
+   # Set as default toolchain (persistent)
+   sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+   # Set as environment variable (temporary)
+   export DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer
+   ```
+
 The command line developer tools should include Git too:
 
 ```
