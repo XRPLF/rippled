@@ -27,6 +27,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -81,6 +82,12 @@ VaultCreate::preflight(PreflightContext const& ctx)
     {
         if (metadata->length() == 0 ||
             metadata->length() > maxMPTokenMetadataLength)
+            return temMALFORMED;
+    }
+
+    if (auto const scale = ctx.tx[~sfAssetScale])
+    {
+        if (scale > 18)
             return temMALFORMED;
     }
 
@@ -190,6 +197,14 @@ VaultCreate::doApply()
         !isTesSuccess(ter))
         return ter;
 
+    // Note, AssetScale is set in both MPTokenIssuance and in Vault, but it has
+    // slightly different semantics between these two:
+    // * in MPTokenIssuance it is merely metadata, not used by any program logic
+    // * in Vault it is used to calculate shares to assets conversion factor
+    std::uint8_t assetScale = vaultDefaultAssetScale;
+    if (auto const scale = ctx_.tx[~sfAssetScale])
+        assetScale = *scale;
+
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
     if ((txFlags & tfVaultShareNonTransferable) == 0)
@@ -209,6 +224,7 @@ VaultCreate::doApply()
             .account = pseudoId->value(),
             .sequence = 1,
             .flags = mptFlags,
+            .assetScale = assetScale,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
         });
@@ -235,6 +251,7 @@ VaultCreate::doApply()
         vault->at(sfWithdrawalPolicy) = *value;
     else
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+    vault->at(sfAssetScale) = assetScale;
     // No `LossUnrealized`.
     view().insert(vault);
 

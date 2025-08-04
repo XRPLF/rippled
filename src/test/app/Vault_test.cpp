@@ -745,6 +745,61 @@ class Vault_test : public beast::unit_test::suite
                      Account const& owner,
                      Asset const& asset,
                      Vault& vault) {
+            testcase("create with AssetScale");
+
+            {
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetScale] = 255;
+                env(tx, ter(temMALFORMED));
+            }
+
+            {
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetScale] = 19;
+                env(tx, ter(temMALFORMED));
+            }
+
+            // accepted range from 0 to 18
+            {
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetScale] = 18;
+                env(tx);
+                env.close();
+                auto const sleVault = env.le(keylet);
+                BEAST_EXPECT(sleVault);
+                BEAST_EXPECT((*sleVault)[sfAssetScale] == 18);
+            }
+
+            {
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfAssetScale] = 0;
+                env(tx);
+                env.close();
+                auto const sleVault = env.le(keylet);
+                BEAST_EXPECT(sleVault);
+                BEAST_EXPECT((*sleVault)[sfAssetScale] == 0);
+            }
+
+            {
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
+                auto const sleVault = env.le(keylet);
+                BEAST_EXPECT(sleVault);
+                BEAST_EXPECT((*sleVault)[sfAssetScale] == 6);
+            }
+        });
+
+        testCase([&](Env& env,
+                     Account const&,
+                     Account const& owner,
+                     Asset const& asset,
+                     Vault& vault) {
             testcase("create or set invalid data");
 
             auto [tx1, keylet] = vault.create({.owner = owner, .asset = asset});

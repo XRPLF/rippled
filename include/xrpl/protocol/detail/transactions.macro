@@ -483,6 +483,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate, Delegation::delegatable, ({
     {sfDomainID, soeOPTIONAL},
     {sfWithdrawalPolicy, soeOPTIONAL},
     {sfData, soeOPTIONAL},
+    {sfAssetScale, soeOPTIONAL},
 }))
 
 /** This transaction updates a single asset vault. */
