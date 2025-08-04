@@ -244,7 +244,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                         auto sle = std::make_shared<SLE>(SerialIter{blob}, k);
                         if (!sle->isFieldPresent(sfOwner))
                         {
-                            auto bookBase = keylet::quality({ltDIR_NODE, k}, 0);
+                            auto bookBase = keylet::quality({k}, 0);
                             if (!inBase && inDesired)
                             {
                                 auto firstBook =
