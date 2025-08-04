@@ -215,8 +215,6 @@ VaultDeposit::doApply()
                     mPriorBalance,
                     mptIssuanceID->value(),
                     account_,
-                    {},  // flags
-                    {},  // holderID
                     ctx_.journal);
                 !isTesSuccess(err))
                 return err;
@@ -227,12 +225,13 @@ VaultDeposit::doApply()
         {
             if (auto const err = authorizeMPToken(
                     view(),
-                    mPriorBalance,              // priorBalance
-                    mptIssuanceID->value(),     // mptIssuanceID
-                    sleIssuance->at(sfIssuer),  // account
+                    mPriorBalance,                 // priorBalance
+                    mptIssuanceID->value(),        // mptIssuanceID
+                    sleIssuance->at(sfIssuer),   // account
+                    ctx_.journal,
                     {},                         // flags
-                    account_,                   // holderID
-                    ctx_.journal);
+                    account_                    // holderID
+                );
                 !isTesSuccess(err))
                 return err;
         }

@@ -184,9 +184,9 @@ MPTokenAuthorize::doApply()
         mPriorBalance,
         tx[sfMPTokenIssuanceID],
         account_,
+        ctx_.journal,
         tx.getFlags(),
-        tx[~sfHolder],
-        ctx_.journal);
+        tx[~sfHolder]);
 }
 
 }  // namespace ripple

@@ -1219,8 +1219,6 @@ addEmptyHolding(
         priorBalance,
         mptID,
         accountID,
-        {},  // flags
-        {},  // holderID
         journal);
 }
 
@@ -1230,9 +1228,9 @@ authorizeMPToken(
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
+    beast::Journal journal,
     std::uint32_t flags,
-    std::optional<AccountID> holderID,
-    beast::Journal journal)
+    std::optional<AccountID> holderID)
 {
     auto const sleAcct = view.peek(keylet::account(account));
     if (!sleAcct)
@@ -1532,9 +1530,9 @@ removeEmptyHolding(
         {},  // priorBalance
         mptID,
         accountID,
-        tfMPTUnauthorize,  // flags
-        {},                // holderID
-        journal);
+        journal,
+        tfMPTUnauthorize  // flags
+        );
 }
 
 TER
@@ -2599,9 +2597,8 @@ enforceMPTokenAuthorization(
                 priorBalance,   // priorBalance
                 mptIssuanceID,  // mptIssuanceID
                 account,        // account
-                0,              // flags,
-                {},             // holderID
-                j);
+                j
+            );
             !isTesSuccess(err))
             return err;
 

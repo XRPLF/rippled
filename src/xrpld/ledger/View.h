@@ -583,9 +583,9 @@ authorizeMPToken(
     XRPAmount const& priorBalance,
     MPTID const& mptIssuanceID,
     AccountID const& account,
-    std::uint32_t flags,
-    std::optional<AccountID> holderID,
-    beast::Journal journal);
+    beast::Journal journal,
+    std::uint32_t flags = 0,
+    std::optional<AccountID> holderID = std::nullopt);
 
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
