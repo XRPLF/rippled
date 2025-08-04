@@ -63,27 +63,6 @@ parseIndex(Json::Value const& params, Json::Value& jvResult)
 }
 
 static std::optional<uint256>
-parseHashes(Json::Value const& params, Json::Value& jvResult)
-{
-    if (params.isUInt() || params.isInt() || params.isString())
-    {
-        // If the index doesn't parse as a UInt, throw
-        auto const index = params.asUInt();
-
-        auto const keylet = keylet::skip(index);
-        return keylet.key;
-    }
-    else
-    {
-        // Any type that can't reasonably be interpreted as a UInt will
-        // return the "short" skip list, which contains hashes since
-        // the last flag ledger.
-        auto const keylet = keylet::skip();
-        return keylet.key;
-    }
-}
-
-static std::optional<uint256>
 parseAccountRoot(Json::Value const& params, Json::Value& jvResult)
 {
     auto const account = parseBase58<AccountID>(params.asString());
@@ -478,6 +457,48 @@ parseEscrow(Json::Value const& params, Json::Value& jvResult)
     }
 
     return keylet::escrow(*id, params[jss::seq].asUInt()).key;
+}
+
+static std::optional<uint256>
+parseFixed(
+    Keylet const& keylet,
+    Json::Value const& params,
+    Json::Value& jvResult)
+{
+    if (!params.isBool())
+    {
+        uint256 uNodeIndex;
+        if (!params.isString() || !uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+    if (!params.asBool())
+    {
+        jvResult[jss::error] = "invalidParams";
+        return std::nullopt;
+    }
+
+    return keylet.key;
+}
+
+static std::optional<uint256>
+parseHashes(Json::Value const& params, Json::Value& jvResult)
+{
+    if (params.isUInt() || params.isInt())
+    {
+        // If the index doesn't parse as a UInt, throw
+        auto const index = params.asUInt();
+
+        // Return the "long" skip list for the given ledger index.
+        auto const keylet = keylet::skip(index);
+        return keylet.key;
+    }
+    // Return the key in `params` or the "short" skip list, which contains
+    // hashes since the last flag ledger.
+    return parseFixed(keylet::skip(), params, jvResult);
 }
 
 static std::optional<uint256>
@@ -974,7 +995,11 @@ struct LedgerEntry
 static FunctionType
 fixed(Keylet const& keylet)
 {
-    return [&keylet](Json::Value const&, Json::Value&) { return keylet.key; };
+    return [&keylet](
+               Json::Value const& params,
+               Json::Value& jvResult) -> std::optional<uint256> {
+        return parseFixed(keylet, params, jvResult);
+    };
 }
 auto const parseAmendments = fixed(keylet::amendments());
 auto const parseFeeSettings = fixed(keylet::fees());
