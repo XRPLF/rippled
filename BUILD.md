@@ -422,7 +422,7 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
    concurrency. Recommended setting is half of the number of available CPU
    cores.
 
-   The location of `rippled` binary in your build directory depends on your 
+   The location of `rippled` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
 
 
