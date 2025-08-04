@@ -20,6 +20,7 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/TaggedCache.h>
+#include <utility>
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Protocol.h>
@@ -153,24 +154,111 @@ public:
             BEAST_EXPECT(c.getCacheSize() == 1);
             BEAST_EXPECT(c.getTrackSize() == 1);
 
-            auto const p1 = c.fetch(5);
-            BEAST_EXPECT(p1 != nullptr);
-            BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            {
+                auto const p1 = c.fetch(5);
+                BEAST_EXPECT(p1 != nullptr);
+                BEAST_EXPECT(c.getCacheSize() == 1);
+                BEAST_EXPECT(c.getTrackSize() == 1);
 
-            // Advance the clock a lot
+                // Advance the clock a lot
+                ++clock;
+                c.sweep();
+                BEAST_EXPECT(c.getCacheSize() == 0);
+                BEAST_EXPECT(c.getTrackSize() == 1);
+
+                auto p2 = std::make_shared<std::string>("five_2");
+                BEAST_EXPECT(c.canonicalize_replace_cache(5, p2));
+                BEAST_EXPECT(c.getCacheSize() == 1);
+                BEAST_EXPECT(c.getTrackSize() == 1);
+                // Make sure we get the original object
+                BEAST_EXPECT(p1.get() != p2.get());
+                BEAST_EXPECT(*p2 == "five_2");
+            }
+
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            BEAST_EXPECT(c.getTrackSize() == 0);
+        }
 
-            auto p2 = std::make_shared<std::string>("five_2");
-            BEAST_EXPECT(c.canonicalize_replace_cache(5, p2));
-            BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
-            // Make sure we get the original object
-            BEAST_EXPECT(p1.get() != p2.get());
-            BEAST_EXPECT(*p2 == "five_2");
+        {
+            testcase("intrptr");
+
+            struct MyRefCountObject : IntrusiveRefCounts
+            {
+                std::string _data;
+
+                // Needed to support weak intrusive pointers
+                virtual void
+                partialDestructor() {};
+
+                MyRefCountObject() = default;
+                explicit MyRefCountObject(std::string data)
+                : _data(std::move(data)) {}
+                explicit MyRefCountObject(char const* data)
+                    : _data(data) {}
+
+                MyRefCountObject& operator=(MyRefCountObject const& other)
+                {
+                    _data = other._data;
+                    return *this;
+                }
+
+                bool operator==(MyRefCountObject const& other) const
+                {
+                    return _data == other._data;
+                }
+
+                bool operator==(std::string const& other) const
+                {
+                    return _data == other;
+                }
+            };
+
+            using IntrPtrCache = TaggedCache<
+                Key,
+                MyRefCountObject,
+                /*IsKeyCache*/ false,
+                intr_ptr::SharedWeakUnionPtr<MyRefCountObject>,
+                intr_ptr::SharedPtr<MyRefCountObject>
+            >;
+
+            IntrPtrCache intrPtrCache("IntrPtrTest", 1, 1s, clock, journal);
+
+            intrPtrCache.canonicalize_replace_cache(1, intr_ptr::make_shared<MyRefCountObject>("one"));
+            BEAST_EXPECT(intrPtrCache.getCacheSize() == 1);
+            BEAST_EXPECT(intrPtrCache.getTrackSize() == 1);
+
+            {
+                {
+                    intrPtrCache.canonicalize_replace_cache(1, intr_ptr::make_shared<MyRefCountObject>("one_replaced"));
+
+                    auto p = intrPtrCache.fetch(1);
+                    BEAST_EXPECT(*p == "one_replaced");
+
+                    // Advance the clock a lot
+                    ++clock;
+                    intrPtrCache.sweep();
+                    BEAST_EXPECT(intrPtrCache.getCacheSize() == 0);
+                    BEAST_EXPECT(intrPtrCache.getTrackSize() == 1);
+
+                    intrPtrCache.canonicalize_replace_cache(1, intr_ptr::make_shared<MyRefCountObject>("one_replaced_2"));
+
+                    auto p2 = intrPtrCache.fetch(1);
+                    BEAST_EXPECT(*p2 == "one_replaced_2");
+
+                    intrPtrCache.del(1, true);
+                }
+
+                intrPtrCache.canonicalize_replace_cache(1, intr_ptr::make_shared<MyRefCountObject>("one_replaced_3"));
+                auto p3 = intrPtrCache.fetch(1);
+                BEAST_EXPECT(*p3 == "one_replaced_3");
+            }
+
+            ++clock;
+            intrPtrCache.sweep();
+            BEAST_EXPECT(intrPtrCache.getCacheSize() == 0);
+            BEAST_EXPECT(intrPtrCache.getTrackSize() == 0);
         }
     }
 };
