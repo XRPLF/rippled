@@ -388,7 +388,7 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
 
    For a single-configuration generator, it will build whatever configuration
    you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator, you
-   must pass the option `--config` to select the build configuration. 
+   must pass the option `--config` to select the build configuration.
 
    Single-config generators:
 
