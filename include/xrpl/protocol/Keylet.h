@@ -58,7 +58,8 @@ struct TypedKeylet : Keylet
     {
     }
 
-    Keylet untyped() const
+    Keylet
+    untyped() const
     {
         return Keylet(LedgerType, key);
     }
