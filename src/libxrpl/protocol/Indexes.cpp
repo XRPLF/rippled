@@ -203,10 +203,9 @@ skip() noexcept
 TypedKeylet<ltLEDGER_HASHES>
 skip(LedgerIndex ledger) noexcept
 {
-    return {
-        indexHash(
-            LedgerNameSpace::SKIP_LIST,
-            std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
+    return {indexHash(
+        LedgerNameSpace::SKIP_LIST,
+        std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
 }
 
 TypedKeylet<ltAMENDMENTS> const&
@@ -260,12 +259,11 @@ line(
     // two accounts (smallest then largest)  and hash them in that order:
     auto const accounts = std::minmax(id0, id1);
 
-    return {
-        indexHash(
-            LedgerNameSpace::TRUST_LINE,
-            accounts.first,
-            accounts.second,
-            currency)};
+    return {indexHash(
+        LedgerNameSpace::TRUST_LINE,
+        accounts.first,
+        accounts.second,
+        currency)};
 }
 
 TypedKeylet<ltOFFER>
@@ -277,7 +275,6 @@ offer(AccountID const& id, std::uint32_t seq) noexcept
 TypedKeylet<ltDIR_NODE>
 quality(TypedKeylet<ltDIR_NODE> const& k, std::uint64_t q) noexcept
 {
-
     // Indexes are stored in big endian format: they print as hex as stored.
     // Most significant bytes are first and the least significant bytes
     // represent adjacent entries. We place the quality, in big endian format,
@@ -372,7 +369,8 @@ page(uint256 const& key, std::uint64_t index) noexcept
     if (index == 0)
         return TypedKeylet<ltDIR_NODE>{key};
 
-    return TypedKeylet<ltDIR_NODE>{indexHash(LedgerNameSpace::DIR_NODE, key, index)};
+    return TypedKeylet<ltDIR_NODE>{
+        indexHash(LedgerNameSpace::DIR_NODE, key, index)};
 }
 
 TypedKeylet<ltESCROW>
@@ -420,13 +418,15 @@ nftoffer(AccountID const& owner, std::uint32_t seq)
 TypedKeylet<ltDIR_NODE>
 nft_buys(uint256 const& id) noexcept
 {
-    return TypedKeylet<ltDIR_NODE>{indexHash(LedgerNameSpace::NFTOKEN_BUY_OFFERS, id)};
+    return TypedKeylet<ltDIR_NODE>{
+        indexHash(LedgerNameSpace::NFTOKEN_BUY_OFFERS, id)};
 }
 
 TypedKeylet<ltDIR_NODE>
 nft_sells(uint256 const& id) noexcept
 {
-    return TypedKeylet<ltDIR_NODE>{indexHash(LedgerNameSpace::NFTOKEN_SELL_OFFERS, id)};
+    return TypedKeylet<ltDIR_NODE>{
+        indexHash(LedgerNameSpace::NFTOKEN_SELL_OFFERS, id)};
 }
 
 TypedKeylet<ltAMM>
@@ -462,35 +462,32 @@ bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
     // there can only be one bridge per lockingChainCurrency. On the issuing
     // chain there can only be one bridge per issuingChainCurrency.
     auto const& issue = bridge.issue(chainType);
-    return TypedKeylet<ltBRIDGE>{
-        indexHash(
-            LedgerNameSpace::BRIDGE, bridge.door(chainType), issue.currency)};
+    return TypedKeylet<ltBRIDGE>{indexHash(
+        LedgerNameSpace::BRIDGE, bridge.door(chainType), issue.currency)};
 }
 
 TypedKeylet<ltXCHAIN_OWNED_CLAIM_ID>
 xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq)
 {
-    return TypedKeylet<ltXCHAIN_OWNED_CLAIM_ID>{
-        indexHash(
-            LedgerNameSpace::XCHAIN_CLAIM_ID,
-            bridge.lockingChainDoor(),
-            bridge.lockingChainIssue(),
-            bridge.issuingChainDoor(),
-            bridge.issuingChainIssue(),
-            seq)};
+    return TypedKeylet<ltXCHAIN_OWNED_CLAIM_ID>{indexHash(
+        LedgerNameSpace::XCHAIN_CLAIM_ID,
+        bridge.lockingChainDoor(),
+        bridge.lockingChainIssue(),
+        bridge.issuingChainDoor(),
+        bridge.issuingChainIssue(),
+        seq)};
 }
 
 TypedKeylet<ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID>
 xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq)
 {
-    return TypedKeylet<ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID>{
-        indexHash(
-            LedgerNameSpace::XCHAIN_CREATE_ACCOUNT_CLAIM_ID,
-            bridge.lockingChainDoor(),
-            bridge.lockingChainIssue(),
-            bridge.issuingChainDoor(),
-            bridge.issuingChainIssue(),
-            seq)};
+    return TypedKeylet<ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID>{indexHash(
+        LedgerNameSpace::XCHAIN_CREATE_ACCOUNT_CLAIM_ID,
+        bridge.lockingChainDoor(),
+        bridge.lockingChainIssue(),
+        bridge.issuingChainDoor(),
+        bridge.issuingChainIssue(),
+        seq)};
 }
 
 TypedKeylet<ltDID>
@@ -502,7 +499,8 @@ did(AccountID const& account) noexcept
 TypedKeylet<ltORACLE>
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept
 {
-    return TypedKeylet<ltORACLE>{indexHash(LedgerNameSpace::ORACLE, account, documentID)};
+    return TypedKeylet<ltORACLE>{
+        indexHash(LedgerNameSpace::ORACLE, account, documentID)};
 }
 
 TypedKeylet<ltMPTOKEN_ISSUANCE>
