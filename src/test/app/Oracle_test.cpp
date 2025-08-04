@@ -414,15 +414,16 @@ private:
             BEAST_EXPECT(oracle.exists());
             BEAST_EXPECT(ownerCount(env, owner) == (count + adj));
             auto const entry = oracle.ledgerEntry();
-            BEAST_EXPECT(entry[jss::Owner] == owner.human());
+            BEAST_EXPECT(entry[jss::node][jss::Owner] == owner.human());
             if (features[fixIncludeKeyletFields])
             {
                 BEAST_EXPECT(
-                    entry[jss::OracleDocumentID] == oracle.documentID());
+                    entry[jss::node][jss::OracleDocumentID] ==
+                    oracle.documentID());
             }
             else
             {
-                BEAST_EXPECT(!entry.isMember(jss::OracleDocumentID));
+                BEAST_EXPECT(!entry[jss::node].isMember(jss::OracleDocumentID));
             }
             BEAST_EXPECT(oracle.expectLastUpdateTime(946694810));
         };
