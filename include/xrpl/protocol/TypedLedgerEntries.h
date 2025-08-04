@@ -30,8 +30,7 @@
 
 namespace ripple {
 
-enum class LedgerEntryConstness
-{
+enum class LedgerEntryConstness {
     NonConst,
     Const,
 };
@@ -390,15 +389,11 @@ template <typename T, LedgerEntryConstness Constness>
 using AddConstAwareness = std::conditional_t<
     Constness == LedgerEntryConstness::NonConst,
     T,
-    std::add_const_t<T>
->;
+    std::add_const_t<T>>;
 
 template <typename Type, typename MatchAgainst>
-using MatchConstness = std::conditional_t<
-    std::is_const_v<MatchAgainst>,
-    std::add_const_t<Type>,
-    Type
->;
+using MatchConstness = std::
+    conditional_t<std::is_const_v<MatchAgainst>, std::add_const_t<Type>, Type>;
 
 template <typename T>
 concept STObjectLike = std::same_as<std::remove_cvref_t<T>, STObject>;
@@ -802,8 +797,7 @@ struct GetFieldValue<
 #pragma pop_macro("INNER_OBJECT_BEGIN")
 #pragma pop_macro("INNER_OBJECT_END")
 
-template <LedgerEntryType EntryType,
-        LedgerEntryConstness Constness>
+template <LedgerEntryType EntryType, LedgerEntryConstness Constness>
 struct LedgerEntry
 {
 };
@@ -853,9 +847,9 @@ struct LedgerEntry
                  soeStyle,                                                    \
                  detail::GetFieldType<SFieldNames::field_##field>::Value,     \
                  InnerObjectTypesArray>::                                     \
-                     get(std::declval<AddConstAwareness<                      \
-                            STLedgerEntry,                                    \
-                            Constness>&>(), field));                          \
+                     get(std::declval<                                        \
+                             AddConstAwareness<STLedgerEntry, Constness>&>(), \
+                         field));                                             \
     Field_##field##Type f##field()                                            \
     {                                                                         \
         return GetFieldValue<                                                 \
@@ -875,130 +869,147 @@ struct LedgerEntry
             InnerObjectTypesArray>::get(*getObject(), field);                 \
     }
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields)                       \
-    template <LedgerEntryConstness Constness>                                 \
-    struct LedgerEntry<tag, Constness>                                        \
-    {                                                                         \
-    private:                                                                  \
-        using CLS = LedgerEntry<tag, Constness>;                              \
-        std::variant<                                                         \
-            std::shared_ptr<AddConstAwareness<STLedgerEntry, Constness>>,     \
-            AddConstAwareness<STLedgerEntry, Constness>*> object_;            \
-        LedgerEntry(AddConstAwareness<STLedgerEntry, Constness>& object)      \
-                : object_(&object)                                            \
-        {                                                                     \
-        }                                                                     \
-        LedgerEntry(                                                          \
-            std::shared_ptr<                                                  \
-                AddConstAwareness<STLedgerEntry, Constness>                   \
-            > const& object)                                                  \
-            : object_(object)                                                 \
-        {                                                                     \
-        }                                                                     \
-                                                                              \
-    public:                                                                   \
-        bool                                                                  \
-        isValid() const                                                       \
-        {                                                                     \
-            return getObject() != nullptr;                                    \
-        }                                                                     \
-        static void                                                           \
-        ensureType(STLedgerEntry const& object)                               \
-        {                                                                     \
-            if (tag != object.getType())                                      \
-            {                                                                 \
-                Throw<std::runtime_error>("Object type mismatch!");           \
-            }                                                                 \
-        }                                                                     \
-        AddConstAwareness<STLedgerEntry, Constness>*                          \
-        getObject()                                                           \
-        {                                                                     \
-            if (std::holds_alternative<                                       \
-                std::shared_ptr<                                              \
-                    AddConstAwareness<STLedgerEntry, Constness>               \
-                >>(                                                           \
-                    object_))                                                 \
-            {                                                                 \
-                return std::get<                                              \
-                    std::shared_ptr<                                          \
-                        AddConstAwareness<STLedgerEntry, Constness>           \
-                    >>(object_).get();                                        \
-            }                                                                 \
-            else                                                              \
-            {                                                                 \
-                return std::get<                                              \
-                    AddConstAwareness<STLedgerEntry, Constness>*              \
-                >(object_);                                                   \
-            }                                                                 \
-        }                                                                     \
-        STLedgerEntry const*                                                  \
-        getObject() const                                                     \
-        {                                                                     \
-            if (std::holds_alternative<                                       \
-                    std::shared_ptr<                                          \
-                        AddConstAwareness<STLedgerEntry, Constness>>          \
-                    >(object_))                                               \
-            {                                                                 \
-                return std::get<                                              \
-                    std::shared_ptr<                                          \
-                        AddConstAwareness<STLedgerEntry, Constness>>          \
-                    >(object_).get();                                         \
-            }                                                                 \
-            else                                                              \
-            {                                                                 \
-                return std::get<                                              \
-                        AddConstAwareness<STLedgerEntry, Constness>*          \
-                    >(object_);                                               \
-            }                                                                 \
-        }                                                                     \
-        operator std::shared_ptr<                                             \
-                    AddConstAwareness<STLedgerEntry, Constness>>&()           \
-        {                                                                     \
-            return std::get<                                                  \
-                std::shared_ptr<                                              \
-                    AddConstAwareness<STLedgerEntry, Constness>>              \
-                >(object_);                                                   \
-        }                                                                     \
-        operator std::shared_ptr<                                             \
-                    AddConstAwareness<STLedgerEntry, Constness>               \
-                > const&() const                                              \
-        {                                                                     \
-            return std::get<                                                  \
-                std::shared_ptr<                                              \
-                    AddConstAwareness<STLedgerEntry, Constness>>              \
-                >(object_);                                                   \
-        }                                                                     \
-        operator bool() const { return isValid(); }                           \
-        bool operator==(std::nullptr_t) const { return !isValid(); }          \
-        bool operator!=(std::nullptr_t) const { return isValid(); }          \
-        bool operator!() const { return !isValid(); }                         \
-        auto operator->() const { return getObject(); }                       \
-        auto operator->() { return getObject(); }                             \
-        auto& operator*() { return *getObject(); }                            \
-        auto const& operator*() const { return *getObject(); }                \
-        static LedgerEntry                                                    \
-        fromObject(AddConstAwareness<STLedgerEntry, Constness>& object)       \
-        {                                                                     \
-            ensureType(object);                                               \
-            return LedgerEntry{object};                                       \
-        }                                                                     \
-        static LedgerEntry                                                    \
-        fromObject(std::shared_ptr<                                           \
-                AddConstAwareness<STLedgerEntry, Constness>                   \
-                > const& object)                                              \
-        {                                                                     \
-            ensureType(*object);                                              \
-            return LedgerEntry{object};                                       \
-        }                                                                     \
-        static LedgerEntry                                                    \
-        create(uint256 const& key)                                            \
-        {                                                                     \
-            return LedgerEntry{                                               \
-                std::make_shared<                                             \
-                    AddConstAwareness<STLedgerEntry, Constness>               \
-                >(tag, key)};                                                 \
-        }                                                                     \
-        fields                                                                \
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields)                        \
+    template <LedgerEntryConstness Constness>                                  \
+    struct LedgerEntry<tag, Constness>                                         \
+    {                                                                          \
+    private:                                                                   \
+        using CLS = LedgerEntry<tag, Constness>;                               \
+        std::variant<                                                          \
+            std::shared_ptr<AddConstAwareness<STLedgerEntry, Constness>>,      \
+            AddConstAwareness<STLedgerEntry, Constness>*>                      \
+            object_;                                                           \
+        LedgerEntry(AddConstAwareness<STLedgerEntry, Constness>& object)       \
+            : object_(&object)                                                 \
+        {                                                                      \
+        }                                                                      \
+        LedgerEntry(                                                           \
+            std::shared_ptr<                                                   \
+                AddConstAwareness<STLedgerEntry, Constness>> const& object)    \
+            : object_(object)                                                  \
+        {                                                                      \
+        }                                                                      \
+                                                                               \
+    public:                                                                    \
+        bool                                                                   \
+        isValid() const                                                        \
+        {                                                                      \
+            return getObject() != nullptr;                                     \
+        }                                                                      \
+        static void                                                            \
+        ensureType(STLedgerEntry const& object)                                \
+        {                                                                      \
+            if (tag != object.getType())                                       \
+            {                                                                  \
+                Throw<std::runtime_error>("Object type mismatch!");            \
+            }                                                                  \
+        }                                                                      \
+        AddConstAwareness<STLedgerEntry, Constness>*                           \
+        getObject()                                                            \
+        {                                                                      \
+            if (std::holds_alternative<std::shared_ptr<                        \
+                    AddConstAwareness<STLedgerEntry, Constness>>>(object_))    \
+            {                                                                  \
+                return std::get<std::shared_ptr<                               \
+                    AddConstAwareness<STLedgerEntry, Constness>>>(object_)     \
+                    .get();                                                    \
+            }                                                                  \
+            else                                                               \
+            {                                                                  \
+                return std::get<AddConstAwareness<STLedgerEntry, Constness>*>( \
+                    object_);                                                  \
+            }                                                                  \
+        }                                                                      \
+        STLedgerEntry const*                                                   \
+        getObject() const                                                      \
+        {                                                                      \
+            if (std::holds_alternative<std::shared_ptr<                        \
+                    AddConstAwareness<STLedgerEntry, Constness>>>(object_))    \
+            {                                                                  \
+                return std::get<std::shared_ptr<                               \
+                    AddConstAwareness<STLedgerEntry, Constness>>>(object_)     \
+                    .get();                                                    \
+            }                                                                  \
+            else                                                               \
+            {                                                                  \
+                return std::get<AddConstAwareness<STLedgerEntry, Constness>*>( \
+                    object_);                                                  \
+            }                                                                  \
+        }                                                                      \
+        operator std::shared_ptr<                                              \
+            AddConstAwareness<STLedgerEntry, Constness>>&()                    \
+        {                                                                      \
+            return std::get<                                                   \
+                std::shared_ptr<AddConstAwareness<STLedgerEntry, Constness>>>( \
+                object_);                                                      \
+        }                                                                      \
+        operator std::shared_ptr<                                              \
+            AddConstAwareness<STLedgerEntry, Constness>> const&() const        \
+        {                                                                      \
+            return std::get<                                                   \
+                std::shared_ptr<AddConstAwareness<STLedgerEntry, Constness>>>( \
+                object_);                                                      \
+        }                                                                      \
+        operator bool() const                                                  \
+        {                                                                      \
+            return isValid();                                                  \
+        }                                                                      \
+        bool                                                                   \
+        operator==(std::nullptr_t) const                                       \
+        {                                                                      \
+            return !isValid();                                                 \
+        }                                                                      \
+        bool                                                                   \
+        operator!=(std::nullptr_t) const                                       \
+        {                                                                      \
+            return isValid();                                                  \
+        }                                                                      \
+        bool                                                                   \
+        operator!() const                                                      \
+        {                                                                      \
+            return !isValid();                                                 \
+        }                                                                      \
+        auto                                                                   \
+        operator->() const                                                     \
+        {                                                                      \
+            return getObject();                                                \
+        }                                                                      \
+        auto                                                                   \
+        operator->()                                                           \
+        {                                                                      \
+            return getObject();                                                \
+        }                                                                      \
+        auto&                                                                  \
+        operator*()                                                            \
+        {                                                                      \
+            return *getObject();                                               \
+        }                                                                      \
+        auto const&                                                            \
+        operator*() const                                                      \
+        {                                                                      \
+            return *getObject();                                               \
+        }                                                                      \
+        static LedgerEntry                                                     \
+        fromObject(AddConstAwareness<STLedgerEntry, Constness>& object)        \
+        {                                                                      \
+            ensureType(object);                                                \
+            return LedgerEntry{object};                                        \
+        }                                                                      \
+        static LedgerEntry                                                     \
+        fromObject(std::shared_ptr<                                            \
+                   AddConstAwareness<STLedgerEntry, Constness>> const& object) \
+        {                                                                      \
+            ensureType(*object);                                               \
+            return LedgerEntry{object};                                        \
+        }                                                                      \
+        static LedgerEntry                                                     \
+        create(uint256 const& key)                                             \
+        {                                                                      \
+            return LedgerEntry{                                                \
+                std::make_shared<AddConstAwareness<STLedgerEntry, Constness>>( \
+                    tag, key)};                                                \
+        }                                                                      \
+        fields                                                                 \
     };
 
 #define LEDGER_ENTRY_DUPLICATE(...)
@@ -1027,9 +1038,11 @@ using InnerObjectType = typename detail::
 
 // This gives a ledger entry type that the LedgerEntryType corresponds to.
 template <LedgerEntryType EntryType>
-using LedgerObjectType = detail::LedgerEntry<EntryType, LedgerEntryConstness::NonConst>;
+using LedgerObjectType =
+    detail::LedgerEntry<EntryType, LedgerEntryConstness::NonConst>;
 
 template <LedgerEntryType EntryType>
-using ConstLedgerObjectType = detail::LedgerEntry<EntryType, LedgerEntryConstness::Const>;
+using ConstLedgerObjectType =
+    detail::LedgerEntry<EntryType, LedgerEntryConstness::Const>;
 }  // namespace ripple
 #endif  // TYPED_LEDGER_ENTRIES_H
