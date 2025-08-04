@@ -2362,8 +2362,8 @@ private:
                 buffers.prepare(slice.size()), boost::asio::buffer(slice)));
 
             boost::system::error_code ec;
-            auto header =
-                detail::parseMessageHeader(ec, buffers.data(), buffers.size());
+            auto header = ripple::detail::parseMessageHeader(
+                ec, buffers.data(), buffers.size());
             BEAST_EXPECT(!ec);
             return std::make_pair(header, buffers);
         };
@@ -2373,9 +2373,8 @@ private:
             if (BEAST_EXPECT(header) &&
                 BEAST_EXPECT(header->message_type == protocol::mtVALIDATORLIST))
             {
-                auto const msg =
-                    detail::parseMessageContent<protocol::TMValidatorList>(
-                        *header, buffers.data());
+                auto const msg = ripple::detail::parseMessageContent<
+                    protocol::TMValidatorList>(*header, buffers.data());
                 BEAST_EXPECT(msg);
                 return msg;
             }
@@ -2389,7 +2388,7 @@ private:
                     header->message_type ==
                     protocol::mtVALIDATORLISTCOLLECTION))
             {
-                auto const msg = detail::parseMessageContent<
+                auto const msg = ripple::detail::parseMessageContent<
                     protocol::TMValidatorListCollection>(
                     *header, buffers.data());
                 BEAST_EXPECT(msg);

@@ -181,6 +181,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         std::nullopt,
         std::nullopt,
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         ctx.j);
     if (!expected)
         return expected.error();  // LCOV_EXCL_LINE
@@ -236,6 +237,7 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     accountID,
                     deposit.issue(),
                     FreezeHandling::fhIGNORE_FREEZE,
+                    AuthHandling::ahIGNORE_AUTH,
                     ctx.j) >= deposit)
             ? TER(tesSUCCESS)
             : tecUNFUNDED_AMM;
@@ -382,6 +384,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         amount ? amount->issue() : std::optional<Issue>{},
         amount2 ? amount2->issue() : std::optional<Issue>{},
         FreezeHandling::fhZERO_IF_FROZEN,
+        AuthHandling::ahZERO_IF_UNAUTHORIZED,
         ctx_.journal);
     if (!expected)
         return {expected.error(), false};  // LCOV_EXCL_LINE
@@ -528,6 +531,7 @@ AMMDeposit::deposit(
                 account_,
                 depositAmount.issue(),
                 FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
                 ctx_.journal) >= depositAmount)
             return tesSUCCESS;
         return tecUNFUNDED_AMM;
@@ -802,6 +806,22 @@ AMMDeposit::singleDeposit(
     std::optional<STAmount> const& lpTokensDepositMin,
     std::uint16_t tfee)
 {
+    if (view.rules().enabled(fixEnforceTrustlineAuth))
+    {
+        // amountBalance is calculated by `accountHolds`, which has the
+        // possibility of returning zero. amountBalance is passed into
+        // `lpTokensOut` as a denominator, which would throw an exception if
+        // the value is zero.
+        //
+        //  Even though it should not happen and it's checked here
+        //  defensively, we'd like to catch this early on if it does occur.
+
+        // LCOV_EXCL_START
+        if (amountBalance == beast::zero)
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+        // LCOV_EXCL_STOP
+    }
+
     auto const tokens = adjustLPTokensOut(
         view.rules(),
         lptAMMBalance,
