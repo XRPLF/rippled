@@ -95,7 +95,32 @@ Linux</h2>
 macOS</h2>
 <p >Open a Terminal and enter the below command to bring up a dialog to install the command line developer tools. Once it is finished, this command should return a version greater than the minimum required (see <a class="el" href="md____w_rippled_rippled_BUILD.html">BUILD.md</a>).</p>
 <div class="fragment"><div class="line">clang --version</div>
-</div><!-- fragment --><p >The command line developer tools should include Git too:</p>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md143"></a>
+Install Xcode Specific Version (Optional)</h3>
+<p >If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang. This will likely cause issues building rippled. You may want to install a specific version of Xcode:</p>
+<ol type="1">
+<li><b>Download Xcode</b><ul>
+<li>Visit <a href="https://developer.apple.com/download/more/">Apple Developer Downloads</a></li>
+<li>Sign in with your Apple Developer account</li>
+<li>Search for an Xcode version that includes <b>Apple Clang (Expected Version)</b></li>
+<li>Download the <code>.xip</code> file</li>
+</ul>
+</li>
+<li><p class="startli"><b>Install and Configure Xcode</b></p>
+<div class="fragment"><div class="line"># Extract the .xip file and rename for version management</div>
+<div class="line"># Example: Xcode_16.2.app</div>
+<div class="line"> </div>
+<div class="line"># Move to Applications directory</div>
+<div class="line">sudo mv Xcode_16.2.app /Applications/</div>
+<div class="line"> </div>
+<div class="line"># Set as default toolchain (persistent)</div>
+<div class="line">sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer</div>
+<div class="line"> </div>
+<div class="line"># Set as environment variable (temporary)</div>
+<div class="line">export DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer</div>
+</div><!-- fragment --></li>
+</ol>
+<p >The command line developer tools should include Git too:</p>
 <div class="fragment"><div class="line">git --version</div>
 </div><!-- fragment --><p >Install <a href="https://brew.sh/">Homebrew</a>, use it to install <a href="https://github.com/pyenv/pyenv">pyenv</a>, use it to install Python, and use it to install Conan:</p>
 <div class="fragment"><div class="line">/bin/bash -c &quot;$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)&quot;</div>
