@@ -990,7 +990,6 @@ applyCreateAccountAttestations(
     STXChainBridge::ChainType const srcChain,
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     std::uint32_t quorum,
-    std::uint32_t seq,
     beast::Journal j)
 {
     if (attBegin == attEnd)
@@ -1370,7 +1369,6 @@ attestationDoApply(ApplyContext& ctx)
             srcChain,
             signersList,
             quorum,
-            ctx.tx.getSeqValue(),
             ctx.journal);
     }
 }
