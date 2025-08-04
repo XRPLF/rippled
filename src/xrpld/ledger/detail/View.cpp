@@ -36,6 +36,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
+#include <xrpl/protocol/TypedLedgerEntries.h>
 
 #include <type_traits>
 #include <variant>
@@ -260,9 +261,9 @@ isFrozen(
     if (issuer != account)
     {
         // Check if the issuer froze the line
-        sle = view.read(keylet::line(account, issuer, currency));
-        if (sle &&
-            sle->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
+        auto sleLine = view.read(keylet::line(account, issuer, currency));
+        if (sleLine &&
+            sleLine->isFlag((issuer > account) ? lsfHighFreeze : lsfLowFreeze))
             return true;
     }
     return false;
@@ -319,30 +320,34 @@ isVaultPseudoAccountFrozen(
         return true;  // LCOV_EXCL_LINE
 
     auto const mptIssuance =
-        view.read(keylet::mptIssuance(mptShare.getMptID()));
-    if (mptIssuance == nullptr)
+        ConstLedgerObjectType<ltMPTOKEN_ISSUANCE>::fromObject(
+            view.read(keylet::mptIssuance(mptShare.getMptID())));
+    if (mptIssuance.isValid())
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
-    auto const issuer = mptIssuance->getAccountID(sfIssuer);
-    auto const mptIssuer = view.read(keylet::account(issuer));
-    if (mptIssuer == nullptr)
+    auto const issuer = mptIssuance.fsfIssuer();
+    auto const mptIssuer =
+        ConstLedgerObjectType<ltACCOUNT_ROOT>::fromObject(
+            view.read(keylet::account(issuer)));
+    if (mptIssuer.isValid())
     {  // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null MPToken issuer");
         return false;
     }  // LCOV_EXCL_STOP
 
-    if (!mptIssuer->isFieldPresent(sfVaultID))
+    if (!mptIssuer.fsfVaultID().has_value())
         return false;  // not a Vault pseudo-account, common case
 
     auto const vault =
-        view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
-    if (vault == nullptr)
+        ConstLedgerObjectType<ltVAULT>::fromObject(
+            view.read(keylet::vault(*mptIssuer.fsfVaultID())));
+    if (vault.isValid())
     {  // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null vault");
         return false;
     }  // LCOV_EXCL_STOP
 
-    return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
+    return isAnyFrozen(view, {issuer, account}, vault.fsfAsset(), depth + 1);
 }
 
 bool

@@ -33,6 +33,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TypedLedgerEntries.h>
 
 #include <cstdint>
 #include <optional>
@@ -169,6 +170,13 @@ public:
     */
     virtual std::shared_ptr<SLE const>
     read(Keylet const& k) const = 0;
+
+    template<LedgerEntryType Type>
+    ConstLedgerObjectType<Type>
+    read(TypedKeylet<Type> const& k) const
+    {
+        return ConstLedgerObjectType<Type>::fromObject(read(k));
+    }
 
     // Accounts in a payment are not allowed to use assets acquired during that
     // payment. The PaymentSandbox tracks the debits, credits, and owner count

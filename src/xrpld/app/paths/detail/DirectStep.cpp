@@ -421,7 +421,7 @@ DirectIPaymentStep::check(
 
         if (((*sleSrc)[sfFlags] & lsfRequireAuth) &&
             !((*sleLine)[sfFlags] & authField) &&
-            (*sleLine)[sfBalance] == beast::zero)
+            sleLine.fsfBalance() == beast::zero)
         {
             JLOG(j_.warn())
                 << "DirectStepI: can't receive IOUs from issuer without auth."

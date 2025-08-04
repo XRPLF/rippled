@@ -157,7 +157,7 @@ public:
                 return false;
 
             SeqProxy const acctSeq =
-                SeqProxy::sequence(sleAcct->getFieldU32(sfSequence));
+                SeqProxy::sequence(sleAcct.fsfSequence());
             SeqProxy const seqProx = txn.getSeqProxy();
 
             if (seqProx.isSeq())

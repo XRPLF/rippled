@@ -34,10 +34,10 @@ accountInDomain(
         return false;
 
     // domain owner is in the domain
-    if (sleDomain->getAccountID(sfOwner) == account)
+    if (sleDomain.fsfOwner() == account)
         return true;
 
-    auto const& credentials = sleDomain->getFieldArray(sfAcceptedCredentials);
+    auto const& credentials = sleDomain.fsfAcceptedCredentials();
 
     bool const inDomain = std::any_of(
         credentials.begin(), credentials.end(), [&](auto const& credential) {
@@ -67,20 +67,20 @@ offerInDomain(
     // have any of the following wrong behavior
     if (!sleOffer)
         return false;  // LCOV_EXCL_LINE
-    if (!sleOffer->isFieldPresent(sfDomainID))
+    if (!sleOffer.fsfDomainID().has_value())
         return false;  // LCOV_EXCL_LINE
-    if (sleOffer->getFieldH256(sfDomainID) != domainID)
+    if (sleOffer.fsfDomainID() != domainID)
         return false;  // LCOV_EXCL_LINE
 
     if (sleOffer->isFlag(lsfHybrid) &&
-        !sleOffer->isFieldPresent(sfAdditionalBooks))
+        !sleOffer.fsfAdditionalBooks())
     {
         JLOG(j.error()) << "Hybrid offer " << offerID
                         << " missing AdditionalBooks field";
         return false;  // LCOV_EXCL_LINE
     }
 
-    return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
+    return accountInDomain(view, sleOffer.fsfAccount(), domainID);
 }
 
 }  // namespace permissioned_dex

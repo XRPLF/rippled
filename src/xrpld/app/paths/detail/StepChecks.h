@@ -65,17 +65,17 @@ checkFreeze(
     if (view.rules().enabled(fixFrozenLPTokenTransfer))
     {
         if (auto const sleDst = view.read(keylet::account(dst));
-            sleDst && sleDst->isFieldPresent(sfAMMID))
+            sleDst && sleDst.fsfAMMID().has_value())
         {
-            auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
+            auto const sleAmm = view.read(keylet::amm(sleDst.fsfAMMID().value()));
             if (!sleAmm)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (isLPTokenFrozen(
                     view,
                     src,
-                    (*sleAmm)[sfAsset].get<Issue>(),
-                    (*sleAmm)[sfAsset2].get<Issue>()))
+                    sleAmm.fsfAsset().get<Issue>(),
+                    sleAmm.fsfAsset2().get<Issue>()))
             {
                 return terNO_LINE;
             }
