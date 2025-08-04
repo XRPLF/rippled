@@ -53,11 +53,11 @@ class SeqProxy;
 namespace keylet {
 
 /** AccountID root */
-Keylet
+TypedKeylet<ltACCOUNT_ROOT>
 account(AccountID const& id) noexcept;
 
 /** The index of the amendment table */
-Keylet const&
+TypedKeylet<ltAMENDMENTS> const&
 amendments() noexcept;
 
 /** Any item that can be in an owner dir. */
@@ -69,7 +69,7 @@ child(uint256 const& key) noexcept;
     The "short" skip list is a node (at a fixed index) that holds the hashes
     of ledgers since the last flag ledger. It will contain, at most, 256 hashes.
 */
-Keylet const&
+TypedKeylet<ltLEDGER_HASHES> const&
 skip() noexcept;
 
 /** The index of the long skip for a particular ledger range.
@@ -82,15 +82,15 @@ skip() noexcept;
     and uses it to get the hash of the flag ledger whose short skip list will
     contain the hash of the requested ledger.
 */
-Keylet
+TypedKeylet<ltLEDGER_HASHES>
 skip(LedgerIndex ledger) noexcept;
 
 /** The (fixed) index of the object containing the ledger fees. */
-Keylet const&
+TypedKeylet<ltFEE_SETTINGS> const&
 fees() noexcept;
 
 /** The (fixed) index of the object containing the ledger negativeUNL. */
-Keylet const&
+TypedKeylet<ltNEGATIVE_UNL> const&
 negativeUNL() noexcept;
 
 /** The beginning of an order book */
@@ -98,7 +98,7 @@ struct book_t
 {
     explicit book_t() = default;
 
-    Keylet
+    TypedKeylet<ltDIR_NODE>
     operator()(Book const& b) const;
 };
 static book_t const book{};
@@ -111,13 +111,13 @@ static book_t const book{};
     between them.
 */
 /** @{ */
-Keylet
+TypedKeylet<ltRIPPLE_STATE>
 line(
     AccountID const& id0,
     AccountID const& id1,
     Currency const& currency) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltRIPPLE_STATE>
 line(AccountID const& id, Issue const& issue) noexcept
 {
     return line(id, issue.account, issue.currency);
@@ -126,27 +126,27 @@ line(AccountID const& id, Issue const& issue) noexcept
 
 /** An offer from an account */
 /** @{ */
-Keylet
+TypedKeylet<ltOFFER>
 offer(AccountID const& id, std::uint32_t seq) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltOFFER>
 offer(uint256 const& key) noexcept
 {
-    return {ltOFFER, key};
+    return {key};
 }
 /** @} */
 
 /** The initial directory page for a specific quality */
-Keylet
-quality(Keylet const& k, std::uint64_t q) noexcept;
+TypedKeylet<ltDIR_NODE>
+quality(TypedKeylet<ltDIR_NODE> const& k, std::uint64_t q) noexcept;
 
 /** The directory for the next lower quality */
 struct next_t
 {
     explicit next_t() = default;
 
-    Keylet
-    operator()(Keylet const& k) const;
+    TypedKeylet<ltDIR_NODE>
+    operator()(TypedKeylet<ltDIR_NODE> const& k) const;
 };
 static next_t const next{};
 
@@ -155,50 +155,50 @@ struct ticket_t
 {
     explicit ticket_t() = default;
 
-    Keylet
+    TypedKeylet<ltTICKET>
     operator()(AccountID const& id, std::uint32_t ticketSeq) const;
 
-    Keylet
+    TypedKeylet<ltTICKET>
     operator()(AccountID const& id, SeqProxy ticketSeq) const;
 
-    Keylet
+    TypedKeylet<ltTICKET>
     operator()(uint256 const& key) const
     {
-        return {ltTICKET, key};
+        return {key};
     }
 };
 static ticket_t const ticket{};
 
 /** A SignerList */
-Keylet
+TypedKeylet<ltSIGNER_LIST>
 signers(AccountID const& account) noexcept;
 
 /** A Check */
 /** @{ */
-Keylet
+TypedKeylet<ltCHECK>
 check(AccountID const& id, std::uint32_t seq) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltCHECK>
 check(uint256 const& key) noexcept
 {
-    return {ltCHECK, key};
+    return {key};
 }
 /** @} */
 
 /** A DepositPreauth */
 /** @{ */
-Keylet
+TypedKeylet<ltDEPOSIT_PREAUTH>
 depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept;
 
-Keylet
+TypedKeylet<ltDEPOSIT_PREAUTH>
 depositPreauth(
     AccountID const& owner,
     std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltDEPOSIT_PREAUTH>
 depositPreauth(uint256 const& key) noexcept
 {
-    return {ltDEPOSIT_PREAUTH, key};
+    return {key};
 }
 /** @} */
 
@@ -209,15 +209,15 @@ Keylet
 unchecked(uint256 const& key) noexcept;
 
 /** The root page of an account's directory */
-Keylet
+TypedKeylet<ltDIR_NODE>
 ownerDir(AccountID const& id) noexcept;
 
 /** A page in a directory */
 /** @{ */
-Keylet
+TypedKeylet<ltDIR_NODE>
 page(uint256 const& root, std::uint64_t index = 0) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltDIR_NODE>
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
     XRPL_ASSERT(
@@ -227,11 +227,11 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
 /** @} */
 
 /** An escrow entry */
-Keylet
+TypedKeylet<ltESCROW>
 escrow(AccountID const& src, std::uint32_t seq) noexcept;
 
 /** A PaymentChannel */
-Keylet
+TypedKeylet<ltPAYCHAN>
 payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
 
 /** NFT page keylets
@@ -243,110 +243,110 @@ payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
  */
 /** @{ */
 /** A keylet for the owner's first possible NFT page. */
-Keylet
+TypedKeylet<ltNFTOKEN_PAGE>
 nftpage_min(AccountID const& owner);
 
 /** A keylet for the owner's last possible NFT page. */
-Keylet
+TypedKeylet<ltNFTOKEN_PAGE>
 nftpage_max(AccountID const& owner);
 
-Keylet
-nftpage(Keylet const& k, uint256 const& token);
+TypedKeylet<ltNFTOKEN_PAGE>
+nftpage(TypedKeylet<ltNFTOKEN_PAGE> const& k, uint256 const& token);
 /** @} */
 
 /** An offer from an account to buy or sell an NFT */
-Keylet
+TypedKeylet<ltNFTOKEN_OFFER>
 nftoffer(AccountID const& owner, std::uint32_t seq);
 
-inline Keylet
+inline TypedKeylet<ltNFTOKEN_OFFER>
 nftoffer(uint256 const& offer)
 {
-    return {ltNFTOKEN_OFFER, offer};
+    return {offer};
 }
 
 /** The directory of buy offers for the specified NFT */
-Keylet
+TypedKeylet<ltDIR_NODE>
 nft_buys(uint256 const& id) noexcept;
 
 /** The directory of sell offers for the specified NFT */
-Keylet
+TypedKeylet<ltDIR_NODE>
 nft_sells(uint256 const& id) noexcept;
 
 /** AMM entry */
-Keylet
+TypedKeylet<ltAMM>
 amm(Asset const& issue1, Asset const& issue2) noexcept;
 
-Keylet
+TypedKeylet<ltAMM>
 amm(uint256 const& amm) noexcept;
 
 /** A keylet for Delegate object */
-Keylet
+TypedKeylet<ltDELEGATE>
 delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
 
-Keylet
+TypedKeylet<ltBRIDGE>
 bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
 
-Keylet
+TypedKeylet<ltXCHAIN_OWNED_CLAIM_ID>
 xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
-Keylet
+TypedKeylet<ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID>
 xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
-Keylet
+TypedKeylet<ltDID>
 did(AccountID const& account) noexcept;
 
-Keylet
+TypedKeylet<ltORACLE>
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 
-Keylet
+TypedKeylet<ltCREDENTIAL>
 credential(
     AccountID const& subject,
     AccountID const& issuer,
     Slice const& credType) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltCREDENTIAL>
 credential(uint256 const& key) noexcept
 {
-    return {ltCREDENTIAL, key};
+    return {key};
 }
 
-Keylet
+TypedKeylet<ltMPTOKEN_ISSUANCE>
 mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
 
-Keylet
+TypedKeylet<ltMPTOKEN_ISSUANCE>
 mptIssuance(MPTID const& issuanceID) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltMPTOKEN_ISSUANCE>
 mptIssuance(uint256 const& issuanceKey)
 {
-    return {ltMPTOKEN_ISSUANCE, issuanceKey};
+    return {issuanceKey};
 }
 
-Keylet
+TypedKeylet<ltMPTOKEN>
 mptoken(MPTID const& issuanceID, AccountID const& holder) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltMPTOKEN>
 mptoken(uint256 const& mptokenKey)
 {
-    return {ltMPTOKEN, mptokenKey};
+    return {mptokenKey};
 }
 
-Keylet
+TypedKeylet<ltMPTOKEN>
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
-Keylet
+TypedKeylet<ltVAULT>
 vault(AccountID const& owner, std::uint32_t seq) noexcept;
 
-inline Keylet
+inline TypedKeylet<ltVAULT>
 vault(uint256 const& vaultKey)
 {
-    return {ltVAULT, vaultKey};
+    return {vaultKey};
 }
 
-Keylet
+TypedKeylet<ltPERMISSIONED_DOMAIN>
 permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
-Keylet
+TypedKeylet<ltPERMISSIONED_DOMAIN>
 permissionedDomain(uint256 const& domainID) noexcept;
 }  // namespace keylet
 

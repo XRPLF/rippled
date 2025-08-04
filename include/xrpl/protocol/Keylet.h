@@ -49,6 +49,21 @@ struct Keylet
     check(STLedgerEntry const&) const;
 };
 
+template <LedgerEntryType Type>
+struct TypedKeylet : Keylet
+{
+    static constexpr LedgerEntryType LedgerType = Type;
+
+    TypedKeylet(uint256 const& key_) : Keylet(Type, key_)
+    {
+    }
+
+    Keylet untyped() const
+    {
+        return Keylet(LedgerType, key);
+    }
+};
+
 }  // namespace ripple
 
 #endif
