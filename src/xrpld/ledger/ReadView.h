@@ -171,7 +171,7 @@ public:
     virtual std::shared_ptr<SLE const>
     read(Keylet const& k) const = 0;
 
-    template<LedgerEntryType Type>
+    template <LedgerEntryType Type>
     ConstLedgerObjectType<Type>
     read(TypedKeylet<Type> const& k) const
     {

@@ -67,7 +67,8 @@ checkFreeze(
         if (auto const sleDst = view.read(keylet::account(dst));
             sleDst && sleDst.fsfAMMID().has_value())
         {
-            auto const sleAmm = view.read(keylet::amm(sleDst.fsfAMMID().value()));
+            auto const sleAmm =
+                view.read(keylet::amm(sleDst.fsfAMMID().value()));
             if (!sleAmm)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
 

@@ -34,9 +34,9 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TypedLedgerEntries.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
-#include <xrpl/protocol/TypedLedgerEntries.h>
 
 #include <type_traits>
 #include <variant>
@@ -320,13 +320,12 @@ isVaultPseudoAccountFrozen(
         return true;  // LCOV_EXCL_LINE
 
     auto const mptIssuance =
-            view.read(keylet::mptIssuance(mptShare.getMptID()));
+        view.read(keylet::mptIssuance(mptShare.getMptID()));
     if (mptIssuance.isValid())
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
     auto const issuer = mptIssuance.fsfIssuer();
-    auto const mptIssuer =
-            view.read(keylet::account(issuer));
+    auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer.isValid())
     {  // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null MPToken issuer");
@@ -336,8 +335,7 @@ isVaultPseudoAccountFrozen(
     if (!mptIssuer.fsfVaultID().has_value())
         return false;  // not a Vault pseudo-account, common case
 
-    auto const vault =
-            view.read(keylet::vault(*mptIssuer.fsfVaultID()));
+    auto const vault = view.read(keylet::vault(*mptIssuer.fsfVaultID()));
     if (vault.isValid())
     {  // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null vault");

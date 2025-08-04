@@ -72,8 +72,7 @@ offerInDomain(
     if (sleOffer.fsfDomainID() != domainID)
         return false;  // LCOV_EXCL_LINE
 
-    if (sleOffer->isFlag(lsfHybrid) &&
-        !sleOffer.fsfAdditionalBooks())
+    if (sleOffer->isFlag(lsfHybrid) && !sleOffer.fsfAdditionalBooks())
     {
         JLOG(j.error()) << "Hybrid offer " << offerID
                         << " missing AdditionalBooks field";
