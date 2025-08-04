@@ -320,15 +320,13 @@ isVaultPseudoAccountFrozen(
         return true;  // LCOV_EXCL_LINE
 
     auto const mptIssuance =
-        ConstLedgerObjectType<ltMPTOKEN_ISSUANCE>::fromObject(
-            view.read(keylet::mptIssuance(mptShare.getMptID())));
+            view.read(keylet::mptIssuance(mptShare.getMptID()));
     if (mptIssuance.isValid())
         return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
     auto const issuer = mptIssuance.fsfIssuer();
     auto const mptIssuer =
-        ConstLedgerObjectType<ltACCOUNT_ROOT>::fromObject(
-            view.read(keylet::account(issuer)));
+            view.read(keylet::account(issuer));
     if (mptIssuer.isValid())
     {  // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null MPToken issuer");
@@ -339,8 +337,7 @@ isVaultPseudoAccountFrozen(
         return false;  // not a Vault pseudo-account, common case
 
     auto const vault =
-        ConstLedgerObjectType<ltVAULT>::fromObject(
-            view.read(keylet::vault(*mptIssuer.fsfVaultID())));
+            view.read(keylet::vault(*mptIssuer.fsfVaultID()));
     if (vault.isValid())
     {  // LCOV_EXCL_START
         UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null vault");
