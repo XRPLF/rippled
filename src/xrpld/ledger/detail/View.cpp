@@ -1214,12 +1214,7 @@ addEmptyHolding(
     if (view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
 
-    return authorizeMPToken(
-        view,
-        priorBalance,
-        mptID,
-        accountID,
-        journal);
+    return authorizeMPToken(view, priorBalance, mptID, accountID, journal);
 }
 
 [[nodiscard]] TER
@@ -1532,7 +1527,7 @@ removeEmptyHolding(
         accountID,
         journal,
         tfMPTUnauthorize  // flags
-        );
+    );
 }
 
 TER
@@ -2597,8 +2592,7 @@ enforceMPTokenAuthorization(
                 priorBalance,   // priorBalance
                 mptIssuanceID,  // mptIssuanceID
                 account,        // account
-                j
-            );
+                j);
             !isTesSuccess(err))
             return err;
 

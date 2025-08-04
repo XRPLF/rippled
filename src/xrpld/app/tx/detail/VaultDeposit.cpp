@@ -225,12 +225,12 @@ VaultDeposit::doApply()
         {
             if (auto const err = authorizeMPToken(
                     view(),
-                    mPriorBalance,                 // priorBalance
-                    mptIssuanceID->value(),        // mptIssuanceID
-                    sleIssuance->at(sfIssuer),   // account
+                    mPriorBalance,              // priorBalance
+                    mptIssuanceID->value(),     // mptIssuanceID
+                    sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
-                    {},                         // flags
-                    account_                    // holderID
+                    {},       // flags
+                    account_  // holderID
                 );
                 !isTesSuccess(err))
                 return err;
