@@ -20,10 +20,11 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/TaggedCache.h>
-#include <utility>
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Protocol.h>
+
+#include <utility>
 
 namespace ripple {
 
@@ -194,22 +195,28 @@ public:
 
                 MyRefCountObject() = default;
                 explicit MyRefCountObject(std::string data)
-                : _data(std::move(data)) {}
-                explicit MyRefCountObject(char const* data)
-                    : _data(data) {}
+                    : _data(std::move(data))
+                {
+                }
+                explicit MyRefCountObject(char const* data) : _data(data)
+                {
+                }
 
-                MyRefCountObject& operator=(MyRefCountObject const& other)
+                MyRefCountObject&
+                operator=(MyRefCountObject const& other)
                 {
                     _data = other._data;
                     return *this;
                 }
 
-                bool operator==(MyRefCountObject const& other) const
+                bool
+                operator==(MyRefCountObject const& other) const
                 {
                     return _data == other._data;
                 }
 
-                bool operator==(std::string const& other) const
+                bool
+                operator==(std::string const& other) const
                 {
                     return _data == other;
                 }
@@ -220,18 +227,21 @@ public:
                 MyRefCountObject,
                 /*IsKeyCache*/ false,
                 intr_ptr::SharedWeakUnionPtr<MyRefCountObject>,
-                intr_ptr::SharedPtr<MyRefCountObject>
-            >;
+                intr_ptr::SharedPtr<MyRefCountObject>>;
 
             IntrPtrCache intrPtrCache("IntrPtrTest", 1, 1s, clock, journal);
 
-            intrPtrCache.canonicalize_replace_cache(1, intr_ptr::make_shared<MyRefCountObject>("one"));
+            intrPtrCache.canonicalize_replace_cache(
+                1, intr_ptr::make_shared<MyRefCountObject>("one"));
             BEAST_EXPECT(intrPtrCache.getCacheSize() == 1);
             BEAST_EXPECT(intrPtrCache.getTrackSize() == 1);
 
             {
                 {
-                    intrPtrCache.canonicalize_replace_cache(1, intr_ptr::make_shared<MyRefCountObject>("one_replaced"));
+                    intrPtrCache.canonicalize_replace_cache(
+                        1,
+                        intr_ptr::make_shared<MyRefCountObject>(
+                            "one_replaced"));
 
                     auto p = intrPtrCache.fetch(1);
                     BEAST_EXPECT(*p == "one_replaced");
@@ -242,7 +252,10 @@ public:
                     BEAST_EXPECT(intrPtrCache.getCacheSize() == 0);
                     BEAST_EXPECT(intrPtrCache.getTrackSize() == 1);
 
-                    intrPtrCache.canonicalize_replace_cache(1, intr_ptr::make_shared<MyRefCountObject>("one_replaced_2"));
+                    intrPtrCache.canonicalize_replace_cache(
+                        1,
+                        intr_ptr::make_shared<MyRefCountObject>(
+                            "one_replaced_2"));
 
                     auto p2 = intrPtrCache.fetch(1);
                     BEAST_EXPECT(*p2 == "one_replaced_2");
@@ -250,7 +263,9 @@ public:
                     intrPtrCache.del(1, true);
                 }
 
-                intrPtrCache.canonicalize_replace_cache(1, intr_ptr::make_shared<MyRefCountObject>("one_replaced_3"));
+                intrPtrCache.canonicalize_replace_cache(
+                    1,
+                    intr_ptr::make_shared<MyRefCountObject>("one_replaced_3"));
                 auto p3 = intrPtrCache.fetch(1);
                 BEAST_EXPECT(*p3 == "one_replaced_3");
             }
