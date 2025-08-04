@@ -2359,47 +2359,74 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         env.close();
 
+        auto checkResult = [&](bool good,
+                               Json::Value const& jv,
+                               Json::StaticString const& expectedType) {
+            if (good)
+            {
+                BEAST_EXPECTS(
+                    jv.isObject() && jv.isMember(jss::result) &&
+                        !jv[jss::result].isMember(jss::error) &&
+                        jv[jss::result].isMember(jss::node) &&
+                        jv[jss::result][jss::node].isMember(
+                            sfLedgerEntryType.jsonName) &&
+                        jv[jss::result][jss::node]
+                          [sfLedgerEntryType.jsonName] == expectedType,
+                    to_string(jv));
+            }
+            else
+            {
+                BEAST_EXPECTS(
+                    jv.isObject() && jv.isMember(jss::result) &&
+                        jv[jss::result].isMember(jss::error) &&
+                        !jv[jss::result].isMember(jss::node),
+                    to_string(jv));
+            }
+        };
+
         auto test = [&](Json::StaticString const& field,
                         Json::StaticString const& expectedType,
-                        Keylet const& expectedKey) {
+                        Keylet const& expectedKey,
+                        bool good) {
             // Succeed. There is no failure case.
-            testcase << "ledger_entry " << expectedType.c_str();
+            testcase << "ledger_entry " << expectedType.c_str()
+                     << (good ? "" : " not") << " found";
 
+            // Use the "field":null notation
             Json::Value params;
             params[jss::ledger_index] = jss::validated;
             params[field] = Json::nullValue;
-            params[jss::ledger_index] = jss::validated;
             auto jv = env.rpc("json", "ledger_entry", to_string(params));
-            BEAST_EXPECT(
-                jv.isObject() && jv.isMember(jss::result) &&
-                !jv[jss::result].isMember(jss::error) &&
-                jv[jss::result].isMember(jss::node) &&
-                jv[jss::result][jss::node].isMember(
-                    sfLedgerEntryType.jsonName) &&
-                jv[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
-                    expectedType);
-
+            // Index will always be returned for valid parameters.
             std::string const pdIdx = jv[jss::result][jss::index].asString();
             BEAST_EXPECT(strHex(expectedKey.key) == pdIdx);
+            checkResult(good, jv, expectedType);
 
+            // Use the "index":"field" notation
+            params.clear();
+            params[jss::ledger_index] = jss::validated;
+            params[jss::index] = field;
+            jv = env.rpc("json", "ledger_entry", to_string(params));
+            // Index is correct either way
+            BEAST_EXPECT(jv[jss::result][jss::index].asString() == pdIdx);
+            checkResult(good, jv, expectedType);
+
+            // Use the "index":"[index hash]" notation
             params.clear();
             params[jss::ledger_index] = jss::validated;
             params[jss::index] = pdIdx;
             jv = env.rpc("json", "ledger_entry", to_string(params));
-            BEAST_EXPECT(
-                jv.isObject() && jv.isMember(jss::result) &&
-                !jv[jss::result].isMember(jss::error) &&
-                jv[jss::result].isMember(jss::node) &&
-                jv[jss::result][jss::node].isMember(
-                    sfLedgerEntryType.jsonName) &&
-                jv[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
-                    expectedType);
+            // Index is correct either way
+            BEAST_EXPECT(jv[jss::result][jss::index].asString() == pdIdx);
+            checkResult(good, jv, expectedType);
         };
 
-        test(jss::amendments, jss::Amendments, keylet::amendments());
-        test(jss::fee, jss::FeeSettings, keylet::fees());
+        test(jss::amendments, jss::Amendments, keylet::amendments(), true);
+        test(jss::fee, jss::FeeSettings, keylet::fees(), true);
         // There won't be an nunl
-        // test(jss::nunl, jss::NegativeUNL, keylet::negativeUNL());
+        test(jss::nunl, jss::NegativeUNL, keylet::negativeUNL(), false);
+        // Can only get the short skip list this way
+        test(jss::hashes, jss::LedgerHashes, keylet::skip(), true);
     }
 
     void
@@ -2417,73 +2444,66 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         env.close();
 
+        auto checkResult =
+            [&](bool good, Json::Value const& jv, int expectedCount) {
+                if (good)
+                {
+                    BEAST_EXPECTS(
+                        jv.isObject() && jv.isMember(jss::result) &&
+                            !jv[jss::result].isMember(jss::error) &&
+                            jv[jss::result].isMember(jss::node) &&
+                            jv[jss::result][jss::node].isMember(
+                                sfLedgerEntryType.jsonName) &&
+                            jv[jss::result][jss::node]
+                              [sfLedgerEntryType.jsonName] == jss::LedgerHashes,
+                        to_string(jv));
+                    BEAST_EXPECTS(
+                        jv[jss::result].isMember(jss::node) &&
+                            jv[jss::result][jss::node].isMember("Hashes") &&
+                            jv[jss::result][jss::node]["Hashes"].size() ==
+                                expectedCount,
+                        to_string(jv[jss::result][jss::node]["Hashes"].size()));
+                }
+                else
+                {
+                    BEAST_EXPECTS(
+                        jv.isObject() && jv.isMember(jss::result) &&
+                            jv[jss::result].isMember(jss::error) &&
+                            !jv[jss::result].isMember(jss::node),
+                        to_string(jv));
+                }
+            };
+
         auto test = [&](Json::Value ledger,
                         Keylet const& expectedKey,
                         bool good,
                         int expectedCount = 0) {
-            testcase << "ledger_entry Hashes @" << env.current()->info().seq
-                     << " request: " << to_string(ledger)
-                     << " Result: " << (good ? "good" : "error");
+            testcase << "ledger_entry LedgerHashes: seq: "
+                     << env.current()->info().seq
+                     << " \"hashes\":" << to_string(ledger)
+                     << (good ? "" : " not") << " found";
 
+            // Use the "hashes":ledger notation
             Json::Value params;
             params[jss::ledger_index] = jss::validated;
             params[jss::hashes] = ledger;
-            params[jss::ledger_index] = jss::validated;
             auto const hexKey = strHex(expectedKey.key);
             auto jv = env.rpc("json", "ledger_entry", to_string(params));
-            if (good)
-            {
-                BEAST_EXPECTS(
-                    jv.isObject() && jv.isMember(jss::result) &&
-                        !jv[jss::result].isMember(jss::error) &&
-                        jv[jss::result].isMember(jss::node) &&
-                        jv[jss::result][jss::node].isMember(
-                            sfLedgerEntryType.jsonName) &&
-                        jv[jss::result][jss::node]
-                          [sfLedgerEntryType.jsonName] == jss::LedgerHashes,
-                    to_string(jv));
-                BEAST_EXPECTS(
-                    jv[jss::result].isMember(jss::node) &&
-                        jv[jss::result][jss::node].isMember("Hashes") &&
-                        jv[jss::result][jss::node]["Hashes"].size() ==
-                            expectedCount,
-                    to_string(jv[jss::result][jss::node]["Hashes"].size()));
+            checkResult(good, jv, expectedCount);
+            // Index will always be returned for valid parameters.
+            std::string const pdIdx = jv[jss::result][jss::index].asString();
+            BEAST_EXPECTS(hexKey == pdIdx, strHex(pdIdx));
 
-                std::string const pdIdx =
-                    jv[jss::result][jss::index].asString();
-                BEAST_EXPECTS(hexKey == pdIdx, strHex(pdIdx));
-            }
-            else
-            {
-                BEAST_EXPECTS(
-                    jv.isObject() && jv.isMember(jss::result) &&
-                        jv[jss::result].isMember(jss::error),
-                    to_string(jv));
-            }
-
+            // Use the "index":"[index hash]" notation
             params.clear();
             params[jss::ledger_index] = jss::validated;
             params[jss::index] = hexKey;
             jv = env.rpc("json", "ledger_entry", to_string(params));
-            if (good)
-            {
-                BEAST_EXPECTS(
-                    jv.isObject() && jv.isMember(jss::result) &&
-                        !jv[jss::result].isMember(jss::error) &&
-                        jv[jss::result].isMember(jss::node) &&
-                        jv[jss::result][jss::node].isMember(
-                            sfLedgerEntryType.jsonName) &&
-                        jv[jss::result][jss::node]
-                          [sfLedgerEntryType.jsonName] == jss::LedgerHashes,
-                    to_string(jv));
-            }
-            else
-            {
-                BEAST_EXPECTS(
-                    jv.isObject() && jv.isMember(jss::result) &&
-                        jv[jss::result].isMember(jss::error),
-                    to_string(jv));
-            }
+            checkResult(good, jv, expectedCount);
+            // Index is correct either way
+            BEAST_EXPECTS(
+                hexKey == jv[jss::result][jss::index].asString(),
+                strHex(jv[jss::result][jss::index].asString()));
         };
 
         // short skip list

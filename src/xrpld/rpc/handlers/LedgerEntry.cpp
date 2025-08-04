@@ -41,8 +41,19 @@ namespace ripple {
 static std::optional<uint256>
 parseIndex(Json::Value const& params, Json::Value& jvResult)
 {
+    std::string const index = params.asString();
+    if (index == jss::amendments.c_str())
+        return keylet::amendments().key;
+    if (index == jss::fee.c_str())
+        return keylet::fees().key;
+    if (index == jss::nunl)
+        return keylet::negativeUNL().key;
+    if (index == jss::hashes)
+        // Note this only finds the "short" skip list. Use "hashes":index to get
+        // the long list.
+        return keylet::skip().key;
     uint256 uNodeIndex;
-    if (!uNodeIndex.parseHex(params.asString()))
+    if (!uNodeIndex.parseHex(index))
     {
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
@@ -1076,6 +1087,9 @@ doLedgerEntry(RPC::JsonContext& context)
             throw;
     }
 
+    // Return the computed index regardless of whether the node exists.
+    jvResult[jss::index] = to_string(uNodeIndex);
+
     if (uNodeIndex.isZero())
     {
         jvResult[jss::error] = "entryNotFound";
@@ -1108,12 +1122,10 @@ doLedgerEntry(RPC::JsonContext& context)
         sleNode->add(s);
 
         jvResult[jss::node_binary] = strHex(s.peekData());
-        jvResult[jss::index] = to_string(uNodeIndex);
     }
     else
     {
         jvResult[jss::node] = sleNode->getJson(JsonOptions::none);
-        jvResult[jss::index] = to_string(uNodeIndex);
     }
 
     return jvResult;
