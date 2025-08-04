@@ -118,7 +118,7 @@ refer to the provided `conan/profiles/default` profile for inspiration, and you
 may also need to apply the required [tweaks](#conan-profile-tweaks) to this
 default profile.
 
-### Add remote
+### Patched recipes
 
 The recipes in Conan Center occasionally need to be patched for compatibility
 with the latest version of `rippled`. We maintain a fork of the Conan Center
@@ -130,6 +130,15 @@ can do this by running:
 
 ```bash
 conan remote add --index 0 xrplf "https://conan.ripplex.io"
+```
+
+Alternatively, you can use the `conan export` command to add the patched recipes
+that are also (for the time being) located in the `external/` directory to your
+local Conan cache:
+
+```bash
+conan export --version 1.1.10 external/snappy
+conan export --version 4.0.3 external/soci
 ```
 
 ### Conan profile tweaks
@@ -300,23 +309,6 @@ The workaround for this error is to add two lines to your profile:
 [conf]
 tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
 ```
-
-### Export updated recipes
-
-Export our [Conan recipe for Snappy](./external/snappy).
-It does not explicitly link the C++ standard library,
-which allows you to statically link it with GCC, if you want.
-
-   ```bash
-   conan export --version 1.1.10 external/snappy
-   ```
-
-Export our [Conan recipe for SOCI](./external/soci).
-It patches their CMake to correctly import its dependencies.
-
-   ```bash
-   conan export --version 4.0.3 external/soci
-   ```
 
 ### Build and Test
 
