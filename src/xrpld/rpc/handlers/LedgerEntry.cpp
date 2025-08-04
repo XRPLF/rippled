@@ -968,20 +968,17 @@ struct LedgerEntry
     LedgerEntryType expectedType;
 };
 
-// Helper function to return a LedgerEntry for objects that have a fixed
+// Helper function to return FunctionType for objects that have a fixed
 // location. That is, they don't take parameters to compute the index.
 // e.g. amendments, fees, negative UNL, etc.
-static LedgerEntry
-fixed(
-    Json::StaticString const& fieldName,
-    Keylet const& keylet,
-    LedgerEntryType expectedType)
+static FunctionType
+fixed(Keylet const& keylet)
 {
-    return {
-        fieldName,
-        [&keylet](Json::Value const&, Json::Value&) { return keylet.key; },
-        expectedType};
+    return [&keylet](Json::Value const&, Json::Value&) { return keylet.key; };
 }
+auto const parseAmendments = fixed(keylet::amendments());
+auto const parseFeeSettings = fixed(keylet::fees());
+auto const parseNegativeUNL = fixed(keylet::negativeUNL());
 
 // {
 //   ledger_hash : <ledger>
@@ -1000,7 +997,7 @@ doLedgerEntry(RPC::JsonContext& context)
     static auto ledgerEntryParsers = std::to_array<LedgerEntry>({
         {jss::index, parseIndex, ltANY},
         {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
-        fixed(jss::amendments, keylet::amendments(), ltAMENDMENTS),
+        {jss::amendments, parseAmendments, ltAMENDMENTS},
         {jss::amm, parseAMM, ltAMM},
         {jss::bridge, parseBridge, ltBRIDGE},
         {jss::check, parseCheck, ltCHECK},
@@ -1010,13 +1007,13 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::did, parseDID, ltDID},
         {jss::directory, parseDirectory, ltDIR_NODE},
         {jss::escrow, parseEscrow, ltESCROW},
-        fixed(jss::fee, keylet::fees(), ltFEE_SETTINGS),
+        {jss::fee, parseFeeSettings, ltFEE_SETTINGS},
         {jss::hashes, parseHashes, ltLEDGER_HASHES},
         {jss::mpt_issuance, parseMPTokenIssuance, ltMPTOKEN_ISSUANCE},
         {jss::mptoken, parseMPToken, ltMPTOKEN},
         // TODO: add NFT Offers
         {jss::nft_page, parseNFTokenPage, ltNFTOKEN_PAGE},
-        fixed(jss::nunl, keylet::negativeUNL(), ltNEGATIVE_UNL),
+        {jss::nunl, parseNegativeUNL, ltNEGATIVE_UNL},
         {jss::offer, parseOffer, ltOFFER},
         {jss::oracle, parseOracle, ltORACLE},
         {jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
