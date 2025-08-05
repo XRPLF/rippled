@@ -69,7 +69,8 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     for (auto const& permission : permissions)
     {
         auto const permissionValue = permission[sfPermissionValue];
-        if (!Permission::getInstance().isDelegatable(permissionValue))
+        if (!Permission::getInstance().isDelegatable(
+                permissionValue, ctx.view.rules()))
             return tecNO_PERMISSION;
     }
 
