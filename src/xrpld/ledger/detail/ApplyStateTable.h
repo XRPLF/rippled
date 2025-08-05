@@ -72,9 +72,10 @@ public:
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
-        std::optional<uint256 const> const& parentBatchId,
+        std::optional<uint256 const> const& parentTxId,
         std::optional<std::uint32_t> const& gasUsed,
         std::optional<std::int32_t> const& wasmReturnCode,
+        std::vector<STObject> const& contractExecution,
         bool isDryRun,
         beast::Journal j);
 

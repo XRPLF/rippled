@@ -39,7 +39,7 @@ public:
     explicit ApplyContext(
         Application& app,
         OpenView& base,
-        std::optional<uint256 const> const& parentBatchId,
+        std::optional<uint256 const> const& parentTxId,
         STTx const& tx,
         TER preclaimResult,
         XRPAmount baseFee,
@@ -65,7 +65,8 @@ public:
               journal)
     {
         XRPL_ASSERT(
-            (flags & tapBATCH) == 0, "Batch apply flag should not be set");
+            (flags & tapGENERATED) == 0,
+            "Generated apply flag should not be set");
     }
 
     Application& app;
@@ -73,6 +74,12 @@ public:
     TER const preclaimResult;
     XRPAmount const baseFee;
     beast::Journal const journal;
+
+    OpenView&
+    openView()
+    {
+        return base_;
+    }
 
     ApplyView&
     view()
@@ -169,10 +176,9 @@ private:
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
 
-    // The ID of the batch transaction we are executing under, if seated.
-    std::optional<uint256 const> parentBatchId_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> wasmReturnCode_;
+    std::optional<uint256 const> parentTxId_;
 };
 
 }  // namespace ripple

@@ -423,60 +423,6 @@ NFTokenAcceptOffer::pay(
 }
 
 TER
-NFTokenAcceptOffer::transferNFToken(
-    AccountID const& buyer,
-    AccountID const& seller,
-    uint256 const& nftokenID)
-{
-    auto tokenAndPage = nft::findTokenAndPage(view(), seller, nftokenID);
-
-    if (!tokenAndPage)
-        return tecINTERNAL;
-
-    if (auto const ret = nft::removeToken(
-            view(), seller, nftokenID, std::move(tokenAndPage->page));
-        !isTesSuccess(ret))
-        return ret;
-
-    auto const sleBuyer = view().read(keylet::account(buyer));
-    if (!sleBuyer)
-        return tecINTERNAL;
-
-    std::uint32_t const buyerOwnerCountBefore =
-        sleBuyer->getFieldU32(sfOwnerCount);
-
-    auto const insertRet =
-        nft::insertToken(view(), buyer, std::move(tokenAndPage->token));
-
-    // if fixNFTokenReserve is enabled, check if the buyer has sufficient
-    // reserve to own a new object, if their OwnerCount changed.
-    //
-    // There was an issue where the buyer accepts a sell offer, the ledger
-    // didn't check if the buyer has enough reserve, meaning that buyer can get
-    // NFTs free of reserve.
-    if (view().rules().enabled(fixNFTokenReserve))
-    {
-        // To check if there is sufficient reserve, we cannot use mPriorBalance
-        // because NFT is sold for a price. So we must use the balance after
-        // the deduction of the potential offer price. A small caveat here is
-        // that the balance has already deducted the transaction fee, meaning
-        // that the reserve requirement is a few drops higher.
-        auto const buyerBalance = sleBuyer->getFieldAmount(sfBalance);
-
-        auto const buyerOwnerCountAfter = sleBuyer->getFieldU32(sfOwnerCount);
-        if (buyerOwnerCountAfter > buyerOwnerCountBefore)
-        {
-            if (auto const reserve =
-                    view().fees().accountReserve(buyerOwnerCountAfter);
-                buyerBalance < reserve)
-                return tecINSUFFICIENT_RESERVE;
-        }
-    }
-
-    return insertRet;
-}
-
-TER
 NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
 {
     bool const isSell = offer->isFlag(lsfSellNFToken);
@@ -508,7 +454,7 @@ NFTokenAcceptOffer::acceptOffer(std::shared_ptr<SLE> const& offer)
     }
 
     // Now transfer the NFT:
-    return transferNFToken(buyer, seller, nftokenID);
+    return nft::transferNFToken(ctx_.view(), buyer, seller, nftokenID);
 }
 
 TER
@@ -597,7 +543,7 @@ NFTokenAcceptOffer::doApply()
         }
 
         // Now transfer the NFT:
-        return transferNFToken(buyer, seller, nftokenID);
+        return nft::transferNFToken(ctx_.view(), buyer, seller, nftokenID);
     }
 
     if (bo)

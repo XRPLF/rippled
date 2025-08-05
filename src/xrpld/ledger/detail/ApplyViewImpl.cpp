@@ -31,7 +31,7 @@ ApplyViewImpl::apply(
     OpenView& to,
     STTx const& tx,
     TER ter,
-    std::optional<uint256> parentBatchId,
+    std::optional<uint256> parentTxId,
     bool isDryRun,
     beast::Journal j)
 {
@@ -40,9 +40,10 @@ ApplyViewImpl::apply(
         tx,
         ter,
         deliver_,
-        parentBatchId,
+        parentTxId,
         gasUsed_,
         wasmReturnCode_,
+        contractExecution_,
         isDryRun,
         j);
 }

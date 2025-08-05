@@ -37,13 +37,13 @@ public:
     STTx const& tx;
     Rules const rules;
     ApplyFlags flags;
-    std::optional<uint256 const> parentBatchId;
+    std::optional<uint256 const> parentTxId;
     beast::Journal const j;
 
     PreflightContext(
         Application& app_,
         STTx const& tx_,
-        uint256 parentBatchId_,
+        uint256 parentTxId_,
         Rules const& rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
@@ -51,11 +51,12 @@ public:
         , tx(tx_)
         , rules(rules_)
         , flags(flags_)
-        , parentBatchId(parentBatchId_)
+        , parentTxId(parentTxId_)
         , j(j_)
     {
         XRPL_ASSERT(
-            (flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
+            (flags_ & tapGENERATED) == tapGENERATED,
+            "Generated apply flag should be set");
     }
 
     PreflightContext(
@@ -67,7 +68,8 @@ public:
         : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
     {
         XRPL_ASSERT(
-            (flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+            (flags_ & tapGENERATED) == 0,
+            "Generated apply flag should not be set");
     }
 
     PreflightContext&
@@ -83,7 +85,7 @@ public:
     TER preflightResult;
     ApplyFlags flags;
     STTx const& tx;
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<uint256 const> const parentTxId;
     beast::Journal const j;
 
     PreclaimContext(
@@ -92,19 +94,20 @@ public:
         TER preflightResult_,
         STTx const& tx_,
         ApplyFlags flags_,
-        std::optional<uint256> parentBatchId_,
+        std::optional<uint256> parentTxId_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)
         , flags(flags_)
         , tx(tx_)
-        , parentBatchId(parentBatchId_)
+        , parentTxId(parentTxId_)
         , j(j_)
     {
         XRPL_ASSERT(
-            parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
-            "Parent Batch ID should be set if batch apply flag is set");
+            parentTxId.has_value() == ((flags_ & tapGENERATED) == tapGENERATED),
+            "Parent Transaction ID should be set if generated apply flag is "
+            "set");
     }
 
     PreclaimContext(
@@ -124,7 +127,8 @@ public:
               j_)
     {
         XRPL_ASSERT(
-            (flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
+            (flags_ & tapGENERATED) == 0,
+            "Generated apply flag should not be set");
     }
 
     PreclaimContext&

@@ -157,6 +157,12 @@ XRPNotCreated::finalize(
         return false;
     }
 
+    // ContractCall can emit transactions; skip the negative net change check
+    // NOTE: SmartContract Txn Ordering
+    // if (tx.getTxnType() == ttCONTRACT_CALL)
+    if (tx.getTxnType() == ttCONTRACT_CALL && -drops_ > fee.drops())
+        return true;
+
     // The negative of the net change should be equal to actual fee charged.
     if (-drops_ != fee.drops())
     {
@@ -380,8 +386,8 @@ AccountRootsNotDeleted::finalize(
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
     if ((tx.getTxnType() == ttACCOUNT_DELETE ||
-         tx.getTxnType() == ttAMM_DELETE ||
-         tx.getTxnType() == ttVAULT_DELETE) &&
+         tx.getTxnType() == ttAMM_DELETE || tx.getTxnType() == ttVAULT_DELETE ||
+         tx.getTxnType() == ttCONTRACT_DELETE) &&
         result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
@@ -543,6 +549,9 @@ LedgerEntryTypesMatch::visitEntry(
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
             case ltVAULT:
+            case ltCONTRACT_SOURCE:
+            case ltCONTRACT:
+            case ltCONTRACT_DATA:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -963,6 +972,7 @@ ValidNewAccountRoot::finalize(
     // From this point on we know exactly one account was created.
     if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
          tx.getTxnType() == ttVAULT_CREATE ||
+         tx.getTxnType() == ttCONTRACT_CREATE ||
          tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
          tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
         result == tesSUCCESS)
@@ -971,7 +981,8 @@ ValidNewAccountRoot::finalize(
             (pseudoAccount_ && view.rules().enabled(featureSingleAssetVault));
 
         if (pseudoAccount && tx.getTxnType() != ttAMM_CREATE &&
-            tx.getTxnType() != ttVAULT_CREATE)
+            tx.getTxnType() != ttVAULT_CREATE &&
+            tx.getTxnType() != ttCONTRACT_CREATE)
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";

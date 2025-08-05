@@ -305,7 +305,7 @@ Batch::preflight(PreflightContext const& ctx)
 
         auto const innerAccount = stx.getAccountID(sfAccount);
         if (auto const preflightResult = ripple::preflight(
-                ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
+                ctx.app, ctx.rules, parentBatchId, stx, tapGENERATED, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
             JLOG(ctx.j.debug())

@@ -131,24 +131,41 @@ public:
     }
 
     void
-    setParentBatchId(uint256 const& parentBatchId)
+    setParentTxId(uint256 const& parentTxId)
     {
-        parentBatchId_ = parentBatchId;
+        parentTxId_ = parentTxId;
     }
 
     uint256
-    getParentBatchId() const
+    getParentTxId() const
     {
         XRPL_ASSERT(
-            hasParentBatchId(),
-            "ripple::TxMeta::getParentBatchId : non-null batch id");
-        return *parentBatchId_;
+            hasParentTxId(), "ripple::TxMeta::getParentTxId : non-null tx id");
+        return *parentTxId_;
     }
 
     bool
-    hasParentBatchId() const
+    hasParentTxId() const
     {
-        return static_cast<bool>(parentBatchId_);
+        return static_cast<bool>(parentTxId_);
+    }
+
+    void
+    setContractExecutions(STArray const& contractExecutions)
+    {
+        mContractExecutions = contractExecutions;
+    }
+
+    STArray const&
+    getContractExecutions() const
+    {
+        return *mContractExecutions;
+    }
+
+    bool
+    hasContractExecutions() const
+    {
+        return static_cast<bool>(mContractExecutions);
     }
 
     void
@@ -200,9 +217,10 @@ private:
     int mResult;
 
     std::optional<STAmount> mDelivered;
-    std::optional<uint256> parentBatchId_;
+    std::optional<uint256> parentTxId_;
     std::optional<std::uint32_t> gasUsed_;
     std::optional<std::int32_t> wasmReturnCode_;
+    std::optional<STArray> mContractExecutions;
 
     STArray mNodes;
 };

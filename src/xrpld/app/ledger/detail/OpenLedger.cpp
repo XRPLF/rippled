@@ -134,6 +134,17 @@ OpenLedger::accept(
         }
         // LCOV_EXCL_STOP
 
+        // skip generated txns
+        // LCOV_EXCL_START
+        if (tx->isFlag(tfGeneratedTxn))
+        {
+            XRPL_ASSERT(
+                txpair.second && txpair.second->isFieldPresent(sfParentTxID),
+                "Generated transaction missing sfParentTxID");
+            continue;
+        }
+        // LCOV_EXCL_STOP
+
         if (auto const toSkip = app.getHashRouter().shouldRelay(txId))
         {
             JLOG(j_.debug()) << "Relaying recovered tx " << txId;
