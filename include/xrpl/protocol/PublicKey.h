@@ -128,6 +128,12 @@ public:
     {
         return slice();
     }
+
+    Slice
+    fingerprint() const noexcept
+    {
+        return slice().substr(0, 10);
+    }
 };
 
 /** Print the public key to a stream.
