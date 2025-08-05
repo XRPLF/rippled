@@ -317,10 +317,10 @@ Oracle::ledgerEntry(
 
     if (jr.isObject())
     {
+        if (jr.isMember(jss::error))
+            return jr;
         if (jr.isMember(jss::result) && jr[jss::result].isMember(jss::status))
             return jr[jss::result];
-        else if (jr.isMember(jss::error))
-            return jr;
     }
     return Json::nullValue;
 }

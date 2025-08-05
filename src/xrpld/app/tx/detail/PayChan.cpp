@@ -286,6 +286,10 @@ PayChanCreate::doApply()
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
+    }
 
     ctx_.view().insert(slep);
 
