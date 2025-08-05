@@ -77,7 +77,7 @@ public:
     }
 
     std::optional<Slice>
-    getData(Slice const& data)
+    getData()
     {
         return data_;
     }
