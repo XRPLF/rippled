@@ -30,7 +30,6 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/overlay/predicates.h>
 #include <xrpld/peerfinder/make_Manager.h>
 #include <xrpld/rpc/handlers/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
@@ -41,8 +40,6 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/server/SimpleWriter.h>
-
-#include <boost/algorithm/string/predicate.hpp>
 
 #include <functional>
 
@@ -1498,9 +1495,12 @@ OverlayImpl::updateUntrustedValidatorSlot(
         return;
 
     if (!strand_.running_in_this_thread())
-        return post(strand_, [this, key, validator, peer]() {
-            updateUntrustedValidatorSlot(key, validator, peer);
-        });
+        return post(
+            strand_,
+            // Must capture copies of reference parameters (i.e. key, validator)
+            [this, key = key, validator = validator, peer]() {
+                updateUntrustedValidatorSlot(key, validator, peer);
+            });
 
     slots_.updateUntrustedValidatorSlot(key, validator, peer, [&]() {
         reportInboundTraffic(TrafficCount::squelch_ignored, 0);
