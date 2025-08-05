@@ -167,12 +167,6 @@ public:
         STAmount const& asset2,
         CreateArg const& arg);
 
-    static Json::Value
-    createjv(
-        AccountID const& account,
-        STAmount const& amount,
-        STAmount const& amount2);
-
     /** Send amm_info RPC command
      */
     Json::Value
