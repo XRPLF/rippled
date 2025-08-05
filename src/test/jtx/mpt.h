@@ -93,6 +93,7 @@ using Holders = std::vector<Account>;
 struct MPTCreate
 {
     static inline std::vector<Account> AllHolders = {};
+    std::optional<Account> issuer = std::nullopt;
     std::optional<std::uint64_t> maxAmt = std::nullopt;
     std::optional<std::uint8_t> assetScale = std::nullopt;
     std::optional<std::uint16_t> transferFee = std::nullopt;
@@ -195,17 +196,29 @@ public:
     void
     create(MPTCreate const& arg = MPTCreate{});
 
+    static Json::Value
+    createjv(MPTCreate const& arg = MPTCreate{});
+
     void
     destroy(MPTDestroy const& arg = MPTDestroy{});
 
+    static Json::Value
+    destroyjv(MPTDestroy const& arg = MPTDestroy{});
+
     void
     authorize(MPTAuthorize const& arg = MPTAuthorize{});
+
+    static Json::Value
+    authorizejv(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
     authorizeHolders(Holders const& holders);
 
     void
     set(MPTSet const& set = {});
+
+    static Json::Value
+    setjv(MPTSet const& set = {});
 
     [[nodiscard]] bool
     checkDomainID(std::optional<uint256> expected) const;
