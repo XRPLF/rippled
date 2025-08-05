@@ -396,7 +396,7 @@ using MatchConstness = std::
     conditional_t<std::is_const_v<MatchAgainst>, std::add_const_t<Type>, Type>;
 
 template <typename T>
-concept STObjectLike = std::same_as<std::remove_cvref_t<T>, STObject>;
+concept STObjectLike = std::is_same_v<std::remove_cvref_t<T>, STObject>;
 
 // This type returns the value directly if the field is a typed field.
 template <
