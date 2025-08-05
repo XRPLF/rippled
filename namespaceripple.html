@@ -4852,6 +4852,8 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="separator:aad416c46e7b4259fc8caf88cf8dc6ad5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5db0563958665903b910310bab03c681"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5db0563958665903b910310bab03c681">addEmptyHolding</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;accountID, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> priorBalance, <a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a> const &amp;mptIssue, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
 <tr class="separator:a5db0563958665903b910310bab03c681"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a815da37e59b05570030f09cc6fae1914"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a815da37e59b05570030f09cc6fae1914">authorizeMPToken</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;priorBalance, <a class="el" href="namespaceripple.html#a48dcfc87a5a55b47e868c00da3daa3f1">MPTID</a> const &amp;mptIssuanceID, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;account, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> flags, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; holderID)</td></tr>
+<tr class="separator:a815da37e59b05570030f09cc6fae1914"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9eb7f5da763beb91cd314311f2b23015"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9eb7f5da763beb91cd314311f2b23015">trustCreate</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, bool const bSrcHigh, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;uSrcAccountID, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;uDstAccountID, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;uIndex, <a class="el" href="classripple_1_1STLedgerEntry.html#af4681bdc002a61dcef6b9a52bc677c3a">SLE::ref</a> sleAccount, bool const bAuth, bool const bNoRipple, bool const bFreeze, bool bDeepFreeze, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const  &amp;saBalance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const  &amp;saLimit, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uSrcQualityIn, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uSrcQualityOut, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:a9eb7f5da763beb91cd314311f2b23015"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a trust line.  <a href="namespaceripple.html#a9eb7f5da763beb91cd314311f2b23015">More...</a><br /></td></tr>
 <tr class="separator:a9eb7f5da763beb91cd314311f2b23015"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -7950,7 +7952,7 @@ template&lt;class T &gt; </div>
 <p>Deleter function prototype. </p>
 <p >Returns the status of the entry deletion (if should not be skipped) and if the entry should be skipped. The status is always tesSUCCESS if the entry should be skipped. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00875">875</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00885">885</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -10373,7 +10375,7 @@ ledger.
 <tr><td class="fieldname"><a id="a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b" name="a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b"></a>Legacy&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00760">760</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00770">770</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -39630,7 +39632,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00125">125</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00124">124</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -39678,7 +39680,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00136">136</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00135">135</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -39739,7 +39741,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the directory isn't empty; false otherwise </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00147">147</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00146">146</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -39800,7 +39802,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if the directory isn't empty; false otherwise </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00158">158</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00157">157</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -39844,7 +39846,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if <code>exp</code> is in the past; <code>false</code> otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00175">175</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00174">174</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -39874,7 +39876,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00184">184</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00183">183</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -39904,7 +39906,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00194">194</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00193">193</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -39934,7 +39936,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00202">202</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00201">201</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -39976,7 +39978,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00215">215</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00214">214</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40012,7 +40014,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00235">235</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00234">234</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40054,7 +40056,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00249">249</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00248">248</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40096,7 +40098,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00272">272</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00271">271</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40138,7 +40140,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00284">284</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00283">283</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40180,7 +40182,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00309">309</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00308">308</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40222,7 +40224,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00349">349</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00348">348</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40264,7 +40266,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00375">375</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00374">374</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40318,7 +40320,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00386">386</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00385">385</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40366,7 +40368,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00469">469</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00468">468</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40420,7 +40422,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00481">481</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00480">480</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40474,7 +40476,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00530">530</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00529">529</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40522,7 +40524,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00553">553</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00552">552</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40572,7 +40574,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00579">579</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00578">578</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40614,7 +40616,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00617">617</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00616">616</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40652,7 +40654,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 <p>Iterate all items in the given directory. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00655">655</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00654">654</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40717,7 +40719,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>false</code> if the iteration failed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00683">683</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00682">682</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40755,7 +40757,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00761">761</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00760">760</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40793,7 +40795,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00772">772</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00771">771</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40832,7 +40834,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00785">785</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00784">784</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40877,7 +40879,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Return false if the test ledger is provably incompatible with the valid ledger, that is, they could not possibly both be valid. </p>
 <p >Use the first form if you have both ledgers, use the second form if you have not acquired the valid ledger yet </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00798">798</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00797">797</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40925,7 +40927,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00861">861</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00860">860</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40963,7 +40965,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00906">906</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00905">905</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -40983,7 +40985,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00920">920</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00919">919</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41003,7 +41005,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00937">937</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00936">936</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41042,7 +41044,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Return the hash of a ledger by sequence. </p>
 <p >The hash is retrieved by looking up the "skip list" in the passed ledger. As the skip list is limited in size, if the requested ledger sequence number is out of the range of ledgers represented in the skip list, then std::nullopt is returned. </p><dl class="section return"><dt>Returns</dt><dd>The hash of the ledger with the given sequence number or std::nullopt. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00960">960</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00959">959</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41086,7 +41088,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 <p>Adjust the owner count up or down. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01031">1031</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01030">1030</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41106,7 +41108,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01049">1049</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01048">1048</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41142,7 +41144,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01057">1057</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01056">1056</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41172,7 +41174,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01068">1068</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01067">1067</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41211,7 +41213,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Create pseudo-account, storing pseudoOwnerKey into ownerField. </p>
 <p >The list of valid ownerField is maintained in <a class="el" href="View_8cpp_source.html">View.cpp</a> and the caller to this function must perform necessary amendment check(s) before using a field. The amendment check is <b>not</b> performed in createPseudoAccount. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01095">1095</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01094">1094</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41231,7 +41233,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01140">1140</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01139">1139</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41279,7 +41281,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01154">1154</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01153">1153</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41327,7 +41329,67 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01202">1202</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01201">1201</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a815da37e59b05570030f09cc6fae1914" name="a815da37e59b05570030f09cc6fae1914"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a815da37e59b05570030f09cc6fae1914">&#9670;&#160;</a></span>authorizeMPToken()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::authorizeMPToken </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>priorBalance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a48dcfc87a5a55b47e868c00da3daa3f1">MPTID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>mptIssuanceID</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>journal</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>flags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt;&#160;</td>
+          <td class="paramname"><em>holderID</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01221">1221</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41438,7 +41500,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Create a trust line. </p>
 <p >This can set an initial balance. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01227">1227</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01329">1329</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41480,7 +41542,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01346">1346</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01448">1448</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41522,7 +41584,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01408">1408</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01510">1510</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41570,7 +41632,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01431">1431</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01534">1534</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41609,7 +41671,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Delete an offer. </p>
 <p >Requirements: The passed <code>sle</code> be obtained from a prior call to view.peek() </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01471">1471</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01574">1574</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41671,7 +41733,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01532">1532</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01635">1635</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41739,7 +41801,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01686">1686</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01789">1789</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41801,7 +41863,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01738">1738</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01841">1841</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41857,7 +41919,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01858">1858</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01961">1961</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41925,7 +41987,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01920">1920</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02023">2023</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -41987,7 +42049,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01986">1986</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02089">2089</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42044,7 +42106,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Calls static accountSendIOU if saAmount represents <a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a>. </p>
 <p >Calls static accountSendMPT if saAmount represents <a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02011">2011</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02114">2114</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42112,7 +42174,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02032">2032</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02135">2135</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42160,7 +42222,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02085">2085</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02188">2188</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42208,7 +42270,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02185">2185</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02288">2288</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42256,7 +42318,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02258">2258</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02361">2361</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42304,7 +42366,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p >If WeakAuth then return tecNO_AUTH if lsfRequireAuth is set, and the RippleState exists, and is not authorized. Return tecNO_LINE if lsfRequireAuth is set and the RippleState doesn't exist. Consequently, if WeakAuth and lsfRequireAuth is <em>not</em> set, this function will return tesSUCCESS even if RippleState does <em>not</em> exist.</p>
 <p >The default "Legacy" auth type is equivalent to WeakAuth. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02301">2301</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02404">2404</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42359,7 +42421,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p >If WeakAuth then return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken doesn't exist or is not authorized (explicitly or via credentials, if DomainID is set in MPTokenIssuance). Consequently, if WeakAuth and lsfMPTRequireAuth is <em>not</em> set, this function will return true even if MPToken does <em>not</em> exist.</p>
 <p >The default "Legacy" auth type is equivalent to StrongAuth. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02333">2333</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02436">2436</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42412,9 +42474,9 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p >This function will create MPToken (if needed) on the basis of any non-expired credentials and will delete any expired credentials, indirectly via verifyValidDomain, as per DomainID (if set in MPTokenIssuance).</p>
 <p >The caller does NOT need to ensure that DomainID is actually set - this function handles gracefully both cases when DomainID is set and when not.</p>
 <p >The caller does NOT need to look for existing MPToken to match mptIssue/account - this function checks lsfMPTAuthorized of an existing MPToken iff DomainID is not set.</p>
-<p >Do not use for accounts which hold implied permission e.g. object owners or if MPTokenIssuance does not require authorization. In both cases use <a class="el" href="classripple_1_1MPTokenAuthorize.html#ae05b1d7698a2d531de63057594025666">MPTokenAuthorize::authorize</a> if MPToken does not yet exist. </p>
+<p >Do not use for accounts which hold implied permission e.g. object owners or if MPTokenIssuance does not require authorization. In both cases use MPTokenAuthorize::authorize if MPToken does not yet exist. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02419">2419</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02522">2522</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42459,7 +42521,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Check if the destination account is allowed to receive MPT. </p>
 <p >Return tecNO_AUTH if it doesn't and tesSUCCESS otherwise. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02522">2522</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02622">2622</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42507,7 +42569,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02542">2542</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02642">2642</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42552,7 +42614,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Delete trustline to AMM. </p>
 <p >The passed <code>sle</code> must be obtained from a prior call to view.peek(). Fail if neither side of the trustline is AMM or if ammAccountID is seated and is not one of the trustline's side. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02620">2620</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02720">2720</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42609,7 +42671,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 <p>Calls static rippleCreditIOU if saAmount represents <a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a>. </p>
 <p >Calls static rippleCreditMPT if saAmount represents <a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02669">2669</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02769">2769</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42645,7 +42707,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02697">2697</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02797">2797</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42681,7 +42743,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02715">2715</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02815">2815</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42717,7 +42779,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02734">2734</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02834">2834</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42759,7 +42821,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02753">2753</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02853">2853</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42807,7 +42869,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02850">2850</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02950">2950</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42847,7 +42909,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if <em>now</em> refers to a time strictly after <em>mark</em>, else false. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02997">2997</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l03097">3097</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -43439,7 +43501,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00645">645</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00655">655</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -43481,7 +43543,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00816">816</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00826">826</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
 
 </div>
 </div>
@@ -55565,7 +55627,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="line">    &amp;sfVaultID,  </div>
 <div class="line">}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01089">1089</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l01088">1088</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
