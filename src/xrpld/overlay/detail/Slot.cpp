@@ -35,6 +35,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace ripple {
 namespace reduce_relay {
@@ -233,6 +234,7 @@ Slot::deletePeer(PublicKey const& validator, Peer::id_t id, bool erase)
     if (it == peers_.end())
         return;
 
+    std::vector<Peer::id_t> toUnsquelch;
     auto const now = clock_.now();
     if (it->second.state == PeerState::Selected)
     {
@@ -246,7 +248,7 @@ Slot::deletePeer(PublicKey const& validator, Peer::id_t id, bool erase)
         for (auto& [k, v] : peers_)
         {
             if (v.state == PeerState::Squelched)
-                handler_.unsquelch(validator, k);
+                toUnsquelch.push_back(k);
             v.state = PeerState::Counting;
             v.count = 0;
             v.expire = now;
@@ -256,7 +258,7 @@ Slot::deletePeer(PublicKey const& validator, Peer::id_t id, bool erase)
         reachedThreshold_ = 0;
         state_ = SlotState::Counting;
     }
-    else if (considered_.find(id) != considered_.end())
+    else if (considered_.contains(id))
     {
         if (it->second.count > reduce_relay::MAX_MESSAGE_THRESHOLD)
             --reachedThreshold_;
@@ -268,6 +270,10 @@ Slot::deletePeer(PublicKey const& validator, Peer::id_t id, bool erase)
 
     if (erase)
         peers_.erase(it);
+    
+    // Must be after peers_.erase(it)
+    for (auto const& k : toUnsquelch)
+        handler_.unsquelch(validator, k);
 }
 
 void
