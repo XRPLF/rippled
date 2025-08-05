@@ -233,7 +233,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
 
         HostFunctions mock;
         auto const re =
-            preflightEscrowWasm(code, ESCROW_FUNCTION_CALL, {}, &mock, ctx.j);
+            preflightEscrowWasm(code, ESCROW_FUNCTION_NAME, {}, &mock, ctx.j);
         if (!isTesSuccess(re))
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
@@ -1277,7 +1277,7 @@ EscrowFinish::doApply()
         }
         std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
         auto re = runEscrowWasm(
-            wasm, ESCROW_FUNCTION_CALL, {}, &ledgerDataProvider, allowance);
+            wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())
         {

@@ -35,7 +35,7 @@
 namespace ripple {
 
 static void
-getReadOnlyWasmFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
+setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
 {
     // clang-format off
     WASM_IMPORT_FUNC2(i, getLedgerSqn, "get_ledger_sqn", hfs,                                                   60);
@@ -106,7 +106,7 @@ createWasmImport(HostFunctions* hfs)
 
     if (hfs)
     {
-        getReadOnlyWasmFunctions(hfs, i);
+        setCommonHostFunctions(hfs, i);
         WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs, 1000);
     }
 

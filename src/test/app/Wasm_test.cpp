@@ -148,7 +148,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto re = engine.run(
             wasm,
-            ESCROW_FUNCTION_CALL,
+            ESCROW_FUNCTION_NAME,
             {},
             imports,
             &hf,
@@ -166,7 +166,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         // empty module - run the same instance
         re = engine.run(
-            {}, ESCROW_FUNCTION_CALL, {}, imports, &hf, 1'000'000, env.journal);
+            {}, ESCROW_FUNCTION_NAME, {}, imports, &hf, 1'000'000, env.journal);
 
         // code takes 22 gas + 2 getLedgerSqn calls
         if (BEAST_EXPECT(re.has_value()))
@@ -335,7 +335,7 @@ struct Wasm_test : public beast::unit_test::suite
             std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
             auto const re = preflightEscrowWasm(
-                wasm, ESCROW_FUNCTION_CALL, {}, &hfs, env.journal);
+                wasm, ESCROW_FUNCTION_NAME, {}, &hfs, env.journal);
             BEAST_EXPECT(!isTesSuccess(re));
         }
     }
@@ -354,7 +354,7 @@ struct Wasm_test : public beast::unit_test::suite
         {
             TestHostFunctions nfs(env, 0);
             auto re =
-                runEscrowWasm(wasm, ESCROW_FUNCTION_CALL, {}, &nfs, 100'000);
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(re->result && (re->cost == 41'132));
@@ -375,7 +375,7 @@ struct Wasm_test : public beast::unit_test::suite
             };
             BadTestHostFunctions nfs(env);
             auto re =
-                runEscrowWasm(wasm, ESCROW_FUNCTION_CALL, {}, &nfs, 100000);
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100000);
             BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 5831));
             // std::cout << "bad case (access nonexistent field) result "
             //           << re.error() << std::endl;
@@ -395,7 +395,7 @@ struct Wasm_test : public beast::unit_test::suite
             };
             BadTestHostFunctions nfs(env);
             auto re =
-                runEscrowWasm(wasm, ESCROW_FUNCTION_CALL, {}, &nfs, 100'000);
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
             BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 5831));
             // std::cout << "bad case (more than MAX_PAGES) result "
             //           << re.error() << std::endl;
@@ -446,7 +446,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto re = engine.run(
                 wasm,
-                ESCROW_FUNCTION_CALL,
+                ESCROW_FUNCTION_NAME,
                 {},
                 imports,
                 nullptr,
@@ -480,7 +480,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto re = engine.run(
                 wasm,
-                ESCROW_FUNCTION_CALL,
+                ESCROW_FUNCTION_NAME,
                 {},
                 imp,
                 &hfs,
@@ -513,7 +513,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto re = engine.run(
                 wasm,
-                ESCROW_FUNCTION_CALL,
+                ESCROW_FUNCTION_NAME,
                 {},
                 imp,
                 &hfs,
@@ -633,7 +633,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             PerfHostFunctions nfs(env, k, env.tx());
 
-            auto re = runEscrowWasm(wasm, ESCROW_FUNCTION_CALL, {}, &nfs);
+            auto re = runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(re->result);
