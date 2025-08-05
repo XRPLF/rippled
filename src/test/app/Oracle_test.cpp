@@ -783,7 +783,7 @@ private:
         testcase("Amendment");
         using namespace jtx;
 
-        auto const features = supported_amendments() - featurePriceOracle;
+        auto const features = testable_amendments() - featurePriceOracle;
         Account const owner("owner");
         Env env(*this, features);
         auto const baseFee =
@@ -806,7 +806,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
         testInvalidSet();
         testInvalidDelete();
         testCreate();
