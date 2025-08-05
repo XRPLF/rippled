@@ -36,6 +36,8 @@
 
 namespace ripple {
 
+constexpr int const MAX_SIMULATE_TXS = 1000;
+
 static Expected<std::uint32_t, Json::Value>
 getAutofillSequence(
     Json::Value const& tx_json,
@@ -149,15 +151,17 @@ autofillTx(
         }
     }
 
-    if (!tx_json.isMember(jss::TxnSignature))
+    if (tx_json.isMember(jss::TxnSignature))
     {
-        // autofill TxnSignature
-        tx_json[jss::TxnSignature] = "";
-    }
-    else if (tx_json[jss::TxnSignature] != "")
-    {
-        // Transaction must not be signed
-        return rpcError(rpcTX_SIGNED);
+        if (tx_json[jss::TxnSignature] != "")
+        {
+            // Transaction must not be signed
+            return rpcError(rpcTX_SIGNED);
+        }
+        else
+        {
+            tx_json.removeMember(jss::TxnSignature);
+        }
     }
 
     if (!tx_json.isMember(jss::Sequence))
@@ -186,13 +190,6 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
     uint256 hash;
     if (params.isMember(jss::tx_hash))
     {
-        if (params.isMember(jss::tx_blob) || params.isMember(jss::tx_json) ||
-            params.isMember(jss::ctid))
-        {
-            return RPC::make_param_error(
-                "Cannot include 'tx_hash' with 'ctid'.");
-        }
-
         auto const tx_hash = params[jss::tx_hash];
         if (!tx_hash.isString())
         {
@@ -221,13 +218,13 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
         }
         auto decodedCTID =
             RPC::decodeCTID(context.params[jss::ctid].asString());
-        auto const [lgr_seq, txn_idx, net_id] = *decodedCTID;
-        if (!ctid)
+        if (!decodedCTID)
         {
             return RPC::invalid_field_error(jss::ctid);
         }
+        auto const [ledgerSq, txId, _] = *decodedCTID;
         if (auto const optHash =
-                context.app.getLedgerMaster().txnIdFromIndex(lgr_seq, txn_idx);
+                context.app.getLedgerMaster().txnIdFromIndex(ledgerSq, txId);
             optHash)
         {
             hash = *optHash;
@@ -285,14 +282,6 @@ getTxJsonFromParams(
 
     if (txInput.isMember(jss::tx_blob))
     {
-        if (txInput.isMember(jss::tx_json) || txInput.isMember(jss::tx_hash) ||
-            txInput.isMember(jss::ctid))
-        {
-            return RPC::make_param_error(
-                "Cannot include 'tx_blob' with 'tx_json', 'tx_hash', or "
-                "'ctid'.");
-        }
-
         auto const tx_blob = txInput[jss::tx_blob];
         if (!tx_blob.isString())
         {
@@ -316,12 +305,6 @@ getTxJsonFromParams(
     }
     else if (txInput.isMember(jss::tx_json))
     {
-        if (txInput.isMember(jss::tx_hash) || txInput.isMember(jss::ctid))
-        {
-            return RPC::make_param_error(
-                "Cannot include 'tx_json' with 'tx_hash' or 'ctid'.");
-        }
-
         tx_json = txInput[jss::tx_json];
         if (!tx_json.isObject())
         {
@@ -573,15 +556,25 @@ doSimulate(RPC::JsonContext& context)
         }
     }
 
-    if (context.params.isMember(jss::transactions) &&
-        (context.params.isMember(jss::tx_json) ||
-         context.params.isMember(jss::tx_blob) ||
-         context.params.isMember(jss::tx_hash) ||
-         context.params.isMember(jss::ctid)))
+    auto const numParams =
+        (context.params.isMember(jss::transactions) +
+         context.params.isMember(jss::tx_json) +
+         context.params.isMember(jss::tx_blob) +
+         context.params.isMember(jss::tx_hash) +
+         context.params.isMember(jss::ctid));
+    if (numParams == 0)
     {
         return RPC::make_param_error(
-            "Cannot include 'transactions' with 'tx_json', 'tx_blob', "
+            "Must include one of 'transactions', 'tx_json', 'tx_blob', "
             "'tx_hash', or 'ctid'.");
+    }
+    // if more than one of these fields is included, error out
+    if (numParams > 1)
+    {
+        return RPC::make_param_error(
+            "Cannot include more than one of 'transactions', 'tx_json', "
+            "'tx_blob', "
+            "'tx_hash', and 'ctid'.");
     }
 
     std::shared_ptr<ReadView const> lpLedger;
@@ -593,9 +586,48 @@ doSimulate(RPC::JsonContext& context)
     auto transactions = std::vector<std::shared_ptr<Transaction>>{};
     if (context.params.isMember(jss::transactions))
     {
-        // TODO: bunch of additional checks
+        auto const txs = context.params[jss::transactions];
+        if (!txs.isArray())
+        {
+            return RPC::expected_field_error(jss::transactions, "array");
+        }
+        if (txs.size() == 0)
+        {
+            return RPC::expected_field_error(
+                jss::transactions, "nonempty array");
+        }
+        if (txs.size() > MAX_SIMULATE_TXS)
+        {
+            return RPC::make_param_error(
+                "Cannot include more than " + std::to_string(MAX_SIMULATE_TXS) +
+                " transactions in 'transactions' array.");
+        }
         for (auto const& txInput : context.params[jss::transactions])
         {
+            if (!txInput.isObject())
+            {
+                return RPC::expected_field_error(
+                    jss::transactions, "array of objects");
+            }
+            {
+                auto const numParams = txInput.isMember(jss::tx_json) +
+                    txInput.isMember(jss::tx_blob) +
+                    txInput.isMember(jss::tx_hash) +
+                    txInput.isMember(jss::ctid);
+                if (numParams == 0)
+                {
+                    return RPC::make_param_error(
+                        "Must include one of 'tx_json', 'tx_blob', "
+                        "'tx_hash', or 'ctid' in each transaction.");
+                }
+                else if (numParams > 1)
+                {
+                    return RPC::make_param_error(
+                        "Cannot include more than one of 'tx_json', 'tx_blob', "
+                        "'tx_hash', and 'ctid' in each transaction.");
+                }
+            }
+
             auto transaction =
                 processTransaction(context, txInput, lpLedger, isCurrentLedger);
             if (!transaction)

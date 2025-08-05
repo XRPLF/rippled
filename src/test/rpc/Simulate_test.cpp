@@ -69,8 +69,7 @@ class Simulate_test : public beast::unit_test::suite
         BEAST_EXPECT(tx_json[jss::Account] == tx[jss::Account]);
         BEAST_EXPECT(
             tx_json[jss::SigningPubKey] == tx.get(jss::SigningPubKey, ""));
-        BEAST_EXPECT(
-            tx_json[jss::TxnSignature] == tx.get(jss::TxnSignature, ""));
+        BEAST_EXPECT(!tx_json.isMember(jss::TxnSignature));
         BEAST_EXPECT(tx_json[jss::Fee] == tx.get(jss::Fee, expectedFee));
         BEAST_EXPECT(
             tx_json[jss::Sequence] == tx.get(jss::Sequence, expectedSequence));
@@ -167,11 +166,10 @@ class Simulate_test : public beast::unit_test::suite
             // No params
             Json::Value const params = Json::objectValue;
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECTS(
+            BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
-                    "None of `tx_blob`, `tx_json`, `tx_hash`, or `ctid` "
-                    "included.",
-                resp.toStyledString());
+                "Must include one of 'transactions', 'tx_json', 'tx_blob', "
+                "'tx_hash', or 'ctid'.");
         }
         {
             // Providing both `tx_json` and `tx_blob`
@@ -182,8 +180,68 @@ class Simulate_test : public beast::unit_test::suite
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
-                "Cannot include 'tx_blob' with 'tx_json', 'tx_hash', or "
-                "'ctid'.");
+                "Cannot include more than one of 'transactions', 'tx_json', "
+                "'tx_blob', 'tx_hash', and 'ctid'.");
+        }
+        {
+            // Providing both `tx_json` and `tx_hash`
+            Json::Value params = Json::objectValue;
+            params[jss::tx_json] = Json::objectValue;
+            params[jss::tx_hash] = "ABCDEF1234567890";
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot include more than one of 'transactions', 'tx_json', "
+                "'tx_blob', 'tx_hash', and 'ctid'.");
+        }
+        {
+            // Providing both `tx_json` and `ctid`
+            Json::Value params = Json::objectValue;
+            params[jss::tx_json] = Json::objectValue;
+            params[jss::ctid] = "ABCDEF1234567890";
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot include more than one of 'transactions', 'tx_json', "
+                "'tx_blob', 'tx_hash', and 'ctid'.");
+        }
+        {
+            // Providing both `tx_blob` and `tx_hash`
+            Json::Value params = Json::objectValue;
+            params[jss::tx_blob] = "1200";
+            params[jss::tx_hash] = "ABCDEF1234567890";
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot include more than one of 'transactions', 'tx_json', "
+                "'tx_blob', 'tx_hash', and 'ctid'.");
+        }
+        {
+            // Providing both `tx_blob` and `ctid`
+            Json::Value params = Json::objectValue;
+            params[jss::tx_blob] = "1200";
+            params[jss::ctid] = "ABCDEF1234567890";
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot include more than one of 'transactions', 'tx_json', "
+                "'tx_blob', 'tx_hash', and 'ctid'.");
+        }
+        {
+            // Providing both `tx_hash` and `ctid`
+            Json::Value params = Json::objectValue;
+            params[jss::tx_hash] = "ABCDEF1234567890";
+            params[jss::ctid] = "ABCDEF1234567890";
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot include more than one of 'transactions', 'tx_json', "
+                "'tx_blob', 'tx_hash', and 'ctid'.");
         }
         {
             // `binary` isn't a boolean
@@ -484,15 +542,14 @@ class Simulate_test : public beast::unit_test::suite
                 "Cannot use `ctid` without `ledger_index` or `ledger_hash`.");
         }
         {
-            // invalid ledger_hash
+            // invalid tx_hash
             Json::Value params;
             params[jss::tx_hash] = "ABCDEF";
             params[jss::ledger_index] = 1;
             auto const resp = env.rpc("json", "simulate", to_string(params));
-            BEAST_EXPECTS(
+            BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
-                    "Invalid field 'tx_hash'.",
-                resp.toStyledString());
+                "Invalid field 'tx_hash'.");
             BEAST_EXPECT(
                 resp[jss::result][jss::error_code] == rpcINVALID_PARAMS);
         }
@@ -510,9 +567,21 @@ class Simulate_test : public beast::unit_test::suite
                 resp[jss::result][jss::error_code] == rpcTXN_NOT_FOUND);
         }
         {
+            // Invalid ctid
+            Json::Value params;
+            params[jss::ctid] = "123456";
+            params[jss::ledger_index] = 1;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'ctid'.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_code] == rpcINVALID_PARAMS);
+        }
+        {
             // ctid not found
             Json::Value params;
-            params[jss::ctid] = "ABCDEF1234567890";
+            params[jss::ctid] = "CBADEF1234567890";
             params[jss::ledger_index] = 1;
             auto const resp = env.rpc("json", "simulate", to_string(params));
             BEAST_EXPECT(
@@ -558,6 +627,107 @@ class Simulate_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'ledger_index'.");
+        }
+        {
+            // Invalid ledger_hash type
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            params[jss::ledger_hash] = Json::arrayValue;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'ledger_hash'.");
+        }
+        {
+            // Invalid transactions array type
+            Json::Value params;
+            params[jss::transactions] = "not_an_array";
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'transactions', not array.");
+        }
+        {
+            // Empty transactions array
+            Json::Value params;
+            params[jss::transactions] = Json::arrayValue;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'transactions', not nonempty array.");
+        }
+        {
+            // Non-object transaction in transactions array
+            Json::Value params;
+            Json::Value txs = Json::arrayValue;
+            txs.append("not_an_object");
+            params[jss::transactions] = txs;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'transactions', not array of objects.");
+        }
+        {
+            // Missing tx_json in transaction object in transactions array
+            Json::Value params;
+            Json::Value txs = Json::arrayValue;
+            Json::Value txObj = Json::objectValue;
+            txs.append(txObj);
+            params[jss::transactions] = txs;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Must include one of 'tx_json', 'tx_blob', 'tx_hash', or "
+                "'ctid' in each transaction.");
+        }
+        {
+            // Non-object tx_json in transaction object in transactions array
+            Json::Value params;
+            Json::Value txs = Json::arrayValue;
+            Json::Value txObj = Json::objectValue;
+            txObj[jss::tx_json] = "not_an_object";
+            txs.append(txObj);
+            params[jss::transactions] = txs;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECTS(
+                resp[jss::result][jss::error_message] ==
+                    "Invalid field 'tx_json', not object.",
+                resp.toStyledString());
+        }
+        {
+            // Multiple fields in transaction object in transactions array
+            Json::Value params;
+            Json::Value txs = Json::arrayValue;
+            Json::Value txObj = Json::objectValue;
+            txObj[jss::tx_json] = Json::objectValue;
+            txObj[jss::tx_blob] = "ABCDEF1234567890";
+            txs.append(txObj);
+            params[jss::transactions] = txs;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot include more than one of 'tx_json', 'tx_blob', "
+                "'tx_hash', and 'ctid' in each transaction.");
+        }
+        {
+            // too long array of transactions
+            Json::Value params;
+            Json::Value txs = Json::arrayValue;
+            for (int i = 0; i < 1001; ++i)
+            {
+                Json::Value txObj = Json::objectValue;
+                txObj[jss::tx_json] = noop(env.master);
+                txs.append(txObj);
+            }
+            params[jss::transactions] = txs;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Cannot include more than 1000 transactions in 'transactions' "
+                "array.");
         }
     }
 
@@ -1427,6 +1597,7 @@ class Simulate_test : public beast::unit_test::suite
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
         env.close();
+        auto const aliceSeq = env.seq(alice);
 
         Json::Value tx1;
         tx1[jss::tx_json] = pay(alice, env.master, XRP(500));
@@ -1435,14 +1606,88 @@ class Simulate_test : public beast::unit_test::suite
         // TODO: fix sequence autofilling
         tx2[jss::tx_json][jss::Sequence] = env.seq(alice) + 1;
 
+        auto validateOutput = [&](Json::Value const& resp,
+                                  Json::Value const& txs) {
+            auto totalResult = resp[jss::result];
+            BEAST_EXPECT(totalResult.isMember(jss::transactions));
+            BEAST_EXPECT(totalResult[jss::transactions].size() == 2);
+
+            for (unsigned j = 0; j < 2; ++j)
+            {
+                auto const result = totalResult[jss::transactions][j];
+                auto const tx = txs[j][jss::tx_json];
+                checkBasicReturnValidity(
+                    result, tx, aliceSeq + j, env.current()->fees().base);
+                BEAST_EXPECTS(
+                    result[jss::engine_result] == "tesSUCCESS",
+                    result.toStyledString());
+                BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+
+                if (BEAST_EXPECT(
+                        result.isMember(jss::meta) ||
+                        result.isMember(jss::meta_blob)))
+                {
+                    Json::Value const metadata = getJsonMetadata(result);
+
+                    if (BEAST_EXPECT(
+                            metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        BEAST_EXPECT(
+                            metadata[sfAffectedNodes.jsonName].size() == 2);
+                        auto const masterMode =
+                            metadata[sfAffectedNodes.jsonName][0u];
+                        if (BEAST_EXPECT(
+                                masterMode.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = masterMode[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(
+                                finalFields[sfAccount] == env.master.human());
+                            BEAST_EXPECT(
+                                finalFields[sfBalance] ==
+                                (XRP(99999999500) + XRP(200 * j) -
+                                 env.current()->fees().base * 2)
+                                    .getJson());
+                        }
+                        auto const aliceNode =
+                            metadata[sfAffectedNodes.jsonName][1u];
+                        if (BEAST_EXPECT(
+                                aliceNode.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = aliceNode[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(
+                                finalFields[sfAccount] == alice.human());
+                            BEAST_EXPECT(
+                                finalFields[sfBalance] ==
+                                (XRP(500) - XRP(200 * j) -
+                                 env.current()->fees().base * (j + 1))
+                                    .getJson());
+                        }
+                    }
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == j);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                }
+            }
+        };
+
         Json::Value params = Json::objectValue;
         Json::Value txs = Json::arrayValue;
         txs.append(tx1);
         txs.append(tx2);
         params[jss::transactions] = txs;
 
-        auto const result = env.rpc("json", "simulate", to_string(params));
-        std::cout << result.toStyledString() << std::endl;
+        validateOutput(env.rpc("json", "simulate", to_string(params)), txs);
     }
 
     void
@@ -1475,8 +1720,93 @@ class Simulate_test : public beast::unit_test::suite
         Json::Value params = Json::objectValue;
         params[jss::tx_json] = batchTx;
 
-        auto const result = env.rpc("json", "simulate", to_string(params));
-        std::cout << result.toStyledString() << std::endl;
+        auto validateOutput = [&](Json::Value const& resp,
+                                  Json::Value const& batchTx) {
+            auto totalResult = resp[jss::result];
+            BEAST_EXPECT(totalResult.isMember(jss::transactions));
+            BEAST_EXPECT(totalResult[jss::transactions].size() == 3);
+
+            {
+                auto const outerTx = totalResult[jss::transactions][0u];
+                checkBasicReturnValidity(outerTx, batchTx, seq, batchFee);
+                BEAST_EXPECT(outerTx[jss::engine_result] == "tesSUCCESS");
+                BEAST_EXPECT(outerTx[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    outerTx[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+            }
+
+            for (unsigned j = 0; j < 2; ++j)
+            {
+                auto const result = totalResult[jss::transactions][j + 1u];
+                auto const tx =
+                    batchTx[jss::RawTransactions][j][jss::RawTransaction];
+                checkBasicReturnValidity(result, tx, seq + j, "0");
+                BEAST_EXPECTS(
+                    result[jss::engine_result] == "tesSUCCESS",
+                    result.toStyledString());
+                BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+
+                if (BEAST_EXPECT(
+                        result.isMember(jss::meta) ||
+                        result.isMember(jss::meta_blob)))
+                {
+                    Json::Value const metadata = getJsonMetadata(result);
+
+                    if (BEAST_EXPECT(
+                            metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        BEAST_EXPECT(
+                            metadata[sfAffectedNodes.jsonName].size() == 2);
+                        auto const masterMode =
+                            metadata[sfAffectedNodes.jsonName][0u];
+                        if (BEAST_EXPECT(
+                                masterMode.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = masterMode[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(
+                                finalFields[sfAccount] == env.master.human());
+                            BEAST_EXPECT(
+                                finalFields[sfBalance] ==
+                                (XRP(99999999500) + XRP(200 * j) -
+                                 env.current()->fees().base * 2)
+                                    .getJson());
+                        }
+                        auto const aliceNode =
+                            metadata[sfAffectedNodes.jsonName][1u];
+                        if (BEAST_EXPECT(
+                                aliceNode.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = aliceNode[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(
+                                finalFields[sfAccount] == alice.human());
+                            BEAST_EXPECT(
+                                finalFields[sfBalance] ==
+                                (XRP(500) - XRP(200 * j) -
+                                 env.current()->fees().base * 4)
+                                    .getJson());
+                        }
+                    }
+                    BEAST_EXPECT(
+                        metadata[sfTransactionIndex.jsonName] == j + 1);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                }
+            }
+        };
+
+        validateOutput(env.rpc("json", "simulate", to_string(params)), batchTx);
     }
 
 public:
