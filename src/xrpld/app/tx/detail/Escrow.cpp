@@ -1282,7 +1282,8 @@ EscrowFinish::doApply()
         if (re.has_value())
         {
             auto reValue = re.value().result;
-            if (auto const data = ledgerDataProvider.data; data.has_value())
+            if (auto const data = ledgerDataProvider.getData();
+                data.has_value())
             {
                 auto const dataValue = *data;
                 slep->setFieldVL(sfData, dataValue);
