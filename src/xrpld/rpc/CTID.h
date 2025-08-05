@@ -62,7 +62,7 @@ encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
 
     uint64_t ctidValue =
         ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
-        (static_cast<uint64_t>(txnIndex) << 16) + networkID;
+        ((static_cast<uint64_t>(txnIndex) << 16) | networkID);
 
     std::stringstream buffer;
     buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16)
