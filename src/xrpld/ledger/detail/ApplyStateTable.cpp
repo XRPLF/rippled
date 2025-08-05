@@ -116,9 +116,10 @@ ApplyStateTable::apply(
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
-    std::optional<uint256 const> const& parentBatchId,
+    std::optional<uint256 const> const& parentTxId,
     std::optional<std::uint32_t> const& gasUsed,
     std::optional<std::int32_t> const& wasmReturnCode,
+    std::vector<STObject> const& contractExecution,
     bool isDryRun,
     beast::Journal j)
 {
@@ -133,12 +134,15 @@ ApplyStateTable::apply(
 
         if (deliver)
             meta.setDeliveredAmount(*deliver);
-        if (parentBatchId)
-            meta.setParentBatchId(*parentBatchId);
         if (gasUsed)
             meta.setGasUsed(*gasUsed);
         if (wasmReturnCode)
             meta.setWasmReturnCode(*wasmReturnCode);
+        if (parentTxId)
+            meta.setParentTxId(*parentTxId);
+        if (!contractExecution.empty())
+            meta.setContractExecutions(
+                STArray{contractExecution, sfContractExecutions});
         Mods newMod;
         for (auto& item : items_)
         {

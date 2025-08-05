@@ -32,6 +32,7 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/detail/STVar.h>
@@ -237,6 +238,10 @@ public:
     getFieldI64(SField const& field) const;
     AccountID
     getAccountID(SField const& field) const;
+    STData
+    getFieldData(SField const& field) const;
+    STDataType
+    getFieldDataType(SField const& field) const;
 
     Blob
     getFieldVL(SField const& field) const;
@@ -394,6 +399,8 @@ public:
     setFieldV256(SField const& field, STVector256 const& v);
     void
     setFieldArray(SField const& field, STArray const& v);
+    void
+    setFieldJson(SField const& field, STJson const& v);
 
     template <class Tag>
     void

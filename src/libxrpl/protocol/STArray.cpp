@@ -60,6 +60,11 @@ STArray::STArray(SField const& f, std::size_t n) : STBase(f)
     v_.reserve(n);
 }
 
+STArray::STArray(std::vector<STObject> const& v, SField const& f) : STBase(f)
+{
+    v_ = v;
+}
+
 STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 {
     while (!sit.empty())

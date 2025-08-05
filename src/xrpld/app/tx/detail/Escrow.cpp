@@ -883,6 +883,7 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
                 }
             }
         }
+
         if (ctx.view.rules().enabled(featureTokenEscrow))
         {
             AccountID const dest = (*slep)[sfDestination];

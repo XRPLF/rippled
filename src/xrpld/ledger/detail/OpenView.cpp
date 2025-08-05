@@ -267,7 +267,16 @@ OpenView::rawTxInsert(
         std::forward_as_tuple(key),
         std::forward_as_tuple(txn, metaData));
     if (!result.second)
+    {
+        // NOTE: SmartContract Txn Ordering
+        // if (auto const stx =
+        //         std::make_shared<STTx const>(SerialIter{txn->slice()});
+        //     stx->getTxnType() != ttCONTRACT_CALL)
+        // {
+        //     LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
+        // }
         LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
+    }
 }
 
 }  // namespace ripple

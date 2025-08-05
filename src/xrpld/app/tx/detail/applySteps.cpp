@@ -32,6 +32,12 @@
 #include <xrpld/app/tx/detail/CashCheck.h>
 #include <xrpld/app/tx/detail/Change.h>
 #include <xrpld/app/tx/detail/Clawback.h>
+#include <xrpld/app/tx/detail/ContractCall.h>
+#include <xrpld/app/tx/detail/ContractClawback.h>
+#include <xrpld/app/tx/detail/ContractCreate.h>
+#include <xrpld/app/tx/detail/ContractDelete.h>
+#include <xrpld/app/tx/detail/ContractModify.h>
+#include <xrpld/app/tx/detail/ContractUserDelete.h>
 #include <xrpld/app/tx/detail/CreateCheck.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/app/tx/detail/CreateTicket.h>
@@ -345,12 +351,12 @@ PreflightResult
 preflight(
     Application& app,
     Rules const& rules,
-    uint256 const& parentBatchId,
+    uint256 const& parentTxId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, parentBatchId, rules, flags, j);
+    PreflightContext const pfctx(app, tx, parentTxId, rules, flags, j);
     try
     {
         return {pfctx, invoke_preflight(pfctx)};
@@ -372,11 +378,11 @@ preclaim(
     if (preflightResult.rules != view.rules())
     {
         auto secondFlight = [&]() {
-            if (preflightResult.parentBatchId)
+            if (preflightResult.parentTxId)
                 return preflight(
                     app,
                     view.rules(),
-                    preflightResult.parentBatchId.value(),
+                    preflightResult.parentTxId.value(),
                     preflightResult.tx,
                     preflightResult.flags,
                     preflightResult.j);
@@ -395,7 +401,7 @@ preclaim(
             secondFlight.ter,
             secondFlight.tx,
             secondFlight.flags,
-            secondFlight.parentBatchId,
+            secondFlight.parentTxId,
             secondFlight.j);
     }
     else
@@ -406,7 +412,7 @@ preclaim(
             preflightResult.ter,
             preflightResult.tx,
             preflightResult.flags,
-            preflightResult.parentBatchId,
+            preflightResult.parentTxId,
             preflightResult.j);
     }
 
@@ -451,7 +457,7 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
         ApplyContext ctx(
             app,
             view,
-            preclaimResult.parentBatchId,
+            preclaimResult.parentTxId,
             preclaimResult.tx,
             preclaimResult.ter,
             calculateBaseFee(view, preclaimResult.tx),

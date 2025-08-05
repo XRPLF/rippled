@@ -59,7 +59,8 @@ namespace ripple {
 // Universal Transaction flags:
 constexpr std::uint32_t tfFullyCanonicalSig                = 0x80000000;
 constexpr std::uint32_t tfInnerBatchTxn                    = 0x40000000;
-constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig | tfInnerBatchTxn;
+constexpr std::uint32_t tfGeneratedTxn                     = 0x20000000;
+constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig | tfInnerBatchTxn | tfGeneratedTxn;
 constexpr std::uint32_t tfUniversalMask                    = ~tfUniversal;
 
 // AccountSet flags:
@@ -248,6 +249,20 @@ constexpr std::uint32_t tfIndependent                  = 0x00080000;
  */
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
+
+
+constexpr std::uint32_t tfImmutable     = 0x00010000;
+constexpr std::uint32_t tfCodeImmutable = 0x00020000;
+constexpr std::uint32_t tfABIImmutable  = 0x00040000;
+constexpr std::uint32_t tfUndeletable   = 0x00080000;
+constexpr std::uint32_t tfContractMask =
+    ~(tfUniversal | tfImmutable | tfCodeImmutable | tfABIImmutable | tfUndeletable);
+
+constexpr std::uint32_t tfSendAmount     = 0x00010000;
+constexpr std::uint32_t tfSendNFToken    = 0x00020000;
+constexpr std::uint32_t tfAuthorizeToken = 0x00040000;
+constexpr std::uint32_t tfContractParameterMask =
+    ~(tfSendAmount | tfSendNFToken | tfAuthorizeToken);
 
 // clang-format on
 

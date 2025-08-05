@@ -71,6 +71,26 @@ checkValidity(
         return {Validity::Valid, ""};
     }
 
+    // Ignore signature check on generated transactions
+    if (tx.isFlag(tfGeneratedTxn))
+    {
+        // Defensive Check: These values are also checked in Batch::preflight
+        if (tx.isFieldPresent(sfTxnSignature) ||
+            !tx.getSigningPubKey().empty() || tx.isFieldPresent(sfSigners))
+            return {
+                Validity::SigBad, "Malformed: Invalid generated transaction."};
+
+        std::string reason;
+        if (!passesLocalChecks(tx, reason))
+        {
+            router.setFlags(id, SF_LOCALBAD);
+            return {Validity::SigGoodOnly, reason};
+        }
+
+        router.setFlags(id, SF_SIGGOOD);
+        return {Validity::Valid, ""};
+    }
+
     if (any(flags & SF_SIGBAD))
         // Signature is known bad
         return {Validity::SigBad, "Transaction has bad signature."};
@@ -161,13 +181,13 @@ ApplyResult
 apply(
     Application& app,
     OpenView& view,
-    uint256 const& parentBatchId,
+    uint256 const& parentTxId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j)
 {
     return apply(app, view, [&]() mutable {
-        return preflight(app, view.rules(), parentBatchId, tx, flags, j);
+        return preflight(app, view.rules(), parentTxId, tx, flags, j);
     });
 }
 
@@ -183,31 +203,30 @@ applyBatchTransactions(
             batchTxn.getFieldArray(sfRawTransactions).size() != 0,
         "Batch transaction missing sfRawTransactions");
 
-    auto const parentBatchId = batchTxn.getTransactionID();
+    auto const parentTxId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
 
-    auto applyOneTransaction =
-        [&app, &j, &parentBatchId, &batchView](STTx&& tx) {
-            OpenView perTxBatchView(batch_view, batchView);
+    auto applyOneTransaction = [&app, &j, &parentTxId, &batchView](STTx&& tx) {
+        OpenView perTxBatchView(batch_view, batchView);
 
-            auto const ret =
-                apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
-            XRPL_ASSERT(
-                ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
-                "Inner transaction should not be applied");
+        auto const ret =
+            apply(app, perTxBatchView, parentTxId, tx, tapGENERATED, j);
+        XRPL_ASSERT(
+            ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+            "Inner transaction should not be applied");
 
-            JLOG(j.debug()) << "BatchTrace[" << parentBatchId
-                            << "]: " << tx.getTransactionID() << " "
-                            << (ret.applied ? "applied" : "failure") << ": "
-                            << transToken(ret.ter);
+        JLOG(j.debug()) << "BatchTrace[" << parentTxId
+                        << "]: " << tx.getTransactionID() << " "
+                        << (ret.applied ? "applied" : "failure") << ": "
+                        << transToken(ret.ter);
 
-            // If the transaction should be applied push its changes to the
-            // whole-batch view.
-            if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
-                perTxBatchView.apply(batchView);
+        // If the transaction should be applied push its changes to the
+        // whole-batch view.
+        if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+            perTxBatchView.apply(batchView);
 
-            return ret;
-        };
+        return ret;
+    };
 
     int applied = 0;
 

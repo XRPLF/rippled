@@ -172,6 +172,46 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookDirectory, soeREQUIRED},
             {sfBookNode, soeREQUIRED},
         });
+
+    add(sfFunction.jsonName.c_str(),
+        sfFunction.getCode(),
+        {
+            {sfFunctionName, soeREQUIRED},
+            {sfParameters, soeOPTIONAL},
+        });
+
+    add(sfInstanceParameter.jsonName,
+        sfInstanceParameter.getCode(),
+        {
+            {sfParameterFlag, soeREQUIRED},
+            {sfParameterName, soeREQUIRED},
+            {sfParameterType, soeREQUIRED},
+        });
+
+    add(sfInstanceParameterValue.jsonName,
+        sfInstanceParameterValue.getCode(),
+        {
+            {sfParameterFlag, soeREQUIRED},
+            {sfParameterValue, soeREQUIRED},
+        });
+
+    add(sfParameter.jsonName,
+        sfParameter.getCode(),
+        {
+            {sfParameterFlag, soeOPTIONAL},
+            {sfParameterName, soeOPTIONAL},
+            {sfParameterType, soeOPTIONAL},
+            {sfParameterValue, soeOPTIONAL},
+        });
+
+    add(sfContractExecution.jsonName.c_str(),
+        sfContractExecution.getCode(),
+        {{sfContractResult, soeREQUIRED},
+         {sfContractHash, soeREQUIRED},
+         {sfContractAccount, soeREQUIRED},
+         {sfContractReturnCode, soeREQUIRED},
+         {sfGasUsed, soeREQUIRED},
+         {sfFlags, soeOPTIONAL}});
 }
 
 InnerObjectFormats const&

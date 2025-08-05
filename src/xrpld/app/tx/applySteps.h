@@ -166,7 +166,7 @@ public:
     /// From the input - the transaction
     STTx const& tx;
     /// From the input - the batch identifier, if part of a batch
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<uint256 const> const parentTxId;
     /// From the input - the rules
     Rules const rules;
     /// Consequences of the transaction
@@ -185,7 +185,7 @@ public:
         Context const& ctx_,
         std::pair<NotTEC, TxConsequences> const& result)
         : tx(ctx_.tx)
-        , parentBatchId(ctx_.parentBatchId)
+        , parentTxId(ctx_.parentTxId)
         , rules(ctx_.rules)
         , consequences(result.second)
         , flags(ctx_.flags)
@@ -214,7 +214,7 @@ public:
     /// From the input - the transaction
     STTx const& tx;
     /// From the input - the batch identifier, if part of a batch
-    std::optional<uint256 const> const parentBatchId;
+    std::optional<uint256 const> const parentTxId;
     /// From the input - the flags
     ApplyFlags const flags;
     /// From the input - the journal
@@ -232,7 +232,7 @@ public:
     PreclaimResult(Context const& ctx_, TER ter_)
         : view(ctx_.view)
         , tx(ctx_.tx)
-        , parentBatchId(ctx_.parentBatchId)
+        , parentTxId(ctx_.parentTxId)
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)
@@ -275,7 +275,7 @@ PreflightResult
 preflight(
     Application& app,
     Rules const& rules,
-    uint256 const& parentBatchId,
+    uint256 const& parentTxId,
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j);

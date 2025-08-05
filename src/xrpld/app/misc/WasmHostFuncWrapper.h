@@ -498,4 +498,44 @@ using floatLog_proto =
 wasm_trap_t*
 floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
+using contractFuncParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+contractFuncParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using otxnCallParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+otxnCallParam_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getContractData_proto = int32_t(uint8_t*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getContractData_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using setContractData_proto = int32_t(uint8_t*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+setContractData_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using emitTxn_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+emitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using emitEvent_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+emitEvent_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 }  // namespace ripple

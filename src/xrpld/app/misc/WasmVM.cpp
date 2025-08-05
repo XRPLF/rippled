@@ -89,7 +89,6 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
         WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
         WASM_IMPORT_FUNC2(i, traceFloat, "trace_opaque_float", hfs,                                                500);
-
         WASM_IMPORT_FUNC2(i, floatFromInt, "float_from_int", hfs,                                                 1000);
         WASM_IMPORT_FUNC2(i, floatFromUint, "float_from_uint", hfs,                                               1000);
         WASM_IMPORT_FUNC2(i, floatSet, "float_set", hfs,                                                          1000);
@@ -101,6 +100,12 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                        1000);
         WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                        1000);
         WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                          1000);
+        WASM_IMPORT_FUNC2(i, contractFuncParam, "contract_func_param", hfs,                                         70);
+        WASM_IMPORT_FUNC2(i, otxnCallParam, "otxn_call_param", hfs,                                                 70);
+        WASM_IMPORT_FUNC2(i, getContractData, "get_contract_data", hfs,                                             70);
+        WASM_IMPORT_FUNC2(i, setContractData, "set_contract_data", hfs,                                             70);
+        WASM_IMPORT_FUNC2(i, emitTxn, "emit_txn", hfs,                                                             2000);
+        WASM_IMPORT_FUNC2(i, emitEvent, "emit_event", hfs,                                                           70);
 
         // clang-format on
     }
@@ -140,12 +145,11 @@ runEscrowWasm(
 #endif
         return Unexpected<TER>(ret.error());
     }
-
 #ifdef DEBUG_OUTPUT
     std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
               << std::endl;
 #endif
-    return EscrowResult{ret->result > 0, ret->cost};
+    return EscrowResult{ret->result, ret->cost};
 }
 
 NotTEC

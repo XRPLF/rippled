@@ -26,12 +26,15 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 
 enum class HostFunctionError : int32_t {
+    SUCCESS = 0,
     INTERNAL = -1,
     FIELD_NOT_FOUND = -2,
     BUFFER_TOO_SMALL = -3,
@@ -52,6 +55,7 @@ enum class HostFunctionError : int32_t {
     INDEX_OUT_OF_BOUNDS = -18,
     FLOAT_INPUT_MALFORMED = -19,
     FLOAT_COMPUTATION_ERROR = -20,
+    SUBMIT_TXN_FAILURE = -19,
 };
 
 std::string
@@ -465,6 +469,42 @@ struct HostFunctions
 
     virtual Expected<Bytes, HostFunctionError>
     floatLog(Slice const& x, int32_t mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    contractFuncParam(std::uint32_t index, std::uint32_t stTypeId)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    otxnCallParam(std::uint32_t index, std::uint32_t stTypeId)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    getContractData(AccountID const& account)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    setContractData(AccountID const& account, STJson const& data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    emitTxn(std::shared_ptr<STTx const> const& stxPtr)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    emitEvent(std::string_view const& eventName, STJson const& eventData)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

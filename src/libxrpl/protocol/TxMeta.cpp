@@ -57,11 +57,11 @@ TxMeta::TxMeta(
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
     if (obj.isFieldPresent(sfParentBatchID))
-        setParentBatchId(obj.getFieldH256(sfParentBatchID));
-    if (obj.isFieldPresent(sfGasUsed))
-        setGasUsed(obj.getFieldU32(sfGasUsed));
-    if (obj.isFieldPresent(sfWasmReturnCode))
-        setWasmReturnCode(obj.getFieldI32(sfWasmReturnCode));
+        setParentTxId(obj.getFieldH256(sfParentBatchID));
+    if (obj.isFieldPresent(sfParentTxID))
+        setParentTxId(obj.getFieldH256(sfParentTxID));
+    if (obj.isFieldPresent(sfContractExecutions))
+        setContractExecutions(obj.getFieldArray(sfContractExecutions));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
@@ -84,13 +84,19 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
 
     if (obj.isFieldPresent(sfParentBatchID))
-        setParentBatchId(obj.getFieldH256(sfParentBatchID));
+        setParentTxId(obj.getFieldH256(sfParentBatchID));
 
     if (obj.isFieldPresent(sfGasUsed))
         setGasUsed(obj.getFieldU32(sfGasUsed));
 
     if (obj.isFieldPresent(sfWasmReturnCode))
         setWasmReturnCode(obj.getFieldI32(sfWasmReturnCode));
+
+    if (obj.isFieldPresent(sfParentTxID))
+        setParentTxId(obj.getFieldH256(sfParentTxID));
+
+    if (obj.isFieldPresent(sfContractExecutions))
+        setContractExecutions(obj.getFieldArray(sfContractExecutions));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
@@ -258,13 +264,14 @@ TxMeta::getAsObject() const
     metaData.emplace_back(mNodes);
     if (hasDeliveredAmount())
         metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
-    if (hasParentBatchId())
-        metaData.setFieldH256(sfParentBatchID, getParentBatchId());
     if (hasGasUsed())
         metaData.setFieldU32(sfGasUsed, getGasUsed());
     if (hasWasmReturnCode())
         metaData.setFieldI32(sfWasmReturnCode, getWasmReturnCode());
-
+    if (hasParentTxId())
+        metaData.setFieldH256(sfParentTxID, getParentTxId());
+    if (hasContractExecutions())
+        metaData.setFieldArray(sfContractExecutions, getContractExecutions());
     return metaData;
 }
 
