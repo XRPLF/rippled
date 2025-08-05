@@ -1287,13 +1287,13 @@ EscrowFinish::doApply()
                 auto const dataValue = *data;
                 slep->setFieldVL(sfData, dataValue);
             }
+            ctx_.setWasmReturnCode(reValue);
             // TODO: better error handling for this conversion
             ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
             JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue)
                              << ", cost: " << re.value().cost;
-            if (!reValue)
+            if (reValue <= 0)
             {
-                // ctx_.view().update(slep);
                 return tecWASM_REJECTED;
             }
         }

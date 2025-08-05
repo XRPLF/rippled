@@ -60,6 +60,8 @@ TxMeta::TxMeta(
         setParentBatchId(obj.getFieldH256(sfParentBatchID));
     if (obj.isFieldPresent(sfGasUsed))
         setGasUsed(obj.getFieldU32(sfGasUsed));
+    if (obj.isFieldPresent(sfWasmReturnCode))
+        setWasmReturnCode(obj.getFieldI32(sfWasmReturnCode));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
@@ -86,6 +88,9 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     if (obj.isFieldPresent(sfGasUsed))
         setGasUsed(obj.getFieldU32(sfGasUsed));
+
+    if (obj.isFieldPresent(sfWasmReturnCode))
+        setWasmReturnCode(obj.getFieldI32(sfWasmReturnCode));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
@@ -257,6 +262,8 @@ TxMeta::getAsObject() const
         metaData.setFieldH256(sfParentBatchID, getParentBatchId());
     if (hasGasUsed())
         metaData.setFieldU32(sfGasUsed, getGasUsed());
+    if (hasWasmReturnCode())
+        metaData.setFieldI32(sfWasmReturnCode, getWasmReturnCode());
 
     return metaData;
 }
