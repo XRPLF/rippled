@@ -1,0 +1,29 @@
+{
+  "architecture": [
+    {
+      "platform": "macos/arm64",
+      "runner": [
+        "self-hosted",
+        "macOS",
+        "ARM64",
+        "mac-runner-m1"
+      ]
+    }
+  ],
+  "os": [
+    {
+      "distro": "macos",
+      "release": "sequioa",
+      "compiler_name": "apple-clang",
+      "compiler_version": "16"
+    }
+  ],
+  "build_type": [
+    "Debug",
+    "Release"
+  ],
+  "cmake_args": [
+    "-Dunity=OFF",
+    "-Dunity=ON"
+  ]
+}

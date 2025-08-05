@@ -1,4 +1,4 @@
-name: Build and Test (Linux and MacOS)
+name: Build and Test
 
 inputs:
   build_dir:
@@ -21,6 +21,26 @@ inputs:
     description: 'The CMake target to build.'
     required: true
     type: string
+  conan_global_conf:
+    description: 'The contents of the global Conan configuration file.'
+    required: true
+    type: string
+  conan_remote_name:
+    description: 'The name of the Conan remote to use.'
+    required: true
+    type: string
+  conan_remote_url:
+    description: 'The URL of the Conan endpoint to use. The remote name will be added as a path to the URL.'
+    required: true
+    type: string
+  conan_remote_username:
+    description: 'The username for logging into the Conan remote.'
+    required: false
+    type: string
+  conan_remote_password:
+    description: 'The password for logging into the Conan remote.'
+    required: false
+    type: string
   os:
     description: 'A string representing which operating system is used.'
     required: true
@@ -36,31 +56,49 @@ inputs:
 runs:
   using: composite
   steps:
-    # We will enable additional CMake args as follows:
-    # - All builds will have the `werr`, `tests` and `xrpld` options enabled.
-    # - All builds except GCC 12 and Clang 16: wextra
-    # - All release builds: assert
-    # - Debian Bookworm in Debug using GCC 13: reference fee=500
-    # - Debian Bookworm in Debug using GCC 14: codecov
-    # - Debian Bookworm in Debug using Clang 17: reference fee=1000
-    # - Debian Bookworm in Debug using Clang 18: voidstar
-    - name: Determine CMake args
+    # Set up Conan.
+    - name: Install Conan profile
+      shell: bash
       run: |
-        echo "Determining CMake args."
-        CMAKE_ARGS="${{ matrix.cmake_args }} -Dwerr=ON -Dtests=ON -Dxrpld=ON"
-        if [[ "${{ matrix.os.compiler_name }}" != "gcc" && "${{ matrix.os.compiler_name }}" != "clang-16" ]]; then
-          CMAKE_ARGS="${CMAKE_ARGS} -Dwextra=ON"
+        echo "${{ inputs.conan_global_conf }}" >> $(conan config home)/global.conf
+        conan config install conan/profiles/default -tf $(conan config home)/profiles/
+        echo "Conan profile:"
+        conan profile show
+        echo "Conan configuration:"
+        conan config show '*'
+    - name: Add Conan remote
+      shell: bash
+      run: |
+        if conan remote list | grep -q '${{ inputs.conan_remote_name }}'; then
+          conan remote update --index 0 --url ${{ inputs.conan_remote_url }} ${{ inputs.conan_remote_name }}
+          echo "Updated Conan remote '${{ inputs.conan_remote_name }}' to ${{ inputs.conan_remote_url }}."
+        else
+          conan remote add --index 0 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+          echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
         fi
-        if [[ "${{ matrix.os.compiler_name }}" == "gcc" && "${{ matrix.os.compiler_version }}" == "13" && "${{ matrix.build_type }}" == "Debug" ]]; then
-          CMAKE_ARGS="${CMAKE_ARGS} -Dreference_fee=500"
-        elif [[ "${{ matrix.os.compiler_name }}" == "gcc" && "${{ matrix.os.compiler_version }}" == "14" && "${{ matrix.build_type }}" == "Debug" ]]; then
-          CMAKE_ARGS="${CMAKE_ARGS} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS='-O0' -DCMAKE_CXX_FLAGS='-O0'"
-        elif [[ "${{ matrix.os.compiler_name }}" == "clang" && "${{ matrix.os.compiler_version }}" == "17" && "${{ matrix.build_type }}" == "Debug" ]]; then
-          CMAKE_ARGS="${CMAKE_ARGS} -Dreference_fee=1000"
-        elif [[ "${{ matrix.os.compiler_name }}" == "clang" && "${{ matrix.os.compiler_version }}" == "18" && "${{ matrix.build_type }}" == "Debug" ]]; then
-          CMAKE_ARGS="${CMAKE_ARGS} -Dvoidstar=ON"
-        fi
-        echo "CMAKE_ARGS=${CMAKE_ARGS}" >> "$GITHUB_ENV"
+    - name: Log into Conan remote
+      shell: bash
+      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
+      run: |
+        conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
+        conan remote list-users
+    - name: Install Conan dependencies
+      shell: bash
+      run: |
+        mkdir -p ${{ inputs.build_dir }}
+        cd ${{ inputs.build_dir }}
+        conan install \
+          --output-folder . \
+          --build '*' \
+          --options:host '&:tests=True' \
+          --options:host '&:xrpld=True' \
+          --settings:all build_type=${{ inputs.build_type }} \
+          ..
+    - name: Upload Conan dependencies
+      shell: bash
+      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
+      run: conan upload '*' --confirm --check --force --remote ${{ inputs.conan_remote_name }}
+    # Set up CMake.
     - name: Configure CMake
       shell: bash
       working-directory: ${{ inputs.build_dir }}
@@ -69,8 +107,9 @@ runs:
           ${{ inputs.cmake_generator && format('-G "{0}"', inputs.cmake_generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
-          ${{ env.CMAKE_ARGS }} \
+          ${{ inputs.cmake_args }} \
           ..
+    # Build and test the binary.
     - name: Build the binary
       shell: bash
       working-directory: ${{ inputs.build_dir }}
@@ -98,6 +137,7 @@ runs:
         ./rippled --unittest --unittest-jobs $(nproc)
         ctest -j $(nproc) --output-on-failure
     - name: Verify voidstar
-      if: ${{ contains(env.CMAKE_ARGS, '-Dvoidstar=ON') }}
+      shell: bash
+      if: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       working-directory: ${{ inputs.build_dir }}
       run: ./rippled --version | grep libvoidstar

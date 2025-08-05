@@ -1,4 +1,4 @@
-# This workflow builds and tests the binary on various Windows configurations.
+# This workflow builds and tests the binary for various Windows configurations.
 name: Windows
 
 on:
@@ -44,82 +44,29 @@ env:
     tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
     tools.build:verbosity=verbose
     tools.compilation:verbosity=verbose
-  # GitHub does not allow us to specify a reusable matrix strategy, so to avoid
-  # duplication, we define it here using environment variables and create the
-  # matrix in the first job.
-  STRATEGY_MATRIX_ARCHITECTURE: >-
-    [
-      {
-        "platform": "windows/amd64",
-        "runner": ["windows-latest"]
-      }
-    ]
-  STRATEGY_MATRIX_BUILD_TYPE: >-
-    [
-      "Debug",
-      "Release"
-    ]
-  STRATEGY_MATRIX_CMAKE_ARGS: >-
-    [
-      "-Dunity=OFF",
-      "-Dunity=ON"
-    ]
-#  STRATEGY_MATRIX_ARCHITECTURE: >-
-#    [
-#      {
-#        "runner": "windows-latest"
-#      }
-#    ]
-#  STRATEGY_MATRIX_BUILD_TYPE: >-
-#    [
-#      "Debug"
-#    ]
-#  STRATEGY_MATRIX_CMAKE_ARGS: >-
-#    [
-#      "-Dunity=ON"
-#    ]
-  # We will only run Windows on x64 in Debug with unity build for each commit.
-  # All other configurations will be run when merging into a main branch.
-  BUILD_ON_PR_COMMIT: >-
-    [
-      "windows-latest|Debug|-Dunity=ON"
-    ]
 
 jobs:
-  # Generate the strategy matrix and expose environment variables to be used by
-  # following jobs. Exposing env vars this way is needed as they cannot be
-  # directly passed as inputs to reusable workflows (although they can be passed
-  # as inputs to actions).
-  generate-outputs:
+  # Generate the strategy matrix to be used by the following job.
+  generate-matrix:
     runs-on: ubuntu-latest
     steps:
-      - name: Generate outputs
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: 3.13
+      - name: Generate strategy matrix
         id: generate
-        run: |
-          echo "build_on_pr_commit=$(jq -c <<< '${{ env.BUILD_ON_PR_COMMIT }}')" >> "$GITHUB_OUTPUT"
-          echo "strategy_matrix_architecture=$(jq -c <<< '${{ env.STRATEGY_MATRIX_ARCHITECTURE }}')" >> "$GITHUB_OUTPUT"
-          echo "strategy_matrix_build_type=$(jq -c <<< '${{ env.STRATEGY_MATRIX_BUILD_TYPE }}')" >> "$GITHUB_OUTPUT"
-          echo "strategy_matrix_cmake_args=$(jq -c <<< '${{ env.STRATEGY_MATRIX_CMAKE_ARGS }}')" >> "$GITHUB_OUTPUT"
+        run: python .github/scripts/strategy-matrix.py --config=.github/scripts/strategy-matrix-windows.json --ref=${{ github.ref }} >> "${GITHUB_OUTPUT}"
     outputs:
-      build_on_pr_commit: ${{ steps.generate.outputs.build_on_pr_commit }}
-      conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
-      strategy_matrix_architecture: ${{ steps.generate.outputs.strategy_matrix_architecture }}
-      strategy_matrix_build_type: ${{ steps.generate.outputs.strategy_matrix_build_type }}
-      strategy_matrix_cmake_args: ${{ steps.generate.outputs.strategy_matrix_cmake_args }}
+      matrix: ${{ steps.generate.outputs.matrix }}
 
-  # Install and cache the dependencies, and then build and test the binary using
-  # various configurations.
+  # Build and test the binary.
   build-test:
     needs:
-      - generate-outputs
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        architecture: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_architecture) }}
-        build_type: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_build_type) }}
-        cmake_args: ${{ fromJson(needs.generate-outputs.outputs.strategy_matrix_cmake_args) }}
-    #if: ${{ contains(fromJSON('["develop", "release", "master"]'), github.ref_name) || contains(fromJSON(needs.generate-outputs.outputs.build_on_pr_commit), format('{0}|{1}|{2}', matrix.architecture.platform, matrix.build_type, matrix.cmake_args)) }}
+      - generate-matrix
+    strategy: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.architecture.runner }}
     steps:
       - name: Checkout repository
@@ -131,11 +78,11 @@ jobs:
 #
 #          echo "Checking environment variables."
 #          ls env:
-      - name: choose Python
+      - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: 3.13
-      - name: install Conan
+      - name: Install Conan
         run: pip install wheel conan
       - name: Check versions
         run: |
@@ -144,20 +91,6 @@ jobs:
           
           echo "Checking Conan version."
           conan --version
-      - name: Configure Conan
-        uses: ./.github/actions/configure-conan
-        with:
-          conan_global_conf: ${{ inputs.conan_global_conf }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
-          conan_remote_url: ${{ inputs.conan_remote_url }}
-      - name: Install dependencies
-        uses: ./.github/actions/install-dependencies
-        with:
-          build_dir: ${{ inputs.build_dir }}
-          build_type: ${{ matrix.build_type }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
-          conan_remote_username: ${{ secrets.conan_remote_username }}
-          conan_remote_password: ${{ secrets.conan_remote_password }}
       - name: Build and test the binary
         uses: ./.github/actions/build-test
         with:
@@ -166,4 +99,9 @@ jobs:
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Visual Studio 17 2022'
           cmake_target: 'install'
+          conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
+          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_url: ${{ inputs.conan_remote_url }}
+          conan_remote_username: ${{ secrets.conan_remote_username }}
+          conan_remote_password: ${{ secrets.conan_remote_password }}
           os: 'Windows'
