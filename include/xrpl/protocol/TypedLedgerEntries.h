@@ -346,7 +346,7 @@ struct InnerObjectTypePair
 
 template <typename T>
 concept IsInnerObjectTypePair = requires {
-    std::same_as<decltype(T::Field), SFieldNames>;
+    requires std::same_as<decltype(T::Field), SFieldNames>;
     typename T::InnerObjectType;
 } || std::is_same_v<T, void>;
 
