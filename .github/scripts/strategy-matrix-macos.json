@@ -23,7 +23,7 @@
     "Release"
   ],
   "cmake_args": [
-    "-Dunity=OFF",
-    "-Dunity=ON"
+    "-Dunity=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+    "-Dunity=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
   ]
 }
