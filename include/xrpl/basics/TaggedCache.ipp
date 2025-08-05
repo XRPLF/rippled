@@ -899,7 +899,7 @@ TaggedCache<
         std::lock_guard<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {
-        beast::setCurrentThreadName("sweep-KeyValueCache-base");
+        beast::setCurrentThreadName("sweep-KVCache");
 
         int cacheRemovals = 0;
         int mapRemovals = 0;
@@ -990,7 +990,7 @@ TaggedCache<
         std::lock_guard<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {
-        beast::setCurrentThreadName("sweep-KeyOnlyCache-base");
+        beast::setCurrentThreadName("sweep-KCache");
 
         int cacheRemovals = 0;
         int mapRemovals = 0;
