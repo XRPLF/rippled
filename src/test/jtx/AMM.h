@@ -167,6 +167,12 @@ public:
         STAmount const& asset2,
         CreateArg const& arg);
 
+    static Json::Value
+    createjv(
+        AccountID const& account,
+        STAmount const& amount,
+        STAmount const& amount2);
+
     /** Send amm_info RPC command
      */
     Json::Value
@@ -450,13 +456,6 @@ private:
 };
 
 namespace amm {
-Json::Value
-trust(
-    AccountID const& account,
-    STAmount const& amount,
-    std::uint32_t flags = 0);
-Json::Value
-pay(Account const& account, AccountID const& to, STAmount const& amount);
 
 Json::Value
 ammClawback(

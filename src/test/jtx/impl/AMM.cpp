@@ -807,28 +807,6 @@ AMM::ammDelete(AccountID const& deleter, std::optional<ter> const& ter)
 }
 
 namespace amm {
-Json::Value
-trust(AccountID const& account, STAmount const& amount, std::uint32_t flags)
-{
-    if (isXRP(amount))
-        Throw<std::runtime_error>("trust() requires IOU");
-    Json::Value jv;
-    jv[jss::Account] = to_string(account);
-    jv[jss::LimitAmount] = amount.getJson(JsonOptions::none);
-    jv[jss::TransactionType] = jss::TrustSet;
-    jv[jss::Flags] = flags;
-    return jv;
-}
-Json::Value
-pay(Account const& account, AccountID const& to, STAmount const& amount)
-{
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
-    jv[jss::Destination] = to_string(to);
-    jv[jss::TransactionType] = jss::Payment;
-    return jv;
-}
 
 Json::Value
 ammClawback(
