@@ -76,11 +76,7 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
             "cmake_args": cmake_args,
         })
 
-    return {
-        "fail-fast": False,
-        "max-parallel": 4,
-        "include": configurations,
-    }
+    return {"include": configurations}
 
 
 if __name__ == "__main__":
