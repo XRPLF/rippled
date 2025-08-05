@@ -61,7 +61,7 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
 
     using duration = NetClock::duration;
     using timepoint = NetClock::time_point;
-    auto const optExpiry = (*sleCheck)[~sfExpiration];
+    auto const optExpiry = sleCheck.fsfExpiration();
 
     // Expiration is defined in terms of the close time of the parent
     // ledger, because we definitively know the time that it closed but
@@ -73,8 +73,8 @@ CancelCheck::preclaim(PreclaimContext const& ctx)
         // If the check is not yet expired, then only the creator or the
         // destination may cancel the check.
         AccountID const acctId{ctx.tx[sfAccount]};
-        if (acctId != (*sleCheck)[sfAccount] &&
-            acctId != (*sleCheck)[sfDestination])
+        if (acctId != sleCheck.fsfAccount() &&
+            acctId != sleCheck.fsfDestination())
         {
             JLOG(ctx.j.warn()) << "Check is not expired and canceler is "
                                   "neither check source nor destination.";

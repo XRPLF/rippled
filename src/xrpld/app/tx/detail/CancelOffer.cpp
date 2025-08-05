@@ -61,7 +61,7 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
     if (!sle)
         return terNO_ACCOUNT;
 
-    if ((*sle)[sfSequence] <= offerSequence)
+    if (sle.fsfSequence() <= offerSequence)
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: "
                             << "Sequence " << offerSequence << " is invalid.";

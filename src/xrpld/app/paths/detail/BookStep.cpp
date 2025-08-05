@@ -104,7 +104,7 @@ public:
             ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::zero)
             ammLiquidity_.emplace(
                 ctx.view,
-                (*ammSle)[sfAccount],
+                ammSle.fsfAccount(),
                 getTradingFee(ctx.view, *ammSle, ctx.ammContext.account()),
                 in,
                 out,
@@ -1391,7 +1391,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
             auto sle = view.read(keylet::line(*prev, cur, book_.in.currency));
             if (!sle)
                 return terNO_LINE;
-            if ((*sle)[sfFlags] &
+            if ((*sle.getObject())[sfFlags] &
                 ((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
                 return terNO_RIPPLE;
         }

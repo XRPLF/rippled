@@ -245,7 +245,7 @@ authorizedDepositPreauth(
             return tefINTERNAL;  // LCOV_EXCL_LINE
 
         auto [it, ins] =
-            sorted.emplace((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
+            sorted.emplace(sleCred.fsfIssuer(), sleCred.fsfCredentialType());
         if (!ins)
             return tefINTERNAL;  // LCOV_EXCL_LINE
         lifeExtender.push_back(std::move(sleCred));

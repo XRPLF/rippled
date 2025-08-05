@@ -216,14 +216,14 @@ ammAccountHolds(
     if (isXRP(issue))
     {
         if (auto const sle = view.read(keylet::account(ammAccountID)))
-            return (*sle)[sfBalance];
+            return sle.fsfBalance();
     }
     else if (auto const sle = view.read(
                  keylet::line(ammAccountID, issue.account, issue.currency));
              sle &&
              !isFrozen(view, ammAccountID, issue.currency, issue.account))
     {
-        auto amount = (*sle)[sfBalance];
+        auto amount = sle.fsfBalance();
         if (ammAccountID > issue.account)
             amount.negate();
         amount.setIssuer(issue.account);
