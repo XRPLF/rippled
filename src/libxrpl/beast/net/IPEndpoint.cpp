@@ -21,6 +21,8 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <cctype>
@@ -167,7 +169,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
     }
 
     boost::system::error_code ec;
-    auto addr = Address::from_string(addrStr, ec);
+    auto addr = boost::asio::ip::make_address(addrStr, ec);
     if (ec)
     {
         is.setstate(std::ios_base::failbit);
