@@ -4,33 +4,7 @@ import subprocess
 import re
 
 
-def process_project(project_name):
-    project_path = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), project_name)
-    )
-    build_cmd = f"(cd {project_path} && cargo build --target wasm32-unknown-unknown --release && wasm-opt target/wasm32-unknown-unknown/release/{project_name}.wasm -Oz -o target/wasm32-unknown-unknown/release/{project_name}.wasm)"
-    try:
-        result = subprocess.run(
-            build_cmd, shell=True, check=True, capture_output=True, text=True
-        )
-        print(f"stdout: {result.stdout}")
-        if result.stderr:
-            print(f"stderr: {result.stderr}")
-        print(f"WASM file for {project_name} has been built and optimized.")
-    except subprocess.CalledProcessError as e:
-        print(f"exec error: {e}")
-        sys.exit(1)
-
-    src_path = os.path.abspath(
-        os.path.join(
-            os.path.dirname(__file__),
-            f"{project_name}/target/wasm32-unknown-unknown/release/{project_name}.wasm",
-        )
-    )
-    with open(src_path, "rb") as f:
-        data = f.read()
-    wasm = data.hex()
-
+def update_fixture(project_name, wasm):
     fixture_name = re.sub(r"_([a-z])", lambda m: m.group(1).upper(), project_name)
     print(f"Updating fixture: {fixture_name}")
 
@@ -64,17 +38,80 @@ def process_project(project_name):
         f.write(updated_cpp_content)
 
 
+def process_rust(project_name):
+    project_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), project_name)
+    )
+    build_cmd = f"(cd {project_path} && cargo build --target wasm32-unknown-unknown --release && wasm-opt target/wasm32-unknown-unknown/release/{project_name}.wasm -Oz -o target/wasm32-unknown-unknown/release/{project_name}.wasm)"
+    try:
+        result = subprocess.run(
+            build_cmd, shell=True, check=True, capture_output=True, text=True
+        )
+        print(f"stdout: {result.stdout}")
+        if result.stderr:
+            print(f"stderr: {result.stderr}")
+        print(f"WASM file for {project_name} has been built and optimized.")
+    except subprocess.CalledProcessError as e:
+        print(f"exec error: {e}")
+        sys.exit(1)
+
+    src_path = os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__),
+            f"{project_name}/target/wasm32-unknown-unknown/release/{project_name}.wasm",
+        )
+    )
+    with open(src_path, "rb") as f:
+        data = f.read()
+    wasm = data.hex()
+    update_fixture(project_name, wasm)
+
+
+def process_c(project_name):
+    project_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), f"{project_name}.c")
+    )
+    wasm_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), f"{project_name}.wasm")
+    )
+    build_cmd = (
+        f"clang --target=wasm32-unknown-unknown -O3 {project_path} -o {wasm_path}"
+    )
+    try:
+        result = subprocess.run(
+            build_cmd, shell=True, check=True, capture_output=True, text=True
+        )
+        print(f"stdout: {result.stdout}")
+        if result.stderr:
+            print(f"stderr: {result.stderr}")
+        print(
+            f"WASM file for {project_name} has been built with WASI support using clang."
+        )
+    except subprocess.CalledProcessError as e:
+        print(f"exec error: {e}")
+        sys.exit(1)
+
+    with open(wasm_path, "rb") as f:
+        data = f.read()
+    wasm = data.hex()
+    update_fixture(project_name, wasm)
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 2:
         print("Usage: python copyFixtures.py [<project_name>]")
         sys.exit(1)
     if len(sys.argv) == 2:
-        process_project(sys.argv[1])
+        process_rust(sys.argv[1])
     else:
         dirs = [
             d
             for d in os.listdir(os.path.dirname(__file__))
             if os.path.isdir(os.path.join(os.path.dirname(__file__), d))
         ]
+        c_files = [f for f in os.listdir(os.path.dirname(__file__)) if f.endswith(".c")]
         for d in dirs:
-            process_project(d)
+            process_rust(d)
+        for c in c_files:
+            process_c(c[:-2])
+        print("All fixtures have been processed.")
