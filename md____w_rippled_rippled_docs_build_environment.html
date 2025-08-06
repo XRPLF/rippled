@@ -73,29 +73,35 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >Our <a class="el" href="md____w_rippled_rippled_BUILD.html">build instructions</a> assume you have a C++ development environment complete with Git, Python, Conan, CMake, and a C++ compiler. This document exists to help readers set one up on any of the Big Three platforms: Linux, macOS, or Windows.</p>
-<h2><a class="anchor" id="autotoc_md141"></a>
+<h2><a class="anchor" id="autotoc_md154"></a>
 Linux</h2>
-<p >Package ecosystems vary across Linux distributions, so there is no one set of instructions that will work for every Linux user. These instructions are written for Ubuntu 22.04. They are largely copied from the <a href="https://github.com/thejohnfreeman/rippled-docker/blob/master/ubuntu-22.04/install.sh">script</a> used to configure our Docker container for continuous integration. That script handles many more responsibilities. These instructions are just the bare minimum to build one configuration of rippled. You can check that codebase for other Linux distributions and versions. If you cannot find yours there, then we hope that these instructions can at least guide you in the right direction.</p>
-<div class="fragment"><div class="line">apt update</div>
-<div class="line">apt install --yes curl git libssl-dev pipx python3.10-dev python3-pip make g++-11 libprotobuf-dev protobuf-compiler</div>
+<p >Package ecosystems vary across Linux distributions, so there is no one set of instructions that will work for every Linux user. The instructions below are written for Debian 12 (Bookworm).</p>
+<div class="fragment"><div class="line">export GCC_RELEASE=12</div>
+<div class="line">sudo apt update</div>
+<div class="line">sudo apt install --yes gcc-${GCC_RELEASE} g++-${GCC_RELEASE} python3-pip \</div>
+<div class="line">  python-is-python3 python3-venv python3-dev curl wget ca-certificates \</div>
+<div class="line">  git build-essential cmake ninja-build libc6-dev</div>
+<div class="line">sudo pip install --break-system-packages conan</div>
 <div class="line"> </div>
-<div class="line">curl --location --remote-name \</div>
-<div class="line">  &quot;https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz&quot;</div>
-<div class="line">tar -xzf cmake-3.25.1.tar.gz</div>
-<div class="line">rm cmake-3.25.1.tar.gz</div>
-<div class="line">cd cmake-3.25.1</div>
-<div class="line">./bootstrap --parallel=$(nproc)</div>
-<div class="line">make --jobs $(nproc)</div>
-<div class="line">make install</div>
-<div class="line">cd ..</div>
-<div class="line"> </div>
-<div class="line">pipx install &#39;conan&lt;2&#39;</div>
-<div class="line">pipx ensurepath</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md142"></a>
+<div class="line">sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${GCC_RELEASE} 999</div>
+<div class="line">sudo update-alternatives --install \</div>
+<div class="line">  /usr/bin/gcc gcc /usr/bin/gcc-${GCC_RELEASE} 100 \</div>
+<div class="line">  --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_RELEASE} \</div>
+<div class="line">  --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-${GCC_RELEASE} \</div>
+<div class="line">  --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-${GCC_RELEASE} \</div>
+<div class="line">  --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-${GCC_RELEASE} \</div>
+<div class="line">  --slave /usr/bin/gcov gcov /usr/bin/gcov-${GCC_RELEASE} \</div>
+<div class="line">  --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-${GCC_RELEASE} \</div>
+<div class="line">  --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-dump-${GCC_RELEASE} \</div>
+<div class="line">  --slave /usr/bin/lto-dump lto-dump /usr/bin/lto-dump-${GCC_RELEASE}</div>
+<div class="line">sudo update-alternatives --auto cc</div>
+<div class="line">sudo update-alternatives --auto gcc</div>
+</div><!-- fragment --><p >If you use different Linux distribution, hope the instruction above can guide you in the right direction. We try to maintain compatibility with all recent compiler releases, so if you use a rolling distribution like e.g. Arch or CentOS then there is a chance that everything will "just work".</p>
+<h2><a class="anchor" id="autotoc_md155"></a>
 macOS</h2>
 <p >Open a Terminal and enter the below command to bring up a dialog to install the command line developer tools. Once it is finished, this command should return a version greater than the minimum required (see <a class="el" href="md____w_rippled_rippled_BUILD.html">BUILD.md</a>).</p>
 <div class="fragment"><div class="line">clang --version</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md143"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md156"></a>
 Install Xcode Specific Version (Optional)</h3>
 <p >If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang. This will likely cause issues building rippled. You may want to install a specific version of Xcode:</p>
 <ol type="1">
@@ -127,10 +133,10 @@ Install Xcode Specific Version (Optional)</h3>
 <div class="line">brew update</div>
 <div class="line">brew install xz</div>
 <div class="line">brew install pyenv</div>
-<div class="line">pyenv install 3.10-dev</div>
-<div class="line">pyenv global 3.10-dev</div>
+<div class="line">pyenv install 3.11</div>
+<div class="line">pyenv global 3.11</div>
 <div class="line">eval &quot;$(pyenv init -)&quot;</div>
-<div class="line">pip install &#39;conan&lt;2&#39;</div>
+<div class="line">pip install &#39;conan&#39;</div>
 </div><!-- fragment --><p >Install CMake with Homebrew too:</p>
 <div class="fragment"><div class="line">brew install cmake</div>
 </div><!-- fragment --> </div></div><!-- contents -->

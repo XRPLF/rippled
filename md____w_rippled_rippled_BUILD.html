@@ -87,29 +87,35 @@ Branches</h2>
 </div><!-- fragment --><h2><a class="anchor" id="autotoc_md28"></a>
 Minimum Requirements</h2>
 <p >See <a href="https://xrpl.org/system-requirements.html">System Requirements</a>.</p>
-<p >Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a <a class="el" href="md____w_rippled_rippled_docs_build_environment.html">C++ development environment can be found here</a>.</p>
-<ul>
-<li><a href="https://www.python.org/downloads/">Python 3.7</a></li>
-<li><a href="https://conan.io/downloads.html">Conan 1.60</a>[^1]</li>
-<li><a href="https://cmake.org/download/">CMake 3.16</a></li>
-</ul>
-<p >[^1]: It is possible to build with Conan 2.x, but the instructions are significantly different, which is why we are not recommending it yet. Notably, the <code>conan profile update</code> command is removed in 2.x. Profiles must be edited by hand.</p>
-<p ><code>rippled</code> is written in the C++20 dialect and includes the <code>&lt;concepts&gt;</code> header. The <a href="https://en.cppreference.com/w/cpp/compiler_support/20">minimum compiler versions</a> required are:</p>
-<table class="markdownTable">
-<tr class="markdownTableHead">
-<th class="markdownTableHeadNone">Compiler   </th><th class="markdownTableHeadNone">Version    </th></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">GCC   </td><td class="markdownTableBodyNone">11    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">Clang   </td><td class="markdownTableBodyNone">13    </td></tr>
-<tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone">Apple Clang   </td><td class="markdownTableBodyNone">13.1.6    </td></tr>
-<tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone">MSVC   </td><td class="markdownTableBodyNone">19.23   </td></tr>
-</table>
+<p >Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a <a class="el" href="md____w_rippled_rippled_docs_build_environment.html">C++ development environment can be</a>found here".
+
+- &lt;a href="<a href="https://www.python.org/downloads/">https://www.python.org/downloads/</a>" &gt;Python 3.11&lt;/a&gt;, or higher
+- &lt;a href="<a href="https://conan.io/downloads.html">https://conan.io/downloads.html</a>" &gt;Conan 2.17&lt;/a&gt;[^1], or higher
+- &lt;a href="<a href="https://cmake.org/download/">https://cmake.org/download/</a>" &gt;CMake 3.22&lt;/a&gt;[^2], or higher
+
+[^1]: It is possible to build with Conan 1.60+, but the instructions are
+significantly different, which is why we are not recommending it.
+
+[^2]: CMake 4 is not yet supported by all dependencies required by this project.
+If you are affected by this issue, follow @ref workaround-for-cmake-4 "conan workaround for cmake 4"
+
+&lt;tt&gt;rippled&lt;/tt&gt; is written in the C++20 dialect and includes the &lt;tt&gt;\&lt;concepts\&gt;&lt;/tt&gt; header.
+The &lt;a href="<a href="https://en.cppreference.com/w/cpp/compiler_support/20">https://en.cppreference.com/w/cpp/compiler_support/20</a>" &gt;minimum compiler versions&lt;/a&gt; required are:
+
+&lt;table class="markdownTable"&gt;
+  &lt;tr class="markdownTableHead"&gt;    &lt;th class="markdownTableHeadNone"&gt; Compiler   </p>
+<p >Version    </p>
+<p >GCC   </p>
+<p >12    </p>
+<p >Clang   </p>
+<p >16    </p>
+<p >Apple Clang   </p>
+<p >16    </p>
+<p >MSVC   </p>
+<p >19.44[^3]   </p>
 <h3><a class="anchor" id="autotoc_md29"></a>
 Linux</h3>
-<p >The Ubuntu operating system has received the highest level of quality assurance, testing, and support.</p>
+<p >The Ubuntu Linux distribution has received the highest level of quality assurance, testing, and support. We also support Red Hat and use Debian internally.</p>
 <p >Here are <a href="./docs/build/environment.md#linux">sample instructions for setting up a C++ development environment on Linux</a>.</p>
 <h3><a class="anchor" id="autotoc_md30"></a>
 Mac</h3>
@@ -117,50 +123,113 @@ Mac</h3>
 <p >Here are <a href="./docs/build/environment.md#macos">sample instructions for setting up a C++ development environment on macOS</a>.</p>
 <h3><a class="anchor" id="autotoc_md31"></a>
 Windows</h3>
-<p >Windows is not recommended for production use at this time.</p>
-<ul>
-<li>Additionally, 32-bit Windows development is not supported.</li>
-</ul>
+<p >Windows is used by some engineers for development only.</p>
+<p >[^3]: Windows is not recommended for production use.</p>
 <h2><a class="anchor" id="autotoc_md32"></a>
 Steps</h2>
 <h3><a class="anchor" id="autotoc_md33"></a>
 Set Up Conan</h3>
 <p >After you have a <a class="el" href="md____w_rippled_rippled_docs_build_environment.html">C++ development environment</a> ready with Git, Python, Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.</p>
-<p >These instructions assume a basic familiarity with Conan and CMake.</p>
-<p >If you are unfamiliar with Conan, then please read <a class="el" href="md____w_rippled_rippled_docs_build_conan.html">this crash course</a> or the official <a href="https://docs.conan.io/en/latest/getting_started.html">Getting Started</a> walkthrough.</p>
-<p >You'll need at least one Conan profile:</p>
-<div class="fragment"><div class="line">conan profile new default --detect</div>
-</div><!-- fragment --><p >Update the compiler settings:</p>
-<div class="fragment"><div class="line">conan profile update settings.compiler.cppstd=20 default</div>
-</div><!-- fragment --><p >Configure Conan (1.x only) to use recipe revisions:</p>
-<div class="fragment"><div class="line">conan config set general.revisions_enabled=1</div>
-</div><!-- fragment --><p ><b>Linux</b> developers will commonly have a default Conan <a href="https://docs.conan.io/en/latest/reference/profiles.html">profile</a> that compiles with GCC and links with libstdc++. If you are linking with libstdc++ (see profile setting <code>compiler.libcxx</code>), then you will need to choose the <code>libstdc++11</code> ABI:</p>
-<div class="fragment"><div class="line">conan profile update settings.compiler.libcxx=libstdc++11 default</div>
-</div><!-- fragment --><p >Ensure inter-operability between <code>boost::string_view</code> and <code><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a></code> types:</p>
-<div class="fragment"><div class="line">conan profile update &#39;conf.tools.build:cxxflags+=[&quot;-DBOOST_BEAST_USE_STD_STRING_VIEW&quot;]&#39; default</div>
-<div class="line">conan profile update &#39;env.CXXFLAGS=&quot;-DBOOST_BEAST_USE_STD_STRING_VIEW&quot;&#39; default</div>
-</div><!-- fragment --><p >If you have other flags in the <code>conf.tools.build</code> or <code>env.CXXFLAGS</code> sections, make sure to retain the existing flags and append the new ones. You can check them with: </p><div class="fragment"><div class="line">conan profile show default</div>
-</div><!-- fragment --><p ><b>Windows</b> developers may need to use the x64 native build tools. An easy way to do that is to run the shortcut "x64 Native Tools Command
-Prompt" for the version of Visual Studio that you have installed.</p>
-<p >Windows developers must also build <code>rippled</code> and its dependencies for the x64 architecture:</p>
-<div class="fragment"><div class="line">conan profile update settings.arch=x86_64 default</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md34"></a>
-Multiple compilers</h3>
-<p >When <code>/usr/bin/g++</code> exists on a platform, it is the default cpp compiler. This default works for some users.</p>
-<p >However, if this compiler cannot build rippled or its dependencies, then you can install another compiler and set Conan and CMake to use it. Update the <code>conf.tools.build:compiler_executables</code> setting in order to set the correct variables (<code>CMAKE_&lt;LANG&gt;_COMPILER</code>) in the generated CMake toolchain file. For example, on Ubuntu 20, you may have gcc at <code>/usr/bin/gcc</code> and g++ at <code>/usr/bin/g++</code>; if that is the case, you can select those compilers with: </p><div class="fragment"><div class="line">conan profile update &#39;conf.tools.build:compiler_executables={&quot;c&quot;: &quot;/usr/bin/gcc&quot;, &quot;cpp&quot;: &quot;/usr/bin/g++&quot;}&#39; default</div>
-</div><!-- fragment --><p >Replace <code>/usr/bin/gcc</code> and <code>/usr/bin/g++</code> with paths to the desired compilers.</p>
-<p >It should choose the compiler for dependencies as well, but not all of them have a Conan recipe that respects this setting (yet). For the rest, you can set these environment variables. Replace <code>&lt;path&gt;</code> with paths to the desired compilers:</p>
-<ul>
-<li><code>conan profile update env.CC=&lt;path&gt; default</code></li>
-<li><code>conan profile update env.CXX=&lt;path&gt; default</code></li>
-</ul>
-<p >Export our <a href="./external/snappy">Conan recipe for Snappy</a>. It does not explicitly link the C++ standard library, which allows you to statically link it with GCC, if you want.</p>
-<div class="fragment"><div class="line"># Conan 2.x</div>
-<div class="line">conan export --version 1.1.10 external/snappy</div>
-</div><!-- fragment --><p >Export our <a href="./external/soci">Conan recipe for SOCI</a>. It patches their CMake to correctly import its dependencies.</p>
-<div class="fragment"><div class="line"># Conan 2.x</div>
+<p >These instructions assume a basic familiarity with Conan and CMake. If you are unfamiliar with Conan, then please read <a class="el" href="md____w_rippled_rippled_docs_build_conan.html">this crash course</a> or the official <a href="https://docs.conan.io/en/latest/getting_started.html">Getting Started</a> walkthrough.</p>
+<h4><a class="anchor" id="autotoc_md34"></a>
+Default profile</h4>
+<p >We recommend that you import the provided <code>conan/profiles/default</code> profile:</p>
+<div class="fragment"><div class="line">conan config install conan/profiles/ -tf $(conan config home)/profiles/</div>
+</div><!-- fragment --><p >You can check your Conan profile by running:</p>
+<div class="fragment"><div class="line">conan profile show</div>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md35"></a>
+Custom profile</h4>
+<p >If the default profile does not work for you and you do not yet have a Conan profile, you can create one by running:</p>
+<div class="fragment"><div class="line">conan profile detect</div>
+</div><!-- fragment --><p >You may need to make changes to the profile to suit your environment. You can refer to the provided <code>conan/profiles/default</code> profile for inspiration, and you may also need to apply the required tweaks to this default profile.</p>
+<h3><a class="anchor" id="autotoc_md36"></a>
+Patched recipes</h3>
+<p >The recipes in Conan Center occasionally need to be patched for compatibility with the latest version of <code>rippled</code>. We maintain a fork of the Conan Center <a href="https://github.com/XRPLF/conan-center-index/">here</a> containing the patches.</p>
+<p >To ensure our patched recipes are used, you must add our Conan remote at a higher index than the default Conan Center remote, so it is consulted first. You can do this by running:</p>
+<div class="fragment"><div class="line">conan remote add --index 0 xrplf &quot;https://conan.ripplex.io&quot;</div>
+</div><!-- fragment --><p >Alternatively, you can use the <code>conan export</code> command to add the patched recipes that are also (for the time being) located in the <code>external/</code> directory to your local Conan cache:</p>
+<div class="fragment"><div class="line">conan export --version 1.1.10 external/snappy</div>
 <div class="line">conan export --version 4.0.3 external/soci</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md35"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md37"></a>
+Conan profile tweaks</h3>
+<h4><a class="anchor" id="autotoc_md38"></a>
+Missing compiler version</h4>
+<p >If you see an error similar to the following after running <code>conan profile show</code>:</p>
+<div class="fragment"><div class="line">ERROR: Invalid setting &#39;17&#39; is not a valid &#39;settings.compiler.version&#39; value.</div>
+<div class="line">Possible values are [&#39;5.0&#39;, &#39;5.1&#39;, &#39;6.0&#39;, &#39;6.1&#39;, &#39;7.0&#39;, &#39;7.3&#39;, &#39;8.0&#39;, &#39;8.1&#39;,</div>
+<div class="line">&#39;9.0&#39;, &#39;9.1&#39;, &#39;10.0&#39;, &#39;11.0&#39;, &#39;12.0&#39;, &#39;13&#39;, &#39;13.0&#39;, &#39;13.1&#39;, &#39;14&#39;, &#39;14.0&#39;, &#39;15&#39;,</div>
+<div class="line">&#39;15.0&#39;, &#39;16&#39;, &#39;16.0&#39;]</div>
+<div class="line">Read &quot;http://docs.conan.io/2/knowledge/faq.html#error-invalid-setting&quot;</div>
+</div><!-- fragment --><p >you need to amend the list of compiler versions in <code>$(conan config home)/settings.yml</code>, by appending the required version number(s) to the <code>version</code> array specific for your compiler. For example:</p>
+<div class="fragment"><div class="line">apple-clang:</div>
+<div class="line">   version: [&quot;5.0&quot;, &quot;5.1&quot;, &quot;6.0&quot;, &quot;6.1&quot;, &quot;7.0&quot;, &quot;7.3&quot;, &quot;8.0&quot;, &quot;8.1&quot;, &quot;9.0&quot;,</div>
+<div class="line">             &quot;9.1&quot;, &quot;10.0&quot;, &quot;11.0&quot;, &quot;12.0&quot;, &quot;13&quot;, &quot;13.0&quot;, &quot;13.1&quot;, &quot;14&quot;,</div>
+<div class="line">             &quot;14.0&quot;, &quot;15&quot;, &quot;15.0&quot;, &quot;16&quot;, &quot;16.0&quot;, &quot;17&quot;, &quot;17.0&quot;]</div>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md39"></a>
+Multiple compilers</h4>
+<p >If you have multiple compilers installed, make sure to select the one to use in your default Conan configuration <b>before</b> running <code>conan profile detect</code>, by setting the <code>CC</code> and <code>CXX</code> environment variables.</p>
+<p >For example, if you are running MacOS and have <a href="https://formulae.brew.sh/formula/llvm@18">homebrew LLVM@18</a>, and want to use it as a compiler in the new Conan profile:</p>
+<div class="fragment"><div class="line">export CC=$(brew --prefix llvm@18)/bin/clang</div>
+<div class="line">export CXX=$(brew --prefix llvm@18)/bin/clang++</div>
+<div class="line">conan profile detect</div>
+</div><!-- fragment --><p >You should also explicitly set the path to the compiler in the profile file, which helps to avoid errors when <code>CC</code> and/or <code>CXX</code> are set and disagree with the selected Conan profile. For example:</p>
+<div class="fragment"><div class="line">[conf]</div>
+<div class="line">tools.build:compiler_executables={&#39;c&#39;:&#39;/usr/bin/gcc&#39;,&#39;cpp&#39;:&#39;/usr/bin/g++&#39;}</div>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md40"></a>
+Multiple profiles</h4>
+<p >You can manage multiple Conan profiles in the directory <code>$(conan config home)/profiles</code>, for example renaming <code>default</code> to a different name and then creating a new <code>default</code> profile for a different compiler.</p>
+<h4><a class="anchor" id="autotoc_md41"></a>
+Select language</h4>
+<p >The default profile created by Conan will typically select different C++ dialect than C++20 used by this project. You should set <code>20</code> in the profile line starting with <code>compiler.cppstd=</code>. For example:</p>
+<div class="fragment"><div class="line">sed -i.bak -e &#39;s|^compiler\.cppstd=.*$|compiler.cppstd=20|&#39; $(conan config home)/profiles/default</div>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md42"></a>
+Select standard library in Linux</h4>
+<p ><b>Linux</b> developers will commonly have a default Conan <a href="https://docs.conan.io/en/latest/reference/profiles.html">profile</a> that compiles with GCC and links with libstdc++. If you are linking with libstdc++ (see profile setting <code>compiler.libcxx</code>), then you will need to choose the <code>libstdc++11</code> ABI:</p>
+<div class="fragment"><div class="line">sed -i.bak -e &#39;s|^compiler\.libcxx=.*$|compiler.libcxx=libstdc++11|&#39; $(conan config home)/profiles/default</div>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md43"></a>
+Select architecture and runtime in Windows</h4>
+<p ><b>Windows</b> developers may need to use the x64 native build tools. An easy way to do that is to run the shortcut "x64 Native Tools Command Prompt" for the version of Visual Studio that you have installed.</p>
+<p >Windows developers must also build <code>rippled</code> and its dependencies for the x64 architecture:</p>
+<div class="fragment"><div class="line">sed -i.bak -e &#39;s|^arch=.*$|arch=x86_64|&#39; $(conan config home)/profiles/default</div>
+</div><!-- fragment --><p ><b>Windows</b> developers also must select static runtime:</p>
+<div class="fragment"><div class="line">sed -i.bak -e &#39;s|^compiler\.runtime=.*$|compiler.runtime=static|&#39; $(conan config home)/profiles/default</div>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md44"></a>
+Workaround for CMake 4</h4>
+<p >If your system CMake is version 4 rather than 3, you may have to configure Conan profile to use CMake version 3 for dependencies, by adding the following two lines to your profile:</p>
+<div class="fragment"><div class="line">[tool_requires]</div>
+<div class="line">!cmake/*: cmake/[&gt;=3 &lt;4]</div>
+</div><!-- fragment --><p >This will force Conan to download and use a locally cached CMake 3 version, and is needed because some of the dependencies used by this project do not support CMake 4.</p>
+<h4><a class="anchor" id="autotoc_md45"></a>
+Clang workaround for grpc</h4>
+<p >If your compiler is clang, version 19 or later, or apple-clang, version 17 or later, you may encounter a compilation error while building the <code>grpc</code> dependency:</p>
+<div class="fragment"><div class="line">In file included from .../lib/promise/try_seq.h:26:</div>
+<div class="line">.../lib/promise/detail/basic_seq.h:499:38: error: a template argument list is expected after a name prefixed by the template keyword [-Wmissing-template-arg-list-after-template-kw]</div>
+<div class="line">  499 |                     Traits::template CallSeqFactory(f_, *cur_, std::move(arg)));</div>
+<div class="line">      |                                      ^</div>
+</div><!-- fragment --><p >The workaround for this error is to add two lines to profile:</p>
+<div class="fragment"><div class="line">[conf]</div>
+<div class="line">tools.build:cxxflags=[&#39;-Wno-missing-template-arg-list-after-template-kw&#39;]</div>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md46"></a>
+Workaround for gcc 12</h4>
+<p >If your compiler is gcc, version 12, and you have enabled <code>werr</code> option, you may encounter a compilation error such as:</p>
+<div class="fragment"><div class="line">/usr/include/c++/12/bits/char_traits.h:435:56: error: &#39;void* __builtin_memcpy(void*, const void*, long unsigned int)&#39; accessing 9223372036854775810 or more bytes at offsets [2, 9223372036854775807] and 1 may overlap up to 9223372036854775813 bytes at offset -3 [-Werror=restrict]</div>
+<div class="line">  435 |         return static_cast&lt;char_type*&gt;(__builtin_memcpy(__s1, __s2, __n));</div>
+<div class="line">      |                                        ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~</div>
+<div class="line">cc1plus: all warnings being treated as errors</div>
+</div><!-- fragment --><p >The workaround for this error is to add two lines to your profile:</p>
+<div class="fragment"><div class="line">[conf]</div>
+<div class="line">tools.build:cxxflags=[&#39;-Wno-restrict&#39;]</div>
+</div><!-- fragment --><h4><a class="anchor" id="autotoc_md47"></a>
+Workaround for clang 16</h4>
+<p >If your compiler is clang, version 16, you may encounter compilation error such as:</p>
+<div class="fragment"><div class="line">In file included from .../boost/beast/websocket/stream.hpp:2857:</div>
+<div class="line">.../boost/beast/websocket/impl/read.hpp:695:17: error: call to &#39;async_teardown&#39; is ambiguous</div>
+<div class="line">                async_teardown(impl.role, impl.stream(),</div>
+<div class="line">                ^~~~~~~~~~~~~~</div>
+</div><!-- fragment --><p >The workaround for this error is to add two lines to your profile:</p>
+<div class="fragment"><div class="line">[conf]</div>
+<div class="line">tools.build:cxxflags=[&#39;-DBOOST_ASIO_DISABLE_CONCEPTS&#39;]</div>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md48"></a>
 Build and Test</h3>
 <ol type="1">
 <li><p class="startli">Create a build directory and move into it.</p>
@@ -186,34 +255,29 @@ Build and Test</h3>
 <p class="startli">Pass the CMake variable <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html"><code>CMAKE_BUILD_TYPE</code></a> and make sure it matches the one of the <code>build_type</code> settings you chose in the previous step.</p>
 <p class="startli">For example, to build Debug, in the next command, replace "Release" with "Debug"</p>
 <div class="fragment"><div class="line">cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..</div>
-</div><!-- fragment --></li>
-</ol>
-<pre class="fragment">Multi-config generators:
-
-```
-cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=ON -Dtests=ON  ..
-```
-
-**Note:** You can pass build options for `rippled` in this step.
-</pre><ol type="1">
+</div><!-- fragment --><p class="startli">Multi-config generators:</p>
+<div class="fragment"><div class="line">cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=ON -Dtests=ON  ..</div>
+</div><!-- fragment --><p class="startli"><b>Note:</b> You can pass build options for <code>rippled</code> in this step.</p>
+</li>
 <li><p class="startli">Build <code>rippled</code>.</p>
 <p class="startli">For a single-configuration generator, it will build whatever configuration you passed for <code>CMAKE_BUILD_TYPE</code>. For a multi-configuration generator, you must pass the option <code>--config</code> to select the build configuration.</p>
 <p class="startli">Single-config generators:</p>
-<div class="fragment"><div class="line">cmake --build . -j $(nproc)</div>
+<div class="fragment"><div class="line">cmake --build .</div>
 </div><!-- fragment --><p class="startli">Multi-config generators:</p>
 <div class="fragment"><div class="line">cmake --build . --config Release</div>
 <div class="line">cmake --build . --config Debug</div>
 </div><!-- fragment --></li>
 <li><p class="startli">Test rippled.</p>
 <p class="startli">Single-config generators:</p>
-<div class="fragment"><div class="line">./rippled --unittest</div>
+<div class="fragment"><div class="line">./rippled --unittest --unittest-jobs N</div>
 </div><!-- fragment --><p class="startli">Multi-config generators:</p>
-<div class="fragment"><div class="line">./Release/rippled --unittest</div>
-<div class="line">./Debug/rippled --unittest</div>
-</div><!-- fragment --><p class="startli">The location of <code>rippled</code> in your build directory depends on your CMake generator. Pass <code>--help</code> to see the rest of the command line options.</p>
+<div class="fragment"><div class="line">./Release/rippled --unittest --unittest-jobs N</div>
+<div class="line">./Debug/rippled --unittest --unittest-jobs N</div>
+</div><!-- fragment --><p class="startli">Replace the <code>--unittest-jobs</code> parameter N with the desired unit tests concurrency. Recommended setting is half of the number of available CPU cores.</p>
+<p class="startli">The location of <code>rippled</code> binary in your build directory depends on your CMake generator. Pass <code>--help</code> to see the rest of the command line options.</p>
 </li>
 </ol>
-<h2><a class="anchor" id="autotoc_md36"></a>
+<h2><a class="anchor" id="autotoc_md49"></a>
 Coverage report</h2>
 <p >The coverage report is intended for developers using compilers GCC or Clang (including Apple Clang). It is generated by the build target <code>coverage</code>, which is only enabled when the <code>coverage</code> option is set, e.g. with <code>--options coverage=True</code> in <code>conan</code> or <code>-Dcoverage=ON</code> variable in <code>cmake</code></p>
 <p >Prerequisites for the coverage report:</p>
@@ -239,10 +303,10 @@ Coverage report</h2>
 <div class="line">cmake --build . --target coverage</div>
 </div><!-- fragment --><p >After the <code>coverage</code> target is completed, the generated coverage report will be stored inside the build directory, as either of:</p>
 <ul>
-<li>file named <code>coverage.</code>_extension_ , with a suitable extension for the report format, or</li>
+<li>file named <code>coverage.</code>_extension_, with a suitable extension for the report format, or</li>
 <li>directory named <code>coverage</code>, with the <code>index.html</code> and other files inside, for the <code>html-details</code> or <code>html-nested</code> report formats.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md37"></a>
+<h2><a class="anchor" id="autotoc_md50"></a>
 Options</h2>
 <table class="markdownTable">
 <tr class="markdownTableHead">
@@ -256,24 +320,34 @@ Options</h2>
 <tr class="markdownTableRowEven">
 <td class="markdownTableBodyNone"><code>tests</code>   </td><td class="markdownTableBodyNone">OFF   </td><td class="markdownTableBodyNone">Build tests.    </td></tr>
 <tr class="markdownTableRowOdd">
-<td class="markdownTableBodyNone"><code>unity</code>   </td><td class="markdownTableBodyNone">ON   </td><td class="markdownTableBodyNone">Configure a unity build.    </td></tr>
+<td class="markdownTableBodyNone"><code>unity</code>   </td><td class="markdownTableBodyNone">OFF   </td><td class="markdownTableBodyNone">Configure a unity build.    </td></tr>
 <tr class="markdownTableRowEven">
-<td class="markdownTableBodyNone"><code>xrpld</code>   </td><td class="markdownTableBodyNone">OFF   </td><td class="markdownTableBodyNone">Build the xrpld (<code>rippled</code>) application, and not just the libxrpl library.   </td></tr>
+<td class="markdownTableBodyNone"><code>xrpld</code>   </td><td class="markdownTableBodyNone">OFF   </td><td class="markdownTableBodyNone">Build the xrpld (<code>rippled</code>) application, and not just the libxrpl library.    </td></tr>
+<tr class="markdownTableRowOdd">
+<td class="markdownTableBodyNone"><code>werr</code>   </td><td class="markdownTableBodyNone">OFF   </td><td class="markdownTableBodyNone">Treat compilation warnings as errors    </td></tr>
+<tr class="markdownTableRowEven">
+<td class="markdownTableBodyNone"><code>wextra</code>   </td><td class="markdownTableBodyNone">OFF   </td><td class="markdownTableBodyNone">Enable additional compilation warnings   </td></tr>
 </table>
 <p ><a href="https://en.wikipedia.org/wiki/Unity_build">Unity builds</a> may be faster for the first build (at the cost of much more memory) since they concatenate sources into fewer translation units. Non-unity builds may be faster for incremental builds, and can be helpful for detecting <code>#include</code> omissions.</p>
-<h2><a class="anchor" id="autotoc_md38"></a>
+<h2><a class="anchor" id="autotoc_md51"></a>
 Troubleshooting</h2>
-<h3><a class="anchor" id="autotoc_md39"></a>
+<h3><a class="anchor" id="autotoc_md52"></a>
 Conan</h3>
 <p >After any updates or changes to dependencies, you may need to do the following:</p>
 <ol type="1">
 <li>Remove your build directory.</li>
-<li>Remove the Conan cache: <code>conan remove "*" -c</code></li>
+<li><p class="startli">Remove individual libraries from the Conan cache, e.g.</p>
+<div class="fragment"><div class="line">conan remove &#39;grpc/*&#39;</div>
+</div><!-- fragment --><p class="startli"><b>or</b></p>
+<p class="startli">Remove all libraries from Conan cache:</p>
+<div class="fragment"><div class="line">conan remove &#39;*&#39;</div>
+</div><!-- fragment --></li>
+<li>Re-run conan export</li>
 <li>Re-run conan install.</li>
 </ol>
-<h3><a class="anchor" id="autotoc_md40"></a>
-'protobuf/port_def.inc' file not found</h3>
-<p >If <code>cmake --build .</code> results in an error due to a missing a protobuf file, then you might have generated CMake files for a different <code>build_type</code> than the <code>CMAKE_BUILD_TYPE</code> you passed to conan.</p>
+<h3><a class="anchor" id="autotoc_md53"></a>
+&lt;tt&gt;protobuf/port_def.inc&lt;/tt&gt; file not found</h3>
+<p >If <code>cmake --build .</code> results in an error due to a missing a protobuf file, then you might have generated CMake files for a different <code>build_type</code> than the <code>CMAKE_BUILD_TYPE</code> you passed to Conan.</p>
 <div class="fragment"><div class="line">/rippled/.build/pb-xrpl.libpb/xrpl/proto/ripple.pb.h:10:10: fatal error: &#39;google/protobuf/port_def.inc&#39; file not found</div>
 <div class="line">   10 | #include &lt;google/protobuf/port_def.inc&gt;</div>
 <div class="line">      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</div>
@@ -283,7 +357,7 @@ Conan</h3>
 <li>For conan install, pass <code>--settings build_type=Debug</code></li>
 <li>For cmake, pass <code>-DCMAKE_BUILD_TYPE=Debug</code></li>
 </ol>
-<h2><a class="anchor" id="autotoc_md41"></a>
+<h2><a class="anchor" id="autotoc_md54"></a>
 Add a Dependency</h2>
 <p >If you want to experiment with a new package, follow these steps:</p>
 <ol type="1">
