@@ -346,7 +346,7 @@ struct Wasm_test : public beast::unit_test::suite
         testcase("escrow wasm devnet test");
 
         std::string const wasmStr =
-            boost::algorithm::unhex(allHostFunctionsHex);
+            boost::algorithm::unhex(allHostFunctionsWasmHex);
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
         using namespace test::jtx;
@@ -467,7 +467,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = allHostFunctionsHex;
+            std::string const wasmHex = allHostFunctionsWasmHex;
             std::string const wasmStr = boost::algorithm::unhex(wasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
@@ -502,7 +502,7 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
 
         {
-            std::string const wasmHex = allHostFunctionsHex;
+            std::string const wasmHex = allHostFunctionsWasmHex;
             std::string const wasmStr = boost::algorithm::unhex(wasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
@@ -540,7 +540,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         Env env(*this);
         {
-            std::string const wasmHex = floatHex;
+            std::string const wasmHex = floatTestsWasmHex;
             std::string const wasmStr = boost::algorithm::unhex(wasmHex);
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 

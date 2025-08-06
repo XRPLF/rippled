@@ -1,0 +1,28 @@
+[
+  {
+    "nft_id": "000827103B94ECDE2FB4AD76F8A49A4B30F4815C35A7B0A39D73D4B9289F2FD6",
+    "ledger_index": 95354542,
+    "owner": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "is_burned": false,
+    "flags": 8,
+    "transfer_fee": 0,
+    "issuer": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "nft_taxon": 0,
+    "nft_serial": 1,
+    "validated": true,
+    "uri": "68747470733a2f2f746573742e636f6d2f6e66742f31"
+  },
+  {
+    "nft_id": "000827103B94ECDE2FB4AD76F8A49A4B30F4815C35A7B0A39D73D4B9289F2FD7",
+    "ledger_index": 95354542,
+    "owner": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "is_burned": false,
+    "flags": 8,
+    "transfer_fee": 0,
+    "issuer": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "nft_taxon": 0,
+    "nft_serial": 2,
+    "validated": true,
+    "uri": "68747470733a2f2f746573742e636f6d2f6e66742f32"
+  }
+]

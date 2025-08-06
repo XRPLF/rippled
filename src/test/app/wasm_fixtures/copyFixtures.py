@@ -89,8 +89,8 @@ def process_c(project_name):
             build_cmd, shell=True, check=True, capture_output=True, text=True
         )
         print(f"stdout: {result.stdout}")
-        # if result.stderr:
-        print(f"stderr: {result.stderr}")
+        if result.stderr:
+            print(f"stderr: {result.stderr}")
         print(
             f"WASM file for {project_name} has been built with WASI support using clang."
         )
@@ -117,8 +117,8 @@ if __name__ == "__main__":
             if os.path.isdir(os.path.join(os.path.dirname(__file__), d))
         ]
         c_files = [f for f in os.listdir(os.path.dirname(__file__)) if f.endswith(".c")]
-        # for d in dirs:
-        #     process_rust(d)
+        for d in dirs:
+            process_rust(d)
         for c in c_files:
             process_c(c[:-2])
         print("All fixtures have been processed.")

@@ -25,7 +25,7 @@
 
 extern std::string const ledgerSqnWasmHex;
 
-extern std::string const allHostFunctionsHex;
+extern std::string const allHostFunctionsWasmHex;
 
 extern std::string const deepRecursionHex;
 
@@ -59,7 +59,7 @@ extern std::string const allKeyletsWasmHex;
 
 extern std::string const codecovTestsWasmHex;
 
-extern std::string const floatHex;
+extern std::string const floatTestsWasmHex;
 
 extern std::string const ledgerSqnWasmHex;
 

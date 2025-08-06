@@ -1,0 +1,13 @@
+{
+  "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+  "Balance": "55426479402",
+  "Flags": 1703936,
+  "LedgerEntryType": "AccountRoot",
+  "OwnerCount": 1,
+  "PreviousTxnID": "BC8E8B46D1C403B168EE6402769065EBDAD78E5EA3A043D8E041372EDF14A11F",
+  "PreviousTxnLgrSeq": 95945324,
+  "RegularKey": "rBmVUQNF6tJy4cLvoKdPXb4BNqKBk5JY1Y",
+  "Sequence": 44196,
+  "TransferRate": 1220000000,
+  "index": "2B6AC232AA4C4BE41BF49D2459FA4A0347E1B543A4C92FCEE0821C0201E2E9A8"
+}

@@ -1,0 +1,15 @@
+[
+  {
+    "nft_id": "000827106807BF848FACD972F2F617E27003D75B2CAAC9816CEE14840521D1E9",
+    "ledger_index": 86802013,
+    "owner": "rrrrrrrrrrrrrrrrrrrrBZbvji",
+    "is_burned": false,
+    "flags": 8,
+    "transfer_fee": 10000,
+    "issuer": "rwVhZJLcdtioxdETLq31Ne2K97xm4zA8Jv",
+    "nft_taxon": 0,
+    "nft_serial": 86102505,
+    "validated": true,
+    "uri": "697066733A2F2F516D57515A4167695A337041327065654A4D7441703663326A394151666E78706A754E62674D5A505748617A3267"
+  }
+]

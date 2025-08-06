@@ -2288,7 +2288,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // TODO: create wasm module for all host functions
-        static auto wasmHex = allHostFunctionsHex;
+        static auto wasmHex = allHostFunctionsWasmHex;
 
         Account const alice{"alice"};
         Account const carol{"carol"};
