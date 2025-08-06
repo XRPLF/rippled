@@ -52,7 +52,9 @@ LedgerHistory::LedgerHistory(
 }
 
 bool
-LedgerHistory::insert(std::shared_ptr<Ledger const> ledger, bool validated)
+LedgerHistory::insert(
+    std::shared_ptr<Ledger const> const& ledger,
+    bool validated)
 {
     if (!ledger->isImmutable())
         LogicError("mutable Ledger in insert");
