@@ -665,7 +665,7 @@ struct Wasm_test : public beast::unit_test::suite
         //     beast::severities::kTrace};
         Env env{*this};
 
-        auto const wasmStr = boost::algorithm::unhex(codecovWasm);
+        auto const wasmStr = boost::algorithm::unhex(codecovTests);
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         std::string const funcName("finish");
         TestHostFunctions hfs(env, 0);

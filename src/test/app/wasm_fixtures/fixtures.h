@@ -59,6 +59,6 @@ extern std::string const opcCallPerfTest;
 
 extern std::string const allKeylets;
 
-extern std::string const codecovWasm;
+extern std::string const codecovTests;
 
 extern std::string const floatHex;

@@ -33,18 +33,35 @@ def process_project(project_name):
 
     fixture_name = re.sub(r"_([a-z])", lambda m: m.group(1).upper(), project_name)
     print(f"Updating fixture: {fixture_name}")
-    dst_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures.cpp"))
-    with open(dst_path, "r", encoding="utf8") as f:
-        dst_content = f.read()
+
+    cpp_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures.cpp"))
+    h_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures.h"))
+    with open(cpp_path, "r", encoding="utf8") as f:
+        cpp_content = f.read()
+
     pattern = rf'extern std::string const {fixture_name} =[ \n]+"[^;]*;'
-    updated_content = re.sub(
-        pattern,
-        f'extern std::string const {fixture_name} = "{wasm}";',
-        dst_content,
-        flags=re.MULTILINE,
-    )
-    with open(dst_path, "w", encoding="utf8") as f:
-        f.write(updated_content)
+    if re.search(pattern, cpp_content, flags=re.MULTILINE):
+        updated_cpp_content = re.sub(
+            pattern,
+            f'extern std::string const {fixture_name} = "{wasm}";',
+            cpp_content,
+            flags=re.MULTILINE,
+        )
+    else:
+        with open(h_path, "r", encoding="utf8") as f:
+            h_content = f.read()
+        updated_h_content = (
+            h_content.rstrip() + f"\n\n extern std::string const {fixture_name};\n"
+        )
+        with open(h_path, "w", encoding="utf8") as f:
+            f.write(updated_h_content)
+        updated_cpp_content = (
+            cpp_content.rstrip()
+            + f'\n\nextern std::string const {fixture_name} = "{wasm}";\n'
+        )
+
+    with open(cpp_path, "w", encoding="utf8") as f:
+        f.write(updated_cpp_content)
 
 
 if __name__ == "__main__":
