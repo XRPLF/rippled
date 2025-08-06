@@ -12,7 +12,7 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 
 # https://docs.github.com/en/actions/using-jobs/using-concurrency
 concurrency:
@@ -30,7 +30,6 @@ env:
     tools.compilation:verbosity=verbose
 
 jobs:
-
   test:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
@@ -66,8 +65,8 @@ jobs:
       - name: restore Python cache directory
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
         with:
-            path: ${{ steps.pip-cache.outputs.dir }}
-            key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-${{ hashFiles('.github/workflows/windows.yml') }}
       - name: install Conan
         run: pip install wheel conan
       - name: check environment
@@ -90,10 +89,10 @@ jobs:
       - name: build
         uses: ./.github/actions/build
         with:
-          generator: '${{ matrix.version.generator }}'
+          generator: "${{ matrix.version.generator }}"
           configuration: ${{ matrix.configuration.type }}
           # Hard code for now. Move to the matrix if varied options are needed
-          cmake-args: '-Dassert=TRUE -Dwerr=TRUE -Dreporting=OFF -Dunity=ON'
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE -Dreporting=OFF -Dunity=ON"
           cmake-target: install
       - name: test
         shell: bash

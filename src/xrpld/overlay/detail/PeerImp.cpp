@@ -1272,8 +1272,8 @@ PeerImp::handleTransaction(
     {
         // If we've never been in synch, there's nothing we can do
         // with a transaction
-        JLOG(p_journal_.debug()) << "Ignoring incoming transaction: "
-                                 << "Need network ledger";
+        JLOG(p_journal_.debug())
+            << "Ignoring incoming transaction: " << "Need network ledger";
         return;
     }
 

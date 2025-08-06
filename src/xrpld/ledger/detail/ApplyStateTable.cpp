@@ -117,6 +117,8 @@ ApplyStateTable::apply(
     TER ter,
     std::optional<STAmount> const& deliver,
     std::optional<uint256 const> const& parentBatchId,
+    std::optional<std::uint32_t> const& gasUsed,
+    std::optional<std::int32_t> const& wasmReturnCode,
     bool isDryRun,
     beast::Journal j)
 {
@@ -127,11 +129,16 @@ ApplyStateTable::apply(
     std::optional<TxMeta> metadata;
     if (!to.open() || isDryRun)
     {
-        TxMeta meta(tx.getTransactionID(), to.seq(), parentBatchId);
+        TxMeta meta(tx.getTransactionID(), to.seq());
 
         if (deliver)
             meta.setDeliveredAmount(*deliver);
-
+        if (parentBatchId)
+            meta.setParentBatchId(*parentBatchId);
+        if (gasUsed)
+            meta.setGasUsed(*gasUsed);
+        if (wasmReturnCode)
+            meta.setWasmReturnCode(*wasmReturnCode);
         Mods newMod;
         for (auto& item : items_)
         {

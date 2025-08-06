@@ -56,9 +56,12 @@ TxMeta::TxMeta(
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
-
     if (obj.isFieldPresent(sfParentBatchID))
         setParentBatchId(obj.getFieldH256(sfParentBatchID));
+    if (obj.isFieldPresent(sfGasUsed))
+        setGasUsed(obj.getFieldU32(sfGasUsed));
+    if (obj.isFieldPresent(sfWasmReturnCode))
+        setWasmReturnCode(obj.getFieldI32(sfWasmReturnCode));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
@@ -82,6 +85,12 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     if (obj.isFieldPresent(sfParentBatchID))
         setParentBatchId(obj.getFieldH256(sfParentBatchID));
+
+    if (obj.isFieldPresent(sfGasUsed))
+        setGasUsed(obj.getFieldU32(sfGasUsed));
+
+    if (obj.isFieldPresent(sfWasmReturnCode))
+        setWasmReturnCode(obj.getFieldI32(sfWasmReturnCode));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
@@ -97,15 +106,11 @@ TxMeta::TxMeta(
 {
 }
 
-TxMeta::TxMeta(
-    uint256 const& transactionID,
-    std::uint32_t ledger,
-    std::optional<uint256> parentBatchId)
+TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
     : mTransactionID(transactionID)
     , mLedger(ledger)
     , mIndex(static_cast<std::uint32_t>(-1))
     , mResult(255)
-    , mParentBatchId(parentBatchId)
     , mNodes(sfAffectedNodes)
 {
     mNodes.reserve(32);
@@ -253,9 +258,12 @@ TxMeta::getAsObject() const
     metaData.emplace_back(mNodes);
     if (hasDeliveredAmount())
         metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
-
     if (hasParentBatchId())
         metaData.setFieldH256(sfParentBatchID, getParentBatchId());
+    if (hasGasUsed())
+        metaData.setFieldU32(sfGasUsed, getGasUsed());
+    if (hasWasmReturnCode())
+        metaData.setFieldI32(sfWasmReturnCode, getWasmReturnCode());
 
     return metaData;
 }

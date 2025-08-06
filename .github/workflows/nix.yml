@@ -361,59 +361,59 @@ jobs:
     env:
       build_dir: .build
     steps:
-        - name: download cache
-          uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
-          with:
-            name: linux-clang-Debug
+      - name: download cache
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: linux-clang-Debug
 
-        - name: extract cache
-          run: |
-            mkdir -p ${CONAN_HOME}
-            tar -xzf conan.tar.gz -C ${CONAN_HOME}
+      - name: extract cache
+        run: |
+          mkdir -p ${CONAN_HOME}
+          tar -xzf conan.tar.gz -C ${CONAN_HOME}
 
-        - name: check environment
-          run: |
-            echo ${PATH} | tr ':' '\n'
-            conan --version
-            cmake --version
-            env | sort
-            ls ${CONAN_HOME}
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+          env | sort
+          ls ${CONAN_HOME}
 
-        - name: checkout
-          uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
 
-        - name: dependencies
-          uses: ./.github/actions/dependencies
-          with:
-            configuration: Debug
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          configuration: Debug
 
-        - name: prepare environment
-          run: |
-            mkdir -p ${build_dir}
-            echo "SOURCE_DIR=$(pwd)" >> $GITHUB_ENV
-            echo "BUILD_DIR=$(pwd)/${build_dir}" >> $GITHUB_ENV
+      - name: prepare environment
+        run: |
+          mkdir -p ${build_dir}
+          echo "SOURCE_DIR=$(pwd)" >> $GITHUB_ENV
+          echo "BUILD_DIR=$(pwd)/${build_dir}" >> $GITHUB_ENV
 
-        - name: build with instrumentation
-          run: |
-            cd ${BUILD_DIR}
-            cmake -S ${SOURCE_DIR} -B ${BUILD_DIR} \
-              -Dvoidstar=ON \
-              -Dtests=ON \
-              -Dxrpld=ON \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DSECP256K1_BUILD_BENCHMARK=OFF \
-              -DSECP256K1_BUILD_TESTS=OFF \
-              -DSECP256K1_BUILD_EXHAUSTIVE_TESTS=OFF \
-              -DCMAKE_TOOLCHAIN_FILE=${BUILD_DIR}/build/generators/conan_toolchain.cmake
-            cmake --build .  --parallel $(nproc)
+      - name: build with instrumentation
+        run: |
+          cd ${BUILD_DIR}
+          cmake -S ${SOURCE_DIR} -B ${BUILD_DIR} \
+            -Dvoidstar=ON \
+            -Dtests=ON \
+            -Dxrpld=ON \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DSECP256K1_BUILD_BENCHMARK=OFF \
+            -DSECP256K1_BUILD_TESTS=OFF \
+            -DSECP256K1_BUILD_EXHAUSTIVE_TESTS=OFF \
+            -DCMAKE_TOOLCHAIN_FILE=${BUILD_DIR}/build/generators/conan_toolchain.cmake
+          cmake --build .  --parallel $(nproc)
 
-        - name: verify instrumentation enabled
-          run: |
-            cd ${BUILD_DIR}
-            ./rippled --version | grep libvoidstar
+      - name: verify instrumentation enabled
+        run: |
+          cd ${BUILD_DIR}
+          ./rippled --version | grep libvoidstar
 
-        - name: run unit tests
-          run: |
-            cd ${BUILD_DIR}
-            ./rippled -u --unittest-jobs $(( $(nproc)/4 ))
-            ctest -j $(nproc) --output-on-failure
+      - name: run unit tests
+        run: |
+          cd ${BUILD_DIR}
+          ./rippled -u --unittest-jobs $(( $(nproc)/4 ))
+          ctest -j $(nproc) --output-on-failure
