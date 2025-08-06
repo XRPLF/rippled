@@ -376,7 +376,11 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(env);
             auto re =
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100000);
-            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 5831));
+            BEAST_EXPECT(
+                re.has_value() &&
+                re->result ==
+                    HferrorToInt(HostFunctionError::FIELD_NOT_FOUND) &&
+                (re->cost == 5831));
             // std::cout << "bad case (access nonexistent field) result "
             //           << re.error() << std::endl;
         }
@@ -396,7 +400,7 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(env);
             auto re =
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
-            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 5831));
+            BEAST_EXPECT(re.has_value() && re->result == HferrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS && (re->cost == 5831));
             // std::cout << "bad case (more than MAX_PAGES) result "
             //           << re.error() << std::endl;
         }
