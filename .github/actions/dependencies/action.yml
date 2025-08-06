@@ -6,6 +6,11 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: export custom recipes
+      shell: bash
+      # TODO: add WAMR to conan center index
+      # This is a workaround until WAMR is available in conan center
+      run: conan export --version 2.4.1 external/wamr
     - name: add Conan remote
       if: env.CONAN_URL != ''
       shell: bash
