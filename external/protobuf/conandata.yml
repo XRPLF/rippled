@@ -1,0 +1,54 @@
+sources:
+  "6.30.1":
+    url: "https://github.com/protocolbuffers/protobuf/archive/refs/tags/v6.30.1.tar.gz"
+    sha256: "c97cc064278ef2b8c4da66c1f85613642ecbd5a0c4217c0defdf7ad1b3de9fa5"
+patches:
+  "6.30.1":
+    - patch_file: "patches/protobuf-6.30.1-change-empty-string.patch"
+      patch_description: "Change how we decide which empty string implementation to use"
+      patch_type: "backport"
+      patch_source: "https://github.com/protocolbuffers/protobuf/issues/20645"
+    - patch_file: "patches/protobuf-6.30.1-disable-fixed-string-MSVC.patch"
+      patch_description: "Disable the optimization for fixed_address_empty_string for MSVC"
+      patch_type: "backport"
+      patch_source: "https://github.com/protocolbuffers/protobuf/issues/21957"
+absl_deps:
+  # reference: https://github.com/protocolbuffers/protobuf/blob/main/cmake/abseil-cpp.cmake
+  "6.30.1":
+    - absl_absl_check
+    - absl_absl_log
+    - absl_algorithm
+    - absl_base
+    - absl_bind_front
+    - absl_bits
+    - absl_btree
+    - absl_cleanup
+    - absl_cord
+    - absl_core_headers
+    - absl_debugging
+    - absl_die_if_null
+    - absl_dynamic_annotations
+    - absl_flags
+    - absl_flat_hash_map
+    - absl_flat_hash_set
+    - absl_function_ref
+    - absl_hash
+    - absl_layout
+    - absl_log_initialize
+    - absl_log_globals
+    - absl_log_severity
+    - absl_memory
+    - absl_node_hash_map
+    - absl_node_hash_set
+    - absl_optional
+    - absl_random_distributions
+    - absl_random_random
+    - absl_span
+    - absl_status
+    - absl_statusor
+    - absl_strings
+    - absl_synchronization
+    - absl_time
+    - absl_type_traits
+    - absl_utility
+    - absl_variant
