@@ -73,11 +73,25 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temBAD_SIGNER;
     }
 
-    auto const counterPartySig = ctx.tx.getFieldObject(sfCounterpartySignature);
+    // These extra hoops are because STObjects cannot be Proxy'd from STObject.
+    auto const counterPartySig = [&tx]() -> std::optional<STObject const> {
+        if (tx.isFieldPresent(sfCounterpartySignature))
+            return tx.getFieldObject(sfCounterpartySignature);
+        return std::nullopt;
+    }();
+    if (!tx.isFlag(tfInnerBatchTxn) && !counterPartySig)
+    {
+        JLOG(ctx.j.warn())
+            << "LoanSet transaction must have a CounterpartySignature.";
+        return temBAD_SIGNER;
+    }
 
-    if (auto const ret =
-            ripple::detail::preflightCheckSigningKey(counterPartySig, ctx.j))
-        return ret;
+    if (counterPartySig)
+    {
+        if (auto const ret = ripple::detail::preflightCheckSigningKey(
+                *counterPartySig, ctx.j))
+            return ret;
+    }
 
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
@@ -109,9 +123,12 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     // Copied from preflight2
-    if (auto const ret = ripple::detail::preflightCheckSimulateKeys(
-            ctx.flags, counterPartySig, ctx.j))
-        return *ret;
+    if (counterPartySig)
+    {
+        if (auto const ret = ripple::detail::preflightCheckSimulateKeys(
+                ctx.flags, *counterPartySig, ctx.j))
+            return *ret;
+    }
 
     return tesSUCCESS;
 }
@@ -136,7 +153,10 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     }();
     if (!counterSigner)
         return temBAD_SIGNER;
-    // Counterparty signature is required
+
+    // Counterparty signature is optional. Presence is checked in preflight.
+    if (!ctx.tx.isFieldPresent(sfCounterpartySignature))
+        return tesSUCCESS;
     auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
     return Transactor::checkSign(ctx, *counterSigner, counterSig);
 }
@@ -150,6 +170,8 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
     // CounterpartySignature, whether a single signature or a multisignature
     XRPAmount const baseFee = view.fees().base;
 
+    // Counterparty signature is optional, but getFieldObject will return an
+    // empty object if it's not present.
     auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
     // Each signer adds one more baseFee to the minimum required fee
     // for the transaction. Note that unlike the base class, the single signer

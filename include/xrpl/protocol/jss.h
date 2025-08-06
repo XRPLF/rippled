@@ -59,6 +59,7 @@ JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
 JSS(ClearFlag);            // field.
+JSS(CounterpartySignature);// field.
 JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(Destination);          // in: TransactionSign; field.

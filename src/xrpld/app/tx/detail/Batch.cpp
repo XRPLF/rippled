@@ -310,6 +310,8 @@ Batch::preflight(PreflightContext const& ctx)
         if (auto const ret = checkSignatureFields(stx, hash))
             return ret;
 
+        // Note that the CounterpartySignature is optional, and should not be
+        // included, but if it is, ensure it doesn't contain a signature.
         if (stx.isFieldPresent(sfCounterpartySignature))
         {
             auto const counterpartySignature =

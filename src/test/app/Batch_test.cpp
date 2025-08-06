@@ -2651,30 +2651,6 @@ class Batch_test : public beast::unit_test::suite
             {
                 auto const [txIDs, batchID] = submitBatch(
                     env,
-                    telENV_RPC_FAILED,
-                    batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
-                    batch::inner(
-                        env.json(
-                            set(lender,
-                                brokerKeylet.key,
-                                asset(1000).value(),
-                                env.now() + 3600s),
-                            // Must include a CounterpartySignature field.
-                            // Transaction will not even parse at the RPC layer
-                            sig(none),
-                            fee(none),
-                            seq(none)),
-                        lenderSeq + 1),
-                    batch::inner(
-                        draw(
-                            lender,
-                            loanKeylet.key,
-                            STAmount{asset, asset(500).value()}),
-                        lenderSeq + 2));
-            }
-            {
-                auto const [txIDs, batchID] = submitBatch(
-                    env,
                     temINVALID_INNER_BATCH,
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
@@ -2683,7 +2659,6 @@ class Batch_test : public beast::unit_test::suite
                                 brokerKeylet.key,
                                 asset(1000).value(),
                                 env.now() + 3600s),
-                            json(sfCounterpartySignature, Json::objectValue),
                             // Counterparty must be set
                             sig(none),
                             fee(none),
@@ -2709,7 +2684,6 @@ class Batch_test : public beast::unit_test::suite
                                 env.now() + 3600s),
                             // Counterparty must sign the outer transaction
                             counterparty(borrower.id()),
-                            json(sfCounterpartySignature, Json::objectValue),
                             sig(none),
                             fee(none),
                             seq(none)),
@@ -2737,7 +2711,6 @@ class Batch_test : public beast::unit_test::suite
                                 asset(1000).value(),
                                 env.now() + 3600s),
                             counterparty(borrower.id()),
-                            json(sfCounterpartySignature, Json::objectValue),
                             sig(none),
                             fee(none),
                             seq(none)),
@@ -2773,7 +2746,6 @@ class Batch_test : public beast::unit_test::suite
                                 asset(1000).value(),
                                 env.now() + 3600s),
                             counterparty(borrower.id()),
-                            json(sfCounterpartySignature, Json::objectValue),
                             sig(none),
                             fee(none),
                             seq(none)),

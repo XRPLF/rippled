@@ -86,10 +86,11 @@ class Loan_test : public beast::unit_test::suite
             using namespace std::chrono_literals;
             using namespace loan;
 
-            // counter party signature is required on LoanSet
+            // counter party signature is optional on LoanSet. Confirm that by
+            // sending transaction without one.
             auto setTx = env.jt(
                 set(alice, keylet.key, Number(10000), env.now() + 720h),
-                ter(temMALFORMED));
+                ter(temDISABLED));
             env(setTx);
 
             // All loan transactions are disabled.
@@ -1822,22 +1823,34 @@ class Loan_test : public beast::unit_test::suite
         auto const startDate = env.now() + 60s;
 
         // The LoanSet json can be created without a counterparty signature, but
-        // it is malformed.
+        // it will not pass preflight
         auto createJson = env.json(
             set(lender,
                 broker.brokerID,
                 broker.asset(principalRequest).value(),
                 startDate),
             fee(loanSetFee));
+        env(createJson, ter(temBAD_SIGNER));
 
-        env(createJson, ter(temMALFORMED));
-
-        // Adding an empty counterparty signature object is also malformed, but
-        // fails at the RPC level.
+        // Adding an empty counterparty signature object also fails, but
+        // at the RPC level.
         createJson = env.json(
             createJson, json(sfCounterpartySignature, Json::objectValue));
-
         env(createJson, ter(telENV_RPC_FAILED));
+
+        if (auto const jt = env.jt(createJson); BEAST_EXPECT(jt.stx))
+        {
+            Serializer s;
+            jt.stx->add(s);
+            auto const jr = env.rpc("submit", strHex(s.slice()));
+
+            BEAST_EXPECT(jr.isMember(jss::result));
+            auto const jResult = jr[jss::result];
+            BEAST_EXPECT(jResult[jss::error] == "invalidTransaction");
+            BEAST_EXPECT(
+                jResult[jss::error_exception] ==
+                "fails local checks: Transaction has bad signature.");
+        }
 
         // Copy the transaction signature into the counterparty signature.
         Json::Value counterpartyJson{Json::objectValue};
@@ -2137,6 +2150,55 @@ class Loan_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testRPC()
+    {
+        // This will expand as more test cases are added. Some functionality is
+        // tested in other test functions.
+        testcase("RPC");
+
+        using namespace jtx;
+
+        Env env(*this, all);
+
+        Account const alice{"alice"};
+
+        {
+            auto const sk = alice.sk();
+            auto const jr = env.rpc(
+                "sign",
+                encodeBase58Token(TokenType::FamilySeed, sk.data(), sk.size()),
+                R"({ "TransactionType" : "LoanSet", )"
+                R"("Account" : "rHP9W1SByc8on4vfFsBdt5sun2gZTnBhkx", )"
+                R"("Counterparty" : "rHP9W1SByc8on4vfFsBdt5sun2gZTnBhkx", )"
+                R"("LoanBrokerID" : )"
+                R"("EAFD2D37FE12815F00705F1B57173A16F94EE15E02D53AF5B683942B57ED53E9", )"
+                R"("PrincipalRequested" : "100000000", )"
+                R"("StartDate" : "807730340", "PaymentTotal" : 10000, )"
+                R"("PaymentInterval" : 1, "GracePeriod" : 300, )"
+                R"("Flags" : 65536, "Fee" : "24", "Sequence" : 1 })",
+                "offline");
+
+            BEAST_EXPECT(
+                jr.isMember(jss::result) &&
+                jr[jss::result].isMember(jss::tx_json));
+            auto const& tx = jr[jss::result][jss::tx_json];
+            BEAST_EXPECT(!tx.isMember(jss::CounterpartySignature));
+            BEAST_EXPECT(
+                tx.isMember(jss::TxnSignature) &&
+                tx[jss::TxnSignature].asString().length() == 142);
+        }
+    }
+
+    void
+    testBasicMath()
+    {
+        // Test the functions defined in LendingHelpers.h
+        testcase("Basic Math");
+
+        pass();
+    }
+
 public:
     void
     run() override
@@ -2147,6 +2209,9 @@ public:
         testBatchBypassCounterparty();
         testWrongMaxDebtBehavior();
         testLoanPayComputePeriodicPaymentValidRateInvariant();
+
+        testRPC();
+        testBasicMath();
     }
 };
 
