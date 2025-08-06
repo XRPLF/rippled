@@ -23,17 +23,17 @@
 
 #include <string>
 
+extern std::string const smartEscrowFinishTx;
+
+extern std::string const smartEscrowLE;
+
+extern std::string const smartEscrowLE2;
+
 extern std::string const ledgerSqnWasmHex;
 
 extern std::string const allHostFunctionsWasmHex;
 
 extern std::string const deepRecursionHex;
-
-extern std::string const tx_js;
-
-extern std::string const lo_js;
-
-extern std::string const lo_js2;
 
 extern std::string const fibWasmHex;
 

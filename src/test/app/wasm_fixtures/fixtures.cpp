@@ -21,7 +21,7 @@
 
 #include <test/app/wasm_fixtures/fixtures.h>
 
-extern std::string const tx_js = R"({
+extern std::string const smartEscrowFinishTx = R"({
            "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
            "Fee" : "10",
            "Flags" : 2147483648,
@@ -33,7 +33,7 @@ extern std::string const tx_js = R"({
            "TxnSignature" : "30450221008AD5EE48F7F1047813E79C174FE401D023A4B4A7B99AF826E081DB1DFF7B9C510220133F05B7FD3D7D7F163E8C77EE0A49D02619AB6C77CC3487D0095C9B34033C1C",
            "hash" : "74465121372813CBA4C77E31F12E137163F5B2509B16AC1703ECF0DA194B2DD4"
         })";
-extern std::string const lo_js = R"({
+extern std::string const smartEscrowLE = R"({
                "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
                "Amount" : "100000",
                "CancelAfter" : 790297421,
@@ -49,7 +49,7 @@ extern std::string const lo_js = R"({
                "index" : "9BC6631F3EC761CF9BD846D006560E2D57B0A5C91D4570AEB209645B189A702F"
             })";
 
-extern std::string const lo_js2 = R"({
+extern std::string const smartEscrowLE2 = R"({
            "Account" : "rHb9CJAWyB4rj91VRWn96DkukG4bwdty00",
            "Amount" : "100000",
            "CancelAfter" : 790297421,

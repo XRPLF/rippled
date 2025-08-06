@@ -214,8 +214,10 @@ struct Wasm_test : public beast::unit_test::suite
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
         std::string funcName("compare_accountID");
 
-        std::vector<uint8_t> const tx_data(tx_js.begin(), tx_js.end());
-        std::vector<uint8_t> const lo_data(lo_js.begin(), lo_js.end());
+        std::vector<uint8_t> const tx_data(
+            smartEscrowFinishTx.begin(), smartEscrowFinishTx.end());
+        std::vector<uint8_t> const lo_data(
+            smartEscrowLE.begin(), smartEscrowLE.end());
         auto re = runEscrowWasm(
             wasm,
             funcName,
@@ -226,7 +228,8 @@ struct Wasm_test : public beast::unit_test::suite
         if (BEAST_EXPECT(re.has_value()))
             BEAST_EXPECT(re.value().result && (re->cost == 42'212));
 
-        std::vector<uint8_t> const lo_data2(lo_js2.begin(), lo_js2.end());
+        std::vector<uint8_t> const lo_data2(
+            smartEscrowLE2.begin(), smartEscrowLE2.end());
         re = runEscrowWasm(
             wasm,
             funcName,
