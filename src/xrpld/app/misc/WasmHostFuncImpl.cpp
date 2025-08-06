@@ -851,8 +851,9 @@ public:
             int32_t const e =
                 static_cast<uint8_t>((v >> (64 - 10)) & ((1ull << 8) - 1));
             int64_t const m = neg * (v & ((1ull << 54) - 1));
-            x = !m ? Number() : Number(m, e - 97);
-            if (m && (x.exponent() > 80 || x.exponent() < -96))
+            x = !m || (e < 1) ? Number()
+                              : Number(m, e + IOUAmount::minExponent - 1);
+            if (m && (x.exponent() > IOUAmount::maxExponent))
                 return;  // invalid number
             issue_ = IOU;
         }
@@ -873,6 +874,10 @@ public:
 
         *static_cast<Number*>(this) = x;
         good_ = true;
+    }
+
+    Number2() : Number(), good_(true), issue_(IOU)
+    {
     }
 
     Number2(int64_t x) : Number(x), good_(true), issue_(IOU)
@@ -923,8 +928,10 @@ public:
                     return Unexpected(
                         HostFunctionError::FLOAT_COMPUTATION_ERROR);
             }
-            else if (exponent() > 80 || exponent() < -96)
+            else if (exponent() > IOUAmount::maxExponent)
                 return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            else if (exponent() < IOUAmount::minExponent)
+                return Number2().toBytes();
 
             uint64_t absM = mantissa() >= 0 ? mantissa() : -mantissa();
             if (absM > ((1ull << 54) - 1))
@@ -932,7 +939,8 @@ public:
 
             v |= absM;
 
-            int const e = (!mantissa() ? 0 : exponent()) + 97;
+            int const e =
+                (!mantissa() ? 0 : exponent()) - IOUAmount::minExponent + 1;
             v |= ((uint64_t)e) << 54;
         }
         else if (issue_ == MPT)
@@ -954,6 +962,16 @@ public:
         Serializer msg;
         msg.add64(v);
         auto const data = msg.getData();
+
+#ifdef DEBUG_OUTPUT
+        std::cout << "m: " << std::setw(20) << mantissa()
+                  << ", e: " << std::setw(12) << exponent() << ", hex: ";
+        std::cout << std::hex << std::uppercase << std::setfill('0');
+        for (auto const& c : data)
+            std::cout << std::setw(2) << (unsigned)c << " ";
+        std::cout << std::dec << std::setfill(' ') << std::endl;
+#endif
+
         return data;
     }
 
@@ -1045,15 +1063,13 @@ floatFromIntImpl(int64_t x, int32_t mode)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         Number2 num(x);
-        if (!num)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-
         return num.toBytes();
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1066,15 +1082,13 @@ floatFromUintImpl(uint64_t x, int32_t mode)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         Number2 num(x);
-        if (!num)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-
         return num.toBytes();
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1086,8 +1100,6 @@ floatSetImpl(int64_t mantissa, int32_t exponent, int32_t mode)
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 num(mantissa, exponent);
-        if (!num)
-            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         return num.toBytes();
     }
     catch (...)
@@ -1110,9 +1122,10 @@ floatCompareImpl(Slice const& x, Slice const& y)
         return xx < yy ? 2 : (xx == yy ? 0 : 1);
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1134,9 +1147,10 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
         return res.toBytes();
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1157,9 +1171,10 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
         return res.toBytes();
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1180,9 +1195,10 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
         return res.toBytes();
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1213,6 +1229,9 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
+        if (n < 1)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
         SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
@@ -1220,14 +1239,16 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
         Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
         Number2 const res(root(xx, n));
 
         return res.toBytes();
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1235,6 +1256,9 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
+        if (n < 0)
+            return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
+
         SetRound rm(mode);
         if (!rm)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
@@ -1250,9 +1274,10 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
         return res.toBytes();
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1272,9 +1297,10 @@ floatLogImpl(Slice const& x, int32_t mode)
         return res.toBytes();
     }
     catch (...)
-    {
+    {  // LCOV_EXCL_LINE
     }
-    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    return Unexpected(
+        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple
