@@ -90,9 +90,6 @@ public:
     int
     getCacheSize() const;
 
-    int
-    getTrackSize() const;
-
     float
     getHitRate();
 

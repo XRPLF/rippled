@@ -148,29 +148,6 @@ template <
     class Hash,
     class KeyEqual,
     class Mutex>
-inline int
-TaggedCache<
-    Key,
-    T,
-    IsKeyCache,
-    SharedWeakUnionPointer,
-    SharedPointerType,
-    Hash,
-    KeyEqual,
-    Mutex>::getTrackSize() const
-{
-    return size();
-}
-
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class SharedWeakUnionPointer,
-    class SharedPointerType,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
 inline float
 TaggedCache<
     Key,
