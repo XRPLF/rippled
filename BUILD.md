@@ -141,8 +141,8 @@ git init
 git remote add origin git@github.com:XRPLF/conan-center-index.git
 git sparse-checkout init
 git sparse-checkout set recipes/grpc
-git sparse-checkout set recipes/protobuf
-git sparse-checkout set recipes/snappy
+git sparse-checkout add recipes/protobuf
+git sparse-checkout add recipes/snappy
 git sparse-checkout add recipes/soci
 git fetch origin master
 git checkout master
