@@ -7,6 +7,9 @@ Loop: test.jtx test.unit_test
 Loop: xrpld.app xrpld.core
   xrpld.app > xrpld.core
 
+Loop: xrpld.app xrpld.net
+  xrpld.app > xrpld.net
+
 Loop: xrpld.app xrpld.ledger
   xrpld.app > xrpld.ledger
 
