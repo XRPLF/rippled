@@ -77,18 +77,12 @@ runs:
       shell: bash
       run: |
         if conan remote list | grep -q '${{ inputs.conan_remote_name }}'; then
+          echo "Updating Conan remote '${{ inputs.conan_remote_name }}' to ${{ inputs.conan_remote_url }}."
           conan remote update --index 0 --url ${{ inputs.conan_remote_url }} ${{ inputs.conan_remote_name }}
-          echo "Updated Conan remote '${{ inputs.conan_remote_name }}' to ${{ inputs.conan_remote_url }}."
         else
+          echo "Adding new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
           conan remote add --index 0 ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
-          echo "Added new conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
         fi
-    - name: Log into Conan remote
-      shell: bash
-      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
-      run: |
-        conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
-        conan remote list-users
     - name: Install Conan dependencies
       shell: bash
       run: |
@@ -103,8 +97,12 @@ runs:
           ..
     - name: Upload Conan dependencies
       shell: bash
-      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
-      run: conan upload '*' --confirm --check --force --remote ${{ inputs.conan_remote_name }}
+      if: ${{ inputs.conan_remote_url && inputs.conan_remote_username && inputs.conan_remote_password && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
+      run: |
+        echo "Logging into Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
+        conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
+        echo "Uploading dependencies to Conan remote."
+        conan upload '*' --confirm --check --remote ${{ inputs.conan_remote_name }}
     # Set up CMake.
     - name: Configure CMake
       shell: bash
