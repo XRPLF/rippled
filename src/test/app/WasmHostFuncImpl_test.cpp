@@ -1520,15 +1520,15 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(compareKeylet(actual.value(), expected)); \
         }                                                          \
     }
-#define COMPARE_KEYLET_FAIL(hfsFunc, keyletFunc, expected, ...)        \
-    {                                                                  \
-        auto actual = hfs.hfsFunc(__VA_ARGS__);                        \
-        if (BEAST_EXPECT(!actual.has_value()))                         \
-        {                                                              \
-            BEAST_EXPECTS(                                             \
-                actual.error() == expected,                            \
-                std::to_string(static_cast<int32_t>(actual.error()))); \
-        }                                                              \
+#define COMPARE_KEYLET_FAIL(hfsFunc, keyletFunc, expected, ...) \
+    {                                                           \
+        auto actual = hfs.hfsFunc(__VA_ARGS__);                 \
+        if (BEAST_EXPECT(!actual.has_value()))                  \
+        {                                                       \
+            BEAST_EXPECTS(                                      \
+                actual.error() == expected,                     \
+                std::to_string(HferrorToInt(actual.error())));  \
+        }                                                       \
     }
 
         // accountKeylet

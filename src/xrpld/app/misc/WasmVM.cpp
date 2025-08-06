@@ -150,7 +150,7 @@ runEscrowWasm(
     std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
               << std::endl;
 #endif
-    return EscrowResult{ret->result > 0, ret->cost};
+    return EscrowResult{ret->result, ret->cost};
 }
 
 NotTEC
