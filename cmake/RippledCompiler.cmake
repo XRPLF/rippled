@@ -69,9 +69,9 @@ if (MSVC)
         -GS
         -Zc:forScope
       >
-      # dynamic runtime
-      $<$<CONFIG:Debug>:-MDd>
-      $<$<NOT:$<CONFIG:Debug>>:-MD>
+      # static runtime
+      $<$<CONFIG:Debug>:-MTd>
+      $<$<NOT:$<CONFIG:Debug>>:-MT>
       $<$<BOOL:${werr}>:-WX>
       -DOPENSSL_SUPPRESS_DEPRECATED
       )
