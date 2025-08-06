@@ -147,10 +147,19 @@ Patched recipes</h3>
 <p >The recipes in Conan Center occasionally need to be patched for compatibility with the latest version of <code>rippled</code>. We maintain a fork of the Conan Center <a href="https://github.com/XRPLF/conan-center-index/">here</a> containing the patches.</p>
 <p >To ensure our patched recipes are used, you must add our Conan remote at a higher index than the default Conan Center remote, so it is consulted first. You can do this by running:</p>
 <div class="fragment"><div class="line">conan remote add --index 0 xrplf &quot;https://conan.ripplex.io&quot;</div>
-</div><!-- fragment --><p >Alternatively, you can use the <code>conan export</code> command to add the patched recipes that are also (for the time being) located in the <code>external/</code> directory to your local Conan cache:</p>
-<div class="fragment"><div class="line">conan export --version 1.1.10 external/snappy</div>
-<div class="line">conan export --version 4.0.3 external/soci</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md37"></a>
+</div><!-- fragment --><p >Alternatively, you can pull the patched recipes into the repository and use them locally:</p>
+<div class="fragment"><div class="line">cd external</div>
+<div class="line">git init</div>
+<div class="line">git remote add origin git@github.com:XRPLF/conan-center-index.git</div>
+<div class="line">git sparse-checkout init</div>
+<div class="line">git sparse-checkout set recipes/snappy</div>
+<div class="line">git sparse-checkout add recipes/soci</div>
+<div class="line">git fetch origin master</div>
+<div class="line">git checkout master</div>
+<div class="line">conan export --version 1.1.10 external/recipes/snappy</div>
+<div class="line">conan export --version 4.0.3 external/recipes/soci</div>
+</div><!-- fragment --><p >In the case we switch to a newer version of a dependency that still requires a patch, it will be necessary for you to pull in the changes and re-export the updated dependencies with the newer version. However, if we switch to a newer version that no longer requires a patch, no action is required on your part, as the new recipe will be automatically pulled from the official Conan Center.</p>
+<h3><a class="anchor" id="autotoc_md37"></a>
 Conan profile tweaks</h3>
 <h4><a class="anchor" id="autotoc_md38"></a>
 Missing compiler version</h4>
@@ -342,7 +351,7 @@ Conan</h3>
 <p class="startli">Remove all libraries from Conan cache:</p>
 <div class="fragment"><div class="line">conan remove &#39;*&#39;</div>
 </div><!-- fragment --></li>
-<li>Re-run conan export</li>
+<li>Re-run conan export if needed.</li>
 <li>Re-run conan install.</li>
 </ol>
 <h3><a class="anchor" id="autotoc_md53"></a>
