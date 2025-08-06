@@ -159,9 +159,9 @@ TaggedCache<
     KeyEqual,
     Mutex>::getHitRate()
 {
-    auto hits = m_hits.load(std::memory_order_relaxed);
-    auto misses = m_misses.load(std::memory_order_relaxed);
-    float total = float(hits + misses);
+    auto const hits = m_hits.load(std::memory_order_relaxed);
+    auto const misses = m_misses.load(std::memory_order_relaxed);
+    float const total = float(hits + misses);
     return hits * (100.0f / std::max(1.0f, total));
 }
 
@@ -712,8 +712,8 @@ TaggedCache<
     KeyEqual,
     Mutex>::rate() const
 {
-    auto hits = m_hits.load(std::memory_order_relaxed);
-    auto misses = m_misses.load(std::memory_order_relaxed);
+    auto const hits = m_hits.load(std::memory_order_relaxed);
+    auto const misses = m_misses.load(std::memory_order_relaxed);
     auto const tot = hits + misses;
     if (tot == 0)
         return 0.0;
