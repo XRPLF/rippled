@@ -210,12 +210,12 @@ VaultDeposit::doApply()
         auto sleMpt = view().read(keylet::mptoken(mptIssuanceID, account_));
         if (!sleMpt)
         {
-            if (auto const err = MPTokenAuthorize::authorize(
+            if (auto const err = authorizeMPToken(
                     view(),
-                    ctx_.journal,
-                    {.priorBalance = mPriorBalance,
-                     .mptIssuanceID = mptIssuanceID->value(),
-                     .account = account_});
+                    mPriorBalance,
+                    mptIssuanceID->value(),
+                    account_,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -223,15 +223,15 @@ VaultDeposit::doApply()
         // If the vault is private, set the authorized flag for the vault owner
         if (vault->isFlag(tfVaultPrivate))
         {
-            if (auto const err = MPTokenAuthorize::authorize(
+            if (auto const err = authorizeMPToken(
                     view(),
+                    mPriorBalance,              // priorBalance
+                    mptIssuanceID->value(),     // mptIssuanceID
+                    sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
-                    {
-                        .priorBalance = mPriorBalance,
-                        .mptIssuanceID = mptIssuanceID->value(),
-                        .account = sleIssuance->at(sfIssuer),
-                        .holderID = account_,
-                    });
+                    {},       // flags
+                    account_  // holderID
+                );
                 !isTesSuccess(err))
                 return err;
         }
