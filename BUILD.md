@@ -536,7 +536,7 @@ After any updates or changes to dependencies, you may need to do the following:
    conan remove '*'
    ```
 
-3. Re-run [conan export](#export-updated-recipes)
+3. Re-run [conan export](#patched-recipes) if needed.
 4. Re-run [conan install](#build-and-test).
 
 ### `protobuf/port_def.inc` file not found
