@@ -1824,7 +1824,10 @@ class Loan_test : public beast::unit_test::suite
         // The LoanSet json can be created without a counterparty signature, but
         // it is malformed.
         auto createJson = env.json(
-            set(lender, broker.brokerID, principalRequest, startDate),
+            set(lender,
+                broker.brokerID,
+                broker.asset(principalRequest).value(),
+                startDate),
             fee(loanSetFee));
 
         env(createJson, ter(temMALFORMED));
@@ -1868,7 +1871,7 @@ class Loan_test : public beast::unit_test::suite
                 BEAST_EXPECT(types[type] == 1);
             }
         }
-        {
+        auto const loanID = [&]() {
             Json::Value params(Json::objectValue);
             params[jss::account] = lender.human();
             params[jss::type] = "Loan";
@@ -1879,7 +1882,7 @@ class Loan_test : public beast::unit_test::suite
             BEAST_EXPECT(objects.size() == 1);
 
             auto const loan = objects[0u];
-            BEAST_EXPECT(loan[sfAssetsAvailable] == "1000");
+            BEAST_EXPECT(loan[sfAssetsAvailable] == "1000000000");
             BEAST_EXPECT(loan[sfBorrower] == lender.human());
             BEAST_EXPECT(loan[sfCloseInterestRate] == 0);
             BEAST_EXPECT(loan[sfClosePaymentFee] == "0");
@@ -1899,12 +1902,23 @@ class Loan_test : public beast::unit_test::suite
             BEAST_EXPECT(loan[sfPaymentInterval] == 60);
             BEAST_EXPECT(loan[sfPaymentRemaining] == 1);
             BEAST_EXPECT(loan[sfPreviousPaymentDate] == 0);
-            BEAST_EXPECT(loan[sfPrincipalOutstanding] == "1000");
-            BEAST_EXPECT(loan[sfPrincipalRequested] == "1000");
+            BEAST_EXPECT(loan[sfPrincipalOutstanding] == "1000000000");
+            BEAST_EXPECT(loan[sfPrincipalRequested] == "1000000000");
             BEAST_EXPECT(
                 loan[sfStartDate].asUInt() ==
                 startDate.time_since_epoch().count());
-        }
+
+            return loan["index"].asString();
+        }();
+        auto const loanKeylet{keylet::loan(uint256{std::string_view(loanID)})};
+
+        env.close(startDate);
+
+        // Draw the loan
+        env(draw(lender, loanKeylet.key, broker.asset(1000)));
+        env.close();
+        // Make a payment
+        env(pay(lender, loanKeylet.key, broker.asset(1000)));
     }
 
     void
@@ -2028,6 +2042,101 @@ class Loan_test : public beast::unit_test::suite
         env.close();
     }
 
+    void
+    testLoanPayComputePeriodicPaymentValidRateInvariant()
+    {
+        testcase
+            << "LoanPay ripple::detail::computePeriodicPayment : valid rate";
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender)};
+
+        using namespace loan;
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        Number const principalRequest{640562, -5};
+        auto const startDate = env.now() + 60s;
+
+        Number const serviceFee{2462611968};
+        std::uint32_t const numPayments{4294967295};
+
+        auto createJson = env.json(
+            set(borrower, broker.brokerID, principalRequest, startDate),
+            fee(loanSetFee),
+            loanServiceFee(serviceFee),
+            paymentTotal(numPayments),
+            json(sfCounterpartySignature, Json::objectValue));
+
+        createJson["CloseInterestRate"] = 55374;
+        createJson["ClosePaymentFee"] = "3825205248";
+        createJson["GracePeriod"] = 0;
+        createJson["LatePaymentFee"] = "237";
+        createJson["LoanOriginationFee"] = "0";
+        createJson["OverpaymentFee"] = 35167;
+        createJson["OverpaymentInterestRate"] = 1360;
+        createJson["PaymentInterval"] = 727;
+
+        Number const actualPrincipal{6};
+
+        auto const brokerStateBefore =
+            env.le(keylet::loanbroker(broker.brokerID));
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+
+        createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
+        env(createJson, ter(tesSUCCESS));
+        env.close(startDate);
+
+        if (auto const loan = env.le(keylet); BEAST_EXPECT(loan))
+        {
+            // Verify the payment decreased the principal
+            BEAST_EXPECT(loan->at(sfPaymentRemaining) == numPayments);
+            BEAST_EXPECT(loan->at(sfPrincipalRequested) == actualPrincipal);
+            BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == actualPrincipal);
+            BEAST_EXPECT(loan->at(sfAssetsAvailable) == actualPrincipal);
+        }
+
+        auto loanDrawTx = env.json(
+            draw(borrower, keylet.key, STAmount{broker.asset, Number{6}}));
+        env(loanDrawTx, ter(tesSUCCESS));
+        env.close();
+
+        if (auto const loan = env.le(keylet); BEAST_EXPECT(loan))
+        {
+            // Verify the payment decreased the principal
+            BEAST_EXPECT(loan->at(sfPaymentRemaining) == numPayments);
+            BEAST_EXPECT(loan->at(sfPrincipalRequested) == actualPrincipal);
+            BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == actualPrincipal);
+            BEAST_EXPECT(loan->at(sfAssetsAvailable) == actualPrincipal - 6);
+        }
+
+        auto loanPayTx = env.json(
+            pay(borrower, keylet.key, STAmount{broker.asset, serviceFee + 6}));
+        env(loanPayTx, ter(tesSUCCESS));
+        env.close();
+
+        if (auto const loan = env.le(keylet); BEAST_EXPECT(loan))
+        {
+            // Verify the payment decreased the principal
+            BEAST_EXPECT(loan->at(sfPaymentRemaining) == numPayments - 1);
+            BEAST_EXPECT(loan->at(sfPrincipalRequested) == actualPrincipal);
+            BEAST_EXPECT(
+                loan->at(sfPrincipalOutstanding) == actualPrincipal - 1);
+            BEAST_EXPECT(loan->at(sfAssetsAvailable) == actualPrincipal - 6);
+        }
+    }
+
 public:
     void
     run() override
@@ -2037,6 +2146,7 @@ public:
         testLifecycle();
         testBatchBypassCounterparty();
         testWrongMaxDebtBehavior();
+        testLoanPayComputePeriodicPaymentValidRateInvariant();
     }
 };
 

@@ -170,7 +170,7 @@ LoanPay::doApply()
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudoAccount = vaultSle->at(sfAccount);
-    auto const asset = vaultSle->at(sfAsset);
+    auto const asset = *vaultSle->at(sfAsset);
 
     //------------------------------------------------------
     // Loan object state changes

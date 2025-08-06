@@ -153,48 +153,6 @@ loanAccruedInterest(
     std::uint32_t prevPaymentDate,
     std::uint32_t paymentInterval);
 
-struct PeriodicPayment
-{
-    Number interest;
-    Number principal;
-};
-
-template <AssetType A>
-PeriodicPayment
-computePeriodicPaymentParts(
-    A const& asset,
-    Number const& originalPrincipal,
-    Number const& principalOutstanding,
-    Number const& periodicPaymentAmount,
-    Number const& periodicRate,
-    std::uint32_t paymentRemaining)
-{
-    if (paymentRemaining == 1)
-    {
-        // If there's only one payment left, we need to pay off the principal.
-        Number const interest = roundToAsset(
-            asset,
-            periodicPaymentAmount - principalOutstanding,
-            originalPrincipal);
-        return {interest, principalOutstanding};
-    }
-    Number const interest = roundToAsset(
-        asset, principalOutstanding * periodicRate, originalPrincipal);
-    XRPL_ASSERT(
-        interest >= 0,
-        "ripple::detail::computePeriodicPayment : valid interest");
-
-    auto const roundedPayment =
-        roundToAsset(asset, periodicPaymentAmount, originalPrincipal);
-    Number const principal =
-        roundToAsset(asset, roundedPayment - interest, originalPrincipal);
-    XRPL_ASSERT(
-        principal > 0 && principal <= principalOutstanding,
-        "ripple::detail::computePeriodicPayment : valid principal");
-
-    return {interest, principal};
-}
-
 inline Number
 minusManagementFee(Number value, TenthBips32 managementFeeRate)
 {
@@ -283,6 +241,72 @@ loanLatePaymentInterest(
         originalPrincipal);
 }
 
+struct PeriodicPaymentParts
+{
+    Number interest;
+    Number principal;
+};
+
+template <AssetType A>
+PeriodicPaymentParts
+computePeriodicPaymentParts(
+    A const& asset,
+    Number const& originalPrincipal,
+    Number const& principalOutstanding,
+    Number const& periodicPaymentAmount,
+    Number const& periodicRate,
+    std::uint32_t paymentRemaining)
+{
+    if (paymentRemaining == 1)
+    {
+        // If there's only one payment left, we need to pay off the principal.
+        Number const interest = roundToAsset(
+            asset,
+            periodicPaymentAmount - principalOutstanding,
+            originalPrincipal);
+        return {interest, principalOutstanding};
+    }
+    Number const interest = roundToAsset(
+        asset, principalOutstanding * periodicRate, originalPrincipal);
+    XRPL_ASSERT(
+        interest >= 0,
+        "ripple::detail::computePeriodicPayment : valid interest");
+
+    auto const roundedPayment = [&]() {
+        auto roundedPayment =
+            roundToAsset(asset, periodicPaymentAmount, originalPrincipal);
+        if (roundedPayment > interest)
+            return roundedPayment;
+        auto newPayment = roundedPayment;
+        if (asset.native() || !asset.template holds<Issue>())
+        {
+            // integral types, just add one
+            ++newPayment;
+        }
+        else
+        {
+            // Non-integral types: IOU. Add "dust" that will not be lost in
+            // rounding.
+            auto const epsilon = Number{1, originalPrincipal.exponent() - 14};
+            newPayment += epsilon;
+        }
+        roundedPayment = roundToAsset(asset, newPayment, originalPrincipal);
+        XRPL_ASSERT_PARTS(
+            roundedPayment == newPayment,
+            "ripple::computePeriodicPaymentParts",
+            "epsilon preserved in rounding");
+        return roundedPayment;
+    }();
+    Number const principal =
+        roundToAsset(asset, roundedPayment - interest, originalPrincipal);
+    XRPL_ASSERT_PARTS(
+        principal > 0 && principal <= principalOutstanding,
+        "ripple::computePeriodicPaymentParts",
+        "valid principal");
+
+    return {interest, principal};
+}
+
 struct LoanPaymentParts
 {
     Number principalPaid;
@@ -335,7 +359,8 @@ loanComputePaymentParts(
     Number const periodicRate =
         detail::loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(
-        periodicRate > 0, "ripple::loanComputePaymentParts : valid rate");
+        interestRate == 0 || periodicRate > 0,
+        "ripple::loanComputePaymentParts : valid rate");
 
     // Don't round the payment amount. Only round the final computations using
     // it.
@@ -345,7 +370,7 @@ loanComputePaymentParts(
         periodicPaymentAmount > 0,
         "ripple::computePeriodicPayment : valid payment");
 
-    auto const periodic = detail::computePeriodicPaymentParts(
+    auto const periodic = computePeriodicPaymentParts(
         asset,
         originalPrincipalRequested,
         principalOutstandingField,
@@ -514,12 +539,12 @@ loanComputePaymentParts(
     Number totalInterestPaid = 0;
     Number loanValueChange = 0;
 
-    std::optional<detail::PeriodicPayment> future = periodic;
+    std::optional<PeriodicPaymentParts> future = periodic;
     for (int i = 0; i < fullPeriodicPayments; ++i)
     {
         // Only do the work if we need to
         if (!future)
-            future = detail::computePeriodicPaymentParts(
+            future = computePeriodicPaymentParts(
                 asset,
                 originalPrincipalRequested,
                 principalOutstandingField,
