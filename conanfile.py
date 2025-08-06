@@ -24,7 +24,7 @@ class Xrpl(ConanFile):
     }
 
     requires = [
-        'grpc/1.72.0',
+        'grpc/1.50.1',
         'libarchive/3.8.1',
         'nudb/2.0.9',
         'openssl/3.5.2',
@@ -37,7 +37,7 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
-        'protobuf/6.30.1',
+        'protobuf/3.21.12',
     ]
 
     default_options = {
@@ -55,16 +55,6 @@ class Xrpl(ConanFile):
         'date/*:header_only': True,
         'grpc/*:shared': False,
         'grpc/*:secure': True,
-        'grpc/*:codegen': True,
-        'grpc/*:cpp_plugin': True,
-        'grpc/*:csharp_ext': False,
-        'grpc/*:csharp_plugin': False,
-        'grpc/*:node_plugin': False,
-        'grpc/*:objective_c_plugin': False,
-        'grpc/*:php_plugin': False,
-        'grpc/*:python_plugin': False,
-        'grpc/*:ruby_plugin': False,
-        'grpc/*:otel_plugin': False,
         'libarchive/*:shared': False,
         'libarchive/*:with_acl': False,
         'libarchive/*:with_bzip2': False,
@@ -117,7 +107,7 @@ class Xrpl(ConanFile):
         self.requires('boost/1.86.0', force=True, **transitive_headers_opt)
         self.requires('date/3.0.4', **transitive_headers_opt)
         self.requires('lz4/1.10.0', force=True)
-        self.requires('protobuf/6.30.1', force=True)
+        self.requires('protobuf/3.21.12', force=True)
         self.requires('sqlite3/3.49.1', force=True)
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
