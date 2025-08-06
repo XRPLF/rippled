@@ -56,11 +56,18 @@ inputs:
 runs:
   using: composite
   steps:
-    # Set up Conan.
+    # Set up Conan. Note that MacOS and Windows, which are self-hosted runners,
+    # we should overwrite the global.conf file instead of appending to it. On
+    # Linux runners, where we run Docker images, the file is reset on each run
+    # with important defaults.
     - name: Install Conan profile
       shell: bash
       run: |
-        echo "${{ inputs.conan_global_conf }}" >> $(conan config home)/global.conf
+        if [ '${{ inputs.os }}' == 'Linux' ]; then
+          echo "${{ inputs.conan_global_conf }}" >> $(conan config home)/global.conf
+        else
+          echo "${{ inputs.conan_global_conf }}" > $(conan config home)/global.conf
+        fi
         conan config install conan/profiles/default -tf $(conan config home)/profiles/
         echo "Conan profile:"
         conan profile show
