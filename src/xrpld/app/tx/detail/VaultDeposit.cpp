@@ -183,7 +183,7 @@ VaultDeposit::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const assets = ctx_.tx[sfAmount];
+    auto assets = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
@@ -242,17 +242,21 @@ VaultDeposit::doApply()
     XRPL_ASSERT(
         shares.asset() != assets.asset(),
         "ripple::VaultDeposit::doApply : assets are not shares");
-    auto const assetsToTake = sharesToAssetsDeposit(vault, sleIssuance, shares);
-    if (assetsToTake > assets)
     {
-        // LCOV_EXCL_START
-        JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-        return tefINTERNAL;
-        // LCOV_EXCL_STOP
+        auto const assetsToTake =
+            sharesToAssetsDeposit(vault, sleIssuance, shares);
+        if (assetsToTake > assets)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+        assets = assetsToTake;
     }
 
-    vault->at(sfAssetsTotal) += assetsToTake;
-    vault->at(sfAssetsAvailable) += assetsToTake;
+    vault->at(sfAssetsTotal) += assets;
+    vault->at(sfAssetsAvailable) += assets;
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
@@ -262,19 +266,14 @@ VaultDeposit::doApply()
 
     // Transfer assets from depositor to vault.
     if (auto ter = accountSend(
-            view(),
-            account_,
-            vaultAccount,
-            assetsToTake,
-            j_,
-            WaiveTransferFee::Yes))
+            view(), account_, vaultAccount, assets, j_, WaiveTransferFee::Yes))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
             account_,
-            assetsToTake.asset(),
+            assets.asset(),
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
