@@ -5,7 +5,9 @@ import re
 
 
 def update_fixture(project_name, wasm):
-    fixture_name = re.sub(r"_([a-z])", lambda m: m.group(1).upper(), project_name)
+    fixture_name = (
+        re.sub(r"_([a-z])", lambda m: m.group(1).upper(), project_name) + "WasmHex"
+    )
     print(f"Updating fixture: {fixture_name}")
 
     cpp_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "fixtures.cpp"))
@@ -75,15 +77,20 @@ def process_c(project_name):
         os.path.join(os.path.dirname(__file__), f"{project_name}.wasm")
     )
     build_cmd = (
-        f"clang --target=wasm32-unknown-unknown -O3 {project_path} -o {wasm_path}"
+        f"$CC --sysroot=$SYSROOT -I$SYSROOT/include/wasm32-wasi "
+        f"-std=c11 -Os --target=wasm32 -ffunction-sections -fdata-sections -Wl,--gc-sections "
+        f"-g0 -fno-exceptions -fno-threadsafe-statics -fvisibility=default "
+        f"-Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -DNDEBUG "
+        f"--no-standard-libraries -fno-builtin-memset "
+        f"-o {wasm_path} {project_path}"
     )
     try:
         result = subprocess.run(
             build_cmd, shell=True, check=True, capture_output=True, text=True
         )
         print(f"stdout: {result.stdout}")
-        if result.stderr:
-            print(f"stderr: {result.stderr}")
+        # if result.stderr:
+        print(f"stderr: {result.stderr}")
         print(
             f"WASM file for {project_name} has been built with WASI support using clang."
         )
@@ -110,8 +117,8 @@ if __name__ == "__main__":
             if os.path.isdir(os.path.join(os.path.dirname(__file__), d))
         ]
         c_files = [f for f in os.listdir(os.path.dirname(__file__)) if f.endswith(".c")]
-        for d in dirs:
-            process_rust(d)
+        # for d in dirs:
+        #     process_rust(d)
         for c in c_files:
             process_c(c[:-2])
         print("All fixtures have been processed.")

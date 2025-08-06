@@ -57,7 +57,7 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("Wasm fibo");
 
-        auto const ws = boost::algorithm::unhex(fib32Hex);
+        auto const ws = boost::algorithm::unhex(fibWasmHex);
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 
@@ -71,12 +71,12 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("Wasm sha");
 
-        auto const ws = boost::algorithm::unhex(sha512PureHex);
+        auto const ws = boost::algorithm::unhex(sha512PureWasmHex);
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 
         auto const re =
-            engine.run(wasm, "sha512_process", wasmParams(sha512PureHex));
+            engine.run(wasm, "sha512_process", wasmParams(sha512PureWasmHex));
 
         BEAST_EXPECT(
             re.has_value() && (re->result == 34432) && (re->cost == 157'452));
@@ -86,7 +86,7 @@ struct Wasm_test : public beast::unit_test::suite
     testWasmB58()
     {
         testcase("Wasm base58");
-        auto const ws = boost::algorithm::unhex(b58Hex);
+        auto const ws = boost::algorithm::unhex(b58WasmHex);
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 
@@ -95,8 +95,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto const minsz = std::min(
             static_cast<std::uint32_t>(512),
-            static_cast<std::uint32_t>(b58Hex.size()));
-        auto const s = std::string_view(b58Hex.c_str(), minsz);
+            static_cast<std::uint32_t>(b58WasmHex.size()));
+        auto const s = std::string_view(b58WasmHex.c_str(), minsz);
         auto const re = engine.run(wasm, "b58enco", wasmParams(outb, s));
 
         BEAST_EXPECT(re.has_value() && re->result && (re->cost == 3'066'129));
@@ -134,7 +134,7 @@ struct Wasm_test : public beast::unit_test::suite
     {
         testcase("Wasm get ledger sequence");
 
-        auto wasmStr = boost::algorithm::unhex(ledgerSqnHex);
+        auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
         Bytes wasm(wasmStr.begin(), wasmStr.end());
 
         using namespace test::jtx;
@@ -434,7 +434,7 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {
-            auto wasmStr = boost::algorithm::unhex(ledgerSqnHex);
+            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
             Bytes wasm(wasmStr.begin(), wasmStr.end());
             TestLedgerDataProvider ledgerDataProvider(&env);
 
@@ -665,7 +665,7 @@ struct Wasm_test : public beast::unit_test::suite
         //     beast::severities::kTrace};
         Env env{*this};
 
-        auto const wasmStr = boost::algorithm::unhex(codecovTests);
+        auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         std::string const funcName("finish");
         TestHostFunctions hfs(env, 0);

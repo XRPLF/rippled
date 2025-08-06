@@ -1708,7 +1708,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        static auto wasmHex = ledgerSqnHex;
+        static auto wasmHex = ledgerSqnWasmHex;
 
         {
             // featureSmartEscrow disabled
@@ -1884,7 +1884,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        static auto wasmHex = ledgerSqnHex;
+        static auto wasmHex = ledgerSqnWasmHex;
 
         {
             // featureSmartEscrow disabled
@@ -2036,7 +2036,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        auto const& wasmHex = ledgerSqnHex;
+        auto const& wasmHex = ledgerSqnWasmHex;
         std::uint32_t const allowance = 71;
 
         {
@@ -2356,7 +2356,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // TODO: create wasm module for all host functions
-        static auto wasmHex = allKeylets;
+        static auto wasmHex = allKeyletsWasmHex;
 
         Account const alice{"alice"};
         Account const carol{"carol"};
