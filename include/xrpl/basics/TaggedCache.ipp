@@ -213,12 +213,7 @@ TaggedCache<
     KeyEqual,
     Mutex>::reset()
 {
-    for (auto& mutex : partitionLocks_)
-        mutex.lock();
-    m_cache.clear();
-    for (auto& mutex : partitionLocks_)
-        mutex.unlock();
-    m_cache_count.store(0, std::memory_order_relaxed);
+    clear();
     m_hits.store(0, std::memory_order_relaxed);
     m_misses.store(0, std::memory_order_relaxed);
 }
