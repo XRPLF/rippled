@@ -10,12 +10,13 @@ runs:
       if: env.CONAN_URL != ''
       shell: bash
       run: |
-        if conan remote list | grep -q "xrplf"; then
-            conan remote remove xrplf
-            echo "Removed conan remote xrplf"
+        if conan remote list | grep -q 'xrplf'; then
+          conan remote update --index 0 --url ${CONAN_URL} xrplf
+          echo "Updated Conan remote 'xrplf' to ${CONAN_URL}."
+        else
+          conan remote add --index 0 xrplf ${CONAN_URL}
+          echo "Added new conan remote 'xrplf' at ${CONAN_URL}."
         fi
-        conan remote add --index 0 xrplf "${CONAN_URL}"
-        echo "Added conan remote xrplf at ${CONAN_URL}"
     - name: list missing binaries
       id: binaries
       shell: bash

@@ -80,7 +80,7 @@ jobs:
       - name: configure Conan
         shell: bash
         run: |
-          echo "${CONAN_GLOBAL_CONF}" >> $(conan config home)/global.conf
+          echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
       - name: build dependencies
