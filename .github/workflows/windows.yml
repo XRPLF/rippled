@@ -37,8 +37,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - generator: Visual Studio 17 2022
-            runs-on: windows-2022
+          - generator: Visual Studio 17 2019
+            runs-on: [self-hosted, windows-runner-vc2019]
         configuration:
           - type: Release
             tests: true
