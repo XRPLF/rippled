@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <chrono>
 #include <deque>
+#include <format>
 #include <optional>
 #include <sstream>
 
@@ -1726,12 +1727,14 @@ Consensus<Adaptor>::haveConsensus(
                             });
     if (stalled)
     {
-        std::stringstream ss;
-        ss << "Consensus detects as stalled with " << (agree + disagree) << "/"
-           << prevProposers_ << " proposers, and " << result_->disputes.size()
-           << " stalled disputed transactions.";
-        JLOG(j_.error()) << ss.str();
-        CLOG(clog) << ss.str();
+        auto const msg = std::format(
+            "Consensus detects as stalled with {}/{} proposers, and {} stalled "
+            "disputed transactions.",
+            (agree + disagree),
+            prevProposers_,
+            result_->disputes.size());
+        JLOG(j_.error()) << msg;
+        CLOG(clog) << msg;
     }
 
     // Determine if we actually have consensus or not
