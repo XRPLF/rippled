@@ -2,119 +2,204 @@
   "expected_host_calls": [
     {
       "function": "get_ledger_sqn",
-    "parameters": ["buffer_size: 8"]
-  },
-  {
-    "function": "get_parent_ledger_time",
-    "parameters": ["buffer_size: 8"]
-  },
-  {
-    "function": "get_parent_ledger_hash",
-    "parameters": ["buffer_size: 32"]
-  },
-  {
-    "function": "get_tx_field",
-    "parameters": ["field: Account", "buffer_size: 20"]
-  },
-  {
-    "function": "get_tx_field",
-    "parameters": ["field: Fee", "buffer_size: 8"]
-  },
-  {
-    "function": "get_tx_field",
-    "parameters": ["field: Sequence", "buffer_size: 4"]
-  },
-  {
-    "function": "get_tx_field2",
-    "parameters": ["field1: Memos", "field2: MemoData", "buffer_size: 64"]
-  },
-  {
-    "function": "get_tx_field3",
-    "parameters": ["field1: Signers", "field2: Signer", "field3: Account", "buffer_size: 32"]
-  },
-  {
-    "function": "get_tx_field4",
-    "parameters": ["deep field access", "buffer_size: 32"]
-  },
-  {
-    "function": "get_tx_nested_field",
-    "parameters": ["locator: [0x01, 0x00]", "buffer_size: 32"]
-  },
-  {
-    "function": "get_tx_array_len",
-    "parameters": ["field: Signers"]
-  },
-  {
-    "function": "get_tx_array_len",
-    "parameters": ["field: Memos"]
-  },
-  {
-    "function": "get_tx_nested_array_len",
-    "parameters": ["locator: [0x01, 0x00]"]
-  },
-  {
-    "function": "get_current_ledger_obj_field",
-    "parameters": ["field: Balance", "buffer_size: 8"]
-  },
-  {
-    "function": "get_current_ledger_obj_field",
-    "parameters": ["field: Account", "buffer_size: 20"]
-  },
-  {
-    "function": "get_current_ledger_obj_nested_field",
-    "parameters": ["locator: [0x01, 0x00]", "buffer_size: 32"]
-  },
-  {
-    "function": "get_current_ledger_obj_array_len",
-    "parameters": ["field: Signers"]
-  },
-  {
-    "function": "get_current_ledger_obj_nested_array_len",
-    "parameters": ["locator: [0x01, 0x00]"]
-  },
-  {
-    "function": "account_keylet",
-    "parameters": ["account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "buffer_size: 32"]
-  },
-  {
-    "function": "cache_ledger_obj",
-    "parameters": ["keylet: 32 bytes", "cache_num: 0"]
-  },
-  {
-    "function": "account_keylet",
-    "parameters": ["account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "buffer_size: 32"]
-  },
-  {
-    "function": "credential_keylet",
-    "parameters": ["subject, issuer, cred_type", "buffer_size: 32"]
-  },
-  {
-    "function": "escrow_keylet",
-    "parameters": ["account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "sequence: 1000", "buffer_size: 32"]
-  },
-  {
-    "function": "oracle_keylet",
-    "parameters": ["account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "document_id: 42", "buffer_size: 32"]
-  },
-  {
-    "function": "compute_sha512_half",
-    "parameters": ["data: Hello, XRPL WASM world!", "buffer_size: 32"]
-  },
-  {
-    "function": "get_NFT",
-    "parameters": ["account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh", "nft_id: 32 zero bytes", "buffer_size: 256"]
-  },
-  {
-    "function": "trace",
-    "parameters": ["message: Test trace message", "data: payload", "as_hex: 1"]
-  },
-  {
-    "function": "trace_num",
-    "parameters": ["message: Test number trace", "number: 42"]
-  },
-  {
-    "function": "update_data",
-    "parameters": ["data: Updated ledger entry data from WASM test"]
-  }
+      "parameters": [
+        "buffer_size: 8"
+      ]
+    },
+    {
+      "function": "get_parent_ledger_time",
+      "parameters": [
+        "buffer_size: 8"
+      ]
+    },
+    {
+      "function": "get_parent_ledger_hash",
+      "parameters": [
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "get_tx_field",
+      "parameters": [
+        "field: Account",
+        "buffer_size: 20"
+      ]
+    },
+    {
+      "function": "get_tx_field",
+      "parameters": [
+        "field: Fee",
+        "buffer_size: 8"
+      ]
+    },
+    {
+      "function": "get_tx_field",
+      "parameters": [
+        "field: Sequence",
+        "buffer_size: 4"
+      ]
+    },
+    {
+      "function": "get_tx_field2",
+      "parameters": [
+        "field1: Memos",
+        "field2: MemoData",
+        "buffer_size: 64"
+      ]
+    },
+    {
+      "function": "get_tx_field3",
+      "parameters": [
+        "field1: Signers",
+        "field2: Signer",
+        "field3: Account",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "get_tx_field4",
+      "parameters": [
+        "deep field access",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "get_tx_nested_field",
+      "parameters": [
+        "locator: [0x01, 0x00]",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "get_tx_array_len",
+      "parameters": [
+        "field: Signers"
+      ]
+    },
+    {
+      "function": "get_tx_array_len",
+      "parameters": [
+        "field: Memos"
+      ]
+    },
+    {
+      "function": "get_tx_nested_array_len",
+      "parameters": [
+        "locator: [0x01, 0x00]"
+      ]
+    },
+    {
+      "function": "get_current_ledger_obj_field",
+      "parameters": [
+        "field: Balance",
+        "buffer_size: 8"
+      ]
+    },
+    {
+      "function": "get_current_ledger_obj_field",
+      "parameters": [
+        "field: Account",
+        "buffer_size: 20"
+      ]
+    },
+    {
+      "function": "get_current_ledger_obj_nested_field",
+      "parameters": [
+        "locator: [0x01, 0x00]",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "get_current_ledger_obj_array_len",
+      "parameters": [
+        "field: Signers"
+      ]
+    },
+    {
+      "function": "get_current_ledger_obj_nested_array_len",
+      "parameters": [
+        "locator: [0x01, 0x00]"
+      ]
+    },
+    {
+      "function": "account_keylet",
+      "parameters": [
+        "account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "cache_ledger_obj",
+      "parameters": [
+        "keylet: 32 bytes",
+        "cache_num: 0"
+      ]
+    },
+    {
+      "function": "account_keylet",
+      "parameters": [
+        "account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "credential_keylet",
+      "parameters": [
+        "subject, issuer, cred_type",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "escrow_keylet",
+      "parameters": [
+        "account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "sequence: 1000",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "oracle_keylet",
+      "parameters": [
+        "account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "document_id: 42",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "compute_sha512_half",
+      "parameters": [
+        "data: Hello, XRPL WASM world!",
+        "buffer_size: 32"
+      ]
+    },
+    {
+      "function": "get_NFT",
+      "parameters": [
+        "account: rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "nft_id: 32 zero bytes",
+        "buffer_size: 256"
+      ]
+    },
+    {
+      "function": "trace",
+      "parameters": [
+        "message: Test trace message",
+        "data: payload",
+        "as_hex: 1"
+      ]
+    },
+    {
+      "function": "trace_num",
+      "parameters": [
+        "message: Test number trace",
+        "number: 42"
+      ]
+    },
+    {
+      "function": "update_data",
+      "parameters": [
+        "data: Updated ledger entry data from WASM test"
+      ]
+    }
   ]
 }
