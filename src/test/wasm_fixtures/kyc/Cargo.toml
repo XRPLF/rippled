@@ -1,0 +1,12 @@
+[package]
+name = "kyc"
+version = "0.1.0"
+edition = "2024"
+description = "A Smart Escrow that unlocks based on the presence of a certain credential."
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xrpl-std = { git = "https://github.com/ripple/craft.git", branch = "remove-submodules", package = "xrpl-std" }
