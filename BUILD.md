@@ -148,9 +148,11 @@ conan export --version 1.1.10 external/recipes/snappy
 conan export --version 4.0.3 external/recipes/soci
 ```
 
-In the case we switch to a newer version of a dependency, it will be necessary
-for you to pull in the changes and re-export the updated dependencies with the
-newer version.
+In the case we switch to a newer version of a dependency that still requires a
+patch, it will be necessary for you to pull in the changes and re-export the
+updated dependencies with the newer version. However, if we switch to a newer
+version that no longer requires a patch, no action is required on your part, as
+the new recipe will be automatically pulled from the official Conan Center.
 
 ### Conan profile tweaks
 
