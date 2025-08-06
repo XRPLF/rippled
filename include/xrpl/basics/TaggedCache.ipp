@@ -864,7 +864,7 @@ TaggedCache<
         Mutex& partitionLock)
 {
     return std::thread([&, this]() {
-        beast::setCurrentThreadName("sweep-KeyValueCache");
+        beast::setCurrentThreadName("sweep-KVCache");
 
         int cacheRemovals = 0;
         int mapRemovals = 0;
@@ -957,7 +957,7 @@ TaggedCache<
         Mutex& partitionLock)
 {
     return std::thread([&, this]() {
-        beast::setCurrentThreadName("sweep-KeyOnlyCache");
+        beast::setCurrentThreadName("sweep-KCache");
 
         int cacheRemovals = 0;
         int mapRemovals = 0;
