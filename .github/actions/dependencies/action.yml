@@ -9,16 +9,13 @@ runs:
   using: composite
   steps:
     - name: add Conan remote
-      if: env.CONAN_REMOTE_URL != ''
+      if: ${{ env.CONAN_REMOTE_URL != '' }}
       shell: bash
       run: |
-        if conan remote list | grep -q 'xrplf'; then
-          conan remote update --index 0 --url ${{ env.CONAN_REMOTE_URL }} xrplf
-          echo "Updated Conan remote 'xrplf' to ${{ env.CONAN_REMOTE_URL }}."
-        else
-          conan remote add --index 0 xrplf ${{ env.CONAN_REMOTE_URL }}
-          echo "Added new Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
-        fi
+        conan remote list
+        conan remote add --index 0 --force xrplf ${{ env.CONAN_REMOTE_URL }}
+        echo "Added Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
+        conan remote list
     - name: install dependencies
       shell: bash
       run: |
