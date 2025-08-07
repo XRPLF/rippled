@@ -3,6 +3,8 @@ import sys
 import subprocess
 import re
 
+OPT = "-Oz"
+
 
 def update_fixture(project_name, wasm):
     fixture_name = (
@@ -44,10 +46,11 @@ def process_rust(project_name):
     project_path = os.path.abspath(
         os.path.join(os.path.dirname(__file__), project_name)
     )
+    wasm_location = f"target/wasm32-unknown-unknown/release/{project_name}.wasm"
     build_cmd = (
         f"(cd {project_path} "
         f"&& cargo build --target wasm32-unknown-unknown --release "
-        f"&& wasm-opt target/wasm32-unknown-unknown/release/{project_name}.wasm -Oz -o target/wasm32-unknown-unknown/release/{project_name}.wasm"
+        f"&& wasm-opt {wasm_location} {OPT} -o {wasm_location}"
         ")"
     )
     try:
@@ -85,7 +88,7 @@ def process_c(project_name):
         f"$CC --sysroot=$SYSROOT -I$SYSROOT/include/wasm32-wasi "
         f"-O3 -ffast-math --target=wasm32      -fno-exceptions -fno-threadsafe-statics -fvisibility=default -Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -DNDEBUG --no-standard-libraries -fno-builtin-memset "
         f"-o {wasm_path} {project_path}"
-        f"&& wasm-opt {wasm_path} -Oz -o {wasm_path}"
+        f"&& wasm-opt {wasm_path} {OPT} -o {wasm_path}"
     )
     try:
         result = subprocess.run(
