@@ -80,6 +80,7 @@ def process_c(project_name):
         f"$CC --sysroot=$SYSROOT -I$SYSROOT/include/wasm32-wasi "
         f"-O3 -ffast-math --target=wasm32      -fno-exceptions -fno-threadsafe-statics -fvisibility=default -Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -DNDEBUG --no-standard-libraries -fno-builtin-memset "
         f"-o {wasm_path} {project_path}"
+        f"&& wasm-opt {wasm_path} -Oz -o {wasm_path}"
     )
     try:
         result = subprocess.run(
