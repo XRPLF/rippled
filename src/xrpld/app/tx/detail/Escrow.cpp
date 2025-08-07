@@ -1282,11 +1282,10 @@ EscrowFinish::doApply()
         if (re.has_value())
         {
             auto reValue = re.value().result;
-            if (auto const data = ledgerDataProvider.getData();
+            if (auto const& data = ledgerDataProvider.getData();
                 data.has_value())
             {
-                auto const dataValue = *data;
-                slep->setFieldVL(sfData, dataValue);
+                slep->setFieldVL(sfData, *data);
             }
             ctx_.setWasmReturnCode(reValue);
             // TODO: better error handling for this conversion
