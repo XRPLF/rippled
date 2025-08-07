@@ -829,9 +829,11 @@ WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode)
 
 class Number2 : public Number
 {
-    bool good_;
-
+public:
     enum Issue { XRP, MPT, IOU };
+
+protected:
+    bool good_;
     Issue issue_;
 
 public:
@@ -913,6 +915,18 @@ public:
         return good_;
     }
 
+    Issue
+    getIssue() const
+    {
+        return issue_;
+    }
+
+    void
+    setIssue(Issue i)
+    {
+        issue_ = i;
+    }
+
     Expected<Bytes, HostFunctionError>
     toBytes() const
     {
@@ -926,7 +940,8 @@ public:
             {
                 if (exponent() != std::numeric_limits<int>::lowest())
                     return Unexpected(
-                        HostFunctionError::FLOAT_COMPUTATION_ERROR);
+                        HostFunctionError::
+                            FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
             }
             else if (exponent() > IOUAmount::maxExponent)
                 return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
@@ -980,7 +995,7 @@ protected:
     toUInt(unsigned bits) const
     {
         if (bits >= sizeof(uint64_t) * 8)
-            return std::numeric_limits<uint64_t>::max();
+            return std::numeric_limits<uint64_t>::max();  // LCOV_EXCL_LINE
 
         uint64_t maxV = (1ull << bits) - 1;
         uint64_t absM = mantissa() >= 0 ? mantissa() : -mantissa();
@@ -991,8 +1006,9 @@ protected:
         {
             for (int i = 0; i > exponent(); --i)
             {
+                // underflow
                 if (absM < 10)
-                    return std::numeric_limits<uint64_t>::max();  // underflow
+                    return std::numeric_limits<uint64_t>::max();
                 absM /= 10;
             }
         }
@@ -1000,8 +1016,9 @@ protected:
         {
             for (int i = 0; i < exponent(); ++i)
             {
+                // overflow
                 if (absM > maxV / 10)
-                    return std::numeric_limits<uint64_t>::max();  // overflow
+                    return std::numeric_limits<uint64_t>::max();
                 absM *= 10;
             }
         }
@@ -1065,11 +1082,12 @@ floatFromIntImpl(int64_t x, int32_t mode)
         Number2 num(x);
         return num.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1084,11 +1102,12 @@ floatFromUintImpl(uint64_t x, int32_t mode)
         Number2 num(x);
         return num.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1121,11 +1140,12 @@ floatCompareImpl(Slice const& x, Slice const& y)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         return xx < yy ? 2 : (xx == yy ? 0 : 1);
     }
+    // LCOV_EXCL_START
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1144,13 +1164,15 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 res = xx + yy;
+        res.setIssue(xx.getIssue());
         return res.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1168,13 +1190,15 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 res = xx - yy;
+        res.setIssue(xx.getIssue());
         return res.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1192,13 +1216,15 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 res = xx * yy;
+        res.setIssue(xx.getIssue());
         return res.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1216,6 +1242,7 @@ floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 res = xx / yy;
+        res.setIssue(xx.getIssue());
         return res.toBytes();
     }
     catch (...)
@@ -1240,15 +1267,16 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
-        Number2 const res(root(xx, n));
-
+        Number2 res(root(xx, n));
+        res.setIssue(xx.getIssue());
         return res.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1269,15 +1297,14 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
         if (xx == Number() && !n)
             return Unexpected(HostFunctionError::INVALID_PARAMS);
 
-        Number2 const res(power(xx, n, 1));
-
+        Number2 res(power(xx, n, 1));
+        res.setIssue(xx.getIssue());
         return res.toBytes();
     }
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
 }
 
 Expected<Bytes, HostFunctionError>
@@ -1292,15 +1319,17 @@ floatLogImpl(Slice const& x, int32_t mode)
         Number2 xx(x);
         if (!xx)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
-        Number2 const res(lg(xx));
 
+        Number2 res(lg(xx));
+        res.setIssue(xx.getIssue());
         return res.toBytes();
     }
+    // LCOV_EXCL_START
     catch (...)
-    {  // LCOV_EXCL_LINE
+    {
     }
-    return Unexpected(
-        HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
+    return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace ripple
