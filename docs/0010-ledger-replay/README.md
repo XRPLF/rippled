@@ -82,7 +82,9 @@ pattern and the way coroutines are implemented, where every yield saves the spot
 in the code where it left off and every resume jumps back to that spot.
 
 ### Sequence Diagram
+
 ![Sequence diagram](./ledger_replay_sequence.png?raw=true "A successful ledger replay")
 
 ### Class Diagram
+
 ![Class diagram](./ledger_replay_classes.png?raw=true "Ledger replay classes")
