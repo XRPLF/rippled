@@ -1,8 +1,8 @@
 name: Check libXRPL compatibility with Clio
 env:
-  CONAN_URL: https://conan.ripplex.io
-  CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.CONAN_USERNAME }}
-  CONAN_PASSWORD_XRPLF: ${{ secrets.CONAN_TOKEN }}
+  CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
+  CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.CONAN_REMOTE_USERNAME }}
+  CONAN_PASSWORD_XRPLF: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 on:
   pull_request:
     paths:
@@ -49,7 +49,7 @@ jobs:
           conan remote list
           conan remote remove xrplf || true
           # Do not quote the URL. An empty string will be accepted (with a non-fatal warning), but a missing argument will not.
-          conan remote add xrplf ${{ env.CONAN_URL }} --insert 0
+          conan remote add xrplf ${{ env.CONAN_REMOTE_URL }} --insert 0
       - name: Parse new version
         id: version
         shell: bash
