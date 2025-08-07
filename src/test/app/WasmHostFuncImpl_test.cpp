@@ -1953,8 +1953,9 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     Bytes const floatMinus1        =  {0x94, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // -1
     Bytes const float1More         =  {0xD4, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x01};  // 1.000 000 000 000 001
     Bytes const float2             =  {0xD4, 0x87, 0x1A, 0xFD, 0x49, 0x8D, 0x00, 0x00};  // 2
-
     Bytes const float10            =  {0xD4, 0xC3, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // 10
+    Bytes const floatMaxXRP        =  {0x5F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  // 2^62-1
+    Bytes const floatMaxMPT        =  {0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  // 2^62-1
 
     std::string const invalid = "invalid_data";
 
@@ -1977,10 +1978,14 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         std::string msg = "trace float";
 
         auto result = hfs.traceFloat(msg, makeSlice(invalid));
-        BEAST_EXPECT(result && *result > msg.size() + invalid.size());
+        BEAST_EXPECT(
+            result &&
+            *result ==
+                msg.size() + 14 /* error msg size*/ + invalid.size() * 2);
 
         result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
-        BEAST_EXPECT(result && *result > msg.size() + floatMaxExp.size());
+        BEAST_EXPECT(
+            result && *result == msg.size() + 19 /* string represenation*/);
     }
 
     void
@@ -2070,6 +2075,11 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
 
+        result = hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+        BEAST_EXPECT(!result) &&
+            BEAST_EXPECT(
+                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
         result = hfs.floatSet(1, IOUAmount::maxExponent + normalExp + 1, 0);
         BEAST_EXPECT(!result) &&
             BEAST_EXPECT(
@@ -2119,9 +2129,18 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                 result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         result = hfs.floatCompare(makeSlice(float1), makeSlice(invalid));
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        BEAST_EXPECT(
+            !result &&
+            result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+
+        auto x = floatMaxExp;
+        // exp = 81 + 97 = 178
+        x[1] |= 0x80;
+        x[1] &= 0xBF;
+        result = hfs.floatCompare(makeSlice(x), makeSlice(floatMaxExp));
+        BEAST_EXPECT(
+            !result &&
+            result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         result =
             hfs.floatCompare(makeSlice(floatIntMin), makeSlice(floatIntZero));
@@ -2413,6 +2432,11 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
 
+        result = hfs.floatPower(makeSlice(floatMaxIOU), 40000, 0);
+        BEAST_EXPECT(!result) &&
+            BEAST_EXPECT(
+                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
         result = hfs.floatPower(makeSlice(floatMaxIOU), 0, 0);
         BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
 
@@ -2491,6 +2515,81 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testFloatNonIOU()
+    {
+        testcase("Float Xrp+Mpt");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto y = hfs.floatSet(20, 0, 0);
+        if (BEAST_EXPECT(y))
+        {
+            Bytes x(8);
+
+            // XRP
+            memset(x.data(), 0, x.size());
+            x[0] = 0x40;
+            x[7] = 10;
+
+            auto rc = hfs.floatCompare(makeSlice(x), makeSlice(float10));
+            BEAST_EXPECT(rc && *rc == 0);
+
+            auto result = hfs.floatAdd(makeSlice(x), makeSlice(float10), 0);
+            if (BEAST_EXPECT(rc))
+            {
+                rc = hfs.floatCompare(makeSlice(*result), makeSlice(*y));
+                BEAST_EXPECT(rc && *rc == 0);
+            }
+
+            // underflow
+            x[7] = 1;
+            result = hfs.floatDivide(makeSlice(x), makeSlice(float1More), 0);
+            BEAST_EXPECT(
+                !result &&
+                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
+            result = hfs.floatMultiply(
+                makeSlice(floatMaxXRP), makeSlice(floatIntZero), 0);
+            if (BEAST_EXPECT(result))
+            {
+                rc = hfs.floatCompare(
+                    makeSlice(*result), makeSlice(floatIntZero));
+                BEAST_EXPECT(rc && *rc == 0);
+            }
+
+            // overflow
+            result = hfs.floatAdd(makeSlice(floatMaxXRP), makeSlice(float1), 0);
+            BEAST_EXPECT(
+                !result &&
+                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+
+            // MPT
+            memset(x.data(), 0, x.size());
+            x[0] = 0x60;
+            x[7] = 10;
+
+            rc = hfs.floatCompare(makeSlice(x), makeSlice(float10));
+            BEAST_EXPECT(rc && *rc == 0);
+
+            result = hfs.floatAdd(makeSlice(x), makeSlice(float10), 0);
+            BEAST_EXPECT(rc);
+            rc = hfs.floatCompare(makeSlice(*result), makeSlice(*y));
+            BEAST_EXPECT(rc && *rc == 0);
+
+            result = hfs.floatAdd(makeSlice(floatMaxMPT), makeSlice(float1), 0);
+            BEAST_EXPECT(
+                !result &&
+                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
+    }
+
+    void
     testFloats()
     {
         testFloatFromInt();
@@ -2504,6 +2603,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         testFloatRoot();
         testFloatPower();
         testFloatLog();
+        testFloatNonIOU();
         testFloatTrace();
     }
 
@@ -2542,7 +2642,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         testGetNFTSerial();
         testTrace();
         testTraceNum();
-
         testFloats();
     }
 };
