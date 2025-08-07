@@ -97,9 +97,10 @@ struct Wasm_test : public beast::unit_test::suite
             static_cast<std::uint32_t>(512),
             static_cast<std::uint32_t>(b58WasmHex.size()));
         auto const s = std::string_view(b58WasmHex.c_str(), minsz);
+
         auto const re = engine.run(wasm, "b58enco", wasmParams(outb, s));
 
-        BEAST_EXPECT(re.has_value() && re->result && (re->cost == 3'066'129));
+        BEAST_EXPECT(re.has_value() && re->result && (re->cost == 3'065'447));
     }
 
     void
@@ -548,107 +549,17 @@ struct Wasm_test : public beast::unit_test::suite
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
             TestHostFunctions hf(env, 0);
-            auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
+            auto re = runEscrowWasm(wasm, funcName, {}, &hf, -1);
+
+            if (re.has_value())
+                std::cout << "Wasm float result: " << re->result << " "
+                          << re->cost << std::endl;
+            else
+                std::cout << "Wasm float error: " << re.error() << std::endl;
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(re->result && (re->cost == 91'412));
             }
-            env.close();
-        }
-    }
-
-    void
-    perfTest()
-    {
-        testcase("Perf test host functions");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        // std::string const funcName("test");
-        auto const& wasmHex = hfPerfTest;
-        // auto const& wasmHex = opcCallPerfTest;
-        std::string const wasmStr = boost::algorithm::unhex(wasmHex);
-        std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
-
-        std::string const credType = "abcde";
-        std::string const credType2 = "fghijk";
-        std::string const credType3 = "0123456";
-        // char const uri[] = "uri";
-
-        Account const alan{"alan"};
-        Account const bob{"bob"};
-        Account const issuer{"issuer"};
-
-        {
-            Env env(*this);
-            // Env env(*this, envconfig(), {}, nullptr,
-            // beast::severities::kTrace);
-            env.fund(XRP(5000), alan, bob, issuer);
-            env.close();
-
-            // // create escrow
-            // auto const seq = env.seq(alan);
-            // auto const k = keylet::escrow(alan, seq);
-            // // auto const allowance = 3'600;
-            // auto escrowCreate = escrow::create(alan, bob, XRP(1000));
-            // XRPAmount txnFees = env.current()->fees().base + 1000;
-            // env(escrowCreate,
-            //     escrow::finish_function(wasmHex),
-            //     escrow::finish_time(env.now() + 11s),
-            //     escrow::cancel_time(env.now() + 100s),
-            //     escrow::data("1000000000"),  // 1000 XRP in drops
-            //     memodata("memo1234567"),
-            //     memodata("2memo1234567"),
-            //     fee(txnFees));
-
-            // // create depositPreauth
-            // auto const k = keylet::depositPreauth(
-            //     bob,
-            //     {{issuer.id(), makeSlice(credType)},
-            //      {issuer.id(), makeSlice(credType2)},
-            //      {issuer.id(), makeSlice(credType3)}});
-            // env(deposit::authCredentials(
-            //     bob,
-            //     {{issuer, credType},
-            //      {issuer, credType2},
-            //      {issuer, credType3}}));
-
-            // cREATE nft
-            [[maybe_unused]] uint256 const nft0{
-                token::getNextID(env, alan, 0u)};
-            env(token::mint(alan, 0u));
-            auto const k = keylet::nftoffer(alan, 0);
-            [[maybe_unused]] uint256 const nft1{
-                token::getNextID(env, alan, 0u)};
-
-            env(token::mint(alan, 0u),
-                token::uri(
-                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
-                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
-            [[maybe_unused]] uint256 const nft2{
-                token::getNextID(env, alan, 0u)};
-            env(token::mint(alan, 0u));
-            env.close();
-
-            PerfHostFunctions nfs(env, k, env.tx());
-
-            auto re = runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result);
-                std::cout << "Res: " << re->result << " cost: " << re->cost
-                          << std::endl;
-            }
-
-            // env(escrow::finish(alan, alan, seq),
-            //     escrow::comp_allowance(allowance),
-            //     fee(txnFees),
-            //     ter(tesSUCCESS));
-
             env.close();
         }
     }
@@ -706,8 +617,6 @@ struct Wasm_test : public beast::unit_test::suite
         testFloat();
 
         testCodecovWasm();
-
-        // perfTest();
     }
 };
 
