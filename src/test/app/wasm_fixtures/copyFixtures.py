@@ -44,7 +44,12 @@ def process_rust(project_name):
     project_path = os.path.abspath(
         os.path.join(os.path.dirname(__file__), project_name)
     )
-    build_cmd = f"(cd {project_path} && cargo build --target wasm32-unknown-unknown --release && wasm-opt target/wasm32-unknown-unknown/release/{project_name}.wasm -Oz -o target/wasm32-unknown-unknown/release/{project_name}.wasm)"
+    build_cmd = (
+        f"(cd {project_path} "
+        f"&& cargo build --target wasm32-unknown-unknown --release "
+        f"&& wasm-opt target/wasm32-unknown-unknown/release/{project_name}.wasm -Oz -o target/wasm32-unknown-unknown/release/{project_name}.wasm"
+        ")"
+    )
     try:
         result = subprocess.run(
             build_cmd, shell=True, check=True, capture_output=True, text=True

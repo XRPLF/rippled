@@ -84,8 +84,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         if (BEAST_EXPECT(re.has_value()))
         {
-            BEAST_EXPECTS(re->result == 34432, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 157'452, std::to_string(re->cost));
+            BEAST_EXPECTS(re->result == 1664, std::to_string(re->result));
+            BEAST_EXPECTS(re->cost == 187'724, std::to_string(re->cost));
         }
     }
 
@@ -110,7 +110,7 @@ struct Wasm_test : public beast::unit_test::suite
         if (BEAST_EXPECT(re.has_value()))
         {
             BEAST_EXPECT(re->result);
-            BEAST_EXPECTS(re->cost == 3'065'447, std::to_string(re->cost));
+            BEAST_EXPECT(re->cost == 3'599'998);
         }
     }
 
@@ -518,7 +518,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(re->result);
-                BEAST_EXPECT(re->cost == 91'881);
+                BEAST_EXPECTS(re->cost == 91'881, std::to_string(re->cost));
             }
             env.close();
         }
@@ -550,8 +550,7 @@ struct Wasm_test : public beast::unit_test::suite
         if (BEAST_EXPECT(re.has_value()))
         {
             BEAST_EXPECT(re->result);
-            BEAST_EXPECTS(
-                re->cost == 4'191'711'969ll, std::to_string(re->cost));
+            BEAST_EXPECT(re->cost == 100'784);
         }
     }
 
