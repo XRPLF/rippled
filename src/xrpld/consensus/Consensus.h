@@ -1718,11 +1718,13 @@ Consensus<Adaptor>::haveConsensus(
     bool const stalled = haveCloseTimeConsensus_ &&
         !result_->disputes.empty() &&
         std::ranges::all_of(result_->disputes,
-                            [this, &parms](auto const& dispute) {
+                            [this, &parms, &clog](auto const& dispute) {
                                 return dispute.second.stalled(
                                     parms,
                                     mode_.get() == ConsensusMode::proposing,
-                                    peerUnchangedCounter_);
+                                    peerUnchangedCounter_,
+                                    j_,
+                                    clog);
                             });
     if (stalled)
     {
