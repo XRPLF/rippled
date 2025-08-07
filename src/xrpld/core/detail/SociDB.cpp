@@ -25,6 +25,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/SociDB.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/contract.h>
@@ -34,6 +35,8 @@
 #include <soci/sqlite3/soci-sqlite3.h>
 
 #include <memory>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -257,9 +260,17 @@ public:
                 // There is a separate check in `checkpoint` for a valid
                 // connection in the rare case when the DatabaseCon is destroyed
                 // after locking this weak_ptr
-                [wp = std::weak_ptr<Checkpointer>{shared_from_this()}]() {
-                    if (auto self = wp.lock())
-                        self->checkpoint();
+                [wp = std::weak_ptr<Checkpointer>{shared_from_this()},
+                 journal = j_]() {
+                    perf::measureDurationAndLog(
+                        [&]() {
+                            if (auto self = wp.lock())
+                                self->checkpoint();
+                            return true;
+                        },
+                        "WAL",
+                        1s,
+                        journal);
                 }))
         {
             std::lock_guard lock(mutex_);
