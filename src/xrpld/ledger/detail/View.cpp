@@ -2810,12 +2810,12 @@ assetsToSharesDeposit(
     if (assetTotal == 0)
         return STAmount{
             shares.asset(),
-            assets.mantissa(),
-            assets.exponent() + vault->at(sfAssetScale),
-            false};
+            Number(
+                assets.mantissa(), assets.exponent() + vault->at(sfAssetScale))
+                .truncate()};
 
     Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+    shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
 }
 
@@ -2860,7 +2860,7 @@ assetsToSharesWithdraw(
     if (assetTotal == 0)
         return shares;
     Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+    shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
 }
 

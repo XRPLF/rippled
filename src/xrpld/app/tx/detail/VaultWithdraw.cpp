@@ -208,7 +208,7 @@ VaultWithdraw::doApply()
         {
             // LCOV_EXCL_START
             JLOG(j_.error())
-                << "VaultDeposit: would withdraw more than requested.";
+                << "VaultWithdraw: would withdraw more than requested.";
             return tefINTERNAL;
             // LCOV_EXCL_STOP
         }

@@ -185,23 +185,23 @@ VaultClawback::doApply()
             AuthHandling::ahIGNORE_AUTH,
             j_);
         assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
-
-        auto const assetsToWithdraw =
-            sharesToAssetsWithdraw(vault, sleIssuance, shares);
-        if (assetsToWithdraw > assets)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error())
-                << "VaultDeposit: would withdraw more than requested.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-        assets = assetsToWithdraw;
     }
     else
     {
         assets = amount;
         shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+
+        auto const assetsToClawback =
+            sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        if (assetsToClawback > assets)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())
+                << "VaultClawback: would clawback more than requested.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+        assets = assetsToClawback;
     }
 
     // Clamp to maximum.
