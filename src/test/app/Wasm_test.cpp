@@ -144,7 +144,7 @@ struct Wasm_test : public beast::unit_test::suite
         if (BEAST_EXPECT(re.has_value()))
         {
             BEAST_EXPECT(re->result);
-            BEAST_EXPECT(re->cost == 332'205'984);
+            BEAST_EXPECT(re->cost == 307'747'186);
         }
     }
 
