@@ -12,9 +12,9 @@ runs:
       if: ${{ env.CONAN_REMOTE_URL != '' }}
       shell: bash
       run: |
-        conan remote list
+        echo "Adding Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
         conan remote add --index 0 --force xrplf ${{ env.CONAN_REMOTE_URL }}
-        echo "Added Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
+        echo "Listing Conan remotes."
         conan remote list
     - name: install dependencies
       shell: bash
