@@ -91,6 +91,14 @@ public:
         return m_public_key;
     }
 
+    std::string
+    fingerprint() const
+    {
+        return public_key().has_value() ?
+            strHex(public_key()->fingerprint()) :
+            remote_endpoint().to_string();
+    }
+
     std::optional<std::uint16_t>
     listening_port() const override
     {
