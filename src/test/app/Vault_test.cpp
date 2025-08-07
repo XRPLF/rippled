@@ -351,6 +351,36 @@ class Vault_test : public beast::unit_test::suite
                 BEAST_EXPECT(env.balance(depositor, shares) == share(0));
             }
 
+            if (!asset.raw().native() && asset.raw().holds<Issue>())
+            {
+                testcase(prefix + " temporary authorization for 3rd party");
+                env(trust(erin, asset(1000)));
+                env(trust(issuer, asset(0), erin, tfSetfAuth));
+                env(pay(issuer, erin, asset(10)));
+
+                // Erin deposits all in vault, then sends shares to depositor
+                auto tx = vault.deposit(
+                    {.depositor = erin, .id = keylet.key, .amount = asset(10)});
+                env(tx);
+                env(pay(erin, depositor, share(10 * scale)));
+
+                testcase(prefix + " withdraw to authorized 3rd party");
+                // Depositor withdraws shares, destined to Erin
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                tx[sfDestination] = erin.human();
+                env(tx);
+                // Erin returns assets to issuer
+                env(pay(erin, issuer, asset(10)));
+
+                testcase(prefix + " fail to pay to unauthorized 3rd party");
+                env(trust(erin, asset(0)));
+                // Erin has MPToken but is no longer authorized to hold assets
+                env(pay(depositor, erin, share(1)), ter{tecNO_LINE});
+            }
+
             {
                 testcase(prefix + " fail to delete because wrong owner");
                 auto tx = vault.del({.owner = issuer, .id = keylet.key});
@@ -1965,37 +1995,7 @@ class Vault_test : public beast::unit_test::suite
     testWithIOU()
     {
         using namespace test::jtx;
-        /*
-                if (!asset.raw().native() && asset.raw().holds<Issue>())
-                {
-                    testcase(prefix + " temporary authorization for 3rd party");
-                    env(trust(erin, asset(1000)));
-                    env(trust(issuer, asset(0), erin, tfSetfAuth));
-                    env(pay(issuer, erin, asset(10)));
 
-                    // Erin deposits all in vault, then sends shares to
-           depositor auto tx = vault.deposit(
-                        {.depositor = erin, .id = keylet.key, .amount =
-           asset(10)}); env(tx); env(pay(erin, depositor, share(10'000'000)));
-
-                    testcase(prefix + " withdraw to authorized 3rd party");
-                    // Depositor withdraws shares, destined to Erin
-                    tx = vault.withdraw(
-                        {.depositor = depositor,
-                         .id = keylet.key,
-                         .amount = asset(10)});
-                    tx[sfDestination] = erin.human();
-                    env(tx);
-                    // Erin returns assets to issuer
-                    env(pay(erin, issuer, asset(10)));
-
-                    testcase(prefix + " fail to pay to unauthorized 3rd party");
-                    env(trust(erin, asset(0)));
-                    // Erin has MPToken but is no longer authorized to hold
-           assets env(pay(depositor, erin, share(1)), ter{tecNO_LINE});
-                    env.close();
-                }
-        */
         auto testCase =
             [&,
              this](std::function<void(
