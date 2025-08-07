@@ -1,5 +1,5 @@
-typedef long long mint;
-// typedef int mint;
+// typedef long long mint;
+typedef int mint;
 
 mint
 fib(mint n)

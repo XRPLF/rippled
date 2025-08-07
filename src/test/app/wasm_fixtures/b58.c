@@ -21,7 +21,7 @@ deallocate(void* p)
 {
 }
 
-int32_t
+extern int32_t
 b58enco(char* b58, int32_t b58sz, void const* data, int32_t binsz)
 {
     uint8_t const* bin = data;

@@ -78,10 +78,7 @@ def process_c(project_name):
     )
     build_cmd = (
         f"$CC --sysroot=$SYSROOT -I$SYSROOT/include/wasm32-wasi "
-        f"-std=c11 -Os --target=wasm32 -ffunction-sections -fdata-sections -Wl,--gc-sections "
-        f"-g0 -fno-exceptions -fno-threadsafe-statics -fvisibility=default "
-        f"-Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -DNDEBUG "
-        f"--no-standard-libraries -fno-builtin-memset "
+        f"-O3 -ffast-math --target=wasm32      -fno-exceptions -fno-threadsafe-statics -fvisibility=default -Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -DNDEBUG --no-standard-libraries -fno-builtin-memset "
         f"-o {wasm_path} {project_path}"
     )
     try:
