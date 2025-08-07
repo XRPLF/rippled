@@ -23,12 +23,6 @@
 
 #include <string>
 
-extern std::string const smartEscrowFinishTx;
-
-extern std::string const smartEscrowLE;
-
-extern std::string const smartEscrowLE2;
-
 extern std::string const ledgerSqnWasmHex;
 
 extern std::string const allHostFunctionsWasmHex;
