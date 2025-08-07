@@ -360,7 +360,8 @@ public:
         beast::IP::Endpoint const& local_endpoint)
     {
         JLOG(m_journal.trace())
-            << beast::leftw(18) << "Logic connected" << slot->remote_endpoint()
+            << beast::leftw(18)
+            << "Logic connected" << slot->fingerprint()
             << " on local " << local_endpoint;
 
         std::lock_guard _(lock_);
@@ -383,7 +384,7 @@ public:
                     "endpoints do match");
                 JLOG(m_journal.warn())
                     << beast::leftw(18) << "Logic dropping "
-                    << slot->remote_endpoint() << " as self connect";
+                    << slot->fingerprint() << " as self connect";
                 return false;
             }
         }
@@ -399,7 +400,8 @@ public:
     activate(SlotImp::ptr const& slot, PublicKey const& key, bool reserved)
     {
         JLOG(m_journal.debug())
-            << beast::leftw(18) << "Logic handshake " << slot->remote_endpoint()
+            << beast::leftw(18)
+            << "Logic handshake " << slot->fingerprint()
             << " with " << (reserved ? "reserved " : "") << "key " << key;
 
         std::lock_guard _(lock_);
@@ -463,7 +465,7 @@ public:
 
             iter->second.success(m_clock.now());
             JLOG(m_journal.trace()) << beast::leftw(18) << "Logic fixed "
-                                    << slot->remote_endpoint() << " success";
+                                    << slot->fingerprint() << " success";
         }
 
         return Result::success;
@@ -683,7 +685,7 @@ public:
                 auto const& list = t.list();
                 JLOG(m_journal.trace())
                     << beast::leftw(18) << "Logic sending "
-                    << slot->remote_endpoint() << " with " << list.size()
+                    << slot->fingerprint() << " with " << list.size()
                     << ((list.size() == 1) ? " endpoint" : " endpoints");
                 result.push_back(std::make_pair(slot, list));
             }
@@ -796,7 +798,8 @@ public:
         }
 
         JLOG(m_journal.trace())
-            << beast::leftw(18) << "Endpoints from " << slot->remote_endpoint()
+            << beast::leftw(18)
+            << "Endpoints from " << slot->fingerprint()
             << " contained " << list.size()
             << ((list.size() > 1) ? " entries" : " entry");
 
@@ -945,7 +948,7 @@ public:
 
             iter->second.failure(m_clock.now());
             JLOG(m_journal.debug()) << beast::leftw(18) << "Logic fixed "
-                                    << slot->remote_endpoint() << " failed";
+                                    << slot->fingerprint() << " failed";
         }
 
         // Do state specific bookkeeping
@@ -953,7 +956,7 @@ public:
         {
             case Slot::accept:
                 JLOG(m_journal.trace()) << beast::leftw(18) << "Logic accept "
-                                        << slot->remote_endpoint() << " failed";
+                                        << slot->fingerprint() << " failed";
                 break;
 
             case Slot::connect:
@@ -968,12 +971,12 @@ public:
 
             case Slot::active:
                 JLOG(m_journal.trace()) << beast::leftw(18) << "Logic close "
-                                        << slot->remote_endpoint();
+                                        << slot->fingerprint();
                 break;
 
             case Slot::closing:
                 JLOG(m_journal.trace()) << beast::leftw(18) << "Logic finished "
-                                        << slot->remote_endpoint();
+                                        << slot->fingerprint();
                 break;
 
             default:
