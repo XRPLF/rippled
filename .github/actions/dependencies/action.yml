@@ -34,6 +34,7 @@ runs:
     - name: upload dependencies
       #if: ${{ env.CONAN_REMOTE_URL != '' && env.CONAN_REMOTE_USERNAME != '' && env.CONAN_REMOTE_PASSWORD != '' && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
       shell: bash
+      working-directory: ${{ env.build_dir }}
       run: |
         echo "Logging into Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
         conan remote login xrplf "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
