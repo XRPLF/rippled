@@ -118,7 +118,7 @@ struct Wasm_test : public beast::unit_test::suite
     testWasmSP1Verifier()
     {
         testcase("Wasm sp1 zkproof verifier");
-        auto const ws = boost::algorithm::unhex(sp1_wasm);
+        auto const ws = boost::algorithm::unhex(sp1WasmHex);
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 
@@ -135,7 +135,7 @@ struct Wasm_test : public beast::unit_test::suite
     testWasmBG16Verifier()
     {
         testcase("Wasm BG16 zkproof verifier");
-        auto const ws = boost::algorithm::unhex(zkProofHex);
+        auto const ws = boost::algorithm::unhex(zkProofWasmHex);
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 

@@ -35,9 +35,9 @@ extern std::string const b58WasmHex;
 
 extern std::string const sha512PureWasmHex;
 
-extern std::string const zkProofHex;
+extern std::string const zkProofWasmHex;
 
-extern std::string const sp1_wasm;
+extern std::string const sp1WasmHex;
 
 extern std::string const reqNonexistentField;
 
