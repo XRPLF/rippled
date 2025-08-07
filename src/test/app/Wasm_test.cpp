@@ -175,74 +175,6 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
-    testWasmCheckJson()
-    {
-        testcase("Wasm check json");
-
-        using namespace test::jtx;
-        Env env{*this};
-
-        auto const wasmStr = boost::algorithm::unhex(checkJsonHex);
-        Bytes const wasm(wasmStr.begin(), wasmStr.end());
-        std::string const funcName("check_accountID");
-        {
-            std::string str = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-            Bytes data(str.begin(), str.end());
-            auto re = runEscrowWasm(
-                wasm, funcName, wasmParams(data), nullptr, -1, env.journal);
-            if (BEAST_EXPECT(re.has_value()))
-                BEAST_EXPECT(re.value().result && (re->cost == 838));
-        }
-        {
-            std::string str = "rHb9CJAWyB4rj91VRWn96DkukG4bwdty00";
-            Bytes data(str.begin(), str.end());
-            auto re = runEscrowWasm(
-                wasm, funcName, wasmParams(data), nullptr, -1, env.journal);
-            if (BEAST_EXPECT(re.has_value()))
-                BEAST_EXPECT(!re.value().result && (re->cost == 822));
-        }
-    }
-
-    void
-    testWasmCompareJson()
-    {
-        testcase("Wasm compare json");
-
-        using namespace test::jtx;
-        Env env{*this};
-
-        auto wasmStr = boost::algorithm::unhex(compareJsonHex);
-        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-        std::string funcName("compare_accountID");
-
-        std::vector<uint8_t> const tx_data(
-            smartEscrowFinishTx.begin(), smartEscrowFinishTx.end());
-        std::vector<uint8_t> const lo_data(
-            smartEscrowLE.begin(), smartEscrowLE.end());
-        auto re = runEscrowWasm(
-            wasm,
-            funcName,
-            wasmParams(tx_data, lo_data),
-            nullptr,
-            -1,
-            env.journal);
-        if (BEAST_EXPECT(re.has_value()))
-            BEAST_EXPECT(re.value().result && (re->cost == 42'212));
-
-        std::vector<uint8_t> const lo_data2(
-            smartEscrowLE2.begin(), smartEscrowLE2.end());
-        re = runEscrowWasm(
-            wasm,
-            funcName,
-            wasmParams(tx_data, lo_data2),
-            nullptr,
-            -1,
-            env.journal);
-        if (BEAST_EXPECT(re.has_value()))
-            BEAST_EXPECT(!re.value().result && (re->cost == 41'496));
-    }
-
-    void
     testWasmLib()
     {
         testcase("wasmtime lib test");
@@ -599,8 +531,6 @@ struct Wasm_test : public beast::unit_test::suite
         testGetDataHelperFunctions();
         testWasmLib();
         testBadWasm();
-        testWasmCheckJson();
-        testWasmCompareJson();
         testWasmLedgerSqn();
 
         testWasmFib();

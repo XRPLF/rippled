@@ -41,10 +41,6 @@ extern std::string const b58WasmHex;
 
 extern std::string const sha512PureWasmHex;
 
-extern std::string const checkJsonHex;
-
-extern std::string const compareJsonHex;
-
 extern std::string const zkProofHex;
 
 extern std::string const sp1_wasm;
