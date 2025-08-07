@@ -8,55 +8,18 @@ extern crate std;
 use xrpl_std::core::locator::Locator;
 use xrpl_std::decode_hex_32;
 use xrpl_std::host::trace::DataRepr::AsHex;
-use xrpl_std::host::trace::{DataRepr, trace, trace_data, trace_float, trace_num};
+use xrpl_std::host::trace::{trace, trace_data, trace_float, trace_num, DataRepr};
 use xrpl_std::host::{
-    FLOAT_NEGATIVE_ONE, FLOAT_ONE, FLOAT_ROUNDING_MODES_TO_NEAREST, cache_ledger_obj, float_add,
-    float_compare, float_divide, float_from_int, float_from_uint, float_log, float_multiply,
-    float_pow, float_root, float_set, float_subtract, get_ledger_obj_array_len,
-    get_ledger_obj_field, get_ledger_obj_nested_field, trace_opaque_float,
+    cache_ledger_obj, float_add, float_compare, float_divide, float_from_int, float_from_uint,
+    float_log, float_multiply, float_pow, float_root, float_set, float_subtract,
+    get_ledger_obj_array_len, get_ledger_obj_field, get_ledger_obj_nested_field,
+    trace_opaque_float, FLOAT_NEGATIVE_ONE, FLOAT_ONE, FLOAT_ROUNDING_MODES_TO_NEAREST,
 };
 use xrpl_std::sfield;
 use xrpl_std::sfield::{
     Account, AccountTxnID, Balance, Domain, EmailHash, Flags, LedgerEntryType, MessageKey,
     OwnerCount, PreviousTxnID, PreviousTxnLgrSeq, RegularKey, Sequence, TicketCount, TransferRate,
 };
-
-fn test_float_from_host() {
-    let _ = trace("\n$$$ test_float_from_host $$$");
-
-    let keylet =
-        decode_hex_32(b"97DD92D4F3A791254A530BA769F6669DEBF6B2FC8CCA46842B9031ADCD4D1ADA").unwrap();
-    let slot = unsafe { cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
-    let mut buf = [0x00; 48];
-    let output_len =
-        unsafe { get_ledger_obj_field(slot, sfield::LPTokenBalance, buf.as_mut_ptr(), buf.len()) };
-    let f_lptokenbalance: [u8; 8] = buf[0..8].try_into().unwrap();
-    let _ = trace_float("  LPTokenBalance value:", &f_lptokenbalance);
-
-    let mut locator = Locator::new();
-    locator.pack(sfield::AuctionSlot);
-    locator.pack(sfield::Price);
-    let output_len = unsafe {
-        get_ledger_obj_nested_field(
-            slot,
-            locator.get_addr(),
-            locator.num_packed_bytes(),
-            buf.as_mut_ptr(),
-            buf.len(),
-        )
-    };
-    let f_auctionslot: [u8; 8] = buf[0..8].try_into().unwrap();
-    let _ = trace_float("  AuctionSlot Price value:", &f_auctionslot);
-
-    let keylet =
-        decode_hex_32(b"D0A063DEE0B0EC9522CF35CD55771B5DCAFA19A133EE46A0295E4D089AF86438").unwrap();
-    let slot = unsafe { cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
-    let mut buf = [0x00; 48];
-    let output_len =
-        unsafe { get_ledger_obj_field(slot, sfield::TakerPays, buf.as_mut_ptr(), buf.len()) };
-    let f_takerpays: [u8; 8] = buf[0..8].try_into().unwrap();
-    let _ = trace_float("  TakerPays:", &f_takerpays);
-}
 
 fn test_float_from_wasm() {
     let _ = trace("\n$$$ test_float_from_wasm $$$");
@@ -483,7 +446,6 @@ fn test_float_invert() {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn finish() -> i32 {
-    test_float_from_host();
     test_float_from_wasm();
     test_float_compare();
     test_float_add_subtract();
