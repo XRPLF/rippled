@@ -132,14 +132,27 @@ can do this by running:
 conan remote add --index 0 xrplf "https://conan.ripplex.io"
 ```
 
-Alternatively, you can use the `conan export` command to add the patched recipes
-that are also (for the time being) located in the `external/` directory to your
-local Conan cache:
+Alternatively, you can pull the patched recipes into the repository and use them
+locally:
 
 ```bash
-conan export --version 1.1.10 external/snappy
-conan export --version 4.0.3 external/soci
+cd external
+git init
+git remote add origin git@github.com:XRPLF/conan-center-index.git
+git sparse-checkout init
+git sparse-checkout set recipes/snappy
+git sparse-checkout add recipes/soci
+git fetch origin master
+git checkout master
+conan export --version 1.1.10 external/recipes/snappy
+conan export --version 4.0.3 external/recipes/soci
 ```
+
+In the case we switch to a newer version of a dependency that still requires a
+patch, it will be necessary for you to pull in the changes and re-export the
+updated dependencies with the newer version. However, if we switch to a newer
+version that no longer requires a patch, no action is required on your part, as
+the new recipe will be automatically pulled from the official Conan Center.
 
 ### Conan profile tweaks
 
@@ -525,7 +538,7 @@ After any updates or changes to dependencies, you may need to do the following:
    conan remove '*'
    ```
 
-3. Re-run [conan export](#export-updated-recipes)
+3. Re-run [conan export](#patched-recipes) if needed.
 4. Re-run [conan install](#build-and-test).
 
 ### `protobuf/port_def.inc` file not found

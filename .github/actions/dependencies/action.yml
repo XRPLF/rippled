@@ -1,0 +1,46 @@
+name: dependencies
+inputs:
+  configuration:
+    required: true
+# An implicit input is the environment variable `build_dir`.
+runs:
+  using: composite
+  steps:
+    - name: add Conan remote
+      if: env.CONAN_URL != ''
+      shell: bash
+      run: |
+        if conan remote list | grep -q 'xrplf'; then
+          conan remote update --index 0 --url ${CONAN_URL} xrplf
+          echo "Updated Conan remote 'xrplf' to ${CONAN_URL}."
+        else
+          conan remote add --index 0 xrplf ${CONAN_URL}
+          echo "Added new Conan remote 'xrplf' at ${CONAN_URL}."
+        fi
+    - name: list missing binaries
+      id: binaries
+      shell: bash
+      # Print the list of dependencies that would need to be built locally.
+      # A non-empty list means we have "failed" to cache binaries remotely.
+      run: |
+        echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
+    - name: install dependencies
+      shell: bash
+      run: |
+        mkdir ${build_dir}
+        cd ${build_dir}
+        conan install \
+          --output-folder . \
+          --build missing \
+          --options:host "&:tests=True" \
+          --options:host "&:xrpld=True" \
+          --settings:all build_type=${{ inputs.configuration }} \
+          ..
+    - name: upload dependencies
+      if: ${{ env.CONAN_URL != '' && env.CONAN_LOGIN_USERNAME_XRPLF != '' && env.CONAN_PASSWORD_XRPLF != '' && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
+      shell: bash
+      run: |
+        echo "Logging into Conan remote 'xrplf' at ${CONAN_URL}."
+        conan remote login xrplf "${{ env.CONAN_LOGIN_USERNAME_XRPLF }}" --password "${{ env.CONAN_PASSWORD_XRPLF }}"
+        echo "Uploading dependencies for configuration '${{ inputs.configuration }}'."
+        conan upload --all --confirm --remote xrplf . --settings build_type=${{ inputs.configuration }}
