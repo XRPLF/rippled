@@ -172,7 +172,7 @@ public:
     explicit
     operator result_type() noexcept
     {
-        return XXH3_64bits_digest(state_);
+        return retrieveHash();
     }
 };
 

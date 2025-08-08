@@ -20,8 +20,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <xrpl/beast/hash/xxhasher.h>
 #include <xrpl/beast/unit_test.h>
 
-#include "../../../include/xrpl/protocol/digest.h"
-
 namespace beast {
 
 class XXHasher_test : public unit_test::suite
@@ -188,14 +186,31 @@ public:
     testResultTypeCanBeCalledIdempotently()
     {
         testcase("Operator result type doesn't change the internal state");
-        xxhasher hasher1;
+        {
+            xxhasher hasher;
 
-        std::string object{"Hello xxhash"};
-        hasher1(object.data(), object.size());
-        auto xxhashResult1 = static_cast<xxhasher::result_type>(hasher1);
-        auto xxhashResult2 = static_cast<xxhasher::result_type>(hasher1);
+            std::string object{"Hello xxhash"};
+            hasher(object.data(), object.size());
+            auto xxhashResult1 = static_cast<xxhasher::result_type>(hasher);
+            auto xxhashResult2 = static_cast<xxhasher::result_type>(hasher);
 
-        BEAST_EXPECT(xxhashResult1 == xxhashResult2);
+            BEAST_EXPECT(xxhashResult1 == xxhashResult2);
+        }
+        {
+
+            xxhasher hasher;
+
+            std::string object;
+            for (int i = 0; i < 100; i++)
+            {
+                object += "Hello, xxHash!";
+            }
+            hasher(object.data(), object.size());
+            auto xxhashResult1 = hasher.operator xxhasher::result_type();
+            auto xxhashResult2 = hasher.operator xxhasher::result_type();
+
+            BEAST_EXPECT(xxhashResult1 == xxhashResult2);
+        }
     }
 
     void
@@ -210,8 +225,7 @@ public:
         testBigObjectWithSmallAndBigUpdatesWithSeed();
         testBigObjectWithOneUpdateWithoutSeed();
         testBigObjectWithOneUpdateWithSeed();
-        testOperatorResultTypeDoesTheSameAsOtherHashers();
-        testHasherStateStillValidAfterReset();
+        testResultTypeCanBeCalledIdempotently();
     }
 };
 
