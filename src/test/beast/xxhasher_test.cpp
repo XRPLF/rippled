@@ -185,57 +185,17 @@ public:
     }
 
     void
-    testOperatorResultTypeDoesTheSameAsOtherHashers()
+    testResultTypeCanBeCalledIdempotently()
     {
-        testcase("Operator result type does the same as other hashers");
+        testcase("Operator result type doesn't change the internal state");
         xxhasher hasher1;
-        ripple::sha256_hasher hasher2{};
 
         std::string object{"Hello xxhash"};
         hasher1(object.data(), object.size());
-        hasher2(object.data(), object.size());
         auto xxhashResult1 = static_cast<xxhasher::result_type>(hasher1);
         auto xxhashResult2 = static_cast<xxhasher::result_type>(hasher1);
 
-        auto sha256Result1 = static_cast<ripple::sha256_hasher::result_type>(hasher2);
-        auto sha256Result2 = static_cast<ripple::sha256_hasher::result_type>(hasher2);
-
-        auto xxhashChanged = xxhashResult1 == xxhashResult2;
-        auto sha256Changed = sha256Result1 == sha256Result2;
-        BEAST_EXPECT(xxhashChanged == sha256Changed);
-    }
-
-    void
-    testHasherStateStillValidAfterReset()
-    {
-        testcase("Hasher state still valid after reset");
-        {
-            xxhasher hasher1;
-
-            std::string object{"Hello xxhash"};
-            hasher1(object.data(), object.size());
-            auto xxhashResult1 = static_cast<xxhasher::result_type>(hasher1);
-            hasher1(object.data(), object.size());
-            auto xxhashResult2 = static_cast<xxhasher::result_type>(hasher1);
-
-            BEAST_EXPECT(xxhashResult1 == xxhashResult2);
-        }
-        {
-            xxhasher hasher1;
-
-            std::string object;
-            for (int i = 0; i < 100; i++)
-            {
-                object += "Hello, xxHash!";
-            }
-
-            hasher1(object.data(), object.size());
-            auto xxhashResult1 = static_cast<xxhasher::result_type>(hasher1);
-            hasher1(object.data(), object.size());
-            auto xxhashResult2 = static_cast<xxhasher::result_type>(hasher1);
-
-            BEAST_EXPECT(xxhashResult1 == xxhashResult2);
-        }
+        BEAST_EXPECT(xxhashResult1 == xxhashResult2);
     }
 
     void
