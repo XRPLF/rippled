@@ -76,7 +76,7 @@ public:
         return ctx.journal;
     }
 
-    std::optional<Slice> const
+    std::optional<Slice> const&
     getData() const
     {
         return data_;

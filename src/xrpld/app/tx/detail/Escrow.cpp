@@ -1279,14 +1279,15 @@ EscrowFinish::doApply()
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
+
+        if (auto const& data = ledgerDataProvider.getData(); data.has_value())
+        {
+            slep->setFieldVL(sfData, *data);
+        }
+
         if (re.has_value())
         {
             auto reValue = re.value().result;
-            if (auto const& data = ledgerDataProvider.getData();
-                data.has_value())
-            {
-                slep->setFieldVL(sfData, *data);
-            }
             ctx_.setWasmReturnCode(reValue);
             // TODO: better error handling for this conversion
             ctx_.setGasUsed(static_cast<uint32_t>(re.value().cost));
