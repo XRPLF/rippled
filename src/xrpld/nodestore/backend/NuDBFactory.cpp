@@ -68,7 +68,7 @@ public:
         , keyBytes_(keyBytes)
         , burstSize_(burstSize)
         , name_(get(keyValues, "path"))
-        , blockSize_(parseBlockSize(keyValues, journal))
+        , blockSize_(parseBlockSize(name_, keyValues, journal))
         , deletePath_(false)
         , scheduler_(scheduler)
     {
@@ -88,7 +88,7 @@ public:
         , keyBytes_(keyBytes)
         , burstSize_(burstSize)
         , name_(get(keyValues, "path"))
-        , blockSize_(parseBlockSize(keyValues, journal))
+        , blockSize_(parseBlockSize(name_, keyValues, journal))
         , db_(context)
         , deletePath_(false)
         , scheduler_(scheduler)
@@ -116,6 +116,12 @@ public:
     getName() override
     {
         return name_;
+    }
+
+    std::optional<std::size_t>
+    getBlockSize() const override
+    {
+        return blockSize_;
     }
 
     void
@@ -366,9 +372,18 @@ public:
 
 private:
     static std::size_t
-    parseBlockSize(Section const& keyValues, beast::Journal journal)
+    parseBlockSize(
+        std::string const& name,
+        Section const& keyValues,
+        beast::Journal journal)
     {
-        std::size_t blockSize = 4096;  // Default 4K
+        using namespace boost::filesystem;
+        auto const folder = path(name);
+        auto const kp = (folder / "nudb.key").string();
+
+        std::size_t const defaultSize =
+            nudb::block_size(kp);  // Default 4K from NuDB
+        std::size_t blockSize = defaultSize;
         std::string blockSizeStr;
 
         if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
@@ -385,11 +400,10 @@ private:
             if (parsedBlockSize < 4096 || parsedBlockSize > 32768 ||
                 (parsedBlockSize & (parsedBlockSize - 1)) != 0)
             {
-                JLOG(journal.warn())
-                    << "Invalid nudb_block_size: " << parsedBlockSize
-                    << ". Must be power of 2 between 4096 and 32768. Using "
-                       "default 4096.";
-                return 4096;
+                std::stringstream s;
+                s << "Invalid nudb_block_size: " << parsedBlockSize
+                  << ". Must be power of 2 between 4096 and 32768.";
+                Throw<std::runtime_error>(s.str());
             }
 
             JLOG(journal.info())
@@ -399,10 +413,10 @@ private:
         }
         catch (std::exception const& e)
         {
-            JLOG(journal.warn())
-                << "Invalid nudb_block_size value: " << blockSizeStr
-                << ". Using default 4096. Error: " << e.what();
-            return 4096;
+            std::stringstream s;
+            s << "Invalid nudb_block_size value: " << blockSizeStr
+              << ". Error: " << e.what();
+            Throw<std::runtime_error>(s.str());
         }
     }
 };
