@@ -1,0 +1,175 @@
+
+#if !defined(INNER_OBJECT)
+#error "undefined macro: INNER_OBJECT"
+#endif
+
+#if !defined(FIELDS)
+#error "undefined macro: FIELDS"
+#endif
+
+#if !defined(FIELD)
+#error "undefined macro: FIELD"
+#endif
+
+#if !defined(INNER_OBJECT_BEGIN)
+#error "undefined macro: INNER_OBJECT_BEGIN"
+#endif
+
+#if !defined(INNER_OBJECT_END)
+#error "undefined macro: INNER_OBJECT_END"
+#endif
+
+INNER_OBJECT_BEGIN
+
+INNER_OBJECT(sfSignerEntry,
+    FIELDS(
+        FIELD(sfSignerEntry, sfAccount, soeREQUIRED)
+        FIELD(sfSignerEntry, sfSignerWeight, soeREQUIRED)
+        FIELD(sfSignerEntry, sfWalletLocator, soeOPTIONAL)
+    )
+)
+
+INNER_OBJECT(sfSigner,
+    FIELDS(
+        FIELD(sfSigner, sfAccount, soeREQUIRED)
+        FIELD(sfSigner, sfSigningPubKey, soeREQUIRED)
+        FIELD(sfSigner, sfTxnSignature, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfMajority,
+    FIELDS(
+        FIELD(sfMajority, sfAmendment, soeREQUIRED)
+        FIELD(sfMajority, sfCloseTime, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfDisabledValidator,
+    FIELDS(
+        FIELD(sfDisabledValidator, sfPublicKey, soeREQUIRED)
+        FIELD(sfDisabledValidator, sfFirstLedgerSequence, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfNFToken,
+    FIELDS(
+        FIELD(sfNFToken, sfNFTokenID, soeREQUIRED)
+        FIELD(sfNFToken, sfURI, soeOPTIONAL)
+    )
+)
+
+INNER_OBJECT(sfVoteEntry,
+    FIELDS(
+        FIELD(sfVoteEntry, sfAccount, soeREQUIRED)
+        FIELD(sfVoteEntry, sfTradingFee, soeDEFAULT)
+        FIELD(sfVoteEntry, sfVoteWeight, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfAuctionSlot,
+    FIELDS(
+        FIELD(sfAuctionSlot, sfAccount, soeREQUIRED)
+        FIELD(sfAuctionSlot, sfExpiration, soeREQUIRED)
+        FIELD(sfAuctionSlot, sfDiscountedFee, soeDEFAULT)
+        FIELD(sfAuctionSlot, sfPrice, soeREQUIRED)
+        FIELD(sfAuctionSlot, sfAuthAccounts, soeOPTIONAL)
+    )
+)
+
+INNER_OBJECT(sfXChainClaimAttestationCollectionElement,
+    FIELDS(
+        FIELD(sfXChainClaimAttestationCollectionElement, sfAttestationSignerAccount, soeREQUIRED)
+        FIELD(sfXChainClaimAttestationCollectionElement, sfPublicKey, soeREQUIRED)
+        FIELD(sfXChainClaimAttestationCollectionElement, sfSignature, soeREQUIRED)
+        FIELD(sfXChainClaimAttestationCollectionElement, sfAmount, soeREQUIRED)
+        FIELD(sfXChainClaimAttestationCollectionElement, sfAccount, soeREQUIRED)
+        FIELD(sfXChainClaimAttestationCollectionElement, sfAttestationRewardAccount, soeREQUIRED)
+        FIELD(sfXChainClaimAttestationCollectionElement, sfWasLockingChainSend, soeREQUIRED)
+        FIELD(sfXChainClaimAttestationCollectionElement, sfXChainClaimID, soeREQUIRED)
+        FIELD(sfXChainClaimAttestationCollectionElement, sfDestination, soeOPTIONAL)
+    )
+)
+
+INNER_OBJECT(sfXChainCreateAccountAttestationCollectionElement,
+    FIELDS(
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfAttestationSignerAccount, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfPublicKey, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfSignature, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfAmount, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfAccount, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfAttestationRewardAccount, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfWasLockingChainSend, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfXChainAccountCreateCount, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfDestination, soeREQUIRED)
+        FIELD(sfXChainCreateAccountAttestationCollectionElement, sfSignatureReward, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfXChainClaimProofSig,
+    FIELDS(
+        FIELD(sfXChainClaimProofSig, sfAttestationSignerAccount, soeREQUIRED)
+        FIELD(sfXChainClaimProofSig, sfPublicKey, soeREQUIRED)
+        FIELD(sfXChainClaimProofSig, sfAmount, soeREQUIRED)
+        FIELD(sfXChainClaimProofSig, sfAttestationRewardAccount, soeREQUIRED)
+        FIELD(sfXChainClaimProofSig, sfWasLockingChainSend, soeREQUIRED)
+        FIELD(sfXChainClaimProofSig, sfDestination, soeOPTIONAL)
+    )
+)
+
+INNER_OBJECT(sfXChainCreateAccountProofSig,
+    FIELDS(
+        FIELD(sfXChainCreateAccountProofSig, sfAttestationSignerAccount, soeREQUIRED)
+        FIELD(sfXChainCreateAccountProofSig, sfPublicKey, soeREQUIRED)
+        FIELD(sfXChainCreateAccountProofSig, sfAmount, soeREQUIRED)
+        FIELD(sfXChainCreateAccountProofSig, sfSignatureReward, soeREQUIRED)
+        FIELD(sfXChainCreateAccountProofSig, sfAttestationRewardAccount, soeREQUIRED)
+        FIELD(sfXChainCreateAccountProofSig, sfWasLockingChainSend, soeREQUIRED)
+        FIELD(sfXChainCreateAccountProofSig, sfDestination, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfAuthAccount,
+    FIELDS(
+        FIELD(sfAuthAccount, sfAccount, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfPriceData,
+    FIELDS(
+        FIELD(sfPriceData, sfBaseAsset, soeREQUIRED)
+        FIELD(sfPriceData, sfQuoteAsset, soeREQUIRED)
+        FIELD(sfPriceData, sfAssetPrice, soeOPTIONAL)
+        FIELD(sfPriceData, sfScale, soeDEFAULT)
+    )
+)
+
+INNER_OBJECT(sfCredential,
+    FIELDS(
+        FIELD(sfCredential, sfIssuer, soeREQUIRED)
+        FIELD(sfCredential, sfCredentialType, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfPermission,
+    FIELDS(
+        FIELD(sfPermission, sfPermissionValue, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT(sfBatchSigner,
+    FIELDS(
+        FIELD(sfBatchSigner, sfAccount, soeREQUIRED)
+        FIELD(sfBatchSigner, sfSigningPubKey, soeOPTIONAL)
+        FIELD(sfBatchSigner, sfTxnSignature, soeOPTIONAL)
+        FIELD(sfBatchSigner, sfSigners, soeOPTIONAL)
+    )
+)
+
+INNER_OBJECT(sfBook,
+    FIELDS(
+        FIELD(sfBook, sfBookDirectory, soeREQUIRED)
+        FIELD(sfBook, sfBookNode, soeREQUIRED)
+    )
+)
+
+INNER_OBJECT_END
