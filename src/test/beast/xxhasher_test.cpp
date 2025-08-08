@@ -28,7 +28,7 @@ public:
     void
     testWithoutSeed()
     {
-        testcase("Without Seed");
+        testcase("Without seed");
 
         xxhasher hasher{};
 
@@ -43,7 +43,7 @@ public:
     void
     testWithSeed()
     {
-        testcase("With Seed");
+        testcase("With seed");
 
         xxhasher hasher{static_cast<std::uint32_t>(102)};
 
@@ -58,7 +58,7 @@ public:
     void
     testWithTwoSeeds()
     {
-        testcase("With Two Seeds");
+        testcase("With two seeds");
         xxhasher hasher{
             static_cast<std::uint32_t>(102), static_cast<std::uint32_t>(103)};
 
@@ -73,7 +73,7 @@ public:
     void
     testBigObjectWithMultiupleSmallUpdatesWithoutSeed()
     {
-        testcase("Big Object With Multiuple Small Updates Without Seed");
+        testcase("Big object with multiple small updates without seed");
         xxhasher hasher{};
 
         std::string objectToHash{"Hello, xxHash!"};
@@ -90,7 +90,7 @@ public:
     void
     testBigObjectWithMultiupleSmallUpdatesWithSeed()
     {
-        testcase("Big Object With Multiuple Small Updates With Seed");
+        testcase("Big object with multiple small updates with seed");
         xxhasher hasher{static_cast<std::uint32_t>(103)};
 
         std::string objectToHash{"Hello, xxHash!"};
@@ -107,7 +107,7 @@ public:
     void
     testBigObjectWithSmallAndBigUpdatesWithoutSeed()
     {
-        testcase("Big Object With Small And Big Updates Without Seed");
+        testcase("Big object with small and big updates without seed");
         xxhasher hasher{};
 
         std::string objectToHash{"Hello, xxHash!"};
@@ -128,7 +128,7 @@ public:
     void
     testBigObjectWithSmallAndBigUpdatesWithSeed()
     {
-        testcase("Big Object With Small And Big Updates With Seed");
+        testcase("Big object with small and big updates with seed");
         xxhasher hasher{static_cast<std::uint32_t>(103)};
 
         std::string objectToHash{"Hello, xxHash!"};
@@ -149,7 +149,7 @@ public:
     void
     testBigObjectWithOneUpdateWithoutSeed()
     {
-        testcase("Big Object With One Update Without Seed");
+        testcase("Big object with one update without seed");
         xxhasher hasher{};
 
         std::string objectToHash;
@@ -167,7 +167,7 @@ public:
     void
     testBigObjectWithOneUpdateWithSeed()
     {
-        testcase("Big Object With One Update With Seed");
+        testcase("Big object with one update with seed");
         xxhasher hasher{static_cast<std::uint32_t>(103)};
 
         std::string objectToHash;
