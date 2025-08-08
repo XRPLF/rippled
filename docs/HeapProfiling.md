@@ -31,7 +31,7 @@ and header under /opt/local/include:
 
     $ scons clang profile-jemalloc=/opt/local
 
-----------------------
+---
 
 ## Using the jemalloc library from within the code
 
@@ -60,4 +60,3 @@ Linking against the jemalloc library will override
 the system's default `malloc()` and related functions with jemalloc's
 implementation. This is the case even if the code is not instrumented
 to use jemalloc's specific API.
-
