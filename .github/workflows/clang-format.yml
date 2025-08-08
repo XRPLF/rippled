@@ -9,24 +9,25 @@ jobs:
   check:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-24.04
-    env:
-      CLANG_VERSION: 18
+    container: ghcr.io/xrplf/ci/tools-rippled-clang-format
     steps:
+      # For jobs running in containers, $GITHUB_WORKSPACE and ${{ github.workspace }} might not be the
+      # same directory. The actions/checkout step is *supposed* to checkout into $GITHUB_WORKSPACE and
+      # then add it to safe.directory (see instructions at https://github.com/actions/checkout)
+      # but that's apparently not happening for some container images. We can't be sure what is actually
+      # happening, so let's pre-emptively add both directories to safe.directory. There's a
+      # Github issue opened in 2022 and not resolved in 2025 https://github.com/actions/runner/issues/2058 ¯\_(ツ)_/¯
+      - run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git config --global --add safe.directory ${{ github.workspace }}
       - uses: actions/checkout@v4
-      - name: Install clang-format
-        run: |
-          codename=$( lsb_release --codename --short )
-          sudo tee /etc/apt/sources.list.d/llvm.list >/dev/null <<EOF
-          deb http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main
-          deb-src http://apt.llvm.org/${codename}/ llvm-toolchain-${codename}-${CLANG_VERSION} main
-          EOF
-          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add
-          sudo apt-get update
-          sudo apt-get install clang-format-${CLANG_VERSION}
       - name: Format first-party sources
-        run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format-${CLANG_VERSION} -i {} +
+        run: |
+          clang-format --version
+          find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
       - name: Check for differences
         id: assert
+        shell: bash
         run: |
           set -o pipefail
           git diff --exit-code | tee "clang-format.patch"
@@ -58,6 +59,6 @@ jobs:
                in your repo, commit, and push.
         run: |
           echo "${PREAMBLE}"
-          clang-format-${CLANG_VERSION} --version
+          clang-format --version
           echo "${SUGGESTION}"
           exit 1
