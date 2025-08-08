@@ -1448,6 +1448,10 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
         for (auto& t : transactions)
             mTransactions.push_back(std::move(t));
     }
+    if (mTransactions.empty())
+    {
+        return;
+    }
 
     doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {
         XRPL_ASSERT(
