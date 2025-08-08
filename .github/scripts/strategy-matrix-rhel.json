@@ -22,6 +22,12 @@
   "os": [
     {
       "distro": "rhel",
+      "release": "9.4",
+      "compiler_name": "gcc",
+      "compiler_version": "12"
+    },
+    {
+      "distro": "rhel",
       "release": "9.6",
       "compiler_name": "gcc",
       "compiler_version": "13"
@@ -31,6 +37,12 @@
       "release": "9.6",
       "compiler_name": "gcc",
       "compiler_version": "14"
+    },
+    {
+      "distro": "rhel",
+      "release": "9.4",
+      "compiler_name": "clang",
+      "compiler_version": "any"
     },
     {
       "distro": "rhel",
