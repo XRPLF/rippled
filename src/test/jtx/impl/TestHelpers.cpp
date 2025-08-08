@@ -137,9 +137,29 @@ expectLine(
 }
 
 [[nodiscard]] bool
+expectLine(Env& env, AccountID const& account, None const&, Issue const& issue)
+{
+    return !env.le(keylet::line(account, issue));
+}
+
+[[nodiscard]] bool
+expectLine(
+    Env& env,
+    AccountID const& account,
+    None const&,
+    MPTIssue const& mptIssue)
+{
+    return !env.le(keylet::mptoken(mptIssue.getMptID(), account));
+}
+
+[[nodiscard]] bool
 expectLine(Env& env, AccountID const& account, None const& value)
 {
-    return !env.le(keylet::line(account, value.issue));
+    return std::visit(
+        [&](auto const& issue) {
+            return expectLine(env, account, value, issue);
+        },
+        value.asset.value());
 }
 
 [[nodiscard]] bool
