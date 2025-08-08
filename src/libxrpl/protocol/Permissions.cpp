@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/jss.h>
 
@@ -25,11 +26,25 @@ namespace ripple {
 
 Permission::Permission()
 {
+    txFeaturesMap_ = {
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, delegatable, amendments, fields) \
+    {value, std::initializer_list<uint256> amendments},
+
+#include <xrpl/protocol/detail/transactions.macro>
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+    };
+
     delegatableTx_ = {
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) {value, delegatable},
+#define TRANSACTION(tag, value, name, delegatable, amendments, fields) \
+    {value, delegatable},
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -118,7 +133,9 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
 }
 
 bool
-Permission::isDelegatable(std::uint32_t const& permissionValue) const
+Permission::isDelegatable(
+    std::uint32_t const& permissionValue,
+    Rules const& rules) const
 {
     auto const granularPermission =
         getGranularName(static_cast<GranularPermissionType>(permissionValue));
@@ -127,6 +144,27 @@ Permission::isDelegatable(std::uint32_t const& permissionValue) const
         return true;
 
     auto const it = delegatableTx_.find(permissionValue - 1);
+
+    if (rules.enabled(fixDelegateV1_1))
+    {
+        if (it == delegatableTx_.end())
+            return false;
+
+        auto const txFeaturesIt = txFeaturesMap_.find(permissionValue - 1);
+        if (txFeaturesIt == txFeaturesMap_.end())
+            return false;
+
+        // Delegation is not allowed if any required amendment for the
+        // transaction is not enabled.
+        if (std::any_of(
+                txFeaturesIt->second.begin(),
+                txFeaturesIt->second.end(),
+                [&rules](auto const& feature) {
+                    return !rules.enabled(feature);
+                }))
+            return false;
+    }
+
     if (it != delegatableTx_.end() && it->second == Delegation::notDelegatable)
         return false;
 
