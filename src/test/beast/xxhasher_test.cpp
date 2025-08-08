@@ -183,7 +183,7 @@ public:
     }
 
     void
-    testResultTypeCanBeCalledIdempotently()
+    testOperatorResultTypeDoesNotChangeInternalState()
     {
         testcase("Operator result type doesn't change the internal state");
         {
@@ -197,7 +197,6 @@ public:
             BEAST_EXPECT(xxhashResult1 == xxhashResult2);
         }
         {
-
             xxhasher hasher;
 
             std::string object;
@@ -225,7 +224,7 @@ public:
         testBigObjectWithSmallAndBigUpdatesWithSeed();
         testBigObjectWithOneUpdateWithoutSeed();
         testBigObjectWithOneUpdateWithSeed();
-        testResultTypeCanBeCalledIdempotently();
+        testOperatorResultTypeDoesNotChangeInternalState();
     }
 };
 
