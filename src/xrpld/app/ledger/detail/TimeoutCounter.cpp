@@ -55,23 +55,31 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
     JLOG(journal_.debug()) << "Setting timer for " << timerInterval_.count()
                            << "ms";
     timer_.expires_after(timerInterval_);
-    timer_.async_wait(
-        [wptr = pmDowncast()](boost::system::error_code const& ec) {
-            if (ec == boost::asio::error::operation_aborted)
-                return;
-
-            if (auto ptr = wptr.lock())
+    timer_.async_wait([wptr =
+                           pmDowncast()](boost::system::error_code const& ec) {
+        if (auto ptr = wptr.lock())
+        {
+            ScopedLockType sl(ptr->mtx_);
+            if (ec == boost::asio::error::operation_aborted || ptr->skipNext_)
             {
                 JLOG(ptr->journal_.debug())
-                    << "timer: ec: " << ec << " (operation_aborted: "
-                    << boost::asio::error::operation_aborted << " - "
-                    << (ec == boost::asio::error::operation_aborted ? "aborted"
-                                                                    : "other")
-                    << ")";
-                ScopedLockType sl(ptr->mtx_);
-                ptr->queueJob(sl);
+                    << "Aborting setTimer: " << ec
+                    << ", skip: " << (ptr->skipNext_ ? "true" : "false");
+                ptr->skipNext_ = false;
+                return;
             }
-        });
+
+            ptr->queueJob(sl);
+        }
+    });
+}
+
+std::size_t
+TimeoutCounter::cancelTimer(ScopedLockType& sl)
+{
+    auto const ret = timer_.cancel();
+    JLOG(journal_.debug()) << "Cancelled " << ret << " timer(s)";
+    return ret;
 }
 
 void
@@ -108,7 +116,10 @@ TimeoutCounter::invokeOnTimer()
 
     if (!progress_)
     {
-        ++timeouts_;
+        if (deferred_)
+            deferred_ = false;
+        else
+            ++timeouts_;
         JLOG(journal_.debug()) << "Timeout(" << timeouts_ << ") "
                                << " acquiring " << hash_;
         onTimer(false, sl);
