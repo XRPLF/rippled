@@ -117,7 +117,6 @@ class Xrpl(ConanFile):
 
     exports_sources = (
         'CMakeLists.txt',
-        'bin/getRippledInfo',
         'cfg/*',
         'cmake/*',
         'external/*',
