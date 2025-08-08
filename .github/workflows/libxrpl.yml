@@ -46,10 +46,10 @@ jobs:
       - name: Add Conan remote
         shell: bash
         run: |
+          echo "Adding Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
+          conan remote add xrplf ${{ env.CONAN_REMOTE_URL }} --insert 0 --force 
+          echo "Listing Conan remotes."
           conan remote list
-          conan remote remove xrplf || true
-          # Do not quote the URL. An empty string will be accepted (with a non-fatal warning), but a missing argument will not.
-          conan remote add xrplf ${{ env.CONAN_REMOTE_URL }} --insert 0
       - name: Parse new version
         id: version
         shell: bash

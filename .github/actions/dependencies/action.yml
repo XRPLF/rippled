@@ -3,7 +3,7 @@ inputs:
   configuration:
     required: true
 # Implicit inputs are the environment variables `build_dir`, CONAN_REMOTE_URL,
-# CONAN_REMOTE_USERNAME, and CONAN_REMOTE_PASSWORD. The latter three are only
+# CONAN_REMOTE_USERNAME, and CONAN_REMOTE_PASSWORD. The latter two are only
 # used to upload newly built dependencies to the Conan remote.
 runs:
   using: composite
@@ -27,14 +27,12 @@ runs:
           --options:host "&:tests=True" \
           --options:host "&:xrpld=True" \
           --settings:all build_type=${{ inputs.configuration }} \
-          --format=json .. > build.json
+          ..
     - name: upload dependencies
       if: ${{ env.CONAN_REMOTE_URL != '' && env.CONAN_REMOTE_USERNAME != '' && env.CONAN_REMOTE_PASSWORD != '' && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
       shell: bash
-      working-directory: ${{ env.build_dir }}
       run: |
         echo "Logging into Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
         conan remote login xrplf "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
-        echo "Uploading missing dependencies."
-        conan list --graph=build.json --graph-binaries=build --format=json > pkgs.json
-        conan upload --list=pkgs.json --confirm --check --remote xrplf
+        echo "Uploading dependencies."
+        conan upload '*' --confirm --check --remote xrplf
