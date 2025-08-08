@@ -109,9 +109,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac3ffc63a830314ccb7187751260b7573"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#ac3ffc63a830314ccb7187751260b7573">getOurVote</a> () const</td></tr>
 <tr class="memdesc:ac3ffc63a830314ccb7187751260b7573"><td class="mdescLeft">&#160;</td><td class="mdescRight">Our vote on whether the transaction should be included.  <a href="classripple_1_1DisputedTx.html#ac3ffc63a830314ccb7187751260b7573">More...</a><br /></td></tr>
 <tr class="separator:ac3ffc63a830314ccb7187751260b7573"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af909c25e25539ba94a3f87f3ea228416"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#af909c25e25539ba94a3f87f3ea228416">stalled</a> (<a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const &amp;p, bool <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">proposing</a>, int peersUnchanged) const</td></tr>
-<tr class="memdesc:af909c25e25539ba94a3f87f3ea228416"><td class="mdescLeft">&#160;</td><td class="mdescRight">Are we and our peers "stalled" where we probably won't change our vote?  <a href="classripple_1_1DisputedTx.html#af909c25e25539ba94a3f87f3ea228416">More...</a><br /></td></tr>
-<tr class="separator:af909c25e25539ba94a3f87f3ea228416"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab02347b54221f964938ea4ed57180a1b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#ab02347b54221f964938ea4ed57180a1b">stalled</a> (<a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const &amp;p, bool <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">proposing</a>, int peersUnchanged, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog) const</td></tr>
+<tr class="memdesc:ab02347b54221f964938ea4ed57180a1b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Are we and our peers "stalled" where we probably won't change our vote?  <a href="classripple_1_1DisputedTx.html#ab02347b54221f964938ea4ed57180a1b">More...</a><br /></td></tr>
+<tr class="separator:ab02347b54221f964938ea4ed57180a1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a381b39854e9dc11cee3d0e5e2ddffc"><td class="memItemLeft" align="right" valign="top">Tx_t const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a8a381b39854e9dc11cee3d0e5e2ddffc">tx</a> () const</td></tr>
 <tr class="memdesc:a8a381b39854e9dc11cee3d0e5e2ddffc"><td class="mdescLeft">&#160;</td><td class="mdescRight">The disputed transaction.  <a href="classripple_1_1DisputedTx.html#a8a381b39854e9dc11cee3d0e5e2ddffc">More...</a><br /></td></tr>
 <tr class="separator:a8a381b39854e9dc11cee3d0e5e2ddffc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -333,8 +333,8 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 </div>
 </div>
-<a id="af909c25e25539ba94a3f87f3ea228416" name="af909c25e25539ba94a3f87f3ea228416"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af909c25e25539ba94a3f87f3ea228416">&#9670;&#160;</a></span>stalled()</h2>
+<a id="ab02347b54221f964938ea4ed57180a1b" name="ab02347b54221f964938ea4ed57180a1b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab02347b54221f964938ea4ed57180a1b">&#9670;&#160;</a></span>stalled()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -357,7 +357,19 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>peersUnchanged</em>&#160;</td>
+          <td class="paramname"><em>peersUnchanged</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -392,7 +404,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p>The disputed transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00132">132</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00153">153</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -416,7 +428,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p><a class="el" href="classripple_1_1Change.html">Change</a> our vote. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00139">139</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00160">160</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -458,7 +470,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>bool Whether the peer changed its vote. (A new vote counts as a change.) </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00198">198</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00219">219</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -488,7 +500,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00241">241</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00262">262</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -538,7 +550,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether our vote changed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00258">258</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00279">279</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -558,7 +570,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p>JSON representation of dispute, used for debugging. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00321">321</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00342">342</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -585,7 +597,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00181">181</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00202">202</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -611,7 +623,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00182">182</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00203">203</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -637,7 +649,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00183">183</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00204">204</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -663,7 +675,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00184">184</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00205">205</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -689,7 +701,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00185">185</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00206">206</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -717,7 +729,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p>The number of rounds we've gone without changing our vote. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00187">187</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00208">208</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -745,7 +757,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p>Which minimum acceptance percentage phase we are currently in. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00189">189</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00210">210</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -773,7 +785,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p>How long we have been in the current acceptance phase. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00191">191</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00212">212</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -799,7 +811,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00192">192</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00213">213</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>

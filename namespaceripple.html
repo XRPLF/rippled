@@ -38414,7 +38414,7 @@ template&lt;class TIn , class TOut &gt; </div>
     <tr><td class="paramname">currentFinished</td><td>proposers who have validated a ledger after this one </td></tr>
     <tr><td class="paramname">previousAgreeTime</td><td>how long, in milliseconds, it took to agree on the last ledger </td></tr>
     <tr><td class="paramname">currentAgreeTime</td><td>how long, in milliseconds, we've been trying to agree </td></tr>
-    <tr><td class="paramname">stalled</td><td>the network appears to be stalled, where neither we nor our peers have changed their vote on any disputes in a while. This is undesirable, and will cause us to end consensus without 80% agreement. </td></tr>
+    <tr><td class="paramname">stalled</td><td>the network appears to be stalled, where neither we nor our peers have changed their vote on any disputes in a while. This is undesirable, and should be rare, and will cause us to end consensus without 80% agreement. </td></tr>
     <tr><td class="paramname">parms</td><td><a class="el" href="classripple_1_1Consensus.html" title="Generic implementation of consensus algorithm.">Consensus</a> constant parameters </td></tr>
     <tr><td class="paramname">proposing</td><td>whether we should count ourselves </td></tr>
     <tr><td class="paramname">j</td><td>journal for logging </td></tr>

@@ -1406,197 +1406,211 @@ $(function() {
 <div class="line"><a id="l01712" name="l01712"></a><span class="lineno"> 1712</span>                     &lt;&lt; <span class="stringliteral">&quot;, disagree=&quot;</span> &lt;&lt; disagree;</div>
 <div class="line"><a id="l01713" name="l01713"></a><span class="lineno"> 1713</span> </div>
 <div class="line"><a id="l01714" name="l01714"></a><span class="lineno"> 1714</span>    <a class="code hl_struct" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> <span class="keyword">const</span>&amp; parms = adaptor_.parms();</div>
-<div class="line"><a id="l01715" name="l01715"></a><span class="lineno"> 1715</span>    <span class="comment">// Stalling is BAD</span></div>
-<div class="line"><a id="l01716" name="l01716"></a><span class="lineno"> 1716</span>    <span class="keywordtype">bool</span> <span class="keyword">const</span> stalled = haveCloseTimeConsensus_ &amp;&amp;</div>
-<div class="line"><a id="l01717" name="l01717"></a><span class="lineno"> 1717</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/all_any_none_of.html">std::ranges::all_of</a>(result_-&gt;disputes,</div>
-<div class="line"><a id="l01718" name="l01718"></a><span class="lineno"> 1718</span>                            [<span class="keyword">this</span>, &amp;parms](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; dispute) {</div>
-<div class="line"><a id="l01719" name="l01719"></a><span class="lineno"> 1719</span>                                return dispute.second.stalled(</div>
-<div class="line"><a id="l01720" name="l01720"></a><span class="lineno"> 1720</span>                                    parms,</div>
-<div class="line"><a id="l01721" name="l01721"></a><span class="lineno"> 1721</span>                                    mode_.get() == ConsensusMode::proposing,</div>
-<div class="line"><a id="l01722" name="l01722"></a><span class="lineno"> 1722</span>                                    peerUnchangedCounter_);</div>
-<div class="line"><a id="l01723" name="l01723"></a><span class="lineno"> 1723</span>                            });</div>
-<div class="line"><a id="l01724" name="l01724"></a><span class="lineno"> 1724</span> </div>
-<div class="line"><a id="l01725" name="l01725"></a><span class="lineno"> 1725</span>    <span class="comment">// Determine if we actually have consensus or not</span></div>
-<div class="line"><a id="l01726" name="l01726"></a><span class="lineno"> 1726</span>    result_-&gt;state = <a class="code hl_function" href="namespaceripple.html#a3f77b20f5195322940dad13117249178">checkConsensus</a>(</div>
-<div class="line"><a id="l01727" name="l01727"></a><span class="lineno"> 1727</span>        prevProposers_,</div>
-<div class="line"><a id="l01728" name="l01728"></a><span class="lineno"> 1728</span>        agree + disagree,</div>
-<div class="line"><a id="l01729" name="l01729"></a><span class="lineno"> 1729</span>        agree,</div>
-<div class="line"><a id="l01730" name="l01730"></a><span class="lineno"> 1730</span>        currentFinished,</div>
-<div class="line"><a id="l01731" name="l01731"></a><span class="lineno"> 1731</span>        prevRoundTime_,</div>
-<div class="line"><a id="l01732" name="l01732"></a><span class="lineno"> 1732</span>        result_-&gt;roundTime.read(),</div>
-<div class="line"><a id="l01733" name="l01733"></a><span class="lineno"> 1733</span>        stalled,</div>
-<div class="line"><a id="l01734" name="l01734"></a><span class="lineno"> 1734</span>        parms,</div>
-<div class="line"><a id="l01735" name="l01735"></a><span class="lineno"> 1735</span>        mode_.get() == <a class="code hl_enumvalue" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">ConsensusMode::proposing</a>,</div>
-<div class="line"><a id="l01736" name="l01736"></a><span class="lineno"> 1736</span>        j_,</div>
-<div class="line"><a id="l01737" name="l01737"></a><span class="lineno"> 1737</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>);</div>
+<div class="line"><a id="l01715" name="l01715"></a><span class="lineno"> 1715</span>    <span class="comment">// Stalling is BAD. It means that we have a consensus on the close time, so</span></div>
+<div class="line"><a id="l01716" name="l01716"></a><span class="lineno"> 1716</span>    <span class="comment">// peers are talking, but we have disputed transactions that peers are</span></div>
+<div class="line"><a id="l01717" name="l01717"></a><span class="lineno"> 1717</span>    <span class="comment">// unable or unwilling to come to agreement on one way or the other.</span></div>
+<div class="line"><a id="l01718" name="l01718"></a><span class="lineno"> 1718</span>    <span class="keywordtype">bool</span> <span class="keyword">const</span> stalled = haveCloseTimeConsensus_ &amp;&amp;</div>
+<div class="line"><a id="l01719" name="l01719"></a><span class="lineno"> 1719</span>        !result_-&gt;disputes.empty() &amp;&amp;</div>
+<div class="line"><a id="l01720" name="l01720"></a><span class="lineno"> 1720</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/all_any_none_of.html">std::ranges::all_of</a>(result_-&gt;disputes,</div>
+<div class="line"><a id="l01721" name="l01721"></a><span class="lineno"> 1721</span>                            [<span class="keyword">this</span>, &amp;parms, &amp;<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>](<span class="keyword">auto</span> <span class="keyword">const</span>&amp; dispute) {</div>
+<div class="line"><a id="l01722" name="l01722"></a><span class="lineno"> 1722</span>                                return dispute.second.stalled(</div>
+<div class="line"><a id="l01723" name="l01723"></a><span class="lineno"> 1723</span>                                    parms,</div>
+<div class="line"><a id="l01724" name="l01724"></a><span class="lineno"> 1724</span>                                    mode_.get() == ConsensusMode::proposing,</div>
+<div class="line"><a id="l01725" name="l01725"></a><span class="lineno"> 1725</span>                                    peerUnchangedCounter_,</div>
+<div class="line"><a id="l01726" name="l01726"></a><span class="lineno"> 1726</span>                                    j_,</div>
+<div class="line"><a id="l01727" name="l01727"></a><span class="lineno"> 1727</span>                                    clog);</div>
+<div class="line"><a id="l01728" name="l01728"></a><span class="lineno"> 1728</span>                            });</div>
+<div class="line"><a id="l01729" name="l01729"></a><span class="lineno"> 1729</span>    <span class="keywordflow">if</span> (stalled)</div>
+<div class="line"><a id="l01730" name="l01730"></a><span class="lineno"> 1730</span>    {</div>
+<div class="line"><a id="l01731" name="l01731"></a><span class="lineno"> 1731</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> ss;</div>
+<div class="line"><a id="l01732" name="l01732"></a><span class="lineno"> 1732</span>        ss &lt;&lt; <span class="stringliteral">&quot;Consensus detects as stalled with &quot;</span> &lt;&lt; (agree + disagree) &lt;&lt; <span class="stringliteral">&quot;/&quot;</span></div>
+<div class="line"><a id="l01733" name="l01733"></a><span class="lineno"> 1733</span>           &lt;&lt; prevProposers_ &lt;&lt; <span class="stringliteral">&quot; proposers, and &quot;</span> &lt;&lt; result_-&gt;disputes.size()</div>
+<div class="line"><a id="l01734" name="l01734"></a><span class="lineno"> 1734</span>           &lt;&lt; <span class="stringliteral">&quot; stalled disputed transactions.&quot;</span>;</div>
+<div class="line"><a id="l01735" name="l01735"></a><span class="lineno"> 1735</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>();</div>
+<div class="line"><a id="l01736" name="l01736"></a><span class="lineno"> 1736</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>();</div>
+<div class="line"><a id="l01737" name="l01737"></a><span class="lineno"> 1737</span>    }</div>
 <div class="line"><a id="l01738" name="l01738"></a><span class="lineno"> 1738</span> </div>
-<div class="line"><a id="l01739" name="l01739"></a><span class="lineno"> 1739</span>    <span class="keywordflow">if</span> (result_-&gt;state == <a class="code hl_enumvalue" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1abafd7322c6e97d25b6299b5d6fe8920b">ConsensusState::No</a>)</div>
-<div class="line"><a id="l01740" name="l01740"></a><span class="lineno"> 1740</span>    {</div>
-<div class="line"><a id="l01741" name="l01741"></a><span class="lineno"> 1741</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;No consensus. &quot;</span>;</div>
-<div class="line"><a id="l01742" name="l01742"></a><span class="lineno"> 1742</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l01743" name="l01743"></a><span class="lineno"> 1743</span>    }</div>
-<div class="line"><a id="l01744" name="l01744"></a><span class="lineno"> 1744</span> </div>
-<div class="line"><a id="l01745" name="l01745"></a><span class="lineno"> 1745</span>    <span class="comment">// Consensus has taken far too long. Drop out of the round.</span></div>
-<div class="line"><a id="l01746" name="l01746"></a><span class="lineno"> 1746</span>    <span class="keywordflow">if</span> (result_-&gt;state == <a class="code hl_enumvalue" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1a24fe48030f7d3097d5882535b04c3fa8">ConsensusState::Expired</a>)</div>
-<div class="line"><a id="l01747" name="l01747"></a><span class="lineno"> 1747</span>    {</div>
-<div class="line"><a id="l01748" name="l01748"></a><span class="lineno"> 1748</span>        <span class="keyword">static</span> <span class="keyword">auto</span> <span class="keyword">const</span> minimumCounter =</div>
-<div class="line"><a id="l01749" name="l01749"></a><span class="lineno"> 1749</span>            parms.<a class="code hl_variable" href="structripple_1_1ConsensusParms.html#aaf825acb654ae3666751f4c5c2e55e0e">avalancheCutoffs</a>.size() * parms.<a class="code hl_variable" href="structripple_1_1ConsensusParms.html#a3ce38535601e5bc5bb757b66458482e8">avMIN_ROUNDS</a>;</div>
-<div class="line"><a id="l01750" name="l01750"></a><span class="lineno"> 1750</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> ss;</div>
-<div class="line"><a id="l01751" name="l01751"></a><span class="lineno"> 1751</span>        <span class="keywordflow">if</span> (establishCounter_ &lt; minimumCounter)</div>
-<div class="line"><a id="l01752" name="l01752"></a><span class="lineno"> 1752</span>        {</div>
-<div class="line"><a id="l01753" name="l01753"></a><span class="lineno"> 1753</span>            <span class="comment">// If each round of phaseEstablish takes a very long time, we may</span></div>
-<div class="line"><a id="l01754" name="l01754"></a><span class="lineno"> 1754</span>            <span class="comment">// &quot;expire&quot; before we&#39;ve given consensus enough time at each</span></div>
-<div class="line"><a id="l01755" name="l01755"></a><span class="lineno"> 1755</span>            <span class="comment">// avalanche level to actually come to a consensus. In that case,</span></div>
-<div class="line"><a id="l01756" name="l01756"></a><span class="lineno"> 1756</span>            <span class="comment">// keep trying. This should only happen if there are an extremely</span></div>
-<div class="line"><a id="l01757" name="l01757"></a><span class="lineno"> 1757</span>            <span class="comment">// large number of disputes such that each round takes an inordinate</span></div>
-<div class="line"><a id="l01758" name="l01758"></a><span class="lineno"> 1758</span>            <span class="comment">// amount of time.</span></div>
-<div class="line"><a id="l01759" name="l01759"></a><span class="lineno"> 1759</span> </div>
-<div class="line"><a id="l01760" name="l01760"></a><span class="lineno"> 1760</span>            ss &lt;&lt; <span class="stringliteral">&quot;Consensus time has expired in round &quot;</span> &lt;&lt; establishCounter_</div>
-<div class="line"><a id="l01761" name="l01761"></a><span class="lineno"> 1761</span>               &lt;&lt; <span class="stringliteral">&quot;; continue until round &quot;</span> &lt;&lt; minimumCounter &lt;&lt; <span class="stringliteral">&quot;. &quot;</span></div>
-<div class="line"><a id="l01762" name="l01762"></a><span class="lineno"> 1762</span>               &lt;&lt; <a class="code hl_class" href="classJson_1_1Compact.html">Json::Compact</a>{<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<span class="keyword">false</span>)};</div>
-<div class="line"><a id="l01763" name="l01763"></a><span class="lineno"> 1763</span>            JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>();</div>
-<div class="line"><a id="l01764" name="l01764"></a><span class="lineno"> 1764</span>            CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>() &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
-<div class="line"><a id="l01765" name="l01765"></a><span class="lineno"> 1765</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l01766" name="l01766"></a><span class="lineno"> 1766</span>        }</div>
-<div class="line"><a id="l01767" name="l01767"></a><span class="lineno"> 1767</span>        ss &lt;&lt; <span class="stringliteral">&quot;Consensus expired. &quot;</span> &lt;&lt; <a class="code hl_class" href="classJson_1_1Compact.html">Json::Compact</a>{<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<span class="keyword">true</span>)};</div>
-<div class="line"><a id="l01768" name="l01768"></a><span class="lineno"> 1768</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>();</div>
-<div class="line"><a id="l01769" name="l01769"></a><span class="lineno"> 1769</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>() &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
-<div class="line"><a id="l01770" name="l01770"></a><span class="lineno"> 1770</span>        leaveConsensus(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>);</div>
-<div class="line"><a id="l01771" name="l01771"></a><span class="lineno"> 1771</span>    }</div>
-<div class="line"><a id="l01772" name="l01772"></a><span class="lineno"> 1772</span>    <span class="comment">// There is consensus, but we need to track if the network moved on</span></div>
-<div class="line"><a id="l01773" name="l01773"></a><span class="lineno"> 1773</span>    <span class="comment">// without us.</span></div>
-<div class="line"><a id="l01774" name="l01774"></a><span class="lineno"> 1774</span>    <span class="keywordflow">if</span> (result_-&gt;state == <a class="code hl_enumvalue" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1a6978081a12147518207c7512374c5c80">ConsensusState::MovedOn</a>)</div>
-<div class="line"><a id="l01775" name="l01775"></a><span class="lineno"> 1775</span>    {</div>
-<div class="line"><a id="l01776" name="l01776"></a><span class="lineno"> 1776</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;Unable to reach consensus&quot;</span>;</div>
-<div class="line"><a id="l01777" name="l01777"></a><span class="lineno"> 1777</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <a class="code hl_class" href="classJson_1_1Compact.html">Json::Compact</a>{<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<span class="keyword">true</span>)};</div>
-<div class="line"><a id="l01778" name="l01778"></a><span class="lineno"> 1778</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;Unable to reach consensus &quot;</span></div>
-<div class="line"><a id="l01779" name="l01779"></a><span class="lineno"> 1779</span>                   &lt;&lt; <a class="code hl_class" href="classJson_1_1Compact.html">Json::Compact</a>{<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<span class="keyword">true</span>)} &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
-<div class="line"><a id="l01780" name="l01780"></a><span class="lineno"> 1780</span>    }</div>
-<div class="line"><a id="l01781" name="l01781"></a><span class="lineno"> 1781</span> </div>
-<div class="line"><a id="l01782" name="l01782"></a><span class="lineno"> 1782</span>    CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;Consensus has been reached. &quot;</span>;</div>
-<div class="line"><a id="l01783" name="l01783"></a><span class="lineno"> 1783</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a id="l01784" name="l01784"></a><span class="lineno"> 1784</span>}</div>
-<div class="line"><a id="l01785" name="l01785"></a><span class="lineno"> 1785</span> </div>
-<div class="line"><a id="l01786" name="l01786"></a><span class="lineno"> 1786</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Adaptor&gt;</div>
-<div class="line"><a id="l01787" name="l01787"></a><span class="lineno"> 1787</span><span class="keywordtype">void</span></div>
-<div class="line"><a id="l01788" name="l01788"></a><span class="lineno"><a class="line" href="classripple_1_1Consensus.html#a4b9cd1dcf891a027ba7649d2464c81ff"> 1788</a></span><a class="code hl_function" href="classripple_1_1Consensus.html#a4b9cd1dcf891a027ba7649d2464c81ff">Consensus&lt;Adaptor&gt;::leaveConsensus</a>(</div>
-<div class="line"><a id="l01789" name="l01789"></a><span class="lineno"> 1789</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;std::stringstream&gt;</a> <span class="keyword">const</span>&amp; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>)</div>
-<div class="line"><a id="l01790" name="l01790"></a><span class="lineno"> 1790</span>{</div>
-<div class="line"><a id="l01791" name="l01791"></a><span class="lineno"> 1791</span>    <span class="keywordflow">if</span> (mode_.get() == <a class="code hl_enumvalue" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">ConsensusMode::proposing</a>)</div>
-<div class="line"><a id="l01792" name="l01792"></a><span class="lineno"> 1792</span>    {</div>
-<div class="line"><a id="l01793" name="l01793"></a><span class="lineno"> 1793</span>        <span class="keywordflow">if</span> (result_ &amp;&amp; !result_-&gt;position.isBowOut())</div>
-<div class="line"><a id="l01794" name="l01794"></a><span class="lineno"> 1794</span>        {</div>
-<div class="line"><a id="l01795" name="l01795"></a><span class="lineno"> 1795</span>            result_-&gt;position.bowOut(now_);</div>
-<div class="line"><a id="l01796" name="l01796"></a><span class="lineno"> 1796</span>            adaptor_.propose(result_-&gt;position);</div>
-<div class="line"><a id="l01797" name="l01797"></a><span class="lineno"> 1797</span>        }</div>
-<div class="line"><a id="l01798" name="l01798"></a><span class="lineno"> 1798</span> </div>
-<div class="line"><a id="l01799" name="l01799"></a><span class="lineno"> 1799</span>        mode_.set(<a class="code hl_enumvalue" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563eaea5234685f43dcab142e132c0e7be2ce">ConsensusMode::observing</a>, adaptor_);</div>
-<div class="line"><a id="l01800" name="l01800"></a><span class="lineno"> 1800</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a87d6bd59020d94110027dcab3d9e3357">info</a>()) &lt;&lt; <span class="stringliteral">&quot;Bowing out of consensus&quot;</span>;</div>
-<div class="line"><a id="l01801" name="l01801"></a><span class="lineno"> 1801</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;Bowing out of consensus. &quot;</span>;</div>
-<div class="line"><a id="l01802" name="l01802"></a><span class="lineno"> 1802</span>    }</div>
-<div class="line"><a id="l01803" name="l01803"></a><span class="lineno"> 1803</span>}</div>
-<div class="line"><a id="l01804" name="l01804"></a><span class="lineno"> 1804</span> </div>
-<div class="line"><a id="l01805" name="l01805"></a><span class="lineno"> 1805</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Adaptor&gt;</div>
-<div class="line"><a id="l01806" name="l01806"></a><span class="lineno"> 1806</span><span class="keywordtype">void</span></div>
-<div class="line"><a id="l01807" name="l01807"></a><span class="lineno"><a class="line" href="classripple_1_1Consensus.html#a9c7b09f8e8242025e0f1bbc76ce29aad"> 1807</a></span><a class="code hl_function" href="classripple_1_1Consensus.html#a9c7b09f8e8242025e0f1bbc76ce29aad">Consensus&lt;Adaptor&gt;::createDisputes</a>(</div>
-<div class="line"><a id="l01808" name="l01808"></a><span class="lineno"> 1808</span>    <a class="code hl_typedef" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> <span class="keyword">const</span>&amp; o,</div>
-<div class="line"><a id="l01809" name="l01809"></a><span class="lineno"> 1809</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;std::stringstream&gt;</a> <span class="keyword">const</span>&amp; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>)</div>
-<div class="line"><a id="l01810" name="l01810"></a><span class="lineno"> 1810</span>{</div>
-<div class="line"><a id="l01811" name="l01811"></a><span class="lineno"> 1811</span>    <span class="comment">// Cannot create disputes without our stance</span></div>
-<div class="line"><a id="l01812" name="l01812"></a><span class="lineno"> 1812</span>    XRPL_ASSERT(result_, <span class="stringliteral">&quot;ripple::Consensus::createDisputes : result is set&quot;</span>);</div>
-<div class="line"><a id="l01813" name="l01813"></a><span class="lineno"> 1813</span> </div>
-<div class="line"><a id="l01814" name="l01814"></a><span class="lineno"> 1814</span>    <span class="comment">// Only create disputes if this is a new set</span></div>
-<div class="line"><a id="l01815" name="l01815"></a><span class="lineno"> 1815</span>    <span class="keyword">auto</span> <span class="keyword">const</span> emplaced = result_-&gt;compares.emplace(o.id()).second;</div>
-<div class="line"><a id="l01816" name="l01816"></a><span class="lineno"> 1816</span>    CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;createDisputes: new set? &quot;</span> &lt;&lt; !emplaced &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
-<div class="line"><a id="l01817" name="l01817"></a><span class="lineno"> 1817</span>    <span class="keywordflow">if</span> (!emplaced)</div>
-<div class="line"><a id="l01818" name="l01818"></a><span class="lineno"> 1818</span>        <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l01819" name="l01819"></a><span class="lineno"> 1819</span> </div>
-<div class="line"><a id="l01820" name="l01820"></a><span class="lineno"> 1820</span>    <span class="comment">// Nothing to dispute if we agree</span></div>
-<div class="line"><a id="l01821" name="l01821"></a><span class="lineno"> 1821</span>    <span class="keywordflow">if</span> (result_-&gt;txns.id() == o.id())</div>
-<div class="line"><a id="l01822" name="l01822"></a><span class="lineno"> 1822</span>    {</div>
-<div class="line"><a id="l01823" name="l01823"></a><span class="lineno"> 1823</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;both sets are identical. &quot;</span>;</div>
-<div class="line"><a id="l01824" name="l01824"></a><span class="lineno"> 1824</span>        <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l01825" name="l01825"></a><span class="lineno"> 1825</span>    }</div>
-<div class="line"><a id="l01826" name="l01826"></a><span class="lineno"> 1826</span> </div>
-<div class="line"><a id="l01827" name="l01827"></a><span class="lineno"> 1827</span>    CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;comparing existing with new set: &quot;</span> &lt;&lt; result_-&gt;txns.id()</div>
-<div class="line"><a id="l01828" name="l01828"></a><span class="lineno"> 1828</span>               &lt;&lt; <span class="charliteral">&#39;,&#39;</span> &lt;&lt; o.id() &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
-<div class="line"><a id="l01829" name="l01829"></a><span class="lineno"> 1829</span>    JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;createDisputes &quot;</span> &lt;&lt; result_-&gt;txns.id() &lt;&lt; <span class="stringliteral">&quot; to &quot;</span></div>
-<div class="line"><a id="l01830" name="l01830"></a><span class="lineno"> 1830</span>                     &lt;&lt; o.id();</div>
-<div class="line"><a id="l01831" name="l01831"></a><span class="lineno"> 1831</span> </div>
-<div class="line"><a id="l01832" name="l01832"></a><span class="lineno"> 1832</span>    <span class="keyword">auto</span> differences = result_-&gt;txns.compare(o);</div>
+<div class="line"><a id="l01739" name="l01739"></a><span class="lineno"> 1739</span>    <span class="comment">// Determine if we actually have consensus or not</span></div>
+<div class="line"><a id="l01740" name="l01740"></a><span class="lineno"> 1740</span>    result_-&gt;state = <a class="code hl_function" href="namespaceripple.html#a3f77b20f5195322940dad13117249178">checkConsensus</a>(</div>
+<div class="line"><a id="l01741" name="l01741"></a><span class="lineno"> 1741</span>        prevProposers_,</div>
+<div class="line"><a id="l01742" name="l01742"></a><span class="lineno"> 1742</span>        agree + disagree,</div>
+<div class="line"><a id="l01743" name="l01743"></a><span class="lineno"> 1743</span>        agree,</div>
+<div class="line"><a id="l01744" name="l01744"></a><span class="lineno"> 1744</span>        currentFinished,</div>
+<div class="line"><a id="l01745" name="l01745"></a><span class="lineno"> 1745</span>        prevRoundTime_,</div>
+<div class="line"><a id="l01746" name="l01746"></a><span class="lineno"> 1746</span>        result_-&gt;roundTime.read(),</div>
+<div class="line"><a id="l01747" name="l01747"></a><span class="lineno"> 1747</span>        stalled,</div>
+<div class="line"><a id="l01748" name="l01748"></a><span class="lineno"> 1748</span>        parms,</div>
+<div class="line"><a id="l01749" name="l01749"></a><span class="lineno"> 1749</span>        mode_.get() == <a class="code hl_enumvalue" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">ConsensusMode::proposing</a>,</div>
+<div class="line"><a id="l01750" name="l01750"></a><span class="lineno"> 1750</span>        j_,</div>
+<div class="line"><a id="l01751" name="l01751"></a><span class="lineno"> 1751</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>);</div>
+<div class="line"><a id="l01752" name="l01752"></a><span class="lineno"> 1752</span> </div>
+<div class="line"><a id="l01753" name="l01753"></a><span class="lineno"> 1753</span>    <span class="keywordflow">if</span> (result_-&gt;state == <a class="code hl_enumvalue" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1abafd7322c6e97d25b6299b5d6fe8920b">ConsensusState::No</a>)</div>
+<div class="line"><a id="l01754" name="l01754"></a><span class="lineno"> 1754</span>    {</div>
+<div class="line"><a id="l01755" name="l01755"></a><span class="lineno"> 1755</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;No consensus. &quot;</span>;</div>
+<div class="line"><a id="l01756" name="l01756"></a><span class="lineno"> 1756</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l01757" name="l01757"></a><span class="lineno"> 1757</span>    }</div>
+<div class="line"><a id="l01758" name="l01758"></a><span class="lineno"> 1758</span> </div>
+<div class="line"><a id="l01759" name="l01759"></a><span class="lineno"> 1759</span>    <span class="comment">// Consensus has taken far too long. Drop out of the round.</span></div>
+<div class="line"><a id="l01760" name="l01760"></a><span class="lineno"> 1760</span>    <span class="keywordflow">if</span> (result_-&gt;state == <a class="code hl_enumvalue" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1a24fe48030f7d3097d5882535b04c3fa8">ConsensusState::Expired</a>)</div>
+<div class="line"><a id="l01761" name="l01761"></a><span class="lineno"> 1761</span>    {</div>
+<div class="line"><a id="l01762" name="l01762"></a><span class="lineno"> 1762</span>        <span class="keyword">static</span> <span class="keyword">auto</span> <span class="keyword">const</span> minimumCounter =</div>
+<div class="line"><a id="l01763" name="l01763"></a><span class="lineno"> 1763</span>            parms.<a class="code hl_variable" href="structripple_1_1ConsensusParms.html#aaf825acb654ae3666751f4c5c2e55e0e">avalancheCutoffs</a>.size() * parms.<a class="code hl_variable" href="structripple_1_1ConsensusParms.html#a3ce38535601e5bc5bb757b66458482e8">avMIN_ROUNDS</a>;</div>
+<div class="line"><a id="l01764" name="l01764"></a><span class="lineno"> 1764</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> ss;</div>
+<div class="line"><a id="l01765" name="l01765"></a><span class="lineno"> 1765</span>        <span class="keywordflow">if</span> (establishCounter_ &lt; minimumCounter)</div>
+<div class="line"><a id="l01766" name="l01766"></a><span class="lineno"> 1766</span>        {</div>
+<div class="line"><a id="l01767" name="l01767"></a><span class="lineno"> 1767</span>            <span class="comment">// If each round of phaseEstablish takes a very long time, we may</span></div>
+<div class="line"><a id="l01768" name="l01768"></a><span class="lineno"> 1768</span>            <span class="comment">// &quot;expire&quot; before we&#39;ve given consensus enough time at each</span></div>
+<div class="line"><a id="l01769" name="l01769"></a><span class="lineno"> 1769</span>            <span class="comment">// avalanche level to actually come to a consensus. In that case,</span></div>
+<div class="line"><a id="l01770" name="l01770"></a><span class="lineno"> 1770</span>            <span class="comment">// keep trying. This should only happen if there are an extremely</span></div>
+<div class="line"><a id="l01771" name="l01771"></a><span class="lineno"> 1771</span>            <span class="comment">// large number of disputes such that each round takes an inordinate</span></div>
+<div class="line"><a id="l01772" name="l01772"></a><span class="lineno"> 1772</span>            <span class="comment">// amount of time.</span></div>
+<div class="line"><a id="l01773" name="l01773"></a><span class="lineno"> 1773</span> </div>
+<div class="line"><a id="l01774" name="l01774"></a><span class="lineno"> 1774</span>            ss &lt;&lt; <span class="stringliteral">&quot;Consensus time has expired in round &quot;</span> &lt;&lt; establishCounter_</div>
+<div class="line"><a id="l01775" name="l01775"></a><span class="lineno"> 1775</span>               &lt;&lt; <span class="stringliteral">&quot;; continue until round &quot;</span> &lt;&lt; minimumCounter &lt;&lt; <span class="stringliteral">&quot;. &quot;</span></div>
+<div class="line"><a id="l01776" name="l01776"></a><span class="lineno"> 1776</span>               &lt;&lt; <a class="code hl_class" href="classJson_1_1Compact.html">Json::Compact</a>{<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<span class="keyword">false</span>)};</div>
+<div class="line"><a id="l01777" name="l01777"></a><span class="lineno"> 1777</span>            JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>();</div>
+<div class="line"><a id="l01778" name="l01778"></a><span class="lineno"> 1778</span>            CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>() &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
+<div class="line"><a id="l01779" name="l01779"></a><span class="lineno"> 1779</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l01780" name="l01780"></a><span class="lineno"> 1780</span>        }</div>
+<div class="line"><a id="l01781" name="l01781"></a><span class="lineno"> 1781</span>        ss &lt;&lt; <span class="stringliteral">&quot;Consensus expired. &quot;</span> &lt;&lt; <a class="code hl_class" href="classJson_1_1Compact.html">Json::Compact</a>{<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<span class="keyword">true</span>)};</div>
+<div class="line"><a id="l01782" name="l01782"></a><span class="lineno"> 1782</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>();</div>
+<div class="line"><a id="l01783" name="l01783"></a><span class="lineno"> 1783</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; ss.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream/str.html">str</a>() &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
+<div class="line"><a id="l01784" name="l01784"></a><span class="lineno"> 1784</span>        leaveConsensus(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>);</div>
+<div class="line"><a id="l01785" name="l01785"></a><span class="lineno"> 1785</span>    }</div>
+<div class="line"><a id="l01786" name="l01786"></a><span class="lineno"> 1786</span>    <span class="comment">// There is consensus, but we need to track if the network moved on</span></div>
+<div class="line"><a id="l01787" name="l01787"></a><span class="lineno"> 1787</span>    <span class="comment">// without us.</span></div>
+<div class="line"><a id="l01788" name="l01788"></a><span class="lineno"> 1788</span>    <span class="keywordflow">if</span> (result_-&gt;state == <a class="code hl_enumvalue" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1a6978081a12147518207c7512374c5c80">ConsensusState::MovedOn</a>)</div>
+<div class="line"><a id="l01789" name="l01789"></a><span class="lineno"> 1789</span>    {</div>
+<div class="line"><a id="l01790" name="l01790"></a><span class="lineno"> 1790</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;Unable to reach consensus&quot;</span>;</div>
+<div class="line"><a id="l01791" name="l01791"></a><span class="lineno"> 1791</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <a class="code hl_class" href="classJson_1_1Compact.html">Json::Compact</a>{<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<span class="keyword">true</span>)};</div>
+<div class="line"><a id="l01792" name="l01792"></a><span class="lineno"> 1792</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;Unable to reach consensus &quot;</span></div>
+<div class="line"><a id="l01793" name="l01793"></a><span class="lineno"> 1793</span>                   &lt;&lt; <a class="code hl_class" href="classJson_1_1Compact.html">Json::Compact</a>{<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<span class="keyword">true</span>)} &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
+<div class="line"><a id="l01794" name="l01794"></a><span class="lineno"> 1794</span>    }</div>
+<div class="line"><a id="l01795" name="l01795"></a><span class="lineno"> 1795</span> </div>
+<div class="line"><a id="l01796" name="l01796"></a><span class="lineno"> 1796</span>    CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;Consensus has been reached. &quot;</span>;</div>
+<div class="line"><a id="l01797" name="l01797"></a><span class="lineno"> 1797</span>    <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l01798" name="l01798"></a><span class="lineno"> 1798</span>}</div>
+<div class="line"><a id="l01799" name="l01799"></a><span class="lineno"> 1799</span> </div>
+<div class="line"><a id="l01800" name="l01800"></a><span class="lineno"> 1800</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Adaptor&gt;</div>
+<div class="line"><a id="l01801" name="l01801"></a><span class="lineno"> 1801</span><span class="keywordtype">void</span></div>
+<div class="line"><a id="l01802" name="l01802"></a><span class="lineno"><a class="line" href="classripple_1_1Consensus.html#a4b9cd1dcf891a027ba7649d2464c81ff"> 1802</a></span><a class="code hl_function" href="classripple_1_1Consensus.html#a4b9cd1dcf891a027ba7649d2464c81ff">Consensus&lt;Adaptor&gt;::leaveConsensus</a>(</div>
+<div class="line"><a id="l01803" name="l01803"></a><span class="lineno"> 1803</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;std::stringstream&gt;</a> <span class="keyword">const</span>&amp; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>)</div>
+<div class="line"><a id="l01804" name="l01804"></a><span class="lineno"> 1804</span>{</div>
+<div class="line"><a id="l01805" name="l01805"></a><span class="lineno"> 1805</span>    <span class="keywordflow">if</span> (mode_.get() == <a class="code hl_enumvalue" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">ConsensusMode::proposing</a>)</div>
+<div class="line"><a id="l01806" name="l01806"></a><span class="lineno"> 1806</span>    {</div>
+<div class="line"><a id="l01807" name="l01807"></a><span class="lineno"> 1807</span>        <span class="keywordflow">if</span> (result_ &amp;&amp; !result_-&gt;position.isBowOut())</div>
+<div class="line"><a id="l01808" name="l01808"></a><span class="lineno"> 1808</span>        {</div>
+<div class="line"><a id="l01809" name="l01809"></a><span class="lineno"> 1809</span>            result_-&gt;position.bowOut(now_);</div>
+<div class="line"><a id="l01810" name="l01810"></a><span class="lineno"> 1810</span>            adaptor_.propose(result_-&gt;position);</div>
+<div class="line"><a id="l01811" name="l01811"></a><span class="lineno"> 1811</span>        }</div>
+<div class="line"><a id="l01812" name="l01812"></a><span class="lineno"> 1812</span> </div>
+<div class="line"><a id="l01813" name="l01813"></a><span class="lineno"> 1813</span>        mode_.set(<a class="code hl_enumvalue" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563eaea5234685f43dcab142e132c0e7be2ce">ConsensusMode::observing</a>, adaptor_);</div>
+<div class="line"><a id="l01814" name="l01814"></a><span class="lineno"> 1814</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a87d6bd59020d94110027dcab3d9e3357">info</a>()) &lt;&lt; <span class="stringliteral">&quot;Bowing out of consensus&quot;</span>;</div>
+<div class="line"><a id="l01815" name="l01815"></a><span class="lineno"> 1815</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;Bowing out of consensus. &quot;</span>;</div>
+<div class="line"><a id="l01816" name="l01816"></a><span class="lineno"> 1816</span>    }</div>
+<div class="line"><a id="l01817" name="l01817"></a><span class="lineno"> 1817</span>}</div>
+<div class="line"><a id="l01818" name="l01818"></a><span class="lineno"> 1818</span> </div>
+<div class="line"><a id="l01819" name="l01819"></a><span class="lineno"> 1819</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Adaptor&gt;</div>
+<div class="line"><a id="l01820" name="l01820"></a><span class="lineno"> 1820</span><span class="keywordtype">void</span></div>
+<div class="line"><a id="l01821" name="l01821"></a><span class="lineno"><a class="line" href="classripple_1_1Consensus.html#a9c7b09f8e8242025e0f1bbc76ce29aad"> 1821</a></span><a class="code hl_function" href="classripple_1_1Consensus.html#a9c7b09f8e8242025e0f1bbc76ce29aad">Consensus&lt;Adaptor&gt;::createDisputes</a>(</div>
+<div class="line"><a id="l01822" name="l01822"></a><span class="lineno"> 1822</span>    <a class="code hl_typedef" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> <span class="keyword">const</span>&amp; o,</div>
+<div class="line"><a id="l01823" name="l01823"></a><span class="lineno"> 1823</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;std::stringstream&gt;</a> <span class="keyword">const</span>&amp; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>)</div>
+<div class="line"><a id="l01824" name="l01824"></a><span class="lineno"> 1824</span>{</div>
+<div class="line"><a id="l01825" name="l01825"></a><span class="lineno"> 1825</span>    <span class="comment">// Cannot create disputes without our stance</span></div>
+<div class="line"><a id="l01826" name="l01826"></a><span class="lineno"> 1826</span>    XRPL_ASSERT(result_, <span class="stringliteral">&quot;ripple::Consensus::createDisputes : result is set&quot;</span>);</div>
+<div class="line"><a id="l01827" name="l01827"></a><span class="lineno"> 1827</span> </div>
+<div class="line"><a id="l01828" name="l01828"></a><span class="lineno"> 1828</span>    <span class="comment">// Only create disputes if this is a new set</span></div>
+<div class="line"><a id="l01829" name="l01829"></a><span class="lineno"> 1829</span>    <span class="keyword">auto</span> <span class="keyword">const</span> emplaced = result_-&gt;compares.emplace(o.id()).second;</div>
+<div class="line"><a id="l01830" name="l01830"></a><span class="lineno"> 1830</span>    CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;createDisputes: new set? &quot;</span> &lt;&lt; !emplaced &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
+<div class="line"><a id="l01831" name="l01831"></a><span class="lineno"> 1831</span>    <span class="keywordflow">if</span> (!emplaced)</div>
+<div class="line"><a id="l01832" name="l01832"></a><span class="lineno"> 1832</span>        <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l01833" name="l01833"></a><span class="lineno"> 1833</span> </div>
-<div class="line"><a id="l01834" name="l01834"></a><span class="lineno"> 1834</span>    <span class="keywordtype">int</span> dc = 0;</div>
-<div class="line"><a id="l01835" name="l01835"></a><span class="lineno"> 1835</span> </div>
-<div class="line"><a id="l01836" name="l01836"></a><span class="lineno"> 1836</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [txId, inThisSet] : differences)</div>
-<div class="line"><a id="l01837" name="l01837"></a><span class="lineno"> 1837</span>    {</div>
-<div class="line"><a id="l01838" name="l01838"></a><span class="lineno"> 1838</span>        ++dc;</div>
-<div class="line"><a id="l01839" name="l01839"></a><span class="lineno"> 1839</span>        <span class="comment">// create disputed transactions (from the ledger that has them)</span></div>
-<div class="line"><a id="l01840" name="l01840"></a><span class="lineno"> 1840</span>        XRPL_ASSERT(</div>
-<div class="line"><a id="l01841" name="l01841"></a><span class="lineno"> 1841</span>            (inThisSet &amp;&amp; result_-&gt;txns.find(txId) &amp;&amp; !o.find(txId)) ||</div>
-<div class="line"><a id="l01842" name="l01842"></a><span class="lineno"> 1842</span>                (!inThisSet &amp;&amp; !result_-&gt;txns.find(txId) &amp;&amp; o.find(txId)),</div>
-<div class="line"><a id="l01843" name="l01843"></a><span class="lineno"> 1843</span>            <span class="stringliteral">&quot;ripple::Consensus::createDisputes : has disputed transactions&quot;</span>);</div>
-<div class="line"><a id="l01844" name="l01844"></a><span class="lineno"> 1844</span> </div>
-<div class="line"><a id="l01845" name="l01845"></a><span class="lineno"> 1845</span>        <a class="code hl_typedef" href="classripple_1_1Consensus.html#a756a605e09b99b2a7d49a941a3055433">Tx_t</a> tx = inThisSet ? result_-&gt;txns.find(txId) : o.find(txId);</div>
-<div class="line"><a id="l01846" name="l01846"></a><span class="lineno"> 1846</span>        <span class="keyword">auto</span> txID = tx.id();</div>
+<div class="line"><a id="l01834" name="l01834"></a><span class="lineno"> 1834</span>    <span class="comment">// Nothing to dispute if we agree</span></div>
+<div class="line"><a id="l01835" name="l01835"></a><span class="lineno"> 1835</span>    <span class="keywordflow">if</span> (result_-&gt;txns.id() == o.id())</div>
+<div class="line"><a id="l01836" name="l01836"></a><span class="lineno"> 1836</span>    {</div>
+<div class="line"><a id="l01837" name="l01837"></a><span class="lineno"> 1837</span>        CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;both sets are identical. &quot;</span>;</div>
+<div class="line"><a id="l01838" name="l01838"></a><span class="lineno"> 1838</span>        <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l01839" name="l01839"></a><span class="lineno"> 1839</span>    }</div>
+<div class="line"><a id="l01840" name="l01840"></a><span class="lineno"> 1840</span> </div>
+<div class="line"><a id="l01841" name="l01841"></a><span class="lineno"> 1841</span>    CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;comparing existing with new set: &quot;</span> &lt;&lt; result_-&gt;txns.id()</div>
+<div class="line"><a id="l01842" name="l01842"></a><span class="lineno"> 1842</span>               &lt;&lt; <span class="charliteral">&#39;,&#39;</span> &lt;&lt; o.id() &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
+<div class="line"><a id="l01843" name="l01843"></a><span class="lineno"> 1843</span>    JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;createDisputes &quot;</span> &lt;&lt; result_-&gt;txns.id() &lt;&lt; <span class="stringliteral">&quot; to &quot;</span></div>
+<div class="line"><a id="l01844" name="l01844"></a><span class="lineno"> 1844</span>                     &lt;&lt; o.id();</div>
+<div class="line"><a id="l01845" name="l01845"></a><span class="lineno"> 1845</span> </div>
+<div class="line"><a id="l01846" name="l01846"></a><span class="lineno"> 1846</span>    <span class="keyword">auto</span> differences = result_-&gt;txns.compare(o);</div>
 <div class="line"><a id="l01847" name="l01847"></a><span class="lineno"> 1847</span> </div>
-<div class="line"><a id="l01848" name="l01848"></a><span class="lineno"> 1848</span>        <span class="keywordflow">if</span> (result_-&gt;disputes.find(txID) != result_-&gt;disputes.end())</div>
-<div class="line"><a id="l01849" name="l01849"></a><span class="lineno"> 1849</span>            <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l01850" name="l01850"></a><span class="lineno"> 1850</span> </div>
-<div class="line"><a id="l01851" name="l01851"></a><span class="lineno"> 1851</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Transaction &quot;</span> &lt;&lt; txID &lt;&lt; <span class="stringliteral">&quot; is disputed&quot;</span>;</div>
-<div class="line"><a id="l01852" name="l01852"></a><span class="lineno"> 1852</span> </div>
-<div class="line"><a id="l01853" name="l01853"></a><span class="lineno"> 1853</span>        <span class="keyword">typename</span> <a class="code hl_class" href="classripple_1_1DisputedTx.html">Result::Dispute_t</a> dtx{</div>
-<div class="line"><a id="l01854" name="l01854"></a><span class="lineno"> 1854</span>            tx,</div>
-<div class="line"><a id="l01855" name="l01855"></a><span class="lineno"> 1855</span>            result_-&gt;txns.exists(txID),</div>
-<div class="line"><a id="l01856" name="l01856"></a><span class="lineno"> 1856</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(prevProposers_, currPeerPositions_.size()),</div>
-<div class="line"><a id="l01857" name="l01857"></a><span class="lineno"> 1857</span>            j_};</div>
+<div class="line"><a id="l01848" name="l01848"></a><span class="lineno"> 1848</span>    <span class="keywordtype">int</span> dc = 0;</div>
+<div class="line"><a id="l01849" name="l01849"></a><span class="lineno"> 1849</span> </div>
+<div class="line"><a id="l01850" name="l01850"></a><span class="lineno"> 1850</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [txId, inThisSet] : differences)</div>
+<div class="line"><a id="l01851" name="l01851"></a><span class="lineno"> 1851</span>    {</div>
+<div class="line"><a id="l01852" name="l01852"></a><span class="lineno"> 1852</span>        ++dc;</div>
+<div class="line"><a id="l01853" name="l01853"></a><span class="lineno"> 1853</span>        <span class="comment">// create disputed transactions (from the ledger that has them)</span></div>
+<div class="line"><a id="l01854" name="l01854"></a><span class="lineno"> 1854</span>        XRPL_ASSERT(</div>
+<div class="line"><a id="l01855" name="l01855"></a><span class="lineno"> 1855</span>            (inThisSet &amp;&amp; result_-&gt;txns.find(txId) &amp;&amp; !o.find(txId)) ||</div>
+<div class="line"><a id="l01856" name="l01856"></a><span class="lineno"> 1856</span>                (!inThisSet &amp;&amp; !result_-&gt;txns.find(txId) &amp;&amp; o.find(txId)),</div>
+<div class="line"><a id="l01857" name="l01857"></a><span class="lineno"> 1857</span>            <span class="stringliteral">&quot;ripple::Consensus::createDisputes : has disputed transactions&quot;</span>);</div>
 <div class="line"><a id="l01858" name="l01858"></a><span class="lineno"> 1858</span> </div>
-<div class="line"><a id="l01859" name="l01859"></a><span class="lineno"> 1859</span>        <span class="comment">// Update all of the available peer&#39;s votes on the disputed transaction</span></div>
-<div class="line"><a id="l01860" name="l01860"></a><span class="lineno"> 1860</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [nodeId, peerPos] : currPeerPositions_)</div>
-<div class="line"><a id="l01861" name="l01861"></a><span class="lineno"> 1861</span>        {</div>
-<div class="line"><a id="l01862" name="l01862"></a><span class="lineno"> 1862</span>            <a class="code hl_class" href="classripple_1_1ConsensusProposal.html">Proposal_t</a> <span class="keyword">const</span>&amp; peerProp = peerPos.proposal();</div>
-<div class="line"><a id="l01863" name="l01863"></a><span class="lineno"> 1863</span>            <span class="keyword">auto</span> <span class="keyword">const</span> cit = acquired_.find(peerProp.<a class="code hl_function" href="classripple_1_1ConsensusProposal.html#a91e326fe44578217610b5ace9e246004">position</a>());</div>
-<div class="line"><a id="l01864" name="l01864"></a><span class="lineno"> 1864</span>            <span class="keywordflow">if</span> (cit != acquired_.end() &amp;&amp;</div>
-<div class="line"><a id="l01865" name="l01865"></a><span class="lineno"> 1865</span>                dtx.setVote(nodeId, cit-&gt;second.exists(txID)))</div>
-<div class="line"><a id="l01866" name="l01866"></a><span class="lineno"> 1866</span>                peerUnchangedCounter_ = 0;</div>
-<div class="line"><a id="l01867" name="l01867"></a><span class="lineno"> 1867</span>        }</div>
-<div class="line"><a id="l01868" name="l01868"></a><span class="lineno"> 1868</span>        adaptor_.share(dtx.tx());</div>
-<div class="line"><a id="l01869" name="l01869"></a><span class="lineno"> 1869</span> </div>
-<div class="line"><a id="l01870" name="l01870"></a><span class="lineno"> 1870</span>        result_-&gt;disputes.emplace(txID, std::move(dtx));</div>
-<div class="line"><a id="l01871" name="l01871"></a><span class="lineno"> 1871</span>    }</div>
-<div class="line"><a id="l01872" name="l01872"></a><span class="lineno"> 1872</span>    JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; dc &lt;&lt; <span class="stringliteral">&quot; differences found&quot;</span>;</div>
-<div class="line"><a id="l01873" name="l01873"></a><span class="lineno"> 1873</span>    CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;disputes: &quot;</span> &lt;&lt; dc &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
-<div class="line"><a id="l01874" name="l01874"></a><span class="lineno"> 1874</span>}</div>
-<div class="line"><a id="l01875" name="l01875"></a><span class="lineno"> 1875</span> </div>
-<div class="line"><a id="l01876" name="l01876"></a><span class="lineno"> 1876</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Adaptor&gt;</div>
-<div class="line"><a id="l01877" name="l01877"></a><span class="lineno"> 1877</span><span class="keywordtype">void</span></div>
-<div class="line"><a id="l01878" name="l01878"></a><span class="lineno"><a class="line" href="classripple_1_1Consensus.html#a4e782139b66fec214ed2b12adef662ac"> 1878</a></span><a class="code hl_function" href="classripple_1_1Consensus.html#a4e782139b66fec214ed2b12adef662ac">Consensus&lt;Adaptor&gt;::updateDisputes</a>(<a class="code hl_typedef" href="classripple_1_1Consensus.html#ac0595ebca5fc6577d86cb4b4dddaef3e">NodeID_t</a> <span class="keyword">const</span>&amp; node, <a class="code hl_typedef" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> <span class="keyword">const</span>&amp; other)</div>
-<div class="line"><a id="l01879" name="l01879"></a><span class="lineno"> 1879</span>{</div>
-<div class="line"><a id="l01880" name="l01880"></a><span class="lineno"> 1880</span>    <span class="comment">// Cannot updateDisputes without our stance</span></div>
-<div class="line"><a id="l01881" name="l01881"></a><span class="lineno"> 1881</span>    XRPL_ASSERT(result_, <span class="stringliteral">&quot;ripple::Consensus::updateDisputes : result is set&quot;</span>);</div>
-<div class="line"><a id="l01882" name="l01882"></a><span class="lineno"> 1882</span> </div>
-<div class="line"><a id="l01883" name="l01883"></a><span class="lineno"> 1883</span>    <span class="comment">// Ensure we have created disputes against this set if we haven&#39;t seen</span></div>
-<div class="line"><a id="l01884" name="l01884"></a><span class="lineno"> 1884</span>    <span class="comment">// it before</span></div>
-<div class="line"><a id="l01885" name="l01885"></a><span class="lineno"> 1885</span>    <span class="keywordflow">if</span> (result_-&gt;compares.find(other.id()) == result_-&gt;compares.end())</div>
-<div class="line"><a id="l01886" name="l01886"></a><span class="lineno"> 1886</span>        createDisputes(other);</div>
-<div class="line"><a id="l01887" name="l01887"></a><span class="lineno"> 1887</span> </div>
-<div class="line"><a id="l01888" name="l01888"></a><span class="lineno"> 1888</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; it : result_-&gt;disputes)</div>
-<div class="line"><a id="l01889" name="l01889"></a><span class="lineno"> 1889</span>    {</div>
-<div class="line"><a id="l01890" name="l01890"></a><span class="lineno"> 1890</span>        <span class="keyword">auto</span>&amp; d = it.second;</div>
-<div class="line"><a id="l01891" name="l01891"></a><span class="lineno"> 1891</span>        <span class="keywordflow">if</span> (d.setVote(node, other.exists(d.tx().id())))</div>
-<div class="line"><a id="l01892" name="l01892"></a><span class="lineno"> 1892</span>            peerUnchangedCounter_ = 0;</div>
-<div class="line"><a id="l01893" name="l01893"></a><span class="lineno"> 1893</span>    }</div>
-<div class="line"><a id="l01894" name="l01894"></a><span class="lineno"> 1894</span>}</div>
-<div class="line"><a id="l01895" name="l01895"></a><span class="lineno"> 1895</span> </div>
-<div class="line"><a id="l01896" name="l01896"></a><span class="lineno"> 1896</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Adaptor&gt;</div>
-<div class="line"><a id="l01897" name="l01897"></a><span class="lineno"> 1897</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a></div>
-<div class="line"><a id="l01898" name="l01898"></a><span class="lineno"><a class="line" href="classripple_1_1Consensus.html#a9639282cdda2fcd103490c15c08b9af7"> 1898</a></span><a class="code hl_function" href="classripple_1_1Consensus.html#a9639282cdda2fcd103490c15c08b9af7">Consensus&lt;Adaptor&gt;::asCloseTime</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> raw)<span class="keyword"> const</span></div>
-<div class="line"><a id="l01899" name="l01899"></a><span class="lineno"> 1899</span><span class="keyword"></span>{</div>
-<div class="line"><a id="l01900" name="l01900"></a><span class="lineno"> 1900</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple.html#a45507a299fab4f0506b9fcf559fddae3">roundCloseTime</a>(raw, closeResolution_);</div>
-<div class="line"><a id="l01901" name="l01901"></a><span class="lineno"> 1901</span>}</div>
-<div class="line"><a id="l01902" name="l01902"></a><span class="lineno"> 1902</span> </div>
-<div class="line"><a id="l01903" name="l01903"></a><span class="lineno"> 1903</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a id="l01904" name="l01904"></a><span class="lineno"> 1904</span> </div>
-<div class="line"><a id="l01905" name="l01905"></a><span class="lineno"> 1905</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l01859" name="l01859"></a><span class="lineno"> 1859</span>        <a class="code hl_typedef" href="classripple_1_1Consensus.html#a756a605e09b99b2a7d49a941a3055433">Tx_t</a> tx = inThisSet ? result_-&gt;txns.find(txId) : o.find(txId);</div>
+<div class="line"><a id="l01860" name="l01860"></a><span class="lineno"> 1860</span>        <span class="keyword">auto</span> txID = tx.id();</div>
+<div class="line"><a id="l01861" name="l01861"></a><span class="lineno"> 1861</span> </div>
+<div class="line"><a id="l01862" name="l01862"></a><span class="lineno"> 1862</span>        <span class="keywordflow">if</span> (result_-&gt;disputes.find(txID) != result_-&gt;disputes.end())</div>
+<div class="line"><a id="l01863" name="l01863"></a><span class="lineno"> 1863</span>            <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l01864" name="l01864"></a><span class="lineno"> 1864</span> </div>
+<div class="line"><a id="l01865" name="l01865"></a><span class="lineno"> 1865</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Transaction &quot;</span> &lt;&lt; txID &lt;&lt; <span class="stringliteral">&quot; is disputed&quot;</span>;</div>
+<div class="line"><a id="l01866" name="l01866"></a><span class="lineno"> 1866</span> </div>
+<div class="line"><a id="l01867" name="l01867"></a><span class="lineno"> 1867</span>        <span class="keyword">typename</span> <a class="code hl_class" href="classripple_1_1DisputedTx.html">Result::Dispute_t</a> dtx{</div>
+<div class="line"><a id="l01868" name="l01868"></a><span class="lineno"> 1868</span>            tx,</div>
+<div class="line"><a id="l01869" name="l01869"></a><span class="lineno"> 1869</span>            result_-&gt;txns.exists(txID),</div>
+<div class="line"><a id="l01870" name="l01870"></a><span class="lineno"> 1870</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(prevProposers_, currPeerPositions_.size()),</div>
+<div class="line"><a id="l01871" name="l01871"></a><span class="lineno"> 1871</span>            j_};</div>
+<div class="line"><a id="l01872" name="l01872"></a><span class="lineno"> 1872</span> </div>
+<div class="line"><a id="l01873" name="l01873"></a><span class="lineno"> 1873</span>        <span class="comment">// Update all of the available peer&#39;s votes on the disputed transaction</span></div>
+<div class="line"><a id="l01874" name="l01874"></a><span class="lineno"> 1874</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [nodeId, peerPos] : currPeerPositions_)</div>
+<div class="line"><a id="l01875" name="l01875"></a><span class="lineno"> 1875</span>        {</div>
+<div class="line"><a id="l01876" name="l01876"></a><span class="lineno"> 1876</span>            <a class="code hl_class" href="classripple_1_1ConsensusProposal.html">Proposal_t</a> <span class="keyword">const</span>&amp; peerProp = peerPos.proposal();</div>
+<div class="line"><a id="l01877" name="l01877"></a><span class="lineno"> 1877</span>            <span class="keyword">auto</span> <span class="keyword">const</span> cit = acquired_.find(peerProp.<a class="code hl_function" href="classripple_1_1ConsensusProposal.html#a91e326fe44578217610b5ace9e246004">position</a>());</div>
+<div class="line"><a id="l01878" name="l01878"></a><span class="lineno"> 1878</span>            <span class="keywordflow">if</span> (cit != acquired_.end() &amp;&amp;</div>
+<div class="line"><a id="l01879" name="l01879"></a><span class="lineno"> 1879</span>                dtx.setVote(nodeId, cit-&gt;second.exists(txID)))</div>
+<div class="line"><a id="l01880" name="l01880"></a><span class="lineno"> 1880</span>                peerUnchangedCounter_ = 0;</div>
+<div class="line"><a id="l01881" name="l01881"></a><span class="lineno"> 1881</span>        }</div>
+<div class="line"><a id="l01882" name="l01882"></a><span class="lineno"> 1882</span>        adaptor_.share(dtx.tx());</div>
+<div class="line"><a id="l01883" name="l01883"></a><span class="lineno"> 1883</span> </div>
+<div class="line"><a id="l01884" name="l01884"></a><span class="lineno"> 1884</span>        result_-&gt;disputes.emplace(txID, std::move(dtx));</div>
+<div class="line"><a id="l01885" name="l01885"></a><span class="lineno"> 1885</span>    }</div>
+<div class="line"><a id="l01886" name="l01886"></a><span class="lineno"> 1886</span>    JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; dc &lt;&lt; <span class="stringliteral">&quot; differences found&quot;</span>;</div>
+<div class="line"><a id="l01887" name="l01887"></a><span class="lineno"> 1887</span>    CLOG(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/clog.html">clog</a>) &lt;&lt; <span class="stringliteral">&quot;disputes: &quot;</span> &lt;&lt; dc &lt;&lt; <span class="stringliteral">&quot;. &quot;</span>;</div>
+<div class="line"><a id="l01888" name="l01888"></a><span class="lineno"> 1888</span>}</div>
+<div class="line"><a id="l01889" name="l01889"></a><span class="lineno"> 1889</span> </div>
+<div class="line"><a id="l01890" name="l01890"></a><span class="lineno"> 1890</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Adaptor&gt;</div>
+<div class="line"><a id="l01891" name="l01891"></a><span class="lineno"> 1891</span><span class="keywordtype">void</span></div>
+<div class="line"><a id="l01892" name="l01892"></a><span class="lineno"><a class="line" href="classripple_1_1Consensus.html#a4e782139b66fec214ed2b12adef662ac"> 1892</a></span><a class="code hl_function" href="classripple_1_1Consensus.html#a4e782139b66fec214ed2b12adef662ac">Consensus&lt;Adaptor&gt;::updateDisputes</a>(<a class="code hl_typedef" href="classripple_1_1Consensus.html#ac0595ebca5fc6577d86cb4b4dddaef3e">NodeID_t</a> <span class="keyword">const</span>&amp; node, <a class="code hl_typedef" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> <span class="keyword">const</span>&amp; other)</div>
+<div class="line"><a id="l01893" name="l01893"></a><span class="lineno"> 1893</span>{</div>
+<div class="line"><a id="l01894" name="l01894"></a><span class="lineno"> 1894</span>    <span class="comment">// Cannot updateDisputes without our stance</span></div>
+<div class="line"><a id="l01895" name="l01895"></a><span class="lineno"> 1895</span>    XRPL_ASSERT(result_, <span class="stringliteral">&quot;ripple::Consensus::updateDisputes : result is set&quot;</span>);</div>
+<div class="line"><a id="l01896" name="l01896"></a><span class="lineno"> 1896</span> </div>
+<div class="line"><a id="l01897" name="l01897"></a><span class="lineno"> 1897</span>    <span class="comment">// Ensure we have created disputes against this set if we haven&#39;t seen</span></div>
+<div class="line"><a id="l01898" name="l01898"></a><span class="lineno"> 1898</span>    <span class="comment">// it before</span></div>
+<div class="line"><a id="l01899" name="l01899"></a><span class="lineno"> 1899</span>    <span class="keywordflow">if</span> (result_-&gt;compares.find(other.id()) == result_-&gt;compares.end())</div>
+<div class="line"><a id="l01900" name="l01900"></a><span class="lineno"> 1900</span>        createDisputes(other);</div>
+<div class="line"><a id="l01901" name="l01901"></a><span class="lineno"> 1901</span> </div>
+<div class="line"><a id="l01902" name="l01902"></a><span class="lineno"> 1902</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span>&amp; it : result_-&gt;disputes)</div>
+<div class="line"><a id="l01903" name="l01903"></a><span class="lineno"> 1903</span>    {</div>
+<div class="line"><a id="l01904" name="l01904"></a><span class="lineno"> 1904</span>        <span class="keyword">auto</span>&amp; d = it.second;</div>
+<div class="line"><a id="l01905" name="l01905"></a><span class="lineno"> 1905</span>        <span class="keywordflow">if</span> (d.setVote(node, other.exists(d.tx().id())))</div>
+<div class="line"><a id="l01906" name="l01906"></a><span class="lineno"> 1906</span>            peerUnchangedCounter_ = 0;</div>
+<div class="line"><a id="l01907" name="l01907"></a><span class="lineno"> 1907</span>    }</div>
+<div class="line"><a id="l01908" name="l01908"></a><span class="lineno"> 1908</span>}</div>
+<div class="line"><a id="l01909" name="l01909"></a><span class="lineno"> 1909</span> </div>
+<div class="line"><a id="l01910" name="l01910"></a><span class="lineno"> 1910</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Adaptor&gt;</div>
+<div class="line"><a id="l01911" name="l01911"></a><span class="lineno"> 1911</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a></div>
+<div class="line"><a id="l01912" name="l01912"></a><span class="lineno"><a class="line" href="classripple_1_1Consensus.html#a9639282cdda2fcd103490c15c08b9af7"> 1912</a></span><a class="code hl_function" href="classripple_1_1Consensus.html#a9639282cdda2fcd103490c15c08b9af7">Consensus&lt;Adaptor&gt;::asCloseTime</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> raw)<span class="keyword"> const</span></div>
+<div class="line"><a id="l01913" name="l01913"></a><span class="lineno"> 1913</span><span class="keyword"></span>{</div>
+<div class="line"><a id="l01914" name="l01914"></a><span class="lineno"> 1914</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple.html#a45507a299fab4f0506b9fcf559fddae3">roundCloseTime</a>(raw, closeResolution_);</div>
+<div class="line"><a id="l01915" name="l01915"></a><span class="lineno"> 1915</span>}</div>
+<div class="line"><a id="l01916" name="l01916"></a><span class="lineno"> 1916</span> </div>
+<div class="line"><a id="l01917" name="l01917"></a><span class="lineno"> 1917</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l01918" name="l01918"></a><span class="lineno"> 1918</span> </div>
+<div class="line"><a id="l01919" name="l01919"></a><span class="lineno"> 1919</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
 <div class="ttc" id="aall_any_none_of_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/ranges/all_any_none_of.html">std::ranges::all_of</a></div><div class="ttdeci">T all_of(T... args)</div></div>
 <div class="ttc" id="abasic_stringstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a></div></div>
@@ -1636,8 +1650,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Consensus_html_a369fcc4a40027db6c9097b06f1ca64e0"><div class="ttname"><a href="classripple_1_1Consensus.html#a369fcc4a40027db6c9097b06f1ca64e0">ripple::Consensus::phase_</a></div><div class="ttdeci">ConsensusPhase phase_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00567">Consensus.h:567</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a3e7e737e0e20f72f6e6f56b6387902cb"><div class="ttname"><a href="classripple_1_1Consensus.html#a3e7e737e0e20f72f6e6f56b6387902cb">ripple::Consensus::prevCloseTime_</a></div><div class="ttdeci">NetClock::time_point prevCloseTime_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00595">Consensus.h:595</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a46b3b59f24d1b45310a7b0b9dff3177d"><div class="ttname"><a href="classripple_1_1Consensus.html#a46b3b59f24d1b45310a7b0b9dff3177d">ripple::Consensus::clock_</a></div><div class="ttdeci">clock_type const  &amp; clock_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00572">Consensus.h:572</a></div></div>
-<div class="ttc" id="aclassripple_1_1Consensus_html_a4b9cd1dcf891a027ba7649d2464c81ff"><div class="ttname"><a href="classripple_1_1Consensus.html#a4b9cd1dcf891a027ba7649d2464c81ff">ripple::Consensus::leaveConsensus</a></div><div class="ttdeci">void leaveConsensus(std::unique_ptr&lt; std::stringstream &gt; const &amp;clog)</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l01788">Consensus.h:1788</a></div></div>
-<div class="ttc" id="aclassripple_1_1Consensus_html_a4e782139b66fec214ed2b12adef662ac"><div class="ttname"><a href="classripple_1_1Consensus.html#a4e782139b66fec214ed2b12adef662ac">ripple::Consensus::updateDisputes</a></div><div class="ttdeci">void updateDisputes(NodeID_t const &amp;node, TxSet_t const &amp;other)</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l01878">Consensus.h:1878</a></div></div>
+<div class="ttc" id="aclassripple_1_1Consensus_html_a4b9cd1dcf891a027ba7649d2464c81ff"><div class="ttname"><a href="classripple_1_1Consensus.html#a4b9cd1dcf891a027ba7649d2464c81ff">ripple::Consensus::leaveConsensus</a></div><div class="ttdeci">void leaveConsensus(std::unique_ptr&lt; std::stringstream &gt; const &amp;clog)</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l01802">Consensus.h:1802</a></div></div>
+<div class="ttc" id="aclassripple_1_1Consensus_html_a4e782139b66fec214ed2b12adef662ac"><div class="ttname"><a href="classripple_1_1Consensus.html#a4e782139b66fec214ed2b12adef662ac">ripple::Consensus::updateDisputes</a></div><div class="ttdeci">void updateDisputes(NodeID_t const &amp;node, TxSet_t const &amp;other)</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l01892">Consensus.h:1892</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a524a13145148ff9d6e69328577a11446"><div class="ttname"><a href="classripple_1_1Consensus.html#a524a13145148ff9d6e69328577a11446">ripple::Consensus::previousLedger_</a></div><div class="ttdeci">Ledger_t previousLedger_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00603">Consensus.h:603</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a524b889667609917d080a6ec775ab2e4"><div class="ttname"><a href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">ripple::Consensus::TxSet_t</a></div><div class="ttdeci">typename Adaptor::TxSet_t TxSet_t</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00300">Consensus.h:300</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a538994e958fd92ecbae04618d360af18"><div class="ttname"><a href="classripple_1_1Consensus.html#a538994e958fd92ecbae04618d360af18">ripple::Consensus::closeTimeAvalancheState_</a></div><div class="ttdeci">ConsensusParms::AvalancheState closeTimeAvalancheState_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00583">Consensus.h:583</a></div></div>
@@ -1656,9 +1670,9 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Consensus_html_a837ef9ac79284d6eb64d0ca4c5dd13bc"><div class="ttname"><a href="classripple_1_1Consensus.html#a837ef9ac79284d6eb64d0ca4c5dd13bc">ripple::Consensus::Consensus</a></div><div class="ttdeci">Consensus(Consensus &amp;&amp;) noexcept=default</div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a921fea6c8ce957db08f8f0e6216f158a"><div class="ttname"><a href="classripple_1_1Consensus.html#a921fea6c8ce957db08f8f0e6216f158a">ripple::Consensus::now_</a></div><div class="ttdeci">NetClock::time_point now_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00594">Consensus.h:594</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a952cc0a61b025adf8197a9022d70fa12"><div class="ttname"><a href="classripple_1_1Consensus.html#a952cc0a61b025adf8197a9022d70fa12">ripple::Consensus::prevProposers_</a></div><div class="ttdeci">std::size_t prevProposers_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00629">Consensus.h:629</a></div></div>
-<div class="ttc" id="aclassripple_1_1Consensus_html_a9639282cdda2fcd103490c15c08b9af7"><div class="ttname"><a href="classripple_1_1Consensus.html#a9639282cdda2fcd103490c15c08b9af7">ripple::Consensus::asCloseTime</a></div><div class="ttdeci">NetClock::time_point asCloseTime(NetClock::time_point raw) const</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l01898">Consensus.h:1898</a></div></div>
+<div class="ttc" id="aclassripple_1_1Consensus_html_a9639282cdda2fcd103490c15c08b9af7"><div class="ttname"><a href="classripple_1_1Consensus.html#a9639282cdda2fcd103490c15c08b9af7">ripple::Consensus::asCloseTime</a></div><div class="ttdeci">NetClock::time_point asCloseTime(NetClock::time_point raw) const</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l01912">Consensus.h:1912</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a9a266a4807e75ecbe9bd3b7703c19816"><div class="ttname"><a href="classripple_1_1Consensus.html#a9a266a4807e75ecbe9bd3b7703c19816">ripple::Consensus::j_</a></div><div class="ttdeci">beast::Journal const j_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00635">Consensus.h:635</a></div></div>
-<div class="ttc" id="aclassripple_1_1Consensus_html_a9c7b09f8e8242025e0f1bbc76ce29aad"><div class="ttname"><a href="classripple_1_1Consensus.html#a9c7b09f8e8242025e0f1bbc76ce29aad">ripple::Consensus::createDisputes</a></div><div class="ttdeci">void createDisputes(TxSet_t const &amp;o, std::unique_ptr&lt; std::stringstream &gt; const &amp;clog={})</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l01807">Consensus.h:1807</a></div></div>
+<div class="ttc" id="aclassripple_1_1Consensus_html_a9c7b09f8e8242025e0f1bbc76ce29aad"><div class="ttname"><a href="classripple_1_1Consensus.html#a9c7b09f8e8242025e0f1bbc76ce29aad">ripple::Consensus::createDisputes</a></div><div class="ttdeci">void createDisputes(TxSet_t const &amp;o, std::unique_ptr&lt; std::stringstream &gt; const &amp;clog={})</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l01821">Consensus.h:1821</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_a9dffbdf2708f81eee49bed08891a7b9a"><div class="ttname"><a href="classripple_1_1Consensus.html#a9dffbdf2708f81eee49bed08891a7b9a">ripple::Consensus::gotTxSet</a></div><div class="ttdeci">void gotTxSet(NetClock::time_point const &amp;now, TxSet_t const &amp;txSet)</div><div class="ttdoc">Process a transaction set acquired from the network.</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00892">Consensus.h:892</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_aaddd7a137e45ca83bbcc528a16838cf1"><div class="ttname"><a href="classripple_1_1Consensus.html#aaddd7a137e45ca83bbcc528a16838cf1">ripple::Consensus::adaptor_</a></div><div class="ttdeci">Adaptor &amp; adaptor_</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00565">Consensus.h:565</a></div></div>
 <div class="ttc" id="aclassripple_1_1Consensus_html_ab3549c5ca51ce1c6fcbb4ed8ccc65d75"><div class="ttname"><a href="classripple_1_1Consensus.html#ab3549c5ca51ce1c6fcbb4ed8ccc65d75">ripple::Consensus::Ledger_t</a></div><div class="ttdeci">typename Adaptor::Ledger_t Ledger_t</div><div class="ttdef"><b>Definition:</b> <a href="Consensus_8h_source.html#l00299">Consensus.h:299</a></div></div>
