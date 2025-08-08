@@ -2,33 +2,25 @@ name: dependencies
 inputs:
   configuration:
     required: true
-# An implicit input is the environment variable `build_dir`.
+# Implicit inputs are the environment variables `build_dir`, CONAN_REMOTE_URL,
+# CONAN_REMOTE_USERNAME, and CONAN_REMOTE_PASSWORD. The latter two are only
+# used to upload newly built dependencies to the Conan remote.
 runs:
   using: composite
   steps:
     - name: add Conan remote
-      if: env.CONAN_URL != ''
+      if: ${{ env.CONAN_REMOTE_URL != '' }}
       shell: bash
       run: |
-        if conan remote list | grep -q 'xrplf'; then
-          conan remote update --index 0 --url ${CONAN_URL} xrplf
-          echo "Updated Conan remote 'xrplf' to ${CONAN_URL}."
-        else
-          conan remote add --index 0 xrplf ${CONAN_URL}
-          echo "Added new conan remote 'xrplf' at ${CONAN_URL}."
-        fi
-    - name: list missing binaries
-      id: binaries
-      shell: bash
-      # Print the list of dependencies that would need to be built locally.
-      # A non-empty list means we have "failed" to cache binaries remotely.
-      run: |
-        echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
+        echo "Adding Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
+        conan remote add --index 0 --force xrplf ${{ env.CONAN_REMOTE_URL }}
+        echo "Listing Conan remotes."
+        conan remote list
     - name: install dependencies
       shell: bash
       run: |
-        mkdir ${build_dir}
-        cd ${build_dir}
+        mkdir -p ${{ env.build_dir }}
+        cd ${{ env.build_dir }}
         conan install \
           --output-folder . \
           --build missing \
@@ -36,3 +28,11 @@ runs:
           --options:host "&:xrpld=True" \
           --settings:all build_type=${{ inputs.configuration }} \
           ..
+    - name: upload dependencies
+      if: ${{ env.CONAN_REMOTE_URL != '' && env.CONAN_REMOTE_USERNAME != '' && env.CONAN_REMOTE_PASSWORD != '' && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
+      shell: bash
+      run: |
+        echo "Logging into Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
+        conan remote login xrplf "${{ env.CONAN_REMOTE_USERNAME }}" --password "${{ env.CONAN_REMOTE_PASSWORD }}"
+        echo "Uploading dependencies."
+        conan upload '*' --confirm --check --remote xrplf
