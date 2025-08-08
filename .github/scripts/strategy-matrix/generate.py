@@ -6,7 +6,7 @@ import re
 
 '''
 Generate a strategy matrix for GitHub Actions CI.
- 
+
 On each PR commit we will run the following configurations:
 - Debian Bookworm on amd64 in Debug for GCC 12-14 and Clang 16-18 with unity.
 - MacOS on arm64 in Debug with unity.
@@ -14,7 +14,7 @@ On each PR commit we will run the following configurations:
 
 Upon merge into the develop, release, or master branch, we will run all
 Debian, RHEL, Ubuntu, MacOS, and Windows configurations.
-  
+
 We will further set additional CMake arguments as follows:
 - All builds will have the `tests`, `werr`, and `xrpld` options.
 - All builds will have the `wextra` option except for GCC 12 and Clang 16.

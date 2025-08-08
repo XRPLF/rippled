@@ -81,7 +81,7 @@ If you create new source files, they must be organized as follows:
 
 The source must be formatted according to the style guide below.
 
-Header includes must be [levelized](./Builds/levelization).
+Header includes must be [levelized](.github/scripts/levelization).
 
 Changes should be usually squashed down into a single commit.
 Some larger or more complicated change sets make more sense,

@@ -20,18 +20,16 @@ defaults:
     shell: bash
 
 jobs:
-#  check-clang-format:
-#    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-#    uses: ./.github/workflows/check-clang-format.yml
-#
-#  check-levelization:
-#    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-#    uses: ./.github/workflows/check-levelization.yml
+  check-clang-format:
+    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+    uses: ./.github/workflows/check-clang-format.yml
+
+  check-levelization:
+    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+    uses: ./.github/workflows/check-levelization.yml
 
   debian:
-#    needs:
-#      - check-clang-format
-#      - check-levelization
+    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-debian.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
@@ -41,9 +39,7 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   rhel:
-#    needs:
-#      - check-clang-format
-#      - check-levelization
+    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-rhel.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
@@ -53,9 +49,7 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   ubuntu:
-#    needs:
-#      - check-clang-format
-#      - check-levelization
+    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-ubuntu.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
@@ -65,9 +59,7 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   macos:
-#    needs:
-#      - check-clang-format
-#      - check-levelization
+    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-macos.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
@@ -77,9 +69,7 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   windows:
-#    needs:
-#      - check-clang-format
-#      - check-levelization
+    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-windows.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}

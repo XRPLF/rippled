@@ -26,7 +26,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-windows
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -58,7 +58,7 @@ jobs:
           python-version: 3.13
       - name: Generate strategy matrix
         id: generate
-        run: python .github/scripts/strategy-matrix.py --config=.github/scripts/strategy-matrix-windows.json --ref=${{ github.ref }} >> "${GITHUB_OUTPUT}"
+        run: python .github/scripts/strategy-matrix/generate.py --config=.github/scripts/strategy-matrix/windows.json --ref=${{ github.ref }} >> "${GITHUB_OUTPUT}"
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
 
@@ -74,26 +74,25 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-#      - name: Check configuration
-#        run: |
-#          echo "Checking path"
-#          $env:PATH -split ';' | Sort-Object
-#
-#          echo "Checking environment variables."
-#          ls env:
       - name: Set up Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: 3.13
       - name: Install Conan
         run: pip install wheel conan
-      - name: Check versions
+      - name: Check configuration
         run: |
-          echo "Checking CMake version."
-          cmake --version
-          
-          echo "Checking Conan version."
-          conan --version
+#          echo "Checking path"
+#          $env:PATH -split ';' | Sort-Object
+#
+#          echo "Checking environment variables."
+#          ls env:
+#
+           echo "Checking CMake version."
+           cmake --version
+
+           echo "Checking Conan version."
+           conan --version
       - name: Build and test the binary
         uses: ./.github/actions/build-test
         with:

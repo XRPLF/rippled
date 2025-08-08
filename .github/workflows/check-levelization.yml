@@ -6,7 +6,7 @@ name: Levelization
 on: workflow_call
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-levelization
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -20,7 +20,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Check levelization
-        run: Builds/levelization/levelization.sh
+        run: .github/scripts/levelization/generate.sh
       - name: Check for differences
         env:
           MESSAGE: |
@@ -32,8 +32,8 @@ jobs:
             removed from loops.txt, it's probably an improvement, while if
             something was added, it's probably a regression.
 
-            Run './Builds/levelization/levelization.sh' in your repo, and then
-            commit and push the changes. See Builds/levelization/README.md for
+            Run '.github/scripts/levelization/generate.sh' in your repo, commit
+            and push the changes. See .github/scripts/levelization/README.md for
             more info.
         run: |
           DIFF=$(git status --porcelain)

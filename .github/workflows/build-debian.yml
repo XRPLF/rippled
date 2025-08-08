@@ -26,7 +26,7 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-debian
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -58,7 +58,7 @@ jobs:
           python-version: 3.13
       - name: Generate strategy matrix
         id: generate
-        run: python .github/scripts/strategy-matrix.py --config=.github/scripts/strategy-matrix-debian.json --ref=${{ github.ref }} >> "${GITHUB_OUTPUT}"
+        run: python .github/scripts/strategy-matrix/generate.py --config=.github/scripts/strategy-matrix/debian.json --ref=${{ github.ref }} >> "${GITHUB_OUTPUT}"
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
 
@@ -79,20 +79,19 @@ jobs:
         run: |
           echo "Checking path"
           echo ${PATH} | tr ':' '\n'
-          
+
           echo "Checking environment variables."
           env | sort
-      - name: Check versions
-        run: |
+
           echo "Checking CMake version."
           cmake --version
-          
+
           echo "Checking compiler version."
           ${CC} --version
-          
+
           echo "Checking Conan version."
           conan --version
-          
+
           echo "Checking Ninja version."
           ninja --version
       - name: Build and test the binary
