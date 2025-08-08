@@ -18,9 +18,12 @@ concurrency:
 # This part of Conan configuration is specific to this workflow only; we do not want
 # to pollute conan/profiles directory with settings which might not work for others
 env:
-  CONAN_URL: https://conan.ripplex.io
-  CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.CONAN_USERNAME }}
-  CONAN_PASSWORD_XRPLF: ${{ secrets.CONAN_TOKEN }}
+  CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
+  CONAN_REMOTE_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
+  CONAN_REMOTE_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+  # This part of the Conan configuration is specific to this workflow only; we
+  # do not want to pollute the 'conan/profiles' directory with settings that
+  # might not work for other workflows.
   CONAN_GLOBAL_CONF: |
     core.download:parallel={{os.cpu_count()}}
     core.upload:parallel={{os.cpu_count()}}
