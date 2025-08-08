@@ -74,13 +74,19 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
             env.close();
             BEAST_EXPECT(env.le(keylet));
-            std::uint64_t const scale = asset.raw().native() ? 1e12 : 1e6;
+            std::uint64_t const scale = asset.raw().holds<MPTIssue>() ? 1 : 1e6;
 
-            auto const [share, vaultAccount] = [&env, keylet = keylet, this]()
-                -> std::tuple<PrettyAsset, Account> {
+            auto const [share, vaultAccount] =
+                [&env,
+                 keylet = keylet,
+                 asset,
+                 this]() -> std::tuple<PrettyAsset, Account> {
                 auto const vault = env.le(keylet);
                 BEAST_EXPECT(vault != nullptr);
-                BEAST_EXPECT(vault->at(sfAssetScale) == 6);
+                if (asset.raw().holds<Issue>() && !asset.raw().native())
+                    BEAST_EXPECT(vault->at(sfAssetScale) == 6);
+                else
+                    BEAST_EXPECT(vault->at(sfAssetScale) == 0);
                 return {
                     MPTIssue(vault->at(sfShareMPTID)),
                     Account("vault", vault->at(sfAccount))};
@@ -1582,7 +1588,7 @@ class Vault_test : public beast::unit_test::suite
             auto issuance = env.le(keylet::mptIssuance(share));
             BEAST_EXPECT(issuance);
             Number outstandingShares = issuance->at(sfOutstandingAmount);
-            BEAST_EXPECT(outstandingShares == 100'000'000);
+            BEAST_EXPECT(outstandingShares == 100);
 
             mptt.set({.account = issuer, .flags = tfMPTLock});
             env.close();
@@ -1868,6 +1874,8 @@ class Vault_test : public beast::unit_test::suite
                 // Withdrawal to other (authorized) accounts works
                 tx[sfDestination] = issuer.human();
                 env(tx);
+                env.close();
+
                 tx[sfDestination] = owner.human();
                 env(tx);
                 env.close();
@@ -1889,6 +1897,7 @@ class Vault_test : public beast::unit_test::suite
                  .holder = depositor,
                  .amount = asset(800)});
             env(tx);
+            env.close();
 
             env(vault.del({.owner = owner, .id = keylet.key}));
         });
@@ -2921,7 +2930,7 @@ class Vault_test : public beast::unit_test::suite
     }
 
     void
-    testAssetScale()
+    testAssetScaleIOU()
     {
         using namespace test::jtx;
 
@@ -3099,6 +3108,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 env.balance(d.depositor, d.assets) ==
                 STAmount(d.asset, start - Number(12, -1)));
+
             {
                 auto tx = d.vault.deposit(
                     {.depositor = d.depositor,
@@ -3598,19 +3608,19 @@ public:
     void
     run() override
     {
-        // testSequences();
-        // testPreflight();
-        // testCreateFailXRP();
-        // testCreateFailIOU();
-        // testCreateFailMPT();
-        // testWithMPT();
-        // testWithIOU();
-        // testWithDomainCheck();
-        // testWithDomainCheckXRP();
-        // testNonTransferableShares();
-        // testFailedPseudoAccount();
-        testAssetScale();
-        // testRPC();
+        testSequences();
+        testPreflight();
+        testCreateFailXRP();
+        testCreateFailIOU();
+        testCreateFailMPT();
+        testWithMPT();
+        testWithIOU();
+        testWithDomainCheck();
+        testWithDomainCheckXRP();
+        testNonTransferableShares();
+        testFailedPseudoAccount();
+        testAssetScaleIOU();
+        testRPC();
     }
 };
 

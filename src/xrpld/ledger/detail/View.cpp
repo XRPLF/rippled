@@ -2801,7 +2801,7 @@ assetsToSharesDeposit(
 {
     XRPL_ASSERT(
         !assets.negative(),
-        "ripple::sharesToAssetsWithdraw : non-negative assets");
+        "ripple::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesDeposit : assets and vault match");
@@ -2860,7 +2860,7 @@ assetsToSharesWithdraw(
     if (assetTotal == 0)
         return shares;
     Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = (shareTotal * (assets / assetTotal)).truncate();
+    shares = shareTotal * (assets / assetTotal);
     return shares;
 }
 

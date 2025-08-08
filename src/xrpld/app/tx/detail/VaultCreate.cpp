@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -88,6 +89,10 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const scale = ctx.tx[~sfAssetScale])
     {
         if (scale > 18)
+            return temMALFORMED;
+
+        auto vaultAsset = ctx.tx[sfAsset];
+        if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
     }
 
@@ -202,7 +207,9 @@ VaultCreate::doApply()
     // * in MPTokenIssuance it is merely metadata, not used by any program logic
     // * in Vault it is used to calculate shares to assets conversion factor
     std::uint8_t assetScale = vaultDefaultAssetScale;
-    if (auto const scale = ctx_.tx[~sfAssetScale])
+    if (asset.holds<MPTIssue>() || asset.native())
+        assetScale = 0;
+    else if (auto const scale = ctx_.tx[~sfAssetScale])
         assetScale = *scale;
 
     auto txFlags = tx.getFlags();
