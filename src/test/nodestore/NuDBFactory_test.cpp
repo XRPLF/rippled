@@ -50,7 +50,9 @@ private:
 
     // Helper function to create a backend and test basic functionality
     bool
-    testBackendFunctionality(Section const& params)
+    testBackendFunctionality(
+        Section const& params,
+        std::size_t expectedBlocksize)
     {
         try
         {
@@ -60,12 +62,15 @@ private:
             auto backend = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
 
-            if (!backend)
+            if (!BEAST_EXPECT(backend))
+                return false;
+
+            if (!BEAST_EXPECT(backend->getBlockSize() == expectedBlocksize))
                 return false;
 
             backend->open();
 
-            if (!backend->isOpen())
+            if (!BEAST_EXPECT(backend->isOpen()))
                 return false;
 
             // Test basic store/fetch functionality
@@ -95,7 +100,7 @@ public:
         auto params = createSection(tempDir.path());
 
         // Should work with default 4096 block size
-        BEAST_EXPECT(testBackendFunctionality(params));
+        BEAST_EXPECT(testBackendFunctionality(params, 4096));
     }
 
     void
@@ -103,22 +108,27 @@ public:
     {
         testcase("Valid block sizes");
 
-        std::vector<std::string> validSizes = {
-            "4096", "8192", "16384", "32768"};
+        std::vector<std::size_t> validSizes = {4096, 8192, 16384, 32768};
 
         for (auto const& size : validSizes)
         {
             beast::temp_dir tempDir;
-            auto params = createSection(tempDir.path(), size);
+            auto params = createSection(tempDir.path(), to_string(size));
 
-            BEAST_EXPECT(testBackendFunctionality(params));
+            BEAST_EXPECT(testBackendFunctionality(params, size));
         }
+        // Empty value is ignored by the config parser, so uses the
+        // default
+        beast::temp_dir tempDir;
+        auto params = createSection(tempDir.path(), "");
+
+        BEAST_EXPECT(testBackendFunctionality(params, 4096));
     }
 
     void
     testInvalidBlockSizes()
     {
-        testcase("Invalid block sizes with fallback to default");
+        testcase("Invalid block sizes");
 
         std::vector<std::string> invalidSizes = {
             "2048",    // Too small
@@ -132,7 +142,6 @@ public:
             "-1",      // Negative
             "abc",     // Non-numeric
             "4k",      // Invalid format
-            "",        // Empty string
             "4096.5"   // Decimal
         };
 
@@ -141,8 +150,8 @@ public:
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), size);
 
-            // Should still work by falling back to default 4096
-            BEAST_EXPECT(testBackendFunctionality(params));
+            // Fails
+            BEAST_EXPECT(!testBackendFunctionality(params, 4096));
         }
 
         // Test whitespace cases separately since lexical_cast may handle them
@@ -156,9 +165,8 @@ public:
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), size);
 
-            // Should work regardless (either parsed correctly or fallback to
-            // default)
-            BEAST_EXPECT(testBackendFunctionality(params));
+            // Fails
+            BEAST_EXPECT(!testBackendFunctionality(params, 4096));
         }
     }
 
@@ -185,7 +193,7 @@ public:
                 std::string::npos);
         }
 
-        // Test invalid block size warning
+        // Test invalid block size failure
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), "5000");
@@ -194,19 +202,26 @@ public:
             beast::Journal journal(sink);
 
             DummyScheduler scheduler;
-            auto backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
-
-            std::string logOutput = sink.messages().str();
-            BEAST_EXPECT(
-                logOutput.find("Invalid nudb_block_size: 5000") !=
-                std::string::npos);
-            BEAST_EXPECT(
-                logOutput.find("Must be power of 2 between 4096 and 32768") !=
-                std::string::npos);
+            try
+            {
+                auto backend = Manager::instance().make_Backend(
+                    params, megabytes(4), scheduler, journal);
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                std::string logOutput{e.what()};
+                BEAST_EXPECT(
+                    logOutput.find("Invalid nudb_block_size: 5000") !=
+                    std::string::npos);
+                BEAST_EXPECT(
+                    logOutput.find(
+                        "Must be power of 2 between 4096 and 32768") !=
+                    std::string::npos);
+            }
         }
 
-        // Test non-numeric value warning
+        // Test non-numeric value failure
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), "invalid");
@@ -215,15 +230,20 @@ public:
             beast::Journal journal(sink);
 
             DummyScheduler scheduler;
-            auto backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
+            try
+            {
+                auto backend = Manager::instance().make_Backend(
+                    params, megabytes(4), scheduler, journal);
 
-            std::string logOutput = sink.messages().str();
-            BEAST_EXPECT(
-                logOutput.find("Invalid nudb_block_size value: invalid") !=
-                std::string::npos);
-            BEAST_EXPECT(
-                logOutput.find("Using default 4096") != std::string::npos);
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                std::string logOutput{e.what()};
+                BEAST_EXPECT(
+                    logOutput.find("Invalid nudb_block_size value: invalid") !=
+                    std::string::npos);
+            }
         }
     }
 
@@ -250,22 +270,25 @@ public:
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), size);
 
-            // All should work due to fallback, but we test the validation logic
-            // by checking if warnings are logged for invalid values
+            // We test the validation logic by catching exceptions for invalid
+            // values
             test::StreamSink sink(beast::severities::kWarning);
             beast::Journal journal(sink);
 
             DummyScheduler scheduler;
-            auto backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
-
-            std::string logOutput = sink.messages().str();
-            bool hasWarning =
-                logOutput.find("Invalid nudb_block_size") != std::string::npos;
-
-            BEAST_EXPECT(
-                hasWarning ==
-                !shouldWork);  // Warning should appear for invalid values
+            try
+            {
+                auto backend = Manager::instance().make_Backend(
+                    params, megabytes(4), scheduler, journal);
+                BEAST_EXPECT(shouldWork);
+            }
+            catch (std::exception const& e)
+            {
+                std::string logOutput{e.what()};
+                BEAST_EXPECT(
+                    logOutput.find("Invalid nudb_block_size") !=
+                    std::string::npos);
+            }
         }
     }
 
@@ -285,7 +308,7 @@ public:
             auto backend1 = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
             BEAST_EXPECT(backend1 != nullptr);
-            BEAST_EXPECT(testBackendFunctionality(params));
+            BEAST_EXPECT(testBackendFunctionality(params, 16384));
         }
 
         // Test second constructor (with nudb::context)
@@ -346,11 +369,17 @@ public:
             beast::Journal journal(sink);
 
             DummyScheduler scheduler;
-            auto backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
-
-            // Should work with either success or fallback to default
-            BEAST_EXPECT(testBackendFunctionality(params));
+            try
+            {
+                auto backend = Manager::instance().make_Backend(
+                    params, megabytes(4), scheduler, journal);
+                fail();
+            }
+            catch (...)
+            {
+                // Fails
+                BEAST_EXPECT(!testBackendFunctionality(params, 8192));
+            }
         }
     }
 
