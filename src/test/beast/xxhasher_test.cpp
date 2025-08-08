@@ -22,6 +22,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 namespace beast {
 
+int volatile xxhasher::test = 0;
+
 class XXHasher_test : public unit_test::suite
 {
 public:
@@ -102,6 +104,8 @@ public:
         BEAST_EXPECT(
             static_cast<xxhasher::result_type>(hasher) ==
             17285302196561698791ULL);
+
+        BEAST_EXPECT(xxhasher::test > 0);
     }
 
     void
@@ -123,6 +127,8 @@ public:
         BEAST_EXPECT(
             static_cast<xxhasher::result_type>(hasher) ==
             1865045178324729219ULL);
+
+        BEAST_EXPECT(xxhasher::test > 0);
     }
 
     void
@@ -144,6 +150,8 @@ public:
         BEAST_EXPECT(
             static_cast<xxhasher::result_type>(hasher) ==
             16189862915636005281ULL);
+
+        BEAST_EXPECT(xxhasher::test > 0);
     }
 
     void
@@ -162,6 +170,8 @@ public:
         BEAST_EXPECT(
             static_cast<xxhasher::result_type>(hasher) ==
             15296278154063476002ULL);
+
+        BEAST_EXPECT(xxhasher::test > 0);
     }
 
     void
@@ -180,6 +190,8 @@ public:
         BEAST_EXPECT(
             static_cast<xxhasher::result_type>(hasher) ==
             17285302196561698791ULL);
+
+        BEAST_EXPECT(xxhasher::test > 0);
     }
 
     void
@@ -210,6 +222,8 @@ public:
 
             BEAST_EXPECT(xxhashResult1 == xxhashResult2);
         }
+
+        BEAST_EXPECT(xxhasher::test > 0);
     }
 
     void

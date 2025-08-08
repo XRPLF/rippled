@@ -36,6 +36,7 @@ class xxhasher
 {
 public:
     using result_type = std::size_t;
+    static int volatile test;
 
 private:
     static_assert(sizeof(std::size_t) == 8, "requires 64-bit std::size_t");
@@ -143,6 +144,7 @@ public:
     {
         if (state_)
         {
+            test = test + 1;
             XXH3_freeState(state_);
         }
     }
