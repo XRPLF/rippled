@@ -1977,15 +1977,19 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
 
         std::string msg = "trace float";
 
-        auto result = hfs.traceFloat(msg, makeSlice(invalid));
-        BEAST_EXPECT(
-            result &&
-            *result ==
-                msg.size() + 14 /* error msg size*/ + invalid.size() * 2);
+        {
+            auto const result = hfs.traceFloat(msg, makeSlice(invalid));
+            BEAST_EXPECT(
+                result &&
+                *result ==
+                    msg.size() + 14 /* error msg size*/ + invalid.size() * 2);
+        }
 
-        result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
-        BEAST_EXPECT(
-            result && *result == msg.size() + 19 /* string represenation*/);
+        {
+            auto const result = hfs.traceFloat(msg, makeSlice(floatMaxExp));
+            BEAST_EXPECT(
+                result && *result == msg.size() + 19 /* string represenation*/);
+        }
     }
 
     void
@@ -2001,24 +2005,38 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result =
+                hfs.floatFromInt(std::numeric_limits<int64_t>::min(), -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), 4);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result =
+                hfs.floatFromInt(std::numeric_limits<int64_t>::min(), 4);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatFromInt(std::numeric_limits<int64_t>::min(), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+        {
+            auto const result =
+                hfs.floatFromInt(std::numeric_limits<int64_t>::min(), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+        }
 
-        result = hfs.floatFromInt(0, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        {
+            auto const result = hfs.floatFromInt(0, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
 
-        result = hfs.floatFromInt(std::numeric_limits<int64_t>::max(), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMax);
+        {
+            auto const result =
+                hfs.floatFromInt(std::numeric_limits<int64_t>::max(), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMax);
+        }
     }
 
     void
@@ -2034,22 +2052,32 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result =
-            hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result =
+                hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), 4);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result =
+                hfs.floatFromUint(std::numeric_limits<uint64_t>::min(), 4);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatFromUint(0, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        {
+            auto const result = hfs.floatFromUint(0, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
 
-        result = hfs.floatFromUint(std::numeric_limits<uint64_t>::max(), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatUIntMax);
+        {
+            auto const result =
+                hfs.floatFromUint(std::numeric_limits<uint64_t>::max(), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatUIntMax);
+        }
     }
 
     void
@@ -2065,49 +2093,80 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatSet(1, 0, -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatSet(1, 0, -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatSet(1, 0, 4);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatSet(1, 0, 4);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        {
+            auto const result =
+                hfs.floatSet(1, Number::maxExponent + normalExp + 1, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() ==
+                    HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
 
-        result = hfs.floatSet(1, IOUAmount::maxExponent + normalExp + 1, 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        {
+            auto const result =
+                hfs.floatSet(1, IOUAmount::maxExponent + normalExp + 1, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() ==
+                    HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
 
-        result = hfs.floatSet(1, IOUAmount::minExponent + normalExp - 1, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        {
+            auto const result =
+                hfs.floatSet(1, IOUAmount::minExponent + normalExp - 1, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
 
         ////////
 
-        result = hfs.floatSet(1, IOUAmount::maxExponent + normalExp, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+        {
+            auto const result =
+                hfs.floatSet(1, IOUAmount::maxExponent + normalExp, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+        }
 
-        result = hfs.floatSet(-1, IOUAmount::maxExponent + normalExp, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
+        {
+            auto const result =
+                hfs.floatSet(-1, IOUAmount::maxExponent + normalExp, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinusMaxExp);
+        }
 
-        result = hfs.floatSet(1, IOUAmount::maxExponent + normalExp - 1, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
+        {
+            auto const result =
+                hfs.floatSet(1, IOUAmount::maxExponent + normalExp - 1, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
+        }
 
-        result =
-            hfs.floatSet(IOUAmount::maxMantissa, IOUAmount::maxExponent, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
+        {
+            auto const result =
+                hfs.floatSet(IOUAmount::maxMantissa, IOUAmount::maxExponent, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
+        }
 
-        result = hfs.floatSet(1, IOUAmount::minExponent + normalExp, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinExp);
+        {
+            auto const result =
+                hfs.floatSet(1, IOUAmount::minExponent + normalExp, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinExp);
+        }
 
-        result = hfs.floatSet(10, -1, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        {
+            auto const result = hfs.floatSet(10, -1, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        }
     }
 
     void
@@ -2123,35 +2182,50 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatCompare(Slice(), Slice());
-        BEAST_EXPECT(!result) &&
+        {
+            auto const result = hfs.floatCompare(Slice(), Slice());
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result =
+                hfs.floatCompare(makeSlice(float1), makeSlice(invalid));
             BEAST_EXPECT(
+                !result &&
                 result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatCompare(makeSlice(float1), makeSlice(invalid));
-        BEAST_EXPECT(
-            !result &&
-            result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto x = floatMaxExp;
+            // exp = 81 + 97 = 178
+            x[1] |= 0x80;
+            x[1] &= 0xBF;
+            auto const result =
+                hfs.floatCompare(makeSlice(x), makeSlice(floatMaxExp));
+            BEAST_EXPECT(
+                !result &&
+                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        auto x = floatMaxExp;
-        // exp = 81 + 97 = 178
-        x[1] |= 0x80;
-        x[1] &= 0xBF;
-        result = hfs.floatCompare(makeSlice(x), makeSlice(floatMaxExp));
-        BEAST_EXPECT(
-            !result &&
-            result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatCompare(
+                makeSlice(floatIntMin), makeSlice(floatIntZero));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 2);
+        }
 
-        result =
-            hfs.floatCompare(makeSlice(floatIntMin), makeSlice(floatIntZero));
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == 2);
+        {
+            auto const result = hfs.floatCompare(
+                makeSlice(floatIntMax), makeSlice(floatIntZero));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 1);
+        }
 
-        result =
-            hfs.floatCompare(makeSlice(floatIntMax), makeSlice(floatIntZero));
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == 1);
-
-        result = hfs.floatCompare(makeSlice(float1), makeSlice(float1));
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == 0);
+        {
+            auto const result =
+                hfs.floatCompare(makeSlice(float1), makeSlice(float1));
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == 0);
+        }
     }
 
     void
@@ -2167,34 +2241,48 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatAdd(Slice(), Slice(), -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatAdd(Slice(), Slice(), -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatAdd(Slice(), Slice(), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatAdd(Slice(), Slice(), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatAdd(makeSlice(float1), makeSlice(invalid), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result =
+                hfs.floatAdd(makeSlice(float1), makeSlice(invalid), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result =
-            hfs.floatAdd(makeSlice(floatMaxIOU), makeSlice(floatMaxExp), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        {
+            auto const result =
+                hfs.floatAdd(makeSlice(floatMaxIOU), makeSlice(floatMaxExp), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() ==
+                    HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
 
-        result =
-            hfs.floatAdd(makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+        {
+            auto const result = hfs.floatAdd(
+                makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+        }
 
-        result =
-            hfs.floatAdd(makeSlice(floatIntMax), makeSlice(floatIntMin), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        {
+            auto const result =
+                hfs.floatAdd(makeSlice(floatIntMax), makeSlice(floatIntMin), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
     }
 
     void
@@ -2210,35 +2298,48 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatSubtract(Slice(), Slice(), -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatSubtract(Slice(), Slice(), -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatSubtract(Slice(), Slice(), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatSubtract(Slice(), Slice(), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatSubtract(makeSlice(float1), makeSlice(invalid), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result =
+                hfs.floatSubtract(makeSlice(float1), makeSlice(invalid), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        // hfs.floatSet(-1, 80, 0);
-        result = hfs.floatSubtract(
-            makeSlice(floatMaxIOU), makeSlice(floatMinusMaxExp), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        {
+            auto const result = hfs.floatSubtract(
+                makeSlice(floatMaxIOU), makeSlice(floatMinusMaxExp), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() ==
+                    HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
 
-        result = hfs.floatSubtract(
-            makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+        {
+            auto const result = hfs.floatSubtract(
+                makeSlice(floatIntMin), makeSlice(floatIntZero), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntMin);
+        }
 
-        result =
-            hfs.floatSubtract(makeSlice(floatIntZero), makeSlice(float1), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus1);
+        {
+            auto const result = hfs.floatSubtract(
+                makeSlice(floatIntZero), makeSlice(float1), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMinus1);
+        }
     }
 
     void
@@ -2254,38 +2355,54 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatMultiply(Slice(), Slice(), -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatMultiply(Slice(), Slice(), -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatMultiply(Slice(), Slice(), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result = hfs.floatMultiply(Slice(), Slice(), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        result = hfs.floatMultiply(makeSlice(float1), makeSlice(invalid), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        {
+            auto const result =
+                hfs.floatMultiply(makeSlice(float1), makeSlice(invalid), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
 
-        // hfs.floatSet(10, 0, 0);
-        result =
-            hfs.floatMultiply(makeSlice(floatMaxIOU), makeSlice(float1More), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        {
+            auto const result = hfs.floatMultiply(
+                makeSlice(floatMaxIOU), makeSlice(float1More), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() ==
+                    HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
 
-        result = hfs.floatMultiply(makeSlice(float1), makeSlice(float1), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        {
+            auto const result =
+                hfs.floatMultiply(makeSlice(float1), makeSlice(float1), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        }
 
-        result = hfs.floatMultiply(
-            makeSlice(floatIntZero), makeSlice(floatMaxIOU), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        {
+            auto const result = hfs.floatMultiply(
+                makeSlice(floatIntZero), makeSlice(floatMaxIOU), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
 
-        result =
-            hfs.floatMultiply(makeSlice(float10), makeSlice(floatPreMaxExp), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+        {
+            auto const result = hfs.floatMultiply(
+                makeSlice(float10), makeSlice(floatPreMaxExp), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxExp);
+        }
     }
 
     void
@@ -2301,43 +2418,62 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatDivide(Slice(), Slice(), -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        result = hfs.floatDivide(Slice(), Slice(), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        result = hfs.floatDivide(makeSlice(float1), makeSlice(invalid), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        // hfs.floatSet(10, 0, 0);
-        result = hfs.floatDivide(makeSlice(float1), makeSlice(floatIntZero), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
-
-        auto y = hfs.floatSet(
-            IOUAmount::maxMantissa, -normalExp - 1, 0);  // 0.9999999...
-        if (BEAST_EXPECT(y))
         {
-            result = hfs.floatDivide(makeSlice(floatMaxIOU), makeSlice(*y), 0);
+            auto const result = hfs.floatDivide(Slice(), Slice(), -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result = hfs.floatDivide(Slice(), Slice(), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result =
+                hfs.floatDivide(makeSlice(float1), makeSlice(invalid), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result =
+                hfs.floatDivide(makeSlice(float1), makeSlice(floatIntZero), 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
                     HostFunctionError::FLOAT_COMPUTATION_ERROR);
         }
 
-        result = hfs.floatDivide(makeSlice(floatIntZero), makeSlice(float1), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        {
+            auto const y = hfs.floatSet(
+                IOUAmount::maxMantissa, -normalExp - 1, 0);  // 0.9999999...
+            if (BEAST_EXPECT(y))
+            {
+                auto const result =
+                    hfs.floatDivide(makeSlice(floatMaxIOU), makeSlice(*y), 0);
+                BEAST_EXPECT(!result) &&
+                    BEAST_EXPECT(
+                        result.error() ==
+                        HostFunctionError::FLOAT_COMPUTATION_ERROR);
+            }
+        }
 
-        result = hfs.floatDivide(makeSlice(floatMaxExp), makeSlice(float10), 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
+        {
+            auto const result =
+                hfs.floatDivide(makeSlice(floatIntZero), makeSlice(float1), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
+
+        {
+            auto const result =
+                hfs.floatDivide(makeSlice(floatMaxExp), makeSlice(float10), 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatPreMaxExp);
+        }
     }
 
     void
@@ -2353,48 +2489,63 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatRoot(Slice(), 2, -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        result = hfs.floatRoot(makeSlice(invalid), 3, 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        // hfs.floatSet(10, 0, 0);
-        result = hfs.floatRoot(makeSlice(float1), -2, 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        result = hfs.floatRoot(makeSlice(floatIntZero), 2, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
-
-        result = hfs.floatRoot(makeSlice(floatMaxIOU), 1, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
-
-        auto x = hfs.floatSet(100, 0, 0);  // 100
-        if (BEAST_EXPECT(x))
         {
-            result = hfs.floatRoot(makeSlice(*x), 2, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float10);
+            auto const result = hfs.floatRoot(Slice(), 2, -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
-        x = hfs.floatSet(1000, 0, 0);  // 1000
-        if (BEAST_EXPECT(x))
         {
-            result = hfs.floatRoot(makeSlice(*x), 3, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float10);
+            auto const result = hfs.floatRoot(makeSlice(invalid), 3, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
-        x = hfs.floatSet(1, -2, 0);       // 0.01
-        auto y = hfs.floatSet(1, -1, 0);  // 0.1
-        if (BEAST_EXPECT(x && y))
         {
-            result = hfs.floatRoot(makeSlice(*x), 2, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            auto const result = hfs.floatRoot(makeSlice(float1), -2, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result = hfs.floatRoot(makeSlice(floatIntZero), 2, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
+        }
+
+        {
+            auto const result = hfs.floatRoot(makeSlice(floatMaxIOU), 1, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
+        }
+
+        {
+            auto const x = hfs.floatSet(100, 0, 0);  // 100
+            if (BEAST_EXPECT(x))
+            {
+                auto const result = hfs.floatRoot(makeSlice(*x), 2, 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == float10);
+            }
+        }
+
+        {
+            auto const x = hfs.floatSet(1000, 0, 0);  // 1000
+            if (BEAST_EXPECT(x))
+            {
+                auto const result = hfs.floatRoot(makeSlice(*x), 3, 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == float10);
+            }
+        }
+
+        {
+            auto const x = hfs.floatSet(1, -2, 0);  // 0.01
+            auto const y = hfs.floatSet(1, -1, 0);  // 0.1
+            if (BEAST_EXPECT(x && y))
+            {
+                auto const result = hfs.floatRoot(makeSlice(*x), 2, 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            }
         }
     }
 
@@ -2411,51 +2562,71 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatPower(Slice(), 2, -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        result = hfs.floatPower(makeSlice(invalid), 3, 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        // hfs.floatSet(10, 0, 0);
-        result = hfs.floatPower(makeSlice(float1), -2, 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        result = hfs.floatPower(makeSlice(floatMaxIOU), 2, 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
-
-        result = hfs.floatPower(makeSlice(floatMaxIOU), 40000, 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
-
-        result = hfs.floatPower(makeSlice(floatMaxIOU), 0, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
-
-        result = hfs.floatPower(makeSlice(floatMaxIOU), 1, 0);
-        BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
-
-        auto x = hfs.floatSet(100, 0, 0);  // 100
-        if (BEAST_EXPECT(x))
         {
-            result = hfs.floatPower(makeSlice(float10), 2, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == *x);
+            auto const result = hfs.floatPower(Slice(), 2, -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
-        x = hfs.floatSet(1, -1, 0);       // 0.1
-        auto y = hfs.floatSet(1, -2, 0);  // 0.01
-        if (BEAST_EXPECT(x && y))
         {
-            result = hfs.floatPower(makeSlice(*x), 2, 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            auto const result = hfs.floatPower(makeSlice(invalid), 3, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result = hfs.floatPower(makeSlice(float1), -2, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 2, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() ==
+                    HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
+
+        {
+            auto const result =
+                hfs.floatPower(makeSlice(floatMaxIOU), 40000, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() ==
+                    HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
+
+        {
+            auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 0, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float1);
+        }
+
+        {
+            auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 1, 0);
+            BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatMaxIOU);
+        }
+
+        {
+            auto const x = hfs.floatSet(100, 0, 0);  // 100
+            if (BEAST_EXPECT(x))
+            {
+                auto const result = hfs.floatPower(makeSlice(float10), 2, 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *x);
+            }
+        }
+
+        {
+            auto const x = hfs.floatSet(1, -1, 0);  // 0.1
+            auto const y = hfs.floatSet(1, -2, 0);  // 0.01
+            if (BEAST_EXPECT(x && y))
+            {
+                auto const result = hfs.floatPower(makeSlice(*x), 2, 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            }
         }
     }
 
@@ -2472,45 +2643,58 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto result = hfs.floatLog(Slice(), -1);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        result = hfs.floatLog(makeSlice(invalid), 0);
-        BEAST_EXPECT(!result) &&
-            BEAST_EXPECT(
-                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
-
-        // hfs.floatSet(10, 0, 0);
-        auto x = hfs.floatSet(9'500'000'000'000'001, -14, 0);  // almost 80+15
-        if (BEAST_EXPECT(x))
         {
-            result = hfs.floatLog(makeSlice(floatMaxExp), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == *x);
+            auto const result = hfs.floatLog(Slice(), -1);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
-        x = hfs.floatSet(100, 0, 0);  // 100
-        if (BEAST_EXPECT(x))
         {
-            result = hfs.floatLog(makeSlice(*x), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == float2);
+            auto const result = hfs.floatLog(makeSlice(invalid), 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
-        x = hfs.floatSet(1000, 0, 0);    // 1000
-        auto y = hfs.floatSet(3, 0, 0);  // 0.1
-        if (BEAST_EXPECT(x && y))
         {
-            result = hfs.floatLog(makeSlice(*x), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            auto const x =
+                hfs.floatSet(9'500'000'000'000'001, -14, 0);  // almost 80+15
+            if (BEAST_EXPECT(x))
+            {
+                auto const result = hfs.floatLog(makeSlice(floatMaxExp), 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *x);
+            }
         }
 
-        x = hfs.floatSet(1, -2, 0);                   // 0.01
-        y = hfs.floatSet(-1999999993734431, -15, 0);  // almost -2
-        if (BEAST_EXPECT(x && y))
         {
-            result = hfs.floatLog(makeSlice(*x), 0);
-            BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            auto const x = hfs.floatSet(100, 0, 0);  // 100
+            if (BEAST_EXPECT(x))
+            {
+                auto const result = hfs.floatLog(makeSlice(*x), 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == float2);
+            }
+        }
+
+        {
+            auto const x = hfs.floatSet(1000, 0, 0);  // 1000
+            auto const y = hfs.floatSet(3, 0, 0);     // 0.1
+            if (BEAST_EXPECT(x && y))
+            {
+                auto const result = hfs.floatLog(makeSlice(*x), 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            }
+        }
+
+        {
+            auto const x = hfs.floatSet(1, -2, 0);  // 0.01
+            auto const y =
+                hfs.floatSet(-1999999993734431, -15, 0);  // almost -2
+            if (BEAST_EXPECT(x && y))
+            {
+                auto const result = hfs.floatLog(makeSlice(*x), 0);
+                BEAST_EXPECT(result) && BEAST_EXPECT(*result == *y);
+            }
         }
     }
 
@@ -2527,62 +2711,89 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        auto y = hfs.floatSet(20, 0, 0);
-        if (BEAST_EXPECT(y))
+        auto const y = hfs.floatSet(20, 0, 0);
+        if (!BEAST_EXPECT(y))
+            return;
+
+        Bytes x(8);
+
+        // XRP
+        memset(x.data(), 0, x.size());
+        x[0] = 0x40;
+        x[7] = 10;
+
         {
-            Bytes x(8);
+            auto const result =
+                hfs.floatCompare(makeSlice(x), makeSlice(float10));
+            BEAST_EXPECT(result && *result == 0);
+        }
 
-            // XRP
-            memset(x.data(), 0, x.size());
-            x[0] = 0x40;
-            x[7] = 10;
-
-            auto rc = hfs.floatCompare(makeSlice(x), makeSlice(float10));
-            BEAST_EXPECT(rc && *rc == 0);
-
-            auto result = hfs.floatAdd(makeSlice(x), makeSlice(float10), 0);
-            if (BEAST_EXPECT(rc))
+        {
+            auto const result =
+                hfs.floatAdd(makeSlice(x), makeSlice(float10), 0);
+            if (BEAST_EXPECT(result))
             {
-                rc = hfs.floatCompare(makeSlice(*result), makeSlice(*y));
-                BEAST_EXPECT(rc && *rc == 0);
+                auto const result2 =
+                    hfs.floatCompare(makeSlice(*result), makeSlice(*y));
+                BEAST_EXPECT(result2 && *result2 == 0);
             }
+        }
 
-            // underflow
-            x[7] = 1;
-            result = hfs.floatDivide(makeSlice(x), makeSlice(float1More), 0);
+        // underflow
+        x[7] = 1;
+        {
+            auto const result =
+                hfs.floatDivide(makeSlice(x), makeSlice(float1More), 0);
             BEAST_EXPECT(
                 !result &&
                 result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
 
-            result = hfs.floatMultiply(
+        {
+            auto const result = hfs.floatMultiply(
                 makeSlice(floatMaxXRP), makeSlice(floatIntZero), 0);
             if (BEAST_EXPECT(result))
             {
-                rc = hfs.floatCompare(
+                auto const result2 = hfs.floatCompare(
                     makeSlice(*result), makeSlice(floatIntZero));
-                BEAST_EXPECT(rc && *rc == 0);
+                BEAST_EXPECT(result2 && *result2 == 0);
             }
+        }
 
-            // overflow
-            result = hfs.floatAdd(makeSlice(floatMaxXRP), makeSlice(float1), 0);
+        // overflow
+        {
+            auto const result =
+                hfs.floatAdd(makeSlice(floatMaxXRP), makeSlice(float1), 0);
             BEAST_EXPECT(
                 !result &&
                 result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        }
 
-            // MPT
-            memset(x.data(), 0, x.size());
-            x[0] = 0x60;
-            x[7] = 10;
+        // MPT
+        memset(x.data(), 0, x.size());
+        x[0] = 0x60;
+        x[7] = 10;
 
-            rc = hfs.floatCompare(makeSlice(x), makeSlice(float10));
-            BEAST_EXPECT(rc && *rc == 0);
+        {
+            auto const result =
+                hfs.floatCompare(makeSlice(x), makeSlice(float10));
+            BEAST_EXPECT(result && *result == 0);
+        }
 
-            result = hfs.floatAdd(makeSlice(x), makeSlice(float10), 0);
-            BEAST_EXPECT(rc);
-            rc = hfs.floatCompare(makeSlice(*result), makeSlice(*y));
-            BEAST_EXPECT(rc && *rc == 0);
+        {
+            auto const result =
+                hfs.floatAdd(makeSlice(x), makeSlice(float10), 0);
+            if (BEAST_EXPECT(result))
+            {
+                auto const result2 =
+                    hfs.floatCompare(makeSlice(*result), makeSlice(*y));
+                BEAST_EXPECT(result2 && *result2 == 0);
+            }
+        }
 
-            result = hfs.floatAdd(makeSlice(floatMaxMPT), makeSlice(float1), 0);
+        {
+            auto const result =
+                hfs.floatAdd(makeSlice(floatMaxMPT), makeSlice(float1), 0);
             BEAST_EXPECT(
                 !result &&
                 result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
