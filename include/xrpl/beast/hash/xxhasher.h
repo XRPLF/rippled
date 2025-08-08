@@ -172,7 +172,14 @@ public:
     explicit
     operator result_type() noexcept
     {
-        return retrieveHash();
+        auto result = retrieveHash();
+        resetBuffers();
+        if (state_)
+        {
+            XXH3_freeState(state_);
+            state_ = nullptr;
+        }
+        return result;
     }
 };
 
