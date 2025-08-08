@@ -36,7 +36,8 @@ public:
         hasher(objectToHash.data(), objectToHash.size());
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 16042857369214894119ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            16042857369214894119ULL);
     }
 
     void
@@ -50,7 +51,8 @@ public:
         hasher(objectToHash.data(), objectToHash.size());
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 14440132435660934800ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            14440132435660934800ULL);
     }
 
     void
@@ -64,7 +66,8 @@ public:
         hasher(objectToHash.data(), objectToHash.size());
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 14440132435660934800ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            14440132435660934800ULL);
     }
 
     void
@@ -80,7 +83,8 @@ public:
         }
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 15296278154063476002ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            15296278154063476002ULL);
     }
 
     void
@@ -96,7 +100,8 @@ public:
         }
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 17285302196561698791ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            17285302196561698791ULL);
     }
 
     void
@@ -116,7 +121,8 @@ public:
         hasher(objectToHash.data(), objectToHash.size());
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 1865045178324729219ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            1865045178324729219ULL);
     }
 
     void
@@ -136,7 +142,8 @@ public:
         hasher(objectToHash.data(), objectToHash.size());
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 16189862915636005281ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            16189862915636005281ULL);
     }
 
     void
@@ -153,7 +160,8 @@ public:
         hasher(objectToHash.data(), objectToHash.size());
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 15296278154063476002ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            15296278154063476002ULL);
     }
 
     void
@@ -170,7 +178,8 @@ public:
         hasher(objectToHash.data(), objectToHash.size());
 
         BEAST_EXPECT(
-            static_cast<xxhasher::HashType>(hasher) == 17285302196561698791ULL);
+            static_cast<xxhasher::result_type>(hasher) ==
+            17285302196561698791ULL);
     }
 
     void

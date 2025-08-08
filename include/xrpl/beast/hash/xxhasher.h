@@ -35,21 +35,21 @@ namespace beast {
 class xxhasher
 {
 public:
-    using HashType = std::size_t;
+    using result_type = std::size_t;
 
 private:
-    // requires 64-bit std::size_t
-    static_assert(sizeof(std::size_t) == 8, "");
+    static_assert(sizeof(std::size_t) == 8, "requires 64-bit std::size_t");
+
     // Have an internal buffer to avoid the streaming API
-    // A 40-byte buffer should to be big enough for us
-    static constexpr std::size_t INTERNAL_BUFFER_SIZE = 40;
+    // A 64-byte buffer should to be big enough for us
+    static constexpr std::size_t INTERNAL_BUFFER_SIZE = 64;
+
+    alignas(64) std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_;
+    std::span<std::uint8_t> readBuffer_;
+    std::span<std::uint8_t> writeBuffer_;
 
     std::optional<XXH64_hash_t> seed_;
     XXH3_state_t* state_ = nullptr;
-
-    std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_;
-    std::span<std::uint8_t> readBuffer_;
-    std::span<std::uint8_t> writeBuffer_;
 
     void
     resetBuffers()
@@ -106,7 +106,7 @@ private:
         }
     }
 
-    HashType
+    result_type
     retrieveHash()
     {
         if (state_)
@@ -129,8 +129,6 @@ private:
     }
 
 public:
-    using result_type = std::size_t;
-
     static constexpr auto const endian = boost::endian::order::native;
 
     xxhasher(xxhasher const&) = delete;
@@ -173,7 +171,7 @@ public:
     }
 
     explicit
-    operator HashType() noexcept
+    operator result_type() noexcept
     {
         return retrieveHash();
     }
