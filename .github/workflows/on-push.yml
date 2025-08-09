@@ -1,14 +1,12 @@
 # This workflow runs all workflows to check, build and test the project on
 # various Linux flavors, as well as MacOS and Windows.
-name: Main
+name: Push
 
 # This workflow is triggered on every push to the repository, including pull
 # requests. However, it will not run if the pull request is a draft unless it
-# has the 'DraftRunCI' label. As GitHub Actions does not support such `if`
-# conditions here, the individual jobs will check the pull request state and
-# labels to determine whether to run or not. The workflows called by the jobs
-# may also have their own conditions to partially or completely skip execution
-# as needed.
+# has the 'DraftRunCI' label. The missing commits check is only run when the
+# code is merged into the 'develop' or 'release' branches, and the documentation
+# is built when the code is merged into the 'develop' branch.
 on: push
 
 concurrency:
@@ -28,53 +26,51 @@ jobs:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/check-levelization.yml
 
-  debian:
+  check-missing-commits:
+    if: ${{ github.ref_type == 'branch' && contains(fromJSON('["develop", "release"]'), github.ref_name) }}
+    uses: ./.github/workflows/check-missing-commits.yml
+
+  build-linux:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    uses: ./.github/workflows/build-debian.yml
+    uses: ./.github/workflows/build-linux.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
-  rhel:
-    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    uses: ./.github/workflows/build-rhel.yml
-    with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
-      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-
-  ubuntu:
-    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    uses: ./.github/workflows/build-ubuntu.yml
-    with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
-      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-
-  macos:
+  build-macos:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-macos.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
-  windows:
+  build-windows:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-windows.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
+
+  publish-clio:
+    needs:
+      - build-linux
+      - build-macos
+      - build-windows
+    if: ${{ secrets.CONAN_REMOTE_USERNAME && secrets.CONAN_REMOTE_PASSWORD }}
+    uses: ./.github/workflows/publish-clio.yml
+    with:
+      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
     secrets:
+      clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  publish-docs:
+    needs:
+      - build-linux
+      - build-macos
+      - build-windows
+    if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
+    uses: ./.github/workflows/publish-docs.yml
 

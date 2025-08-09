@@ -1,6 +1,6 @@
 # This workflow checks if the dependencies between the modules are correctly
 # indexed.
-name: Levelization
+name: Check levelization
 
 # This workflow can only be triggered by other workflows.
 on: workflow_call

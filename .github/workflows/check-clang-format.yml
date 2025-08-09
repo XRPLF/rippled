@@ -1,6 +1,6 @@
 # This workflow checks if the code is formatted according to the .clang-format
 # rules.
-name: Clang Format
+name: Check clang format
 
 # This workflow can only be triggered by other workflows.
 on: workflow_call
@@ -31,8 +31,16 @@ jobs:
           git config --global --add safe.directory ${{ github.workspace }}
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Check version
-        run: clang-format --version
+      - name: Check configuration
+        run: |
+          echo "Checking path"
+          echo ${PATH} | tr ':' '\n'
+
+          echo "Checking environment variables."
+          env | sort
+
+          echo "Checking clang-format version."
+          clang-format --version
       - name: Format code
         run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
       - name: Check for differences

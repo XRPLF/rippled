@@ -1,14 +1,10 @@
+# This workflow checks that all commits in the "master" branch are also in the
+# "release" and "develop" branches, and that all commits in the "release" branch
+# are also in the "develop" branch.
 name: Check for missing commits
 
-# TODO: Use `workflow_run` to trigger this workflow after checks have completed.
-# This can only be done if the `checks` workflow already exists on the default
-# branch (i.e. `develop`), so we cannot do this yet.
-# See https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run.
-on:
-  push:
-    branches:
-      - develop
-      - release
+# This workflow can only be triggered by other workflows.
+on: workflow_call
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

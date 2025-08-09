@@ -1,13 +1,15 @@
-name: Documentation
+# This workflow builds and publishes the documentation for the repository.
+name: Build and publish documentation
 
-# TODO: Use `workflow_run` to trigger this workflow after checks have completed.
-# This can only be done if the `checks` workflow already exists on the default
-# branch (i.e. `develop`), so we cannot do this yet.
-# See https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_run.
+# This workflow can only be triggered by other workflows.
 on:
-  push:
-    branches:
-      - develop
+  workflow_call:
+    inputs:
+      build_dir:
+        description: 'The directory where to build.'
+        required: false
+        type: string
+        default: '.build'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,11 +20,11 @@ defaults:
     shell: bash
 
 jobs:
-  doxygen:
+  publish:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/ci/tools-rippled-documentation
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -41,12 +43,12 @@ jobs:
           doxygen --version
       - name: Build documentation
         run: |
-          mkdir build
-          cd build
+          mkdir ${{ inputs.build_dir }}
+          cd ${{ inputs.build_dir }}
           cmake -Donly_docs=ON ..
           cmake --build . --target docs --parallel $(nproc)
       - name: Publish documentation
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: build/docs/html
+          publish_dir: ${{ inputs.build_dir }}/docs/html
