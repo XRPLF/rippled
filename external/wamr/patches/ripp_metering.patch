@@ -1,0 +1,692 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 4b28fa89..7d523a3d 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ # Copyright (C) 2019 Intel Corporation.  All rights reserved.
+ # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ 
+-cmake_minimum_required (VERSION 3.14)
++cmake_minimum_required (VERSION 3.20)
+ 
+ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+ 
+@@ -170,7 +170,7 @@ if (MINGW)
+ endif ()
+ 
+ if (WIN32)
+-  target_link_libraries(vmlib PRIVATE ntdll)
++  target_link_libraries(vmlib PUBLIC ntdll)
+ endif()
+ 
+ set (WAMR_PUBLIC_HEADERS
+diff --git a/core/iwasm/aot/aot_runtime.c b/core/iwasm/aot/aot_runtime.c
+index d2621fb2..6c96a844 100644
+--- a/core/iwasm/aot/aot_runtime.c
++++ b/core/iwasm/aot/aot_runtime.c
+@@ -5611,7 +5611,7 @@ aot_resolve_import_func(AOTModule *module, AOTImportFunc *import_func)
+     import_func->func_ptr_linked = wasm_native_resolve_symbol(
+         import_func->module_name, import_func->func_name,
+         import_func->func_type, &import_func->signature,
+-        &import_func->attachment, &import_func->call_conv_raw);
++        &import_func->attachment, NULL, &import_func->call_conv_raw);
+ #if WASM_ENABLE_MULTI_MODULE != 0
+     if (!import_func->func_ptr_linked) {
+         if (!wasm_runtime_is_built_in_module(import_func->module_name)) {
+diff --git a/core/iwasm/common/wasm_c_api.c b/core/iwasm/common/wasm_c_api.c
+index 269ec577..34eb7c34 100644
+--- a/core/iwasm/common/wasm_c_api.c
++++ b/core/iwasm/common/wasm_c_api.c
+@@ -3242,10 +3242,20 @@ wasm_func_copy(const wasm_func_t *func)
+ 
+     cloned->func_idx_rt = func->func_idx_rt;
+     cloned->inst_comm_rt = func->inst_comm_rt;
++    cloned->gas = func->gas;
+ 
+     RETURN_OBJ(cloned, wasm_func_delete)
+ }
+ 
++uint32_t
++wasm_func_set_gas(wasm_func_t *func, uint32_t gas)
++{
++    if(!func) return 0;
++
++    func->gas = gas;
++    return gas;
++}
++
+ own wasm_functype_t *
+ wasm_func_type(const wasm_func_t *func)
+ {
+@@ -4998,11 +5008,11 @@ wasm_instance_new_with_args_ex(wasm_store_t *store, const wasm_module_t *module,
+         goto failed;
+     }
+ 
++    WASMModuleInstance *wasm_module_inst = NULL;
+     /* create the c-api func import list */
+ #if WASM_ENABLE_INTERP != 0
+     if (instance->inst_comm_rt->module_type == Wasm_Module_Bytecode) {
+-        WASMModuleInstance *wasm_module_inst =
+-            (WASMModuleInstance *)instance->inst_comm_rt;
++        wasm_module_inst = (WASMModuleInstance *)instance->inst_comm_rt;
+         p_func_imports = &(wasm_module_inst->c_api_func_imports);
+         import_func_count = MODULE_INTERP(module)->import_function_count;
+     }
+@@ -5052,6 +5062,13 @@ wasm_instance_new_with_args_ex(wasm_store_t *store, const wasm_module_t *module,
+         }
+         bh_assert(func_import->func_ptr_linked);
+ 
++        // fill gas
++        if(wasm_module_inst) {
++            WASMFunctionInstance *fi = wasm_module_inst->e->functions + func_host->func_idx_rt;
++            if(fi) fi->gas = func_host->gas;
++        }
++
++
+         func_import++;
+     }
+ 
+@@ -5389,3 +5406,8 @@ wasm_instance_get_wasm_func_exec_time(const wasm_instance_t *instance,
+     return -1.0;
+ #endif
+ }
++
++wasm_exec_env_t wasm_instance_exec_env(const wasm_instance_t *instance)
++{
++    return wasm_runtime_get_exec_env_singleton(instance->inst_comm_rt);
++}
+diff --git a/core/iwasm/common/wasm_c_api_internal.h b/core/iwasm/common/wasm_c_api_internal.h
+index 49a17a96..19a85980 100644
+--- a/core/iwasm/common/wasm_c_api_internal.h
++++ b/core/iwasm/common/wasm_c_api_internal.h
+@@ -142,6 +142,10 @@ struct wasm_func_t {
+             void (*finalizer)(void *);
+         } cb_env;
+     } u;
++
++    // gas cost for import func
++    uint32 gas;
++
+     /*
+      * an index in both functions runtime instance lists
+      * of interpreter mode and aot mode
+diff --git a/core/iwasm/common/wasm_exec_env.c b/core/iwasm/common/wasm_exec_env.c
+index 47752950..5f26d886 100644
+--- a/core/iwasm/common/wasm_exec_env.c
++++ b/core/iwasm/common/wasm_exec_env.c
+@@ -86,7 +86,7 @@ wasm_exec_env_create_internal(struct WASMModuleInstanceCommon *module_inst,
+ #endif
+ 
+ #if WASM_ENABLE_INSTRUCTION_METERING != 0
+-    exec_env->instructions_to_execute = -1;
++    exec_env->instructions_to_execute = INT64_MAX;
+ #endif
+ 
+     return exec_env;
+diff --git a/core/iwasm/common/wasm_exec_env.h b/core/iwasm/common/wasm_exec_env.h
+index 5d80312f..b2ecce2e 100644
+--- a/core/iwasm/common/wasm_exec_env.h
++++ b/core/iwasm/common/wasm_exec_env.h
+@@ -89,7 +89,7 @@ typedef struct WASMExecEnv {
+ 
+ #if WASM_ENABLE_INSTRUCTION_METERING != 0
+     /* instructions to execute */
+-    int instructions_to_execute;
++    int64 instructions_to_execute;
+ #endif
+ 
+ #if WASM_ENABLE_FAST_JIT != 0
+diff --git a/core/iwasm/common/wasm_native.c b/core/iwasm/common/wasm_native.c
+index 060bb2c3..9221c36a 100644
+--- a/core/iwasm/common/wasm_native.c
++++ b/core/iwasm/common/wasm_native.c
+@@ -180,9 +180,9 @@ native_symbol_cmp(const void *native_symbol1, const void *native_symbol2)
+                   ((const NativeSymbol *)native_symbol2)->symbol);
+ }
+ 
+-static void *
++static NativeSymbol *
+ lookup_symbol(NativeSymbol *native_symbols, uint32 n_native_symbols,
+-              const char *symbol, const char **p_signature, void **p_attachment)
++              const char *symbol)
+ {
+     NativeSymbol *native_symbol, key = { 0 };
+ 
+@@ -190,9 +190,7 @@ lookup_symbol(NativeSymbol *native_symbols, uint32 n_native_symbols,
+ 
+     if ((native_symbol = bsearch(&key, native_symbols, n_native_symbols,
+                                  sizeof(NativeSymbol), native_symbol_cmp))) {
+-        *p_signature = native_symbol->signature;
+-        *p_attachment = native_symbol->attachment;
+-        return native_symbol->func_ptr;
++        return native_symbol;
+     }
+ 
+     return NULL;
+@@ -205,25 +203,36 @@ lookup_symbol(NativeSymbol *native_symbols, uint32 n_native_symbols,
+ void *
+ wasm_native_resolve_symbol(const char *module_name, const char *field_name,
+                            const WASMFuncType *func_type,
+-                           const char **p_signature, void **p_attachment,
++                           const char **p_signature, void **p_attachment, uint32_t *gas,
+                            bool *p_call_conv_raw)
+ {
+     NativeSymbolsNode *node, *node_next;
+     const char *signature = NULL;
+     void *func_ptr = NULL, *attachment = NULL;
++    NativeSymbol *native_symbol = NULL;
+ 
+     node = g_native_symbols_list;
+     while (node) {
+         node_next = node->next;
+         if (!strcmp(node->module_name, module_name)) {
+-            if ((func_ptr =
++            if ((native_symbol =
+                      lookup_symbol(node->native_symbols, node->n_native_symbols,
+-                                   field_name, &signature, &attachment))
++                                   field_name))
+                 || (field_name[0] == '_'
+-                    && (func_ptr = lookup_symbol(
++                    && (native_symbol = lookup_symbol(
+                             node->native_symbols, node->n_native_symbols,
+-                            field_name + 1, &signature, &attachment))))
+-                break;
++                            field_name + 1))))
++            {
++                func_ptr = native_symbol->func_ptr;
++                if(func_ptr)
++                {
++                    if(gas)
++                        *gas = native_symbol->gas;
++                    signature = native_symbol->signature;
++                    attachment = native_symbol->attachment;
++                    break;
++                }
++            }
+         }
+         node = node_next;
+     }
+diff --git a/core/iwasm/common/wasm_native.h b/core/iwasm/common/wasm_native.h
+index 9a6afee1..0fe4739f 100644
+--- a/core/iwasm/common/wasm_native.h
++++ b/core/iwasm/common/wasm_native.h
+@@ -52,7 +52,7 @@ wasm_native_lookup_libc_builtin_global(const char *module_name,
+ void *
+ wasm_native_resolve_symbol(const char *module_name, const char *field_name,
+                            const WASMFuncType *func_type,
+-                           const char **p_signature, void **p_attachment,
++                           const char **p_signature, void **p_attachment, uint32_t *gas,
+                            bool *p_call_conv_raw);
+ 
+ bool
+diff --git a/core/iwasm/common/wasm_runtime_common.c b/core/iwasm/common/wasm_runtime_common.c
+index 943b46fc..d026777e 100644
+--- a/core/iwasm/common/wasm_runtime_common.c
++++ b/core/iwasm/common/wasm_runtime_common.c
+@@ -2344,10 +2344,18 @@ wasm_runtime_access_exce_check_guard_page()
+ #if WASM_ENABLE_INSTRUCTION_METERING != 0
+ void
+ wasm_runtime_set_instruction_count_limit(WASMExecEnv *exec_env,
+-                                         int instructions_to_execute)
++                                         int64 instructions_to_execute)
+ {
++    if(instructions_to_execute == -1)
++        instructions_to_execute = INT64_MAX;
+     exec_env->instructions_to_execute = instructions_to_execute;
+ }
++
++int64
++wasm_runtime_get_instruction_count_limit(WASMExecEnv *exec_env)
++{
++    return exec_env->instructions_to_execute;
++}
+ #endif
+ 
+ WASMFuncType *
+@@ -7412,7 +7420,7 @@ wasm_runtime_is_import_func_linked(const char *module_name,
+                                    const char *func_name)
+ {
+     return wasm_native_resolve_symbol(module_name, func_name, NULL, NULL, NULL,
+-                                      NULL);
++                                      NULL, NULL);
+ }
+ 
+ bool
+@@ -7869,13 +7877,14 @@ wasm_runtime_get_module_name(wasm_module_t module)
+ bool
+ wasm_runtime_detect_native_stack_overflow(WASMExecEnv *exec_env)
+ {
++#if WASM_DISABLE_STACK_HW_BOUND_CHECK == 0
+     uint8 *boundary = exec_env->native_stack_boundary;
+     RECORD_STACK_USAGE(exec_env, (uint8 *)&boundary);
+     if (boundary == NULL) {
+         /* the platform doesn't support os_thread_get_stack_boundary */
+         return true;
+     }
+-#if defined(OS_ENABLE_HW_BOUND_CHECK) && WASM_DISABLE_STACK_HW_BOUND_CHECK == 0
++#if defined(OS_ENABLE_HW_BOUND_CHECK)
+     uint32 page_size = os_getpagesize();
+     uint32 guard_page_count = STACK_OVERFLOW_CHECK_GUARD_PAGE_COUNT;
+     boundary = boundary + page_size * guard_page_count;
+@@ -7885,6 +7894,7 @@ wasm_runtime_detect_native_stack_overflow(WASMExecEnv *exec_env)
+                                    "native stack overflow");
+         return false;
+     }
++#endif
+     return true;
+ }
+ 
+@@ -7907,7 +7917,7 @@ wasm_runtime_detect_native_stack_overflow_size(WASMExecEnv *exec_env,
+     boundary = boundary - WASM_STACK_GUARD_SIZE + requested_size;
+     if ((uint8 *)&boundary < boundary) {
+         wasm_runtime_set_exception(wasm_runtime_get_module_inst(exec_env),
+-                                   "native stack overflow");
++                                   "native s stack overflow");
+         return false;
+     }
+     return true;
+diff --git a/core/iwasm/common/wasm_runtime_common.h b/core/iwasm/common/wasm_runtime_common.h
+index 324620be..54155a0c 100644
+--- a/core/iwasm/common/wasm_runtime_common.h
++++ b/core/iwasm/common/wasm_runtime_common.h
+@@ -833,7 +833,10 @@ wasm_runtime_set_native_stack_boundary(WASMExecEnv *exec_env,
+ /* See wasm_export.h for description */
+ WASM_RUNTIME_API_EXTERN void
+ wasm_runtime_set_instruction_count_limit(WASMExecEnv *exec_env,
+-                                         int instructions_to_execute);
++                                         int64 instructions_to_execute);
++WASM_RUNTIME_API_EXTERN int64
++wasm_runtime_get_instruction_count_limit(WASMExecEnv *exec_env);
++
+ #endif
+ 
+ #if WASM_CONFIGURABLE_BOUNDS_CHECKS != 0
+diff --git a/core/iwasm/include/lib_export.h b/core/iwasm/include/lib_export.h
+index 0ca668f5..93bcf807 100644
+--- a/core/iwasm/include/lib_export.h
++++ b/core/iwasm/include/lib_export.h
+@@ -24,6 +24,8 @@ typedef struct NativeSymbol {
+     /* attachment which can be retrieved in native API by
+        calling wasm_runtime_get_function_attachment(exec_env) */
+     void *attachment;
++    // gas cost for import func
++    uint32_t gas;
+ } NativeSymbol;
+ 
+ /* clang-format off */
+diff --git a/core/iwasm/include/wasm_c_api.h b/core/iwasm/include/wasm_c_api.h
+index 241a0eec..1141744c 100644
+--- a/core/iwasm/include/wasm_c_api.h
++++ b/core/iwasm/include/wasm_c_api.h
+@@ -19,8 +19,10 @@
+ #if defined(_MSC_BUILD)
+ #if defined(COMPILING_WASM_RUNTIME_API)
+ #define WASM_API_EXTERN __declspec(dllexport)
+-#else
++#elif defined(_DLL)
+ #define WASM_API_EXTERN __declspec(dllimport)
++#else
++#define WASM_API_EXTERN
+ #endif
+ #else
+ #define WASM_API_EXTERN
+@@ -592,6 +594,8 @@ WASM_API_EXTERN size_t wasm_func_result_arity(const wasm_func_t*);
+ WASM_API_EXTERN own wasm_trap_t* wasm_func_call(
+   const wasm_func_t*, const wasm_val_vec_t* args, wasm_val_vec_t* results);
+ 
++WASM_API_EXTERN own uint32_t wasm_func_set_gas(wasm_func_t*, uint32_t);
++
+ 
+ // Global Instances
+ 
+@@ -701,6 +705,11 @@ WASM_API_EXTERN double wasm_instance_sum_wasm_exec_time(const wasm_instance_t*);
+ // func_name. If the function is not found, return 0.
+ WASM_API_EXTERN double wasm_instance_get_wasm_func_exec_time(const wasm_instance_t*, const char *);
+ 
++struct WASMExecEnv;
++typedef struct WASMExecEnv *wasm_exec_env_t;
++
++WASM_API_EXTERN wasm_exec_env_t wasm_instance_exec_env(const wasm_instance_t*);
++
+ ///////////////////////////////////////////////////////////////////////////////
+ // Convenience
+ 
+diff --git a/core/iwasm/include/wasm_export.h b/core/iwasm/include/wasm_export.h
+index 81efb8f6..f752a970 100644
+--- a/core/iwasm/include/wasm_export.h
++++ b/core/iwasm/include/wasm_export.h
+@@ -20,8 +20,10 @@
+ #if defined(_MSC_BUILD)
+ #if defined(COMPILING_WASM_RUNTIME_API)
+ #define WASM_RUNTIME_API_EXTERN __declspec(dllexport)
+-#else
++#elif defined(_DLL)
+ #define WASM_RUNTIME_API_EXTERN __declspec(dllimport)
++#else
++#define WASM_RUNTIME_API_EXTERN
+ #endif
+ #elif defined(__GNUC__) || defined(__clang__)
+ #define WASM_RUNTIME_API_EXTERN __attribute__((visibility("default")))
+@@ -1874,7 +1876,14 @@ wasm_runtime_set_native_stack_boundary(wasm_exec_env_t exec_env,
+  */
+ WASM_RUNTIME_API_EXTERN void
+ wasm_runtime_set_instruction_count_limit(wasm_exec_env_t exec_env,
+-                                         int instruction_count);
++                                         int64_t instruction_count);
++
++WASM_RUNTIME_API_EXTERN int64_t
++wasm_runtime_get_instruction_count_limit(wasm_exec_env_t exec_env);
++
++WASM_RUNTIME_API_EXTERN void
++wasm_runtime_set_instruction_schedule(wasm_exec_env_t exec_env,
++                                      int64_t const *instructions_schedule);
+ 
+ /**
+  * Dump runtime memory consumption, including:
+diff --git a/core/iwasm/interpreter/wasm.h b/core/iwasm/interpreter/wasm.h
+index 0dd73958..b7cad5f2 100644
+--- a/core/iwasm/interpreter/wasm.h
++++ b/core/iwasm/interpreter/wasm.h
+@@ -617,6 +617,9 @@ typedef struct WASMFunctionImport {
+     WASMModule *import_module;
+     WASMFunction *import_func_linked;
+ #endif
++    // gas cost for import func
++    uint32 gas;
++
+ } WASMFunctionImport;
+ 
+ #if WASM_ENABLE_TAGS != 0
+diff --git a/core/iwasm/interpreter/wasm_interp_classic.c b/core/iwasm/interpreter/wasm_interp_classic.c
+index edc473f2..55071613 100644
+--- a/core/iwasm/interpreter/wasm_interp_classic.c
++++ b/core/iwasm/interpreter/wasm_interp_classic.c
+@@ -1547,13 +1547,14 @@ get_global_addr(uint8 *global_data, WASMGlobalInstance *global)
+ }
+ 
+ #if WASM_ENABLE_INSTRUCTION_METERING != 0
+-#define CHECK_INSTRUCTION_LIMIT()                                 \
+-    if (instructions_left == 0) {                                 \
+-        wasm_set_exception(module, "instruction limit exceeded"); \
+-        goto got_exception;                                       \
+-    }                                                             \
+-    else if (instructions_left > 0)                               \
+-        instructions_left--;
++#define CHECK_INSTRUCTION_LIMIT()                                     \
++    do {                                                              \
++        --instructions_left;                                          \
++        if (instructions_left < 0) {                                  \
++            wasm_set_exception(module, "instruction limit exceeded"); \
++            goto got_exception;                                       \
++        }                                                             \
++    } while (0)
+ #else
+ #define CHECK_INSTRUCTION_LIMIT() (void)0
+ #endif
+@@ -1603,10 +1604,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+     uint32 cache_index, type_index, param_cell_num, cell_num;
+ 
+ #if WASM_ENABLE_INSTRUCTION_METERING != 0
+-    int instructions_left = -1;
+-    if (exec_env) {
++    int64 instructions_left = INT64_MAX;
++    if (exec_env)
+         instructions_left = exec_env->instructions_to_execute;
+-    }
+ #endif
+ 
+ #if WASM_ENABLE_EXCE_HANDLING != 0
+@@ -6849,6 +6849,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+         FREE_FRAME(exec_env, frame);
+         wasm_exec_env_set_cur_frame(exec_env, prev_frame);
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++        if(exec_env)
++            exec_env->instructions_to_execute = instructions_left;
++#endif
++
+         if (!prev_frame->ip) {
+             /* Called from native. */
+             return;
+@@ -6889,6 +6894,12 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+         }
+ #endif
+         SYNC_ALL_TO_FRAME();
++
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++        if(exec_env)
++            exec_env->instructions_to_execute = instructions_left;
++#endif
++
+         return;
+ 
+ #if WASM_ENABLE_LABELS_AS_VALUES == 0
+diff --git a/core/iwasm/interpreter/wasm_interp_fast.c b/core/iwasm/interpreter/wasm_interp_fast.c
+index 36d4538f..912be3d8 100644
+--- a/core/iwasm/interpreter/wasm_interp_fast.c
++++ b/core/iwasm/interpreter/wasm_interp_fast.c
+@@ -90,14 +90,14 @@ typedef float64 CellType_F64;
+     } while (0)
+ 
+ #if WASM_ENABLE_INSTRUCTION_METERING != 0
+-#define CHECK_INSTRUCTION_LIMIT()                                 \
+-    if (instructions_left == 0) {                                 \
+-        wasm_set_exception(module, "instruction limit exceeded"); \
+-        goto got_exception;                                       \
+-    }                                                             \
+-    else if (instructions_left > 0)                               \
+-        instructions_left--;
+-
++#define CHECK_INSTRUCTION_LIMIT()                                     \
++    do {                                                              \
++        --instructions_left;                                          \
++        if (instructions_left < 0) {                                  \
++            wasm_set_exception(module, "instruction limit exceeded"); \
++            goto got_exception;                                       \
++        }                                                             \
++    } while (0)
+ #else
+ #define CHECK_INSTRUCTION_LIMIT() (void)0
+ #endif
+@@ -1438,7 +1438,6 @@ wasm_interp_dump_op_count()
+     do {                                               \
+         const void *p_label_addr = *(void **)frame_ip; \
+         frame_ip += sizeof(void *);                    \
+-        CHECK_INSTRUCTION_LIMIT();                     \
+         goto *p_label_addr;                            \
+     } while (0)
+ #else
+@@ -1450,7 +1449,6 @@ wasm_interp_dump_op_count()
+         /* int32 relative offset was emitted in 64-bit target */          \
+         p_label_addr = label_base + (int32)LOAD_U32_WITH_2U16S(frame_ip); \
+         frame_ip += sizeof(int32);                                        \
+-        CHECK_INSTRUCTION_LIMIT();                                        \
+         goto *p_label_addr;                                               \
+     } while (0)
+ #else
+@@ -1461,17 +1459,18 @@ wasm_interp_dump_op_count()
+         /* uint32 label address was emitted in 32-bit target */          \
+         p_label_addr = (void *)(uintptr_t)LOAD_U32_WITH_2U16S(frame_ip); \
+         frame_ip += sizeof(int32);                                       \
+-        CHECK_INSTRUCTION_LIMIT();                                       \
+         goto *p_label_addr;                                              \
+     } while (0)
+ #endif
+ #endif /* end of WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS */
+-#define HANDLE_OP_END() FETCH_OPCODE_AND_DISPATCH()
++#define HANDLE_OP_END() CHECK_INSTRUCTION_LIMIT(); FETCH_OPCODE_AND_DISPATCH()
+ 
+ #else /* else of WASM_ENABLE_LABELS_AS_VALUES */
+ 
+ #define HANDLE_OP(opcode) case opcode:
+-#define HANDLE_OP_END() continue
++#define HANDLE_OP_END()        \
++    CHECK_INSTRUCTION_LIMIT(); \
++    continue
+ 
+ #endif /* end of WASM_ENABLE_LABELS_AS_VALUES */
+ 
+@@ -1540,10 +1539,9 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+     uint8 opcode = 0, local_type, *global_addr;
+ 
+ #if WASM_ENABLE_INSTRUCTION_METERING != 0
+-    int instructions_left = -1;
+-    if (exec_env) {
++    int64 instructions_left = INT64_MAX;
++    if (exec_env)
+         instructions_left = exec_env->instructions_to_execute;
+-    }
+ #endif
+ #if !defined(OS_ENABLE_HW_BOUND_CHECK) \
+     || WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS == 0
+@@ -7672,6 +7670,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+             {
+                 wasm_interp_call_func_native(module, exec_env, cur_func,
+                                              prev_frame);
++                instructions_left -= cur_func->gas;
+             }
+ 
+ #if WASM_ENABLE_TAIL_CALL != 0 || WASM_ENABLE_GC != 0
+@@ -7784,6 +7783,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+         FREE_FRAME(exec_env, frame);
+         wasm_exec_env_set_cur_frame(exec_env, (WASMRuntimeFrame *)prev_frame);
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++        if (exec_env)
++            exec_env->instructions_to_execute = instructions_left;
++#endif
++
+         if (!prev_frame->ip)
+             /* Called from native. */
+             return;
+@@ -7812,6 +7816,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+ 
+     got_exception:
+         SYNC_ALL_TO_FRAME();
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++        if (exec_env)
++            exec_env->instructions_to_execute = instructions_left;
++#endif
+         return;
+ 
+ #if WASM_ENABLE_LABELS_AS_VALUES == 0
+diff --git a/core/iwasm/interpreter/wasm_mini_loader.c b/core/iwasm/interpreter/wasm_mini_loader.c
+index 771538a1..d6e6a6b8 100644
+--- a/core/iwasm/interpreter/wasm_mini_loader.c
++++ b/core/iwasm/interpreter/wasm_mini_loader.c
+@@ -805,6 +805,7 @@ load_function_import(const uint8 **p_buf, const uint8 *buf_end,
+     const char *linked_signature = NULL;
+     void *linked_attachment = NULL;
+     bool linked_call_conv_raw = false;
++    uint32_t gas = 0;
+ 
+     read_leb_uint32(p, p_end, declare_type_index);
+     *p_buf = p;
+@@ -816,7 +817,7 @@ load_function_import(const uint8 **p_buf, const uint8 *buf_end,
+     /* check built-in modules */
+     linked_func = wasm_native_resolve_symbol(
+         sub_module_name, function_name, declare_func_type, &linked_signature,
+-        &linked_attachment, &linked_call_conv_raw);
++        &linked_attachment, &gas, &linked_call_conv_raw);
+ 
+     function->module_name = (char *)sub_module_name;
+     function->field_name = (char *)function_name;
+@@ -825,6 +826,7 @@ load_function_import(const uint8 **p_buf, const uint8 *buf_end,
+     function->signature = linked_signature;
+     function->attachment = linked_attachment;
+     function->call_conv_raw = linked_call_conv_raw;
++    function->gas = gas;
+     return true;
+ }
+ 
+diff --git a/core/iwasm/interpreter/wasm_runtime.c b/core/iwasm/interpreter/wasm_runtime.c
+index b4aa483d..2d74e469 100644
+--- a/core/iwasm/interpreter/wasm_runtime.c
++++ b/core/iwasm/interpreter/wasm_runtime.c
+@@ -168,7 +168,7 @@ wasm_resolve_import_func(const WASMModule *module, WASMFunctionImport *function)
+ #endif
+     function->func_ptr_linked = wasm_native_resolve_symbol(
+         function->module_name, function->field_name, function->func_type,
+-        &function->signature, &function->attachment, &function->call_conv_raw);
++        &function->signature, &function->attachment, &function->gas, &function->call_conv_raw);
+ 
+     if (function->func_ptr_linked) {
+         return true;
+@@ -820,6 +820,7 @@ functions_instantiate(const WASMModule *module, WASMModuleInstance *module_inst,
+         function->param_count =
+             (uint16)function->u.func_import->func_type->param_count;
+         function->param_types = function->u.func_import->func_type->types;
++        function->gas = import->u.function.gas;
+         function->local_cell_num = 0;
+         function->local_count = 0;
+         function->local_types = NULL;
+diff --git a/core/iwasm/interpreter/wasm_runtime.h b/core/iwasm/interpreter/wasm_runtime.h
+index 16c670f0..5ddac567 100644
+--- a/core/iwasm/interpreter/wasm_runtime.h
++++ b/core/iwasm/interpreter/wasm_runtime.h
+@@ -237,6 +237,10 @@ struct WASMFunctionInstance {
+         WASMFunctionImport *func_import;
+         WASMFunction *func;
+     } u;
++
++    // gas cost for import func
++    uint32 gas;
++
+ #if WASM_ENABLE_MULTI_MODULE != 0
+     WASMModuleInstance *import_module_inst;
+     WASMFunctionInstance *import_func_inst;
+diff --git a/core/iwasm/libraries/libc-builtin/libc_builtin_wrapper.c b/core/iwasm/libraries/libc-builtin/libc_builtin_wrapper.c
+index a68c0749..cafb6915 100644
+--- a/core/iwasm/libraries/libc-builtin/libc_builtin_wrapper.c
++++ b/core/iwasm/libraries/libc-builtin/libc_builtin_wrapper.c
+@@ -1038,16 +1038,16 @@ print_f64_wrapper(wasm_exec_env_t exec_env, double f64)
+ 
+ /* clang-format off */
+ #define REG_NATIVE_FUNC(func_name, signature) \
+-    { #func_name, func_name##_wrapper, signature, NULL }
++    { #func_name, func_name##_wrapper, signature, NULL, 0 }
+ /* clang-format on */
+ 
+ static NativeSymbol native_symbols_libc_builtin[] = {
+     REG_NATIVE_FUNC(printf, "($*)i"),
+     REG_NATIVE_FUNC(sprintf, "($$*)i"),
+     REG_NATIVE_FUNC(snprintf, "(*~$*)i"),
+-    { "vprintf", printf_wrapper, "($*)i", NULL },
+-    { "vsprintf", sprintf_wrapper, "($$*)i", NULL },
+-    { "vsnprintf", snprintf_wrapper, "(*~$*)i", NULL },
++    { "vprintf", printf_wrapper, "($*)i", NULL, 0 },
++    { "vsprintf", sprintf_wrapper, "($$*)i", NULL, 0 },
++    { "vsnprintf", snprintf_wrapper, "(*~$*)i", NULL, 0 },
+     REG_NATIVE_FUNC(puts, "($)i"),
+     REG_NATIVE_FUNC(putchar, "(i)i"),
+     REG_NATIVE_FUNC(memcmp, "(**~)i"),
+diff --git a/core/iwasm/libraries/libc-wasi/libc_wasi_wrapper.c b/core/iwasm/libraries/libc-wasi/libc_wasi_wrapper.c
+index f7dfea0b..c01e80a9 100644
+--- a/core/iwasm/libraries/libc-wasi/libc_wasi_wrapper.c
++++ b/core/iwasm/libraries/libc-wasi/libc_wasi_wrapper.c
+@@ -2269,7 +2269,7 @@ wasi_sched_yield(wasm_exec_env_t exec_env)
+ 
+ /* clang-format off */
+ #define REG_NATIVE_FUNC(func_name, signature) \
+-    { #func_name, wasi_##func_name, signature, NULL }
++    { #func_name, wasi_##func_name, signature, NULL, 0 }
+ /* clang-format on */
+ 
+ static NativeSymbol native_symbols_libc_wasi[] = {
+diff --git a/core/shared/platform/include/platform_wasi_types.h b/core/shared/platform/include/platform_wasi_types.h
+index ac1a95ea..e23b500e 100644
+--- a/core/shared/platform/include/platform_wasi_types.h
++++ b/core/shared/platform/include/platform_wasi_types.h
+@@ -36,7 +36,11 @@ extern "C" {
+ #if WASM_ENABLE_UVWASI != 0 || WASM_ENABLE_LIBC_WASI == 0
+ #define assert_wasi_layout(expr, message) /* nothing */
+ #else
+-#define assert_wasi_layout(expr, message) _Static_assert(expr, message)
++    #ifndef _MSC_VER
++        #define assert_wasi_layout(expr, message) _Static_assert(expr, message)
++    #else
++        #define assert_wasi_layout(expr, message) static_assert(expr, message)
++    #endif
+ #endif
+ 
+ assert_wasi_layout(_Alignof(int8_t) == 1, "non-wasi data layout");

@@ -446,8 +446,8 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     }
 
     using namespace boost::multiprecision;
-
-    uint128_t product;
+    using uint128 = boost::multiprecision::uint128_t;
+    uint128 product;
     product = multiply(
         product,
         static_cast<std::uint64_t>(value.value()),
