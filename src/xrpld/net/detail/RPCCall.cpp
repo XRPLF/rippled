@@ -966,7 +966,16 @@ private:
         Json::Value txJSON;
         Json::Reader reader;
         bool const bOffline =
-            3 == jvParams.size() && jvParams[2u].asString() == "offline";
+            jvParams.size() >= 3 && jvParams[2u].asString() == "offline";
+        std::optional<std::string> const field =
+            [&jvParams, bOffline]() -> std::optional<std::string> {
+            if (jvParams.size() < 3)
+                return std::nullopt;
+            if (jvParams.size() < 4 && bOffline)
+                return std::nullopt;
+            Json::UInt index = bOffline ? 3u : 2u;
+            return jvParams[index].asString();
+        }();
 
         if (1 == jvParams.size())
         {
@@ -979,7 +988,7 @@ private:
             return jvRequest;
         }
         else if (
-            (2 == jvParams.size() || bOffline) &&
+            (jvParams.size() >= 2 || bOffline) &&
             reader.parse(jvParams[1u].asString(), txJSON))
         {
             // Signing or submitting tx_json.
@@ -990,6 +999,9 @@ private:
 
             if (bOffline)
                 jvRequest[jss::offline] = true;
+
+            if (field)
+                jvRequest[jss::signature_target] = *field;
 
             return jvRequest;
         }
