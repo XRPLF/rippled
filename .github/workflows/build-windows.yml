@@ -69,12 +69,12 @@ jobs:
         run: pip install wheel conan
       - name: Check configuration
         run: |
-#          echo "Checking path"
-#          $env:PATH -split ';' | Sort-Object
-#
-#          echo "Checking environment variables."
-#          ls env:
-#
+          echo "Checking path"
+#         $env:PATH -split ';' | Sort-Object
+
+          echo "Checking environment variables."
+#         ls env:
+
            echo "Checking CMake version."
            cmake --version
 
