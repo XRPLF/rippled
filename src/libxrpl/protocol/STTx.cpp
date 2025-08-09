@@ -234,13 +234,24 @@ STTx::getSeqValue() const
 }
 
 void
-STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
+STTx::sign(
+    PublicKey const& publicKey,
+    SecretKey const& secretKey,
+    std::optional<std::reference_wrapper<SField const>> signatureTarget)
 {
     auto const data = getSigningData(*this);
 
     auto const sig = ripple::sign(publicKey, secretKey, makeSlice(data));
 
-    setFieldVL(sfTxnSignature, sig);
+    if (signatureTarget)
+    {
+        auto& target = peekFieldObject(*signatureTarget);
+        target.setFieldVL(sfTxnSignature, sig);
+    }
+    else
+    {
+        setFieldVL(sfTxnSignature, sig);
+    }
     tid_ = getHash(HashPrefix::transactionID);
 }
 

@@ -125,7 +125,11 @@ public:
     getJson(JsonOptions options, bool binary) const;
 
     void
-    sign(PublicKey const& publicKey, SecretKey const& secretKey);
+    sign(
+        PublicKey const& publicKey,
+        SecretKey const& secretKey,
+        std::optional<std::reference_wrapper<SField const>> signatureTarget =
+            {});
 
     enum class RequireFullyCanonicalSig : bool { no, yes };
 

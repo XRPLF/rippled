@@ -59,6 +59,7 @@ JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
 JSS(ClearFlag);            // field.
+JSS(Counterparty);         // field.
 JSS(CounterpartySignature);// field.
 JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
@@ -567,6 +568,7 @@ JSS(settle_delay);            // out: AccountChannels
 JSS(severity);                // in: LogLevel
 JSS(shares);                  // out: VaultInfo
 JSS(signature);               // out: NetworkOPs, ChannelAuthorize
+JSS(signature_target);        // in: TransactionSign
 JSS(signature_verified);      // out: ChannelVerify
 JSS(signing_key);             // out: NetworkOPs
 JSS(signing_keys);            // out: ValidatorList

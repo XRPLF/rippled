@@ -389,6 +389,8 @@ public:
     setFieldV256(SField const& field, STVector256 const& v);
     void
     setFieldArray(SField const& field, STArray const& v);
+    void
+    setFieldObject(SField const& field, STObject const& v);
 
     template <class Tag>
     void

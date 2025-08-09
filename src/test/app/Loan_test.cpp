@@ -37,6 +37,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -2162,31 +2163,301 @@ class Loan_test : public beast::unit_test::suite
         Env env(*this, all);
 
         Account const alice{"alice"};
+        std::string const borrowerPass = "borrower";
+        std::string const borrowerSeed = "ssBRAsLpH4778sLNYC4ik1JBJsBVf";
+        Account borrower{borrowerPass, KeyType::ed25519};
+        auto const lenderPass = "lender";
+        std::string const lenderSeed = "shPTCZGwTEhJrYT8NbcNkeaa8pzPM";
+        Account lender{lenderPass, KeyType::ed25519};
+
+        env.fund(XRP(1'000'000), alice, lender, borrower);
+        env.close();
+        env(noop(lender));
+        env(noop(lender));
+        env(noop(lender));
+        env(noop(lender));
+        env(noop(lender));
+        env.close();
 
         {
-            auto const sk = alice.sk();
-            auto const jr = env.rpc(
-                "sign",
-                encodeBase58Token(TokenType::FamilySeed, sk.data(), sk.size()),
-                R"({ "TransactionType" : "LoanSet", )"
-                R"("Account" : "rHP9W1SByc8on4vfFsBdt5sun2gZTnBhkx", )"
-                R"("Counterparty" : "rHP9W1SByc8on4vfFsBdt5sun2gZTnBhkx", )"
-                R"("LoanBrokerID" : )"
-                R"("EAFD2D37FE12815F00705F1B57173A16F94EE15E02D53AF5B683942B57ED53E9", )"
-                R"("PrincipalRequested" : "100000000", )"
-                R"("StartDate" : "807730340", "PaymentTotal" : 10000, )"
-                R"("PaymentInterval" : 1, "GracePeriod" : 300, )"
-                R"("Flags" : 65536, "Fee" : "24", "Sequence" : 1 })",
-                "offline");
+            testcase("RPC AccountSet");
+            Json::Value txJson{Json::objectValue};
+            txJson[sfTransactionType] = "AccountSet";
+            txJson[sfAccount] = borrower.human();
+
+            auto const signParams = [&]() {
+                Json::Value signParams{Json::objectValue};
+                signParams[jss::passphrase] = borrowerPass;
+                signParams[jss::key_type] = "ed25519";
+                signParams[jss::tx_json] = txJson;
+                return signParams;
+            }();
+            auto const jSign = env.rpc("json", "sign", to_string(signParams));
+            BEAST_EXPECT(
+                jSign.isMember(jss::result) &&
+                jSign[jss::result].isMember(jss::tx_json));
+            auto txSignResult = jSign[jss::result][jss::tx_json];
+            auto txSignBlob = jSign[jss::result][jss::tx_blob].asString();
+            txSignResult.removeMember(jss::hash);
+
+            auto const jtx = env.jt(txJson, sig(borrower));
+            BEAST_EXPECT(txSignResult == jtx.jv);
+
+            auto const jSubmit = env.rpc("submit", txSignBlob);
+            BEAST_EXPECT(
+                jSubmit.isMember(jss::result) &&
+                jSubmit[jss::result].isMember(jss::engine_result) &&
+                jSubmit[jss::result][jss::engine_result].asString() ==
+                    "tesSUCCESS");
+
+            env(jtx.jv, sig(none), seq(none), fee(none), ter(tefPAST_SEQ));
+        }
+
+        {
+            testcase("RPC LoanSet - illegal signature_target");
+
+            Json::Value txJson{Json::objectValue};
+            txJson[sfTransactionType] = "AccountSet";
+            txJson[sfAccount] = borrower.human();
+
+            auto const borrowerSignParams = [&]() {
+                Json::Value params{Json::objectValue};
+                params[jss::passphrase] = borrowerPass;
+                params[jss::key_type] = "ed25519";
+                params[jss::signature_target] = "Destination";
+                params[jss::tx_json] = txJson;
+                return params;
+            }();
+            auto const jSignBorrower =
+                env.rpc("json", "sign", to_string(borrowerSignParams));
+            BEAST_EXPECT(
+                jSignBorrower.isMember(jss::result) &&
+                jSignBorrower[jss::result].isMember(jss::error) &&
+                jSignBorrower[jss::result][jss::error] == "invalidParams" &&
+                jSignBorrower[jss::result].isMember(jss::error_message) &&
+                jSignBorrower[jss::result][jss::error_message] ==
+                    "Destination");
+        }
+        {
+            testcase("RPC LoanSet - sign and submit borrower initiated");
+            // 1. Borrower creates the transaction
+            Json::Value txJson{Json::objectValue};
+            txJson[sfTransactionType] = "LoanSet";
+            txJson[sfAccount] = borrower.human();
+            txJson[sfCounterparty] = lender.human();
+            txJson[sfLoanBrokerID] =
+                "FF924CD18A236C2B49CF8E80A351CEAC6A10171DC9F110025646894FECF83F"
+                "5C";
+            txJson[sfPrincipalRequested] = "100000000";
+            txJson[sfStartDate] = 807730340;
+            txJson[sfPaymentTotal] = 10000;
+            txJson[sfPaymentInterval] = 3600;
+            txJson[sfGracePeriod] = 300;
+            txJson[sfFlags] = 65536;  // tfLoanOverpayment
+            txJson[sfFee] = "24";
+
+            // 2. Borrower signs the transaction
+            auto const borrowerSignParams = [&]() {
+                Json::Value params{Json::objectValue};
+                params[jss::passphrase] = borrowerPass;
+                params[jss::key_type] = "ed25519";
+                params[jss::tx_json] = txJson;
+                return params;
+            }();
+            auto const jSignBorrower =
+                env.rpc("json", "sign", to_string(borrowerSignParams));
+            BEAST_EXPECT(
+                jSignBorrower.isMember(jss::result) &&
+                jSignBorrower[jss::result].isMember(jss::tx_json));
+            auto const txBorrowerSignResult =
+                jSignBorrower[jss::result][jss::tx_json];
+            auto const txBorrowerSignBlob =
+                jSignBorrower[jss::result][jss::tx_blob].asString();
+
+            // 2a. Borrower attempts to submit the transaction. It doesn't work
+            {
+                auto const jSubmitBlob = env.rpc("submit", txBorrowerSignBlob);
+                BEAST_EXPECT(jSubmitBlob.isMember(jss::result));
+                auto const jSubmitBlobResult = jSubmitBlob[jss::result];
+                BEAST_EXPECT(jSubmitBlobResult.isMember(jss::tx_json));
+                // Transaction fails because the CounterpartySignature is
+                // missing
+                BEAST_EXPECT(
+                    jSubmitBlobResult.isMember(jss::engine_result) &&
+                    jSubmitBlobResult[jss::engine_result].asString() ==
+                        "temBAD_SIGNER");
+            }
+
+            // 3. Borrower sends the signed transaction to the lender
+            // 4. Lender signs the transaction
+            auto const lenderSignParams = [&]() {
+                Json::Value params{Json::objectValue};
+                params[jss::passphrase] = lenderPass;
+                params[jss::key_type] = "ed25519";
+                params[jss::signature_target] = "CounterpartySignature";
+                params[jss::tx_json] = txBorrowerSignResult;
+                return params;
+            }();
+            auto const jSignLender =
+                env.rpc("json", "sign", to_string(lenderSignParams));
+            BEAST_EXPECT(
+                jSignLender.isMember(jss::result) &&
+                jSignLender[jss::result].isMember(jss::tx_json));
+            auto const txLenderSignResult =
+                jSignLender[jss::result][jss::tx_json];
+            auto const txLenderSignBlob =
+                jSignLender[jss::result][jss::tx_blob].asString();
+
+            // 5. Lender submits the signed transaction blob
+            auto const jSubmitBlob = env.rpc("submit", txLenderSignBlob);
+            BEAST_EXPECT(jSubmitBlob.isMember(jss::result));
+            auto const jSubmitBlobResult = jSubmitBlob[jss::result];
+            BEAST_EXPECT(jSubmitBlobResult.isMember(jss::tx_json));
+            auto const jSubmitBlobTx = jSubmitBlobResult[jss::tx_json];
+            // To get far enough to return tecNO_ENTRY means that the signatures
+            // all validated. Of course the transaction won't succeed because no
+            // Vault or Broker were created.
+            BEAST_EXPECT(
+                jSubmitBlobResult.isMember(jss::engine_result) &&
+                jSubmitBlobResult[jss::engine_result].asString() ==
+                    "tecNO_ENTRY");
 
             BEAST_EXPECT(
-                jr.isMember(jss::result) &&
-                jr[jss::result].isMember(jss::tx_json));
-            auto const& tx = jr[jss::result][jss::tx_json];
-            BEAST_EXPECT(!tx.isMember(jss::CounterpartySignature));
+                !jSubmitBlob.isMember(jss::error) &&
+                !jSubmitBlobResult.isMember(jss::error));
+
+            // 4-alt. Lender submits the transaction json originally received
+            // from the Borrower. It gets signed, but is now a duplicate, so
+            // fails. Borrower could done this instead of steps 4 and 5.
+            auto const jSubmitJson =
+                env.rpc("json", "submit", to_string(lenderSignParams));
+            BEAST_EXPECT(jSubmitJson.isMember(jss::result));
+            auto const jSubmitJsonResult = jSubmitJson[jss::result];
+            BEAST_EXPECT(jSubmitJsonResult.isMember(jss::tx_json));
+            auto const jSubmitJsonTx = jSubmitJsonResult[jss::tx_json];
+            // Since the previous tx claimed a fee, this duplicate is not going
+            // anywhere
             BEAST_EXPECT(
-                tx.isMember(jss::TxnSignature) &&
-                tx[jss::TxnSignature].asString().length() == 142);
+                jSubmitJsonResult.isMember(jss::engine_result) &&
+                jSubmitJsonResult[jss::engine_result].asString() ==
+                    "tefPAST_SEQ");
+
+            BEAST_EXPECT(
+                !jSubmitJson.isMember(jss::error) &&
+                !jSubmitJsonResult.isMember(jss::error));
+
+            BEAST_EXPECT(jSubmitBlobTx == jSubmitJsonTx);
+        }
+
+        {
+            testcase("RPC LoanSet - sign and submit lender initiated");
+            // 1. Lender creates the transaction
+            Json::Value txJson{Json::objectValue};
+            txJson[sfTransactionType] = "LoanSet";
+            txJson[sfAccount] = lender.human();
+            txJson[sfCounterparty] = borrower.human();
+            txJson[sfLoanBrokerID] =
+                "FF924CD18A236C2B49CF8E80A351CEAC6A10171DC9F110025646894FECF83F"
+                "5C";
+            txJson[sfPrincipalRequested] = "100000000";
+            txJson[sfStartDate] = 807730340;
+            txJson[sfPaymentTotal] = 10000;
+            txJson[sfPaymentInterval] = 3600;
+            txJson[sfGracePeriod] = 300;
+            txJson[sfFlags] = 65536;  // tfLoanOverpayment
+            txJson[sfFee] = "24";
+
+            // 2. Lender signs the transaction
+            auto const lenderSignParams = [&]() {
+                Json::Value params{Json::objectValue};
+                params[jss::passphrase] = lenderPass;
+                params[jss::key_type] = "ed25519";
+                params[jss::tx_json] = txJson;
+                return params;
+            }();
+            auto const jSignLender =
+                env.rpc("json", "sign", to_string(lenderSignParams));
+            BEAST_EXPECT(
+                jSignLender.isMember(jss::result) &&
+                jSignLender[jss::result].isMember(jss::tx_json));
+            auto const txLenderSignResult =
+                jSignLender[jss::result][jss::tx_json];
+            auto const txLenderSignBlob =
+                jSignLender[jss::result][jss::tx_blob].asString();
+
+            // 2a. Lender attempts to submit the transaction. It doesn't work
+            {
+                auto const jSubmitBlob = env.rpc("submit", txLenderSignBlob);
+                BEAST_EXPECT(jSubmitBlob.isMember(jss::result));
+                auto const jSubmitBlobResult = jSubmitBlob[jss::result];
+                BEAST_EXPECT(jSubmitBlobResult.isMember(jss::tx_json));
+                // Transaction fails because the CounterpartySignature is
+                // missing
+                BEAST_EXPECT(
+                    jSubmitBlobResult.isMember(jss::engine_result) &&
+                    jSubmitBlobResult[jss::engine_result].asString() ==
+                        "temBAD_SIGNER");
+            }
+
+            // 3. Lender sends the signed transaction to the Borrower
+            // 4. Borrower signs the transaction
+            auto const borrowerSignParams = [&]() {
+                Json::Value params{Json::objectValue};
+                params[jss::passphrase] = borrowerPass;
+                params[jss::key_type] = "ed25519";
+                params[jss::signature_target] = "CounterpartySignature";
+                params[jss::tx_json] = txLenderSignResult;
+                return params;
+            }();
+            auto const jSignBorrower =
+                env.rpc("json", "sign", to_string(borrowerSignParams));
+            BEAST_EXPECT(
+                jSignBorrower.isMember(jss::result) &&
+                jSignBorrower[jss::result].isMember(jss::tx_json));
+            auto const txBorrowerSignResult =
+                jSignBorrower[jss::result][jss::tx_json];
+            auto const txBorrowerSignBlob =
+                jSignBorrower[jss::result][jss::tx_blob].asString();
+
+            // 5. Borrower submits the signed transaction blob
+            auto const jSubmitBlob = env.rpc("submit", txBorrowerSignBlob);
+            BEAST_EXPECT(jSubmitBlob.isMember(jss::result));
+            auto const jSubmitBlobResult = jSubmitBlob[jss::result];
+            BEAST_EXPECT(jSubmitBlobResult.isMember(jss::tx_json));
+            auto const jSubmitBlobTx = jSubmitBlobResult[jss::tx_json];
+            // To get far enough to return tecNO_ENTRY means that the signatures
+            // all validated. Of course the transaction won't succeed because no
+            // Vault or Broker were created.
+            BEAST_EXPECT(
+                jSubmitBlobResult.isMember(jss::engine_result) &&
+                jSubmitBlobResult[jss::engine_result].asString() ==
+                    "tecNO_ENTRY");
+
+            BEAST_EXPECT(
+                !jSubmitBlob.isMember(jss::error) &&
+                !jSubmitBlobResult.isMember(jss::error));
+
+            // 4-alt. Borrower submits the transaction json originally received
+            // from the Lender. It gets signed, but is now a duplicate, so
+            // fails. Lender could done this instead of steps 4 and 5.
+            auto const jSubmitJson =
+                env.rpc("json", "submit", to_string(borrowerSignParams));
+            BEAST_EXPECT(jSubmitJson.isMember(jss::result));
+            auto const jSubmitJsonResult = jSubmitJson[jss::result];
+            BEAST_EXPECT(jSubmitJsonResult.isMember(jss::tx_json));
+            auto const jSubmitJsonTx = jSubmitJsonResult[jss::tx_json];
+            // Since the previous tx claimed a fee, this duplicate is not going
+            // anywhere
+            BEAST_EXPECT(
+                jSubmitJsonResult.isMember(jss::engine_result) &&
+                jSubmitJsonResult[jss::engine_result].asString() ==
+                    "tefPAST_SEQ");
+
+            BEAST_EXPECT(
+                !jSubmitJson.isMember(jss::error) &&
+                !jSubmitJsonResult.isMember(jss::error));
+
+            BEAST_EXPECT(jSubmitBlobTx == jSubmitJsonTx);
         }
     }
 
