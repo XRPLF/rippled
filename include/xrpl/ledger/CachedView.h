@@ -20,10 +20,9 @@
 #ifndef RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_CACHEDVIEW_H_INCLUDED
 
-#include <xrpld/ledger/CachedSLEs.h>
-#include <xrpld/ledger/ReadView.h>
-
 #include <xrpl/basics/hardened_hash.h>
+#include <xrpl/ledger/CachedSLEs.h>
+#include <xrpl/ledger/ReadView.h>
 
 #include <mutex>
 #include <type_traits>

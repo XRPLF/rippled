@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpld/ledger/CachedView.h>
-
 #include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/ledger/CachedView.h>
 
 namespace ripple {
 namespace detail {
