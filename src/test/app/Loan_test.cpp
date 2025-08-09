@@ -25,7 +25,9 @@
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/utility.h>
