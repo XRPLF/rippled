@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Usage: levelization.sh
+# Usage: generate.sh
 # This script takes no parameters, reads no environment variables,
 # and can be run from any directory, as long as it is in the expected
 # location in the repo.
@@ -19,7 +19,7 @@ export LANG=C
 rm -rfv results
 mkdir results
 includes="$( pwd )/results/rawincludes.txt"
-pushd ../..
+pushd ../../..
 echo Raw includes:
 grep -r '^[ ]*#include.*/.*\.h' include src | \
     grep -v boost | tee ${includes}
@@ -75,8 +75,8 @@ do
 done
 exec 4>&- #close fd 4
 
-loops="$( pwd )/loops.txt"
-ordering="$( pwd )/ordering.txt"
+loops="$( pwd )/../loops.txt"
+ordering="$( pwd )/../ordering.txt"
 pushd includes
 echo Search for loops
 # Redirect stdout to a file

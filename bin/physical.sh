@@ -213,6 +213,6 @@ git commit -m 'Rearrange sources' --author 'Pretty Printer <cpp@ripple.com>'
 find include src -type f \( -name '*.cpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format-10 -i {} +
 git add --update .
 git commit -m 'Rewrite includes' --author 'Pretty Printer <cpp@ripple.com>'
-./Builds/levelization/levelization.sh
+.github/scripts/levelization/generate.sh
 git add --update .
 git commit -m 'Recompute loops' --author 'Pretty Printer <cpp@ripple.com>'
