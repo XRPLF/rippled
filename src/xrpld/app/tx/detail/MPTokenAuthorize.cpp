@@ -176,125 +176,17 @@ MPTokenAuthorize::createMPToken(
 }
 
 TER
-MPTokenAuthorize::authorize(
-    ApplyView& view,
-    beast::Journal journal,
-    MPTAuthorizeArgs const& args)
-{
-    auto const sleAcct = view.peek(keylet::account(args.account));
-    if (!sleAcct)
-        return tecINTERNAL;
-
-    // If the account that submitted the tx is a holder
-    // Note: `account_` is holder's account
-    //       `holderID` is NOT used
-    if (!args.holderID)
-    {
-        // When a holder wants to unauthorize/delete a MPT, the ledger must
-        //      - delete mptokenKey from owner directory
-        //      - delete the MPToken
-        if (args.flags & tfMPTUnauthorize)
-        {
-            auto const mptokenKey =
-                keylet::mptoken(args.mptIssuanceID, args.account);
-            auto const sleMpt = view.peek(mptokenKey);
-            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-
-            if (!view.dirRemove(
-                    keylet::ownerDir(args.account),
-                    (*sleMpt)[sfOwnerNode],
-                    sleMpt->key(),
-                    false))
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-
-            adjustOwnerCount(view, sleAcct, -1, journal);
-
-            view.erase(sleMpt);
-            return tesSUCCESS;
-        }
-
-        // A potential holder wants to authorize/hold a mpt, the ledger must:
-        //      - add the new mptokenKey to the owner directory
-        //      - create the MPToken object for the holder
-
-        // The reserve that is required to create the MPToken. Note
-        // that although the reserve increases with every item
-        // an account owns, in the case of MPTokens we only
-        // *enforce* a reserve if the user owns more than two
-        // items. This is similar to the reserve requirements of trust lines.
-        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
-        XRPAmount const reserveCreate(
-            (uOwnerCount < 2) ? XRPAmount(beast::zero)
-                              : view.fees().accountReserve(uOwnerCount + 1));
-
-        if (args.priorBalance < reserveCreate)
-            return tecINSUFFICIENT_RESERVE;
-
-        auto const mptokenKey =
-            keylet::mptoken(args.mptIssuanceID, args.account);
-        auto mptoken = std::make_shared<SLE>(mptokenKey);
-        if (auto ter = dirLink(view, args.account, mptoken))
-            return ter;  // LCOV_EXCL_LINE
-
-        (*mptoken)[sfAccount] = args.account;
-        (*mptoken)[sfMPTokenIssuanceID] = args.mptIssuanceID;
-        (*mptoken)[sfFlags] = 0;
-        view.insert(mptoken);
-
-        // Update owner count.
-        adjustOwnerCount(view, sleAcct, 1, journal);
-
-        return tesSUCCESS;
-    }
-
-    auto const sleMptIssuance =
-        view.read(keylet::mptIssuance(args.mptIssuanceID));
-    if (!sleMptIssuance)
-        return tecINTERNAL;
-
-    // If the account that submitted this tx is the issuer of the MPT
-    // Note: `account_` is issuer's account
-    //       `holderID` is holder's account
-    if (args.account != (*sleMptIssuance)[sfIssuer])
-        return tecINTERNAL;
-
-    auto const sleMpt =
-        view.peek(keylet::mptoken(args.mptIssuanceID, *args.holderID));
-    if (!sleMpt)
-        return tecINTERNAL;
-
-    std::uint32_t const flagsIn = sleMpt->getFieldU32(sfFlags);
-    std::uint32_t flagsOut = flagsIn;
-
-    // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
-    // their MPToken
-    if (args.flags & tfMPTUnauthorize)
-        flagsOut &= ~lsfMPTAuthorized;
-    // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
-    // MPToken
-    else
-        flagsOut |= lsfMPTAuthorized;
-
-    if (flagsIn != flagsOut)
-        sleMpt->setFieldU32(sfFlags, flagsOut);
-
-    view.update(sleMpt);
-    return tesSUCCESS;
-}
-
-TER
 MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
-    return authorize(
+    return authorizeMPToken(
         ctx_.view(),
+        mPriorBalance,
+        tx[sfMPTokenIssuanceID],
+        account_,
         ctx_.journal,
-        {.priorBalance = mPriorBalance,
-         .mptIssuanceID = tx[sfMPTokenIssuanceID],
-         .account = account_,
-         .flags = tx.getFlags(),
-         .holderID = tx[~sfHolder]});
+        tx.getFlags(),
+        tx[~sfHolder]);
 }
 
 }  // namespace ripple

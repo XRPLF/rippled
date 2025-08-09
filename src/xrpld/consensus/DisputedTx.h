@@ -85,7 +85,12 @@ public:
     //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
     bool
-    stalled(ConsensusParms const& p, bool proposing, int peersUnchanged) const
+    stalled(
+        ConsensusParms const& p,
+        bool proposing,
+        int peersUnchanged,
+        beast::Journal j,
+        std::unique_ptr<std::stringstream> const& clog) const
     {
         // at() can throw, but the map is built by hand to ensure all valid
         // values are available.
@@ -123,8 +128,24 @@ public:
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
-        return weight > p.minCONSENSUS_PCT ||
-            weight < (100 - p.minCONSENSUS_PCT);
+        bool const stalled =
+            weight > p.minCONSENSUS_PCT || weight < (100 - p.minCONSENSUS_PCT);
+
+        if (stalled)
+        {
+            // stalling is an error condition for even a single
+            // transaction.
+            std::stringstream s;
+            s << "Transaction " << ID() << " is stalled. We have been voting "
+              << (getOurVote() ? "YES" : "NO") << " for " << currentVoteCounter_
+              << " rounds. Peers have not changed their votes in "
+              << peersUnchanged << " rounds. The transaction has " << weight
+              << "% support. ";
+            JLOG(j_.error()) << s.str();
+            CLOG(clog) << s.str();
+        }
+
+        return stalled;
     }
 
     //! The disputed transaction.
