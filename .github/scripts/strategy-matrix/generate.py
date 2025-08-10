@@ -31,7 +31,7 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
         # Checks for PR commits.
         if pr:
             # Only run in Debug with unity.
-            if build_type != "Debug" or cmake_args != "-Dunity=ON":
+            if build_type != "Debug" or "-Dunity=ON" not in cmake_args:
                 continue
 
             # Checks for Debian Bookworm.
