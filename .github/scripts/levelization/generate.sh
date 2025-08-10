@@ -75,8 +75,8 @@ do
 done
 exec 4>&- #close fd 4
 
-loops="$( pwd )/../loops.txt"
-ordering="$( pwd )/../ordering.txt"
+loops="$( pwd )/loops.txt"
+ordering="$( pwd )/ordering.txt"
 pushd includes
 echo Search for loops
 # Redirect stdout to a file

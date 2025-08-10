@@ -37,7 +37,9 @@ Release/*.*
 *.gcov
 
 # Levelization checking
-.github/scripts/levelization/results
+.github/scripts/levelization/results/*
+!.github/scripts/levelization/results/loops.txt
+!.github/scripts/levelization/results/ordering.txt
 
 # Ignore tmp directory.
 tmp

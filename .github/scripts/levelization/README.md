@@ -67,14 +67,14 @@ It generates many files of [results](results):
 * `includedby/`: Similar to `includes/`, but the other way around. Each
   file represents a module and contains a list of modules and counts
   that _include_ the module.
-* [`loops.txt`](loops.txt): A list of direct loops detected
+* [`loops.txt`](results/loops.txt): A list of direct loops detected
   between modules as they actually exist, as opposed to how they are
   desired as described above. In a perfect repo, this file will be
   empty.
   This file is committed to the repo, and is used by the [levelization
   Github workflow](../../workflows/check-levelization.yml) to validate
   that nothing changed.
-* [`ordering.txt`](ordering.txt): A list showing relationships
+* [`ordering.txt`](results/ordering.txt): A list showing relationships
   between modules where there are no loops as they actually exist, as
   opposed to how they are desired as described above.
   This file is committed to the repo, and is used by the [levelization
