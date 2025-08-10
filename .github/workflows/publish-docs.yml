@@ -22,8 +22,6 @@ defaults:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     container: ghcr.io/xrplf/ci/tools-rippled-documentation
     steps:
       - name: Checkout repository
