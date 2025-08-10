@@ -26,6 +26,14 @@ on:
         description: 'The password for logging into the Conan remote.'
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-clio
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   upload:
     runs-on: ubuntu-latest

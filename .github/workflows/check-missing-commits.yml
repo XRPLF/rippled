@@ -7,7 +7,7 @@ name: Check for missing commits
 on: workflow_call
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-missing-commits
   cancel-in-progress: true
 
 defaults:
