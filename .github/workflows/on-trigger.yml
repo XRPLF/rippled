@@ -96,10 +96,11 @@ jobs:
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
       dependencies_force_build: ${{ needs.check-trigger.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.check-trigger.outputs.dependencies_force_upload }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   build-macos:
     needs: check-trigger
@@ -107,10 +108,11 @@ jobs:
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
       dependencies_force_build: ${{ needs.check-trigger.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.check-trigger.outputs.dependencies_force_upload }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   build-windows:
     needs: check-trigger
@@ -118,10 +120,11 @@ jobs:
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
       dependencies_force_build: ${{ needs.check-trigger.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.check-trigger.outputs.dependencies_force_upload }}
+    secrets:
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   publish-docs:
     needs:
