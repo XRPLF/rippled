@@ -193,3 +193,8 @@ class Xrpl(ConanFile):
         ]
         if self.options.rocksdb:
             libxrpl.requires.append('rocksdb::librocksdb')
+
+    def package_id(self):
+        # Apply full package mode so all dependencies will follow the package ID
+        # rules of this package.
+        self.info.requires.full_package_mode()
