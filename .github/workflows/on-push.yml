@@ -56,13 +56,6 @@ jobs:
       - build-linux
       - build-macos
       - build-windows
-    # This job requires the CONAN_REMOTE_USERNAME and CONAN_REMOTE_PASSWORD to
-    # be set in the repository secrets. As if-statements cannot reference
-    # secrets directly, we use environment variables as a workaround.
-    env:
-      CONAN_REMOTE_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      CONAN_REMOTE_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-    if: ${{ env.CONAN_REMOTE_USERNAME && env.CONAN_REMOTE_PASSWORD }}
     uses: ./.github/workflows/publish-clio.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}

@@ -69,17 +69,17 @@ jobs:
         run: pip install wheel conan
       - name: Check configuration
         run: |
-          echo "Checking path"
-#         $env:PATH -split ';' | Sort-Object
+          #echo "Checking path"
+          #$env:PATH -split ';' | Sort-Object
+          #
+          #echo "Checking environment variables."
+          #ls env:
+          #
+          echo "Checking CMake version."
+          cmake --version
 
-          echo "Checking environment variables."
-#         ls env:
-
-           echo "Checking CMake version."
-           cmake --version
-
-           echo "Checking Conan version."
-           conan --version
+          echo "Checking Conan version."
+          conan --version
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
