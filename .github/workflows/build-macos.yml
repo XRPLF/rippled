@@ -27,13 +27,9 @@ on:
       conan_remote_username:
         description: 'The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
         required: false
-        type: string
-        default: ''
       conan_remote_password:
         description: 'The password for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
         required: false
-        type: string
-        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-macos
