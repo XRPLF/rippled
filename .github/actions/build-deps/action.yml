@@ -1,0 +1,105 @@
+# This action installs and optionally uploads Conan dependencies to a remote
+# repository. The dependencies will only be uploaded if the credentials are
+# provided.
+name: Build Conan dependencies
+
+inputs:
+  build_dir:
+    description: 'The directory where to build.'
+    required: false
+    type: string
+    default: '.build'
+  build_type:
+    description: 'The build type to use.'
+    required: true
+    type: string
+  conan_global_conf:
+    description: 'The contents of the global Conan configuration file.'
+    required: true
+    type: string
+  conan_remote_name:
+    description: 'The name of the Conan remote to use.'
+    required: true
+    type: string
+  conan_remote_url:
+    description: 'The URL of the Conan endpoint to use.'
+    required: true
+    type: string
+  conan_remote_username:
+    description: 'The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
+    required: false
+    type: string
+    default: ''
+  conan_remote_password:
+    description: 'The password for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
+    required: false
+    type: string
+    default: ''
+  force_build:
+    description: 'Force building of all dependencies.'
+    required: false
+    type: boolean
+    default: false
+  force_upload:
+    description: 'Force uploading of all dependencies.'
+    required: false
+    type: boolean
+    default: false
+  os:
+    description: 'The operating system that is used (Linux, MacOS, or Windows).'
+    required: true
+    type: choice
+    options:
+      - Linux
+      - MacOS
+      - Windows
+
+runs:
+  using: composite
+  steps:
+    # Set up Conan. Note that on MacOS and Windows, which are self-hosted
+    # runners, we should overwrite the global.conf file instead of appending to
+    # it. On Linux runners, where we run Docker images, the file is reset on
+    # each run with important defaults.
+    - name: Install Conan profile
+      shell: bash
+      run: |
+        if [ '${{ inputs.os }}' == 'Linux' ]; then
+          echo "${{ inputs.conan_global_conf }}" >> $(conan config home)/global.conf
+        else
+          echo "${{ inputs.conan_global_conf }}" > $(conan config home)/global.conf
+        fi
+        conan config install conan/profiles/default -tf $(conan config home)/profiles/
+        echo "Conan profile:"
+        conan profile show
+        echo "Conan configuration:"
+        conan config show '*'
+    - name: Add Conan remote
+      shell: bash
+      run: |
+        echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
+        conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+        echo "Listing Conan remotes."
+        conan remote list
+    - name: Install Conan dependencies
+      shell: bash
+      run: |
+        mkdir -p ${{ inputs.build_dir }}
+        cd ${{ inputs.build_dir }}
+        conan install \
+          --output-folder . \
+          --build ${{ inputs.force_build && '"*"' || 'missing' }} \
+          --options:host '&:tests=True' \
+          --options:host '&:xrpld=True' \
+          --settings:all build_type=${{ inputs.build_type }} \
+          --format=json .. > build.json
+    - name: Upload Conan dependencies
+      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}
+      run: |
+        echo "Logging into Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
+        conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
+        echo "Uploading dependencies to Conan remote."
+        conan list --graph=build.json --graph-binaries=build --format=json > pkgs.json
+        conan upload --list=pkgs.json --confirm --check ${{ inputs.force_upload && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}

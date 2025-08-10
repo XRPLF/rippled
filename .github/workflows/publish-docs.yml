@@ -1,0 +1,52 @@
+# This workflow builds and publishes the documentation for the repository.
+name: Build and publish documentation
+
+# This workflow can only be triggered by other workflows.
+on:
+  workflow_call:
+    inputs:
+      build_dir:
+        description: 'The directory where to build.'
+        required: false
+        type: string
+        default: '.build'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-docs
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/ci/tools-rippled-documentation
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check configuration
+        run: |
+          echo "Checking path"
+          echo ${PATH} | tr ':' '\n'
+
+          echo "Checking environment variables."
+          env | sort
+
+          echo "Checking CMake version."
+          cmake --version
+
+          echo "Checking Doxygen version."
+          doxygen --version
+      - name: Build documentation
+        run: |
+          mkdir ${{ inputs.build_dir }}
+          cd ${{ inputs.build_dir }}
+          cmake -Donly_docs=ON ..
+          cmake --build . --target docs --parallel $(nproc)
+      - name: Publish documentation
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ inputs.build_dir }}/docs/html

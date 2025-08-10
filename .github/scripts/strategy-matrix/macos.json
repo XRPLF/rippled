@@ -1,0 +1,30 @@
+{
+  "architecture": [
+    {
+      "platform": "macos/arm64",
+      "runner": [
+        "self-hosted",
+        "macOS",
+        "ARM64",
+        "mac-runner-m1"
+      ]
+    }
+  ],
+  "os": [
+    {
+      "distro_name": "macos",
+      "distro_version": "",
+      "compiler_name": "apple-clang",
+      "compiler_version": "16"
+    }
+  ],
+  "build_type": [
+    "Debug",
+    "distro_version"
+  ],
+  "cmake_args": [
+    "-Dunity=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+    "-Dunity=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+  ],
+  "cmake_extras": {}
+}
