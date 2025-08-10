@@ -77,7 +77,7 @@ jobs:
       fail-fast: false
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     runs-on: ${{ matrix.architecture.runner }}
-    container: ghcr.io/xrplf/ci/${{ matrix.os.distro }}-${{ matrix.os.release }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
+    container: ghcr.io/xrplf/ci/${{ matrix.os.distro_name }}-${{ matrix.os.distro_version }}:${{ matrix.os.compiler_name }}-${{ matrix.os.compiler_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
