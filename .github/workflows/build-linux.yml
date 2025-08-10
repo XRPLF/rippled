@@ -13,6 +13,27 @@ on:
         description: 'The URL of the Conan endpoint to use.'
         required: true
         type: string
+      dependencies_force_build:
+        description: 'Force building of all dependencies.'
+        required: false
+        type: boolean
+        default: false
+      dependencies_force_upload:
+        description: 'Force uploading of all dependencies.'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      conan_remote_username:
+        description: 'The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
+        required: false
+        type: string
+        default: ''
+      conan_remote_password:
+        description: 'The password for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
+        required: false
+        type: string
+        default: ''
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}-linux
@@ -46,8 +67,9 @@ jobs:
         with:
           python-version: 3.13
       - name: Generate strategy matrix
+        working-directory: .github/scripts/strategy-matrix
         id: generate
-        run: python .github/scripts/strategy-matrix/generate.py --config=.github/scripts/strategy-matrix/linux.json --ref=${{ github.ref }} >> "${GITHUB_OUTPUT}"
+        run: python generate.py --config=linux.json --ref=${{ github.ref }} >> "${GITHUB_OUTPUT}"
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
 
@@ -89,8 +111,12 @@ jobs:
           conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_url: ${{ inputs.conan_remote_url }}
+          conan_remote_username: ${{ secrets.conan_remote_username }}
+          conan_remote_password: ${{ secrets.conan_remote_password }}
+          force_build: ${{ inputs.dependencies_force_build }}
+          force_upload: ${{ inputs.dependencies_force_upload }}
           os: 'Linux'
-      - name: Build and test the binary
+      - name: Build and test binary
         uses: ./.github/actions/build-test
         with:
           build_type: ${{ matrix.build_type }}

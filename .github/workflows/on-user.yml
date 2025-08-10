@@ -1,13 +1,39 @@
 # This workflow runs all workflows to check, build and test the project on
-# various Linux flavors, as well as MacOS and Windows.
-name: Push
+# various Linux flavors, as well as on MacOS and Windows, on every push to a
+# user branch. However, it will not run if the pull request is a draft unless it
+# has the 'DraftRunCI' label.
+name: User
 
-# This workflow is triggered on every push to the repository, including pull
-# requests. However, it will not run if the pull request is a draft unless it
-# has the 'DraftRunCI' label. The missing commits check is only run when the
-# code is merged into the 'develop' or 'release' branches, and the documentation
-# is built when the code is merged into the 'develop' branch.
-on: push
+on:
+  push:
+    branches-ignore:
+      - develop
+      - release
+      - master
+    paths:
+      - '.github/actions/build-deps'
+      - '.github/actions/build-test'
+      - '.github/scripts/levelization'
+      - '.github/scripts/strategy-matrix'
+      - '.github/workflows/build-linux.yml'
+      - '.github/workflows/build-macos.yml'
+      - '.github/workflows/build-windows.yml'
+      - '.github/workflows/check-clang-format.yml'
+      - '.github/workflows/check-levelization.yml'
+      - '.github/workflows/notify-clio.yml'
+      - '.github/workflows/on-user.yml'
+      # Keep the list of paths below in sync with those in `on-trigger.yml`.
+      - 'cmake'
+      - 'conan'
+      - 'external'
+      - 'include'
+      - 'src'
+      - 'tests'
+      - '.clang-format'
+      - '.codecov.yml'
+      - '.pre-commit-config.yaml'
+      - 'CMakeLists.txt'
+      - 'conanfile.py'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -25,10 +51,6 @@ jobs:
   check-levelization:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/check-levelization.yml
-
-  check-missing-commits:
-    if: ${{ github.ref_type == 'branch' && contains(fromJSON('["develop", "release"]'), github.ref_name) }}
-    uses: ./.github/workflows/check-missing-commits.yml
 
   build-linux:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
@@ -51,12 +73,12 @@ jobs:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
 
-  publish-clio:
+  notify-clio:
     needs:
       - build-linux
       - build-macos
       - build-windows
-    uses: ./.github/workflows/publish-clio.yml
+    uses: ./.github/workflows/notify-clio.yml
     with:
       conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
@@ -64,14 +86,3 @@ jobs:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-
-  publish-docs:
-    needs:
-      - build-linux
-      - build-macos
-      - build-windows
-    if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
-    permissions:
-      contents: write
-    uses: ./.github/workflows/publish-docs.yml
-

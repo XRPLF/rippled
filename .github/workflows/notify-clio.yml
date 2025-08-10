@@ -1,7 +1,7 @@
 # This workflow exports the built libxrpl package to the Conan remote on a
 # a channel named after the pull request, and notifies the Clio repository about
 # the new version so it can check for compatibility.
-name: Publish Clio
+name: Notify Clio
 
 # This workflow can only be triggered by other workflows.
 on:

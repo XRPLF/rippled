@@ -29,12 +29,24 @@ inputs:
     description: 'The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
     required: false
     type: string
+    default: ''
   conan_remote_password:
     description: 'The password for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
     required: false
     type: string
+    default: ''
+  force_build:
+    description: 'Force building of all dependencies.'
+    required: false
+    type: boolean
+    default: false
+  force_upload:
+    description: 'Force uploading of all dependencies.'
+    required: false
+    type: boolean
+    default: false
   os:
-    description: 'A string representing which operating system is used.'
+    description: 'The operating system that is used (Linux, MacOS, or Windows).'
     required: true
     type: choice
     options:
@@ -76,13 +88,13 @@ runs:
         cd ${{ inputs.build_dir }}
         conan install \
           --output-folder . \
-          --build missing \
+          --build ${{ inputs.force_build && '"*"' || 'missing' }} \
           --options:host '&:tests=True' \
           --options:host '&:xrpld=True' \
           --settings:all build_type=${{ inputs.build_type }} \
           --format=json .. > build.json
     - name: Upload Conan dependencies
-      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
+      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
@@ -90,4 +102,4 @@ runs:
         conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
         echo "Uploading dependencies to Conan remote."
         conan list --graph=build.json --graph-binaries=build --format=json > pkgs.json
-        conan upload --list=pkgs.json --confirm --check --remote=${{ inputs.conan_remote_name }}
+        conan upload --list=pkgs.json --confirm --check ${{ inputs.force_upload && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}

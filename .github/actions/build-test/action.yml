@@ -20,8 +20,12 @@ inputs:
     description: 'The CMake generator to use for the build.'
     required: true
     type: string
+  cmake_target:
+    description: 'The CMake target to build.'
+    required: true
+    type: string
   os:
-    description: 'A string representing which operating system is used.'
+    description: 'The operating system that is used (Linux, MacOS, or Windows).'
     required: true
     type: choice
     options:

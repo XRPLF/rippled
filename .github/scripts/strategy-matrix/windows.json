@@ -9,18 +9,19 @@
   ],
   "os": [
     {
-      "distro": "windows",
-      "release": "",
+      "distro_name": "windows",
+      "distro_version": "",
       "compiler_name": "",
       "compiler_version": ""
     }
   ],
   "build_type": [
     "Debug",
-    "Release"
+    "distro_version"
   ],
   "cmake_args": [
     "-Dunity=OFF",
     "-Dunity=ON"
-  ]
+  ],
+  "cmake_extras": {}
 }

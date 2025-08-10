@@ -21,126 +21,132 @@
   ],
   "os": [
     {
-      "distro": "debian",
-      "release": "bookworm",
+      "distro_name": "debian",
+      "distro_version": "bookworm",
       "compiler_name": "gcc",
       "compiler_version": "12"
     },
     {
-      "distro": "debian",
-      "release": "bookworm",
+      "distro_name": "debian",
+      "distro_version": "bookworm",
       "compiler_name": "gcc",
       "compiler_version": "13"
     },
     {
-      "distro": "debian",
-      "release": "bookworm",
+      "distro_name": "debian",
+      "distro_version": "bookworm",
       "compiler_name": "gcc",
       "compiler_version": "14"
     },
     {
-      "distro": "debian",
-      "release": "bookworm",
+      "distro_name": "debian",
+      "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "16"
     },
     {
-      "distro": "debian",
-      "release": "bookworm",
+      "distro_name": "debian",
+      "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "17"
     },
     {
-      "distro": "debian",
-      "release": "bookworm",
+      "distro_name": "debian",
+      "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "18"
     },
     {
-      "distro": "debian",
-      "release": "bookworm",
+      "distro_name": "debian",
+      "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "19"
     },
     {
-      "distro": "rhel",
-      "release": "9.4",
+      "distro_name": "rhel",
+      "distro_version": "9.4",
       "compiler_name": "gcc",
       "compiler_version": "12"
     },
     {
-      "distro": "rhel",
-      "release": "9.6",
+      "distro_name": "rhel",
+      "distro_version": "9.6",
       "compiler_name": "gcc",
       "compiler_version": "13"
     },
     {
-      "distro": "rhel",
-      "release": "9.6",
+      "distro_name": "rhel",
+      "distro_version": "9.6",
       "compiler_name": "gcc",
       "compiler_version": "14"
     },
     {
-      "distro": "rhel",
-      "release": "9.4",
+      "distro_name": "rhel",
+      "distro_version": "9.4",
       "compiler_name": "clang",
       "compiler_version": "any"
     },
     {
-      "distro": "rhel",
-      "release": "9.6",
+      "distro_name": "rhel",
+      "distro_version": "9.6",
       "compiler_name": "clang",
       "compiler_version": "any"
     },
     {
-      "distro": "ubuntu",
-      "release": "jammy",
+      "distro_name": "ubuntu",
+      "distro_version": "jammy",
       "compiler_name": "gcc",
       "compiler_version": "12"
     },
     {
-      "distro": "ubuntu",
-      "release": "noble",
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
       "compiler_name": "gcc",
       "compiler_version": "13"
     },
     {
-      "distro": "ubuntu",
-      "release": "noble",
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
       "compiler_name": "gcc",
       "compiler_version": "14"
     },
     {
-      "distro": "ubuntu",
-      "release": "noble",
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
       "compiler_name": "clang",
       "compiler_version": "16"
     },
     {
-      "distro": "ubuntu",
-      "release": "noble",
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
       "compiler_name": "clang",
       "compiler_version": "17"
     },
     {
-      "distro": "ubuntu",
-      "release": "noble",
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
       "compiler_name": "clang",
       "compiler_version": "18"
     },
     {
-      "distro": "ubuntu",
-      "release": "noble",
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
       "compiler_name": "clang",
       "compiler_version": "19"
     }
   ],
   "build_type": [
     "Debug",
-    "Release"
+    "distro_version"
   ],
   "cmake_args": [
     "-Dunity=OFF",
     "-Dunity=ON"
-  ]
+  ],
+  "cmake_extras": {
+    "linux/amd64|debian-bookworm-gcc-13|Debug": "-DUNIT_TEST_REFERENCE_FEE=500",
+    "linux/amd64|debian-bookworm-gcc-14|Debug": "-Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS='-O0' -DCMAKE_CXX_FLAGS='-O0'",
+    "linux/amd64|debian-bookworm-clang-17|Debug": "-DUNIT_TEST_REFERENCE_FEE=1000",
+    "linux/amd64|debian-bookworm-clang-18|Debug": "-Dvoidstar=ON"
+  }
 }
