@@ -32,7 +32,7 @@ class WasmHostFunctionsImpl : public HostFunctions
 
     static int constexpr MAX_CACHE = 256;
     std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
-    std::optional<Slice> data_;
+    std::optional<Bytes> data_;
 
     void const* rt_ = nullptr;
 
@@ -76,10 +76,10 @@ public:
         return ctx.journal;
     }
 
-    std::optional<Slice> const&
+    Slice
     getData() const
     {
-        return data_;
+        return data_ ? makeSlice(*data_) : Slice();
     }
 
     Expected<std::uint32_t, HostFunctionError>
