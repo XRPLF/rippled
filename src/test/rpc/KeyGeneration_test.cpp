@@ -894,7 +894,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(WalletPropose, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(WalletPropose, rpc, ripple);
 
 }  // namespace RPC
 }  // namespace ripple
