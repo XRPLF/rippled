@@ -146,6 +146,7 @@ git fetch origin master
 git checkout master
 conan export --version 1.1.10 external/recipes/snappy
 conan export --version 4.0.3 external/recipes/soci
+conan export --version 2.4.1 external/wamr # TODO: needs to be added to the conan center index
 ```
 
 In the case we switch to a newer version of a dependency that still requires a
