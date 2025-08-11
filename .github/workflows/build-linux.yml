@@ -5,6 +5,11 @@ name: Build and test on Linux
 on:
   workflow_call:
     inputs:
+      build_dir:
+        description: 'The directory where to build.'
+        required: false
+        type: string
+        default: '.build'
       conan_remote_name:
         description: 'The name of the Conan remote to use.'
         required: true
@@ -106,6 +111,7 @@ jobs:
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
+          build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
@@ -118,9 +124,30 @@ jobs:
       - name: Build and test binary
         uses: ./.github/actions/build-test
         with:
+          build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Ninja'
           cmake_target: ${{ matrix.cmake_target }}
           codecov_token: ${{ secrets.codecov_token }}
           os: 'Linux'
+      - name: Verify voidstar
+        if: ${{ contains(matrix.cmake_args, '-Dvoidstar=ON') }}
+        working-directory: ${{ inputs.build_dir }}
+        run: |
+          echo 'Verifying presence of libvoidstar.'
+          ./rippled --version | grep libvoidstar
+      - name: Upload coverage report
+        if: ${{ contains(matrix.cmake_args, '-Dcoverage=ON') && secrets.codecov_token != '' }}
+        uses: wandalen/wretry.action@v3.8.0
+        with:
+          action: codecov/codecov-action@v5.4.3
+          with: |
+            disable_search: true
+            fail_ci_if_error: true
+            files: ${{ inputs.build_dir }}/coverage.xml
+            plugins: noop
+            token: ${{ secrets.codecov_token }}
+            verbose: true
+          attempt_delay: 210000 # milliseconds.
+          attempt_limit: 5

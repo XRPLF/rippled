@@ -6,9 +6,8 @@ name: Build Conan dependencies
 inputs:
   build_dir:
     description: 'The directory where to build.'
-    required: false
+    required: true
     type: string
-    default: '.build'
   build_type:
     description: 'The build type to use.'
     required: true

@@ -5,6 +5,11 @@ name: Build and test on MacOS
 on:
   workflow_call:
     inputs:
+      build_dir:
+        description: 'The directory where to build.'
+        required: false
+        type: string
+        default: '.build'
       conan_remote_name:
         description: 'The name of the Conan remote to use.'
         required: true
@@ -102,6 +107,7 @@ jobs:
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
+          build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
@@ -114,6 +120,7 @@ jobs:
       - name: Build and test binary
         uses: ./.github/actions/build-test
         with:
+          build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Ninja'
