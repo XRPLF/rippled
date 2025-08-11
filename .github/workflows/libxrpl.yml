@@ -1,6 +1,6 @@
 name: Check libXRPL compatibility with Clio
 env:
-  CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
+  CONAN_REMOTE_URL: https://conan.ripplex.io
   CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.CONAN_REMOTE_USERNAME }}
   CONAN_PASSWORD_XRPLF: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 on:
