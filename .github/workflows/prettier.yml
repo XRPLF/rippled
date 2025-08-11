@@ -1,4 +1,4 @@
-name: clang-format
+name: prettier
 
 on:
   push:
@@ -13,7 +13,6 @@ jobs:
   check:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-24.04
-    container: ghcr.io/xrplf/ci/tools-rippled-clang-format
     steps:
       - name: Use Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
