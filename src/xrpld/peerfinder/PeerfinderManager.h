@@ -28,6 +28,8 @@
 
 #include <boost/asio/ip/tcp.hpp>
 
+#include <string_view>
+
 namespace ripple {
 namespace PeerFinder {
 
@@ -136,21 +138,36 @@ using Endpoints = std::vector<Endpoint>;
 /** Possible results from activating a slot. */
 enum class Result { duplicate, full, success };
 
-inline std::string
+/**
+ * @brief Converts a `Result` enum value to its string representation.
+ *
+ * This function provides a human-readable string for a given `Result` enum,
+ * which is useful for logging, debugging, or displaying status messages.
+ *
+ * @param result The `Result` enum value to convert.
+ * @return A `std::string_view` representing the enum value. Returns "unknown"
+ * if the enum value is not explicitly handled.
+ *
+ * @note This function returns a `std::string_view` for performance.
+ * A `std::string` would need to allocate memory on the heap and copy the
+ * string literal into it every time the function is called.
+ */
+inline std::string_view
 to_string(Result result)
 {
     switch (result)
     {
-        case ripple::PeerFinder::Result::success:
+        case Result::success:
             return "success";
-        case ripple::PeerFinder::Result::duplicate:
+        case Result::duplicate:
             return "duplicate connection";
-        case ripple::PeerFinder::Result::full:
+        case Result::full:
             return "slots full";
         default:
             return "unknown";
     }
 }
+
 /** Maintains a set of IP addresses used for getting into the network. */
 class Manager : public beast::PropertyStream::Source
 {
