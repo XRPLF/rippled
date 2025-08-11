@@ -73,34 +73,31 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >This document contains instructions for installing rippled. The APT package manager is common on Debian-based Linux distributions like Ubuntu, while the YUM package manager is common on Red Hat-based Linux distributions like CentOS. Installing from source is an option for all platforms, and the only supported option for installing custom builds.</p>
-<h2><a class="anchor" id="autotoc_md157"></a>
+<h2><a class="anchor" id="autotoc_md126"></a>
 From source</h2>
 <p >From a source build, you can install rippled and libxrpl using CMake's <code>--install</code> mode:</p>
 <div class="fragment"><div class="line">cmake --install . --prefix /opt/local</div>
 </div><!-- fragment --><p >The default <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html">prefix</a> is typically <code>/usr/local</code> on Linux and macOS and <code>C:/Program Files/rippled</code> on Windows.</p>
-<h2><a class="anchor" id="autotoc_md158"></a>
+<h2><a class="anchor" id="autotoc_md127"></a>
 With the APT package manager</h2>
 <ol type="1">
-<li>Update repositories: <pre class="fragment"> sudo apt update -y
+<li>Update repositories: <pre class="fragment">sudo apt update -y
 </pre></li>
-<li>Install utilities: <pre class="fragment"> sudo apt install -y apt-transport-https ca-certificates wget gnupg
+<li>Install utilities: <pre class="fragment">sudo apt install -y apt-transport-https ca-certificates wget gnupg
 </pre></li>
-<li>Add Ripple's package-signing GPG key to your list of trusted keys: <pre class="fragment"> sudo mkdir /usr/local/share/keyrings/
- wget -q -O - "https://repos.ripple.com/repos/api/gpg/key/public" | gpg --dearmor &gt; ripple-key.gpg
- sudo mv ripple-key.gpg /usr/local/share/keyrings
+<li>Add Ripple's package-signing GPG key to your list of trusted keys: <pre class="fragment">sudo mkdir /usr/local/share/keyrings/
+wget -q -O - "https://repos.ripple.com/repos/api/gpg/key/public" | gpg --dearmor &gt; ripple-key.gpg
+sudo mv ripple-key.gpg /usr/local/share/keyrings
 </pre></li>
-<li><p class="startli">Check the fingerprint of the newly-added key: </p><pre class="fragment"> gpg /usr/local/share/keyrings/ripple-key.gpg
-</pre><p> The output should include an entry for Ripple such as the following: </p><pre class="fragment">gpg: WARNING: no command supplied.  Trying to guess what you mean ...
+<li>Check the fingerprint of the newly-added key: <pre class="fragment">gpg /usr/local/share/keyrings/ripple-key.gpg
+</pre> The output should include an entry for Ripple such as the following: <pre class="fragment">gpg: WARNING: no command supplied.  Trying to guess what you mean ...
 pub   rsa3072 2019-02-14 [SC] [expires: 2026-02-17]
     C0010EC205B35A3310DC90DE395F97FFCCAFD9A2
 uid           TechOps Team at Ripple &lt;techops+rippled@ripple.com&gt;
 sub   rsa3072 2019-02-14 [E] [expires: 2026-02-17]
-</pre><p class="startli">In particular, make sure that the fingerprint matches. (In the above example, the fingerprint is on the third line, starting with <code>C001</code>.)</p>
-</li>
-</ol>
-<ol type="1">
-<li><p class="startli">Add the appropriate Ripple repository for your operating system version: </p><pre class="fragment"> echo "deb [signed-by=/usr/local/share/keyrings/ripple-key.gpg] https://repos.ripple.com/repos/rippled-deb focal stable" | \
-     sudo tee -a /etc/apt/sources.list.d/ripple.list
+</pre> In particular, make sure that the fingerprint matches. (In the above example, the fingerprint is on the third line, starting with <code>C001</code>.)</li>
+<li><p class="startli">Add the appropriate Ripple repository for your operating system version: </p><pre class="fragment">echo "deb [signed-by=/usr/local/share/keyrings/ripple-key.gpg] https://repos.ripple.com/repos/rippled-deb focal stable" | \
+    sudo tee -a /etc/apt/sources.list.d/ripple.list
 </pre><p> The above example is appropriate for <b>Ubuntu 20.04 Focal Fossa</b>. For other operating systems, replace the word <code>focal</code> with one of the following:</p><ul>
 <li><code>jammy</code> for <b>Ubuntu 22.04 Jammy Jellyfish</b></li>
 <li><code>bionic</code> for <b>Ubuntu 18.04 Bionic Beaver</b></li>
@@ -113,18 +110,18 @@ sub   rsa3072 2019-02-14 [E] [expires: 2026-02-17]
 </ul>
 <p class="startli"><b>Warning:</b> Unstable and nightly builds may be broken at any time. Do not use these builds for production servers.</p>
 </li>
-<li>Fetch the Ripple repository. <pre class="fragment"> sudo apt -y update
+<li>Fetch the Ripple repository. <pre class="fragment">sudo apt -y update
 </pre></li>
-<li>Install the <code>rippled</code> software package: <pre class="fragment"> sudo apt -y install rippled
+<li>Install the <code>rippled</code> software package: <pre class="fragment">sudo apt -y install rippled
 </pre></li>
-<li>Check the status of the <code>rippled</code> service: <pre class="fragment"> systemctl status rippled.service
+<li>Check the status of the <code>rippled</code> service: <pre class="fragment">systemctl status rippled.service
 </pre> The <code>rippled</code> service should start automatically. If not, you can start it manually: <pre class="fragment">sudo systemctl start rippled.service
 </pre></li>
 <li><p class="startli">Optional: allow <code>rippled</code> to bind to privileged ports.</p>
 <p class="startli">This allows you to serve incoming API requests on port 80 or 443. (If you want to do so, you must also update the config file's port settings.) </p><pre class="fragment">sudo setcap 'cap_net_bind_service=+ep' /opt/ripple/bin/rippled
-</pre></li>
+</pre> </li>
 </ol>
-<h2><a class="anchor" id="autotoc_md159"></a>
+<h2><a class="anchor" id="autotoc_md128"></a>
 With the YUM package manager</h2>
 <ol type="1">
 <li><p class="startli">Install the Ripple RPM repository:</p>
@@ -161,13 +158,13 @@ baseurl=https://repos.ripple.com/repos/rippled-rpm/nightly/
 gpgkey=https://repos.ripple.com/repos/rippled-rpm/nightly/repodata/repomd.xml.key
 REPOFILE
 </pre></li>
-<li>Fetch the latest repo updates: <pre class="fragment"> sudo yum -y update
+<li>Fetch the latest repo updates: <pre class="fragment">sudo yum -y update
 </pre></li>
-<li>Install the new <code>rippled</code> package: <pre class="fragment"> sudo yum install -y rippled
+<li>Install the new <code>rippled</code> package: <pre class="fragment">sudo yum install -y rippled
 </pre></li>
-<li>Configure the <code>rippled</code> service to start on boot: <pre class="fragment"> sudo systemctl enable rippled.service
+<li>Configure the <code>rippled</code> service to start on boot: <pre class="fragment">sudo systemctl enable rippled.service
 </pre></li>
-<li>Start the <code>rippled</code> service: <pre class="fragment"> sudo systemctl start rippled.service
+<li>Start the <code>rippled</code> service: <pre class="fragment">sudo systemctl start rippled.service
 </pre> </li>
 </ol>
 </div></div><!-- contents -->

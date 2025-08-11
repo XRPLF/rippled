@@ -73,7 +73,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >To better understand how to use Conan, we should first understand <em>why</em> we use Conan, and to understand that, we need to understand how we use CMake.</p>
-<h2><a class="anchor" id="autotoc_md150"></a>
+<h2><a class="anchor" id="autotoc_md119"></a>
 CMake</h2>
 <p >Technically, you don't need CMake to build this project. You could manually compile every translation unit into an object file, using the right compiler options, and then manually link all those objects together, using the right linker options. However, that is very tedious and error-prone, which is why we lean on tools like CMake.</p>
 <p >We have written CMake configuration files (<a href="./CMakeLists.txt"><code>CMakeLists.txt</code></a> and friends) for this project so that CMake can be used to correctly compile and link all of the translation units in it. Or rather, CMake will generate files for a separate build system (e.g. Make, Ninja, Visual Studio, Xcode, etc.) that compile and link all of the translation units. Even then, CMake has parameters, some of which are platform-specific. In CMake's parlance, parameters are specially-named <b>variables</b> like <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html"><code>CMAKE_BUILD_TYPE</code></a> or <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_MSVC_RUNTIME_LIBRARY.html"><code>CMAKE_MSVC_RUNTIME_LIBRARY</code></a>. Parameters include:</p>
@@ -87,7 +87,7 @@ CMake</h2>
 </ul>
 <p >For some of these parameters, like the build system and compiler, CMake goes through a complicated search process to choose default values. For others, like the dependencies, <em>we</em> had written in the CMake configuration files of this project our own complicated process to choose defaults. For most developers, things "just worked"... until they didn't, and then you were left trying to debug one of these complicated processes, instead of choosing and manually passing the parameter values yourself.</p>
 <p >You can pass every parameter to CMake on the command line, but writing out these parameters every time we want to configure CMake is a pain. Most humans prefer to put them into a configuration file, once, that CMake can read every time it is configured. For CMake, that file is a <a href="https://cmake.org/cmake/help/latest/manual/cmake-toolchains.7.html">toolchain file</a>.</p>
-<h2><a class="anchor" id="autotoc_md151"></a>
+<h2><a class="anchor" id="autotoc_md120"></a>
 Conan</h2>
 <p >These next few paragraphs on Conan are going to read much like the ones above for CMake.</p>
 <p >Technically, you don't need Conan to build this project. You could manually download, configure, build, and install all of the dependencies yourself, and then pass all of the parameters necessary for CMake to link to those dependencies. To guarantee ABI compatibility, you must be sure to use the same set of compiler and linker options for all dependencies <em>and</em> this project. However, that is very tedious and error-prone, which is why we lean on tools like Conan.</p>

@@ -93,11 +93,13 @@ Minimum Requirements</h2>
 - &lt;a href="<a href="https://conan.io/downloads.html">https://conan.io/downloads.html</a>" &gt;Conan 2.17&lt;/a&gt;[^1], or higher
 - &lt;a href="<a href="https://cmake.org/download/">https://cmake.org/download/</a>" &gt;CMake 3.22&lt;/a&gt;[^2], or higher
 
-[^1]: It is possible to build with Conan 1.60+, but the instructions are
-significantly different, which is why we are not recommending it.
+[^1]:
+    It is possible to build with Conan 1.60+, but the instructions are
+    significantly different, which is why we are not recommending it.
 
-[^2]: CMake 4 is not yet supported by all dependencies required by this project.
-If you are affected by this issue, follow @ref workaround-for-cmake-4 "conan workaround for cmake 4"
+[^2]:
+    CMake 4 is not yet supported by all dependencies required by this project.
+    If you are affected by this issue, follow @ref workaround-for-cmake-4 "conan workaround for cmake 4"
 
 &lt;tt&gt;rippled&lt;/tt&gt; is written in the C++20 dialect and includes the &lt;tt&gt;\&lt;concepts\&gt;&lt;/tt&gt; header.
 The &lt;a href="<a href="https://en.cppreference.com/w/cpp/compiler_support/20">https://en.cppreference.com/w/cpp/compiler_support/20</a>" &gt;minimum compiler versions&lt;/a&gt; required are:
@@ -171,9 +173,33 @@ Missing compiler version</h4>
 <div class="line">Read &quot;http://docs.conan.io/2/knowledge/faq.html#error-invalid-setting&quot;</div>
 </div><!-- fragment --><p >you need to amend the list of compiler versions in <code>$(conan config home)/settings.yml</code>, by appending the required version number(s) to the <code>version</code> array specific for your compiler. For example:</p>
 <div class="fragment"><div class="line">apple-clang:</div>
-<div class="line">   version: [&quot;5.0&quot;, &quot;5.1&quot;, &quot;6.0&quot;, &quot;6.1&quot;, &quot;7.0&quot;, &quot;7.3&quot;, &quot;8.0&quot;, &quot;8.1&quot;, &quot;9.0&quot;,</div>
-<div class="line">             &quot;9.1&quot;, &quot;10.0&quot;, &quot;11.0&quot;, &quot;12.0&quot;, &quot;13&quot;, &quot;13.0&quot;, &quot;13.1&quot;, &quot;14&quot;,</div>
-<div class="line">             &quot;14.0&quot;, &quot;15&quot;, &quot;15.0&quot;, &quot;16&quot;, &quot;16.0&quot;, &quot;17&quot;, &quot;17.0&quot;]</div>
+<div class="line">  version:</div>
+<div class="line">    [</div>
+<div class="line">      &quot;5.0&quot;,</div>
+<div class="line">      &quot;5.1&quot;,</div>
+<div class="line">      &quot;6.0&quot;,</div>
+<div class="line">      &quot;6.1&quot;,</div>
+<div class="line">      &quot;7.0&quot;,</div>
+<div class="line">      &quot;7.3&quot;,</div>
+<div class="line">      &quot;8.0&quot;,</div>
+<div class="line">      &quot;8.1&quot;,</div>
+<div class="line">      &quot;9.0&quot;,</div>
+<div class="line">      &quot;9.1&quot;,</div>
+<div class="line">      &quot;10.0&quot;,</div>
+<div class="line">      &quot;11.0&quot;,</div>
+<div class="line">      &quot;12.0&quot;,</div>
+<div class="line">      &quot;13&quot;,</div>
+<div class="line">      &quot;13.0&quot;,</div>
+<div class="line">      &quot;13.1&quot;,</div>
+<div class="line">      &quot;14&quot;,</div>
+<div class="line">      &quot;14.0&quot;,</div>
+<div class="line">      &quot;15&quot;,</div>
+<div class="line">      &quot;15.0&quot;,</div>
+<div class="line">      &quot;16&quot;,</div>
+<div class="line">      &quot;16.0&quot;,</div>
+<div class="line">      &quot;17&quot;,</div>
+<div class="line">      &quot;17.0&quot;,</div>
+<div class="line">    ]</div>
 </div><!-- fragment --><h4><a class="anchor" id="autotoc_md39"></a>
 Multiple compilers</h4>
 <p >If you have multiple compilers installed, make sure to select the one to use in your default Conan configuration <b>before</b> running <code>conan profile detect</code>, by setting the <code>CC</code> and <code>CXX</code> environment variables.</p>
