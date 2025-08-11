@@ -153,7 +153,7 @@ enum class Result { duplicate, full, success };
  * string literal into it every time the function is called.
  */
 inline std::string_view
-to_string(Result result)
+to_string(Result result) noexcept
 {
     switch (result)
     {
@@ -163,9 +163,9 @@ to_string(Result result)
             return "duplicate connection";
         case Result::full:
             return "slots full";
-        default:
-            return "unknown";
     }
+
+    return "unknown";
 }
 
 /** Maintains a set of IP addresses used for getting into the network. */
