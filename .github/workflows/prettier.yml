@@ -20,10 +20,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install Prettier
-        run: |
-          npm i --no-save prettier@${{ env.PRETTIER_VERSION }} --registry=https://registry.npmjs.org
-
       - name: Cache node modules
         id: cache-nodemodules
         uses: actions/cache@v4
@@ -37,6 +33,11 @@ jobs:
           key: ${{ runner.os }}-deps-${{ env.NODE_VERSION }}-${{ env.PRETTIER_VERSION }}
           restore-keys: |
             ${{ runner.os }}-deps-${{ env.NODE_VERSION }}-
+
+      - name: Install Prettier
+        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
+        run: |
+          npm i --no-save prettier@${{ env.PRETTIER_VERSION }} --registry=https://registry.npmjs.org
 
       - name: run Prettier for JS/Markdown files
         run: |
