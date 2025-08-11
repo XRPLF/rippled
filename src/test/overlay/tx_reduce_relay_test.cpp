@@ -284,6 +284,6 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(tx_reduce_relay, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, ripple);
 }  // namespace test
 }  // namespace ripple
