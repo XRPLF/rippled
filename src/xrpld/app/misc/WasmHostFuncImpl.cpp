@@ -66,7 +66,7 @@ WasmHostFunctionsImpl::getBaseFee()
 {
     auto fee = ctx.view().fees().base.drops();
     if (fee > std::numeric_limits<int32_t>::max())
-        return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+        return Unexpected(HostFunctionError::INTERNAL);
     return static_cast<int32_t>(fee);
 }
 
@@ -191,10 +191,8 @@ getAnyFieldData(STBase const* obj)
             return Bytes{data.begin(), data.end()};
         }
         break;
-        // LCOV_EXCL_START
         default:
             break;  // default to serializer
-                    // LCOV_EXCL_STOP;
     }
 
     Serializer msg;
