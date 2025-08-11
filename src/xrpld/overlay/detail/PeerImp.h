@@ -23,7 +23,8 @@
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
 #include <xrpld/app/misc/HashRouter.h>
-#include <xrpld/overlay/Squelch.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/SquelchStore.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
@@ -116,7 +117,7 @@ private:
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
 
-    reduce_relay::Squelch<UptimeClock> squelch_;
+    reduce_relay::SquelchStore squelchStore_;
 
     // Notes on thread locking:
     //
@@ -440,6 +441,13 @@ public:
         return txReduceRelayEnabled_;
     }
 
+    /** Check if a given validator is squelched.
+     * @param validator Validator's public key
+     * @return true if squelch exists and it is not expired. False otherwise.
+     */
+    bool
+    isSquelched(PublicKey const& validator) const;
+
 private:
     void
     close();
@@ -680,7 +688,7 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
-    , squelch_(app_.journal("Squelch"))
+    , squelchStore_(app_.journal("SquelchStore"), stopwatch())
     , usage_(usage)
     , fee_{Resource::feeTrivialPeer}
     , slot_(std::move(slot))
