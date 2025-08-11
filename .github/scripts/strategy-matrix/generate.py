@@ -7,11 +7,9 @@ import re
 '''
 Generate a strategy matrix for GitHub Actions CI.
 
-On each PR commit we will only build the Debian, RHEL, Ubuntu, MacOS, and
-Windows configurations in Debug with unity enabled.
-
-Upon merge into the develop, release, or master branch, we will build all
-Debian, RHEL, Ubuntu, MacOS, and Windows configurations.
+On each PR commit we will build a selection of Debian, RHEL, Ubuntu, MacOS, and
+Windows configurations, while upon merge into the develop, release, or master
+branches, we will build all configurations.
 
 We will further set additional CMake arguments as follows:
 - All builds will have the `tests`, `werr`, and `xrpld` options.
@@ -24,8 +22,9 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
     configurations = []
     for architecture, os, build_type, cmake_args in itertools.product(architecture, os, build_type, cmake_args):
 
-        # Only run in Debug with unity.
-        if pr and (build_type != "Debug" or "-Dunity=ON" not in cmake_args):
+        # Only run a subset of configurations in PRs.
+        # TODO: Find a good mixture of configurations to run in PRs.
+        if pr and build_type != "Debug":
             continue
 
         # Additional CMake arguments.
