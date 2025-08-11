@@ -21,6 +21,9 @@ We will further set additional CMake arguments as follows:
 def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict], build_type: list[str], cmake_args: list[str]) -> dict:
     configurations = []
     for architecture, os, build_type, cmake_args in itertools.product(architecture, os, build_type, cmake_args):
+        # The default CMake target is 'all' for Linux and MacOS and 'install'
+        # for Windows, but it can get overridden for certain configurations.
+        cmake_target = 'install' if os["distro_name"] == 'windows' else 'all'
 
         # Only run a subset of configurations in PRs.
         if pr:
@@ -38,6 +41,7 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
                 if os['distro_version'] == 'bookworm':
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         cmake_args = f'{cmake_args} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0'
+                        cmake_target = 'coverage'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
                         cmake_args = f'{cmake_args} -DUNIT_TEST_REFERENCE_FEE=500'
@@ -92,7 +96,7 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
 
             # Windows:
             # - Release and Unity on windows/amd64.
-            if os['distro_name'] == 'windows' and not (build_type == 'Release' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'windows/amd64'):
+            if os['distro_name'] == 'windows' and not (build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'windows/amd64'):
                 continue
 
 
@@ -108,6 +112,7 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
             'os': os,
             'build_type': build_type,
             'cmake_args': cmake_args,
+            'cmake_target': cmake_target,
         })
 
     return {'include': configurations}

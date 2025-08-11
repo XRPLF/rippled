@@ -116,5 +116,5 @@ jobs:
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Visual Studio 17 2022'
-          cmake_target: 'install'
+          cmake_target: ${{ matrix.cmake_target }}
           os: 'Windows'

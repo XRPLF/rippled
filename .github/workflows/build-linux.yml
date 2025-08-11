@@ -118,5 +118,5 @@ jobs:
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Ninja'
-          cmake_target: 'all'
+          cmake_target: ${{ matrix.cmake_target }}
           os: 'Linux'

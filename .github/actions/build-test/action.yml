@@ -79,3 +79,22 @@ runs:
       if: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       working-directory: ${{ inputs.build_dir }}
       run: ./rippled --version | grep libvoidstar
+    - name: Archive coverage report
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: ${{ env.build_dir }}/coverage.xml
+        path: coverage.xml
+        retention-days: 30
+    - name: Upload coverage report
+      uses: wandalen/wretry.action@v3.8.0
+      with:
+        action: codecov/codecov-action@v5.4.3
+        with: |
+          files: ${{ env.build_dir }}/coverage.xml
+          fail_ci_if_error: true
+          disable_search: true
+          verbose: true
+          plugin: noop
+          token: ${{ secrets.CODECOV_TOKEN }}
+        attempt_limit: 5
+        attempt_delay: 210000 # in milliseconds
