@@ -147,6 +147,6 @@
     "linux/amd64|debian-bookworm-gcc-12|Debug": "-DUNIT_TEST_REFERENCE_FEE=500",
     "linux/amd64|debian-bookworm-gcc-13|Debug": "-Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS='-O0' -DCMAKE_CXX_FLAGS='-O0'",
     "linux/amd64|debian-bookworm-clang-16|Debug": "-Dvoidstar=ON",
-    "linux/amd64|debian-bookworm-clang-17|Debug": "-DUNIT_TEST_REFERENCE_FEE=1000",
+    "linux/amd64|debian-bookworm-clang-17|Debug": "-DUNIT_TEST_REFERENCE_FEE=1000"
   }
 }
