@@ -76,10 +76,10 @@ public:
         return ctx.journal;
     }
 
-    std::optional<Slice>
+    std::optional<Bytes>
     getData() const
     {
-        return data_ ? makeSlice(*data_) : std::nullopt;
+        return data_;
     }
 
     Expected<std::uint32_t, HostFunctionError>
