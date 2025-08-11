@@ -40,7 +40,7 @@ jobs:
       matrix:
         version:
           - generator: Visual Studio 17 2022
-            runs-on: windows-2022
+            runs-on: [self-hosted, Windows, devbox]
         configuration:
           - type: Release
             tests: true
