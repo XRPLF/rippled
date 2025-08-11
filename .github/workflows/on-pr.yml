@@ -72,9 +72,10 @@ jobs:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-linux.yml
     with:
-      codecov_token: ${{ secrets.CODECOV_TOKEN }}
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
       conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
 
   build-macos:
     needs: generate-outputs
