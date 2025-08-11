@@ -21,7 +21,7 @@ on:
       - '.github/workflows/check-clang-format.yml'
       - '.github/workflows/check-levelization.yml'
       - '.github/workflows/notify-clio.yml'
-      - 'on-pr.yml'
+      - '.github/workflows/on-pr.yml'
       # Keep the list of paths below in sync with those in `on-trigger.yml`.
       - 'cmake/**'
       - 'conan/**'
