@@ -46,7 +46,3 @@ extern std::string const allKeyletsWasmHex;
 extern std::string const codecovTestsWasmHex;
 
 extern std::string const floatTestsWasmHex;
-
-extern std::string const ledgerSqnWasmHex;
-
-extern std::string const fibWasmHex;
