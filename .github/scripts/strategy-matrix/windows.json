@@ -17,11 +17,10 @@
   ],
   "build_type": [
     "Debug",
-    "distro_version"
+    "Release"
   ],
   "cmake_args": [
     "-Dunity=OFF",
     "-Dunity=ON"
-  ],
-  "cmake_extras": {}
+  ]
 }

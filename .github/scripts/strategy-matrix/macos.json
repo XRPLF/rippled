@@ -14,17 +14,16 @@
     {
       "distro_name": "macos",
       "distro_version": "",
-      "compiler_name": "apple-clang",
-      "compiler_version": "16"
+      "compiler_name": "",
+      "compiler_version": ""
     }
   ],
   "build_type": [
     "Debug",
-    "distro_version"
+    "Release"
   ],
   "cmake_args": [
     "-Dunity=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5",
     "-Dunity=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5"
-  ],
-  "cmake_extras": {}
+  ]
 }
