@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
+  
+env:
+  NODE_VERSION: 22.x
 
 jobs:
   check:
@@ -63,10 +66,10 @@ jobs:
           echo "${SUGGESTION}"
           exit 1
       
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js ${{ env.NODE_VERSION }}
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: ${{ env.NODE_VERSION }}
 
       - name: Setup npm version 10
         run: |
@@ -83,9 +86,9 @@ jobs:
           path: |
             node_modules
             */*/node_modules
-          key: ${{ runner.os }}-deps-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-deps-${{ env.NODE_VERSION }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-deps-${{ matrix.node-version }}-
+            ${{ runner.os }}-deps-${{ env.NODE_VERSION }}-
 
       - name: run Prettier for JS/Markdown files
         run: |
