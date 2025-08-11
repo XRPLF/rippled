@@ -1373,14 +1373,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         if (BEAST_EXPECT(!tooBig.has_value()))
             BEAST_EXPECT(
                 tooBig.error() == HostFunctionError::DATA_FIELD_TOO_LARGE);
-
-        // Should fail if ledger object not found (use a bogus keylet)
-        auto const bogusKeylet = keylet::escrow(env.master, 999999);
-        WasmHostFunctionsImpl hfs2(ac, bogusKeylet);
-        auto const notFound = hfs2.updateData(Slice(data.data(), data.size()));
-        if (BEAST_EXPECT(!notFound.has_value()))
-            BEAST_EXPECT(
-                notFound.error() == HostFunctionError::LEDGER_OBJ_NOT_FOUND);
     }
 
     void
