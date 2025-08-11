@@ -1279,6 +1279,12 @@ EscrowFinish::doApply()
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
+
+        if (auto const& data = ledgerDataProvider.getData(); data.has_value())
+        {
+            slep->setFieldVL(sfData, makeSlice(*data));
+        }
+
         if (re.has_value())
         {
             auto reValue = re.value().result;
