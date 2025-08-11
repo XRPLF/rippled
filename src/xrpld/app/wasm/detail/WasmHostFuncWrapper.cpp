@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/wasm/HostFunc.h>
+#include <xrpld/app/wasm/HostFuncWrapper.h>
 #include <xrpld/app/wasm/WamrVM.h>
-#include <xrpld/app/wasm/WasmHostFunc.h>
-#include <xrpld/app/wasm/WasmHostFuncWrapper.h>
 
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/digest.h>

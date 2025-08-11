@@ -18,7 +18,7 @@
 //==============================================================================
 #pragma once
 
-#include <xrpld/app/wasm/WasmHostFunc.h>
+#include <xrpld/app/wasm/HostFunc.h>
 
 #include <string_view>
 
