@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL }}
+  CONAN_REMOTE_URL: ${{ vars.CONAN_REMOTE_URL || 'https://conan.ripplex.io' }}
   CONAN_REMOTE_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
   CONAN_REMOTE_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}
   # This part of the Conan configuration is specific to this workflow only; we
