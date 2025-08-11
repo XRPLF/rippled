@@ -65,16 +65,23 @@ defaults:
   run:
     shell: bash
 
+env:
+  CONAN_REMOTE_NAME: xrplf
+  CONAN_REMOTE_URL: https://conan.ripplex.io
+
 jobs:
   check-missing-commits:
     if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && contains(fromJSON('["develop", "release"]'), github.ref_name) }}
     uses: ./.github/workflows/check-missing-commits.yml
 
-  check-trigger:
+  # This job works around the limitation that GitHub Actions does not support
+  # using environment variables as inputs for reusable workflows. It also sets
+  # outputs that depend on the event that triggered the workflow.
+  generate-outputs:
     runs-on: ubuntu-latest
     steps:
       - name: Check inputs and set outputs
-        id: check
+        id: generate
         run: |
           if [[ "${{ github.event_name }}" == 'push' ]]; then
             echo 'dependencies_force_build=false' >> "${GITHUB_OUTPUT}"
@@ -87,41 +94,43 @@ jobs:
             echo 'dependencies_force_upload=${{ inputs.dependencies_force_upload }}' >> "${GITHUB_OUTPUT}"
           fi
     outputs:
-      dependencies_force_build: ${{ steps.check.outputs.dependencies_force_build }}
-      dependencies_force_upload: ${{ steps.check.outputs.dependencies_force_upload }}
+      conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
+      dependencies_force_build: ${{ steps.generate.outputs.dependencies_force_build }}
+      dependencies_force_upload: ${{ steps.generate.outputs.dependencies_force_upload }}
 
   build-linux:
-    needs: check-trigger
+    needs: generate-outputs
     uses: ./.github/workflows/build-linux.yml
     with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
-      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-      dependencies_force_build: ${{ needs.check-trigger.outputs.dependencies_force_build }}
-      dependencies_force_upload: ${{ needs.check-trigger.outputs.dependencies_force_upload }}
+      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
+      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
+      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
+      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   build-macos:
-    needs: check-trigger
+    needs: generate-outputs
     uses: ./.github/workflows/build-macos.yml
     with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
-      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-      dependencies_force_build: ${{ needs.check-trigger.outputs.dependencies_force_build }}
-      dependencies_force_upload: ${{ needs.check-trigger.outputs.dependencies_force_upload }}
+      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
+      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
+      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
+      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   build-windows:
-    needs: check-trigger
+    needs: generate-outputs
     uses: ./.github/workflows/build-windows.yml
     with:
-      conan_remote_name: ${{ vars.CONAN_REMOTE_NAME }}
-      conan_remote_url: ${{ vars.CONAN_REMOTE_URL }}
-      dependencies_force_build: ${{ needs.check-trigger.outputs.dependencies_force_build }}
-      dependencies_force_upload: ${{ needs.check-trigger.outputs.dependencies_force_upload }}
+      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
+      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
+      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
+      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
