@@ -2711,8 +2711,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerEntry, app, ripple);
-BEAST_DEFINE_TESTSUITE(LedgerEntry_XChain, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerEntry, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerEntry_XChain, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple
