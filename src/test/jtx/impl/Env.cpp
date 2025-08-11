@@ -230,6 +230,14 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
 }
 
 PrettyAmount
+Env::balance(Account const& account, Asset const& asset) const
+{
+    return std::visit(
+        [&](auto const& issue) { return balance(account, issue); },
+        asset.value());
+}
+
+PrettyAmount
 Env::limit(Account const& account, Issue const& issue) const
 {
     auto const sle = le(keylet::line(account.id(), issue));
