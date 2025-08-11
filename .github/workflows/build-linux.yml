@@ -138,7 +138,7 @@ jobs:
           echo 'Verifying presence of libvoidstar.'
           ./rippled --version | grep libvoidstar
       - name: Upload coverage report
-        if: ${{ contains(matrix.cmake_args, '-Dcoverage=ON') && secrets.codecov_token != '' }}
+        if: ${{ contains(matrix.cmake_args, '-Dcoverage=ON') }}
         uses: wandalen/wretry.action@v3.8.0
         with:
           action: codecov/codecov-action@v5.4.3
