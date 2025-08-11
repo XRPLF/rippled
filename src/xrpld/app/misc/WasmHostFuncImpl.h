@@ -76,7 +76,7 @@ public:
         return ctx.journal;
     }
 
-    std::optional<Bytes>
+    std::optional<Bytes> const&
     getData() const
     {
         return data_;
