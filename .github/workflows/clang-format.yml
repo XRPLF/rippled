@@ -62,8 +62,31 @@ jobs:
           clang-format --version
           echo "${SUGGESTION}"
           exit 1
+      
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Setup npm version 10
+        run: |
+          npm i -g npm@10 --registry=https://registry.npmjs.org
+          npm i --no-save prettier --registry=https://registry.npmjs.org
+
+      - name: Cache node modules
+        id: cache-nodemodules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          # caching node_modules
+          path: |
+            node_modules
+            */*/node_modules
+          key: ${{ runner.os }}-deps-${{ matrix.node-version }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-deps-${{ matrix.node-version }}-
 
       - name: run Prettier for JS/Markdown files
         run: |
-          npm i --no-save prettier
           npx prettier --check .
