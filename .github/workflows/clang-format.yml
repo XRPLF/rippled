@@ -62,3 +62,7 @@ jobs:
           clang-format --version
           echo "${SUGGESTION}"
           exit 1
+
+      - name: run Prettier for JS/Markdown files
+        run: |
+          npx prettier --check .
