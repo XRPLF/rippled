@@ -13,9 +13,9 @@ on:
       - release
       - master
     paths:
-      - '.github/actions/build-deps'
-      - '.github/actions/build-test'
-      - '.github/scripts/strategy-matrix'
+      - '.github/actions/build-deps/**'
+      - '.github/actions/build-test/**'
+      - '.github/scripts/strategy-matrix/**'
       - '.github/workflows/build-linux.yml'
       - '.github/workflows/build-macos.yml'
       - '.github/workflows/build-windows.yml'
@@ -23,12 +23,12 @@ on:
       - '.github/workflows/on-trigger.yml'
       - '.github/workflows/publish-docs.yml'
       # Keep the list of paths below in sync with those in `on-pr.yml`.
-      - 'cmake'
-      - 'conan'
-      - 'external'
-      - 'include'
-      - 'src'
-      - 'tests'
+      - 'cmake/**'
+      - 'conan/**'
+      - 'external/**'
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
       - '.clang-format'
       - '.codecov.yml'
       - '.pre-commit-config.yaml'
