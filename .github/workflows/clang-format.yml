@@ -65,4 +65,5 @@ jobs:
 
       - name: run Prettier for JS/Markdown files
         run: |
+          npm i --no-save prettier
           npx prettier --check .

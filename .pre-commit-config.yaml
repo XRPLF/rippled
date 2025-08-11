@@ -4,3 +4,10 @@ repos:
     rev: v18.1.8
     hooks:
       - id: clang-format
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: npx prettier --write
+        language: system
+        types: [markdown, javascript, json, yaml]
