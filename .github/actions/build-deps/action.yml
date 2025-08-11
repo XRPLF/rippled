@@ -64,26 +64,30 @@ runs:
     - name: Install Conan profile
       shell: bash
       run: |
+        echo 'Installing configuration and profile.'
         if [ '${{ inputs.os }}' == 'Linux' ]; then
-          echo "${{ inputs.conan_global_conf }}" >> $(conan config home)/global.conf
+          echo '${{ inputs.conan_global_conf }}' >> $(conan config home)/global.conf
         else
-          echo "${{ inputs.conan_global_conf }}" > $(conan config home)/global.conf
+          echo '${{ inputs.conan_global_conf }}' > $(conan config home)/global.conf
         fi
         conan config install conan/profiles/default -tf $(conan config home)/profiles/
-        echo "Conan profile:"
-        conan profile show
-        echo "Conan configuration:"
+
+        echo 'Conan configuration:'
         conan config show '*'
+
+        echo 'Conan profile:'
+        conan profile show
     - name: Add Conan remote
       shell: bash
       run: |
         echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
         conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
-        echo "Listing Conan remotes."
+        echo 'Listing Conan remotes.'
         conan remote list
     - name: Install Conan dependencies
       shell: bash
       run: |
+        echo 'Installing dependencies.'
         mkdir -p ${{ inputs.build_dir }}
         cd ${{ inputs.build_dir }}
         conan install \
@@ -100,6 +104,6 @@ runs:
       run: |
         echo "Logging into Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
         conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
-        echo "Uploading dependencies to Conan remote."
+        echo 'Uploading dependencies.'
         conan list --graph=build.json --graph-binaries=build --format=json > pkgs.json
         conan upload --list=pkgs.json --confirm --check ${{ inputs.force_upload && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}

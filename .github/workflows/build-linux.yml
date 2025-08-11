@@ -122,5 +122,5 @@ jobs:
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Ninja'
           cmake_target: ${{ matrix.cmake_target }}
-          codecov_token: ${{ inputs.codecov_token }}
+          codecov_token: ${{ secrets.codecov_token }}
           os: 'Linux'

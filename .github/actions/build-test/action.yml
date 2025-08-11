@@ -47,6 +47,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
+        echo 'Configuring CMake.'
         cmake \
           ${{ inputs.cmake_generator && format('-G "{0}"', inputs.cmake_generator) || '' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
@@ -58,6 +59,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
+        echo 'Building binary.'
         cmake --build . \
               --config ${{ inputs.build_type }} \
               --parallel $(nproc) \
@@ -67,6 +69,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
+        echo 'Checking linking.'
         ldd ./rippled
         if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
           echo 'The binary is statically linked.'
@@ -78,13 +81,16 @@ runs:
       shell: bash
       working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'Windows' && inputs.build_type || '' }}
       run: |
+        echo 'Testing binary.'
         ./rippled --unittest --unittest-jobs $(nproc)
         ctest -j $(nproc) --output-on-failure
     - name: Verify voidstar
       shell: bash
       if: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
       working-directory: ${{ inputs.build_dir }}
-      run: ./rippled --version | grep libvoidstar
+      run: |
+        echo 'Verifying presence of libvoidstar.'
+        ./rippled --version | grep libvoidstar
     - name: Upload coverage report
       if: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') && inputs.codecov_token != '' }}
       uses: wandalen/wretry.action@v3.8.0
