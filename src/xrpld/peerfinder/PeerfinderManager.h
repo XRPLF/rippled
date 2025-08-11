@@ -136,6 +136,21 @@ using Endpoints = std::vector<Endpoint>;
 /** Possible results from activating a slot. */
 enum class Result { duplicate, full, success };
 
+inline std::string
+to_string(Result result)
+{
+    switch (result)
+    {
+        case ripple::PeerFinder::Result::success:
+            return "success";
+        case ripple::PeerFinder::Result::duplicate:
+            return "duplicate connection";
+        case ripple::PeerFinder::Result::full:
+            return "slots full";
+        default:
+            return "unknown";
+    }
+}
 /** Maintains a set of IP addresses used for getting into the network. */
 class Manager : public beast::PropertyStream::Source
 {
