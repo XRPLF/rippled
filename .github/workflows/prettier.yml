@@ -20,9 +20,8 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Setup npm version 10
+      - name: Install Prettier
         run: |
-          npm i -g npm@10 --registry=https://registry.npmjs.org
           npm i --no-save prettier@${{ env.PRETTIER_VERSION }} --registry=https://registry.npmjs.org
 
       - name: Cache node modules
