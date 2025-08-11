@@ -139,15 +139,11 @@ jobs:
           ./rippled --version | grep libvoidstar
       - name: Upload coverage report
         if: ${{ contains(matrix.cmake_args, '-Dcoverage=ON') }}
-        uses: wandalen/wretry.action@v3.8.0
-        with:
-          action: codecov/codecov-action@v5.4.3
-          with: |
-            disable_search: true
-            fail_ci_if_error: true
-            files: ${{ inputs.build_dir }}/coverage.xml
-            plugins: noop
-            token: ${{ secrets.codecov_token }}
-            verbose: true
-          attempt_delay: 210000 # milliseconds.
-          attempt_limit: 5
+        uses: codecov/codecov-action@v5.4.3
+        with: |
+          disable_search: true
+          fail_ci_if_error: true
+          files: ${{ inputs.build_dir }}/coverage.xml
+          plugins: noop
+          token: ${{ secrets.codecov_token }}
+          verbose: true
