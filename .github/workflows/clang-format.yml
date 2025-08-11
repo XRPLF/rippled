@@ -4,10 +4,6 @@ on:
   push:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
-  
-env:
-  NODE_VERSION: 22.x
-  PRETTIER_VERSION: 3.6.2
 
 jobs:
   check:
@@ -67,30 +63,3 @@ jobs:
           echo "${SUGGESTION}"
           exit 1
       
-      - name: Use Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Setup npm version 10
-        run: |
-          npm i -g npm@10 --registry=https://registry.npmjs.org
-          npm i --no-save prettier@${{ env.PRETTIER_VERSION }} --registry=https://registry.npmjs.org
-
-      - name: Cache node modules
-        id: cache-nodemodules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          # caching node_modules
-          path: |
-            node_modules
-            */*/node_modules
-          key: ${{ runner.os }}-deps-${{ env.NODE_VERSION }}-${{ env.PRETTIER_VERSION }}
-          restore-keys: |
-            ${{ runner.os }}-deps-${{ env.NODE_VERSION }}-
-
-      - name: run Prettier for JS/Markdown files
-        run: |
-          npx prettier --check .
