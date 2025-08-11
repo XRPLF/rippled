@@ -201,18 +201,7 @@ VaultWithdraw::doApply()
         // Fixed assets, variable shares.
         assets = amount;
         shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
-
-        auto const assetsToWithdraw =
-            sharesToAssetsWithdraw(vault, sleIssuance, shares);
-        if (assetsToWithdraw > assets)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error())
-                << "VaultWithdraw: would withdraw more than requested.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-        assets = assetsToWithdraw;
+        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
     }
     else if (amount.asset() == share)
     {
