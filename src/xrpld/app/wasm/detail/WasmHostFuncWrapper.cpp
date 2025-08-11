@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/WamrVM.h>
-#include <xrpld/app/misc/WasmHostFunc.h>
-#include <xrpld/app/misc/WasmHostFuncWrapper.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/wasm/WamrVM.h>
+#include <xrpld/app/wasm/WasmHostFunc.h>
+#include <xrpld/app/wasm/WasmHostFuncWrapper.h>
 
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/digest.h>

@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <xrpld/app/misc/WasmParamsHelper.h>
+#include <xrpld/app/wasm/WasmParamsHelper.h>
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>

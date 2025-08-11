@@ -19,7 +19,7 @@
 
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/WasmHostFuncImpl.h>
+#include <xrpld/app/wasm/WasmHostFuncImpl.h>
 
 namespace ripple {
 namespace test {

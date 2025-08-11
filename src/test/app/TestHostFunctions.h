@@ -21,9 +21,9 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/misc/WasmHostFunc.h>
-#include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/wasm/WasmHostFunc.h>
+#include <xrpld/app/wasm/WasmVM.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
 
 namespace ripple {

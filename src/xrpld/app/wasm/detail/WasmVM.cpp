@@ -21,9 +21,9 @@
 // #define DEBUG_OUTPUT 1
 #endif
 
-#include <xrpld/app/misc/WamrVM.h>
-#include <xrpld/app/misc/WasmHostFunc.h>
-#include <xrpld/app/misc/WasmHostFuncWrapper.h>
+#include <xrpld/app/wasm/WamrVM.h>
+#include <xrpld/app/wasm/WasmHostFunc.h>
+#include <xrpld/app/wasm/WasmHostFuncWrapper.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>

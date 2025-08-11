@@ -23,8 +23,8 @@
 
 #include <test/app/TestHostFunctions.h>
 
-#include <xrpld/app/misc/WamrVM.h>
-#include <xrpld/app/misc/WasmHostFuncWrapper.h>
+#include <xrpld/app/wasm/WamrVM.h>
+#include <xrpld/app/wasm/WasmHostFuncWrapper.h>
 
 namespace ripple {
 namespace test {
