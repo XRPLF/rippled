@@ -24,6 +24,9 @@ on:
         type: boolean
         default: false
     secrets:
+      codecov_token:
+        description: 'The Codecov token to use for uploading coverage reports.'
+        required: false
       conan_remote_username:
         description: 'The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
         required: false
@@ -119,4 +122,5 @@ jobs:
           cmake_args: ${{ matrix.cmake_args }}
           cmake_generator: 'Ninja'
           cmake_target: ${{ matrix.cmake_target }}
+          codecov_token: ${{ inputs.codecov_token }}
           os: 'Linux'
