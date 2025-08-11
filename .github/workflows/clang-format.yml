@@ -62,4 +62,3 @@ jobs:
           clang-format --version
           echo "${SUGGESTION}"
           exit 1
-      
