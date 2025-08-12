@@ -64,7 +64,7 @@ target_link_libraries(xrpl.imports.main
     secp256k1::secp256k1
     xrpl.libpb
     xxHash::xxhash
-    ${nudb}
+    Ripple::libs
     $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 
