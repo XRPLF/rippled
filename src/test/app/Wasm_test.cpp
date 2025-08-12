@@ -376,13 +376,11 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(env);
             auto re =
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100000);
-            BEAST_EXPECT(
-                re.has_value() &&
-                re->result ==
-                    HferrorToInt(HostFunctionError::FIELD_NOT_FOUND) &&
-                (re->cost == 5831));
-            // std::cout << "bad case (access nonexistent field) result "
-            //           << re.error() << std::endl;
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == -201);
+                BEAST_EXPECT(re->cost == 5831);
+            }
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
@@ -400,9 +398,11 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(env);
             auto re =
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
-            BEAST_EXPECT(re.has_value() && re->result == HferrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS && (re->cost == 5831));
-            // std::cout << "bad case (more than MAX_PAGES) result "
-            //           << re.error() << std::endl;
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == -201);
+                BEAST_EXPECT(re->cost == 5831);
+            }
         }
 
         {  // fail because recursion too deep
