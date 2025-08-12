@@ -90,6 +90,43 @@ private:
         }
     }
 
+    // Helper function to test log messages
+    void
+    testLogMessage(Section const& params, beast::severities::Level level,
+                   std::string const& expectedMessage)
+    {
+        test::StreamSink sink(level);
+        beast::Journal journal(sink);
+
+        DummyScheduler scheduler;
+        auto backend = Manager::instance().make_Backend(
+            params, megabytes(4), scheduler, journal);
+
+        std::string logOutput = sink.messages().str();
+        BEAST_EXPECT(logOutput.find(expectedMessage) != std::string::npos);
+    }
+
+    // Helper function to test power of two validation
+    void
+    testPowerOfTwoValidation(std::string const& size, bool shouldWork)
+    {
+        beast::temp_dir tempDir;
+        auto params = createSection(tempDir.path(), size);
+
+        test::StreamSink sink(beast::severities::kWarning);
+        beast::Journal journal(sink);
+
+        DummyScheduler scheduler;
+        auto backend = Manager::instance().make_Backend(
+            params, megabytes(4), scheduler, journal);
+
+        std::string logOutput = sink.messages().str();
+        bool hasWarning =
+            logOutput.find("Invalid nudb_block_size") != std::string::npos;
+
+        BEAST_EXPECT(hasWarning == !shouldWork);
+    }
+
 public:
     void
     testDefaultBlockSize()
@@ -180,17 +217,8 @@ public:
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), "8192");
 
-            test::StreamSink sink(beast::severities::kInfo);
-            beast::Journal journal(sink);
-
-            DummyScheduler scheduler;
-            auto backend = Manager::instance().make_Backend(
-                params, megabytes(4), scheduler, journal);
-
-            std::string logOutput = sink.messages().str();
-            BEAST_EXPECT(
-                logOutput.find("Using custom NuDB block size: 8192") !=
-                std::string::npos);
+            testLogMessage(params, beast::severities::kInfo,
+                          "Using custom NuDB block size: 8192");
         }
 
         // Test invalid block size failure
