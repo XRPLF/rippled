@@ -721,18 +721,22 @@ class Delegate_test : public beast::unit_test::suite
             env.trust(USD(10000), alice);
             env.trust(USD(10000), bob);
             env.trust(USD(10000), carol);
+            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, bob, USD(1000)));
             env(pay(gw, carol, USD(1000)));
-            env.close();
-
-            env(offer(carol, XRP(100), USD(500)));
             env.close();
 
             auto const result = features[fixDelegateV1_1]
                 ? static_cast<TER>(tecNO_DELEGATE_PERMISSION)
                 : static_cast<TER>(tesSUCCESS);
+            auto const offerCount = features[fixDelegateV1_1] ? 1 : 0;
 
             // PaymentMint
             {
+                env(offer(carol, XRP(10), USD(50)));
+                env.close();
+                BEAST_EXPECT(expectOffers(env, carol, 1));
+
                 env(delegate::set(gw, bob, {"PaymentMint"}));
                 env.close();
 
@@ -745,6 +749,7 @@ class Delegate_test : public beast::unit_test::suite
                     txflags(tfPartialPayment),
                     delegate::as(bob),
                     ter(result));
+                BEAST_EXPECT(expectOffers(env, carol, offerCount));
 
                 // succeed with direct payment
                 env(pay(gw, alice, USD(50)), delegate::as(bob));
@@ -753,6 +758,9 @@ class Delegate_test : public beast::unit_test::suite
 
             // PaymentBurn
             {
+                env(offer(bob, XRP(10), USD(50)));
+                env.close();
+                BEAST_EXPECT(expectOffers(env, bob, 1));
                 env(delegate::set(alice, bob, {"PaymentBurn"}));
                 env.close();
 
@@ -765,6 +773,7 @@ class Delegate_test : public beast::unit_test::suite
                     txflags(tfPartialPayment),
                     delegate::as(bob),
                     ter(result));
+                BEAST_EXPECT(expectOffers(env, carol, offerCount));
 
                 // succeed with direct payment
                 env(pay(alice, gw, USD(50)), delegate::as(bob));
@@ -789,12 +798,17 @@ class Delegate_test : public beast::unit_test::suite
             mpt.authorize({.account = carol});
 
             auto const MPT = mpt["MPT"];
+            auto aliceMPT = env.balance(alice, MPT);
+            auto bobMPT = env.balance(bob, MPT);
 
             // PaymentMint
             {
                 env(delegate::set(gw, bob, {"PaymentMint"}));
                 env.close();
                 env(pay(gw, alice, MPT(50)), delegate::as(bob));
+                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT + MPT(50));
+                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
+                aliceMPT = env.balance(alice, MPT);
             }
 
             // PaymentBurn
@@ -802,6 +816,8 @@ class Delegate_test : public beast::unit_test::suite
                 env(delegate::set(alice, bob, {"PaymentBurn"}));
                 env.close();
                 env(pay(alice, gw, MPT(50)), delegate::as(bob));
+                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(50));
+                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
             }
         }
     }
@@ -1612,7 +1628,7 @@ class Delegate_test : public beast::unit_test::suite
             if (!features[fixDelegateV1_1])
                 env(jv);
             else
-                env(jv, ter(tecNO_PERMISSION));
+                env(jv, ter(temMALFORMED));
         }
     }
 

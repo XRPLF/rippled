@@ -132,7 +132,7 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
     return std::nullopt;
 }
 
-bool
+TER
 Permission::isDelegatable(
     std::uint32_t const& permissionValue,
     Rules const& rules) const
@@ -141,18 +141,20 @@ Permission::isDelegatable(
         getGranularName(static_cast<GranularPermissionType>(permissionValue));
     if (granularPermission)
         // granular permissions are always allowed to be delegated
-        return true;
+        return tesSUCCESS;
 
     auto const it = delegatableTx_.find(permissionValue - 1);
 
     if (rules.enabled(fixDelegateV1_1))
     {
         if (it == delegatableTx_.end())
-            return false;
+            return temMALFORMED;
 
         auto const txFeaturesIt = txFeaturesMap_.find(permissionValue - 1);
-        if (txFeaturesIt == txFeaturesMap_.end())
-            return false;
+        XRPL_ASSERT(
+            txFeaturesIt != txFeaturesMap_.end(),
+            "ripple::Permissions::isDelegatable : tx does not exist in "
+            "txFeaturesMap_");
 
         // Delegation is not allowed if any required amendment for the
         // transaction is not enabled.
@@ -162,13 +164,13 @@ Permission::isDelegatable(
                 [&rules](auto const& feature) {
                     return !rules.enabled(feature);
                 }))
-            return false;
+            return tecNO_PERMISSION;
     }
 
     if (it != delegatableTx_.end() && it->second == Delegation::notDelegatable)
-        return false;
+        return tecNO_PERMISSION;
 
-    return true;
+    return tesSUCCESS;
 }
 
 uint32_t

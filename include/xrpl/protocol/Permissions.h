@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_PERMISSION_H_INCLUDED
 
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <optional>
@@ -82,7 +83,7 @@ public:
     std::optional<TxType>
     getGranularTxType(GranularPermissionType const& gpType) const;
 
-    bool
+    TER
     isDelegatable(std::uint32_t const& permissionValue, Rules const& rules)
         const;
 

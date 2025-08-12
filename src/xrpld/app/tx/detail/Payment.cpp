@@ -270,7 +270,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     // post-amendment: disallow cross currency payments for PaymentMint and
     // PaymentBurn
     if (view.rules().enabled(fixDelegateV1_1) && tx.isFieldPresent(sfSendMax) &&
-        tx[sfSendMax].issue() != amountAsset)
+        tx[sfSendMax].asset() != amountAsset)
         return tecNO_DELEGATE_PERMISSION;
 
     if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
