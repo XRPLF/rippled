@@ -24,6 +24,8 @@
 
 #include <xrpl/json/json_reader.h>
 
+#include <chrono>
+
 namespace ripple {
 
 ConnectAttempt::ConnectAttempt(
@@ -94,13 +96,16 @@ ConnectAttempt::close()
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
         "ripple::ConnectAttempt::close : strand in this thread");
-    if (socket_.is_open())
-    {
-        error_code ec;
-        timer_.cancel(ec);
-        socket_.close(ec);
-        JLOG(journal_.debug()) << "Closed";
-    }
+    if (!socket_.is_open())
+        return;
+
+    cancelTimer();
+
+    error_code ec;
+    stream_.shutdown(ec);
+    socket_.close(ec);
+
+    JLOG(journal_.debug()) << "Closed";
 }
 
 void
@@ -120,13 +125,15 @@ ConnectAttempt::fail(std::string const& name, error_code ec)
 void
 ConnectAttempt::setTimer()
 {
-    error_code ec;
-    timer_.expires_from_now(std::chrono::seconds(15), ec);
-    if (ec)
+    try
     {
-        JLOG(journal_.error()) << "setTimer: " << ec.message();
-        return;
+        timer_.expires_after(std::chrono::seconds(15));
     }
+    catch (std::exception const& ex)
+    {
+        JLOG(journal_.error()) << "setTimer: " << ex.what();
+        return;
+    };
 
     timer_.async_wait(strand_.wrap(std::bind(
         &ConnectAttempt::onTimer, shared_from_this(), std::placeholders::_1)));

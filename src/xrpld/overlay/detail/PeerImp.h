@@ -95,7 +95,6 @@ private:
 
     std::atomic<Tracking> tracking_;
     clock_type::time_point trackingTime_;
-    bool detaching_ = false;
     // Node public key of peer.
     PublicKey const publicKey_;
     std::string name_;
@@ -425,9 +424,6 @@ public:
     bool
     isHighLatency() const override;
 
-    void
-    fail(std::string const& reason);
-
     bool
     compressionEnabled() const override
     {
@@ -441,20 +437,62 @@ public:
     }
 
 private:
-    void
-    close();
-
+    /** @brief Closes the connection and logs the reason for failure.
+     *
+     * @param name A string identifying the operation or context of the failure.
+     * @param ec The `error_code` associated with the failure.
+     * @note This operation is idempotent; calling it on an already closed
+     * socket has no effect.
+     * @note Must be called on the peer's strand.
+     */
     void
     fail(std::string const& name, error_code ec);
 
+    /** @brief Closes the connection and logs a descriptive reason.
+     *
+     * @param reason A human-readable string explaining why the peer connection
+     * is being terminated.
+     * @note This operation is idempotent; calling it on an already closed
+     * socket has no effect.
+     * @note Must be called on the peer's strand.
+     */
+    void
+    fail(std::string const& reason);
+
+    /** @brief Forcibly terminates the peer connection and performs cleanup.
+     *
+     * This function terminates the peer connection. It performs graceful SSL
+     * shutdown, closes the underlying network socket and cancels pending
+     * timers.
+     *
+     * @note This operation is idempotent; it's safe to call on a connection
+     * that is already closed.
+     * @note Must be called on the peer's strand.
+     */
+    void
+    close();
+
+    /** @brief Initiates a graceful shutdown of the peer connection.
+     *
+     * This function marks the connection for closure. A "graceful" close
+     * ensures that any messages already queued for sending are transmitted
+     * before the underlying socket is closed. The connection may still be
+     * terminated forcefully if the remote server stopped reading the messages.
+     *
+     *
+     * If the send queue is empty, the connection is closed immediately. If
+     * messages are still pending, the actual socket closure is deferred until
+     * the send queue is drained by the I/O processing logic.
+     *
+     * @note This operation is idempotent; calling it on a connection that is
+     * already closed or in the process of closing has no effect.
+     * @note Must be called on the peer's strand.
+     */
     void
     gracefulClose();
 
     void
     setTimer();
-
-    void
-    cancelTimer();
 
     static std::string
     makePrefix(id_t id);
@@ -462,10 +500,6 @@ private:
     // Called when the timer wait completes
     void
     onTimer(boost::system::error_code const& ec);
-
-    // Called when SSL shutdown completes
-    void
-    onShutdown(error_code ec);
 
     void
     doAccept();
