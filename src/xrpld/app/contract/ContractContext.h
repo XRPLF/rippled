@@ -29,7 +29,7 @@
 namespace ripple {
 
 class ContractDataMap
-    : public std::map<ripple::AccountID, std::pair<bool, ripple::Blob>>
+    : public std::map<ripple::AccountID, std::pair<bool, STJson>>
 {
 public:
     uint32_t modifiedCount = 0;

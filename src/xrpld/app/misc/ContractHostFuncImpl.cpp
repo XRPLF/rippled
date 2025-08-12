@@ -185,7 +185,7 @@ ContractHostFunctionsImpl::otxnCallParam(
 }
 
 inline std::optional<
-    std::reference_wrapper<std::pair<bool, ripple::Blob> const>>
+    std::reference_wrapper<std::pair<bool, STJson> const>>
 getDataCache(ContractContext& contractCtx, ripple::AccountID const& account)
 {
     auto& dataMap = contractCtx.result.dataMap;
@@ -200,7 +200,7 @@ HostFunctionError
 setDataCache(
     ContractContext& contractCtx,
     AccountID const& account,
-    ripple::Blob const& data,
+    STJson const& data,
     bool modified = true)
 {
     auto& dataMap = contractCtx.result.dataMap;
@@ -265,7 +265,8 @@ ContractHostFunctionsImpl::getContractData(AccountID const& account)
     if (cacheEntryLookup)
     {
         auto const& cacheEntry = cacheEntryLookup->get();
-        return Bytes{cacheEntry.second.begin(), cacheEntry.second.end()};
+        ripple::Blob const blob = cacheEntry.second.toBlob();
+        return Bytes{blob.begin(), blob.end()};
     }
 
     auto const dataKeylet = keylet::contractData(account, contractAccount);
@@ -273,12 +274,13 @@ ContractHostFunctionsImpl::getContractData(AccountID const& account)
     if (!dataSle)
         return Unexpected(HostFunctionError::INTERNAL);
 
-    auto const dataBlob = dataSle->getFieldVL(sfData);
+    auto const data = dataSle->getFieldJson(sfContractJson);
     // it exists add it to cache and return it
-    if (setDataCache(contractCtx, account, dataBlob, false) !=
+    if (setDataCache(contractCtx, account, data, false) !=
         HostFunctionError::SUCCESS)
         return Unexpected(HostFunctionError::INTERNAL);
 
+    ripple::Blob const dataBlob = data.toBlob();
     return Bytes{dataBlob.begin(), dataBlob.end()};
 }
 
@@ -291,8 +293,7 @@ ContractHostFunctionsImpl::setContractData(
     if (data.toBlob().size() > maxSize)
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
-    if (HostFunctionError ret =
-            setDataCache(contractCtx, account, data.toBlob(), true);
+    if (HostFunctionError ret = setDataCache(contractCtx, account, data, true);
         ret != HostFunctionError::SUCCESS)
         return Unexpected(ret);
 

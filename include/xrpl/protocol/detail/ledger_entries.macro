@@ -549,8 +549,7 @@ LEDGER_ENTRY(ltCONTRACT_DATA, 0x0087, ContractData, contract_data, ({
     {sfOwnerNode,            soeREQUIRED},
     {sfOwner,                soeREQUIRED},
     {sfContractAccount,      soeREQUIRED},
-    {sfData,                 soeREQUIRED}, // Remove In Prod
-    // {sfContractJson,         soeREQUIRED},
+    {sfContractJson,         soeREQUIRED},
 }))
 
 #undef EXPAND

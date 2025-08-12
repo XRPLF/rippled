@@ -50,17 +50,12 @@ STJson::STJson(SerialIter& sit, SField const& name) : STBase{name}
     if (sit.empty())
         return;
 
-    // Read the length of the STJson
     int length = sit.getVLDataLength();
     if (length < 0)
         Throw<std::runtime_error>("Invalid STJson length");
 
-    // Track initial position to calculate consumed bytes
     int initialBytesLeft = sit.getBytesLeft();
-
-    // Parse key-value pairs until we reach the end of the STJson
-    while (sit.getBytesLeft() > 0 &&
-           (initialBytesLeft - sit.getBytesLeft()) < length)
+    while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
     {
         auto [key, value] = parsePair(sit);
         map_.emplace(std::move(key), std::move(value));
@@ -91,32 +86,40 @@ std::shared_ptr<STJson>
 STJson::fromBlob(void const* data, std::size_t size)
 {
     SerialIter sit(static_cast<uint8_t const*>(data), size);
-    return fromSerialIter(sit, size);
+    return fromSerialIter(sit);
 }
 
 std::shared_ptr<STJson>
-STJson::fromSerialIter(SerialIter& sit, std::size_t length)
+STJson::fromSerialIter(SerialIter& sit)
 {
     Map map;
-    int bytesLeftStart = sit.getBytesLeft();
-    while ((bytesLeftStart - sit.getBytesLeft()) < static_cast<int>(length) &&
-           sit.getBytesLeft() > 0)
+    if (sit.empty())
+        return nullptr;
+
+    int length = sit.getVLDataLength();
+    if (length < 0)
+        Throw<std::runtime_error>("Invalid STJson length");
+
+    int initialBytesLeft = sit.getBytesLeft();
+    while (sit.getBytesLeft() > 0 && (initialBytesLeft - sit.getBytesLeft()) < length)
     {
         auto [key, value] = parsePair(sit);
         map.emplace(std::move(key), std::move(value));
     }
+
+    int consumedBytes = initialBytesLeft - sit.getBytesLeft();
+    if (consumedBytes != length)
+        Throw<std::runtime_error>("STJson length mismatch");
+
     return std::make_shared<STJson>(std::move(map));
 }
 
 std::pair<STJson::Key, STJson::Value>
 STJson::parsePair(SerialIter& sit)
 {
-    // Parse VL-encoded key
     auto keyBlob = sit.getVL();
     std::string key(
         reinterpret_cast<char const*>(keyBlob.data()), keyBlob.size());
-
-    // Parse VL-encoded value (which is [SType marker][serialized SType])
     auto valueVL = sit.getVL();
     if (valueVL.empty())
         return {std::move(key), nullptr};
@@ -204,22 +207,21 @@ STJson::addVLValue(Serializer& s, std::shared_ptr<STBase> const& value)
         return;
     }
     Serializer tmp;
-    // Write SType marker
     tmp.add8(static_cast<uint8_t>(value->getSType()));
-    // Write SType serialization
     value->add(tmp);
-    // VL-encode the whole [SType marker][serialized SType]
     s.addVL(tmp.peekData().data(), tmp.peekData().size());
 }
 
 void
 STJson::add(Serializer& s) const
 {
+    Serializer inner;
     for (auto const& [key, value] : map_)
     {
-        addVLKey(s, key);
-        addVLValue(s, value);
+        addVLKey(inner, key);
+        addVLValue(inner, value);
     }
+    s.addVL(inner.peekData().data(), inner.peekData().size());
 }
 
 Json::Value
@@ -236,12 +238,33 @@ STJson::getJson(JsonOptions options) const
     return obj;
 }
 
+bool
+STJson::isEquivalent(STBase const& t) const
+{
+    auto const* const tPtr = dynamic_cast<STJson const*>(&t);
+    return tPtr && (map_ == tPtr->map_);
+}
+
+bool
+STJson::isDefault() const
+{
+    return default_;
+}
+
 Blob
 STJson::toBlob() const
 {
     Serializer s;
     add(s);
     return s.peekData();
+}
+
+std::size_t
+STJson::size() const
+{
+    Serializer s;
+    add(s);
+    return s.size();
 }
 
 void

@@ -732,6 +732,13 @@ STObject::getFieldNumber(SField const& field) const
     return getFieldByConstRef<STNumber>(field, empty);
 }
 
+STJson const&
+STObject::getFieldJson(SField const& field) const
+{
+    static STJson const empty{field};
+    return getFieldByConstRef<STJson>(field, empty);
+}
+
 void
 STObject::set(std::unique_ptr<STBase> v)
 {

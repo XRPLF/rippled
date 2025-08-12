@@ -57,7 +57,7 @@ public:
 
     // Parse from SerialIter
     static std::shared_ptr<STJson>
-    fromSerialIter(SerialIter& sit, std::size_t length);
+    fromSerialIter(SerialIter& sit);
 
     // Serialize to binary
     void
@@ -67,9 +67,19 @@ public:
     Json::Value
     getJson(JsonOptions options) const override;
 
+    bool
+    isEquivalent(STBase const& t) const override;
+
+    bool
+    isDefault() const override;
+
     // Blob representation
     Blob
     toBlob() const;
+
+    // STJson size
+    std::size_t
+    size() const;
 
     // Accessors
     Map const&
@@ -89,6 +99,7 @@ public:
 
 private:
     Map map_;
+    bool default_{false};
 
     // Helper: parse a single key-value pair from SerialIter
     static std::pair<Key, Value>

@@ -404,7 +404,7 @@ setContractData(
     ApplyContext& applyCtx,
     AccountID const& account,
     AccountID const& contractAccount,
-    Slice const& data)
+    STJson const& data)
 {
     auto& view = applyCtx.view();
     auto j = applyCtx.app.journal("View");
@@ -420,13 +420,12 @@ setContractData(
     auto dataSle = view.peek(dataKeylet);
 
     // DELETE
-    if (data.empty())
+    if (data.size() == 0)
     {
         if (!dataSle)
             return tesSUCCESS;
 
-        uint32_t oldDataReserve =
-            contractDataReserve(dataSle->getFieldVL(sfData).size());
+        uint32_t oldDataReserve = contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
 
         std::uint64_t const page = (*dataSle)[sfOwnerNode];
         // Remove the page from the account directory
@@ -457,7 +456,7 @@ setContractData(
         adjustOwnerCount(view, sleAccount, dataReserve, j);
         // create an entry
         dataSle = std::make_shared<SLE>(dataKeylet);
-        dataSle->setFieldVL(sfData, data);
+        dataSle->setFieldJson(sfContractJson, data);
         dataSle->setAccountID(sfOwner, account);
         dataSle->setAccountID(sfContractAccount, contractAccount);
 
@@ -476,8 +475,7 @@ setContractData(
     else
     {
         // UPDATE
-        uint32_t oldDataReserve =
-            contractDataReserve(dataSle->getFieldVL(sfData).size());
+        uint32_t oldDataReserve = contractDataReserve(dataSle->getFieldJson(sfContractJson).size());
         uint32_t newDataReserve = contractDataReserve(data.size());
         if (newDataReserve != oldDataReserve)
         {
@@ -492,7 +490,7 @@ setContractData(
         }
 
         // update the data
-        dataSle->setFieldVL(sfData, data);
+        dataSle->setFieldJson(sfContractJson, data);
         view.update(dataSle);
     }
     return tesSUCCESS;
@@ -517,7 +515,7 @@ finalizeContractData(
         auto const& acc = accEntry.first;
         auto const& cacheEntry = accEntry.second;
         bool is_modified = cacheEntry.first;
-        auto const& blob = cacheEntry.second;
+        auto const& jsonData = cacheEntry.second;
         if (is_modified)
         {
             changeCount++;
@@ -530,13 +528,12 @@ finalizeContractData(
                 return tecWASM_REJECTED;
             }
 
-            auto slice = Slice(blob.data(), blob.size());
-            TER result = setContractData(applyCtx, acc, contractAccount, slice);
+            TER result = setContractData(applyCtx, acc, contractAccount, jsonData);
             if (!isTesSuccess(result))
             {
                 JLOG(j.warn()) << "ContractError[TX:" << txnID
                                << "]: SetContractData failed: " << result
-                               << " Account: " << acc << " Value: " << slice;
+                               << " Account: " << acc;
                 return result;
             }
         }

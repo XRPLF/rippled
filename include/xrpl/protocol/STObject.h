@@ -257,6 +257,8 @@ public:
     getFieldCurrency(SField const& field) const;
     STNumber const&
     getFieldNumber(SField const& field) const;
+    STJson const&
+    getFieldJson(SField const& field) const;
 
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired

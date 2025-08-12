@@ -160,7 +160,7 @@ doContractInfo(RPC::JsonContext& context)
     auto const dataSle = ledger->read(
         keylet::contractData(contractAccountID, contractAccountID));
     if (dataSle)
-        result[jss::contract_data] = strHex(dataSle->getFieldVL(sfData));
+        result[jss::contract_data] = dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::none);
 
     if (!account.empty())
     {
@@ -175,7 +175,7 @@ doContractInfo(RPC::JsonContext& context)
         {
             if (auto dataSle = ledger->read(
                     keylet::contractData(accountID, contractAccountID)))
-                result[jss::user_data] = strHex(dataSle->getFieldVL(sfData));
+                result[jss::user_data] = dataSle->getFieldJson(sfContractJson).getJson(JsonOptions::none);
         }
     }
 
