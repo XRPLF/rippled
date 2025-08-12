@@ -240,7 +240,11 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
+
     if (gracefulClose_)
+        return;
+
+    if (!socket_.is_open())
         return;
 
     auto validator = m->getValidatorKey();
