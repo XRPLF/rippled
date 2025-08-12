@@ -251,7 +251,14 @@ public:
     traceNum(std::string_view const& msg, int64_t data) override;
 
     Expected<int32_t, HostFunctionError>
+    traceAccount(std::string_view const& msg, AccountID const& account)
+        override;
+
+    Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data) override;
+
+    Expected<int32_t, HostFunctionError>
+    traceAmount(std::string_view const& msg, STAmount const& amount) override;
 
     Expected<Bytes, HostFunctionError>
     floatFromInt(int64_t x, int32_t mode) override;

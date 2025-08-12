@@ -92,7 +92,9 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
 
     WASM_IMPORT_FUNC (i, trace, hfs,                                                                           500);
     WASM_IMPORT_FUNC2(i, traceNum, "trace_num", hfs,                                                           500);
+    WASM_IMPORT_FUNC2(i, traceAccount, "trace_account", hfs,                                                   500);
     WASM_IMPORT_FUNC2(i, traceFloat, "trace_opaque_float", hfs,                                                500);
+    WASM_IMPORT_FUNC2(i, traceAmount, "trace_amount", hfs,                                                     500);
 
     WASM_IMPORT_FUNC2(i, floatFromInt, "float_from_int", hfs,                                                 1000);
     WASM_IMPORT_FUNC2(i, floatFromUint, "float_from_uint", hfs,                                               1000);

@@ -790,6 +790,26 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 }
 
 Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::traceAccount(
+    std::string_view const& msg,
+    AccountID const& account)
+{
+#ifdef DEBUG_OUTPUT
+    auto j = getJournal().error();
+#else
+    auto j = getJournal().trace();
+#endif
+    if (!account)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+    auto const accountStr = toBase58(account);
+
+    j << "WAMR TRACE ACCOUNT(" << leKey.key << "): " << msg << " "
+      << accountStr;
+    return msg.size() + accountStr.size();
+}
+
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::traceFloat(
     std::string_view const& msg,
     Slice const& data)
@@ -802,6 +822,21 @@ WasmHostFunctionsImpl::traceFloat(
     auto const s = floatToString(data);
     j << "WAMR TRACE FLOAT(" << leKey.key << "): " << msg << " " << s;
     return msg.size() + s.size();
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::traceAmount(
+    std::string_view const& msg,
+    STAmount const& amount)
+{
+#ifdef DEBUG_OUTPUT
+    auto j = getJournal().error();
+#else
+    auto j = getJournal().trace();
+#endif
+    auto const amountStr = amount.getText();
+    j << "WAMR TRACE AMOUNT(" << leKey.key << "): " << msg << " " << amountStr;
+    return msg.size() + amountStr.size();
 }
 
 Expected<Bytes, HostFunctionError>

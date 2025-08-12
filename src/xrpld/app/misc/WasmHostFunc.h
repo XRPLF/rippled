@@ -429,7 +429,19 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
+    traceAccount(std::string_view const& msg, AccountID const& account)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    traceAmount(std::string_view const& msg, STAmount const& amount)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

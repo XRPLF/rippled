@@ -1558,6 +1558,31 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 }
 
 wasm_trap_t*
+traceAccount_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    if (params->data[1].of.i32 > maxWasmDataLength)
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+
+    int i = 0;
+    auto const msg = getDataString(runtime, params, i);
+    if (!msg)
+        return hfResult(results, msg.error());
+
+    auto const account = getDataAccountID(runtime, params, i);
+    if (!account)
+        return hfResult(results, account.error());
+
+    return returnResult(
+        runtime, params, results, hf->traceAccount(*msg, *account), i);
+}
+
+wasm_trap_t*
 traceFloat_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -1580,6 +1605,47 @@ traceFloat_wrap(
 
     return returnResult(
         runtime, params, results, hf->traceFloat(*msg, *number), i);
+}
+
+wasm_trap_t*
+traceAmount_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    if (params->data[1].of.i32 > maxWasmDataLength)
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+
+    int i = 0;
+    auto const msg = getDataString(runtime, params, i);
+    if (!msg)
+        return hfResult(results, msg.error());
+
+    auto const amountSliceOpt = getDataSlice(runtime, params, i);
+    if (!amountSliceOpt)
+        return hfResult(results, amountSliceOpt.error());
+
+    auto const amountSlice = amountSliceOpt.value();
+    auto serialIter = SerialIter(amountSlice);
+
+    auto amount = [&]() -> std::optional<STAmount> {
+        try
+        {
+            return STAmount(serialIter, sfGeneric);
+        }
+        catch (std::exception const&)
+        {
+            return std::nullopt;
+        }
+    }();
+    if (!amount || !amount.value())
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+
+    return returnResult(
+        runtime, params, results, hf->traceAmount(*msg, *amount), i);
 }
 
 wasm_trap_t*
