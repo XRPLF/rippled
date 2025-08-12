@@ -45,10 +45,10 @@ class MemoryFactory : public Factory
 private:
     std::mutex mutex_;
     std::map<std::string, MemoryDB, boost::beast::iless> map_;
+    Manager& manager_;
 
 public:
-    MemoryFactory();
-    ~MemoryFactory() override;
+    explicit MemoryFactory(Manager& manager);
 
     std::string
     getName() const override;
@@ -74,7 +74,13 @@ public:
     }
 };
 
-static MemoryFactory memoryFactory;
+MemoryFactory* memoryFactory = nullptr;
+
+void registerMemoryFactory(Manager& manager)
+{
+    static MemoryFactory instance{manager};
+    memoryFactory = &instance;
+}
 
 //------------------------------------------------------------------------------
 
@@ -113,7 +119,7 @@ public:
     void
     open(bool createIfMissing) override
     {
-        db_ = &memoryFactory.open(name_);
+        db_ = &memoryFactory->open(name_);
     }
 
     bool
@@ -218,14 +224,9 @@ public:
 
 //------------------------------------------------------------------------------
 
-MemoryFactory::MemoryFactory()
+MemoryFactory::MemoryFactory(Manager& manager) : manager_(manager)
 {
-    Manager::instance().insert(*this);
-}
-
-MemoryFactory::~MemoryFactory()
-{
-    Manager::instance().erase(*this);
+    manager_.insert(*this);
 }
 
 std::string

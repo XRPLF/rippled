@@ -41,6 +41,23 @@ ManagerImp::missing_backend()
         "please see the rippled-example.cfg file!");
 }
 
+// We shouldn't rely on global variables for lifetime management because their
+// lifetime is not well-defined. ManagerImp may get destroyed before the Factory
+// classes, and then, calling Manager::instance().erase() in the destructors of
+// the Factory classes is an undefined behaviour.
+void registerNuDBFactory(Manager& manager);
+void registerRocksDBFactory(Manager& manager);
+void registerNullFactory(Manager& manager);
+void registerMemoryFactory(Manager& manager);
+
+ManagerImp::ManagerImp()
+{
+    registerNuDBFactory(*this);
+    registerRocksDBFactory(*this);
+    registerNullFactory(*this);
+    registerMemoryFactory(*this);
+}
+
 std::unique_ptr<Backend>
 ManagerImp::make_Backend(
     Section const& parameters,

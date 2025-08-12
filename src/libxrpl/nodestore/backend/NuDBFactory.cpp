@@ -364,15 +364,13 @@ public:
 
 class NuDBFactory : public Factory
 {
-public:
-    NuDBFactory()
-    {
-        Manager::instance().insert(*this);
-    }
+private:
+    Manager& manager_;
 
-    ~NuDBFactory() override
+public:
+    explicit NuDBFactory(Manager& manager) : manager_(manager)
     {
-        Manager::instance().erase(*this);
+        manager_.insert(*this);
     }
 
     std::string
@@ -407,7 +405,10 @@ public:
     }
 };
 
-static NuDBFactory nuDBFactory;
+void registerNuDBFactory(Manager& manager)
+{
+    static NuDBFactory instance{manager};
+}
 
 }  // namespace NodeStore
 }  // namespace ripple
