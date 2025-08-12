@@ -25,6 +25,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -258,6 +259,12 @@ struct HostFunctions
 
     virtual Expected<Bytes, HostFunctionError>
     accountKeylet(AccountID const& account)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    ammKeylet(Asset const& issue1, Asset const& issue2)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

@@ -22,6 +22,7 @@
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/digest.h>
 
@@ -83,7 +84,7 @@ getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 Expected<uint64_t, HostFunctionError>
-getDataUint64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataUInt64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const r = getDataSlice(runtime, params, i);
     if (!r)
@@ -188,6 +189,41 @@ getDataCurrency(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     }
 
     return Currency::fromVoid(slice->data());
+}
+
+template <class IW>
+static Expected<Asset, HostFunctionError>
+getDataAsset(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+{
+    auto const slice = getDataSlice(runtime, params, i);
+    if (!slice)
+    {
+        return Unexpected(slice.error());
+    }
+
+    if (slice->size() == MPTID::bytes)
+    {
+        auto const mptid = MPTID::fromVoid(slice->data());
+        return Asset{mptid};
+    }
+
+    if (slice->size() == Currency::bytes)
+    {
+        auto const currency = Currency::fromVoid(slice->data());
+        auto const issue = Issue{currency, xrpAccount()};
+        if (!issue.native())
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Asset{issue};
+    }
+
+    if (slice->size() == (AccountID::bytes + Currency::bytes))
+    {
+        return Asset{Issue(
+            Currency::fromVoid(slice->data()),
+            AccountID::fromVoid(slice->data() + Currency::bytes))};
+    }
+
+    return Unexpected(HostFunctionError::INVALID_PARAMS);
 }
 
 template <class IW>
@@ -799,6 +835,33 @@ accountKeylet_wrap(
 
     return returnResult(
         runtime, params, results, hf->accountKeylet(*acc), index);
+}
+
+wasm_trap_t*
+ammKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const issue1 = getDataAsset(runtime, params, index);
+    if (!issue1)
+    {
+        return hfResult(results, issue1.error());
+    }
+
+    auto const issue2 = getDataAsset(runtime, params, index);
+    if (!issue2)
+    {
+        return hfResult(results, issue2.error());
+    }
+
+    return returnResult(
+        runtime,
+        params,
+        results,
+        hf->ammKeylet(issue1.value(), issue2.value()),
+        index);
 }
 
 wasm_trap_t*
@@ -1416,7 +1479,7 @@ floatFromUint_wrap(
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataUint64(runtime, params, i);
+    auto const x = getDataUInt64(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 

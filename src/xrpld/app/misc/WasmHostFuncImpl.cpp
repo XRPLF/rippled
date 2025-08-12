@@ -487,6 +487,18 @@ WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
 }
 
 Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::ammKeylet(Asset const& issue1, Asset const& issue2)
+{
+    if (issue1.native() && issue2.native())
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+    if (issue1 == issue2)
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    auto const keylet = keylet::amm(issue1, issue2);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::checkKeylet(AccountID const& account, std::uint32_t seq)
 {
     if (!account)

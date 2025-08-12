@@ -161,6 +161,9 @@ public:
     accountKeylet(AccountID const& account) override;
 
     Expected<Bytes, HostFunctionError>
+    ammKeylet(Asset const& issue1, Asset const& issue2) override;
+
+    Expected<Bytes, HostFunctionError>
     checkKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
