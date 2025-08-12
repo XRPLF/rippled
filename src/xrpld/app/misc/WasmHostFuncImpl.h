@@ -224,6 +224,9 @@ public:
     ticketKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
+    vaultKeylet(AccountID const& account, std::uint32_t seq) override;
+
+    Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) override;
 
     Expected<Bytes, HostFunctionError>

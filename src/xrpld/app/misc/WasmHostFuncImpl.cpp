@@ -685,6 +685,15 @@ WasmHostFunctionsImpl::ticketKeylet(AccountID const& account, std::uint32_t seq)
 }
 
 Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::vaultKeylet(AccountID const& account, std::uint32_t seq)
+{
+    if (!account)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+    auto const keylet = keylet::vault(account, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
 {
     if (!account)

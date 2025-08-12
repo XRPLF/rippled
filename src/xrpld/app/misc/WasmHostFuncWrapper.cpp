@@ -1344,6 +1344,36 @@ ticketKeylet_wrap(
 }
 
 wasm_trap_t*
+vaultKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(runtime, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const seq = getDataInt32(runtime, params, index);
+    if (!seq)
+    {
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+    }
+
+    return returnResult(
+        runtime,
+        params,
+        results,
+        hf->vaultKeylet(acc.value(), seq.value()),
+        index);
+}
+
+wasm_trap_t*
 getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);

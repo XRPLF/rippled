@@ -375,6 +375,12 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
+    vaultKeylet(AccountID const& account, std::uint32_t seq)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId)
     {
         return Unexpected(HostFunctionError::INTERNAL);
