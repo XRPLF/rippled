@@ -718,12 +718,12 @@ class Delegate_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
 
             env.fund(XRP(10000), alice, bob, carol, gw);
-            env.trust(USD(10000), alice);
-            env.trust(USD(10000), bob);
-            env.trust(USD(10000), carol);
-            env(pay(gw, alice, USD(1000)));
-            env(pay(gw, bob, USD(1000)));
-            env(pay(gw, carol, USD(1000)));
+            env.trust(USD(50000), alice);
+            env.trust(USD(50000), bob);
+            env.trust(USD(50000), carol);
+            env(pay(gw, alice, USD(10000)));
+            env(pay(gw, bob, USD(10000)));
+            env(pay(gw, carol, USD(10000)));
             env.close();
 
             auto const result = features[fixDelegateV1_1]
