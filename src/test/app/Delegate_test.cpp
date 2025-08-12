@@ -718,6 +718,7 @@ class Delegate_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env.trust(USD(50000), alice);
             env.trust(USD(50000), bob);
             env.trust(USD(50000), carol);
@@ -733,33 +734,30 @@ class Delegate_test : public beast::unit_test::suite
 
             // PaymentMint
             {
-                env(offer(carol, XRP(10), USD(50)));
-                env.close();
+                env(offer(carol, XRP(100), USD(501)));
                 BEAST_EXPECT(expectOffers(env, carol, 1));
-
                 env(delegate::set(gw, bob, {"PaymentMint"}));
                 env.close();
 
                 // post-amendment: fixDelegateV1_1
                 // bob can not send cross currency payment on behalf of the gw,
                 // even with PaymentMint permission and gw being the issuer.
-                env(pay(gw, alice, USD(50)),
+                env(pay(gw, alice, USD(5000)),
                     path(~USD),
-                    sendmax(XRP(10)),
+                    sendmax(XRP(1001)),
                     txflags(tfPartialPayment),
                     delegate::as(bob),
                     ter(result));
                 BEAST_EXPECT(expectOffers(env, carol, offerCount));
 
                 // succeed with direct payment
-                env(pay(gw, alice, USD(50)), delegate::as(bob));
+                env(pay(gw, alice, USD(100)), delegate::as(bob));
                 env.close();
             }
 
             // PaymentBurn
             {
-                env(offer(bob, XRP(10), USD(50)));
-                env.close();
+                env(offer(bob, XRP(100), USD(501)));
                 BEAST_EXPECT(expectOffers(env, bob, 1));
                 env(delegate::set(alice, bob, {"PaymentBurn"}));
                 env.close();
@@ -767,16 +765,16 @@ class Delegate_test : public beast::unit_test::suite
                 // post-amendment: fixDelegateV1_1
                 // bob can not send cross currency payment on behalf of alice,
                 // even with PaymentBurn permission and gw being the issuer.
-                env(pay(alice, gw, USD(50)),
+                env(pay(alice, gw, USD(5000)),
                     path(~USD),
-                    sendmax(XRP(10)),
+                    sendmax(XRP(1001)),
                     txflags(tfPartialPayment),
                     delegate::as(bob),
                     ter(result));
-                BEAST_EXPECT(expectOffers(env, carol, offerCount));
+                BEAST_EXPECT(expectOffers(env, bob, offerCount));
 
                 // succeed with direct payment
-                env(pay(alice, gw, USD(50)), delegate::as(bob));
+                env(pay(alice, gw, USD(100)), delegate::as(bob));
                 env.close();
             }
         }
