@@ -131,19 +131,3 @@ jobs:
           cmake_target: ${{ matrix.cmake_target }}
           codecov_token: ${{ secrets.codecov_token }}
           os: 'Linux'
-      - name: Verify voidstar
-        if: ${{ contains(matrix.cmake_args, '-Dvoidstar=ON') }}
-        working-directory: ${{ inputs.build_dir }}
-        run: |
-          echo 'Verifying presence of libvoidstar.'
-          ./rippled --version | grep libvoidstar
-      - name: Upload coverage report
-        if: ${{ contains(matrix.cmake_args, '-Dcoverage=ON') }}
-        uses: codecov/codecov-action@v5.4.3
-        with: |
-          disable_search: true
-          fail_ci_if_error: true
-          files: ${{ inputs.build_dir }}/coverage.xml
-          plugins: noop
-          token: ${{ secrets.codecov_token }}
-          verbose: true
