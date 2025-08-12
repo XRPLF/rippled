@@ -407,7 +407,8 @@ public:
     }
 };
 
-void registerNuDBFactory(Manager& manager)
+void
+registerNuDBFactory(Manager& manager)
 {
     static NuDBFactory instance{manager};
 }

@@ -45,10 +45,14 @@ ManagerImp::missing_backend()
 // lifetime is not well-defined. ManagerImp may get destroyed before the Factory
 // classes, and then, calling Manager::instance().erase() in the destructors of
 // the Factory classes is an undefined behaviour.
-void registerNuDBFactory(Manager& manager);
-void registerRocksDBFactory(Manager& manager);
-void registerNullFactory(Manager& manager);
-void registerMemoryFactory(Manager& manager);
+void
+registerNuDBFactory(Manager& manager);
+void
+registerRocksDBFactory(Manager& manager);
+void
+registerNullFactory(Manager& manager);
+void
+registerMemoryFactory(Manager& manager);
 
 ManagerImp::ManagerImp()
 {
