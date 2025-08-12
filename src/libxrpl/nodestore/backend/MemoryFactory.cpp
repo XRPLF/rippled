@@ -76,7 +76,8 @@ public:
 
 MemoryFactory* memoryFactory = nullptr;
 
-void registerMemoryFactory(Manager& manager)
+void
+registerMemoryFactory(Manager& manager)
 {
     static MemoryFactory instance{manager};
     memoryFactory = &instance;
