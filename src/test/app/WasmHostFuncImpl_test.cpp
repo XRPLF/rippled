@@ -1512,7 +1512,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(compareKeylet(actual.value(), expected)); \
         }                                                          \
     }
-#define COMPARE_KEYLET_FAIL(hfsFunc, keyletFunc, expected, ...)        \
+#define COMPARE_KEYLET_FAIL(hfsFunc, expected, ...)                    \
     {                                                                  \
         auto actual = hfs.hfsFunc(__VA_ARGS__);                        \
         if (BEAST_EXPECT(!actual.has_value()))                         \
@@ -1526,17 +1526,23 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         // accountKeylet
         COMPARE_KEYLET(accountKeylet, keylet::account, env.master.id());
         COMPARE_KEYLET_FAIL(
-            accountKeylet,
-            keylet::account,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount());
+            accountKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
+
+        // ammKeylet
+        COMPARE_KEYLET(
+            ammKeylet, keylet::amm, xrpIssue(), env.master["USD"].issue());
+        COMPARE_KEYLET_FAIL(
+            ammKeylet,
+            HostFunctionError::INVALID_PARAMS,
+            xrpIssue(),
+            xrpIssue());
+
+        // checkKeylet
         COMPARE_KEYLET(checkKeylet, keylet::check, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
-            checkKeylet,
-            keylet::check,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount(),
-            1);
+            checkKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+
+        // credentialKeylet
         std::string const credType = "test";
         COMPARE_KEYLET(
             credentialKeylet,
@@ -1552,53 +1558,48 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         static_assert(longCredType.size() > maxCredentialTypeLength);
         COMPARE_KEYLET_FAIL(
             credentialKeylet,
-            keylet::credential,
             HostFunctionError::INVALID_PARAMS,
             env.master.id(),
             alice.id(),
             Slice(longCredType.data(), longCredType.size()));
         COMPARE_KEYLET_FAIL(
             credentialKeylet,
-            keylet::credential,
             HostFunctionError::INVALID_ACCOUNT,
             xrpAccount(),
             alice.id(),
             Slice(credType.data(), credType.size()));
         COMPARE_KEYLET_FAIL(
             credentialKeylet,
-            keylet::credential,
             HostFunctionError::INVALID_ACCOUNT,
             env.master.id(),
             xrpAccount(),
             Slice(credType.data(), credType.size()));
 
+        // didKeylet
         COMPARE_KEYLET(didKeylet, keylet::did, env.master.id());
         COMPARE_KEYLET_FAIL(
-            didKeylet,
-            keylet::did,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount());
+            didKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
+
+        // delegateKeylet
         COMPARE_KEYLET(
             delegateKeylet, keylet::delegate, env.master.id(), alice.id());
         COMPARE_KEYLET_FAIL(
             delegateKeylet,
-            keylet::delegate,
             HostFunctionError::INVALID_PARAMS,
             env.master.id(),
             env.master.id());
         COMPARE_KEYLET_FAIL(
             delegateKeylet,
-            keylet::delegate,
             HostFunctionError::INVALID_ACCOUNT,
             env.master.id(),
             xrpAccount());
         COMPARE_KEYLET_FAIL(
             delegateKeylet,
-            keylet::delegate,
             HostFunctionError::INVALID_ACCOUNT,
             xrpAccount(),
             env.master.id());
 
+        // depositPreauthKeylet
         COMPARE_KEYLET(
             depositPreauthKeylet,
             keylet::depositPreauth,
@@ -1606,19 +1607,16 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             alice.id());
         COMPARE_KEYLET_FAIL(
             depositPreauthKeylet,
-            keylet::depositPreauth,
             HostFunctionError::INVALID_PARAMS,
             env.master.id(),
             env.master.id());
         COMPARE_KEYLET_FAIL(
             depositPreauthKeylet,
-            keylet::depositPreauth,
             HostFunctionError::INVALID_ACCOUNT,
             env.master.id(),
             xrpAccount());
         COMPARE_KEYLET_FAIL(
             depositPreauthKeylet,
-            keylet::depositPreauth,
             HostFunctionError::INVALID_ACCOUNT,
             xrpAccount(),
             env.master.id());
@@ -1626,11 +1624,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         // escrowKeylet
         COMPARE_KEYLET(escrowKeylet, keylet::escrow, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
-            escrowKeylet,
-            keylet::escrow,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount(),
-            1);
+            escrowKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
         // lineKeylet
         Currency usd = to_currency("USD");
@@ -1638,91 +1632,125 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             lineKeylet, keylet::line, env.master.id(), alice.id(), usd);
         COMPARE_KEYLET_FAIL(
             lineKeylet,
-            keylet::line,
             HostFunctionError::INVALID_PARAMS,
             env.master.id(),
             env.master.id(),
             usd);
         COMPARE_KEYLET_FAIL(
             lineKeylet,
-            keylet::line,
             HostFunctionError::INVALID_ACCOUNT,
             env.master.id(),
             xrpAccount(),
             usd);
         COMPARE_KEYLET_FAIL(
             lineKeylet,
-            keylet::line,
             HostFunctionError::INVALID_ACCOUNT,
             xrpAccount(),
             env.master.id(),
             usd);
         COMPARE_KEYLET_FAIL(
             lineKeylet,
-            keylet::line,
             HostFunctionError::INVALID_PARAMS,
             env.master.id(),
             alice.id(),
             to_currency(""));
 
+        //.mptIssuanceKeylet
+        {
+            auto actual = hfs.mptIssuanceKeylet(env.master.id(), 1);
+            auto expected = keylet::mptIssuance(1, env.master.id());
+            if (BEAST_EXPECT(actual.has_value()))
+            {
+                BEAST_EXPECT(compareKeylet(actual.value(), expected));
+            }
+        }
+        {
+            auto actual = hfs.mptIssuanceKeylet(xrpAccount(), 1);
+            if (BEAST_EXPECT(!actual.has_value()))
+                BEAST_EXPECT(
+                    actual.error() == HostFunctionError::INVALID_ACCOUNT);
+        }
+
+        // mptokenKeylet
+        auto const sampleMPTID = makeMptID(1, env.master.id());
+        COMPARE_KEYLET(mptokenKeylet, keylet::mptoken, sampleMPTID, alice.id());
+        COMPARE_KEYLET_FAIL(
+            mptokenKeylet,
+            HostFunctionError::INVALID_PARAMS,
+            MPTID{},
+            alice.id());
+        COMPARE_KEYLET_FAIL(
+            mptokenKeylet,
+            HostFunctionError::INVALID_ACCOUNT,
+            sampleMPTID,
+            xrpAccount());
+
+        // nftOfferKeylet
         COMPARE_KEYLET(nftOfferKeylet, keylet::nftoffer, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
             nftOfferKeylet,
-            keylet::nftoffer,
             HostFunctionError::INVALID_ACCOUNT,
             xrpAccount(),
             1);
+
+        // offerKeylet
         COMPARE_KEYLET(offerKeylet, keylet::offer, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
-            offerKeylet,
-            keylet::offer,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount(),
-            1);
+            offerKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+
+        // oracleKeylet
         COMPARE_KEYLET(oracleKeylet, keylet::oracle, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
-            oracleKeylet,
-            keylet::oracle,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount(),
-            1);
+            oracleKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+
+        // paychanKeylet
         COMPARE_KEYLET(
             paychanKeylet, keylet::payChan, env.master.id(), alice.id(), 1);
         COMPARE_KEYLET_FAIL(
             paychanKeylet,
-            keylet::payChan,
             HostFunctionError::INVALID_PARAMS,
             env.master.id(),
             env.master.id(),
             1);
         COMPARE_KEYLET_FAIL(
             paychanKeylet,
-            keylet::payChan,
             HostFunctionError::INVALID_ACCOUNT,
             env.master.id(),
             xrpAccount(),
             1);
         COMPARE_KEYLET_FAIL(
             paychanKeylet,
-            keylet::payChan,
             HostFunctionError::INVALID_ACCOUNT,
             xrpAccount(),
             env.master.id(),
             1);
 
-        COMPARE_KEYLET(signersKeylet, keylet::signers, env.master.id());
+        // permissionedDomainKeylet
+        COMPARE_KEYLET(
+            permissionedDomainKeylet,
+            keylet::permissionedDomain,
+            env.master.id(),
+            1);
         COMPARE_KEYLET_FAIL(
-            signersKeylet,
-            keylet::signers,
-            HostFunctionError::INVALID_ACCOUNT,
-            xrpAccount());
-        COMPARE_KEYLET(ticketKeylet, keylet::ticket, env.master.id(), 1);
-        COMPARE_KEYLET_FAIL(
-            ticketKeylet,
-            keylet::ticket,
+            permissionedDomainKeylet,
             HostFunctionError::INVALID_ACCOUNT,
             xrpAccount(),
             1);
+
+        // signersKeylet
+        COMPARE_KEYLET(signersKeylet, keylet::signers, env.master.id());
+        COMPARE_KEYLET_FAIL(
+            signersKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
+
+        // ticketKeylet
+        COMPARE_KEYLET(ticketKeylet, keylet::ticket, env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            ticketKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
+
+        // vaultKeylet
+        COMPARE_KEYLET(vaultKeylet, keylet::vault, env.master.id(), 1);
+        COMPARE_KEYLET_FAIL(
+            vaultKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
     }
 
     void
@@ -2011,6 +2039,96 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 
     void
+    testTraceAccount()
+    {
+        testcase("traceAccount");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        std::string msg = "trace account";
+        // Valid account
+        {
+            auto const result = hfs.traceAccount(msg, env.master.id());
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(
+                result.value() ==
+                msg.size() + toBase58(env.master.id()).size());
+        }
+
+        // Invalid (zero) account
+        {
+            auto const result = hfs.traceAccount(msg, xrpAccount());
+            BEAST_EXPECT(!result.has_value());
+            BEAST_EXPECT(result.error() == HostFunctionError::INVALID_ACCOUNT);
+        }
+    }
+
+    void
+    testTraceAmount()
+    {
+        testcase("traceAmount");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        std::string msg = "trace amount";
+        STAmount amount = XRP(12345);
+        {
+            auto const result = hfs.traceAmount(msg, amount);
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(
+                result.value() == msg.size() + amount.getText().size());
+        }
+
+        // IOU amount
+        Account const alice("alice");
+        env.fund(XRP(1000), alice);
+        env.close();
+        STAmount iouAmount = env.master["USD"](100);
+        {
+            auto const result = hfs.traceAmount(msg, iouAmount);
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(
+                result.value() == msg.size() + iouAmount.getText().size());
+        }
+
+        // MPT amount
+        {
+            auto const mptId = makeMptID(42, env.master.id());
+            Asset mptAsset = Asset(mptId);
+            STAmount mptAmount(mptAsset, 123456);
+            auto const result = hfs.traceAmount(msg, mptAmount);
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(
+                result.value() == msg.size() + mptAmount.getText().size());
+        }
+
+        // Invalid
+        {
+            STAmount invalidAmount;
+            auto const result = hfs.traceAmount(msg, invalidAmount);
+            // Should still succeed and return msg.size() +
+            // amount.getText().size()
+            BEAST_EXPECT(result.has_value());
+            BEAST_EXPECT(
+                result.value() == msg.size() + invalidAmount.getText().size());
+        }
+    }
+
+    void
     run() override
     {
         testGetLedgerSqn();
@@ -2045,6 +2163,8 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         testGetNFTSerial();
         testTrace();
         testTraceNum();
+        testTraceAccount();
+        testTraceAmount();
     }
 };
 

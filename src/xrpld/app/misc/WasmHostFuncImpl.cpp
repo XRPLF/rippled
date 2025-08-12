@@ -489,8 +489,6 @@ WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
 Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::ammKeylet(Asset const& issue1, Asset const& issue2)
 {
-    if (issue1.native() && issue2.native())
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
     if (issue1 == issue2)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
@@ -603,8 +601,10 @@ WasmHostFunctionsImpl::mptokenKeylet(
     MPTID const& mptid,
     AccountID const& holder)
 {
-    if (!mptid || !holder)
+    if (!mptid)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
+    if (!holder)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
 
     auto const keylet = keylet::mptoken(mptid, holder);
     return Bytes{keylet.key.begin(), keylet.key.end()};
