@@ -92,8 +92,10 @@ private:
 
     // Helper function to test log messages
     void
-    testLogMessage(Section const& params, beast::severities::Severity level,
-                   std::string const& expectedMessage)
+    testLogMessage(
+        Section const& params,
+        beast::severities::Severity level,
+        std::string const& expectedMessage)
     {
         test::StreamSink sink(level);
         beast::Journal journal(sink);
@@ -217,8 +219,10 @@ public:
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), "8192");
 
-            testLogMessage(params, beast::severities::kInfo,
-                          "Using custom NuDB block size: 8192");
+            testLogMessage(
+                params,
+                beast::severities::kInfo,
+                "Using custom NuDB block size: 8192");
         }
 
         // Test invalid block size failure
