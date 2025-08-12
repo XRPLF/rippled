@@ -32,6 +32,7 @@
 
 #include <boost/algorithm/string.hpp>
 
+#include <regex>
 #include <unordered_map>
 
 namespace ripple {
@@ -61,6 +62,248 @@ public:
     get() const
     {
         return defs_;
+    }
+    static Json::Value
+    parseLedgerEntryFlags()
+    {
+        Json::Value solution = Json::objectValue;
+        std::string const ledgerFormatFile{
+            "../include/xrpl/protocol/LedgerFormats.h"};
+        std::ifstream file(ledgerFormatFile);
+
+        if (!file.is_open())
+        {
+            Throw<std::runtime_error>(
+                "Error: Could not open file " + ledgerFormatFile);
+            return Json::Value{};
+        }
+
+        // Read entire file into a single string
+        std::string fileContents(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>());
+        file.close();
+
+        std::smatch match;
+        auto begin = fileContents.cbegin();
+        auto end = fileContents.cend();
+
+        std::regex ledgerSpecificFlagDef(
+            R"(^)"                         // start of the line
+            R"( *(lsf[a-zA-Z]+))"          // flag name
+            R"( *=(?:(?: *(0x[0-9]{8}),)"  // capture the hexcode
+            R"((?: *\/\/.+)?))"            // regex pattern to match comments
+            R"(|)"
+            R"((?:\n *(0x[0-9]{8}),)"  // capture the hexcode
+            R"((?: *\/\/.+)?)))"       // regex pattern to match comments
+            R"($)",                    // end of the line
+            std::regex_constants::multiline);
+
+        while (std::regex_search(begin, end, match, ledgerSpecificFlagDef))
+        {
+            if (match[2].str().empty())
+            {
+                // handle the case where the flag is completely defined in one
+                // line
+                solution[match[1].str()] = match[3].str();
+            }
+            else
+            {
+                // handle the case where the flag definition is split across two
+                // lines
+                solution[match[1].str()] = match[2].str();
+            }
+            begin = match.suffix().first;
+        }
+        return solution;
+    }
+
+    static Json::Value
+    parseTransactionFormats()
+    {
+        Json::Value solution;
+        std::string const transactionFormatsFile =
+            "../include/xrpl/protocol/detail/transactions.macro";
+        std::ifstream file(transactionFormatsFile);
+
+        if (!file.is_open())
+        {
+            Throw<std::runtime_error>(
+                "Error: Could not open file " + transactionFormatsFile);
+            return Json::Value{};
+        }
+
+        // Read entire file into a single string
+        std::string fileContents(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>());
+        file.close();
+
+        std::smatch match;
+        auto begin = fileContents.cbegin();
+        auto end = fileContents.cend();
+
+        std::regex txnDefinitionStart(
+            R"(^TRANSACTION\()"    // match the start of a new transaction
+                                   // definition
+            R"((?:tt[A-Z_]+) *,)"  // match the rippled internal variable name
+                                   // for the Transaction
+            R"( *([0-9]+),)"       // the numeric code associated with the
+                                   // transaction
+            R"( *([a-zA-Z]+),)"  // the human-readable name for the transaction
+            R"( Delegation::(notDelegatable|delegatable),)"  // is the
+                                                             // transaction
+                                                             // delegatable or
+                                                             // not?
+            R"( \(\{)"  // beginning of the sfield definition in subsequent line
+            R"((\}\)\))?)"  // only the DIDDelete transaction is fully defined
+                            // in one single line
+            R"($)",         // end of the line
+            std::regex_constants::multiline);
+
+        std::regex sfieldDefinition(
+            R"(^)"                                 // start of the line
+            R"( *\{sf([a-zA-Z0-9_]+) *,)"          // name of the sfield
+            R"( *soe(REQUIRED|OPTIONAL|DEFAULT))"  // "optionality" of the field
+                                                   // inside the transaction
+                                                   // format
+            R"((?:, *soe(MPTSupported))?)"  // whether the field supports MPT
+            R"(\},)"                        // end of the sfield definition
+            R"((?: *\/\/.+)?)"              // optional comments
+            R"($)",                         // end of the line
+            std::regex_constants::multiline);
+        std::regex endTxnDefinition(
+            R"(^\}\)\)$)", std::regex_constants::multiline);
+
+        while (std::regex_search(begin, end, match, txnDefinitionStart))
+        {
+            solution[match[2].str()] = Json::objectValue;
+            solution[match[2].str()][jss::hexCode] = match[1].str();
+            solution[match[2].str()][jss::delegatability] = match[3].str();
+
+            begin = match.suffix().first;
+            solution[match[2].str()][jss::sfields] = Json::arrayValue;
+
+            // DIDDelete transaction is fully defined in one single line. This
+            // condition handles this case
+            if (!match[4].str().empty())
+                continue;
+
+            while (true)
+            {
+                std::smatch sfieldMatch, txnDefEndMatch;
+                std::regex_search(begin, end, sfieldMatch, sfieldDefinition);
+                std::regex_search(begin, end, txnDefEndMatch, endTxnDefinition);
+                if (sfieldMatch.suffix().first > txnDefEndMatch.suffix().first)
+                {
+                    // the current transaction definition is completed.
+                    begin = txnDefEndMatch.suffix().first;
+                    break;
+                }
+
+                Json::Value sfield = Json::objectValue;
+                sfield[jss::sfield_Name] = sfieldMatch[1].str();
+                sfield[jss::optionality] = sfieldMatch[2].str();
+                if (!sfieldMatch[3].str().empty())
+                {
+                    sfield[jss::isMPTSupported] = sfieldMatch[3].str();
+                }
+                solution[match[2].str()][jss::sfields].append(sfield);
+
+                begin = sfieldMatch.suffix().first;
+            }
+        }
+
+        return solution;
+    }
+    static Json::Value
+    parseLedgerEntries()
+    {
+        Json::Value ret;
+
+        std::string const ledger_entry_macros_file =
+            "../include/xrpl/protocol/detail/ledger_entries.macro";
+
+        std::ifstream file(ledger_entry_macros_file);
+
+        if (!file.is_open())
+        {
+            Throw<std::runtime_error>(
+                "Error: Could not open file " + ledger_entry_macros_file);
+            return Json::Value{};
+        }
+
+        // Read entire file into a single string
+        std::string fileContents(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>());
+        file.close();
+
+        std::smatch match;
+        auto begin = fileContents.cbegin();
+
+        auto end = fileContents.cend();
+
+        std::regex macroDefStart(
+            R"(^LEDGER_ENTRY(?:_DUPLICATE)?\()"  // match the start of the macro
+                                                 // definition
+            R"((lt[A-Z_]+) *,)"  // capture the `lt` ledger-entry variable name
+            R"( *(0x[0-9a-f]+) *,)"  // grab the hexCode
+            R"( *([^,]+) *,)"    // grab the human-readable ledger-entry name
+            R"( *(?:[^,]+) *,)"  // match the lt-variable name used inside
+                                 // rippled
+            R"( *\(\{$)",  // verbatim match the remaining characters in the
+                           // definition
+            std::regex_constants::multiline);
+        std::regex macroDefEnd(R"(^\}\)\)$)", std::regex_constants::multiline);
+        std::regex sfieldDef(
+            R"(^ *\{)"           // start of the SField definition
+            R"( *sf([^,]+) *,)"  // capture the SField title
+            R"( *soe(REQUIRED|OPTIONAL|DEFAULT) *\},?)"  // capture the
+                                                         // `optionality` of the
+                                                         // SField inside the
+                                                         // LedgerEntry
+            R"((?: *\/\/[^\n]+)?)"  // match the comments at the end of the
+                                    // SField definition
+            R"($)",                 // end of the line
+            std::regex_constants::multiline);
+
+        while (std::regex_search(begin, end, match, macroDefStart))
+        {
+            std::string const ltName = match[3].str();
+            ret[ltName] = Json::objectValue;
+            begin = match.suffix().first;
+            ret[ltName][jss::sfields] = Json::arrayValue;
+            ret[ltName][jss::hexCode] = match[2].str();
+
+            // find all the SFields contained inside this LedgerEntry
+            while (true)
+            {
+                std::smatch sfield_match, macro_end_match;
+                bool const isSFieldDefPresent =
+                    std::regex_search(begin, end, sfield_match, sfieldDef);
+                bool const isMacroEndPresent =
+                    std::regex_search(begin, end, macro_end_match, macroDefEnd);
+
+                // LedgerEntry macro definition is closed
+                if (!isSFieldDefPresent ||
+                    (isMacroEndPresent &&
+                     macro_end_match.suffix().first <
+                         sfield_match.suffix().first))
+                {
+                    begin = macro_end_match.suffix().first;
+                    break;
+                }
+
+                Json::Value sField = Json::objectValue;
+
+                sField[jss::sfield_Name] = sfield_match[1].str();
+                sField[jss::optionality] = sfield_match[2].str();
+                ret[ltName][jss::sfields].append(sField);
+                begin = sfield_match.suffix().first;
+            }
+        }
+        return ret;
     }
 };
 
@@ -142,6 +385,14 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
     }
+
+    // populate ledger_entry formats
+    defs_[jss::LEDGER_ENTRIES] = parseLedgerEntries();
+
+    // populate all the flags which are associated with ledger entries.
+    defs_[jss::LEDGER_ENTRY_FLAGS] = parseLedgerEntryFlags();
+
+    defs_["TRANSACTION_FORMATS"] = parseTransactionFormats();
 
     // populate LedgerEntryType names and values
     defs_[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
