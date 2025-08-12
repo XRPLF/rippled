@@ -38,24 +38,28 @@ namespace jtx {
 
 class LPToken
 {
-    IOUAmount const tokens_;
+    Number const tokens_;
+    Asset asset_;
 
 public:
-    LPToken(std::uint64_t tokens) : tokens_(tokens)
+    LPToken(std::uint64_t tokens) : tokens_(tokens), asset_(xrpIssue())
     {
     }
-    LPToken(IOUAmount tokens) : tokens_(tokens)
+    LPToken(IOUAmount tokens) : tokens_(tokens), asset_(xrpIssue())
     {
     }
-    IOUAmount const&
+    LPToken(STAmount tokens) : tokens_(tokens), asset_(tokens.asset())
+    {
+    }
+    STAmount
     tokens() const
     {
-        return tokens_;
+        return STAmount{asset_, tokens_};
     }
     STAmount
     tokens(Issue const& ammIssue) const
     {
-        return STAmount{tokens_, ammIssue};
+        return STAmount{ammIssue, tokens_};
     }
 };
 
@@ -91,7 +95,7 @@ struct WithdrawArg
     std::optional<LPToken> tokens = std::nullopt;
     std::optional<STAmount> asset1Out = std::nullopt;
     std::optional<STAmount> asset2Out = std::nullopt;
-    std::optional<IOUAmount> maxEP = std::nullopt;
+    std::optional<LPToken> maxEP = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::pair<Asset, Asset>> assets = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
@@ -167,6 +171,13 @@ public:
         STAmount const& asset2,
         CreateArg const& arg);
 
+    static Json::Value
+    createjv(
+        AccountID const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        std::uint16_t const& tfee);
+
     /** Send amm_info RPC command
      */
     Json::Value
@@ -234,6 +245,9 @@ public:
     [[nodiscard]] bool
     ammExists() const;
 
+    static Json::Value
+    depositjv(DepositArg const& arg);
+
     IOUAmount
     deposit(
         std::optional<Account> const& account,
@@ -267,6 +281,9 @@ public:
     IOUAmount
     deposit(DepositArg const& arg);
 
+    static Json::Value
+    withdrawjv(WithdrawArg const& arg);
+
     IOUAmount
     withdraw(
         std::optional<Account> const& account,
@@ -294,7 +311,7 @@ public:
         std::optional<Account> const& account,
         STAmount const& asset1Out,
         std::optional<STAmount> const& asset2Out = std::nullopt,
-        std::optional<IOUAmount> const& maxEP = std::nullopt,
+        std::optional<LPToken> const& maxEP = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     IOUAmount
@@ -303,7 +320,7 @@ public:
         std::optional<LPToken> const& tokens,
         std::optional<STAmount> const& asset1Out,
         std::optional<STAmount> const& asset2Out,
-        std::optional<IOUAmount> const& maxEP,
+        std::optional<LPToken> const& maxEP,
         std::optional<std::uint32_t> const& flags,
         std::optional<std::pair<Asset, Asset>> const& assets,
         std::optional<jtx::seq> const& seq,
@@ -311,6 +328,9 @@ public:
 
     IOUAmount
     withdraw(WithdrawArg const& arg);
+
+    static Json::Value
+    votejv(VoteArg const& arg);
 
     void
     vote(
@@ -369,9 +389,15 @@ public:
         return ammRpcInfo(lp);
     }
 
+    static Json::Value
+    deletejv(
+        AccountID const& account,
+        Asset const& asset1,
+        Asset const& assets);
+
     void
     ammDelete(
-        AccountID const& deleter,
+        AccountID const& account,
         std::optional<ter> const& ter = std::nullopt);
 
     void
@@ -405,22 +431,6 @@ private:
         std::uint32_t tfee = 0,
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
-
-    IOUAmount
-    deposit(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<std::pair<Asset, Asset>> const& assets = std::nullopt,
-        std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
-
-    IOUAmount
-    withdraw(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<jtx::seq> const& seq,
-        std::optional<std::pair<Asset, Asset>> const& assets = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     void
