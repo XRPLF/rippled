@@ -113,6 +113,7 @@ class NullFactory : public Factory
 {
 private:
     Manager& manager_;
+
 public:
     explicit NullFactory(Manager& manager) : manager_(manager)
     {
@@ -137,7 +138,8 @@ public:
     }
 };
 
-void registerNullFactory(Manager& manager)
+void
+registerNullFactory(Manager& manager)
 {
     static NullFactory instance{manager};
 }

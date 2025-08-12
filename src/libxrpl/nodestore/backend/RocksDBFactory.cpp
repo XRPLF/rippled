@@ -459,6 +459,7 @@ class RocksDBFactory : public Factory
 {
 private:
     Manager& manager_;
+
 public:
     RocksDBEnv m_env;
 
@@ -486,7 +487,8 @@ public:
     }
 };
 
-void registerRocksDBFactory(Manager& manager)
+void
+registerRocksDBFactory(Manager& manager)
 {
     static RocksDBFactory instance{manager};
 }
