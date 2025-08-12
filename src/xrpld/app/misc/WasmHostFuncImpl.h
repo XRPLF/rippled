@@ -193,6 +193,9 @@ public:
         Currency const& currency) override;
 
     Expected<Bytes, HostFunctionError>
+    mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) override;
+
+    Expected<Bytes, HostFunctionError>
     nftOfferKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>

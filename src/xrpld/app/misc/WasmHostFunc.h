@@ -318,6 +318,12 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
+    mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
     nftOfferKeylet(AccountID const& account, std::uint32_t seq)
     {
         return Unexpected(HostFunctionError::INTERNAL);

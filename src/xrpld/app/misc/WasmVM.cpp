@@ -70,6 +70,7 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, didKeylet, "did_keylet", hfs,                                                         350);
     WASM_IMPORT_FUNC2(i, escrowKeylet, "escrow_keylet", hfs,                                                   350);
     WASM_IMPORT_FUNC2(i, lineKeylet, "line_keylet", hfs,                                                       350);
+    WASM_IMPORT_FUNC2(i, mptIssuanceKeylet, "mpt_issuance_keylet", hfs,                                        350);
     WASM_IMPORT_FUNC2(i, nftOfferKeylet, "nft_offer_keylet", hfs,                                              350);
     WASM_IMPORT_FUNC2(i, offerKeylet, "offer_keylet", hfs,                                                     350);
     WASM_IMPORT_FUNC2(i, oracleKeylet, "oracle_keylet", hfs,                                                   350);

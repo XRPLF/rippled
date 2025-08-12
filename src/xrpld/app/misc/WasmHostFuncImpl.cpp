@@ -587,6 +587,18 @@ WasmHostFunctionsImpl::lineKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::mptIssuanceKeylet(
+    AccountID const& issuer,
+    std::uint32_t seq)
+{
+    if (!issuer)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+    auto const keylet = keylet::mptIssuance(seq, issuer);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::nftOfferKeylet(
     AccountID const& account,
     std::uint32_t seq)
