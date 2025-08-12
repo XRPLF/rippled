@@ -28,13 +28,13 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/core/SociDB.h>
-#include <xrpld/nodestore/Database.h>
-#include <xrpld/nodestore/detail/DatabaseNodeImp.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>

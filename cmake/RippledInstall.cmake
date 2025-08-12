@@ -18,6 +18,8 @@ install (
     xrpl.libxrpl.json
     xrpl.libxrpl.protocol
     xrpl.libxrpl.resource
+    xrpl.libxrpl.nodestore
+    xrpl.libxrpl.shamap
     xrpl.libxrpl.server
     xrpl.libxrpl
     antithesis-sdk-cpp

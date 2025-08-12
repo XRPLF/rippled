@@ -20,11 +20,10 @@
 #ifndef RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 #define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
 
-#include <xrpld/nodestore/DummyScheduler.h>
-#include <xrpld/nodestore/Manager.h>
-#include <xrpld/shamap/Family.h>
-
 #include <xrpl/basics/chrono.h>
+#include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
+#include <xrpl/shamap/Family.h>
 
 namespace ripple {
 namespace tests {

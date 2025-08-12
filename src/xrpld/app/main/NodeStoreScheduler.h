@@ -21,7 +21,8 @@
 #define RIPPLE_APP_MAIN_NODESTORESCHEDULER_H_INCLUDED
 
 #include <xrpld/core/JobQueue.h>
-#include <xrpld/nodestore/Scheduler.h>
+
+#include <xrpl/nodestore/Scheduler.h>
 
 namespace ripple {
 
