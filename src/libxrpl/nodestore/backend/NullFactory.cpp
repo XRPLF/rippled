@@ -111,15 +111,12 @@ private:
 
 class NullFactory : public Factory
 {
+private:
+    Manager& manager_;
 public:
-    NullFactory()
+    explicit NullFactory(Manager& manager) : manager_(manager)
     {
-        Manager::instance().insert(*this);
-    }
-
-    ~NullFactory() override
-    {
-        Manager::instance().erase(*this);
+        manager_.insert(*this);
     }
 
     std::string
@@ -140,7 +137,10 @@ public:
     }
 };
 
-static NullFactory nullFactory;
+void registerNullFactory(Manager& manager)
+{
+    static NullFactory instance{manager};
+}
 
 }  // namespace NodeStore
 }  // namespace ripple

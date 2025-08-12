@@ -10,6 +10,7 @@ install (
     opts
     ripple_syslibs
     ripple_boost
+    ripple_libs
     xrpl.imports.main
     xrpl.libpb
     xrpl.libxrpl.basics

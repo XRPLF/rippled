@@ -39,7 +39,7 @@ public:
     static void
     missing_backend();
 
-    ManagerImp() = default;
+    ManagerImp();
 
     ~ManagerImp() = default;
 
