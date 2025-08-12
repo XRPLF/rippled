@@ -92,7 +92,7 @@ private:
 
     // Helper function to test log messages
     void
-    testLogMessage(Section const& params, beast::severities::Level level,
+    testLogMessage(Section const& params, beast::severities::Severity level,
                    std::string const& expectedMessage)
     {
         test::StreamSink sink(level);
