@@ -768,6 +768,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Number, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(Number, basics, ripple);
 
 }  // namespace ripple

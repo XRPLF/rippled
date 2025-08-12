@@ -98,6 +98,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, app, ripple);
+BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, ripple);
 }  // namespace test
 }  // namespace ripple
