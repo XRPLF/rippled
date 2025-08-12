@@ -656,6 +656,17 @@ WasmHostFunctionsImpl::paychanKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::permissionedDomainKeylet(
+    AccountID const& account,
+    std::uint32_t seq)
+{
+    if (!account)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+    auto const keylet = keylet::permissionedDomain(account, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::signersKeylet(AccountID const& account)
 {
     if (!account)

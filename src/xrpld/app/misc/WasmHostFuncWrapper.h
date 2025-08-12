@@ -354,6 +354,14 @@ paychanKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using permissionedDomainKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+permissionedDomainKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using signersKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 signersKeylet_wrap(

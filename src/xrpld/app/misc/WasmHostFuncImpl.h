@@ -214,6 +214,10 @@ public:
         std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
+    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
+        override;
+
+    Expected<Bytes, HostFunctionError>
     signersKeylet(AccountID const& account) override;
 
     Expected<Bytes, HostFunctionError>

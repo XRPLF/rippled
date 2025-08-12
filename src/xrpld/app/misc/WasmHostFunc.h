@@ -357,6 +357,12 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
+    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
     signersKeylet(AccountID const& account)
     {
         return Unexpected(HostFunctionError::INTERNAL);
