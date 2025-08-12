@@ -104,7 +104,7 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
         cmake_args = f'{cmake_args} -Dtests=ON -Dwerr=ON -Dxrpld=ON'
         if not f'{os['compiler_name']}-{os['compiler_version']}' in ['gcc-12', 'clang-16']:
             cmake_args = f'{cmake_args} -Dwextra=ON'
-        if build_type == 'distro_version':
+        if build_type == 'Release':
             cmake_args = f'{cmake_args} -Dassert=ON'
 
         configurations.append({
@@ -137,5 +137,5 @@ if __name__ == '__main__':
         raise Exception('Invalid configuration file.')
 
     # Check if the ref is a branch that should trigger a full matrix.
-    match = re.search(r'refs/heads/(develop|master|release)', args.ref)
+    match = re.search(r'^refs/heads/(develop|master|release)$', args.ref)
     print(f'matrix={json.dumps(generate_strategy_matrix(match is None, config['architecture'], config['os'], config['build_type'], config['cmake_args']))}')

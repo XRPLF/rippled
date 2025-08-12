@@ -41,7 +41,6 @@ inputs:
 runs:
   using: composite
   steps:
-    # Set up CMake.
     - name: Configure CMake
       shell: bash
       working-directory: ${{ inputs.build_dir }}
@@ -53,7 +52,6 @@ runs:
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
           ${{ inputs.cmake_args }} \
           ..
-    # Build and test the binary.
     - name: Build the binary
       shell: bash
       working-directory: ${{ inputs.build_dir }}
@@ -81,11 +79,11 @@ runs:
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
-        echo 'Verifying presence of libvoidstar.'
+        echo 'Verifying presence of instrumentation.'
         ./rippled --version | grep libvoidstar
     - name: Upload coverage report
-      if: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') && inputs.codecov_token != '' }}
-      uses: codecov/codecov-action@v5.4.3
+      if: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') && inputs.codecov_token }}
+      uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24
       with:
         disable_search: true
         disable_telem: true
