@@ -24,8 +24,9 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/State.h>
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/nodestore/DatabaseRotating.h>
-#include <xrpld/nodestore/Scheduler.h>
+
+#include <xrpl/nodestore/DatabaseRotating.h>
+#include <xrpl/nodestore/Scheduler.h>
 
 #include <atomic>
 #include <chrono>

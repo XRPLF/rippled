@@ -23,11 +23,11 @@
 #include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/nodestore/Scheduler.h>
-#include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
-#include <xrpld/shamap/SHAMapMissingNode.h>
 
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 
