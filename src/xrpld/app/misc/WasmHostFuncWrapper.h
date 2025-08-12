@@ -303,6 +303,19 @@ mptIssuanceKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using mptokenKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+mptokenKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using nftOfferKeylet_proto =
     int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*

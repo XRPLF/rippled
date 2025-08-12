@@ -599,6 +599,18 @@ WasmHostFunctionsImpl::mptIssuanceKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::mptokenKeylet(
+    MPTID const& mptid,
+    AccountID const& holder)
+{
+    if (!mptid || !holder)
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    auto const keylet = keylet::mptoken(mptid, holder);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::nftOfferKeylet(
     AccountID const& account,
     std::uint32_t seq)

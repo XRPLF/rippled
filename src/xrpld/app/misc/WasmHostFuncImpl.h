@@ -196,6 +196,9 @@ public:
     mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
+    mptokenKeylet(MPTID const& mptid, AccountID const& holder) override;
+
+    Expected<Bytes, HostFunctionError>
     nftOfferKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
