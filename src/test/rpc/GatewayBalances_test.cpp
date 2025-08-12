@@ -261,7 +261,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(GatewayBalances, app, ripple);
+BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

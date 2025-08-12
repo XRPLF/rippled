@@ -2018,7 +2018,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(Book, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, ripple, 1);
 
 }  // namespace test
 }  // namespace ripple
