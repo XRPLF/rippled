@@ -71,18 +71,18 @@ Amendment must receive at least an 80% approval rate from validating nodes for
 a period of two weeks before being accepted. The following example outlines the
 process of an Amendment from its conception to approval and usage.
 
-*  A community member proposes to change transaction processing in some way.
+- A community member proposes to change transaction processing in some way.
   The proposal is discussed amongst the community and receives its support
   creating a community or human consensus.
 
-*  Some members contribute their time and work to develop the Amendment.
+- Some members contribute their time and work to develop the Amendment.
 
-*  A pull request is created and the new code is folded into a rippled build
+- A pull request is created and the new code is folded into a rippled build
   and made available for use.
 
-*  The consensus process begins with the validating nodes.
+- The consensus process begins with the validating nodes.
 
-*  If the Amendment holds an 80% majority for a two week period, nodes will begin
+- If the Amendment holds an 80% majority for a two week period, nodes will begin
   including the transaction to enable it in their initial sets.
 
 Nodes may veto Amendments they consider undesirable by never announcing their
@@ -112,7 +112,7 @@ enabled.
 
 Optional online deletion happens through the SHAMapStore. Records are deleted
 from disk based on ledger sequence number. These records reside in the
-key-value database  as well as in the SQLite ledger and transaction databases.
+key-value database as well as in the SQLite ledger and transaction databases.
 Without online deletion storage usage grows without bounds. It can only
 be pruned by stopping, manually deleting data, and restarting the server.
 Online deletion requires less operator intervention to manage the server.
@@ -142,14 +142,14 @@ server restarts.
 
 Configuration:
 
-* In the [node_db] configuration section, an optional online_delete parameter is
-set. If not set or if set to 0, online delete is disabled. Otherwise, the
-setting defines number of ledgers between deletion cycles.
-* Another optional parameter in [node_db] is that for advisory_delete. It is
-disabled by default. If set to non-zero, requires an RPC call to activate the
-deletion routine.
-* online_delete must not be greater than the [ledger_history] parameter.
-* [fetch_depth] will be silently set to equal the online_delete setting if
-online_delete is greater than fetch_depth.
-* In the [node_db] section, there is a performance tuning option, delete_batch,
-which sets the maximum size in ledgers for each SQL DELETE query.
+- In the [node_db] configuration section, an optional online_delete parameter is
+  set. If not set or if set to 0, online delete is disabled. Otherwise, the
+  setting defines number of ledgers between deletion cycles.
+- Another optional parameter in [node_db] is that for advisory_delete. It is
+  disabled by default. If set to non-zero, requires an RPC call to activate the
+  deletion routine.
+- online_delete must not be greater than the [ledger_history] parameter.
+- [fetch_depth] will be silently set to equal the online_delete setting if
+  online_delete is greater than fetch_depth.
+- In the [node_db] section, there is a performance tuning option, delete_batch,
+  which sets the maximum size in ledgers for each SQL DELETE query.
