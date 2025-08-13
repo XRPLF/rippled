@@ -118,6 +118,7 @@ jobs:
           conan_remote_url: ${{ inputs.conan_remote_url }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
+          config_name: ${{ matrix.config_name }}
           force_build: ${{ inputs.dependencies_force_build }}
           force_upload: ${{ inputs.dependencies_force_upload }}
           os: 'Linux'

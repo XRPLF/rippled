@@ -34,6 +34,10 @@ inputs:
     required: false
     type: string
     default: ''
+  config_name:
+    description: 'The unique name of the configuration that will be used for uploaded Conan artifacts (e.g. debian-bookworm-gcc-12-amd64-release-unity).'
+    required: true
+    type: string
   force_build:
     description: 'Force building of all dependencies.'
     required: false
@@ -49,9 +53,9 @@ inputs:
     required: true
     type: choice
     options:
-      - Linux
-      - MacOS
-      - Windows
+      - 'Linux'
+      - 'MacOS'
+      - 'Windows'
 
 runs:
   using: composite
@@ -106,3 +110,17 @@ runs:
         echo 'Uploading dependencies.'
         conan list --graph=build.json --graph-binaries=build --format=json > pkgs.json
         conan upload --list=pkgs.json --confirm --check ${{ inputs.force_upload && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}
+    - name: Upload build manifest
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: ${{ inputs.config_name }}-build.json
+        path: ${{ inputs.build_dir }}/build.json
+        if-no-files-found: error
+        retention-days: 7
+    - name: Upload package manifest
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      with:
+        name: ${{ inputs.config_name }}-pkgs.json
+        path: ${{ inputs.build_dir }}/pkgs.json
+        if-no-files-found: error
+        retention-days: 7

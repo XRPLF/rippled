@@ -5,7 +5,7 @@
 name: PR
 
 on:
-  push:
+  pull_request:
     branches-ignore:
       - develop
       - release
@@ -18,7 +18,7 @@ on:
       - '.github/workflows/build-linux.yml'
       - '.github/workflows/build-macos.yml'
       - '.github/workflows/build-windows.yml'
-      - '.github/workflows/check-clang-format.yml'
+      - '.github/workflows/check-format.yml'
       - '.github/workflows/check-levelization.yml'
       - '.github/workflows/notify-clio.yml'
       - '.github/workflows/on-pr.yml'
@@ -50,7 +50,7 @@ env:
 jobs:
   check-clang-format:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    uses: ./.github/workflows/check-clang-format.yml
+    uses: ./.github/workflows/check-format.yml
 
   check-levelization:
     if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}

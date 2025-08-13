@@ -41,6 +41,12 @@
     {
       "distro_name": "debian",
       "distro_version": "bookworm",
+      "compiler_name": "gcc",
+      "compiler_version": "15"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
       "compiler_name": "clang",
       "compiler_version": "16"
     },

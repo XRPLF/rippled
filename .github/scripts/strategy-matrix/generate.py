@@ -39,12 +39,12 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
             if os['distro_name'] == 'debian':
                 skip = True
                 if os['distro_version'] == 'bookworm':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
+                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/arm64':
+                        cmake_args = f'{cmake_args} -DUNIT_TEST_REFERENCE_FEE=500'
+                        skip = False
+                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
                         cmake_args = f'{cmake_args} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0'
                         cmake_target = 'coverage'
-                        skip = False
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
-                        cmake_args = f'{cmake_args} -DUNIT_TEST_REFERENCE_FEE=500'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-16' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
                         cmake_args = f'{cmake_args} -Dvoidstar=ON'
@@ -107,12 +107,27 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
         if build_type == 'Release':
             cmake_args = f'{cmake_args} -Dassert=ON'
 
+        # Generate a unique name for the configuration, e.g. macos-arm64-debug
+        # or debian-bookworm-gcc-12-amd64-release-unity.
+        config_name = os['distro_name']
+        if (n := os['distro_version']) != '':
+            config_name = f'{config_name}-{n}'
+        if (n := os['compiler_name']) != '':
+            config_name = f'{config_name}-{n}'
+        if (n := os['compiler_version']) != '':
+            config_name = f'{config_name}-{n}'
+        config_name = f'{config_name}-{architecture['platform'][architecture['platform'].find('/')+1:]}'
+        config_name = f'{config_name}-{build_type.lower()}'
+        if '-Dunity=ON' in cmake_args:
+            config_name = f'{config_name}-unity'
+
         configurations.append({
             'architecture': architecture,
             'os': os,
             'build_type': build_type,
             'cmake_args': cmake_args,
             'cmake_target': cmake_target,
+            'config_name': config_name,
         })
 
     return {'include': configurations}

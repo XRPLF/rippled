@@ -17,9 +17,12 @@ inputs:
     type: string
     default: ''
   cmake_generator:
-    description: 'The CMake generator to use for the build.'
+    description: 'The CMake generator to use for the build (Ninja or Visual Studio 17 2022).'
     required: true
-    type: string
+    type: choice
+    options:
+      - 'Ninja'
+      - 'Visual Studio 17 2022'
   cmake_target:
     description: 'The CMake target to build.'
     required: true
@@ -34,9 +37,9 @@ inputs:
     required: true
     type: choice
     options:
-      - Linux
-      - MacOS
-      - Windows
+      - 'Linux'
+      - 'MacOS'
+      - 'Windows'
 
 runs:
   using: composite
@@ -47,7 +50,7 @@ runs:
       run: |
         echo 'Configuring CMake.'
         cmake \
-          ${{ inputs.cmake_generator && format('-G "{0}"', inputs.cmake_generator) || '' }} \
+          ${{ format('-G "{0}"', inputs.cmake_generator) }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
           ${{ inputs.cmake_args }} \
@@ -72,7 +75,7 @@ runs:
           echo 'The binary is statically linked.'
         else
           echo 'The binary is dynamically linked.'
-        exit 1
+          exit 1
         fi
     - name: Verify voidstar
       if: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
@@ -81,8 +84,16 @@ runs:
       run: |
         echo 'Verifying presence of instrumentation.'
         ./rippled --version | grep libvoidstar
+    - name: Test the binary
+      if: ${{ inputs.cmake_target != coverage }}
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'Windows' && inputs.build_type || '' }}
+      run: |
+        echo 'Testing binary.'
+        ./rippled --unittest --unittest-jobs $(nproc)
+        ctest -j $(nproc) --output-on-failure
     - name: Upload coverage report
-      if: ${{ contains(inputs.cmake_args, '-Dcoverage=ON') && inputs.codecov_token }}
+      if: ${{ inputs.cmake_target == coverage && inputs.codecov_token }}
       uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24
       with:
         disable_search: true
@@ -92,10 +103,3 @@ runs:
         plugins: noop
         token: ${{ inputs.codecov_token }}
         verbose: true
-    - name: Test the binary
-      shell: bash
-      working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'Windows' && inputs.build_type || '' }}
-      run: |
-        echo 'Testing binary.'
-        ./rippled --unittest --unittest-jobs $(nproc)
-        ctest -j $(nproc) --output-on-failure
