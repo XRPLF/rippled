@@ -1760,7 +1760,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Subscribe, app, ripple);
+BEAST_DEFINE_TESTSUITE(Subscribe, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

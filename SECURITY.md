@@ -2,7 +2,6 @@
 
 For more details on operating an XRP Ledger server securely, please visit https://xrpl.org/manage-the-rippled-server.html.
 
-
 # Security Policy
 
 ## Supported Versions
@@ -77,13 +76,14 @@ The amount paid varies dramatically. Vulnerabilities that are harmless on their 
 
 To report a qualifying bug, please send a detailed report to:
 
-|Email Address|bugs@ripple.com                                      |
-|:-----------:|:----------------------------------------------------|
-|Short Key ID | `0xC57929BE`                                        |
-|Long Key ID  | `0xCD49A0AFC57929BE`                                |
-|Fingerprint  | `24E6 3B02 37E0 FA9C 5E96 8974 CD49 A0AF C579 29BE` |
+| Email Address | bugs@ripple.com                                     |
+| :-----------: | :-------------------------------------------------- |
+| Short Key ID  | `0xC57929BE`                                        |
+|  Long Key ID  | `0xCD49A0AFC57929BE`                                |
+|  Fingerprint  | `24E6 3B02 37E0 FA9C 5E96 8974 CD49 A0AF C579 29BE` |
 
-The full PGP key for this address, which is also available on several key servers (e.g. on [keyserver.ubuntu.com](https://keyserver.ubuntu.com)), is: 
+The full PGP key for this address, which is also available on several key servers (e.g. on [keyserver.ubuntu.com](https://keyserver.ubuntu.com)), is:
+
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 mQINBFUwGHYBEAC0wpGpBPkd8W1UdQjg9+cEFzeIEJRaoZoeuJD8mofwI5Ejnjdt
