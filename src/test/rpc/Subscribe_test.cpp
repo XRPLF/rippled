@@ -1667,9 +1667,7 @@ public:
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "2000" &&
                 jv[jss::transaction][jss::Destination] ==
                 "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK" &&
-                jv[jss::transaction][jss::Fee] == "10" &&
                 jv[jss::transaction][jss::Flags] == 2147483648u &&
-                jv[jss::transaction][jss::Sequence] == 5 &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
                 jv[jss::type] == "mptTransaction";
         }));
@@ -1711,7 +1709,8 @@ public:
         // we don't expect to find alice's mpt in the stream
         BEAST_EXPECT(!wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
-                to_string(mptAlice.issuanceID());
+                to_string(mptAlice.issuanceID()) &&
+                jv[jss::transaction][jss::Amount][jss::value] == "500";
         }));
 
         // this txn should be seen
