@@ -200,14 +200,6 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 auto const sleTrustLine =
                     ctx.view.read(keylet::line(dstId, issuerId, currency));
 
-                if (!sleTrustLine &&
-                    !ctx.view.rules().enabled(featureCheckCashMakesTrustLine))
-                {
-                    JLOG(ctx.j.warn())
-                        << "Cannot cash check for IOU without trustline.";
-                    return tecNO_LINE;
-                }
-
                 auto const sleIssuer = ctx.view.read(keylet::account(issuerId));
                 if (!sleIssuer)
                 {
@@ -401,9 +393,6 @@ CashCheck::doApply()
                 optDeliverMin ? maxDeliverMin()
                               : ctx_.tx.getFieldAmount(sfAmount)};
 
-            bool const checkCashMakesTrustLine =
-                psb.rules().enabled(featureCheckCashMakesTrustLine);
-
             // Check reserve. Return destination account SLE if enough reserve,
             // otherwise return nullptr.
             auto checkReserve = [&]() -> std::shared_ptr<SLE> {
@@ -433,7 +422,7 @@ CashCheck::doApply()
                 trustLineKey = keylet::line(truster, trustLineIssue);
                 destLow = issuer > account_;
 
-                if (checkCashMakesTrustLine && !psb.exists(*trustLineKey))
+                if (!psb.exists(*trustLineKey))
                 {
                     // 1. Can the check casher meet the reserve for the trust
                     // line?
@@ -495,16 +484,11 @@ CashCheck::doApply()
                     destLow ? sfLowLimit : sfHighLimit;
                 savedLimit = sleTrustLine->at(tweakedLimit);
 
-                if (checkCashMakesTrustLine)
-                {
-                    // Set the trust line limit to the highest possible value
-                    // while flow runs.
-                    STAmount const bigAmount(
-                        trustLineIssue,
-                        STAmount::cMaxValue,
-                        STAmount::cMaxOffset);
-                    sleTrustLine->at(tweakedLimit) = bigAmount;
-                }
+                // Set the trust line limit to the highest possible value
+                // while flow runs.
+                STAmount const bigAmount(
+                    trustLineIssue, STAmount::cMaxValue, STAmount::cMaxOffset);
+                sleTrustLine->at(tweakedLimit) = bigAmount;
             }
             else if (account_ != flowDeliver.getIssuer())
             {
@@ -566,16 +550,11 @@ CashCheck::doApply()
                         << "flow did not produce DeliverMin.";
                     return tecPATH_PARTIAL;
                 }
-                if (doFix1623 && !checkCashMakesTrustLine &&
-                    optDeliverMin->holds<Issue>())
-                    // Set the delivered_amount metadata.
-                    ctx_.deliver(result.actualAmountOut);
             }
 
             // Set the delivered amount metadata in all cases, not just
             // for DeliverMin.
-            if (checkCashMakesTrustLine)
-                ctx_.deliver(result.actualAmountOut);
+            ctx_.deliver(result.actualAmountOut);
 
             sleCheck = psb.peek(keylet::check(ctx_.tx[sfCheckID]));
         }
