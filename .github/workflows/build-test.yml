@@ -44,7 +44,7 @@ on:
         required: false
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-linux
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.os }}
   cancel-in-progress: true
 
 defaults:
