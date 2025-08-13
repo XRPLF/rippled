@@ -203,7 +203,6 @@ getDataAsset(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 
     if (slice->size() == MPTID::bytes)
     {
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
         auto const mptid = MPTID::fromVoid(slice->data());
         return Asset{mptid};
     }

@@ -829,7 +829,7 @@ WasmHostFunctionsImpl::traceAmount(
 #else
     auto j = getJournal().trace();
 #endif
-    auto const amountStr = amount.getText();
+    auto const amountStr = amount.getFullText();
     j << "WAMR TRACE AMOUNT(" << leKey.key << "): " << msg << " " << amountStr;
     return msg.size() + amountStr.size();
 }

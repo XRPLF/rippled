@@ -451,6 +451,23 @@ public:
     }
 
     Expected<int32_t, HostFunctionError>
+    traceAccount(std::string_view const& msg, AccountID const& account) override
+    {
+#ifdef DEBUG_OUTPUT
+        auto j = getJournal().error();
+#else
+        auto j = getJournal().trace();
+#endif
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+        auto const accountStr = toBase58(account);
+
+        j << "WAMR TRACE ACCOUNT: " << msg << " " << accountStr;
+        return msg.size() + accountStr.size();
+    }
+
+    Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data) override
     {
 #ifdef DEBUG_OUTPUT
@@ -465,6 +482,19 @@ public:
         j << std::endl;
 #endif
         return msg.size() + s.size();
+    }
+
+    Expected<int32_t, HostFunctionError>
+    traceAmount(std::string_view const& msg, STAmount const& amount) override
+    {
+#ifdef DEBUG_OUTPUT
+        auto j = getJournal().error();
+#else
+        auto j = getJournal().trace();
+#endif
+        auto const amountStr = amount.getFullText();
+        j << "WAMR TRACE AMOUNT: " << msg << " " << amountStr;
+        return msg.size() + amountStr.size();
     }
 
     Expected<Bytes, HostFunctionError>
