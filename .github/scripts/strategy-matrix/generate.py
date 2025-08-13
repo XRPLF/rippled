@@ -111,15 +111,15 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
         # or debian-bookworm-gcc-12-amd64-release-unity.
         config_name = os['distro_name']
         if (n := os['distro_version']) != '':
-            config_name = f'{config_name}-{n}'
+            config_name += f'-{n}'
         if (n := os['compiler_name']) != '':
-            config_name = f'{config_name}-{n}'
+            config_name += f'-{n}'
         if (n := os['compiler_version']) != '':
-            config_name = f'{config_name}-{n}'
-        config_name = f'{config_name}-{architecture['platform'][architecture['platform'].find('/')+1:]}'
-        config_name = f'{config_name}-{build_type.lower()}'
+            config_name += f'-{n}'
+        config_name += f'-{architecture['platform'][architecture['platform'].find('/')+1:]}'
+        config_name += f'-{build_type.lower()}'
         if '-Dunity=ON' in cmake_args:
-            config_name = f'{config_name}-unity'
+            config_name += '-unity'
 
         configurations.append({
             'architecture': architecture,
