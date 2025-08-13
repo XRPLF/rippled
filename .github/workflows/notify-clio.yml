@@ -6,15 +6,6 @@ name: Notify Clio
 # This workflow can only be triggered by other workflows.
 on:
   workflow_call:
-    inputs:
-      conan_remote_name:
-        description: 'The name of the Conan remote to use.'
-        required: true
-        type: string
-      conan_remote_url:
-        description: 'The URL of the Conan endpoint to use.'
-        required: true
-        type: string
     secrets:
       clio_notify_token:
         description: 'The GitHub token to notify Clio about new versions.'
@@ -34,6 +25,10 @@ defaults:
   run:
     shell: bash
 
+env:
+  CONAN_REMOTE_NAME: xrplf
+  CONAN_REMOTE_URL: https://conan.ripplex.io
+
 jobs:
   upload:
     runs-on: ubuntu-latest
@@ -50,18 +45,18 @@ jobs:
           echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" >> "${GITHUB_OUTPUT}"
       - name: Add Conan remote
         run: |
-          echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
-          conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+          echo "Adding Conan remote '${{ env.CONAN_REMOTE_NAME }}' at ${{ env.CONAN_REMOTE_URL }}."
+          conan remote add --index 0 --force ${{ env.CONAN_REMOTE_NAME }} ${{ env.CONAN_REMOTE_URL }}
           echo "Listing Conan remotes."
           conan remote list
       - name: Log into Conan remote
-        run: conan remote login ${{ inputs.conan_remote_name }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
+        run: conan remote login ${{ env.CONAN_REMOTE_NAME }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
       - name: Upload package
         run: |
           echo "Exporting package to channel ${{ steps.generate.outputs.channel }}"
           conan export --channel=${{ steps.generate.outputs.channel }} .
           echo "Uploading package version ${{ steps.generate.outputs.version }} on channel ${{ steps.generate.outputs.channel }}"
-          conan upload --confirm --check --remote=${{ inputs.conan_remote_name }} xrpl/${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.channel }}
+          conan upload --confirm --check --remote=${{ env.CONAN_REMOTE_NAME }} xrpl/${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.channel }}
     outputs:
       channel: ${{ steps.generate.outputs.channel }}
       version: ${{ steps.generate.outputs.version }}

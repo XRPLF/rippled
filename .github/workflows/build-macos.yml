@@ -10,14 +10,6 @@ on:
         required: false
         type: string
         default: '.build'
-      conan_remote_name:
-        description: 'The name of the Conan remote to use.'
-        required: true
-        type: string
-      conan_remote_url:
-        description: 'The URL of the Conan endpoint to use.'
-        required: true
-        type: string
       dependencies_force_build:
         description: 'Force building of all dependencies.'
         required: false
@@ -110,8 +102,6 @@ jobs:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
           conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
-          conan_remote_url: ${{ inputs.conan_remote_url }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
           config_name: ${{ matrix.config_name }}

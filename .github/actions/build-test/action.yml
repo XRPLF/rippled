@@ -10,7 +10,10 @@ inputs:
   build_type:
     description: 'The build type to use.'
     required: true
-    type: string
+    type: choice
+    options:
+      - 'Debug'
+      - 'Release'
   cmake_args:
     description: 'Additional arguments to pass to CMake.'
     required: false
@@ -50,7 +53,7 @@ runs:
       run: |
         echo 'Configuring CMake.'
         cmake \
-          ${{ format('-G "{0}"', inputs.cmake_generator) }} \
+          --generator ${{ inputs.cmake_generator }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
           ${{ inputs.cmake_args }} \
@@ -60,10 +63,12 @@ runs:
       working-directory: ${{ inputs.build_dir }}
       run: |
         echo 'Building binary.'
-        cmake --build . \
-              --config ${{ inputs.build_type }} \
-              --parallel $(nproc) \
-              --target ${{ inputs.cmake_target }}
+        cmake \
+          --build \
+          --config ${{ inputs.build_type }} \
+          --parallel $(nproc) \
+          --target ${{ inputs.cmake_target }} \
+          .
     - name: Check linking
       if: ${{ inputs.os == 'Linux' }}
       shell: bash
