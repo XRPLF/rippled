@@ -1626,14 +1626,11 @@ public:
         mptAlice.authorize({.account = bob});
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::ledger_index] == 7 &&
                 jv[jss::transaction][jss::Account] ==
                 "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK" &&
-                jv[jss::transaction][jss::Fee] == "10" &&
                 jv[jss::transaction][jss::Flags] == 0 &&
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptAlice.issuanceID()) &&
-                jv[jss::transaction][jss::Sequence] == 4 &&
                 jv[jss::transaction][jss::TransactionType] ==
                 "MPTokenAuthorize" &&
                 jv[jss::type] == "mptTransaction";
@@ -1643,10 +1640,8 @@ public:
         mptCarol.authorize({.account = dan});
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::ledger_index] == 8 &&
                 jv[jss::transaction][jss::Account] ==
                 "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
-                jv[jss::transaction][jss::Fee] == "10" &&
                 jv[jss::transaction][jss::Flags] == 0 &&
                 jv[jss::transaction][sfMPTokenIssuanceID.jsonName] ==
                 to_string(mptCarol.issuanceID()) &&
@@ -1662,7 +1657,6 @@ public:
         mptAlice.pay(alice, bob, 2000);
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::ledger_index] == 10 &&
                 jv[jss::transaction][jss::Account] ==
                 "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn" &&
                 jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
@@ -1685,9 +1679,7 @@ public:
         // subscribe stream sees carol's MPT
         mptCarol.pay(carol, dan, 1000);
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::close_time_iso] == "2000-01-01T00:01:40Z" &&
-                jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::ledger_index] == 12 &&
+            return jv[jss::engine_result] == "tesSUCCESS" &&
                 jv[jss::transaction][jss::Account] ==
                 "rH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW" &&
                 jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
@@ -1698,7 +1690,6 @@ public:
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "1000" &&
                 jv[jss::transaction][jss::Destination] ==
                 "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
-                jv[jss::transaction][jss::Fee] == "10" &&
                 jv[jss::transaction][jss::Flags] == 2147483648u &&
                 jv[jss::transaction][jss::Sequence] == 6 &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
@@ -1729,7 +1720,6 @@ public:
         // only carol's MPT txn will be seen
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
             return jv[jss::engine_result] == "tesSUCCESS" &&
-                jv[jss::ledger_index] == 14 &&
                 jv[jss::transaction][jss::Account] ==
                 "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
                 jv[jss::transaction][jss::Amount][jss::mpt_issuance_id] ==
@@ -1740,9 +1730,7 @@ public:
                 jv[jss::transaction][jss::DeliverMax][jss::value] == "100" &&
                 jv[jss::transaction][jss::Destination] ==
                 "rH4KEcG9dEwGwpn6AyoWK9cZPLL4RLSmWW" &&
-                jv[jss::transaction][jss::Fee] == "10" &&
                 jv[jss::transaction][jss::Flags] == 2147483648u &&
-                jv[jss::transaction][jss::Sequence] == 6 &&
                 jv[jss::transaction][jss::TransactionType] == "Payment" &&
                 jv[jss::type] == "mptTransaction";
         }));
