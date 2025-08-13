@@ -359,7 +359,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
         testErrors();
         testSimpleRpc();
         testVoteAndBid(all);
@@ -369,7 +369,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AMMInfo, app, ripple);
+BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

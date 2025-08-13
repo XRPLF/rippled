@@ -115,7 +115,7 @@ struct PseudoTx_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const xrpFees{featureXRPFees};
 
         testPrevented(all - featureXRPFees);

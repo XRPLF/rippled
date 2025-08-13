@@ -8075,7 +8075,7 @@ public:
     run(std::uint32_t instance, bool last = false)
     {
         using namespace test::jtx;
-        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const all{testable_amendments()};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
         static std::array<FeatureBitset, 8> const feats{
@@ -8171,13 +8171,13 @@ class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenBaseUtil, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenDisallowIncoming, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOfixV1, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, app, ripple, 2);
 
 }  // namespace ripple

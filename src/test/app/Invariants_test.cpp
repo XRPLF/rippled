@@ -78,7 +78,7 @@ class Invariants_test : public beast::unit_test::suite
         Preclose const& preclose = {})
     {
         using namespace test::jtx;
-        FeatureBitset amendments = supported_amendments() |
+        FeatureBitset amendments = testable_amendments() |
             featureInvariantsV1_1 | featureSingleAssetVault;
         Env env{*this, amendments};
 
@@ -1626,6 +1626,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Invariants, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(Invariants, app, ripple);
 
 }  // namespace ripple

@@ -25,6 +25,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <memory>
 
 namespace ripple {
 

@@ -1,0 +1,34 @@
+{% set os = detect_api.detect_os() %}
+{% set arch = detect_api.detect_arch() %}
+{% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
+{% set compiler_version = version %}
+{% if os == "Linux" %}
+{% set compiler_version = detect_api.default_compiler_version(compiler, version) %}
+{% endif %}
+
+[settings]
+os={{ os }}
+arch={{ arch }}
+build_type=Debug
+compiler={{compiler}}
+compiler.version={{ compiler_version }}
+compiler.cppstd=20
+{% if os == "Windows" %}
+compiler.runtime=static
+{% else %}
+compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
+{% endif %}
+
+[conf]
+{% if compiler == "clang" and compiler_version >= 19 %}
+tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
+{% endif %}
+{% if compiler == "apple-clang" and compiler_version >= 17 %}
+tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
+{% endif %}
+{% if compiler == "gcc" and compiler_version < 13 %}
+tools.build:cxxflags=['-Wno-restrict']
+{% endif %}
+
+[tool_requires]
+!cmake/*: cmake/[>=3 <4]
