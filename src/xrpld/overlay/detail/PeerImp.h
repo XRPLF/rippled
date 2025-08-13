@@ -175,6 +175,7 @@ private:
     boost::beast::http::fields const& headers_;
     std::queue<std::shared_ptr<Message>> send_queue_;
     bool gracefulClose_ = false;
+    bool shutdown_ = false;
     int large_sendq_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
@@ -437,37 +438,78 @@ public:
     }
 
 private:
-    /** @brief Closes the connection and logs the reason for failure.
+    /**
+     * @brief Handles a failure associated with a specific error code.
      *
-     * @param name A string identifying the operation or context of the failure.
-     * @param ec The `error_code` associated with the failure.
-     * @note This operation is idempotent; calling it on an already closed
-     * socket has no effect.
-     * @note Must be called on the peer's strand.
+     * This function is called when an operation fails with an error code. It
+     * logs the warning message and gracefully shutdowns the connection.
+     *
+     * The function will do nothing if the connection is already closed or if a
+     * shutdown is already in progress.
+     *
+     * @param name The name of the operation that failed (e.g., "read",
+     * "write").
+     * @param ec The error code associated with the failure.
+     * @note This function must be called from within the object's strand.
      */
     void
     fail(std::string const& name, error_code ec);
 
-    /** @brief Closes the connection and logs a descriptive reason.
+    /**
+     * @brief Handles a failure described by a reason string.
      *
-     * @param reason A human-readable string explaining why the peer connection
-     * is being terminated.
-     * @note This operation is idempotent; calling it on an already closed
-     * socket has no effect.
-     * @note Must be called on the peer's strand.
+     * This overload is used for logical errors or protocol violations not
+     * associated with a specific error code. It logs a warning with the
+     * given reason, then initiates a graceful shutdown.
+     *
+     * The function will do nothing if the connection is already closed or if a
+     * shutdown is already in progress.
+     *
+     * @param reason A descriptive string explaining the reason for the failure.
+     * @note This function must be called from within the object's strand.
      */
     void
     fail(std::string const& reason);
 
-    /** @brief Forcibly terminates the peer connection and performs cleanup.
+    /**
+     * @brief Initiates a graceful, timed, asynchronous SSL shutdown.
      *
-     * This function terminates the peer connection. It performs graceful SSL
-     * shutdown, closes the underlying network socket and cancels pending
-     * timers.
+     * This function begins the process of closing the peer connection securely.
+     * It first sets a timer to prevent the shutdown from hanging
+     * indefinitely. It then calls `async_shutdown` to perform the SSL shutdown
+     * handshake. The completion of this operation is handled by the
+     * `onShutdown` callback.
      *
-     * @note This operation is idempotent; it's safe to call on a connection
-     * that is already closed.
-     * @note Must be called on the peer's strand.
+     * @note This function must be called from within the object's strand.
+     * It is safe to call if the socket is already closed.
+     */
+    void
+    shutdown();
+    /**
+     * @brief Handles the completion of the asynchronous SSL shutdown.
+     *
+     * This function is the callback for the `async_shutdown` operation started
+     * in `shutdown()`. Its first action is to cancel the timer. It
+     * then inspects the error code to determine the outcome.
+     *
+     * Regardless of the result, this function proceeds to call `close()` to
+     * ensure the underlying socket is fully closed.
+     *
+     * @param ec The error code resulting from the `async_shutdown` operation.
+     */
+    void
+    onShutdown(error_code ec);
+
+    /**
+     * @brief Forcibly closes the underlying socket connection.
+     *
+     * This function provides the final, non-graceful shutdown of the peer
+     * connection. It ensures any pending timers are cancelled and then
+     * immediately closes the TCP socket, bypassing the SSL shutdown handshake.
+     *
+     * After closing, it notifies the overlay manager of the disconnection.
+     *
+     * @note This function must be called from within the object's strand.
      */
     void
     close();
@@ -484,22 +526,47 @@ private:
      * messages are still pending, the actual socket closure is deferred until
      * the send queue is drained by the I/O processing logic.
      *
-     * @note This operation is idempotent; calling it on a connection that is
-     * already closed or in the process of closing has no effect.
-     * @note Must be called on the peer's strand.
+     * @note This function must be called from within the object's strand.
      */
     void
     gracefulClose();
 
+    /**
+     * @brief Sets and starts the peer timer.
+     *
+     * This function starts timer, which is used to detect inactivity
+     * and prevent stalled connections. It sets the timer to expire after the
+     * predefined `peerTimerInterval`.
+     *
+     * @note This function will terminate the connection in case of any errors.
+     */
     void
     setTimer();
 
+    /**
+     * @brief Handles the expiration of the peer activity timer.
+     *
+     * This callback is invoked when the timer set by `setTimer` expires. It
+     * watches the peer connection, checking for various timeout and health
+     * conditions.
+     *
+     * @param ec The error code associated with the timer's expiration.
+     * `operation_aborted` is expected if the timer was cancelled.
+     */
+    void
+    onTimer(error_code const& ec);
+
+    /**
+     * @brief Cancels any pending wait on the peer activity timer.
+     *
+     * This function is called to stop the timer. It gracefully manages any
+     * errors that might occur during the cancellation process.
+     */
+    void
+    cancelTimer() noexcept;
+
     static std::string
     makePrefix(id_t id);
-
-    // Called when the timer wait completes
-    void
-    onTimer(boost::system::error_code const& ec);
 
     void
     doAccept();

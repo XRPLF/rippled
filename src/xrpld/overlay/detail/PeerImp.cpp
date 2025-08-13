@@ -41,6 +41,7 @@
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/beast/core/ostream.hpp>
 
 #include <algorithm>
@@ -215,22 +216,23 @@ PeerImp::stop()
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::stop, shared_from_this()));
-    if (socket_.is_open())
+    if (!socket_.is_open())
+        return;
+
+    // The rationale for using different severity levels is that
+    // outbound connections are under our control and may be logged
+    // at a higher level, but inbound connections are more numerous and
+    // uncontrolled so to prevent log flooding the severity is reduced.
+    if (inbound_)
     {
-        // The rationale for using different severity levels is that
-        // outbound connections are under our control and may be logged
-        // at a higher level, but inbound connections are more numerous and
-        // uncontrolled so to prevent log flooding the severity is reduced.
-        if (inbound_)
-        {
-            JLOG(journal_.debug()) << "Stop";
-        }
-        else
-        {
-            JLOG(journal_.info()) << "Stop";
-        }
+        JLOG(journal_.debug()) << "stop: Stop";
     }
-    close();
+    else
+    {
+        JLOG(journal_.info()) << "stop: Stop";
+    }
+
+    shutdown();
 }
 
 //------------------------------------------------------------------------------
@@ -241,7 +243,8 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
 
-    if (gracefulClose_)
+    // we are in progress of closing the connection
+    if (shutdown_ || gracefulClose_)
         return;
 
     if (!socket_.is_open())
@@ -574,35 +577,21 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 //------------------------------------------------------------------------------
 
 void
-PeerImp::close()
+PeerImp::fail(std::string const& name, error_code ec)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::close : strand in this thread");
+        "ripple::PeerImp::fail : strand in this thread");
 
-    // the socket is closed, this may due to concurrent calls to close()
-    if (!socket_.is_open())
+    if (!socket_.is_open() || shutdown_)
         return;
 
-    // gracefully shutdown the SSL socket, performing a shutdown handshake
-    error_code ec;
-    timer_.cancel(ec);
-    stream_.shutdown(ec);
-    socket_.close(ec);
-    overlay_.incPeerDisconnect();
+    JLOG(journal_.warn()) << name << " from "
+                          << toBase58(TokenType::NodePublic, publicKey_)
+                          << " at " << remote_address_.to_string() << ": "
+                          << ec.message();
 
-    // The rationale for using different severity levels is that
-    // outbound connections are under our control and may be logged
-    // at a higher level, but inbound connections are more numerous and
-    // uncontrolled so to prevent log flooding the severity is reduced.
-    if (inbound_)
-    {
-        JLOG(journal_.debug()) << "Closed";
-    }
-    else
-    {
-        JLOG(journal_.info()) << "Closed";
-    }
+    shutdown();
 }
 
 void
@@ -616,32 +605,18 @@ PeerImp::fail(std::string const& reason)
                 shared_from_this(),
                 reason));
 
-    if (!socket_.is_open())
+    if (!socket_.is_open() || shutdown_)
         return;
 
-    std::string const n = name();
-    JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
-                          << " failed: " << reason;
+    // Call to name() locks, log only if the message will be outputed
+    if (journal_.active(beast::severities::kWarning))
+    {
+        std::string const n = name();
+        JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
+                              << " failed: " << reason;
+    }
 
-    close();
-}
-
-void
-PeerImp::fail(std::string const& name, error_code ec)
-{
-    XRPL_ASSERT(
-        strand_.running_in_this_thread(),
-        "ripple::PeerImp::fail : strand in this thread");
-
-    if (!socket_.is_open())
-        return;
-
-    JLOG(journal_.warn()) << name << " from "
-                          << toBase58(TokenType::NodePublic, publicKey_)
-                          << " at " << remote_address_.to_string() << ": "
-                          << ec.message();
-
-    close();
+    shutdown();
 }
 
 void
@@ -661,8 +636,85 @@ PeerImp::gracefulClose()
     if (send_queue_.size() > 0)
         return;
 
+    shutdown();
+}
+
+void
+PeerImp::shutdown()
+{
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::PeerImp::shutdown : strand in this thread");
+
+    if (!socket_.is_open())
+        return;
+
+    shutdown_ = true;
+
+    setTimer();
+    // gracefully shutdown the SSL socket, performing a shutdown handshake
+    stream_.async_shutdown(bind_executor(
+        strand_,
+        std::bind(
+            &PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
+};
+
+void
+PeerImp::onShutdown(error_code ec)
+{
+    cancelTimer();
+
+    if (ec)
+    {
+        // eof indicates that the stream was cleanly closed
+        // operation_aborted indicates an expired timer (slow shutdown)
+        // stream_truncated indicates the underlying tcp connection was closed
+        // broken_pipe the peer already closed the connection
+        // other errors should be logged
+        if (ec != boost::asio::error::eof &&
+            ec != boost::asio::error::operation_aborted &&
+            ec != boost::asio::ssl::error::stream_truncated &&
+            ec != boost::asio::error::broken_pipe)
+        {
+            JLOG(journal_.warn()) << "onShutdown: " << ec.message();
+        }
+    }
+
     close();
 }
+
+void
+PeerImp::close()
+{
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::PeerImp::close : strand in this thread");
+
+    if (!socket_.is_open())
+        return;
+
+    cancelTimer();
+
+    error_code ec;
+    socket_.close(ec);
+
+    overlay_.incPeerDisconnect();
+
+    // The rationale for using different severity levels is that
+    // outbound connections are under our control and may be logged
+    // at a higher level, but inbound connections are more numerous and
+    // uncontrolled so to prevent log flooding the severity is reduced.
+    if (inbound_)
+    {
+        JLOG(journal_.debug()) << "close: Closed";
+    }
+    else
+    {
+        JLOG(journal_.info()) << "close: Closed";
+    }
+}
+
+//------------------------------------------------------------------------------
 
 void
 PeerImp::setTimer()
@@ -673,8 +725,7 @@ PeerImp::setTimer()
     }
     catch (std::exception const& ex)
     {
-        JLOG(journal_.error())
-            << "setTimer: error expiring the timer: " << ex.what();
+        JLOG(journal_.error()) << "setTimer: " << ex.what();
         return close();
     };
 
@@ -682,16 +733,6 @@ PeerImp::setTimer()
         strand_,
         std::bind(
             &PeerImp::onTimer, shared_from_this(), std::placeholders::_1)));
-}
-
-//------------------------------------------------------------------------------
-
-std::string
-PeerImp::makePrefix(id_t id)
-{
-    std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
-    return ss.str();
 }
 
 void
@@ -707,6 +748,14 @@ PeerImp::onTimer(error_code const& ec)
     {
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
+        return close();
+    }
+
+    // the timer expired before the shutdown completed
+    // force close the connection
+    if (shutdown_)
+    {
+        JLOG(journal_.warn()) << "onTimer: shutdown timer expired";
         return close();
     }
 
@@ -746,6 +795,27 @@ PeerImp::onTimer(error_code const& ec)
     send(std::make_shared<Message>(message, protocol::mtPING));
 
     setTimer();
+}
+
+void
+PeerImp::cancelTimer() noexcept
+{
+    try
+    {
+        timer_.cancel();
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(journal_.error()) << "cancelTimer: " << ex.what();
+    }
+}
+
+std::string
+PeerImp::makePrefix(id_t id)
+{
+    std::stringstream ss;
+    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
+    return ss.str();
 }
 
 //------------------------------------------------------------------------------
@@ -982,7 +1052,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     // finish sending messages to the peer. If we hit this code, that means all
     // messages were sent, finish closing the connection
     if (gracefulClose_)
-        close();
+        shutdown();
 }
 
 //------------------------------------------------------------------------------
