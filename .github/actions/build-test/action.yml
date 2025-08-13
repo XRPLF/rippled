@@ -10,7 +10,10 @@ inputs:
   build_type:
     description: 'The build type to use.'
     required: true
-    type: string
+    type: choice
+    options:
+      - 'Debug'
+      - 'Release'
   cmake_args:
     description: 'Additional arguments to pass to CMake.'
     required: false
@@ -28,7 +31,11 @@ inputs:
   os:
     description: 'The operating system to use for the build (linux, macos, or windows).'
     required: true
-    type: string
+    type: choice
+    options:
+      - 'linux'
+      - 'macos'
+      - 'windows'
 
 runs:
   using: composite
