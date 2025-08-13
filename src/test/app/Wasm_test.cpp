@@ -670,11 +670,15 @@ struct Wasm_test : public beast::unit_test::suite
         std::string const funcName("finish");
         TestHostFunctions hfs(env, 0);
 
+        auto const allowance = 109'091;
         auto re =
-            runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+            runEscrowWasm(wasm, funcName, {}, &hfs, allowance, env.journal);
 
         if (BEAST_EXPECT(re.has_value()))
+        {
             BEAST_EXPECT(re->result);
+            BEAST_EXPECTS(re->cost == allowance, std::to_string(re->cost));
+        }
     }
 
     void

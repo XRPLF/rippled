@@ -2363,12 +2363,6 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             Env env{*this};
-            // Env env{
-            //     *this,
-            //     envconfig(),
-            //     features,
-            //     nullptr,
-            //     beast::severities::kTrace};
             env.fund(XRP(10000), alice, carol);
 
             BEAST_EXPECT(env.seq(alice) == 4);

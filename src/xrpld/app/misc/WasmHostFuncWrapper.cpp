@@ -139,23 +139,6 @@ getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 }
 
 template <class IW>
-Expected<MPTID, HostFunctionError>
-getDataMPTID(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
-{
-    auto const slice = getDataSlice(runtime, params, i);
-    if (!slice)
-    {
-        return Unexpected(slice.error());
-    }
-
-    if (slice->size() != MPTID::bytes)
-    {
-        return Unexpected(HostFunctionError::INVALID_PARAMS);
-    }
-    return MPTID::fromVoid(slice->data());
-}
-
-template <class IW>
 Expected<uint256, HostFunctionError>
 getDataUInt256(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
@@ -220,6 +203,7 @@ getDataAsset(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 
     if (slice->size() == MPTID::bytes)
     {
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
         auto const mptid = MPTID::fromVoid(slice->data());
         return Asset{mptid};
     }
@@ -1122,11 +1106,17 @@ mptokenKeylet_wrap(
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const mptid = getDataMPTID(runtime, params, index);
-    if (!mptid)
+    auto const slice = getDataSlice(runtime, params, index);
+    if (!slice)
     {
-        return hfResult(results, mptid.error());
+        return hfResult(results, slice.error());
     }
+
+    if (slice->size() != MPTID::bytes)
+    {
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
+    auto const mptid = MPTID::fromVoid(slice->data());
 
     auto const holder = getDataAccountID(runtime, params, index);
     if (!holder)
@@ -1138,7 +1128,7 @@ mptokenKeylet_wrap(
         runtime,
         params,
         results,
-        hf->mptokenKeylet(mptid.value(), holder.value()),
+        hf->mptokenKeylet(mptid, holder.value()),
         index);
 }
 
