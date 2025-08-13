@@ -102,14 +102,7 @@ runs:
           --options:host '&:tests=True' \
           --options:host '&:xrpld=True' \
           --settings:all build_type=${{ inputs.build_type }} \
-          --format=json .. > build.json
-    - name: Upload build manifest
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-      with:
-        name: ${{ inputs.config_name }}-build.json
-        path: ${{ inputs.build_dir }}/build.json
-        if-no-files-found: error
-        retention-days: 30
+          --format=json ..
     - name: Upload Conan dependencies
       if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
       shell: bash
@@ -118,13 +111,4 @@ runs:
         echo "Logging into Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
         conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
         echo 'Uploading dependencies.'
-        conan list --graph=build.json --graph-binaries=build --format=json > pkgs.json
-        conan upload --list=pkgs.json --confirm --check ${{ inputs.force_upload && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}
-    - name: Upload package manifest
-      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
-      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-      with:
-        name: ${{ inputs.config_name }}-pkgs.json
-        path: ${{ inputs.build_dir }}/pkgs.json
-        if-no-files-found: error
-        retention-days: 30
+        conan upload '*' --confirm --check ${{ inputs.force_upload && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}
