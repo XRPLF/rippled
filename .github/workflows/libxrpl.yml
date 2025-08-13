@@ -1,13 +1,13 @@
 name: Check libXRPL compatibility with Clio
 env:
-  CONAN_URL: https://conan.ripplex.io
-  CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.CONAN_USERNAME }}
-  CONAN_PASSWORD_XRPLF: ${{ secrets.CONAN_TOKEN }}
+  CONAN_REMOTE_URL: https://conan.ripplex.io
+  CONAN_LOGIN_USERNAME_XRPLF: ${{ secrets.CONAN_REMOTE_USERNAME }}
+  CONAN_PASSWORD_XRPLF: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 on:
   pull_request:
     paths:
-      - 'src/libxrpl/protocol/BuildInfo.cpp'
-      - '.github/workflows/libxrpl.yml'
+      - "src/libxrpl/protocol/BuildInfo.cpp"
+      - ".github/workflows/libxrpl.yml"
     types: [opened, reopened, synchronize, ready_for_review]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,7 +29,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           running-workflow-name: wait-for-check-regexp
-          check-regexp: '(dependencies|test).*linux.*' # Ignore windows and mac tests but make sure linux passes
+          check-regexp: "(dependencies|test).*linux.*" # Ignore windows and mac tests but make sure linux passes
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           wait-interval: 10
       - name: Checkout
@@ -46,10 +46,10 @@ jobs:
       - name: Add Conan remote
         shell: bash
         run: |
+          echo "Adding Conan remote 'xrplf' at ${{ env.CONAN_REMOTE_URL }}."
+          conan remote add xrplf ${{ env.CONAN_REMOTE_URL }} --insert 0 --force 
+          echo "Listing Conan remotes."
           conan remote list
-          conan remote remove xrplf || true
-          # Do not quote the URL. An empty string will be accepted (with a non-fatal warning), but a missing argument will not.
-          conan remote add xrplf ${{ env.CONAN_URL }} --insert 0
       - name: Parse new version
         id: version
         shell: bash

@@ -58,10 +58,10 @@ public:
         // Insert an item, retrieve it, and age it so it gets purged.
         {
             BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            BEAST_EXPECT(c.size() == 0);
             BEAST_EXPECT(!c.insert(1, "one"));
             BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            BEAST_EXPECT(c.size() == 1);
 
             {
                 std::string s;
@@ -72,7 +72,7 @@ public:
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            BEAST_EXPECT(c.size() == 0);
         }
 
         // Insert an item, maintain a strong pointer, age it, and
@@ -80,7 +80,7 @@ public:
         {
             BEAST_EXPECT(!c.insert(2, "two"));
             BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            BEAST_EXPECT(c.size() == 1);
 
             {
                 auto p = c.fetch(2);
@@ -88,14 +88,14 @@ public:
                 ++clock;
                 c.sweep();
                 BEAST_EXPECT(c.getCacheSize() == 0);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
             }
 
             // Make sure its gone now that our reference is gone
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            BEAST_EXPECT(c.size() == 0);
         }
 
         // Insert the same key/value pair and make sure we get the same result
@@ -111,7 +111,7 @@ public:
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            BEAST_EXPECT(c.size() == 0);
         }
 
         // Put an object in but keep a strong pointer to it, advance the clock a
@@ -121,24 +121,24 @@ public:
             // Put an object in
             BEAST_EXPECT(!c.insert(4, "four"));
             BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            BEAST_EXPECT(c.size() == 1);
 
             {
                 // Keep a strong pointer to it
                 auto const p1 = c.fetch(4);
                 BEAST_EXPECT(p1 != nullptr);
                 BEAST_EXPECT(c.getCacheSize() == 1);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
                 // Advance the clock a lot
                 ++clock;
                 c.sweep();
                 BEAST_EXPECT(c.getCacheSize() == 0);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
                 // Canonicalize a new object with the same key
                 auto p2 = std::make_shared<std::string>("four");
                 BEAST_EXPECT(c.canonicalize_replace_client(4, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
                 // Make sure we get the original object
                 BEAST_EXPECT(p1.get() == p2.get());
             }
@@ -146,11 +146,11 @@ public:
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            BEAST_EXPECT(c.size() == 0);
         }
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TaggedCache, common, ripple);
+BEAST_DEFINE_TESTSUITE(TaggedCache, basics, ripple);
 
 }  // namespace ripple
