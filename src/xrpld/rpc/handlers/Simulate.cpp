@@ -445,7 +445,6 @@ simulateTxn(
                 for (int i = 0; i < batchResults->size(); ++i)
                 {
                     auto const& innerResult = (*batchResults)[i];
-                    // TODO: bad, doesn't handle skipping some inner txs
                     jvTransactions.append(processResult(
                         innerResult,
                         txn.getFieldArray(sfRawTransactions)[i],
@@ -519,11 +518,6 @@ processTransaction(
         return Unexpected(jvResult);
     }
 
-    // if (stTx->getTxnType() == ttBATCH)
-    // {
-    //     return Unexpected(RPC::make_error(rpcNOT_IMPL));
-    // }
-
     std::string reason;
     return std::make_shared<Transaction>(stTx, reason, context.app);
 }
@@ -531,8 +525,8 @@ processTransaction(
 // {
 //   tx_blob: <string> XOR tx_json: <object> XOR tx_hash: <string> XOR ctid:
 //   <string> XOR
-//       transactions: [ <object> ] // array of objects with one of
-//       tx_json/tx_blob/tx_hash/ctid,
+//       transactions: [ <object> ]
+//         (each <object contains> one of tx_json/tx_blob/tx_hash/ctid),
 //   binary: <bool>
 // }
 Json::Value
