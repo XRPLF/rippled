@@ -102,7 +102,6 @@ ConnectAttempt::close()
     cancelTimer();
 
     error_code ec;
-    stream_.shutdown(ec);
     socket_.close(ec);
 
     JLOG(journal_.debug()) << "Closed";

@@ -223,14 +223,7 @@ PeerImp::stop()
     // outbound connections are under our control and may be logged
     // at a higher level, but inbound connections are more numerous and
     // uncontrolled so to prevent log flooding the severity is reduced.
-    if (inbound_)
-    {
-        JLOG(journal_.debug()) << "stop: Stop";
-    }
-    else
-    {
-        JLOG(journal_.info()) << "stop: Stop";
-    }
+    JLOG((inbound_ ? journal_.debug() : journal_.info())) << "stop: Stop";
 
     shutdown();
 }
@@ -704,14 +697,7 @@ PeerImp::close()
     // outbound connections are under our control and may be logged
     // at a higher level, but inbound connections are more numerous and
     // uncontrolled so to prevent log flooding the severity is reduced.
-    if (inbound_)
-    {
-        JLOG(journal_.debug()) << "close: Closed";
-    }
-    else
-    {
-        JLOG(journal_.info()) << "close: Closed";
-    }
+    JLOG((inbound_ ? journal_.debug() : journal_.info())) << "close: Closed";
 }
 
 //------------------------------------------------------------------------------
