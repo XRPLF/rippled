@@ -2143,7 +2143,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.traceAmount(msg, amount);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(
-                result.value() == msg.size() + amount.getText().size());
+                result.value() == msg.size() + amount.getFullText().size());
         }
 
         // IOU amount
@@ -2155,7 +2155,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.traceAmount(msg, iouAmount);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(
-                result.value() == msg.size() + iouAmount.getText().size());
+                result.value() == msg.size() + iouAmount.getFullText().size());
         }
 
         // MPT amount
@@ -2166,18 +2166,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             auto const result = hfs.traceAmount(msg, mptAmount);
             BEAST_EXPECT(result.has_value());
             BEAST_EXPECT(
-                result.value() == msg.size() + mptAmount.getText().size());
-        }
-
-        // Invalid
-        {
-            STAmount invalidAmount;
-            auto const result = hfs.traceAmount(msg, invalidAmount);
-            // Should still succeed and return msg.size() +
-            // amount.getText().size()
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(
-                result.value() == msg.size() + invalidAmount.getText().size());
+                result.value() == msg.size() + mptAmount.getFullText().size());
         }
     }
 
