@@ -55,13 +55,15 @@ class WamrConan(ConanFile):
         tc.variables["WAMR_BUILD_AOT"] = 0
         tc.variables["WAMR_BUILD_JIT"] = 0
         tc.variables["WAMR_BUILD_FAST_JIT"] = 0
+        tc.variables["WAMR_BUILD_SIMD"] = 0
+        tc.variables["WAMR_BUILD_LIB_PTHREAD"] = 0
+        tc.variables["WAMR_BUILD_LIB_WASI_THREADS"] = 0
+        tc.variables["WAMR_BUILD_TAIL_CALL"] = 1
+        tc.variables["WAMR_BUILD_BULK_MEMORY"] = 0
         tc.variables["WAMR_DISABLE_HW_BOUND_CHECK"] = 1
         tc.variables["WAMR_DISABLE_STACK_HW_BOUND_CHECK"] = 1
         tc.variables["WAMR_BH_LOG"] = "wamr_log_to_rippled"
-        # tc.variables["WAMR_BUILD_FAST_JIT"] = 0 if self.settings.os == "Windows" else 1
-        # ll_dep = self.dependencies["llvm"]
-        # self.output.info(f"-----------package_folder: {type(ll_dep.__dict__)}")
-        # tc.variables["LLVM_DIR"] = os.path.join(ll_dep.package_folder, "lib", "cmake", "llvm")
+        
         tc.generate()
 
         # This generates "foo-config.cmake" and "bar-config.cmake" in self.generators_folder
