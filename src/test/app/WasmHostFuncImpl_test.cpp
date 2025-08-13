@@ -2131,8 +2131,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             BEAST_EXPECT(result) && BEAST_EXPECT(*result == floatIntZero);
         }
 
-        ////////
-
         {
             auto const result =
                 hfs.floatSet(1, IOUAmount::maxExponent + normalExp, 0);
