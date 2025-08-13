@@ -234,11 +234,6 @@ getTxJsonFromHistory(RPC::JsonContext& context, bool const isCurrentLedger)
             return RPC::make_error(rpcTXN_NOT_FOUND);
         }
     }
-    if (!hash)
-    {
-        return RPC::make_param_error(
-            "None of `tx_blob`, `tx_json`, `tx_hash`, or `ctid` included.");
-    }
     using TxPair =
         std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
     auto ec{rpcSUCCESS};
