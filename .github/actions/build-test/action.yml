@@ -83,7 +83,7 @@ runs:
         echo 'Verifying presence of instrumentation.'
         ./rippled --version | grep libvoidstar
     - name: Test the binary
-      if: ${{ inputs.cmake_target != coverage }}
+      if: ${{ inputs.cmake_target != 'coverage' }}
       shell: bash
       working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'windows' && inputs.build_type || '' }}
       run: |
@@ -91,7 +91,7 @@ runs:
         ./rippled --unittest --unittest-jobs $(nproc)
         ctest -j $(nproc) --output-on-failure
     - name: Upload coverage report
-      if: ${{ inputs.cmake_target == coverage && inputs.codecov_token }}
+      if: ${{ inputs.cmake_target == 'coverage' && inputs.codecov_token }}
       uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24
       with:
         disable_search: true

@@ -101,6 +101,18 @@ jobs:
       - name: Install Conan
         if: ${{ inputs.os == 'windows' }}
         run: pip install wheel conan
+      - name: Set up Conan home directory
+        if: ${{ inputs.os == 'macos' }}
+        run: |
+          echo "Setting up Conan home directory."
+          export CONAN_HOME=${{ github.workspace }}/.conan
+          mkdir -p ${CONAN_HOME}
+      - name: Set up Conan home directory
+        if: ${{ inputs.os == 'windows' }}
+        run: |
+          echo "Setting up Conan home directory."
+          set CONAN_HOME=${{ github.workspace }}\.conan
+          mkdir -p ${CONAN_HOME}
       - name: Check configuration
         if: ${{ inputs.os == 'windows' }}
         run: |
