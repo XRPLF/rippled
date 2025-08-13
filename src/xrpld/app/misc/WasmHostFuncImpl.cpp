@@ -487,6 +487,10 @@ WasmHostFunctionsImpl::ammKeylet(Asset const& issue1, Asset const& issue2)
     if (issue1 == issue2)
         return Unexpected(HostFunctionError::INVALID_PARAMS);
 
+    // note: this should be removed with the MPT DEX amendment
+    if (issue1.holds<MPTIssue>() || issue2.holds<MPTIssue>())
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
     auto const keylet = keylet::amm(issue1, issue2);
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }

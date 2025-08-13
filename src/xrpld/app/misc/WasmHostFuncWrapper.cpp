@@ -1620,7 +1620,7 @@ traceAmount_wrap(
     auto const amountSlice = amountSliceOpt.value();
     auto serialIter = SerialIter(amountSlice);
 
-    auto amount = [&]() -> std::optional<STAmount> {
+    auto getAmount = [&]() -> std::optional<STAmount> {
         try
         {
             return STAmount(serialIter, sfGeneric);
@@ -1629,7 +1629,8 @@ traceAmount_wrap(
         {
             return std::nullopt;
         }
-    }();
+    };
+    auto const amount = getAmount();
     if (!amount || !amount.value())
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
 

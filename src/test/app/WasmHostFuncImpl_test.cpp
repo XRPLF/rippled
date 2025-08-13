@@ -1589,6 +1589,11 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             HostFunctionError::INVALID_PARAMS,
             xrpIssue(),
             xrpIssue());
+        COMPARE_KEYLET_FAIL(
+            ammKeylet,
+            HostFunctionError::INVALID_PARAMS,
+            makeMptID(1, env.master.id()),
+            xrpIssue());
 
         // checkKeylet
         COMPARE_KEYLET(checkKeylet, keylet::check, env.master.id(), 1);

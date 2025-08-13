@@ -332,6 +332,17 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
+    ammKeylet(Asset const& issue1, Asset const& issue2) override
+    {
+        if (issue1 == issue2)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        if (issue1.holds<MPTIssue>() || issue2.holds<MPTIssue>())
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        auto const keylet = keylet::amm(issue1, issue2);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
     credentialKeylet(
         AccountID const& subject,
         AccountID const& issuer,
