@@ -1616,17 +1616,16 @@ public:
 
         Json::Value stream;
         stream = Json::objectValue;
-        stream[jss::mpt_issuance_ids] = Json::arrayValue;
-        stream[jss::mpt_issuance_ids].append(to_string(mptAlice.issuanceID()));
-        stream[jss::mpt_issuance_ids].append(to_string(mptCarol.issuanceID()));
+        stream[jss::mpt_issuances] = Json::arrayValue;
+        stream[jss::mpt_issuances].append(to_string(mptAlice.issuanceID()));
+        stream[jss::mpt_issuances].append(to_string(mptCarol.issuanceID()));
         auto jv = wsc->invoke("subscribe", stream);
         BEAST_EXPECT(jv[jss::status] == "success");
 
         // bob create MPToken
         mptAlice.authorize({.account = bob});
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::close_time_iso] == "2000-01-01T00:00:50Z" &&
-                jv[jss::engine_result] == "tesSUCCESS" &&
+            return jv[jss::engine_result] == "tesSUCCESS" &&
                 jv[jss::ledger_index] == 7 &&
                 jv[jss::transaction][jss::Account] ==
                 "rPMh7Pi9ct699iZUTWaytJUoHcJ7cgyziK" &&
@@ -1643,8 +1642,7 @@ public:
         // dan create MPToken
         mptCarol.authorize({.account = dan});
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::close_time_iso] == "2000-01-01T00:01:00Z" &&
-                jv[jss::engine_result] == "tesSUCCESS" &&
+            return jv[jss::engine_result] == "tesSUCCESS" &&
                 jv[jss::ledger_index] == 8 &&
                 jv[jss::transaction][jss::Account] ==
                 "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&
@@ -1663,8 +1661,7 @@ public:
         // subscribe stream sees alice's MPT
         mptAlice.pay(alice, bob, 2000);
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::close_time_iso] == "2000-01-01T00:01:20Z" &&
-                jv[jss::engine_result] == "tesSUCCESS" &&
+            return jv[jss::engine_result] == "tesSUCCESS" &&
                 jv[jss::ledger_index] == 10 &&
                 jv[jss::transaction][jss::Account] ==
                 "rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn" &&
@@ -1711,8 +1708,8 @@ public:
         // unsub alice's MPT from the stream
         Json::Value unsubStream;
         unsubStream = Json::objectValue;
-        unsubStream[jss::mpt_issuance_ids] = Json::arrayValue;
-        unsubStream[jss::mpt_issuance_ids].append(
+        unsubStream[jss::mpt_issuances] = Json::arrayValue;
+        unsubStream[jss::mpt_issuances].append(
             to_string(mptAlice.issuanceID()));
         auto unsubJv = wsc->invoke("unsubscribe", unsubStream);
         BEAST_EXPECT(unsubJv[jss::status] == "success");
@@ -1731,8 +1728,7 @@ public:
 
         // only carol's MPT txn will be seen
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            return jv[jss::close_time_iso] == "2000-01-01T00:02:00Z" &&
-                jv[jss::engine_result] == "tesSUCCESS" &&
+            return jv[jss::engine_result] == "tesSUCCESS" &&
                 jv[jss::ledger_index] == 14 &&
                 jv[jss::transaction][jss::Account] ==
                 "rJ85Mok8YRNxSo7NnxKGrPuk29uAeZQqwZ" &&

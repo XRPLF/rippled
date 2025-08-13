@@ -179,7 +179,7 @@ JSS(cancel_after);            // out: AccountChannels
 JSS(can_delete);              // out: CanDelete
 JSS(mpt_amount);              // out: mpt_holders
 JSS(mpt_issuance_id);         // in: Payment, mpt_holders
-JSS(mpt_issuance_ids);        // in: Subscribe
+JSS(mpt_issuances);           // in: Subscribe
 JSS(mptoken_index);           // out: mpt_holders
 JSS(changes);                 // out: BookChanges
 JSS(channel_id);              // out: AccountChannels
