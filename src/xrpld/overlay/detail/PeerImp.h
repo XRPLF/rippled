@@ -689,6 +689,9 @@ private:
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
+    std::string
+    fingerprint() const;
+
 public:
     //--------------------------------------------------------------------------
     //
@@ -884,7 +887,7 @@ PeerImp::PeerImp(
                FEATURE_VPRR,
                app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
         << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << remote_address_ << " " << id_;
+        << fingerprint() << " " << id_;
 }
 
 template <class FwdIt, class>

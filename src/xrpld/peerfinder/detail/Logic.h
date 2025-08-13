@@ -360,8 +360,7 @@ public:
         beast::IP::Endpoint const& local_endpoint)
     {
         JLOG(m_journal.trace())
-            << beast::leftw(18)
-            << "Logic connected" << slot->fingerprint()
+            << beast::leftw(18) << "Logic connected" << slot->fingerprint()
             << " on local " << local_endpoint;
 
         std::lock_guard _(lock_);
@@ -400,8 +399,7 @@ public:
     activate(SlotImp::ptr const& slot, PublicKey const& key, bool reserved)
     {
         JLOG(m_journal.debug())
-            << beast::leftw(18)
-            << "Logic handshake " << slot->fingerprint()
+            << beast::leftw(18) << "Logic handshake " << slot->remote_endpoint()
             << " with " << (reserved ? "reserved " : "") << "key " << key;
 
         std::lock_guard _(lock_);
@@ -798,8 +796,7 @@ public:
         }
 
         JLOG(m_journal.trace())
-            << beast::leftw(18)
-            << "Endpoints from " << slot->fingerprint()
+            << beast::leftw(18) << "Endpoints from " << slot->fingerprint()
             << " contained " << list.size()
             << ((list.size() > 1) ? " entries" : " entry");
 

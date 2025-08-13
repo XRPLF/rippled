@@ -132,7 +132,7 @@ PeerImp::PeerImp(
                FEATURE_VPRR,
                app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
         << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << publicKey_.fingerprint() << " " << id_;
+        << fingerprint() << " " << id_;
 }
 
 PeerImp::~PeerImp()
@@ -280,8 +280,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
              sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        sink << (n.empty() ? strHex(publicKey_.fingerprint()) : n)
-             << " sendq: " << sendq_size;
+        sink << (n.empty() ? fingerprint() : n) << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -586,7 +585,7 @@ PeerImp::fail(std::string const& name, error_code ec)
         return;
 
     JLOG(journal_.warn()) << name << " from "
-                          << publicKey_.fingerprint() << ": "
+                          << fingerprint() << ": "
                           << ec.message();
 
     shutdown();
@@ -610,8 +609,8 @@ PeerImp::fail(std::string const& reason)
     if (journal_.active(beast::severities::kWarning))
     {
         std::string const n = name();
-        JLOG(journal_.warn()) << (n.empty() ? strHex(publicKey_.fingerprint()) : n)
-                              << " failed: " << reason;
+        JLOG(journal_.warn())
+            << (n.empty() ? fingerprint() : n) << " failed: " << reason;
     }
 
     shutdown();
@@ -825,7 +824,7 @@ PeerImp::doAccept()
         read_buffer_.size() == 0,
         "ripple::PeerImp::doAccept : empty read buffer");
 
-    JLOG(journal_.debug()) << "doAccept: " << publicKey_.fingerprint();
+    JLOG(journal_.debug()) << "doAccept: " << fingerprint();
 
     // a shutdown was initiated before the handshake, there is nothing to do
     if (shutdown_)
@@ -2143,7 +2142,7 @@ PeerImp::onValidatorListMessage(
     if (blobs.empty())
     {
         JLOG(p_journal_.warn()) << "Ignored malformed " << messageType
-                                << " from peer " << publicKey_.fingerprint();
+                                << " from peer " << fingerprint();
         // This shouldn't ever happen with a well-behaved peer
         fee_.update(Resource::feeHeavyBurdenPeer, "no blobs");
         return;
@@ -2151,9 +2150,8 @@ PeerImp::onValidatorListMessage(
 
     auto const hash = sha512Half(manifest, blobs, version);
 
-    JLOG(p_journal_.debug())
-        << "Received " << messageType << " from " << publicKey_.fingerprint()
-        << " (" << id_ << ")";
+    JLOG(p_journal_.debug()) << "Received " << messageType << " from "
+                             << fingerprint() << " (" << id_ << ")";
 
     if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
     {
@@ -2180,8 +2178,8 @@ PeerImp::onValidatorListMessage(
         << "Processed " << messageType << " version " << version << " from "
         << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
                                      : "unknown or invalid publisher")
-        << " from " << publicKey_.fingerprint() << " (" << id_
-        << ") with best result " << to_string(applyResult.bestDisposition());
+        << " from " << fingerprint() << " (" << id_ << ") with best result "
+        << to_string(applyResult.bestDisposition());
 
     // Act based on the best result
     switch (applyResult.bestDisposition())
@@ -2292,50 +2290,49 @@ PeerImp::onValidatorListMessage(
             case ListDisposition::accepted:
                 JLOG(p_journal_.debug())
                     << "Applied " << count << " new " << messageType
-                    << "(s) from peer " << publicKey_.fingerprint();
+                    << "(s) from peer " << fingerprint();
                 break;
             // Newest list is expired, and that needs to be broadcast, too
             case ListDisposition::expired:
                 JLOG(p_journal_.debug())
                     << "Applied " << count << " expired " << messageType
-                    << "(s) from peer " << publicKey_.fingerprint();
+                    << "(s) from peer " << fingerprint();
                 break;
             // Future list
             case ListDisposition::pending:
                 JLOG(p_journal_.debug())
                     << "Processed " << count << " future " << messageType
-                    << "(s) from peer " << publicKey_.fingerprint();
+                    << "(s) from peer " << fingerprint();
                 break;
             case ListDisposition::same_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with current sequence from peer "
-                    << publicKey_.fingerprint();
+                    << "(s) with current sequence from peer " << fingerprint();
                 break;
             case ListDisposition::known_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with future sequence from peer " << publicKey_.fingerprint();
+                    << "(s) with future sequence from peer " << fingerprint();
                 break;
             case ListDisposition::stale:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << "stale " << messageType
-                    << "(s) from peer " << publicKey_.fingerprint();
+                    << "(s) from peer " << fingerprint();
                 break;
             case ListDisposition::untrusted:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " untrusted " << messageType
-                    << "(s) from peer " << publicKey_.fingerprint();
+                    << "(s) from peer " << fingerprint();
                 break;
             case ListDisposition::unsupported_version:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << "unsupported version "
-                    << messageType << "(s) from peer " << publicKey_.fingerprint();
+                    << messageType << "(s) from peer " << fingerprint();
                 break;
             case ListDisposition::invalid:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << "invalid " << messageType
-                    << "(s) from peer " << publicKey_.fingerprint();
+                    << "(s) from peer " << fingerprint();
                 break;
             default:
                 UNREACHABLE(
@@ -2368,7 +2365,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
     catch (std::exception const& e)
     {
         JLOG(p_journal_.warn()) << "ValidatorList: Exception, " << e.what()
-                                << " from peer " << publicKey_.fingerprint();
+                                << " from peer " << fingerprint();
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
@@ -2408,7 +2405,7 @@ PeerImp::onMessage(
     catch (std::exception const& e)
     {
         JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception, "
-                                << e.what() << " from peer " << publicKey_.fingerprint();
+                                << e.what() << " from peer " << fingerprint();
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
@@ -2762,6 +2759,12 @@ PeerImp::handleHaveTransactions(
 
     if (tmBH.objects_size() > 0)
         send(std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS));
+}
+
+std::string
+PeerImp::fingerprint() const
+{
+    return getFingerprint(remote_address_, publicKey_);
 }
 
 void

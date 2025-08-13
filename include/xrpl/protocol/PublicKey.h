@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_PUBLICKEY_H_INCLUDED
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -130,11 +131,25 @@ public:
     }
 
     Slice
-    fingerprint() const noexcept
+    shortId() const noexcept
     {
         return slice().substr(0, 10);
     }
 };
+
+inline std::string
+getFingerprint(
+    beast::IP::Endpoint const& address,
+    std::optional<PublicKey> const& publicKey)
+{
+    std::stringstream ss;
+    ss << "IP Address: " << address;
+    if (publicKey.has_value())
+    {
+        ss << ", Public Key: " << publicKey->shortId();
+    }
+    return ss.str();
+}
 
 /** Print the public key to a stream.
  */
