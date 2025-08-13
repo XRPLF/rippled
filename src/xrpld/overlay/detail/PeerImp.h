@@ -25,6 +25,7 @@
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/overlay/detail/PeerSink.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
@@ -60,9 +61,6 @@ public:
 private:
     using clock_type = std::chrono::steady_clock;
     using error_code = boost::system::error_code;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using middle_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<middle_type>;
     using address_type = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer =
@@ -75,9 +73,7 @@ private:
     beast::WrappedSink p_sink_;
     beast::Journal const journal_;
     beast::Journal const p_journal_;
-    std::unique_ptr<stream_type> stream_ptr_;
-    socket_type& socket_;
-    stream_type& stream_;
+    PeerSink peerSink_;
     boost::asio::strand<boost::asio::executor> strand_;
     waitable_timer timer_;
 
@@ -242,7 +238,7 @@ public:
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         Resource::Consumer consumer,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        PeerSink&& peerSink,
         OverlayImpl& overlay);
 
     /** Create outgoing, handshaked peer. */
@@ -250,7 +246,7 @@ public:
     template <class Buffers>
     PeerImp(
         Application& app,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        PeerSink&& peerSink,
         Buffers const& buffers,
         std::shared_ptr<PeerFinder::Slot>&& slot,
         http_response_type&& response,
@@ -684,7 +680,7 @@ private:
 template <class Buffers>
 PeerImp::PeerImp(
     Application& app,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    PeerSink&& peerSink,
     Buffers const& buffers,
     std::shared_ptr<PeerFinder::Slot>&& slot,
     http_response_type&& response,
@@ -700,11 +696,9 @@ PeerImp::PeerImp(
     , p_sink_(app_.journal("Protocol"), makePrefix(id))
     , journal_(sink_)
     , p_journal_(p_sink_)
-    , stream_ptr_(std::move(stream_ptr))
-    , socket_(stream_ptr_->next_layer().socket())
-    , stream_(*stream_ptr_)
-    , strand_(socket_.get_executor())
-    , timer_(waitable_timer{socket_.get_executor()})
+    , peerSink_(std::move(peerSink))
+    , strand_(peerSink_.get_executor())
+    , timer_(waitable_timer{strand_})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(false)
@@ -737,6 +731,7 @@ PeerImp::PeerImp(
           FEATURE_LEDGER_REPLAY,
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
+
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
