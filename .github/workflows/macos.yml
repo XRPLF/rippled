@@ -11,7 +11,7 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -32,7 +32,6 @@ env:
     tools.compilation:verbosity=verbose
 
 jobs:
-
   test:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
@@ -89,7 +88,7 @@ jobs:
           sysctl -n hw.logicalcpu
           clang --version
       - name: configure Conan
-        run : |
+        run: |
           echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
