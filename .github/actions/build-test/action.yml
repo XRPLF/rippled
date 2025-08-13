@@ -19,13 +19,6 @@ inputs:
     required: false
     type: string
     default: ''
-  cmake_generator:
-    description: 'The CMake generator to use for the build (Ninja or Visual Studio 17 2022).'
-    required: true
-    type: choice
-    options:
-      - 'Ninja'
-      - 'Visual Studio 17 2022'
   cmake_target:
     description: 'The CMake target to build.'
     required: true
@@ -36,13 +29,13 @@ inputs:
     type: string
     default: ''
   os:
-    description: 'The operating system that is used (Linux, MacOS, or Windows).'
+    description: 'The operating system to use for the build (linux, macos, or windows).'
     required: true
     type: choice
     options:
-      - 'Linux'
-      - 'MacOS'
-      - 'Windows'
+      - linux
+      - macos
+      - windows
 
 runs:
   using: composite
@@ -53,7 +46,7 @@ runs:
       run: |
         echo 'Configuring CMake.'
         cmake \
-          --generator ${{ inputs.cmake_generator }} \
+          --generator ${{ inputs.os == 'windows' && 'Visual Studio 17 2022' || 'Ninja' }} \
           -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
           -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
           ${{ inputs.cmake_args }} \
@@ -70,7 +63,7 @@ runs:
           --target ${{ inputs.cmake_target }} \
           .
     - name: Check linking
-      if: ${{ inputs.os == 'Linux' }}
+      if: ${{ inputs.os == 'linux' }}
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
@@ -92,7 +85,7 @@ runs:
     - name: Test the binary
       if: ${{ inputs.cmake_target != coverage }}
       shell: bash
-      working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'Windows' && inputs.build_type || '' }}
+      working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'windows' && inputs.build_type || '' }}
       run: |
         echo 'Testing binary.'
         ./rippled --unittest --unittest-jobs $(nproc)

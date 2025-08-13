@@ -16,9 +16,7 @@ on:
       - '.github/actions/build-deps/**'
       - '.github/actions/build-test/**'
       - '.github/scripts/strategy-matrix/**'
-      - '.github/workflows/build-linux.yml'
-      - '.github/workflows/build-macos.yml'
-      - '.github/workflows/build-windows.yml'
+      - '.github/workflows/build-test.yml'
       - '.github/workflows/check-missing-commits.yml'
       - '.github/workflows/on-trigger.yml'
       - '.github/workflows/publish-docs.yml'
@@ -65,6 +63,10 @@ defaults:
   run:
     shell: bash
 
+env:
+  CONAN_REMOTE_NAME: xrplf
+  CONAN_REMOTE_URL: https://conan.ripplex.io
+
 jobs:
   check-missing-commits:
     if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && contains(fromJSON('["develop", "release"]'), github.ref_name) }}
@@ -90,35 +92,46 @@ jobs:
             echo 'dependencies_force_upload=${{ inputs.dependencies_force_upload }}' >> "${GITHUB_OUTPUT}"
           fi
     outputs:
+      conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
       dependencies_force_build: ${{ steps.generate.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ steps.generate.outputs.dependencies_force_upload }}
 
   build-linux:
     needs: generate-outputs
-    uses: ./.github/workflows/build-linux.yml
+    uses: ./.github/workflows/build-test.yml
     with:
+      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
+      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
+      os: 'linux'
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   build-macos:
     needs: generate-outputs
-    uses: ./.github/workflows/build-macos.yml
+    uses: ./.github/workflows/build-test.yml
     with:
+      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
+      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
+      os: 'macos'
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   build-windows:
     needs: generate-outputs
-    uses: ./.github/workflows/build-windows.yml
+    uses: ./.github/workflows/build-test.yml
     with:
+      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
+      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
+      os: 'windows'
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
