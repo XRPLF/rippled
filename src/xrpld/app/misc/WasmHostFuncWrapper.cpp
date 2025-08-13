@@ -1915,6 +1915,7 @@ floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         runtime, params, results, hf->floatLog(*x, *rounding), i);
 }
 
+// LCOV_EXCL_START
 namespace test {
 
 class MockInstanceWrapper
@@ -1934,7 +1935,6 @@ public:
     }
 };
 
-// LCOV_EXCL_START
 bool
 testGetDataIncrement()
 {
@@ -2061,7 +2061,8 @@ testGetDataIncrement()
 
     return true;
 }
-// LCOV_EXCL_STOP
 
 }  // namespace test
+// LCOV_EXCL_STOP
+
 }  // namespace ripple

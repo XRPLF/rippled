@@ -661,12 +661,11 @@ struct Wasm_test : public beast::unit_test::suite
 
         auto const wasmStr = boost::algorithm::unhex(codecovWasm);
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
-        std::string const funcName("finish");
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 118'017;
-        auto re =
-            runEscrowWasm(wasm, funcName, {}, &hfs, allowance, env.journal);
+        auto const allowance = 119'881;
+        auto re = runEscrowWasm(
+            wasm, ESCROW_FUNCTION_NAME, {}, &hfs, allowance, env.journal);
 
         if (BEAST_EXPECT(re.has_value()))
         {
