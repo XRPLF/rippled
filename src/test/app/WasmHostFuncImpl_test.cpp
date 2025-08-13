@@ -25,6 +25,13 @@ namespace ripple {
 namespace test {
 
 static Bytes
+toBytes(std::uint8_t value)
+{
+    auto const* b = reinterpret_cast<uint8_t const*>(&value);
+    return Bytes{b, b + 1};
+}
+
+static Bytes
 toBytes(std::uint16_t value)
 {
     auto const* b = reinterpret_cast<uint8_t const*>(&value);
@@ -201,6 +208,31 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         auto const result = hfs.getBaseFee();
         if (BEAST_EXPECT(result.has_value()))
             BEAST_EXPECT(result.value() == env.current()->fees().base.drops());
+
+        {
+            Env env2(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee =
+                        static_cast<int64_t>(
+                            std::numeric_limits<int32_t>::max()) +
+                        1;
+                    return cfg;
+                }),
+                testable_amendments());
+            // Run past the flag ledger so that a Fee change vote occurs and
+            // updates FeeSettings. (It also activates all supported
+            // amendments.)
+            for (auto i = env.current()->seq(); i <= 257; ++i)
+                env.close();
+
+            OpenView ov2{*env2.current()};
+            ApplyContext ac2 = createApplyContext(env2, ov2);
+            WasmHostFunctionsImpl hfs2(ac2, dummyEscrow);
+            auto const result2 = hfs2.getBaseFee();
+            BEAST_EXPECT(!result2.has_value());
+            BEAST_EXPECT(result2.error() == HostFunctionError::INTERNAL);
+        }
     }
 
     void
@@ -439,6 +471,27 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     asset2.value().begin(),
                     asset2.value().end(),
                     toBytes(Asset(mptId)).begin()));
+            }
+        }
+
+        {
+            std::uint8_t const expectedScale = 8;
+            STTx const stx2 = STTx(ttMPTOKEN_ISSUANCE_CREATE, [&](auto& obj) {
+                obj.setAccountID(sfAccount, env.master.id());
+                obj.setFieldU8(sfAssetScale, expectedScale);
+            });
+            ApplyContext ac2 = createApplyContext(env, ov, stx2);
+            WasmHostFunctionsImpl hfs(ac2, dummyEscrow);
+
+            auto const actualScale = hfs.getTxField(sfAssetScale);
+            if (BEAST_EXPECT(actualScale.has_value()))
+            {
+                BEAST_EXPECT(
+                    actualScale.has_value() &&
+                    std::equal(
+                        actualScale.value().begin(),
+                        actualScale.value().end(),
+                        toBytes(expectedScale).begin()));
             }
         }
     }

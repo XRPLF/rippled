@@ -185,12 +185,7 @@ getAnyFieldData(STBase const* obj)
             return Bytes{b, e};
         }
         break;
-        case STI_UINT256: {
-            auto const* num(static_cast<STBitString<256> const*>(obj));
-            auto const& data = num->value();
-            return Bytes{data.begin(), data.end()};
-        }
-        break;
+            break;
         default:
             break;  // default to serializer
     }
