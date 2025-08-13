@@ -31,16 +31,29 @@
 
 namespace ripple {
 
-Expected<std::uint32_t, HostFunctionError>
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerSqn()
 {
-    return ctx.view().seq();
+    auto const seq = ctx.view().seq();
+    if (seq > std::numeric_limits<int32_t>::max())
+    {
+        // won't hit for ~500 years
+        return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+    }
+    return static_cast<int32_t>(seq);
 }
 
-Expected<std::uint32_t, HostFunctionError>
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getParentLedgerTime()
 {
-    return ctx.view().parentCloseTime().time_since_epoch().count();
+    auto const parentTime =
+        ctx.view().parentCloseTime().time_since_epoch().count();
+    if (parentTime > std::numeric_limits<int32_t>::max())
+    {
+        // won't hit for ~50 years
+        return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+    }
+    return static_cast<int32_t>(parentTime);
 }
 
 Expected<Hash, HostFunctionError>
@@ -64,7 +77,7 @@ WasmHostFunctionsImpl::getLedgerTransactionHash()
 Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getBaseFee()
 {
-    auto fee = ctx.view().fees().base.drops();
+    auto const fee = ctx.view().fees().base.drops();
     if (fee > std::numeric_limits<int32_t>::max())
         return Unexpected(HostFunctionError::INTERNAL);
     return static_cast<int32_t>(fee);

@@ -52,10 +52,13 @@ public:
         return rt_;
     }
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        return static_cast<std::uint32_t>(env_->current()->seq());
+        auto const seq = env_->current()->seq();
+        if (seq > std::numeric_limits<int32_t>::max())
+            return Unexpected(HostFunctionError::INTERNAL);
+        return static_cast<int32_t>(seq);
     }
 };
 
@@ -94,17 +97,16 @@ public:
         return env_.journal;
     }
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        return static_cast<std::uint32_t>(env_.current()->seq());
+        return 12345;
     }
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getParentLedgerTime() override
     {
-        return env_.current()->parentCloseTime().time_since_epoch().count() +
-            clock_drift_;
+        return 67890;
     }
 
     Expected<Hash, HostFunctionError>

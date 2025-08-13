@@ -82,10 +82,10 @@ public:
         return data_;
     }
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getLedgerSqn() override;
 
-    Expected<std::uint32_t, HostFunctionError>
+    Expected<int32_t, HostFunctionError>
     getParentLedgerTime() override;
 
     Expected<Hash, HostFunctionError>
