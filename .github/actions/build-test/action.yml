@@ -57,11 +57,10 @@ runs:
       run: |
         echo 'Building binary.'
         cmake \
-          --build \
+          --build . \
           --config ${{ inputs.build_type }} \
           --parallel $(nproc) \
-          --target ${{ inputs.cmake_target }} \
-          .
+          --target ${{ inputs.cmake_target }}
     - name: Check linking
       if: ${{ inputs.os == 'linux' }}
       shell: bash
