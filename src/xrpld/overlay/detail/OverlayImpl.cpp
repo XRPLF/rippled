@@ -459,8 +459,8 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 
     list_.emplace(peer.get(), peer);
 
-    JLOG(journal_.debug()) << "activated " << peer->fingerprint()
-                           << " (" << peer->id() << ":"
+    JLOG(journal_.debug()) << "activated " << peer->fingerprint() << " ("
+                           << peer->id() << ":"
                            << toBase58(
                                   TokenType::NodePublic, peer->getNodePublic())
                            << ")";
