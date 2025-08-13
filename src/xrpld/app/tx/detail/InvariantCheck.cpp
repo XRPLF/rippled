@@ -105,8 +105,10 @@ XRPNotCreated::visitEntry(
                 drops_ -= (*before)[sfBalance].xrp().drops();
                 break;
             case ltPAYCHAN:
-                drops_ -=
-                    ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
+                if (isXRP((*after)[sfAmount]))
+                    drops_ -= ((*before)[sfAmount] - (*before)[sfBalance])
+                                  .xrp()
+                                  .drops();
                 break;
             case ltESCROW:
                 if (isXRP((*before)[sfAmount]))
@@ -125,7 +127,7 @@ XRPNotCreated::visitEntry(
                 drops_ += (*after)[sfBalance].xrp().drops();
                 break;
             case ltPAYCHAN:
-                if (!isDelete)
+                if (!isDelete && isXRP((*after)[sfAmount]))
                     drops_ += ((*after)[sfAmount] - (*after)[sfBalance])
                                   .xrp()
                                   .drops();
@@ -1509,6 +1511,9 @@ ValidMPTIssuance::finalize(
         }
 
         if (tx.getTxnType() == ttESCROW_FINISH)
+            return true;
+
+        if (tx.getTxnType() == ttPAYCHAN_CLAIM)
             return true;
     }
 

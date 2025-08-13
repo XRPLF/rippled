@@ -122,7 +122,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet, Delegation::notDelegatable, ({
 /** This transaction type creates a new unidirectional XRP payment channel. */
 TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, Delegation::delegatable, ({
     {sfDestination, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfSettleDelay, soeREQUIRED},
     {sfPublicKey, soeREQUIRED},
     {sfCancelAfter, soeOPTIONAL},
@@ -132,15 +132,15 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, Delegation::delegatable,
 /** This transaction type funds an existing unidirectional XRP payment channel. */
 TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, Delegation::delegatable, ({
     {sfChannel, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfExpiration, soeOPTIONAL},
 }))
 
 /** This transaction type submits a claim against an existing unidirectional payment channel. */
 TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, Delegation::delegatable, ({
     {sfChannel, soeREQUIRED},
-    {sfAmount, soeOPTIONAL},
-    {sfBalance, soeOPTIONAL},
+    {sfAmount, soeOPTIONAL, soeMPTSupported},
+    {sfBalance, soeOPTIONAL, soeMPTSupported},
     {sfSignature, soeOPTIONAL},
     {sfPublicKey, soeOPTIONAL},
     {sfCredentialIDs, soeOPTIONAL},
