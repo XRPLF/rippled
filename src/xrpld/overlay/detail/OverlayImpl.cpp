@@ -257,6 +257,8 @@ OverlayImpl::onHandoff(
             remote_endpoint.address(),
             app_);
 
+        consumer.setPublicKey(publicKey);
+
         {
             // The node gets a reserved slot if it is in our cluster
             // or if it has a reservation.
@@ -451,8 +453,8 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 
     list_.emplace(peer.get(), peer);
 
-    JLOG(journal_.debug()) << "activated " << peer->publicKey_.fingerprint() << " ("
-                           << peer->id() << ":"
+    JLOG(journal_.debug()) << "activated " << peer->fingerprint()
+                           << " (" << peer->id() << ":"
                            << toBase58(
                                   TokenType::NodePublic, peer->getNodePublic())
                            << ")";

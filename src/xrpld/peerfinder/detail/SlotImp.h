@@ -94,9 +94,7 @@ public:
     std::string
     fingerprint() const
     {
-        return public_key().has_value() ?
-            strHex(public_key()->fingerprint()) :
-            remote_endpoint().to_string();
+        return getFingerprint(remote_endpoint(), public_key());
     }
 
     std::optional<std::uint16_t>

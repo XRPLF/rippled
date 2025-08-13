@@ -53,7 +53,7 @@ struct Entry : public beast::List<Entry>::Node
     std::string
     to_string() const
     {
-        return key->address.to_string();
+        return getFingerprint(key->address, publicKey);
     }
 
     /**
@@ -81,6 +81,9 @@ struct Entry : public beast::List<Entry>::Node
     {
         return local_balance.add(charge, now) + remote_balance;
     }
+
+    // The public key of the peer
+    std::optional<PublicKey> publicKey;
 
     // Back pointer to the map key (bit of a hack here)
     Key const* key;
