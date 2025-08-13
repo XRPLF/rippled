@@ -158,8 +158,9 @@ Patched recipes</h3>
 <div class="line">git sparse-checkout add recipes/soci</div>
 <div class="line">git fetch origin master</div>
 <div class="line">git checkout master</div>
-<div class="line">conan export --version 1.1.10 external/recipes/snappy</div>
-<div class="line">conan export --version 4.0.3 external/recipes/soci</div>
+<div class="line">conan export --version 1.1.10 recipes/snappy/all</div>
+<div class="line">conan export --version 4.0.3 recipes/soci/all</div>
+<div class="line">rm -rf .git</div>
 </div><!-- fragment --><p >In the case we switch to a newer version of a dependency that still requires a patch, it will be necessary for you to pull in the changes and re-export the updated dependencies with the newer version. However, if we switch to a newer version that no longer requires a patch, no action is required on your part, as the new recipe will be automatically pulled from the official Conan Center.</p>
 <h3><a class="anchor" id="autotoc_md37"></a>
 Conan profile tweaks</h3>
