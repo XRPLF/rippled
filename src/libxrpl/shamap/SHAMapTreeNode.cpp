@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
