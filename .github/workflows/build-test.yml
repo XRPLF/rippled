@@ -33,9 +33,9 @@ on:
         required: true
         type: choice
         options:
-          - linux
-          - macos
-          - windows
+          - 'linux'
+          - 'macos'
+          - 'windows'
     secrets:
       codecov_token:
         description: 'The Codecov token to use for uploading coverage reports.'

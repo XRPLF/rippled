@@ -11,10 +11,7 @@ inputs:
   build_type:
     description: 'The build type to use.'
     required: true
-    type: choice
-    options:
-      - 'Debug'
-      - 'Release'
+    type: string
   conan_global_conf:
     description: 'The contents of the global Conan configuration file.'
     required: true
@@ -54,11 +51,7 @@ inputs:
   os:
     description: 'The operating system to use for the build (linux, macos, or windows).'
     required: true
-    type: choice
-    options:
-      - linux
-      - macos
-      - windows
+    type: string
 
 runs:
   using: composite
