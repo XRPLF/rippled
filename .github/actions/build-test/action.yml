@@ -10,10 +10,7 @@ inputs:
   build_type:
     description: 'The build type to use.'
     required: true
-    type: choice
-    options:
-      - 'Debug'
-      - 'Release'
+    type: string
   cmake_args:
     description: 'Additional arguments to pass to CMake.'
     required: false
