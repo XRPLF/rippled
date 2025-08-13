@@ -436,8 +436,18 @@ transferRate(ReadView const& view, MPTID const& issuanceID);
  * @param view The ledger view
  * @param amount The amount to transfer
  */
-[[nodiscard]] Rate
-transferRate(ReadView const& view, STAmount const& amount);
+[[nodiscard]] inline Rate
+transferRate(ReadView const& view, STAmount const& amount)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return transferRate(view, issue.getIssuer());
+            else
+                return transferRate(view, issue.getMptID());
+        },
+        amount.asset().value());
+}
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory

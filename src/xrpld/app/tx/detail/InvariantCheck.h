@@ -704,21 +704,24 @@ private:
         beast::Journal const&) const;
 };
 
+/** Verify:
+ *    - OutstandingAmount <= MaximumAmount for any MPT
+ *    - OutstandingAmount after = OutstandingAmount before +
+ *         sum (MPT after - MPT before) - this is total MPT credit/debit
+ */
 class ValidPayment
 {
-    struct MPTAmount
-    {
-        std::int64_t before;
-        std::int64_t after;
-    };
+    enum Order { Before = 0, After = 1 };
     struct MPTData
     {
-        std::int64_t outstandingBefore{0};
-        std::int64_t outstandingAfter{0};
-        hash_map<AccountID, MPTAmount> mptAmount;
+        std::array<std::int64_t, After + 1> outstanding;
+        // sum (MPT after - MPT before)
+        std::int64_t mptAmount{0};
     };
 
+    // true if OutstandingAmount > MaximumAmount in after for any MPT
     bool overflow_{false};
+    // mptid:MPTData
     hash_map<uint192, MPTData> data_;
 
 public:

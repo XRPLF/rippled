@@ -398,7 +398,7 @@ CashCheck::doApply()
             auto checkReserve = [&]() -> std::shared_ptr<SLE> {
                 auto sleDst = psb.peek(keylet::account(account_));
 
-                // Can the account cover the trust line's reserve?
+                // Can the account cover the trust line's or MPT reserve?
                 if (std::uint32_t const ownerCount = {sleDst->at(sfOwnerCount)};
                     mPriorBalance < psb.fees().accountReserve(ownerCount + 1))
                 {

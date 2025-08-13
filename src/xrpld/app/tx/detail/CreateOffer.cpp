@@ -365,13 +365,7 @@ CreateOffer::flowCross(
         STAmount sendMax = takerAmount.in;
         if (!sendMax.native() && (account_ != sendMax.getIssuer()))
         {
-            gatewayXferRate = [&]() {
-                if (sendMax.holds<Issue>())
-                    return transferRate(psb, sendMax.getIssuer());
-                else
-                    return transferRate(
-                        psb, sendMax.get<MPTIssue>().getMptID());
-            }();
+            gatewayXferRate = transferRate(psb, sendMax);
             if (gatewayXferRate.value != QUALITY_ONE)
             {
                 sendMax = multiplyRound(
@@ -409,6 +403,7 @@ CreateOffer::flowCross(
         }
         // Special handling for the tfSell flag.
         STAmount deliver = takerAmount.out;
+        auto const& deliverAsset = deliver.asset();
         OfferCrossing offerCrossing = OfferCrossing::yes;
         if (txFlags & tfSell)
         {
@@ -422,13 +417,13 @@ CreateOffer::flowCross(
             // there might be a gateway transfer rate to account for.
             // Since the transfer rate cannot exceed 200%, we use 1/2
             // maxValue for our limit.
-            else if (deliver.holds<MPTIssue>())
-                deliver = STAmount{deliver.asset(), maxMPTokenAmount / 2};
-            else
+            else if (deliver.holds<Issue>())
                 deliver = STAmount{
-                    takerAmount.out.asset(),
+                    deliverAsset,
                     STAmount::cMaxValue / 2,
                     STAmount::cMaxOffset};
+            else
+                deliver = STAmount{deliverAsset, maxMPTokenAmount / 2};
         }
 
         // Call the payment engine's flow() to do the actual work.

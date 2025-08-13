@@ -810,6 +810,9 @@ TransfersNotFrozen::recordBalanceChanges(
     std::shared_ptr<SLE const> const& after,
     STAmount const& balanceChange)
 {
+    XRPL_ASSERT(
+        after->at(sfBalance).holds<Issue>(),
+        "ripple::TransfersNotFrozen::recordBalanceChanges : after is Issue");
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).get<Issue>().currency;
 
@@ -2125,38 +2128,29 @@ ValidPayment::visitEntry(
         return sle[sfMPTokenIssuanceID];
     };
 
-    if (before)
-    {
-        auto const type = before->getType();
+    auto update = [&](SLE const& sle, Order order) {
+        auto const type = sle.getType();
         if (type == ltMPTOKEN_ISSUANCE)
         {
-            data_[makeKey(*before)].outstandingBefore =
-                (*before)[sfOutstandingAmount];
+            data_[makeKey(sle)].outstanding[order] = sle[sfOutstandingAmount];
         }
         else if (type == ltMPTOKEN)
         {
-            auto const& account = (*before)[sfAccount];
-            data_[makeKey((*before))].mptAmount[account].before =
-                (*before)[sfMPTAmount] + (*before)[~sfLockedAmount].value_or(0);
+            // subtract before from after
+            data_[makeKey(sle)].mptAmount += (order == Before ? -1 : 1) *
+                (sle[sfMPTAmount] + sle[~sfLockedAmount].value_or(0));
         }
-    }
+    };
+
+    if (before)
+        update(*before, Before);
 
     if (after)
     {
-        auto const type = after->getType();
-        if (type == ltMPTOKEN_ISSUANCE)
-        {
+        if (after->getType() == ltMPTOKEN_ISSUANCE)
             overflow_ = (*after)[sfOutstandingAmount] >
                 (*after)[~sfMaximumAmount].value_or(maxMPTokenAmount);
-            data_[makeKey(*after)].outstandingAfter =
-                (*after)[sfOutstandingAmount];
-        }
-        else if (type == ltMPTOKEN)
-        {
-            auto const& account = (*after)[sfAccount];
-            data_[makeKey((*after))].mptAmount[account].after =
-                (*after)[sfMPTAmount] + (*after)[~sfLockedAmount].value_or(0);
-        }
+        update(*after, After);
     }
 }
 
@@ -2168,7 +2162,6 @@ ValidPayment::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    // Transactions that execute over the payment engine
     if (result == tesSUCCESS)
     {
         bool const enforce = view.rules().enabled(featureMPTokensV2);
@@ -2181,18 +2174,13 @@ ValidPayment::finalize(
         for (auto const& [id, data] : data_)
         {
             (void)id;
-            std::int64_t diff = 0;
-            for (auto [acct, amount] : data.mptAmount)
-            {
-                (void)acct;
-                diff += amount.after - amount.before;
-            }
-            if (data.outstandingAfter != (data.outstandingBefore + diff))
+            if (data.outstanding[After] !=
+                (data.outstanding[Before] + data.mptAmount))
             {
                 JLOG(j.fatal())
                     << "Invariant failed: invalid OutstandingAmount balance "
-                    << data.outstandingBefore << " " << data.outstandingAfter
-                    << " " << diff;
+                    << data.outstanding[Before] << " "
+                    << data.outstanding[After] << " " << data.mptAmount;
                 return enforce ? false : true;
             }
         }

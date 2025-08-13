@@ -20,7 +20,6 @@
 #ifndef RIPPLE_TX_CREATEOFFER_H_INCLUDED
 #define RIPPLE_TX_CREATEOFFER_H_INCLUDED
 
-#include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 
 #include <xrpl/protocol/Quality.h>

@@ -798,19 +798,6 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     return parityRate;
 }
 
-Rate
-transferRate(ReadView const& view, STAmount const& amount)
-{
-    return std::visit(
-        [&]<ValidIssueType TIss>(TIss const& issue) {
-            if constexpr (std::is_same_v<TIss, Issue>)
-                return transferRate(view, issue.getIssuer());
-            else
-                return transferRate(view, issue.getMptID());
-        },
-        amount.asset().value());
-}
-
 bool
 areCompatible(
     ReadView const& validLedger,
