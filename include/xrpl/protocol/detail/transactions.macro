@@ -192,7 +192,7 @@ TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete, Delegation::notDelegatable, {},
 // 22 reserved
 
 /** This transaction mints a new NFT. */
-TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint, Delegation::delegatable, ({featureNonFungibleTokensV1}), ({
+TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint, Delegation::delegatable, {featureNonFungibleTokensV1}, ({
     {sfNFTokenTaxon, soeREQUIRED},
     {sfTransferFee, soeOPTIONAL},
     {sfIssuer, soeOPTIONAL},

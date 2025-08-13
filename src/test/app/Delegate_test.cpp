@@ -785,17 +785,18 @@ class Delegate_test : public beast::unit_test::suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const gw{"gateway"};
-            Account const carol{"carol"};
 
-            MPTTester mpt(env, gw, {.holders = {alice, bob, carol}});
+            MPTTester mpt(env, gw, {.holders = {alice, bob}});
             mpt.create(
                 {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
 
             mpt.authorize({.account = alice});
             mpt.authorize({.account = bob});
-            mpt.authorize({.account = carol});
 
             auto const MPT = mpt["MPT"];
+            env(pay(gw, alice, MPT(500)));
+            env(pay(gw, bob, MPT(500)));
+            env.close();
             auto aliceMPT = env.balance(alice, MPT);
             auto bobMPT = env.balance(bob, MPT);
 
@@ -803,19 +804,57 @@ class Delegate_test : public beast::unit_test::suite
             {
                 env(delegate::set(gw, bob, {"PaymentMint"}));
                 env.close();
-                env(pay(gw, alice, MPT(50)), delegate::as(bob));
-                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT + MPT(50));
-                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
-                aliceMPT = env.balance(alice, MPT);
+
+                if (!features[fixDelegateV1_1])
+                {
+                    // pre-amendment: PaymentMint is not supported for MPT
+                    env(pay(gw, alice, MPT(50)),
+                        delegate::as(bob),
+                        ter(tecNO_DELEGATE_PERMISSION));
+                }
+                else
+                {
+                    env(pay(gw, alice, MPT(50)), delegate::as(bob));
+                    BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT + MPT(50));
+                    BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
+                    aliceMPT = env.balance(alice, MPT);
+                }
             }
 
             // PaymentBurn
             {
                 env(delegate::set(alice, bob, {"PaymentBurn"}));
                 env.close();
+
+                if (!features[fixDelegateV1_1])
+                {
+                    // pre-amendment: PaymentBurn is not supported for MPT
+                    env(pay(alice, gw, MPT(50)),
+                        delegate::as(bob),
+                        ter(tecNO_DELEGATE_PERMISSION));
+                }
+                else
+                {
+                    env(pay(alice, gw, MPT(50)), delegate::as(bob));
+                    BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(50));
+                    BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
+                    aliceMPT = env.balance(alice, MPT);
+                }
+            }
+
+            // Payment transaction for MPT is allowed for both pre and post
+            // amendment
+            {
+                env(delegate::set(
+                    alice, bob, {"PaymentBurn", "PaymentMint", "Payment"}));
+                env.close();
                 env(pay(alice, gw, MPT(50)), delegate::as(bob));
                 BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(50));
                 BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
+                aliceMPT = env.balance(alice, MPT);
+                env(pay(alice, bob, MPT(100)), delegate::as(bob));
+                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(100));
+                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT + MPT(100));
             }
         }
     }

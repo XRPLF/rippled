@@ -70,7 +70,8 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     {
         auto const permissionValue = permission[sfPermissionValue];
         if (auto const res = Permission::getInstance().isDelegatable(
-                permissionValue, ctx.view.rules()))
+                permissionValue, ctx.view.rules());
+            !isTesSuccess(res))
             return res;
     }
 

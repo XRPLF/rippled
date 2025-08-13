@@ -143,14 +143,15 @@ Permission::isDelegatable(
         // granular permissions are always allowed to be delegated
         return tesSUCCESS;
 
-    auto const it = delegatableTx_.find(permissionValue - 1);
+    auto const txType = permissionToTxType(permissionValue);
+    auto const it = delegatableTx_.find(txType);
 
     if (rules.enabled(fixDelegateV1_1))
     {
         if (it == delegatableTx_.end())
             return temMALFORMED;
 
-        auto const txFeaturesIt = txFeaturesMap_.find(permissionValue - 1);
+        auto const txFeaturesIt = txFeaturesMap_.find(txType);
         XRPL_ASSERT(
             txFeaturesIt != txFeaturesMap_.end(),
             "ripple::Permissions::isDelegatable : tx does not exist in "

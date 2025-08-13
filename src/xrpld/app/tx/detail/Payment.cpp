@@ -261,10 +261,17 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
 
+    auto const& dstAmount = tx.getFieldAmount(sfAmount);
+
+    // If fixDelegateV1_1 is not enabled, PaymentMint/PaymentBurn is not
+    // supported for MPT. In this case, only transaction-level permission
+    // (specifically Payment) is allowed for MPT.
+    if (!view.rules().enabled(fixDelegateV1_1) && dstAmount.holds<MPTIssue>())
+        return tecNO_DELEGATE_PERMISSION;
+
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
-    auto const& dstAmount = tx.getFieldAmount(sfAmount);
     auto const& amountAsset = dstAmount.asset();
 
     // post-amendment: disallow cross currency payments for PaymentMint and
