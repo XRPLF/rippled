@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/misc/WasmHostFuncImpl.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/wasm/HostFuncImpl.h>
 
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>

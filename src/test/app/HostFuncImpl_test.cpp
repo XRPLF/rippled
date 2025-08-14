@@ -19,7 +19,7 @@
 
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/WasmHostFuncImpl.h>
+#include <xrpld/app/wasm/HostFuncImpl.h>
 
 namespace ripple {
 namespace test {
@@ -86,7 +86,7 @@ createApplyContext(
     return ac;
 }
 
-struct WasmHostFuncImpl_test : public beast::unit_test::suite
+struct HostFuncImpl_test : public beast::unit_test::suite
 {
     void
     testGetLedgerSqn()
@@ -2855,7 +2855,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(WasmHostFuncImpl, app, ripple);
+BEAST_DEFINE_TESTSUITE(HostFuncImpl, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
