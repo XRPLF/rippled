@@ -28,6 +28,6 @@ jobs:
             echo 'Could not fetch PR number.'
             exit 1
           fi
-          echo "number=${NUMBER}" >> "${GITHUB_OUTPUT}"
+          echo "number=${NUMBER}" | tee "${GITHUB_OUTPUT}"
     outputs:
       number: ${{ steps.cli.outputs.number }}
