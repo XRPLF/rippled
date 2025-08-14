@@ -129,24 +129,7 @@ public:
     {
         return slice();
     }
-
-    std::string
-    shortId() const noexcept;
 };
-
-inline std::string
-getFingerprint(
-    beast::IP::Endpoint const& address,
-    std::optional<PublicKey> const& publicKey)
-{
-    std::stringstream ss;
-    ss << "IP Address: " << address;
-    if (publicKey.has_value())
-    {
-        ss << ", Public Key: " << publicKey->shortId();
-    }
-    return ss.str();
-}
 
 /** Print the public key to a stream.
  */
@@ -282,6 +265,19 @@ calcNodeID(PublicKey const&);
 AccountID
 calcAccountID(PublicKey const& pk);
 
+inline std::string
+getFingerprint(
+    beast::IP::Endpoint const& address,
+    std::optional<PublicKey> const& publicKey)
+{
+    std::stringstream ss;
+    ss << "IP Address: " << address;
+    if (publicKey.has_value())
+    {
+        ss << ", Public Key: " << toBase58(TokenType::NodePublic, *publicKey);
+    }
+    return ss.str();
+}
 }  // namespace ripple
 
 //------------------------------------------------------------------------------
