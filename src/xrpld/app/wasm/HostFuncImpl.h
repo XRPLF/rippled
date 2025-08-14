@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/wasm/HostFunc.h>
 
 namespace ripple {
 class WasmHostFunctionsImpl : public HostFunctions
