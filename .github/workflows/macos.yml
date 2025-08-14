@@ -74,6 +74,20 @@ jobs:
       - name: install nproc
         run: |
           brew install coreutils
+      - name: fix global conf
+        run: |
+          echo "ls -al ~/.conan2" 
+          ls -al ~/.conan2
+          
+          echo "conan config home"
+          conan config home || true
+          
+          echo "printing CONAN_GLOBAL_CONF"
+          echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
+          
+          # TEMPORARY
+          ls -al ~/.conan2
+          cat conan/${{ inputs.os }}.conf > ~/.conan2/global.conf
       - name: check environment
         run: |
           env | sort
