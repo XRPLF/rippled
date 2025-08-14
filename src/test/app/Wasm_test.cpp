@@ -678,6 +678,35 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testDisabledFloat()
+    {
+        testcase("disabled float");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        auto const wasmStr = boost::algorithm::unhex(disabledFloatHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        std::string const funcName("finish");
+        TestHostFunctions hfs(env, 0);
+
+        {
+            // f32 set constant, opcode disabled exception
+            auto const re =
+                runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
+        }
+
+        {
+            // f32 add, can't create module exception
+            wasm[0x117] = 0x92;
+            auto const re =
+                runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -703,6 +732,8 @@ struct Wasm_test : public beast::unit_test::suite
         testFloat();
 
         testCodecovWasm();
+
+        testDisabledFloat();
 
         // perfTest();
     }
