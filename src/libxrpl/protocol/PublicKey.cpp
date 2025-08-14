@@ -43,12 +43,6 @@
 
 namespace ripple {
 
-std::string
-PublicKey::shortId() const noexcept
-{
-    return toBase58(TokenType::NodePublic, *this);
-}
-
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)
 {
