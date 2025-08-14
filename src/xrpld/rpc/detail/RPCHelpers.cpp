@@ -580,19 +580,6 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
     return Status::OK;
 }
 
-// Explicit instantiaion of above three functions
-template Status
-getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context&);
-
-template Status
-getLedger<>(
-    std::shared_ptr<ReadView const>&,
-    LedgerShortcut shortcut,
-    Context&);
-
-template Status
-getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context&);
-
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
 // return the current ledger which, while not strictly wrong, could cause a lot
