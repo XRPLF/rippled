@@ -186,7 +186,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
             id,
             saTakerGets,
             fhZERO_IF_FROZEN,
-            ahIGNORE_AUTH,
+            ahZERO_IF_UNAUTHORIZED,
             viewJ) <= beast::zero)
     {
         JLOG(ctx.j.debug())
@@ -350,7 +350,12 @@ CreateOffer::flowCross(
         // cause a user's available balance to go to 0 (by causing it to dip
         // below the reserve) so we check this case again.
         STAmount const inStartBalance = accountFunds(
-            psb, account_, takerAmount.in, fhZERO_IF_FROZEN, ahIGNORE_AUTH, j_);
+            psb,
+            account_,
+            takerAmount.in,
+            fhZERO_IF_FROZEN,
+            ahZERO_IF_UNAUTHORIZED,
+            j_);
         if (inStartBalance <= beast::zero)
         {
             // The account balance can't cover even part of the offer.
@@ -460,7 +465,7 @@ CreateOffer::flowCross(
                 account_,
                 takerAmount.in,
                 fhZERO_IF_FROZEN,
-                ahIGNORE_AUTH,
+                ahZERO_IF_UNAUTHORIZED,
                 j_);
 
             if (takerInBalance <= beast::zero)

@@ -841,7 +841,7 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 issuer,
                 assetIn,
                 FreezeHandling::fhIGNORE_FREEZE,
-                ahIGNORE_AUTH,
+                AuthHandling::ahIGNORE_AUTH,
                 j_));
             if (stpAmt.in > available)
             {

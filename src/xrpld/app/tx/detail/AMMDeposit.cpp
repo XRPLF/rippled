@@ -410,7 +410,7 @@ AMMDeposit::applyGuts(Sandbox& sb)
         amount ? amount->asset() : std::optional<Asset>{},
         amount2 ? amount2->asset() : std::optional<Asset>{},
         FreezeHandling::fhZERO_IF_FROZEN,
-        AuthHandling::ahIGNORE_AUTH,
+        AuthHandling::ahZERO_IF_UNAUTHORIZED,
         ctx_.journal);
     if (!expected)
         return {expected.error(), false};  // LCOV_EXCL_LINE

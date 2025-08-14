@@ -321,16 +321,16 @@ isConsistent(Asset const& issue)
 }
 
 inline bool
-validAsset(Asset const& issue)
+validAsset(Asset const& asset)
 {
     return std::visit(
-        [&]<typename TIss>(TIss const& issue_) {
+        [&]<typename TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
-                return isConsistent(issue_) && issue_.currency != badCurrency();
+                return isConsistent(issue) && issue.currency != badCurrency();
             else
-                return true;
+                return issue.getIssuer() != xrpAccount();
         },
-        issue.value());
+        asset.value());
 }
 
 template <class Hasher>

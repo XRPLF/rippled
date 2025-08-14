@@ -44,7 +44,7 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
 {
     // AMM LPToken is 0x03 plus 19 bytes of the hash
     std::int32_t constexpr AMMCurrencyCode = 0x03;
-    auto const [minI, maxI] = std::minmax(asset1, asset2);
+    auto const& [minA, maxA] = std::minmax(asset1, asset2);
     uint256 const hash = std::visit(
         [](auto&& issue1, auto&& issue2) {
             auto fromIss = []<ValidIssueType T>(T const& issue) {
@@ -55,8 +55,8 @@ ammLPTCurrency(Asset const& asset1, Asset const& asset2)
             };
             return sha512Half(fromIss(issue1), fromIss(issue2));
         },
-        minI.value(),
-        maxI.value());
+        minA.value(),
+        maxA.value());
     Currency currency;
     *currency.begin() = AMMCurrencyCode;
     std::copy(
