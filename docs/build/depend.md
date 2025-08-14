@@ -2,8 +2,7 @@ We recommend two different methods to depend on libxrpl in your own [CMake][]
 project.
 Both methods add a CMake library target named `xrpl::libxrpl`.
 
-
-## Conan requirement 
+## Conan requirement
 
 The first method adds libxrpl as a [Conan][] requirement.
 With this method, there is no need for a Git [submodule][].
@@ -48,7 +47,6 @@ cmake \
 cmake --build . --parallel
 ```
 
-
 ## CMake subdirectory
 
 The second method adds the [rippled][] project as a CMake
@@ -89,7 +87,6 @@ cmake \
   ..
 cmake --build . --parallel
 ```
-
 
 [add_subdirectory]: https://cmake.org/cmake/help/latest/command/add_subdirectory.html
 [submodule]: https://git-scm.com/book/en/v2/Git-Tools-Submodules

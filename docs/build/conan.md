@@ -5,7 +5,6 @@ we should first understand _why_ we use Conan,
 and to understand that,
 we need to understand how we use CMake.
 
-
 ### CMake
 
 Technically, you don't need CMake to build this project.
@@ -33,9 +32,9 @@ Parameters include:
 - where to find the compiler and linker
 - where to find dependencies, e.g. libraries and headers
 - how to link dependencies, e.g. any special compiler or linker flags that
-    need to be used with them, including preprocessor definitions
+  need to be used with them, including preprocessor definitions
 - how to compile translation units, e.g. with optimizations, debug symbols,
-    position-independent code, etc.
+  position-independent code, etc.
 - on Windows, which runtime library to link with
 
 For some of these parameters, like the build system and compiler,
@@ -53,7 +52,6 @@ a pain.
 Most humans prefer to put them into a configuration file, once, that
 CMake can read every time it is configured.
 For CMake, that file is a [toolchain file][toolchain].
-
 
 ### Conan
 
@@ -79,10 +77,10 @@ Those files include:
 
 - A single toolchain file.
 - For every dependency, a CMake [package configuration file][pcf],
-    [package version file][pvf], and for every build type, a package
-    targets file.
-    Together, these files implement version checking and define `IMPORTED`
-    targets for the dependencies.
+  [package version file][pvf], and for every build type, a package
+  targets file.
+  Together, these files implement version checking and define `IMPORTED`
+  targets for the dependencies.
 
 The toolchain file itself amends the search path
 ([`CMAKE_PREFIX_PATH`][prefix_path]) so that [`find_package()`][find_package]

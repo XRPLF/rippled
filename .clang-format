@@ -1,5 +1,5 @@
 ---
-Language:        Cpp
+Language: Cpp
 AccessModifierOffset: -4
 AlignAfterOpenBracket: AlwaysBreak
 AlignConsecutiveAssignments: false
@@ -19,52 +19,52 @@ AlwaysBreakTemplateDeclarations: true
 BinPackArguments: false
 BinPackParameters: false
 BraceWrapping:
-  AfterClass:      true
+  AfterClass: true
   AfterControlStatement: true
-  AfterEnum:       false
-  AfterFunction:   true
-  AfterNamespace:  false
+  AfterEnum: false
+  AfterFunction: true
+  AfterNamespace: false
   AfterObjCDeclaration: true
-  AfterStruct:     true
-  AfterUnion:      true
-  BeforeCatch:     true
-  BeforeElse:      true
-  IndentBraces:    false
+  AfterStruct: true
+  AfterUnion: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
 BreakBeforeBinaryOperators: false
 BreakBeforeBraces: Custom
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: true
-ColumnLimit:     80
-CommentPragmas:  '^ IWYU pragma:'
+ColumnLimit: 80
+CommentPragmas: "^ IWYU pragma:"
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 Cpp11BracedListStyle: true
 DerivePointerAlignment: false
-DisableFormat:   false
+DisableFormat: false
 ExperimentalAutoDetectBinPacking: false
-ForEachMacros:   [ Q_FOREACH,  BOOST_FOREACH ]
-IncludeBlocks:   Regroup
+ForEachMacros: [Q_FOREACH, BOOST_FOREACH]
+IncludeBlocks: Regroup
 IncludeCategories:
-  - Regex:           '^<(test)/'
-    Priority:        0
-  - Regex:           '^<(xrpld)/'
-    Priority:        1
-  - Regex:           '^<(xrpl)/'
-    Priority:        2
-  - Regex:           '^<(boost)/'
-    Priority:        3
-  - Regex:           '^.*/'
-    Priority:        4
-  - Regex:           '^.*\.h'
-    Priority:        5
-  - Regex:           '.*'
-    Priority:        6
-IncludeIsMainRegex: '$'
+  - Regex: "^<(test)/"
+    Priority: 0
+  - Regex: "^<(xrpld)/"
+    Priority: 1
+  - Regex: "^<(xrpl)/"
+    Priority: 2
+  - Regex: "^<(boost)/"
+    Priority: 3
+  - Regex: "^.*/"
+    Priority: 4
+  - Regex: '^.*\.h'
+    Priority: 5
+  - Regex: ".*"
+    Priority: 6
+IncludeIsMainRegex: "$"
 IndentCaseLabels: true
 IndentFunctionDeclarationAfterType: false
 IndentRequiresClause: true
-IndentWidth:     4
+IndentWidth: 4
 IndentWrappedFunctionNames: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
@@ -78,20 +78,25 @@ PenaltyBreakString: 1000
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 200
 PointerAlignment: Left
-ReflowComments:  true
+ReflowComments: true
 RequiresClausePosition: OwnLine
-SortIncludes:    true
+SortIncludes: true
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
 SpacesBeforeTrailingComments: 2
-SpacesInAngles:  false
+SpacesInAngles: false
 SpacesInContainerLiterals: true
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
-Standard:        Cpp11
-TabWidth:        8
-UseTab:          Never
+Standard: Cpp11
+TabWidth: 8
+UseTab: Never
 QualifierAlignment: Right
+---
+Language: JavaScript
+---
+Language: Json
+IndentWidth: 2

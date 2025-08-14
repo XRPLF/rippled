@@ -1885,8 +1885,8 @@ class NegativeUNLVoteFilterValidations_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NegativeUNL, ledger, ripple);
-BEAST_DEFINE_TESTSUITE(NegativeUNLNoAmendment, ledger, ripple);
+BEAST_DEFINE_TESTSUITE(NegativeUNL, consensus, ripple);
+BEAST_DEFINE_TESTSUITE(NegativeUNLNoAmendment, consensus, ripple);
 
 BEAST_DEFINE_TESTSUITE(NegativeUNLVoteInternal, consensus, ripple);
 BEAST_DEFINE_TESTSUITE_MANUAL(NegativeUNLVoteScoreTable, consensus, ripple);

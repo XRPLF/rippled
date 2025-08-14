@@ -402,7 +402,7 @@ class SHAMapPathProof_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMap, ripple_app, ripple);
-BEAST_DEFINE_TESTSUITE(SHAMapPathProof, ripple_app, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMap, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapPathProof, shamap, ripple);
 }  // namespace tests
 }  // namespace ripple
