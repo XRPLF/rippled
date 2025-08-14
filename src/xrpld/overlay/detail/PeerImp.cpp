@@ -659,15 +659,13 @@ PeerImp::onShutdown(error_code ec)
 
     if (ec)
     {
-        // eof indicates that the stream was cleanly closed
-        // operation_aborted indicates an expired timer (slow shutdown)
-        // stream_truncated indicates the underlying tcp connection was closed
-        // broken_pipe the peer already closed the connection
-        // other errors should be logged
+        // - eof: the stream was cleanly closed
+        // - operation_aborted: an expired timer (slow shutdown)
+        // - stream_truncated: the tcp connection closed (no handshake) it could
+        // occur if a peer does not perform a graceful disconnect
+        // - broken_pipe: the peer is gone
         if (ec != boost::asio::error::eof &&
-            ec != boost::asio::error::operation_aborted &&
-            ec != boost::asio::ssl::error::stream_truncated &&
-            ec != boost::asio::error::broken_pipe)
+            ec != boost::asio::error::operation_aborted)
         {
             JLOG(journal_.warn()) << "onShutdown: " << ec.message();
         }
