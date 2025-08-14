@@ -83,7 +83,13 @@ jobs:
           conan config home || true
           
           echo "printing CONAN_GLOBAL_CONF"
+          cat $(conan config home)/global.conf
+          
+          echo "fixing CONAN_GLOBAL_CONF"
           echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
+          
+          echo "printing CONAN_GLOBAL_CONF"
+          cat $(conan config home)/global.conf
       - name: check environment
         run: |
           env | sort
