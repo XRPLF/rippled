@@ -145,7 +145,7 @@ jobs:
       - name: Set up Conan configuration
         run: |
           echo 'Installing configuration.'
-          cat conan/${{ inputs.os }}.conf ${{ inputs.os == 'linux' && '>>' || '>' }} $(conan config home)/global.conf
+          cat conan/global.conf ${{ inputs.os == 'linux' && '>>' || '>' }} $(conan config home)/global.conf
 
           echo 'Conan configuration:'
           conan config show '*'
