@@ -83,10 +83,12 @@ jobs:
         if: ${{ inputs.os == 'macos' }}
         run: |
           echo "Cleaning workspace '${{ github.workspace }}'."
-          rm -rf ${{ github.workspace }}/*
-          
-          # TEMPORARY
-          cat conan/${{ inputs.os }}.conf > $(conan config home)/global.conf
+          WORKSPACE=${{ github.workspace }}
+          if [ -z "${WORKSPACE}" ] || [ "${WORKSPACE}" = "/" ]; then
+            echo "Invalid working directory '${WORKSPACE}'."
+            exit 1
+          fi
+          find "${WORKSPACE}" -depth 1 | xargs rm -rfv
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Set up Python (Windows)
@@ -105,6 +107,9 @@ jobs:
 
           echo "Checking CMake version."
           cmake --version
+          
+          # TEMPORARY
+          cat conan/${{ inputs.os }}.conf > $(conan config home)/global.conf
 
           echo "Checking Conan version."
           conan --version
