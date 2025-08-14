@@ -177,6 +177,207 @@ doAccountNFTs(RPC::JsonContext& context)
     return result;
 }
 
+/** Gathers all objects for an account in a ledger.
+    @param ledger Ledger to search account objects.
+    @param account AccountID to find objects for.
+    @param typeFilter Gathers objects of these types. empty gathers all types.
+    @param dirIndex Begin gathering account objects from this directory.
+    @param entryIndex Begin gathering objects from this directory node.
+    @param limit Maximum number of objects to find.
+    @param jvResult A JSON result that holds the request objects.
+*/
+bool
+getAccountObjects(
+    ReadView const& ledger,
+    AccountID const& account,
+    std::optional<std::vector<LedgerEntryType>> const& typeFilter,
+    uint256 dirIndex,
+    uint256 entryIndex,
+    std::uint32_t const limit,
+    Json::Value& jvResult)
+{
+    // check if dirIndex is valid
+    if (!dirIndex.isZero() && !ledger.read({ltDIR_NODE, dirIndex}))
+        return false;
+
+    auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
+                                LedgerEntryType ledgerType) {
+        auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
+        return it != typeFilter.end();
+    };
+
+    // if dirIndex != 0, then all NFTs have already been returned.  only
+    // iterate NFT pages if the filter says so AND dirIndex == 0
+    bool iterateNFTPages =
+        (!typeFilter.has_value() ||
+         typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
+        dirIndex == beast::zero;
+
+    Keylet const firstNFTPage = keylet::nftpage_min(account);
+
+    // we need to check the marker to see if it is an NFTTokenPage index.
+    if (iterateNFTPages && entryIndex != beast::zero)
+    {
+        // if it is we will try to iterate the pages up to the limit
+        // and then change over to the owner directory
+
+        if (firstNFTPage.key != (entryIndex & ~nft::pageMask))
+            iterateNFTPages = false;
+    }
+
+    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
+
+    // this is a mutable version of limit, used to seemlessly switch
+    // to iterating directory entries when nftokenpages are exhausted
+    uint32_t mlimit = limit;
+
+    // iterate NFTokenPages preferentially
+    if (iterateNFTPages)
+    {
+        Keylet const first = entryIndex == beast::zero
+            ? firstNFTPage
+            : Keylet{ltNFTOKEN_PAGE, entryIndex};
+
+        Keylet const last = keylet::nftpage_max(account);
+
+        // current key
+        uint256 ck = ledger.succ(first.key, last.key.next()).value_or(last.key);
+
+        // current page
+        auto cp = ledger.read(Keylet{ltNFTOKEN_PAGE, ck});
+
+        while (cp)
+        {
+            jvObjects.append(cp->getJson(JsonOptions::none));
+            auto const npm = (*cp)[~sfNextPageMin];
+            if (npm)
+                cp = ledger.read(Keylet(ltNFTOKEN_PAGE, *npm));
+            else
+                cp = nullptr;
+
+            if (--mlimit == 0)
+            {
+                if (cp)
+                {
+                    jvResult[jss::limit] = limit;
+                    jvResult[jss::marker] = std::string("0,") + to_string(ck);
+                    return true;
+                }
+            }
+
+            if (!npm)
+                break;
+
+            ck = *npm;
+        }
+
+        // if execution reaches here then we're about to transition
+        // to iterating the root directory (and the conventional
+        // behaviour of this RPC function.) Therefore we should
+        // zero entryIndex so as not to terribly confuse things.
+        entryIndex = beast::zero;
+    }
+
+    auto const root = keylet::ownerDir(account);
+    auto found = false;
+
+    if (dirIndex.isZero())
+    {
+        dirIndex = root.key;
+        found = true;
+    }
+
+    auto dir = ledger.read({ltDIR_NODE, dirIndex});
+    if (!dir)
+    {
+        // it's possible the user had nftoken pages but no
+        // directory entries. If there's no nftoken page, we will
+        // give empty array for account_objects.
+        if (mlimit >= limit)
+            jvResult[jss::account_objects] = Json::arrayValue;
+
+        // non-zero dirIndex validity was checked in the beginning of this
+        // function; by this point, it should be zero. This function returns
+        // true regardless of nftoken page presence; if absent, account_objects
+        // is already set as an empty array. Notice we will only return false in
+        // this function when entryIndex can not be found, indicating an invalid
+        // marker error.
+        return true;
+    }
+
+    std::uint32_t i = 0;
+    for (;;)
+    {
+        auto const& entries = dir->getFieldV256(sfIndexes);
+        auto iter = entries.begin();
+
+        if (!found)
+        {
+            iter = std::find(iter, entries.end(), entryIndex);
+            if (iter == entries.end())
+                return false;
+
+            found = true;
+        }
+
+        // it's possible that the returned NFTPages exactly filled the
+        // response.  Check for that condition.
+        if (i == mlimit && mlimit < limit)
+        {
+            jvResult[jss::limit] = limit;
+            jvResult[jss::marker] =
+                to_string(dirIndex) + ',' + to_string(*iter);
+            return true;
+        }
+
+        for (; iter != entries.end(); ++iter)
+        {
+            auto const sleNode = ledger.read(keylet::child(*iter));
+
+            if (!typeFilter.has_value() ||
+                typeMatchesFilter(typeFilter.value(), sleNode->getType()))
+            {
+                jvObjects.append(sleNode->getJson(JsonOptions::none));
+            }
+
+            if (++i == mlimit)
+            {
+                if (++iter != entries.end())
+                {
+                    jvResult[jss::limit] = limit;
+                    jvResult[jss::marker] =
+                        to_string(dirIndex) + ',' + to_string(*iter);
+                    return true;
+                }
+
+                break;
+            }
+        }
+
+        auto const nodeIndex = dir->getFieldU64(sfIndexNext);
+        if (nodeIndex == 0)
+            return true;
+
+        dirIndex = keylet::page(root, nodeIndex).key;
+        dir = ledger.read({ltDIR_NODE, dirIndex});
+        if (!dir)
+            return true;
+
+        if (i == mlimit)
+        {
+            auto const& e = dir->getFieldV256(sfIndexes);
+            if (!e.empty())
+            {
+                jvResult[jss::limit] = limit;
+                jvResult[jss::marker] =
+                    to_string(dirIndex) + ',' + to_string(*e.begin());
+            }
+
+            return true;
+        }
+    }
+}
+
 Json::Value
 doAccountObjects(RPC::JsonContext& context)
 {
@@ -284,7 +485,7 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
-    if (!RPC::getAccountObjects(
+    if (!getAccountObjects(
             *ledger,
             accountID,
             typeFilter,
