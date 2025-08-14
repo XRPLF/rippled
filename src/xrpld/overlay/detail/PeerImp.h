@@ -134,6 +134,7 @@ private:
 
     Application& app_;
     id_t const id_;
+    std::string fingerprint_;
     beast::WrappedSink sink_;
     beast::WrappedSink p_sink_;
     beast::Journal const journal_;
@@ -635,7 +636,7 @@ private:
     cancelTimer() noexcept;
 
     static std::string
-    makePrefix(id_t id, beast::IP::Endpoint const& remoteAddress, PublicKey const& publicKey);
+    makePrefix(id_t id, std::string const& fingerprint);
 
     void
     doAccept();
@@ -688,6 +689,9 @@ private:
     void
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
+
+    std::string
+    fingerprint() const;
 
 public:
     //--------------------------------------------------------------------------
@@ -832,8 +836,9 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id, slot->remote_endpoint(), publicKey))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id, slot->remote_endpoint(), publicKey))
+    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey))
+    , sink_(app_.journal("Peer"), fingerprint_)
+    , p_sink_(app_.journal("Protocol"), fingerprint_)
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
@@ -884,7 +889,7 @@ PeerImp::PeerImp(
                FEATURE_VPRR,
                app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
         << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << fingerprint() << " " << id_;
+        << remote_address_ << " " << id_;
 }
 
 template <class FwdIt, class>

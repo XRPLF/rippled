@@ -130,11 +130,8 @@ public:
         return slice();
     }
 
-    Slice
-    shortId() const noexcept
-    {
-        return slice().substr(0, 10);
-    }
+    std::string
+    shortId() const noexcept;
 };
 
 inline std::string

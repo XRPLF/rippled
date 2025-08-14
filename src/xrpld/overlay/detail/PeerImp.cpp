@@ -82,8 +82,9 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id, slot->remote_endpoint(), publicKey))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id, slot->remote_endpoint(), publicKey))
+    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey))
+    , sink_(app_.journal("Peer"), makePrefix(id, fingerprint_))
+    , p_sink_(app_.journal("Protocol"), makePrefix(id, fingerprint_))
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
@@ -91,7 +92,7 @@ PeerImp::PeerImp(
     , stream_(*stream_ptr_)
     , strand_(boost::asio::make_strand(socket_.get_executor()))
     , timer_(waitable_timer{socket_.get_executor()})
-    , remote_address_()
+    , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(true)
     , protocol_(protocol)
@@ -280,7 +281,8 @@ PeerImp::send(std::shared_ptr<Message> const& m)
              sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        sink << (n.empty() ? remote_address_ : n) << " sendq: " << sendq_size;
+        sink << (n.empty() ? remote_address_.to_string() : n)
+             << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -584,9 +586,9 @@ PeerImp::fail(std::string const& name, error_code ec)
     if (!socket_.is_open())
         return;
 
-    JLOG(journal_.warn()) << name << " from "
-                          << fingerprint() << ": "
-                          << ec.message();
+    JLOG(journal_.warn())
+        << name << " from " << toBase58(TokenType::NodePublic, publicKey_)
+        << " at " << remote_address_.to_string() << ": " << ec.message();
 
     shutdown();
 }
@@ -609,8 +611,8 @@ PeerImp::fail(std::string const& reason)
     if (journal_.active(beast::severities::kWarning))
     {
         std::string const n = name();
-        JLOG(journal_.warn())
-            << (n.empty() ? remote_address_ : n) << " failed: " << reason;
+        JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
+                              << " failed: " << reason;
     }
 
     shutdown();
@@ -731,11 +733,11 @@ PeerImp::setTimer(std::chrono::seconds interval)
 //------------------------------------------------------------------------------
 
 std::string
-PeerImp::makePrefix(id_t id, beast::IP::Endpoint const& remoteAddress, PublicKey const& publicKey)
+PeerImp::makePrefix(id_t id, std::string const& fingerprint)
 {
     std::stringstream ss;
     ss << "[" << std::setfill('0') << std::setw(3) << id
-        << ", fingerprint: " << getFingerprint(remoteAddress, publicKey) << "] ";
+       << ", fingerprint: " << fingerprint << "] ";
     return ss.str();
 }
 
@@ -2161,8 +2163,9 @@ PeerImp::onValidatorListMessage(
 
     auto const hash = sha512Half(manifest, blobs, version);
 
-    JLOG(p_journal_.debug()) << "Received " << messageType << " from "
-                             << remote_address_ << " (" << id_ << ")";
+    JLOG(p_journal_.debug())
+        << "Received " << messageType << " from " << remote_address_.to_string()
+        << " (" << id_ << ")";
 
     if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
     {
@@ -2189,8 +2192,8 @@ PeerImp::onValidatorListMessage(
         << "Processed " << messageType << " version " << version << " from "
         << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
                                      : "unknown or invalid publisher")
-        << " from " << remote_address_ << " (" << id_ << ") with best result "
-        << to_string(applyResult.bestDisposition());
+        << " from " << remote_address_.to_string() << " (" << id_
+        << ") with best result " << to_string(applyResult.bestDisposition());
 
     // Act based on the best result
     switch (applyResult.bestDisposition())
@@ -2318,7 +2321,8 @@ PeerImp::onValidatorListMessage(
             case ListDisposition::same_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with current sequence from peer " << remote_address_;
+                    << "(s) with current sequence from peer "
+                    << remote_address_;
                 break;
             case ListDisposition::known_sequence:
                 JLOG(p_journal_.warn())
