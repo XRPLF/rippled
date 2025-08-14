@@ -20,8 +20,8 @@
 #include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/applySteps.h>
+#include <xrpld/app/wasm/WasmVM.h>
 #include <xrpld/ledger/Dir.h>
 
 #include <xrpl/protocol/Feature.h>
