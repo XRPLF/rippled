@@ -63,4 +63,4 @@ extern std::string const codecovWasm;
 
 extern std::string const floatHex;
 
-extern std::string const disbledFloatHex;
+extern std::string const disabledFloatHex;

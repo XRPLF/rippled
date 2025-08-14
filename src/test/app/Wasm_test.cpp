@@ -685,7 +685,7 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto const wasmStr = boost::algorithm::unhex(disbledFloatHex);
+        auto const wasmStr = boost::algorithm::unhex(disabledFloatHex);
         Bytes wasm(wasmStr.begin(), wasmStr.end());
         std::string const funcName("finish");
         TestHostFunctions hfs(env, 0);
@@ -694,7 +694,7 @@ struct Wasm_test : public beast::unit_test::suite
             // f32 set constant, opcode disabled exception
             auto const re =
                 runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
-            BEAST_EXPECT(!re);
+            BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
         }
 
         {
@@ -702,7 +702,7 @@ struct Wasm_test : public beast::unit_test::suite
             wasm[0x117] = 0x92;
             auto const re =
                 runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
-            BEAST_EXPECT(!re);
+            BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
         }
     }
 
