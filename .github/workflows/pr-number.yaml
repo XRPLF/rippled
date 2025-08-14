@@ -22,8 +22,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.clio_notify_token }}
         run: |
           echo "Fetching PR number associated with current commit '${{ github.sha }}'."
-          gh pr list --search ${{ github.sha }} --json
-          NUMBER=$(gh pr list --search ${{ github.sha }} --json number -q '[0] | .number' || echo '')
+          gh pr list --search=${{ github.sha }} --json=number
+          NUMBER=$(gh pr list --search=${{ github.sha }} --json=number -q '[0] | .number' || echo '')
           if [ -z "${NUMBER}" ]; then
             echo 'Could not fetch PR number.'
             exit 1
