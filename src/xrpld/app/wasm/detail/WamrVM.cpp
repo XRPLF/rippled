@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/WamrVM.h>
+#include <xrpld/app/wasm/WamrVM.h>
 
 #include <xrpl/basics/Log.h>
 

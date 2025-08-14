@@ -18,7 +18,7 @@
 //==============================================================================
 #pragma once
 
-#include <xrpld/app/misc/WasmVM.h>
+#include <xrpld/app/wasm/WasmVM.h>
 
 #include <wasm_c_api.h>
 #include <wasm_export.h>
