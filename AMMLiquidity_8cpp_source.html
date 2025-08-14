@@ -326,7 +326,7 @@ $(function() {
 <div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>            <span class="keywordflow">return</span> offer;</div>
 <div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        }</div>
 <div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span> </div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">error</a>()) &lt;&lt; <span class="stringliteral">&quot;AMMLiquidity::getOffer, failed &quot;</span></div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;AMMLiquidity::getOffer, no valid offer &quot;</span></div>
 <div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                         &lt;&lt; ammContext_.multiPath() &lt;&lt; <span class="stringliteral">&quot; &quot;</span></div>
 <div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                         &lt;&lt; ammContext_.curIters() &lt;&lt; <span class="stringliteral">&quot; &quot;</span></div>
 <div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                         &lt;&lt; (clobQuality ? clobQuality-&gt;rate() : <a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a>{})</div>
