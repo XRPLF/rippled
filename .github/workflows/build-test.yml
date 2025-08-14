@@ -79,6 +79,16 @@ jobs:
     runs-on: ${{ matrix.architecture.runner }}
     container: ${{ inputs.os == 'linux' && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
     steps:
+      - name: Clean workspace (MacOS)
+        if: ${{ inputs.os == 'macos' }}
+        run: |
+          echo "Cleaning workspace."
+          rm -rf ${{ github.workspace }}/*
+      - name: Clean workspace (Windows)
+        if: ${{ inputs.os == 'windows' }}
+        run: |
+          echo "Cleaning workspace."
+          if exist ${{ github.workspace }} (rmdir /s /q ${{ github.workspace }}\*)
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Set up Python (Windows)

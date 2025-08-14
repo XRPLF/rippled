@@ -67,7 +67,7 @@ runs:
       shell: bash
       run: |
         echo 'Installing configuration and profile.'
-        echo 'cat conan/${{ inputs.os }}.conf' ${{ inputs.os == 'linux' && '>>' || '>' }} $(conan config home)/global.conf
+        cat conan/${{ inputs.os }}.conf ${{ inputs.os == 'linux' && '>>' || '>' }} $(conan config home)/global.conf
         conan config install conan/profiles/default -tf $(conan config home)/profiles/
 
         echo 'Conan configuration:'
