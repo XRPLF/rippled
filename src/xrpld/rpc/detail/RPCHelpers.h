@@ -232,7 +232,7 @@ getAPIVersionNumber(Json::Value const& value, bool betaEnabled);
 
 /** Return a ledger based on ledger_hash or ledger_index,
     or an RPC error */
-std::variant<std::shared_ptr<Ledger const>, Json::Value>
+Expected<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context);
 
 std::optional<std::pair<PublicKey, SecretKey>>

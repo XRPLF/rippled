@@ -402,34 +402,7 @@ Status
 ledgerFromRequest(T& ledger, GRPCContext<R>& context)
 {
     R& request = context.params;
-    return ledgerFromSpecifier(ledger, request.ledger(), context);
-}
-
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>&);
-
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>&);
-
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>&);
-
-template <class T>
-Status
-ledgerFromSpecifier(
-    T& ledger,
-    org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
-    Context& context)
-{
+    auto const& specifier = request.ledger();
     ledger.reset();
 
     using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
@@ -437,14 +410,10 @@ ledgerFromSpecifier(
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
-            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
-            {
-                return getLedger(ledger, *hash, context);
-            }
-            return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
+            return ledgerFromHash(ledger, specifier.hash(), context);
         }
         case LedgerCase::kSequence:
-            return getLedger(ledger, specifier.sequence(), context);
+            return ledgerFromIndex(ledger, specifier.sequence(), context);
         case LedgerCase::kShortcut:
             [[fallthrough]];
         case LedgerCase::LEDGER_NOT_SET: {
@@ -476,6 +445,24 @@ ledgerFromSpecifier(
 
     return Status::OK;
 }
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>&);
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>&);
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>&);
 
 template <class T>
 Status
@@ -1004,7 +991,7 @@ getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
     return requestedVersion.asUInt();
 }
 
-std::variant<std::shared_ptr<Ledger const>, Json::Value>
+Expected<std::shared_ptr<Ledger const>, Json::Value>
 getLedgerByContext(RPC::JsonContext& context)
 {
     auto const hasHash = context.params.isMember(jss::ledger_hash);
@@ -1016,8 +1003,8 @@ getLedgerByContext(RPC::JsonContext& context)
 
     if ((hasHash && hasIndex) || !(hasHash || hasIndex))
     {
-        return RPC::make_param_error(
-            "Exactly one of ledger_hash and ledger_index can be set.");
+        return Unexpected(RPC::make_param_error(
+            "Exactly one of ledger_hash and ledger_index can be set."));
     }
 
     context.loadType = Resource::feeHeavyBurdenRPC;
@@ -1026,30 +1013,30 @@ getLedgerByContext(RPC::JsonContext& context)
     {
         auto const& jsonHash = context.params[jss::ledger_hash];
         if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
-            return RPC::invalid_field_error(jss::ledger_hash);
+            return Unexpected(RPC::invalid_field_error(jss::ledger_hash));
     }
     else
     {
         auto const& jsonIndex = context.params[jss::ledger_index];
         if (!jsonIndex.isInt())
-            return RPC::invalid_field_error(jss::ledger_index);
+            return Unexpected(RPC::invalid_field_error(jss::ledger_index));
 
         // We need a validated ledger to get the hash from the sequence
         if (ledgerMaster.getValidatedLedgerAge() >
             RPC::Tuning::maxValidatedLedgerAge)
         {
             if (context.apiVersion == 1)
-                return rpcError(rpcNO_CURRENT);
-            return rpcError(rpcNOT_SYNCED);
+                return Unexpected(rpcError(rpcNO_CURRENT));
+            return Unexpected(rpcError(rpcNOT_SYNCED));
         }
 
         ledgerIndex = jsonIndex.asInt();
         auto ledger = ledgerMaster.getValidatedLedger();
 
         if (ledgerIndex >= ledger->info().seq)
-            return RPC::make_param_error("Ledger index too large");
+            return Unexpected(RPC::make_param_error("Ledger index too large"));
         if (ledgerIndex <= 0)
-            return RPC::make_param_error("Ledger index too small");
+            return Unexpected(RPC::make_param_error("Ledger index too small"));
 
         auto const j = context.app.journal("RPCHandler");
         // Try to get the hash of the desired ledger from the validated
@@ -1118,9 +1105,8 @@ getLedgerByContext(RPC::JsonContext& context)
     if (auto il = context.app.getInboundLedgers().find(ledgerHash))
         return il->getJson(0);
 
-    return RPC::make_error(
-        rpcNOT_READY, "findCreate failed to return an inbound ledger");
-}
+    return Unexpected(RPC::make_error(
+        rpcNOT_READY, "findCreate failed to return an inbound ledger"));
 
 }  // namespace RPC
 }  // namespace ripple
