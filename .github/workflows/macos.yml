@@ -84,10 +84,6 @@ jobs:
           
           echo "printing CONAN_GLOBAL_CONF"
           echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
-          
-          # TEMPORARY
-          ls -al ~/.conan2
-          cat conan/${{ inputs.os }}.conf > ~/.conan2/global.conf
       - name: check environment
         run: |
           env | sort
