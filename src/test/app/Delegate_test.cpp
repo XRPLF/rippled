@@ -781,7 +781,8 @@ class Delegate_test : public beast::unit_test::suite
 
         // PaymentMint and PaymentBurn for MPT
         {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const gw{"gateway"};
@@ -810,7 +811,7 @@ class Delegate_test : public beast::unit_test::suite
                     // pre-amendment: PaymentMint is not supported for MPT
                     env(pay(gw, alice, MPT(50)),
                         delegate::as(bob),
-                        ter(tecNO_DELEGATE_PERMISSION));
+                        ter(tefEXCEPTION));
                 }
                 else
                 {
@@ -831,7 +832,7 @@ class Delegate_test : public beast::unit_test::suite
                     // pre-amendment: PaymentBurn is not supported for MPT
                     env(pay(alice, gw, MPT(50)),
                         delegate::as(bob),
-                        ter(tecNO_DELEGATE_PERMISSION));
+                        ter(tefEXCEPTION));
                 }
                 else
                 {

@@ -23,7 +23,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
 namespace ripple {

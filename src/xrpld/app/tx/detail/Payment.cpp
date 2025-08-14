@@ -261,31 +261,37 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
 
-    auto const& dstAmount = tx.getFieldAmount(sfAmount);
-
-    // If fixDelegateV1_1 is not enabled, PaymentMint/PaymentBurn is not
-    // supported for MPT. In this case, only transaction-level permission
-    // (specifically Payment) is allowed for MPT.
-    if (!view.rules().enabled(fixDelegateV1_1) && dstAmount.holds<MPTIssue>())
-        return tecNO_DELEGATE_PERMISSION;
-
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
-    auto const& amountAsset = dstAmount.asset();
-
+    auto const& dstAmount = tx.getFieldAmount(sfAmount);
     // post-amendment: disallow cross currency payments for PaymentMint and
     // PaymentBurn
-    if (view.rules().enabled(fixDelegateV1_1) && tx.isFieldPresent(sfSendMax) &&
-        tx[sfSendMax].asset() != amountAsset)
-        return tecNO_DELEGATE_PERMISSION;
+    if (view.rules().enabled(fixDelegateV1_1))
+    {
+        auto const& amountAsset = dstAmount.asset();
+        if (tx.isFieldPresent(sfSendMax) &&
+            tx[sfSendMax].asset() != amountAsset)
+            return tecNO_DELEGATE_PERMISSION;
 
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfAccount])
+        if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+            amountAsset.getIssuer() == tx[sfAccount])
+            return tesSUCCESS;
+
+        if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+            amountAsset.getIssuer() == tx[sfDestination])
+            return tesSUCCESS;
+
+        return tecNO_DELEGATE_PERMISSION;
+    }
+
+    auto const& amountIssue = dstAmount.issue();
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
+        amountIssue.account == tx[sfAccount])
         return tesSUCCESS;
 
-    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
-        amountAsset.getIssuer() == tx[sfDestination])
+    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountIssue) &&
+        amountIssue.account == tx[sfDestination])
         return tesSUCCESS;
 
     return tecNO_DELEGATE_PERMISSION;
