@@ -27,8 +27,7 @@ namespace test {
 static Bytes
 toBytes(std::uint8_t value)
 {
-    auto const* b = reinterpret_cast<uint8_t const*>(&value);
-    return Bytes{b, b + 1};
+    return {value};
 }
 
 static Bytes
@@ -487,11 +486,9 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(actualScale.has_value()))
             {
                 BEAST_EXPECT(
-                    actualScale.has_value() &&
-                    std::equal(
-                        actualScale.value().begin(),
-                        actualScale.value().end(),
-                        toBytes(expectedScale).begin()));
+                    std::ranges::equal(
+                        *actualScale,
+                        toBytes(expectedScale));
             }
         }
     }
@@ -1576,12 +1573,10 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         }                                                              \
     }
 
-        // accountKeylet
         COMPARE_KEYLET(accountKeylet, keylet::account, env.master.id());
         COMPARE_KEYLET_FAIL(
             accountKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
 
-        // ammKeylet
         COMPARE_KEYLET(
             ammKeylet, keylet::amm, xrpIssue(), env.master["USD"].issue());
         COMPARE_KEYLET_FAIL(
@@ -1595,12 +1590,10 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             makeMptID(1, env.master.id()),
             xrpIssue());
 
-        // checkKeylet
         COMPARE_KEYLET(checkKeylet, keylet::check, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
             checkKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
-        // credentialKeylet
         std::string const credType = "test";
         COMPARE_KEYLET(
             credentialKeylet,
@@ -1633,12 +1626,10 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             xrpAccount(),
             Slice(credType.data(), credType.size()));
 
-        // didKeylet
         COMPARE_KEYLET(didKeylet, keylet::did, env.master.id());
         COMPARE_KEYLET_FAIL(
             didKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
 
-        // delegateKeylet
         COMPARE_KEYLET(
             delegateKeylet, keylet::delegate, env.master.id(), alice.id());
         COMPARE_KEYLET_FAIL(
@@ -1657,7 +1648,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             xrpAccount(),
             env.master.id());
 
-        // depositPreauthKeylet
         COMPARE_KEYLET(
             depositPreauthKeylet,
             keylet::depositPreauth,
@@ -1679,12 +1669,10 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             xrpAccount(),
             env.master.id());
 
-        // escrowKeylet
         COMPARE_KEYLET(escrowKeylet, keylet::escrow, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
             escrowKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
-        // lineKeylet
         Currency usd = to_currency("USD");
         COMPARE_KEYLET(
             lineKeylet, keylet::line, env.master.id(), alice.id(), usd);
@@ -1713,7 +1701,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             alice.id(),
             to_currency(""));
 
-        //.mptIssuanceKeylet
         {
             auto actual = hfs.mptIssuanceKeylet(env.master.id(), 1);
             auto expected = keylet::mptIssuance(1, env.master.id());
@@ -1729,7 +1716,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
                     actual.error() == HostFunctionError::INVALID_ACCOUNT);
         }
 
-        // mptokenKeylet
         auto const sampleMPTID = makeMptID(1, env.master.id());
         COMPARE_KEYLET(mptokenKeylet, keylet::mptoken, sampleMPTID, alice.id());
         COMPARE_KEYLET_FAIL(
@@ -1743,7 +1729,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             sampleMPTID,
             xrpAccount());
 
-        // nftOfferKeylet
         COMPARE_KEYLET(nftOfferKeylet, keylet::nftoffer, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
             nftOfferKeylet,
@@ -1751,17 +1736,14 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             xrpAccount(),
             1);
 
-        // offerKeylet
         COMPARE_KEYLET(offerKeylet, keylet::offer, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
             offerKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
-        // oracleKeylet
         COMPARE_KEYLET(oracleKeylet, keylet::oracle, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
             oracleKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
-        // paychanKeylet
         COMPARE_KEYLET(
             paychanKeylet, keylet::payChan, env.master.id(), alice.id(), 1);
         COMPARE_KEYLET_FAIL(
@@ -1783,7 +1765,6 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             env.master.id(),
             1);
 
-        // permissionedDomainKeylet
         COMPARE_KEYLET(
             permissionedDomainKeylet,
             keylet::permissionedDomain,
@@ -1795,17 +1776,14 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             xrpAccount(),
             1);
 
-        // signersKeylet
         COMPARE_KEYLET(signersKeylet, keylet::signers, env.master.id());
         COMPARE_KEYLET_FAIL(
             signersKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount());
 
-        // ticketKeylet
         COMPARE_KEYLET(ticketKeylet, keylet::ticket, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
             ticketKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
 
-        // vaultKeylet
         COMPARE_KEYLET(vaultKeylet, keylet::vault, env.master.id(), 1);
         COMPARE_KEYLET_FAIL(
             vaultKeylet, HostFunctionError::INVALID_ACCOUNT, xrpAccount(), 1);
@@ -2114,17 +2092,18 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         // Valid account
         {
             auto const result = hfs.traceAccount(msg, env.master.id());
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(
-                result.value() ==
-                msg.size() + toBase58(env.master.id()).size());
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() ==
+                    msg.size() + toBase58(env.master.id()).size());
         }
 
         // Invalid (zero) account
         {
             auto const result = hfs.traceAccount(msg, xrpAccount());
-            BEAST_EXPECT(!result.has_value());
-            BEAST_EXPECT(result.error() == HostFunctionError::INVALID_ACCOUNT);
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::INVALID_ACCOUNT);
         }
     }
 
@@ -2146,9 +2125,9 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         STAmount amount = XRP(12345);
         {
             auto const result = hfs.traceAmount(msg, amount);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(
-                result.value() == msg.size() + amount.getFullText().size());
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() == msg.size() + amount.getFullText().size());
         }
 
         // IOU amount
@@ -2158,9 +2137,10 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
         STAmount iouAmount = env.master["USD"](100);
         {
             auto const result = hfs.traceAmount(msg, iouAmount);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(
-                result.value() == msg.size() + iouAmount.getFullText().size());
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() ==
+                    msg.size() + iouAmount.getFullText().size());
         }
 
         // MPT amount
@@ -2169,9 +2149,10 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
             Asset mptAsset = Asset(mptId);
             STAmount mptAmount(mptAsset, 123456);
             auto const result = hfs.traceAmount(msg, mptAmount);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT(
-                result.value() == msg.size() + mptAmount.getFullText().size());
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() ==
+                    msg.size() + mptAmount.getFullText().size());
         }
     }
 

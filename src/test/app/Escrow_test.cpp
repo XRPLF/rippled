@@ -2464,7 +2464,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
         testWithFeats(all);
-        // testWithFeats(all - featureTokenEscrow);
+        testWithFeats(all - featureTokenEscrow);
     };
 };
 
