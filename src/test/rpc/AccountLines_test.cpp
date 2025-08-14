@@ -183,26 +183,27 @@ public:
                                            LedgerInfo const& info,
                                            int count) {
             // Get account_lines by ledger index.
-            auto const linesSeq = env.rpc(
-                "json",
-                "account_lines",
-                R"({"account": ")" + account.human() +
-                    R"(", )"
-                    R"("ledger_index": )" +
-                    std::to_string(info.seq) + "}");
-            BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(linesSeq[jss::result][jss::lines].size() == count);
+            {
+                Json::Value params;
+                params[jss::account] = account.human();
+                params[jss::ledger_index] = info.seq;
+                auto const linesSeq =
+                    env.rpc("json", "account_lines", to_string(params));
+                BEAST_EXPECT(linesSeq[jss::result][jss::lines].isArray());
+                BEAST_EXPECT(linesSeq[jss::result][jss::lines].size() == count);
+            }
 
             // Get account_lines by ledger hash.
-            auto const linesHash = env.rpc(
-                "json",
-                "account_lines",
-                R"({"account": ")" + account.human() +
-                    R"(", )"
-                    R"("ledger_hash": ")" +
-                    to_string(info.hash) + R"("})");
-            BEAST_EXPECT(linesHash[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(linesHash[jss::result][jss::lines].size() == count);
+            {
+                Json::Value params;
+                params[jss::account] = account.human();
+                params[jss::ledger_hash] = to_string(info.hash);
+                auto const linesHash =
+                    env.rpc("json", "account_lines", to_string(params));
+                BEAST_EXPECT(linesHash[jss::result][jss::lines].isArray());
+                BEAST_EXPECT(
+                    linesHash[jss::result][jss::lines].size() == count);
+            }
         };
 
         // Alice should have no trust lines in ledger 3.
@@ -217,18 +218,17 @@ public:
         {
             // Surprisingly, it's valid to specify both index and hash, in
             // which case the hash wins.
+            Json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::ledger_hash] = to_string(ledger4Info.hash);
+            params[jss::ledger_index] = ledger58Info.seq;
             auto const lines = env.rpc(
-                "json",
-                "account_lines",
-                R"({"account": ")" + alice.human() +
-                    R"(", )"
-                    R"("ledger_hash": ")" +
-                    to_string(ledger4Info.hash) +
-                    R"(", )"
-                    R"("ledger_index": )" +
-                    std::to_string(ledger58Info.seq) + "}");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+                "json", "account_lines", to_string(params))[jss::result];
+            BEAST_EXPECT(lines[jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                lines[jss::error_message] ==
+                "Exactly one of 'ledger_hash' or 'ledger_index' can be "
+                "specified.");
         }
         {
             // alice should have 52 trust lines in the current ledger.
@@ -1051,26 +1051,24 @@ public:
         testAccountLinesHistory(alice, ledger58Info, 52);
 
         {
-            // Surprisingly, it's valid to specify both index and hash, in
-            // which case the hash wins.
-            auto const lines = env.rpc(
-                "json2",
-                "{ "
-                R"("method" : "account_lines",)"
-                R"("jsonrpc" : "2.0",)"
-                R"("ripplerpc" : "2.0",)"
-                R"("id" : 5,)"
-                R"("params": )"
-                R"({"account": ")" +
-                    alice.human() +
-                    R"(", )"
-                    R"("ledger_hash": ")" +
-                    to_string(ledger4Info.hash) +
-                    R"(", )"
-                    R"("ledger_index": )" +
-                    std::to_string(ledger58Info.seq) + "}}");
-            BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
-            BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+            Json::Value params;
+            params[jss::method] = "account_lines";
+            params[jss::jsonrpc] = "2.0";
+            params[jss::ripplerpc] = "2.0";
+            params[jss::id] = 5;
+            {
+                Json::Value subParams;
+                subParams[jss::account] = alice.human();
+                subParams[jss::ledger_hash] = to_string(ledger4Info.hash);
+                subParams[jss::ledger_index] = ledger58Info.seq;
+                params[jss::params] = subParams;
+            }
+            auto const lines = env.rpc("json2", to_string(params));
+            BEAST_EXPECT(lines[jss::error][jss::error] == "invalidParams");
+            BEAST_EXPECT(
+                lines[jss::error][jss::message] ==
+                "Exactly one of 'ledger_hash' or 'ledger_index' can be "
+                "specified.");
             BEAST_EXPECT(
                 lines.isMember(jss::jsonrpc) && lines[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(
