@@ -19,6 +19,7 @@
 
 #include <xrpld/net/RPCCall.h>
 #include <xrpld/net/RPCSub.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -26,6 +27,8 @@
 #include <xrpl/json/to_string.h>
 
 #include <deque>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -91,8 +94,17 @@ public:
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
             mSending = m_jobQueue.addJob(
-                jtCLIENT_SUBSCRIBE, "RPCSub::sendThread", [this]() {
-                    sendThread();
+                jtCLIENT_SUBSCRIBE,
+                "RPCSub::sendThread",
+                [this, journal = j_]() {
+                    perf::measureDurationAndLog(
+                        [&]() {
+                            sendThread();
+                            return true;
+                        },
+                        "RPCSub::sendThread",
+                        1s,
+                        journal);
                 });
         }
     }

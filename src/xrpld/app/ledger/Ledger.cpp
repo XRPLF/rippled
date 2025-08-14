@@ -30,6 +30,7 @@
 #include <xrpld/core/SociDB.h>
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/nodestore/detail/DatabaseNodeImp.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
@@ -45,6 +46,8 @@
 
 #include <utility>
 #include <vector>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -1029,7 +1032,12 @@ pendSaveValidated(
             isCurrent ? jtPUBLEDGER : jtPUBOLDLEDGER,
             std::to_string(ledger->seq()),
             [&app, ledger, isCurrent]() {
-                saveValidatedLedger(app, ledger, isCurrent);
+                beast::Journal journal = app.journal("Ledger");
+                perf::measureDurationAndLog(
+                    [&]() { saveValidatedLedger(app, ledger, isCurrent); },
+                    "OrderBookDB::update:",
+                    1s,
+                    journal);
             }))
     {
         return true;

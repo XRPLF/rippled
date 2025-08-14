@@ -1079,8 +1079,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMManifests> const& m)
         fee_.update(Resource::feeModerateBurdenPeer, "oversize");
 
     app_.getJobQueue().addJob(
-        jtMANIFEST, "receiveManifests", [this, that = shared_from_this(), m]() {
-            overlay_.onManifests(m, that);
+        jtMANIFEST,
+        "receiveManifests",
+        [this, that = shared_from_this(), m, journal = p_journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    overlay_.onManifests(m, that);
+                    return true;
+                },
+                "receiveManifests",
+                1s,
+                journal);
         });
 }
 
@@ -1363,10 +1372,18 @@ PeerImp::handleTransaction(
                  flags,
                  checkSignature,
                  batch,
-                 stx]() {
-                    if (auto peer = weak.lock())
-                        peer->checkTransaction(
-                            flags, checkSignature, stx, batch);
+                 stx,
+                 journal = p_journal_]() {
+                    perf::measureDurationAndLog(
+                        [&]() {
+                            if (auto peer = weak.lock())
+                                peer->checkTransaction(
+                                    flags, checkSignature, stx, batch);
+                            return true;
+                        },
+                        "recvTransaction->checkTransaction",
+                        1s,
+                        journal);
                 });
         }
     }
@@ -1461,10 +1478,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Queue a job to process the request
     std::weak_ptr<PeerImp> weak = shared_from_this();
-    app_.getJobQueue().addJob(jtLEDGER_REQ, "recvGetLedger", [weak, m]() {
-        if (auto peer = weak.lock())
-            peer->processLedgerRequest(m);
-    });
+    app_.getJobQueue().addJob(
+        jtLEDGER_REQ, "recvGetLedger", [weak, m, journal = p_journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    if (auto peer = weak.lock())
+                        peer->processLedgerRequest(m);
+                    return true;
+                },
+                "recvGetLedger",
+                1s,
+                journal);
+        });
 }
 
 void
@@ -1482,27 +1507,38 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
         Resource::feeModerateBurdenPeer, "received a proof path request");
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
-        jtREPLAY_REQ, "recvProofPathRequest", [weak, m]() {
-            if (auto peer = weak.lock())
-            {
-                auto reply =
-                    peer->ledgerReplayMsgHandler_.processProofPathRequest(m);
-                if (reply.has_error())
-                {
-                    if (reply.error() == protocol::TMReplyError::reBAD_REQUEST)
-                        peer->charge(
-                            Resource::feeMalformedRequest,
-                            "proof_path_request");
-                    else
-                        peer->charge(
-                            Resource::feeRequestNoReply, "proof_path_request");
-                }
-                else
-                {
-                    peer->send(std::make_shared<Message>(
-                        reply, protocol::mtPROOF_PATH_RESPONSE));
-                }
-            }
+        jtREPLAY_REQ,
+        "recvProofPathRequest",
+        [weak, m, journal = p_journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    if (auto peer = weak.lock())
+                    {
+                        auto reply = peer->ledgerReplayMsgHandler_
+                                         .processProofPathRequest(m);
+                        if (reply.has_error())
+                        {
+                            if (reply.error() ==
+                                protocol::TMReplyError::reBAD_REQUEST)
+                                peer->charge(
+                                    Resource::feeMalformedRequest,
+                                    "proof_path_request");
+                            else
+                                peer->charge(
+                                    Resource::feeRequestNoReply,
+                                    "proof_path_request");
+                        }
+                        else
+                        {
+                            peer->send(std::make_shared<Message>(
+                                reply, protocol::mtPROOF_PATH_RESPONSE));
+                        }
+                    }
+                    return true;
+                },
+                "recvProofPathRequest",
+                1s,
+                journal);
         });
 }
 
@@ -1536,28 +1572,38 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
     fee_.fee = Resource::feeModerateBurdenPeer;
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
-        jtREPLAY_REQ, "recvReplayDeltaRequest", [weak, m]() {
-            if (auto peer = weak.lock())
-            {
-                auto reply =
-                    peer->ledgerReplayMsgHandler_.processReplayDeltaRequest(m);
-                if (reply.has_error())
-                {
-                    if (reply.error() == protocol::TMReplyError::reBAD_REQUEST)
-                        peer->charge(
-                            Resource::feeMalformedRequest,
-                            "replay_delta_request");
-                    else
-                        peer->charge(
-                            Resource::feeRequestNoReply,
-                            "replay_delta_request");
-                }
-                else
-                {
-                    peer->send(std::make_shared<Message>(
-                        reply, protocol::mtREPLAY_DELTA_RESPONSE));
-                }
-            }
+        jtREPLAY_REQ,
+        "recvReplayDeltaRequest",
+        [weak, m, journal = p_journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    if (auto peer = weak.lock())
+                    {
+                        auto reply = peer->ledgerReplayMsgHandler_
+                                         .processReplayDeltaRequest(m);
+                        if (reply.has_error())
+                        {
+                            if (reply.error() ==
+                                protocol::TMReplyError::reBAD_REQUEST)
+                                peer->charge(
+                                    Resource::feeMalformedRequest,
+                                    "replay_delta_request");
+                            else
+                                peer->charge(
+                                    Resource::feeRequestNoReply,
+                                    "replay_delta_request");
+                        }
+                        else
+                        {
+                            peer->send(std::make_shared<Message>(
+                                reply, protocol::mtREPLAY_DELTA_RESPONSE));
+                        }
+                    }
+                    return true;
+                },
+                "recvReplayDeltaRequest",
+                1s,
+                journal);
         });
 }
 
@@ -1654,12 +1700,21 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     {
         std::weak_ptr<PeerImp> weak{shared_from_this()};
         app_.getJobQueue().addJob(
-            jtTXN_DATA, "recvPeerData", [weak, ledgerHash, m]() {
-                if (auto peer = weak.lock())
-                {
-                    peer->app_.getInboundTransactions().gotData(
-                        ledgerHash, peer, m);
-                }
+            jtTXN_DATA,
+            "recvPeerData",
+            [weak, ledgerHash, m, journal = p_journal_]() {
+                perf::measureDurationAndLog(
+                    [&]() {
+                        if (auto peer = weak.lock())
+                        {
+                            peer->app_.getInboundTransactions().gotData(
+                                ledgerHash, peer, m);
+                        }
+                        return true;
+                    },
+                    "recvPeerData",
+                    1s,
+                    journal);
             });
         return;
     }
@@ -1783,9 +1838,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     app_.getJobQueue().addJob(
         isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
         "recvPropose->checkPropose",
-        [weak, isTrusted, m, proposal]() {
-            if (auto peer = weak.lock())
-                peer->checkPropose(isTrusted, m, proposal);
+        [weak, isTrusted, m, proposal, journal = p_journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    if (auto peer = weak.lock())
+                        peer->checkPropose(isTrusted, m, proposal);
+                    return true;
+                },
+                "recvPropose->checkPropose",
+                1s,
+                journal);
         });
 }
 
@@ -2419,9 +2481,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             app_.getJobQueue().addJob(
                 isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
                 name,
-                [weak, val, m, key]() {
-                    if (auto peer = weak.lock())
-                        peer->checkValidation(val, key, m);
+                [weak, val, m, key, name, journal = p_journal_]() {
+                    perf::measureDurationAndLog(
+                        [&]() {
+                            if (auto peer = weak.lock())
+                                peer->checkValidation(val, key, m);
+                            return true;
+                        },
+                        name,
+                        1s,
+                        journal);
                 });
         }
         else
@@ -2474,9 +2543,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue().addJob(
-                jtREQUESTED_TXN, "doTransactions", [weak, m]() {
-                    if (auto peer = weak.lock())
-                        peer->doTransactions(m);
+                jtREQUESTED_TXN,
+                "doTransactions",
+                [weak, m, journal = p_journal_]() {
+                    perf::measureDurationAndLog(
+                        [&]() {
+                            if (auto peer = weak.lock())
+                                peer->doTransactions(m);
+                            return true;
+                        },
+                        "doTransactions",
+                        1s,
+                        journal);
                 });
             return;
         }
@@ -2608,9 +2686,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactions> const& m)
 
     std::weak_ptr<PeerImp> weak = shared_from_this();
     app_.getJobQueue().addJob(
-        jtMISSING_TXN, "handleHaveTransactions", [weak, m]() {
-            if (auto peer = weak.lock())
-                peer->handleHaveTransactions(m);
+        jtMISSING_TXN,
+        "handleHaveTransactions",
+        [weak, m, journal = p_journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    if (auto peer = weak.lock())
+                        peer->handleHaveTransactions(m);
+                    return true;
+                },
+                "handleHaveTransactions",
+                1s,
+                journal);
         });
 }
 
@@ -2779,8 +2866,18 @@ PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
     auto elapsed = UptimeClock::now();
     auto const pap = &app_;
     app_.getJobQueue().addJob(
-        jtPACK, "MakeFetchPack", [pap, weak, packet, hash, elapsed]() {
-            pap->getLedgerMaster().makeFetchPack(weak, packet, hash, elapsed);
+        jtPACK,
+        "MakeFetchPack",
+        [pap, weak, packet, hash, elapsed, journal = p_journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    pap->getLedgerMaster().makeFetchPack(
+                        weak, packet, hash, elapsed);
+                    return true;
+                },
+                "MakeFetchPack",
+                1s,
+                journal);
         });
 }
 

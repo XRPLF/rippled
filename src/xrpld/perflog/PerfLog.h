@@ -190,20 +190,35 @@ measureDurationAndLog(
     std::chrono::duration<Rep, Period> maxDelay,
     beast::Journal const& journal)
 {
+    using Result = std::invoke_result_t<Func>;
+
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    auto result = func();
-
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-        end_time - start_time);
-    if (duration > maxDelay)
+    if constexpr (std::is_void_v<Result>)
     {
-        JLOG(journal.warn())
-            << actionDescription << " took " << duration.count() << " ms";
+        std::forward<Func>(func)();
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            end_time - start_time);
+        if (duration > maxDelay)
+        {
+            JLOG(journal.warn())
+                << actionDescription << " took " << duration.count() << " ms";
+        }
     }
-
-    return result;
+    else
+    {
+        Result result = std::forward<Func>(func)();
+        auto end_time = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+            end_time - start_time);
+        if (duration > maxDelay)
+        {
+            JLOG(journal.warn())
+                << actionDescription << " took " << duration.count() << " ms";
+        }
+        return result;
+    }
 }
 
 }  // namespace perf

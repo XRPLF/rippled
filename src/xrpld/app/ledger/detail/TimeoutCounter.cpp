@@ -19,6 +19,9 @@
 
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/core/JobQueue.h>
+#include <xrpld/perflog/PerfLog.h>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -83,9 +86,15 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
     app_.getJobQueue().addJob(
         queueJobParameter_.jobType,
         queueJobParameter_.jobName,
-        [wptr = pmDowncast()]() {
-            if (auto sptr = wptr.lock(); sptr)
-                sptr->invokeOnTimer();
+        [wptr = pmDowncast(), journal = journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    if (auto sptr = wptr.lock(); sptr)
+                        sptr->invokeOnTimer();
+                },
+                "TimeoutCounter::queueJob",
+                1s,
+                journal);
         });
 }
 
