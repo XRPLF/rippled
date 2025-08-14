@@ -1,0 +1,35 @@
+name: Determine PR number on push
+
+on: push
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: 0
+      - name: Fetch PR number
+        id: cli
+        env:
+          GITHUB_TOKEN: ${{ secrets.clio_notify_token }}
+        run: |
+          echo "Fetching PR number associated with current commit '${{ github.sha }}'."
+          gh pr list --search ${{ github.sha }}
+          NUMBER=$(gh pr list --search ${{ github.sha }} --json number -q '[0] | .number' || echo '')
+          if [ -z "${NUMBER}" ]; then
+            echo 'Could not fetch PR number.'
+            exit 1
+          fi
+          echo "number=${NUMBER}" >> "${GITHUB_OUTPUT}"
+    outputs:
+      number: ${{ steps.cli.outputs.number }}
