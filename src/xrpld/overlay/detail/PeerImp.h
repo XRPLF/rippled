@@ -635,7 +635,7 @@ private:
     cancelTimer() noexcept;
 
     static std::string
-    makePrefix(id_t id);
+    makePrefix(id_t id, beast::IP::Endpoint const& remoteAddress, PublicKey const& publicKey);
 
     void
     doAccept();
@@ -688,9 +688,6 @@ private:
     void
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
-
-    std::string
-    fingerprint() const;
 
 public:
     //--------------------------------------------------------------------------
@@ -835,8 +832,8 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
+    , sink_(app_.journal("Peer"), makePrefix(id, slot->remote_endpoint(), publicKey))
+    , p_sink_(app_.journal("Protocol"), makePrefix(id, slot->remote_endpoint(), publicKey))
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
