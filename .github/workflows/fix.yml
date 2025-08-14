@@ -42,6 +42,7 @@ jobs:
           - Ninja
         configuration:
           - Release
+        number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     runs-on: [self-hosted, macOS, mac-runner-m1]
     env:
       # The `build` action requires these variables.
@@ -50,30 +51,6 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: install Conan
-        run: |
-          brew install conan
-      - name: install Ninja
-        if: matrix.generator == 'Ninja'
-        run: brew install ninja
-      - name: install python
-        run: |
-          if which python > /dev/null 2>&1; then
-              echo "Python executable exists"
-          else
-              brew install python@3.13
-              ln -s /opt/homebrew/bin/python3 /opt/homebrew/bin/python
-          fi
-      - name: install cmake
-        run: |
-          if which cmake > /dev/null 2>&1; then
-              echo "cmake executable exists"
-          else
-              brew install cmake
-          fi
-      - name: install nproc
-        run: |
-          brew install coreutils
       - name: fix global conf
         run: |
           echo "ls -al ~/.conan2" 
@@ -108,21 +85,3 @@ jobs:
           echo "${CONAN_GLOBAL_CONF}" > $(conan config home)/global.conf
           conan config install conan/profiles/ -tf $(conan config home)/profiles/
           conan profile show
-      - name: build dependencies
-        uses: ./.github/actions/dependencies
-        with:
-          configuration: ${{ matrix.configuration }}
-      - name: build
-        uses: ./.github/actions/build
-        with:
-          generator: ${{ matrix.generator }}
-          configuration: ${{ matrix.configuration }}
-          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
-      - name: test
-        run: |
-          n=$(nproc)
-          echo "Using $n test jobs"
-
-          cd ${build_dir}
-          ./rippled --unittest --unittest-jobs $n
-          ctest -j $n --output-on-failure
