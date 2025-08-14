@@ -5,6 +5,11 @@ on:
   push:
     paths:
       - '.github/workflows/publish-docs.yml'
+      - '*.md'
+      - '**/*.md'
+      - 'docs/**'
+      - 'include/**'
+      - 'src/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

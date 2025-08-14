@@ -84,6 +84,9 @@ jobs:
         run: |
           echo "Cleaning workspace '${{ github.workspace }}'."
           rm -rf ${{ github.workspace }}/*
+          
+          # TEMPORARY
+          cat conan/${{ inputs.os }}.conf > $(conan config home)/global.conf
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Set up Python (Windows)
