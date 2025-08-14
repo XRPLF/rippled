@@ -40,20 +40,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-        with:
-          fetch-depth: 0
       - name: Fetch PR number
         id: cli
         env:
           GITHUB_TOKEN: ${{ secrets.clio_notify_token }}
         run: |
           echo "Fetching PR number associated with current commit '${{ github.sha }}'."
-          NUMBER=$(gh pr list --search ${{ github.sha }} --json number -q '[0] | .number' || echo '')
+          NUMBER=$(gh pr list --search=${{ github.sha }} --json=number -q '.[0].number' || echo '')
           if [ -z "${NUMBER}" ]; then
             echo 'Could not fetch PR number.'
             exit 1
           fi
-          echo "number=${NUMBER}" >> "${GITHUB_OUTPUT}"
+          echo "number=${NUMBER}" | tee "${GITHUB_OUTPUT}"
     outputs:
       number: ${{ steps.cli.outputs.number }}
 
@@ -68,9 +66,9 @@ jobs:
         id: generate
         run: |
           echo "Generating channel."
-          echo channel="clio/pr_${{ needs.pr.outputs.number }}" >> "${GITHUB_OUTPUT}"
+          echo channel="clio/pr_${{ needs.pr.outputs.number }}" | tee "${GITHUB_OUTPUT}"
           echo "Extracting version."
-          echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" >> "${GITHUB_OUTPUT}"
+          echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" | tee "${GITHUB_OUTPUT}"
       - name: Add Conan remote
         run: |
           echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."

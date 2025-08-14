@@ -65,7 +65,7 @@ jobs:
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
-        run: python generate.py --config=${{ inputs.os }}.json --ref=${{ github.ref }} >> "${GITHUB_OUTPUT}"
+        run: python generate.py --config=${{ inputs.os }}.json --ref=${{ github.ref }} | tee "${GITHUB_OUTPUT}"
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
 
