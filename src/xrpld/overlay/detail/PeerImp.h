@@ -174,7 +174,6 @@ private:
     http_response_type response_;
     boost::beast::http::fields const& headers_;
     std::queue<std::shared_ptr<Message>> send_queue_;
-    bool gracefulClose_ = false;
     bool shutdown_ = false;
     int large_sendq_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
@@ -513,23 +512,6 @@ private:
      */
     void
     close();
-
-    /** @brief Initiates a graceful shutdown of the peer connection.
-     *
-     * This function marks the connection for closure. A "graceful" close
-     * ensures that any messages already queued for sending are transmitted
-     * before the underlying socket is closed. The connection may still be
-     * terminated forcefully if the remote server stopped reading the messages.
-     *
-     *
-     * If the send queue is empty, the connection is closed immediately. If
-     * messages are still pending, the actual socket closure is deferred until
-     * the send queue is drained by the I/O processing logic.
-     *
-     * @note This function must be called from within the object's strand.
-     */
-    void
-    gracefulClose();
 
     /**
      * @brief Sets and starts the peer timer.

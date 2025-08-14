@@ -237,7 +237,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
 
     // we are in progress of closing the connection
-    if (shutdown_ || gracefulClose_)
+    if (shutdown_)
         return;
 
     if (!socket_.is_open())
@@ -613,26 +613,6 @@ PeerImp::fail(std::string const& reason)
 }
 
 void
-PeerImp::gracefulClose()
-{
-    XRPL_ASSERT(
-        strand_.running_in_this_thread(),
-        "ripple::PeerImp::gracefulClose : strand in this thread");
-    XRPL_ASSERT(
-        socket_.is_open(), "ripple::PeerImp::gracefulClose : socket is open");
-    XRPL_ASSERT(
-        !gracefulClose_,
-        "ripple::PeerImp::gracefulClose : socket is not closing");
-
-    gracefulClose_ = true;
-
-    if (send_queue_.size() > 0)
-        return;
-
-    shutdown();
-}
-
-void
 PeerImp::shutdown()
 {
     XRPL_ASSERT(
@@ -725,11 +705,11 @@ PeerImp::onTimer(error_code const& ec)
     if (!socket_.is_open())
         return;
 
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-
     if (ec)
     {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
         return close();
@@ -931,23 +911,27 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 {
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    if (ec == boost::asio::error::eof)
-    {
-        JLOG(journal_.info()) << "EOF";
-        return gracefulClose();
-    }
 
     if (ec)
+    {
+        if (ec == boost::asio::error::eof)
+        {
+            JLOG(journal_.info()) << "EOF";
+            return;
+        }
+
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         return fail("onReadMessage", ec);
+    }
 
     if (auto stream = journal_.trace())
     {
-        if (bytes_transferred > 0)
-            stream << "onReadMessage: " << bytes_transferred << " bytes";
-        else
-            stream << "onReadMessage";
+        stream << "onReadMessage: "
+               << (bytes_transferred > 0
+                       ? to_string(bytes_transferred) + " bytes"
+                       : "");
     }
 
     metrics_.recv.add_message(bytes_transferred);
@@ -971,10 +955,12 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 
         if (!socket_.is_open())
             return;
-        if (gracefulClose_)
-            return;
+
+        // the error_code is produced by invokeProtocolMessage
+        // it could be due to a bad message
         if (ec)
             return fail("onReadMessage", ec);
+
         if (bytes_consumed == 0)
             break;
         read_buffer_.consume(bytes_consumed);
@@ -997,17 +983,21 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
     if (ec)
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         return fail("onWriteMessage", ec);
+    }
 
     if (auto stream = journal_.trace())
     {
-        if (bytes_transferred > 0)
-            stream << "onWriteMessage: " << bytes_transferred << " bytes";
-        else
-            stream << "onWriteMessage";
+        stream << "onWriteMessage: "
+               << (bytes_transferred > 0
+                       ? to_string(bytes_transferred) + " bytes"
+                       : "");
     }
 
     metrics_.sent.add_message(bytes_transferred);
@@ -1031,12 +1021,6 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
                     std::placeholders::_1,
                     std::placeholders::_2)));
     }
-
-    // Graceful close was initiated, but it was postponed to allow the server to
-    // finish sending messages to the peer. If we hit this code, that means all
-    // messages were sent, finish closing the connection
-    if (gracefulClose_)
-        shutdown();
 }
 
 //------------------------------------------------------------------------------
