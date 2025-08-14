@@ -781,31 +781,6 @@ parseAccountIds(Json::Value const& jvArray)
     return result;
 }
 
-void
-injectSLE(Json::Value& jv, SLE const& sle)
-{
-    jv = sle.getJson(JsonOptions::none);
-    if (sle.getType() == ltACCOUNT_ROOT)
-    {
-        if (sle.isFieldPresent(sfEmailHash))
-        {
-            auto const& hash = sle.getFieldH128(sfEmailHash);
-            Blob const b(hash.begin(), hash.end());
-            std::string md5 = strHex(makeSlice(b));
-            boost::to_lower(md5);
-            // VFALCO TODO Give a name and move this constant
-            //             to a more visible location. Also
-            //             shouldn't this be https?
-            jv[jss::urlgravatar] =
-                str(boost::format("http://www.gravatar.com/avatar/%s") % md5);
-        }
-    }
-    else
-    {
-        jv[jss::Invalid] = true;
-    }
-}
-
 std::optional<Json::Value>
 readLimitField(
     unsigned int& limit,

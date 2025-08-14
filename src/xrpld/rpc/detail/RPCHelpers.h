@@ -167,17 +167,6 @@ getOrAcquireLedger(RPC::JsonContext& context);
 hash_set<AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
-/** Inject JSON describing ledger entry
-
-    Effects:
-        Adds the JSON description of `sle` to `jv`.
-
-        If `sle` holds an account root, also adds the
-        urlgravatar field JSON if sfEmailHash is present.
-*/
-void
-injectSLE(Json::Value& jv, SLE const& sle);
-
 /** Retrieve the limit value from a JsonContext, or set a default -
     then restrict the limit by max and min if not an ADMIN request.
 
