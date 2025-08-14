@@ -24,35 +24,10 @@
 #include <boost/container/flat_set.hpp>
 #include <boost/endian/conversion.hpp>
 
-/*
-
-Workaround for overzealous clang warning, which trips on libstdc++ headers
-
-  In file included from
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stl_algo.h:61:
-  /usr/lib/gcc/x86_64-linux-gnu/12/../../../../include/c++/12/bits/stl_tempbuf.h:263:8:
-  error: 'get_temporary_buffer<std::pair<ripple::Quality, const
-  std::vector<std::unique_ptr<ripple::Step>> *>>' is deprecated
-  [-Werror,-Wdeprecated-declarations] 263 |
-  std::get_temporary_buffer<value_type>(_M_original_len));
-       ^
-*/
-
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated"
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
-#include <functional>
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
-
 #include <array>
 #include <chrono>
 #include <cstring>
+#include <functional>
 #include <memory>
 #include <string>
 #include <system_error>
