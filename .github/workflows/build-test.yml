@@ -82,13 +82,8 @@ jobs:
       - name: Clean workspace (MacOS)
         if: ${{ inputs.os == 'macos' }}
         run: |
-          echo "Cleaning workspace."
+          echo "Cleaning workspace '${{ github.workspace }}'."
           rm -rf ${{ github.workspace }}/*
-      - name: Clean workspace (Windows)
-        if: ${{ inputs.os == 'windows' }}
-        run: |
-          echo "Cleaning workspace."
-          rmdir /s /q ${{ github.workspace }}\*
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Set up Python (Windows)
@@ -99,18 +94,6 @@ jobs:
       - name: Install Conan (Windows)
         if: ${{ inputs.os == 'windows' }}
         run: pip install wheel conan
-      - name: Set up Conan home directory (MacOS)
-        if: ${{ inputs.os == 'macos' }}
-        run: |
-          echo "Setting up Conan home directory."
-          export CONAN_HOME=${{ github.workspace }}/.conan
-          mkdir -p ${CONAN_HOME}
-      - name: Set up Conan home directory (Windows)
-        if: ${{ inputs.os == 'windows' }}
-        run: |
-          echo "Setting up Conan home directory."
-          set CONAN_HOME=${{ github.workspace }}\.conan
-          mkdir -p %CONAN_HOME%
       - name: Check configuration (Windows)
         if: ${{ inputs.os == 'windows' }}
         run: |
@@ -142,6 +125,40 @@ jobs:
 
           echo "Checking Ninja version."
           ninja --version
+      - name: Set up Conan home directory (MacOS)
+        if: ${{ inputs.os == 'macos' }}
+        run: |
+          echo "Setting up Conan home directory."
+          export CONAN_HOME=${{ github.workspace }}/.conan
+          mkdir -p ${CONAN_HOME}
+      - name: Set up Conan home directory (Windows)
+        if: ${{ inputs.os == 'windows' }}
+        run: |
+          echo "Setting up Conan home directory."
+          set CONAN_HOME=${{ github.workspace }}\.conan
+          mkdir -p %CONAN_HOME%
+      - name: Set up Conan configuration
+        run: |
+          echo 'Installing configuration.'
+          cat conan/${{ inputs.os }}.conf ${{ inputs.os == 'linux' && '>>' || '>' }} $(conan config home)/global.conf
+
+          echo 'Conan configuration:'
+          conan config show '*'
+      - name: Set up Conan profile
+        run: |
+          echo 'Installing profile.'
+          conan config install conan/profiles/default -tf $(conan config home)/profiles/
+
+          echo 'Conan profile:'
+          conan profile show
+      - name: Set up Conan remote
+        shell: bash
+        run: |
+          echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
+          conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+
+          echo 'Listing Conan remotes.'
+          conan remote list
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
@@ -151,10 +168,8 @@ jobs:
           conan_remote_url: ${{ inputs.conan_remote_url }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
-          config_name: ${{ matrix.config_name }}
           force_build: ${{ inputs.dependencies_force_build }}
           force_upload: ${{ inputs.dependencies_force_upload }}
-          os: ${{ inputs.os }}
       - name: Build and test binary
         uses: ./.github/actions/build-test
         with:

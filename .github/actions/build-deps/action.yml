@@ -33,10 +33,6 @@ inputs:
     required: false
     type: string
     default: ''
-  config_name:
-    description: 'The unique name of the configuration that will be used for uploaded Conan artifacts (e.g. debian-bookworm-gcc-12-amd64-release-unity).'
-    required: true
-    type: string
   force_build:
     description: 'Force building of all dependencies.'
     required: false
@@ -47,41 +43,10 @@ inputs:
     required: false
     type: boolean
     default: false
-  os:
-    description: 'The operating system to use for the build (linux, macos, or windows).'
-    required: true
-    type: choice
-    options:
-      - 'linux'
-      - 'macos'
-      - 'windows'
 
 runs:
   using: composite
   steps:
-    # Set up Conan. Note that on MacOS and Windows, which are self-hosted
-    # runners, we should overwrite the global.conf file instead of appending to
-    # it. On Linux runners, where we run Docker images, the file is reset on
-    # each run with important defaults.
-    - name: Install Conan profile
-      shell: bash
-      run: |
-        echo 'Installing configuration and profile.'
-        cat conan/${{ inputs.os }}.conf ${{ inputs.os == 'linux' && '>>' || '>' }} $(conan config home)/global.conf
-        conan config install conan/profiles/default -tf $(conan config home)/profiles/
-
-        echo 'Conan configuration:'
-        conan config show '*'
-
-        echo 'Conan profile:'
-        conan profile show
-    - name: Add Conan remote
-      shell: bash
-      run: |
-        echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
-        conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
-        echo 'Listing Conan remotes.'
-        conan remote list
     - name: Install Conan dependencies
       shell: bash
       run: |
