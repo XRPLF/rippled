@@ -300,7 +300,7 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 
 template <class T>
 Status
-ledgerFromHash(T& ledger, Json::Value hash, JsonContext& context)
+ledgerFromHash(T& ledger, Json::Value hash, Context& context)
 {
     uint256 ledgerHash;
     if (!ledgerHash.parseHex(hash.asString()))
@@ -310,7 +310,7 @@ ledgerFromHash(T& ledger, Json::Value hash, JsonContext& context)
 
 template <class T>
 Status
-ledgerFromIndex(T& ledger, Json::Value indexValue, JsonContext& context)
+ledgerFromIndex(T& ledger, Json::Value indexValue, Context& context)
 {
     auto const index = indexValue.asString();
 
@@ -402,7 +402,34 @@ Status
 ledgerFromRequest(T& ledger, GRPCContext<R>& context)
 {
     R& request = context.params;
-    auto const& specifier = request.ledger();
+    return ledgerFromSpecifier(ledger, request.ledger(), context);
+}
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>&);
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>&);
+
+// explicit instantiation of above function
+template Status
+ledgerFromRequest<>(
+    std::shared_ptr<ReadView const>&,
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>&);
+
+template <class T>
+Status
+ledgerFromSpecifier(
+    T& ledger,
+    org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
+    Context& context)
+{
     ledger.reset();
 
     using LedgerCase = org::xrpl::rpc::v1::LedgerSpecifier::LedgerCase;
@@ -410,10 +437,14 @@ ledgerFromRequest(T& ledger, GRPCContext<R>& context)
     switch (ledgerCase)
     {
         case LedgerCase::kHash: {
-            return ledgerFromHash(ledger, specifier.hash(), context);
+            if (auto hash = uint256::fromVoidChecked(specifier.hash()))
+            {
+                return getLedger(ledger, *hash, context);
+            }
+            return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
         }
         case LedgerCase::kSequence:
-            return ledgerFromIndex(ledger, specifier.sequence(), context);
+            return getLedger(ledger, specifier.sequence(), context);
         case LedgerCase::kShortcut:
             [[fallthrough]];
         case LedgerCase::LEDGER_NOT_SET: {
@@ -445,24 +476,6 @@ ledgerFromRequest(T& ledger, GRPCContext<R>& context)
 
     return Status::OK;
 }
-
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>&);
-
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>&);
-
-// explicit instantiation of above function
-template Status
-ledgerFromRequest<>(
-    std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>&);
 
 template <class T>
 Status
@@ -632,6 +645,124 @@ lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext& context)
         status.inject(result);
 
     return result;
+}
+
+Expected<std::shared_ptr<Ledger const>, Json::Value>
+getOrAcquireLedger(RPC::JsonContext& context)
+{
+    auto const hasHash = context.params.isMember(jss::ledger_hash);
+    auto const hasIndex = context.params.isMember(jss::ledger_index);
+    std::uint32_t ledgerIndex = 0;
+
+    auto& ledgerMaster = context.app.getLedgerMaster();
+    LedgerHash ledgerHash;
+
+    if ((hasHash && hasIndex) || !(hasHash || hasIndex))
+    {
+        return Unexpected(RPC::make_param_error(
+            "Exactly one of ledger_hash and ledger_index can be set."));
+    }
+
+    if (hasHash)
+    {
+        auto const& jsonHash =
+            context.params.get(jss::ledger_hash, Json::nullValue);
+        if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
+            return Unexpected(RPC::invalid_field_error(jss::ledger_hash));
+    }
+    else
+    {
+        auto const& jsonIndex =
+            context.params.get(jss::ledger_index, Json::nullValue);
+        if (!jsonIndex.isInt() && !jsonIndex.isUInt())
+            return Unexpected(RPC::invalid_field_error(jss::ledger_index));
+
+        // We need a validated ledger to get the hash from the sequence
+        if (ledgerMaster.getValidatedLedgerAge() >
+            RPC::Tuning::maxValidatedLedgerAge)
+        {
+            if (context.apiVersion == 1)
+                return Unexpected(rpcError(rpcNO_CURRENT));
+            return Unexpected(rpcError(rpcNOT_SYNCED));
+        }
+
+        ledgerIndex = jsonIndex.asInt();
+        auto ledger = ledgerMaster.getValidatedLedger();
+
+        if (ledgerIndex >= ledger->info().seq)
+            return Unexpected(RPC::make_param_error("Ledger index too large"));
+        if (ledgerIndex <= 0)
+            return Unexpected(RPC::make_param_error("Ledger index too small"));
+
+        auto const j = context.app.journal("RPCHandler");
+        // Try to get the hash of the desired ledger from the validated
+        // ledger
+        auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);
+        if (!neededHash)
+        {
+            // Find a ledger more likely to have the hash of the desired
+            // ledger
+            auto const refIndex = getCandidateLedger(ledgerIndex);
+            auto refHash = hashOfSeq(*ledger, refIndex, j);
+            XRPL_ASSERT(
+                refHash,
+                "ripple::RPC::getOrAcquireLedger : nonzero ledger hash");
+
+            ledger = ledgerMaster.getLedgerByHash(*refHash);
+            if (!ledger)
+            {
+                // We don't have the ledger we need to figure out which
+                // ledger they want. Try to get it.
+
+                if (auto il = context.app.getInboundLedgers().acquire(
+                        *refHash, refIndex, InboundLedger::Reason::GENERIC))
+                {
+                    Json::Value jvResult = RPC::make_error(
+                        rpcLGR_NOT_FOUND,
+                        "acquiring ledger containing requested index");
+                    jvResult[jss::acquiring] =
+                        getJson(LedgerFill(*il, &context));
+                    return Unexpected(jvResult);
+                }
+
+                if (auto il = context.app.getInboundLedgers().find(*refHash))
+                {
+                    Json::Value jvResult = RPC::make_error(
+                        rpcLGR_NOT_FOUND,
+                        "acquiring ledger containing requested index");
+                    jvResult[jss::acquiring] = il->getJson(0);
+                    return Unexpected(jvResult);
+                }
+
+                // Likely the app is shutting down
+                return Unexpected(Json::Value());
+            }
+
+            neededHash = hashOfSeq(*ledger, ledgerIndex, j);
+        }
+        XRPL_ASSERT(
+            neededHash,
+            "ripple::RPC::getOrAcquireLedger : nonzero needed hash");
+        ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
+    }
+
+    // Try to get the desired ledger
+    // Verify all nodes even if we think we have it
+    auto ledger = context.app.getInboundLedgers().acquire(
+        ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
+
+    // In standalone mode, accept the ledger from the ledger cache
+    if (!ledger && context.app.config().standalone())
+        ledger = ledgerMaster.getLedgerByHash(ledgerHash);
+
+    if (ledger)
+        return ledger;
+
+    if (auto il = context.app.getInboundLedgers().find(ledgerHash))
+        return Unexpected(il->getJson(0));
+
+    return Unexpected(RPC::make_error(
+        rpcNOT_READY, "findCreate failed to return an inbound ledger"));
 }
 
 hash_set<AccountID>
@@ -1003,123 +1134,6 @@ getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
     }
     return requestedVersion.asUInt();
 }
-
-Expected<std::shared_ptr<Ledger const>, Json::Value>
-getLedgerByContext(RPC::JsonContext& context)
-{
-    auto const hasHash = context.params.isMember(jss::ledger_hash);
-    auto const hasIndex = context.params.isMember(jss::ledger_index);
-    std::uint32_t ledgerIndex = 0;
-
-    auto& ledgerMaster = context.app.getLedgerMaster();
-    LedgerHash ledgerHash;
-
-    if ((hasHash && hasIndex) || !(hasHash || hasIndex))
-    {
-        return Unexpected(RPC::make_param_error(
-            "Exactly one of ledger_hash and ledger_index can be set."));
-    }
-
-    context.loadType = Resource::feeHeavyBurdenRPC;
-
-    if (hasHash)
-    {
-        auto const& jsonHash = context.params[jss::ledger_hash];
-        if (!jsonHash.isString() || !ledgerHash.parseHex(jsonHash.asString()))
-            return Unexpected(RPC::invalid_field_error(jss::ledger_hash));
-    }
-    else
-    {
-        auto const& jsonIndex = context.params[jss::ledger_index];
-        if (!jsonIndex.isInt())
-            return Unexpected(RPC::invalid_field_error(jss::ledger_index));
-
-        // We need a validated ledger to get the hash from the sequence
-        if (ledgerMaster.getValidatedLedgerAge() >
-            RPC::Tuning::maxValidatedLedgerAge)
-        {
-            if (context.apiVersion == 1)
-                return Unexpected(rpcError(rpcNO_CURRENT));
-            return Unexpected(rpcError(rpcNOT_SYNCED));
-        }
-
-        ledgerIndex = jsonIndex.asInt();
-        auto ledger = ledgerMaster.getValidatedLedger();
-
-        if (ledgerIndex >= ledger->info().seq)
-            return Unexpected(RPC::make_param_error("Ledger index too large"));
-        if (ledgerIndex <= 0)
-            return Unexpected(RPC::make_param_error("Ledger index too small"));
-
-        auto const j = context.app.journal("RPCHandler");
-        // Try to get the hash of the desired ledger from the validated
-        // ledger
-        auto neededHash = hashOfSeq(*ledger, ledgerIndex, j);
-        if (!neededHash)
-        {
-            // Find a ledger more likely to have the hash of the desired
-            // ledger
-            auto const refIndex = getCandidateLedger(ledgerIndex);
-            auto refHash = hashOfSeq(*ledger, refIndex, j);
-            XRPL_ASSERT(
-                refHash,
-                "ripple::RPC::getLedgerByContext : nonzero ledger hash");
-
-            ledger = ledgerMaster.getLedgerByHash(*refHash);
-            if (!ledger)
-            {
-                // We don't have the ledger we need to figure out which
-                // ledger they want. Try to get it.
-
-                if (auto il = context.app.getInboundLedgers().acquire(
-                        *refHash, refIndex, InboundLedger::Reason::GENERIC))
-                {
-                    Json::Value jvResult = RPC::make_error(
-                        rpcLGR_NOT_FOUND,
-                        "acquiring ledger containing requested index");
-                    jvResult[jss::acquiring] =
-                        getJson(LedgerFill(*il, &context));
-                    return jvResult;
-                }
-
-                if (auto il = context.app.getInboundLedgers().find(*refHash))
-                {
-                    Json::Value jvResult = RPC::make_error(
-                        rpcLGR_NOT_FOUND,
-                        "acquiring ledger containing requested index");
-                    jvResult[jss::acquiring] = il->getJson(0);
-                    return jvResult;
-                }
-
-                // Likely the app is shutting down
-                return Json::Value();
-            }
-
-            neededHash = hashOfSeq(*ledger, ledgerIndex, j);
-        }
-        XRPL_ASSERT(
-            neededHash,
-            "ripple::RPC::getLedgerByContext : nonzero needed hash");
-        ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
-    }
-
-    // Try to get the desired ledger
-    // Verify all nodes even if we think we have it
-    auto ledger = context.app.getInboundLedgers().acquire(
-        ledgerHash, ledgerIndex, InboundLedger::Reason::GENERIC);
-
-    // In standalone mode, accept the ledger from the ledger cache
-    if (!ledger && context.app.config().standalone())
-        ledger = ledgerMaster.getLedgerByHash(ledgerHash);
-
-    if (ledger)
-        return ledger;
-
-    if (auto il = context.app.getInboundLedgers().find(ledgerHash))
-        return il->getJson(0);
-
-    return Unexpected(RPC::make_error(
-        rpcNOT_READY, "findCreate failed to return an inbound ledger"));
 
 }  // namespace RPC
 }  // namespace ripple

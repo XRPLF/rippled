@@ -23,8 +23,7 @@
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
-
-#include <variant>
+#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 
@@ -35,7 +34,8 @@ namespace ripple {
 Json::Value
 doLedgerRequest(RPC::JsonContext& context)
 {
-    auto res = getLedgerByContext(context);
+    context.loadType = Resource::feeHeavyBurdenRPC;
+    auto res = getOrAcquireLedger(context);
 
     if (!res.has_value())
         return res.error();

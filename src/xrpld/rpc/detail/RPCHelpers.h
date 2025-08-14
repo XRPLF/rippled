@@ -141,6 +141,29 @@ ledgerFromSpecifier(
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
     Context& context);
 
+/**
+ * @brief Retrieves or acquires a ledger based on the parameters provided in the
+ * given JsonContext.
+ *
+ * This function differs from the other ledger getter functions in this file in
+ * that it attempts to either retrieve an existing ledger or acquire it if it is
+ * not already available, based on the context of the RPC request. It returns an
+ * Expected containing either a shared pointer to the requested immutable Ledger
+ * object or a Json::Value describing an error. Unlike the other getLedger or
+ * lookupLedger functions, which typically fill a provided ledger pointer or
+ * result object and return a Status, this function encapsulates both the result
+ * and error in a single return value, making it easier to handle success and
+ * failure cases in a unified way.
+ *
+ * @param context The RPC JsonContext containing request parameters and
+ * environment.
+ * @return Expected<std::shared_ptr<Ledger const>, Json::Value>
+ *         On success, contains a shared pointer to the requested Ledger.
+ *         On failure, contains a Json::Value describing the error.
+ */
+Expected<std::shared_ptr<Ledger const>, Json::Value>
+getOrAcquireLedger(RPC::JsonContext& context);
+
 hash_set<AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
@@ -229,11 +252,6 @@ isAccountObjectsValidType(LedgerEntryType const& type);
  */
 unsigned int
 getAPIVersionNumber(Json::Value const& value, bool betaEnabled);
-
-/** Return a ledger based on ledger_hash or ledger_index,
-    or an RPC error */
-Expected<std::shared_ptr<Ledger const>, Json::Value>
-getLedgerByContext(RPC::JsonContext& context);
 
 std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
