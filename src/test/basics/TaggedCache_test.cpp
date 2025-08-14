@@ -153,24 +153,24 @@ public:
         {
             BEAST_EXPECT(!c.insert(5, "five"));
             BEAST_EXPECT(c.getCacheSize() == 1);
-            BEAST_EXPECT(c.getTrackSize() == 1);
+            BEAST_EXPECT(c.size() == 1);
 
             {
                 auto const p1 = c.fetch(5);
                 BEAST_EXPECT(p1 != nullptr);
                 BEAST_EXPECT(c.getCacheSize() == 1);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
 
                 // Advance the clock a lot
                 ++clock;
                 c.sweep();
                 BEAST_EXPECT(c.getCacheSize() == 0);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
 
                 auto p2 = std::make_shared<std::string>("five_2");
                 BEAST_EXPECT(c.canonicalize_replace_cache(5, p2));
                 BEAST_EXPECT(c.getCacheSize() == 1);
-                BEAST_EXPECT(c.getTrackSize() == 1);
+                BEAST_EXPECT(c.size() == 1);
                 // Make sure we get the original object
                 BEAST_EXPECT(p1.get() != p2.get());
                 BEAST_EXPECT(*p2 == "five_2");
@@ -179,7 +179,7 @@ public:
             ++clock;
             c.sweep();
             BEAST_EXPECT(c.getCacheSize() == 0);
-            BEAST_EXPECT(c.getTrackSize() == 0);
+            BEAST_EXPECT(c.size() == 0);
         }
 
         {
@@ -234,7 +234,7 @@ public:
             intrPtrCache.canonicalize_replace_cache(
                 1, intr_ptr::make_shared<MyRefCountObject>("one"));
             BEAST_EXPECT(intrPtrCache.getCacheSize() == 1);
-            BEAST_EXPECT(intrPtrCache.getTrackSize() == 1);
+            BEAST_EXPECT(intrPtrCache.size() == 1);
 
             {
                 {
@@ -250,7 +250,7 @@ public:
                     ++clock;
                     intrPtrCache.sweep();
                     BEAST_EXPECT(intrPtrCache.getCacheSize() == 0);
-                    BEAST_EXPECT(intrPtrCache.getTrackSize() == 1);
+                    BEAST_EXPECT(intrPtrCache.size() == 1);
 
                     intrPtrCache.canonicalize_replace_cache(
                         1,
@@ -273,7 +273,7 @@ public:
             ++clock;
             intrPtrCache.sweep();
             BEAST_EXPECT(intrPtrCache.getCacheSize() == 0);
-            BEAST_EXPECT(intrPtrCache.getTrackSize() == 0);
+            BEAST_EXPECT(intrPtrCache.size() == 0);
         }
     }
 };
