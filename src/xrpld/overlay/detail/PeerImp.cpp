@@ -132,8 +132,7 @@ PeerImp::PeerImp(
                headers_,
                FEATURE_VPRR,
                app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << remote_address_ << " " << id_;
+        << " tx reduce-relay enabled " << txReduceRelayEnabled_;
 }
 
 PeerImp::~PeerImp()
@@ -281,8 +280,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
              sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        sink << (n.empty() ? remote_address_.to_string() : n)
-             << " sendq: " << sendq_size;
+        sink << n << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -583,12 +581,10 @@ PeerImp::fail(std::string const& name, error_code ec)
         strand_.running_in_this_thread(),
         "ripple::PeerImp::fail : strand in this thread");
 
-    if (!socket_.is_open())
-        return;
-
-    JLOG(journal_.warn())
-        << name << " from " << toBase58(TokenType::NodePublic, publicKey_)
-        << " at " << remote_address_.to_string() << ": " << ec.message();
+    if (socket_.is_open())
+    {
+        JLOG(journal_.warn()) << name << ": " << ec.message();
+    }
 
     shutdown();
 }
@@ -611,7 +607,7 @@ PeerImp::fail(std::string const& reason)
     if (journal_.active(beast::severities::kWarning))
     {
         std::string const n = name();
-        JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
+        JLOG(journal_.warn()) << n
                               << " failed: " << reason;
     }
 
@@ -837,7 +833,7 @@ PeerImp::doAccept()
         read_buffer_.size() == 0,
         "ripple::PeerImp::doAccept : empty read buffer");
 
-    JLOG(journal_.debug()) << "doAccept: " << remote_address_;
+    JLOG(journal_.debug()) << "doAccept";
 
     // a shutdown was initiated before the handshake, there is nothing to do
     if (shutdown_)
@@ -2154,8 +2150,7 @@ PeerImp::onValidatorListMessage(
     // ValidatorList class rules), so charge accordingly and skip processing.
     if (blobs.empty())
     {
-        JLOG(p_journal_.warn()) << "Ignored malformed " << messageType
-                                << " from peer " << remote_address_;
+        JLOG(p_journal_.warn()) << "Ignored malformed " << messageType;
         // This shouldn't ever happen with a well-behaved peer
         fee_.update(Resource::feeHeavyBurdenPeer, "no blobs");
         return;
@@ -2164,8 +2159,7 @@ PeerImp::onValidatorListMessage(
     auto const hash = sha512Half(manifest, blobs, version);
 
     JLOG(p_journal_.debug())
-        << "Received " << messageType << " from " << remote_address_.to_string()
-        << " (" << id_ << ")";
+        << "Received " << messageType;
 
     if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
     {
@@ -2192,8 +2186,7 @@ PeerImp::onValidatorListMessage(
         << "Processed " << messageType << " version " << version << " from "
         << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
                                      : "unknown or invalid publisher")
-        << " from " << remote_address_.to_string() << " (" << id_
-        << ") with best result " << to_string(applyResult.bestDisposition());
+        << " with best result " << to_string(applyResult.bestDisposition());
 
     // Act based on the best result
     switch (applyResult.bestDisposition())
@@ -2303,51 +2296,44 @@ PeerImp::onValidatorListMessage(
             // New list
             case ListDisposition::accepted:
                 JLOG(p_journal_.debug())
-                    << "Applied " << count << " new " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Applied " << count << " new " << messageType;
                 break;
             // Newest list is expired, and that needs to be broadcast, too
             case ListDisposition::expired:
                 JLOG(p_journal_.debug())
-                    << "Applied " << count << " expired " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Applied " << count << " expired " << messageType;
                 break;
             // Future list
             case ListDisposition::pending:
                 JLOG(p_journal_.debug())
-                    << "Processed " << count << " future " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Processed " << count << " future " << messageType;
                 break;
             case ListDisposition::same_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with current sequence from peer "
-                    << remote_address_;
+                    << "(s) with current sequence";
                 break;
             case ListDisposition::known_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with future sequence from peer " << remote_address_;
+                    << "(s) with future sequence";
                 break;
             case ListDisposition::stale:
                 JLOG(p_journal_.warn())
-                    << "Ignored " << count << "stale " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Ignored " << count << "stale " << messageType;
                 break;
             case ListDisposition::untrusted:
                 JLOG(p_journal_.warn())
-                    << "Ignored " << count << " untrusted " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Ignored " << count << " untrusted " << messageType;
                 break;
             case ListDisposition::unsupported_version:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << "unsupported version "
-                    << messageType << "(s) from peer " << remote_address_;
+                    << messageType;
                 break;
             case ListDisposition::invalid:
                 JLOG(p_journal_.warn())
-                    << "Ignored " << count << "invalid " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "Ignored " << count << "invalid " << messageType;
                 break;
             default:
                 UNREACHABLE(
@@ -2379,8 +2365,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
     }
     catch (std::exception const& e)
     {
-        JLOG(p_journal_.warn()) << "ValidatorList: Exception, " << e.what()
-                                << " from peer " << remote_address_;
+        JLOG(p_journal_.warn()) << "ValidatorList: Exception, " << e.what();
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
@@ -2419,8 +2404,7 @@ PeerImp::onMessage(
     }
     catch (std::exception const& e)
     {
-        JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception, "
-                                << e.what() << " from peer " << remote_address_;
+        JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception";
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
