@@ -690,8 +690,11 @@ private:
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
-    std::string
-    fingerprint() const;
+    std::string const&
+    fingerprint() const
+    {
+        return fingerprint_;
+    }
 
 public:
     //--------------------------------------------------------------------------
