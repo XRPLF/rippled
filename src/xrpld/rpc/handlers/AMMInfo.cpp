@@ -35,16 +35,12 @@ std::optional<AccountID>
 getAccount(Json::Value const& v, Json::Value& result)
 {
     std::string strIdent(v.asString());
-    AccountID accountID;
 
-    if (auto jv = RPC::accountFromString(accountID, strIdent))
+    if (auto accountID = parseBase58<AccountID>(strIdent))
     {
-        for (auto it = jv.begin(); it != jv.end(); ++it)
-            result[it.memberName()] = (*it);
-
-        return std::nullopt;
+        return *accountID;
     }
-    return std::optional<AccountID>(accountID);
+    return std::nullopt;
 }
 
 Expected<Issue, error_code_i>

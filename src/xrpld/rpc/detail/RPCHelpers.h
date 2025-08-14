@@ -47,32 +47,6 @@ namespace RPC {
 
 struct JsonContext;
 
-/** Get an AccountID from an account ID or public key. */
-std::optional<AccountID>
-accountFromStringStrict(std::string const&);
-
-// --> strIdent: public key, account ID, or regular seed.
-// --> bStrict: Only allow account id or public key.
-//
-// Returns a Json::objectValue, containing error information if there was one.
-Json::Value
-accountFromString(
-    AccountID& result,
-    std::string const& strIdent,
-    bool bStrict = false);
-
-/** Decode account ID from string
-    @param[out] result account ID decoded from string
-    @param strIdent public key, account ID, or regular seed.
-    @param bStrict Only allow account id or public key.
-    @return code representing error, or rpcSUCCES on success
-*/
-error_code_i
-accountFromStringWithCode(
-    AccountID& result,
-    std::string const& strIdent,
-    bool bStrict = false);
-
 /** Gets the start hint for traversing account objects
  * @param sle - Ledger entry defined by the marker passed into the RPC.
  * @param accountID - The ID of the account whose objects you are traversing.

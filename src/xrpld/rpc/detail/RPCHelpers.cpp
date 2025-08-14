@@ -40,60 +40,6 @@
 namespace ripple {
 namespace RPC {
 
-std::optional<AccountID>
-accountFromStringStrict(std::string const& account)
-{
-    std::optional<AccountID> result;
-
-    auto const publicKey =
-        parseBase58<PublicKey>(TokenType::AccountPublic, account);
-
-    if (publicKey)
-        result = calcAccountID(*publicKey);
-    else
-        result = parseBase58<AccountID>(account);
-
-    return result;
-}
-
-error_code_i
-accountFromStringWithCode(
-    AccountID& result,
-    std::string const& strIdent,
-    bool bStrict)
-{
-    if (auto accountID = accountFromStringStrict(strIdent))
-    {
-        result = *accountID;
-        return rpcSUCCESS;
-    }
-
-    if (bStrict)
-        return rpcACT_MALFORMED;
-
-    // We allow the use of the seeds which is poor practice
-    // and merely for debugging convenience.
-    auto const seed = parseGenericSeed(strIdent);
-
-    if (!seed)
-        return rpcBAD_SEED;
-
-    auto const keypair = generateKeyPair(KeyType::secp256k1, *seed);
-
-    result = calcAccountID(keypair.first);
-    return rpcSUCCESS;
-}
-
-Json::Value
-accountFromString(AccountID& result, std::string const& strIdent, bool bStrict)
-{
-    error_code_i code = accountFromStringWithCode(result, strIdent, bStrict);
-    if (code != rpcSUCCESS)
-        return rpcError(code);
-    else
-        return Json::objectValue;
-}
-
 std::uint64_t
 getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
 {
