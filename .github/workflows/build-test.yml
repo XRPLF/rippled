@@ -107,9 +107,6 @@ jobs:
 
           echo "Checking CMake version."
           cmake --version
-          
-          # TEMPORARY
-          cat conan/${{ inputs.os }}.conf > ~/.conan2/global.conf
 
           echo "Checking Conan version."
           conan --version
