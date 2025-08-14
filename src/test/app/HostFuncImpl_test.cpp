@@ -1954,6 +1954,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     Bytes const float1More         =  {0xD4, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x01};  // 1.000 000 000 000 001
     Bytes const float2             =  {0xD4, 0x87, 0x1A, 0xFD, 0x49, 0x8D, 0x00, 0x00};  // 2
     Bytes const float10            =  {0xD4, 0xC3, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // 10
+    Bytes const floatInvalidZero   =  {0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};  // INVALID
 
     std::string const invalid = "invalid_data";
 
@@ -2180,6 +2181,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
         {
             auto const result = hfs.floatCompare(Slice(), Slice());
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result =
+                hfs.floatCompare(makeSlice(floatInvalidZero), Slice());
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
