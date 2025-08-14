@@ -16,6 +16,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/delegate.h>
 
 #include <xrpl/protocol/Feature.h>
