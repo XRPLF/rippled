@@ -608,8 +608,7 @@ PeerImp::fail(std::string const& reason)
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
     {
         std::string const n = name();
-        JLOG(journal_.warn()) << n
-                              << " failed: " << reason;
+        JLOG(journal_.warn()) << n << " failed: " << reason;
     }
     close();
 }
@@ -679,8 +678,8 @@ std::string
 PeerImp::makePrefix(id_t id, std::string const& fingerprint)
 {
     std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id
-       << ", " << fingerprint << "] ";
+    ss << "[" << std::setfill('0') << std::setw(3) << id << ", " << fingerprint
+       << "] ";
     return ss.str();
 }
 
@@ -2048,8 +2047,7 @@ PeerImp::onValidatorListMessage(
 
     auto const hash = sha512Half(manifest, blobs, version);
 
-    JLOG(p_journal_.debug())
-        << "Received " << messageType;
+    JLOG(p_journal_.debug()) << "Received " << messageType;
 
     if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
     {
