@@ -1941,7 +1941,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     int const normalExp = 15;
 
     Bytes const floatIntMin        =  {0x99, 0x20, 0xc4, 0x9b, 0xa5, 0xe3, 0x53, 0xf8};  // -2^63
-    Bytes const floatIntZero       =  {0xd8, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};  // 0
+    Bytes const floatIntZero       =  {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};  // 0
     Bytes const floatIntMax        =  {0xd9, 0x20, 0xc4, 0x9b, 0xa5, 0xe3, 0x53, 0xf8};  // 2^63-1
     Bytes const floatUIntMax       =  {0xd9, 0x46, 0x8d, 0xb8, 0xba, 0xc7, 0x10, 0xcb};  // 2^64
     Bytes const floatMaxExp        =  {0xEC, 0x43, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // 1e(80+15)
@@ -1954,8 +1954,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     Bytes const float1More         =  {0xD4, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x01};  // 1.000 000 000 000 001
     Bytes const float2             =  {0xD4, 0x87, 0x1A, 0xFD, 0x49, 0x8D, 0x00, 0x00};  // 2
     Bytes const float10            =  {0xD4, 0xC3, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // 10
-    Bytes const floatMaxXRP        =  {0x5F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  // 2^62-1
-    Bytes const floatMaxMPT        =  {0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};  // 2^62-1
 
     std::string const invalid = "invalid_data";
 
@@ -2723,48 +2721,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const result =
                 hfs.floatCompare(makeSlice(x), makeSlice(float10));
-            BEAST_EXPECT(result && *result == 0);
-        }
-
-        {
-            auto const result =
-                hfs.floatAdd(makeSlice(x), makeSlice(float10), 0);
-            if (BEAST_EXPECT(result))
-            {
-                auto const result2 =
-                    hfs.floatCompare(makeSlice(*result), makeSlice(*y));
-                BEAST_EXPECT(result2 && *result2 == 0);
-            }
-        }
-
-        // underflow
-        x[7] = 1;
-        {
-            auto const result =
-                hfs.floatDivide(makeSlice(x), makeSlice(float1More), 0);
             BEAST_EXPECT(
                 !result &&
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
-        {
-            auto const result = hfs.floatMultiply(
-                makeSlice(floatMaxXRP), makeSlice(floatIntZero), 0);
-            if (BEAST_EXPECT(result))
-            {
-                auto const result2 = hfs.floatCompare(
-                    makeSlice(*result), makeSlice(floatIntZero));
-                BEAST_EXPECT(result2 && *result2 == 0);
-            }
-        }
-
-        // overflow
         {
             auto const result =
-                hfs.floatAdd(makeSlice(floatMaxXRP), makeSlice(float1), 0);
+                hfs.floatAdd(makeSlice(float10), makeSlice(x), 0);
             BEAST_EXPECT(
                 !result &&
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
 
         // MPT
@@ -2775,26 +2742,17 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {
             auto const result =
                 hfs.floatCompare(makeSlice(x), makeSlice(float10));
-            BEAST_EXPECT(result && *result == 0);
-        }
-
-        {
-            auto const result =
-                hfs.floatAdd(makeSlice(x), makeSlice(float10), 0);
-            if (BEAST_EXPECT(result))
-            {
-                auto const result2 =
-                    hfs.floatCompare(makeSlice(*result), makeSlice(*y));
-                BEAST_EXPECT(result2 && *result2 == 0);
-            }
-        }
-
-        {
-            auto const result =
-                hfs.floatAdd(makeSlice(floatMaxMPT), makeSlice(float1), 0);
             BEAST_EXPECT(
                 !result &&
-                result.error() == HostFunctionError::FLOAT_COMPUTATION_ERROR);
+                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result =
+                hfs.floatAdd(makeSlice(float10), makeSlice(x), 0);
+            BEAST_EXPECT(
+                !result &&
+                result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
     }
 
