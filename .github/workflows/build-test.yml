@@ -51,18 +51,6 @@ defaults:
   run:
     shell: bash
 
-env:
-  # Global configuration for Conan. This is used to set the number of parallel
-  # downloads, uploads, and build jobs. The verbosity is set to verbose to
-  # provide more information during the build process.
-  CONAN_GLOBAL_CONF: |
-    core:non_interactive=True
-    core.download:parallel={{ os.cpu_count() }}
-    core.upload:parallel={{ os.cpu_count() }}
-    tools.build:jobs={{ (os.cpu_count() * 4/5) | int }}
-    tools.build:verbosity=verbose
-    tools.compilation:verbosity=verbose
-
 jobs:
   # Generate the strategy matrix to be used by the following job.
   generate-matrix:
@@ -149,7 +137,6 @@ jobs:
         with:
           build_dir: ${{ inputs.build_dir }}
           build_type: ${{ matrix.build_type }}
-          conan_global_conf: ${{ env.CONAN_GLOBAL_CONF }}
           conan_remote_name: ${{ inputs.conan_remote_name }}
           conan_remote_url: ${{ inputs.conan_remote_url }}
           conan_remote_username: ${{ secrets.conan_remote_username }}

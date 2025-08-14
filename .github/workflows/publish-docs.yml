@@ -1,18 +1,15 @@
 # This workflow builds and publishes the documentation for the repository.
 name: Build and publish documentation
 
-# This workflow can only be triggered by other workflows.
 on:
-  workflow_call:
-    inputs:
-      build_dir:
-        description: 'The directory where to build.'
-        required: false
-        type: string
-        default: '.build'
+  push:
+    branches:
+      - develop
+    paths:
+      - '.github/workflows/publish-docs.yml'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-docs
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:

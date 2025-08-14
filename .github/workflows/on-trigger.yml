@@ -135,13 +135,3 @@ jobs:
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-
-  publish-docs:
-    needs:
-      - build-linux
-      - build-macos
-      - build-windows
-    if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch }}
-    uses: ./.github/workflows/publish-docs.yml
-    permissions:
-      contents: write
