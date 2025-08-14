@@ -669,6 +669,25 @@ parseAccountIds(Json::Value const& jvArray)
     return result;
 }
 
+hash_set<MPTID>
+parseMptIssuanceIds(Json::Value const& jvArray)
+{
+    hash_set<uint192> result;
+    for (auto const& jv : jvArray)
+    {
+        if (!jv.isString())
+            return hash_set<MPTID>();
+
+        auto const mptIssuanceIdStr = jv.asString();
+        uint192 mptIssuanceID;
+        if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
+            return hash_set<MPTID>();
+
+        result.insert(mptIssuanceID);
+    }
+    return result;
+}
+
 void
 injectSLE(Json::Value& jv, SLE const& sle)
 {

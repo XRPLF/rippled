@@ -154,6 +154,9 @@ public:
         return static_cast<bool>(mParentBatchId);
     }
 
+    boost::container::flat_set<MPTID>
+    getAffectedMPTs() const;
+
 private:
     uint256 mTransactionID;
     std::uint32_t mLedger;

@@ -122,6 +122,11 @@ public:
             AccountID const& account,
             bool historyOnly) = 0;
 
+        virtual void
+        unsubMPTInternal(
+            std::uint64_t uListener,
+            hash_set<MPTID> const& mptIDs) = 0;
+
         // VFALCO TODO Document the bool return value
         virtual bool
         subLedger(ref ispListener, Json::Value& jvResult) = 0;
@@ -176,6 +181,11 @@ public:
         subConsensus(ref ispListener) = 0;
         virtual bool
         unsubConsensus(std::uint64_t uListener) = 0;
+
+        virtual void
+        subMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) = 0;
+        virtual void
+        unsubMPT(InfoSub::ref ispListener, hash_set<MPTID> const& mptIDs) = 0;
 
         // VFALCO TODO Remove
         //             This was added for one particular partner, it
@@ -235,6 +245,12 @@ public:
     unsigned int
     getApiVersion() const noexcept;
 
+    void
+    insertSubMPTInfo(MPTID const& mptID);
+
+    void
+    deleteSubMPTInfo(MPTID const& mptID);
+
 protected:
     std::mutex mLock;
 
@@ -246,6 +262,7 @@ private:
     std::shared_ptr<InfoSubRequest> request_;
     std::uint64_t mSeq;
     hash_set<AccountID> accountHistorySubscriptions_;
+    hash_set<MPTID> mptSubscriptions_;
     unsigned int apiVersion_ = 0;
 
     static int

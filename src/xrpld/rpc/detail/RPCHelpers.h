@@ -170,6 +170,9 @@ ledgerFromSpecifier(
 hash_set<AccountID>
 parseAccountIds(Json::Value const& jvArray);
 
+hash_set<MPTID>
+parseMptIssuanceIds(Json::Value const& jvArray);
+
 bool
 isHexTxID(std::string const& txid);
 

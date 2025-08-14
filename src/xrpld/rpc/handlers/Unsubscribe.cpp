@@ -255,6 +255,17 @@ doUnsubscribe(RPC::JsonContext& context)
         }
     }
 
+    if (context.params.isMember(jss::mpt_issuances))
+    {
+        if (!context.params[jss::mpt_issuances].isArray())
+            return rpcError(rpcINVALID_PARAMS);
+
+        auto ids = RPC::parseMptIssuanceIds(context.params[jss::mpt_issuances]);
+        if (ids.empty())
+            return rpcError(rpcINVALID_PARAMS);
+        context.netOps.unsubMPT(ispSub, ids);
+    }
+
     if (removeUrl)
     {
         context.netOps.tryRemoveRpcSub(context.params[jss::url].asString());
