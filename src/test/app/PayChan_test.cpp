@@ -20,7 +20,6 @@
 #include <test/jtx.h>
 
 #include <xrpld/ledger/Dir.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Feature.h>

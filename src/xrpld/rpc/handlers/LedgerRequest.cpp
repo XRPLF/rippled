@@ -19,7 +19,7 @@
 
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
@@ -35,7 +35,7 @@ Json::Value
 doLedgerRequest(RPC::JsonContext& context)
 {
     context.loadType = Resource::feeHeavyBurdenRPC;
-    auto res = getOrAcquireLedger(context);
+    auto res = RPC::getOrAcquireLedger(context);
 
     if (!res.has_value())
         return res.error();

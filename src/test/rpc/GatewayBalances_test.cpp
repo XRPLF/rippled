@@ -18,8 +18,6 @@
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
-#include <xrpld/rpc/detail/RPCHelpers.h>
-
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>

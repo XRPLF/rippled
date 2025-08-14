@@ -20,6 +20,11 @@
 #ifndef RIPPLE_PROTOCOL_APIVERSION_H_INCLUDED
 #define RIPPLE_PROTOCOL_APIVERSION_H_INCLUDED
 
+#include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/jss.h>
+
 #include <type_traits>
 #include <utility>
 
@@ -71,6 +76,70 @@ static_assert(
 static_assert(apiMaximumSupportedVersion >= apiMinimumSupportedVersion);
 static_assert(apiBetaVersion >= apiMaximumSupportedVersion);
 static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
+
+template <class Object>
+void
+setVersion(Object& parent, unsigned int apiVersion, bool betaEnabled)
+{
+    XRPL_ASSERT(
+        apiVersion != apiInvalidVersion,
+        "ripple::RPC::setVersion : input is valid");
+    auto&& object = addObject(parent, jss::version);
+    if (apiVersion == apiVersionIfUnspecified)
+    {
+        /**
+         * API version numbers used in API version 1
+         */
+        static beast::SemanticVersion const firstVersion{"1.0.0"};
+        static beast::SemanticVersion const goodVersion{"1.0.0"};
+        static beast::SemanticVersion const lastVersion{"1.0.0"};
+
+        object[jss::first] = firstVersion.print();
+        object[jss::good] = goodVersion.print();
+        object[jss::last] = lastVersion.print();
+    }
+    else
+    {
+        object[jss::first] = apiMinimumSupportedVersion.value;
+        object[jss::last] =
+            betaEnabled ? apiBetaVersion : apiMaximumSupportedVersion;
+    }
+}
+
+/**
+ * Retrieve the api version number from the json value
+ *
+ * Note that APIInvalidVersion will be returned if
+ * 1) the version number field has a wrong format
+ * 2) the version number retrieved is out of the supported range
+ * 3) the version number is unspecified and
+ *    APIVersionIfUnspecified is out of the supported range
+ *
+ * @param value a Json value that may or may not specifies
+ *        the api version number
+ * @param betaEnabled if the beta API version is enabled
+ * @return the api version number
+ */
+inline unsigned int
+getAPIVersionNumber(Json::Value const& jv, bool betaEnabled)
+{
+    static Json::Value const minVersion(RPC::apiMinimumSupportedVersion);
+    static Json::Value const invalidVersion(RPC::apiInvalidVersion);
+
+    Json::Value const maxVersion(
+        betaEnabled ? RPC::apiBetaVersion : RPC::apiMaximumSupportedVersion);
+    Json::Value requestedVersion(RPC::apiVersionIfUnspecified);
+    if (jv.isObject())
+    {
+        requestedVersion = jv.get(jss::api_version, requestedVersion);
+    }
+    if (!(requestedVersion.isInt() || requestedVersion.isUInt()) ||
+        requestedVersion < minVersion || requestedVersion > maxVersion)
+    {
+        requestedVersion = invalidVersion;
+    }
+    return requestedVersion.asUInt();
+}
 
 }  // namespace RPC
 

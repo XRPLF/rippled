@@ -23,7 +23,6 @@
 #include <test/jtx/Account.h>
 
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STObject.h>

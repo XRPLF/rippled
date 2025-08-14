@@ -28,7 +28,6 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/protocol/ErrorCodes.h>
