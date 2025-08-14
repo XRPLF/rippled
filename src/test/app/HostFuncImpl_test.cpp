@@ -2048,7 +2048,7 @@ struct WasmHostFuncImpl_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(WasmHostFuncImpl, app, ripple);
+BEAST_DEFINE_TESTSUITE(HostFuncImpl, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
