@@ -77,8 +77,8 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
+    , sink_(app_.journal("Peer"), makePrefix(id, slot->remote_endpoint(), publicKey))
+    , p_sink_(app_.journal("Protocol"), makePrefix(id, slot->remote_endpoint(), publicKey))
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
@@ -86,7 +86,7 @@ PeerImp::PeerImp(
     , stream_(*stream_ptr_)
     , strand_(socket_.get_executor())
     , timer_(waitable_timer{socket_.get_executor()})
-    , remote_address_(slot->remote_endpoint())
+    , remote_address_()
     , overlay_(overlay)
     , inbound_(true)
     , protocol_(protocol)
@@ -127,7 +127,7 @@ PeerImp::PeerImp(
                FEATURE_VPRR,
                app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
         << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << fingerprint() << " " << id_;
+        << remote_address_ << " " << id_;
 }
 
 PeerImp::~PeerImp()
@@ -278,7 +278,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
              sink && (sendq_size % Tuning::sendQueueLogFreq) == 0)
     {
         std::string const n = name();
-        sink << (n.empty() ? fingerprint() : n) << " sendq: " << sendq_size;
+        sink << (n.empty() ? remote_address_ : n) << " sendq: " << sendq_size;
     }
 
     send_queue_.push(m);
@@ -609,7 +609,7 @@ PeerImp::fail(std::string const& reason)
     {
         std::string const n = name();
         JLOG(journal_.warn())
-            << (n.empty() ? fingerprint() : n) << " failed: " << reason;
+            << (n.empty() ? remote_address_ : n) << " failed: " << reason;
     }
     close();
 }
@@ -624,7 +624,7 @@ PeerImp::fail(std::string const& name, error_code ec)
     {
         JLOG(journal_.warn())
             << name << " from " << toBase58(TokenType::NodePublic, publicKey_)
-            << " at " << fingerprint() << ": " << ec.message();
+            << " at " << remote_address_ << ": " << ec.message();
     }
     close();
 }
@@ -678,10 +678,11 @@ PeerImp::cancelTimer()
 //------------------------------------------------------------------------------
 
 std::string
-PeerImp::makePrefix(id_t id)
+PeerImp::makePrefix(id_t id, beast::IP::Endpoint const& remoteAddress, PublicKey const& publicKey)
 {
     std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
+    ss << "[" << std::setfill('0') << std::setw(3) << id
+        << ", fingerprint: " << getFingerprint(remoteAddress, publicKey) << "] ";
     return ss.str();
 }
 
@@ -769,7 +770,7 @@ PeerImp::doAccept()
         read_buffer_.size() == 0,
         "ripple::PeerImp::doAccept : empty read buffer");
 
-    JLOG(journal_.debug()) << "doAccept: " << fingerprint();
+    JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
 
@@ -2042,7 +2043,7 @@ PeerImp::onValidatorListMessage(
     if (blobs.empty())
     {
         JLOG(p_journal_.warn()) << "Ignored malformed " << messageType
-                                << " from peer " << fingerprint();
+                                << " from peer " << remote_address_;
         // This shouldn't ever happen with a well-behaved peer
         fee_.update(Resource::feeHeavyBurdenPeer, "no blobs");
         return;
@@ -2051,7 +2052,7 @@ PeerImp::onValidatorListMessage(
     auto const hash = sha512Half(manifest, blobs, version);
 
     JLOG(p_journal_.debug()) << "Received " << messageType << " from "
-                             << fingerprint() << " (" << id_ << ")";
+                             << remote_address_ << " (" << id_ << ")";
 
     if (!app_.getHashRouter().addSuppressionPeer(hash, id_))
     {
@@ -2078,7 +2079,7 @@ PeerImp::onValidatorListMessage(
         << "Processed " << messageType << " version " << version << " from "
         << (applyResult.publisherKey ? strHex(*applyResult.publisherKey)
                                      : "unknown or invalid publisher")
-        << " from " << fingerprint() << " (" << id_ << ") with best result "
+        << " from " << remote_address_ << " (" << id_ << ") with best result "
         << to_string(applyResult.bestDisposition());
 
     // Act based on the best result
@@ -2190,49 +2191,49 @@ PeerImp::onValidatorListMessage(
             case ListDisposition::accepted:
                 JLOG(p_journal_.debug())
                     << "Applied " << count << " new " << messageType
-                    << "(s) from peer " << fingerprint();
+                    << "(s) from peer " << remote_address_;
                 break;
             // Newest list is expired, and that needs to be broadcast, too
             case ListDisposition::expired:
                 JLOG(p_journal_.debug())
                     << "Applied " << count << " expired " << messageType
-                    << "(s) from peer " << fingerprint();
+                    << "(s) from peer " << remote_address_;
                 break;
             // Future list
             case ListDisposition::pending:
                 JLOG(p_journal_.debug())
                     << "Processed " << count << " future " << messageType
-                    << "(s) from peer " << fingerprint();
+                    << "(s) from peer " << remote_address_;
                 break;
             case ListDisposition::same_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with current sequence from peer " << fingerprint();
+                    << "(s) with current sequence from peer " << remote_address_;
                 break;
             case ListDisposition::known_sequence:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " " << messageType
-                    << "(s) with future sequence from peer " << fingerprint();
+                    << "(s) with future sequence from peer " << remote_address_;
                 break;
             case ListDisposition::stale:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << "stale " << messageType
-                    << "(s) from peer " << fingerprint();
+                    << "(s) from peer " << remote_address_;
                 break;
             case ListDisposition::untrusted:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " untrusted " << messageType
-                    << "(s) from peer " << fingerprint();
+                    << "(s) from peer " << remote_address_;
                 break;
             case ListDisposition::unsupported_version:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << "unsupported version "
-                    << messageType << "(s) from peer " << fingerprint();
+                    << messageType << "(s) from peer " << remote_address_;
                 break;
             case ListDisposition::invalid:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << "invalid " << messageType
-                    << "(s) from peer " << fingerprint();
+                    << "(s) from peer " << remote_address_;
                 break;
             default:
                 UNREACHABLE(
@@ -2265,7 +2266,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorList> const& m)
     catch (std::exception const& e)
     {
         JLOG(p_journal_.warn()) << "ValidatorList: Exception, " << e.what()
-                                << " from peer " << fingerprint();
+                                << " from peer " << remote_address_;
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
@@ -2305,7 +2306,7 @@ PeerImp::onMessage(
     catch (std::exception const& e)
     {
         JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception, "
-                                << e.what() << " from peer " << fingerprint();
+                                << e.what() << " from peer " << remote_address_;
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
@@ -2659,12 +2660,6 @@ PeerImp::handleHaveTransactions(
 
     if (tmBH.objects_size() > 0)
         send(std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS));
-}
-
-std::string
-PeerImp::fingerprint() const
-{
-    return getFingerprint(remote_address_, publicKey_);
 }
 
 void
