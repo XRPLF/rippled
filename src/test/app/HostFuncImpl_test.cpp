@@ -2000,6 +2000,88 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         BEAST_EXPECT(result.value() == msg.size() + sizeof(num));
     }
 
+    void
+    testTraceAccount()
+    {
+        testcase("traceAccount");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        std::string msg = "trace account";
+        // Valid account
+        {
+            auto const result = hfs.traceAccount(msg, env.master.id());
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() ==
+                    msg.size() + toBase58(env.master.id()).size());
+        }
+
+        // Invalid (zero) account
+        {
+            auto const result = hfs.traceAccount(msg, xrpAccount());
+            if (BEAST_EXPECT(!result.has_value()))
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::INVALID_ACCOUNT);
+        }
+    }
+
+    void
+    testTraceAmount()
+    {
+        testcase("traceAmount");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+
+        auto const dummyEscrow =
+            keylet::escrow(env.master, env.seq(env.master));
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        std::string msg = "trace amount";
+        STAmount amount = XRP(12345);
+        {
+            auto const result = hfs.traceAmount(msg, amount);
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() == msg.size() + amount.getFullText().size());
+        }
+
+        // IOU amount
+        Account const alice("alice");
+        env.fund(XRP(1000), alice);
+        env.close();
+        STAmount iouAmount = env.master["USD"](100);
+        {
+            auto const result = hfs.traceAmount(msg, iouAmount);
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() ==
+                    msg.size() + iouAmount.getFullText().size());
+        }
+
+        // MPT amount
+        {
+            auto const mptId = makeMptID(42, env.master.id());
+            Asset mptAsset = Asset(mptId);
+            STAmount mptAmount(mptAsset, 123456);
+            auto const result = hfs.traceAmount(msg, mptAmount);
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() ==
+                    msg.size() + mptAmount.getFullText().size());
+        }
+    }
+
     // clang-format off
 
     int const normalExp = 15;
@@ -2878,88 +2960,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         testFloatLog();
         testFloatNonIOU();
         testFloatTrace();
-    }
-
-    void
-    testTraceAccount()
-    {
-        testcase("traceAccount");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        std::string msg = "trace account";
-        // Valid account
-        {
-            auto const result = hfs.traceAccount(msg, env.master.id());
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(
-                    result.value() ==
-                    msg.size() + toBase58(env.master.id()).size());
-        }
-
-        // Invalid (zero) account
-        {
-            auto const result = hfs.traceAccount(msg, xrpAccount());
-            if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECT(
-                    result.error() == HostFunctionError::INVALID_ACCOUNT);
-        }
-    }
-
-    void
-    testTraceAmount()
-    {
-        testcase("traceAmount");
-        using namespace test::jtx;
-
-        Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
-
-        auto const dummyEscrow =
-            keylet::escrow(env.master, env.seq(env.master));
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
-
-        std::string msg = "trace amount";
-        STAmount amount = XRP(12345);
-        {
-            auto const result = hfs.traceAmount(msg, amount);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(
-                    result.value() == msg.size() + amount.getFullText().size());
-        }
-
-        // IOU amount
-        Account const alice("alice");
-        env.fund(XRP(1000), alice);
-        env.close();
-        STAmount iouAmount = env.master["USD"](100);
-        {
-            auto const result = hfs.traceAmount(msg, iouAmount);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(
-                    result.value() ==
-                    msg.size() + iouAmount.getFullText().size());
-        }
-
-        // MPT amount
-        {
-            auto const mptId = makeMptID(42, env.master.id());
-            Asset mptAsset = Asset(mptId);
-            STAmount mptAmount(mptAsset, 123456);
-            auto const result = hfs.traceAmount(msg, mptAmount);
-            if (BEAST_EXPECT(result.has_value()))
-                BEAST_EXPECT(
-                    result.value() ==
-                    msg.size() + mptAmount.getFullText().size());
-        }
     }
 
     void
