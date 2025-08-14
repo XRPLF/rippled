@@ -86,7 +86,7 @@ createApplyContext(
     return ac;
 }
 
-struct WasmHostFuncImpl_test : public beast::unit_test::suite
+struct HostFuncImpl_test : public beast::unit_test::suite
 {
     void
     testGetLedgerSqn()
