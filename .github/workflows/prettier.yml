@@ -9,7 +9,7 @@ jobs:
   check:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-24.04
-    container: ghcr.io/xrplf/ci/tools-rippled/prettier
+    container: ghcr.io/xrplf/ci/tools-rippled-prettier
     steps:
       - uses: actions/checkout@v4
 
