@@ -62,3 +62,7 @@ extern std::string const keyletHostFunctions;
 extern std::string const codecovWasm;
 
 extern std::string const floatHex;
+
+extern std::string const float0Hex;
+
+extern std::string const disabledFloatHex;

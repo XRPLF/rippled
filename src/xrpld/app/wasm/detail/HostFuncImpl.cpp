@@ -914,84 +914,66 @@ WasmHostFunctionsImpl::floatLog(Slice const& x, int32_t mode)
 
 class Number2 : public Number
 {
-public:
-    enum Issue { XRP, MPT, IOU };
-
 protected:
+    static Bytes const FLOAT_NULL;
+
     bool good_;
-    Issue issue_;
 
 public:
-    Number2(Slice const& data) : Number(0), good_(false), issue_(IOU)
+    Number2(Slice const& data) : Number(), good_(false)
     {
         if (data.size() != 8)
             return;
 
+        if (std::ranges::equal(FLOAT_NULL, data))
+        {
+            good_ = true;
+            return;
+        }
+
         uint64_t const v = SerialIter(data).get64();
-        int const neg = (v & STAmount::cPositive) ? 1 : -1;
+        if (!(v & STAmount::cIssuedCurrency))
+            return;
 
-        Number x;
+        int64_t const neg = (v & STAmount::cPositive) ? 1 : -1;
+        int32_t const e = static_cast<uint8_t>((v >> (64 - 10)) & 0xFFull);
+        if (e < 1 || e > 177)
+            return;
 
-        if (v & STAmount::cIssuedCurrency)
-        {
-            // IOU
-            int32_t const e =
-                static_cast<uint8_t>((v >> (64 - 10)) & ((1ull << 8) - 1));
-            int64_t const m = neg * (v & ((1ull << 54) - 1));
-            x = !m || (e < 1) ? Number()
-                              : Number(m, e + IOUAmount::minExponent - 1);
-            if (m && (x.exponent() > IOUAmount::maxExponent))
-                return;  // invalid number
-            issue_ = IOU;
-        }
-        else if (v & STAmount::cMPToken)
-        {
-            // MPT
-            int64_t const m = neg * (v & ((1ull << 61) - 1));
-            x = !m ? Number() : Number(m);
-            issue_ = MPT;
-        }
-        else
-        {
-            // XRP
-            int64_t const m = neg * (v & ((1ull << 61) - 1));
-            x = !m ? Number() : Number(m);
-            issue_ = XRP;
-        }
+        int64_t const m = neg * static_cast<int64_t>(v & ((1ull << 54) - 1));
+        if (!m)
+            return;
 
+        Number x(m, e + IOUAmount::minExponent - 1);
         *static_cast<Number*>(this) = x;
         good_ = true;
     }
 
-    Number2() : Number(), good_(true), issue_(IOU)
+    Number2() : Number(), good_(true)
     {
     }
 
-    Number2(int64_t x) : Number(x), good_(true), issue_(IOU)
+    Number2(int64_t x) : Number(x), good_(true)
     {
     }
 
-    Number2(uint64_t x) : Number(0), good_(false), issue_(IOU)
+    Number2(uint64_t x) : Number(0), good_(false)
     {
-        if (x <=
-            std::numeric_limits<
-                std::invoke_result_t<decltype(&Number::mantissa), Number>>::
-                max())
-            *static_cast<Number*>(this) = Number(x);
+        using mtype = std::invoke_result_t<decltype(&Number::mantissa), Number>;
+        if (x <= std::numeric_limits<mtype>::max())
+            *this = Number(x);
         else
-        {
-            *static_cast<Number*>(this) = Number(x / 10, 1) + Number(x % 10);
-        }
+            *this = Number(x / 10, 1) + Number(x % 10);
 
         good_ = true;
     }
 
     Number2(int64_t mantissa, int32_t exponent)
-        : Number(mantissa, exponent), good_(true), issue_(IOU)
+        : Number(mantissa, exponent), good_(true)
     {
     }
 
-    Number2(Number const& n) : Number(n), good_(true), issue_(IOU)
+    Number2(Number const& n) : Number(n), good_(true)
     {
     }
 
@@ -1000,66 +982,38 @@ public:
         return good_;
     }
 
-    Issue
-    getIssue() const
-    {
-        return issue_;
-    }
-
-    void
-    setIssue(Issue i)
-    {
-        issue_ = i;
-    }
-
     Expected<Bytes, HostFunctionError>
     toBytes() const
     {
         uint64_t v = mantissa() >= 0 ? STAmount::cPositive : 0;
+        v |= STAmount::cIssuedCurrency;
 
-        if (issue_ == IOU)
+        uint64_t const absM = mantissa() >= 0 ? mantissa() : -mantissa();
+        if (!absM)
         {
-            v |= STAmount::cIssuedCurrency;
-
-            if (!mantissa())
+            using etype =
+                std::invoke_result_t<decltype(&Number::exponent), Number>;
+            if (exponent() != std::numeric_limits<etype>::lowest())
             {
-                if (exponent() != std::numeric_limits<int>::lowest())
-                    return Unexpected(
-                        HostFunctionError::
-                            FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
-            }
-            else if (exponent() > IOUAmount::maxExponent)
-                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-            else if (exponent() < IOUAmount::minExponent)
-                return Number2().toBytes();
-
-            uint64_t absM = mantissa() >= 0 ? mantissa() : -mantissa();
-            if (absM > ((1ull << 54) - 1))
                 return Unexpected(
                     HostFunctionError::
                         FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
-
-            v |= absM;
-
-            int const e =
-                (!mantissa() ? 0 : exponent()) - IOUAmount::minExponent + 1;
-            v |= ((uint64_t)e) << 54;
+            }
+            return FLOAT_NULL;
         }
-        else if (issue_ == MPT)
+        else if (absM > ((1ull << 54) - 1))
         {
-            v |= STAmount::cMPToken;
-            uint64_t x = toUInt(61);
-            if (x == std::numeric_limits<uint64_t>::max())
-                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-            v |= x;
+            return Unexpected(
+                HostFunctionError::FLOAT_COMPUTATION_ERROR);  // LCOV_EXCL_LINE
         }
-        else
-        {
-            uint64_t x = toUInt(61);
-            if (x == std::numeric_limits<uint64_t>::max())
-                return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
-            v |= x;
-        }
+        else if (exponent() > IOUAmount::maxExponent)
+            return Unexpected(HostFunctionError::FLOAT_COMPUTATION_ERROR);
+        else if (exponent() < IOUAmount::minExponent)
+            return FLOAT_NULL;
+
+        int const e = exponent() - IOUAmount::minExponent + 1;  //+97
+        v |= absM;
+        v |= ((uint64_t)e) << 54;
 
         Serializer msg;
         msg.add64(v);
@@ -1076,43 +1030,10 @@ public:
 
         return data;
     }
-
-protected:
-    uint64_t
-    toUInt(unsigned bits) const
-    {
-        if (bits >= sizeof(uint64_t) * 8)
-            return std::numeric_limits<uint64_t>::max();  // LCOV_EXCL_LINE
-
-        uint64_t maxV = (1ull << bits) - 1;
-        uint64_t absM = mantissa() >= 0 ? mantissa() : -mantissa();
-
-        if (!absM)
-            return 0;
-        else if (exponent() < 0)
-        {
-            for (int i = 0; i > exponent(); --i)
-            {
-                // underflow
-                if (absM < 10)
-                    return std::numeric_limits<uint64_t>::max();
-                absM /= 10;
-            }
-        }
-        else
-        {
-            for (int i = 0; i < exponent(); ++i)
-            {
-                // overflow
-                if (absM > maxV / 10)
-                    return std::numeric_limits<uint64_t>::max();
-                absM *= 10;
-            }
-        }
-
-        return absM > maxV ? std::numeric_limits<uint64_t>::max() : absM;
-    }
 };
+
+Bytes const Number2::FLOAT_NULL =
+    {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 struct SetRound
 {
@@ -1251,7 +1172,7 @@ floatAddImpl(Slice const& x, Slice const& y, int32_t mode)
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 res = xx + yy;
-        res.setIssue(xx.getIssue());
+
         return res.toBytes();
     }
     // LCOV_EXCL_START
@@ -1277,7 +1198,7 @@ floatSubtractImpl(Slice const& x, Slice const& y, int32_t mode)
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 res = xx - yy;
-        res.setIssue(xx.getIssue());
+
         return res.toBytes();
     }
     // LCOV_EXCL_START
@@ -1303,7 +1224,7 @@ floatMultiplyImpl(Slice const& x, Slice const& y, int32_t mode)
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 res = xx * yy;
-        res.setIssue(xx.getIssue());
+
         return res.toBytes();
     }
     // LCOV_EXCL_START
@@ -1329,7 +1250,7 @@ floatDivideImpl(Slice const& x, Slice const& y, int32_t mode)
         if (!yy)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
         Number2 res = xx / yy;
-        res.setIssue(xx.getIssue());
+
         return res.toBytes();
     }
     catch (...)
@@ -1355,7 +1276,7 @@ floatRootImpl(Slice const& x, int32_t n, int32_t mode)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         Number2 res(root(xx, n));
-        res.setIssue(xx.getIssue());
+
         return res.toBytes();
     }
     // LCOV_EXCL_START
@@ -1385,7 +1306,7 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
             return Unexpected(HostFunctionError::INVALID_PARAMS);
 
         Number2 res(power(xx, n, 1));
-        res.setIssue(xx.getIssue());
+
         return res.toBytes();
     }
     catch (...)
@@ -1408,7 +1329,7 @@ floatLogImpl(Slice const& x, int32_t mode)
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         Number2 res(lg(xx));
-        res.setIssue(xx.getIssue());
+
         return res.toBytes();
     }
     // LCOV_EXCL_START

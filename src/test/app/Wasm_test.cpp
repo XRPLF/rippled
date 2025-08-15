@@ -376,9 +376,11 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(env);
             auto re =
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100000);
-            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 5831));
-            // std::cout << "bad case (access nonexistent field) result "
-            //           << re.error() << std::endl;
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == -201);
+                BEAST_EXPECT(re->cost == 5831);
+            }
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
@@ -396,9 +398,11 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(env);
             auto re =
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
-            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 5831));
-            // std::cout << "bad case (more than MAX_PAGES) result "
-            //           << re.error() << std::endl;
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result == -201);
+                BEAST_EXPECT(re->cost == 5831);
+            }
         }
 
         {  // fail because recursion too deep
@@ -546,10 +550,18 @@ struct Wasm_test : public beast::unit_test::suite
 
             TestHostFunctions hf(env, 0);
             auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result && (re->cost == 91'412));
-            }
+            BEAST_EXPECT(re && re->result && (re->cost == 91'412));
+            env.close();
+        }
+
+        {
+            std::string const wasmHex = float0Hex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            TestHostFunctions hf(env, 0);
+            auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
+            BEAST_EXPECT(re && re->result && (re->cost == 6'533));
             env.close();
         }
     }
@@ -675,6 +687,35 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testDisabledFloat()
+    {
+        testcase("disabled float");
+
+        using namespace test::jtx;
+        Env env{*this};
+
+        auto const wasmStr = boost::algorithm::unhex(disabledFloatHex);
+        Bytes wasm(wasmStr.begin(), wasmStr.end());
+        std::string const funcName("finish");
+        TestHostFunctions hfs(env, 0);
+
+        {
+            // f32 set constant, opcode disabled exception
+            auto const re =
+                runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
+        }
+
+        {
+            // f32 add, can't create module exception
+            wasm[0x117] = 0x92;
+            auto const re =
+                runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+            BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -700,6 +741,7 @@ struct Wasm_test : public beast::unit_test::suite
         testFloat();
 
         testCodecovWasm();
+        testDisabledFloat();
 
         // perfTest();
     }
