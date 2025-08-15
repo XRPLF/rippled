@@ -55,7 +55,7 @@ enum class HostFunctionError : int32_t {
 };
 
 inline int32_t
-HferrorToInt(HostFunctionError e)
+HfErrorToInt(HostFunctionError e)
 {
     return static_cast<int32_t>(e);
 }

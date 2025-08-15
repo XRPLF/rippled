@@ -1449,7 +1449,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         {                                                       \
             BEAST_EXPECTS(                                      \
                 actual.error() == expected,                     \
-                std::to_string(HferrorToInt(actual.error())));  \
+                std::to_string(HfErrorToInt(actual.error())));  \
         }                                                       \
     }
 

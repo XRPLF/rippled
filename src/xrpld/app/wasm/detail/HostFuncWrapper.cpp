@@ -41,18 +41,18 @@ setData(
         return 0;  // LCOV_EXCL_LINE
 
     if (dst < 0 || dstSize < 0 || !src || srcSize < 0)
-        return HferrorToInt(HostFunctionError::INVALID_PARAMS);
+        return HfErrorToInt(HostFunctionError::INVALID_PARAMS);
 
     auto memory = runtime ? runtime->getMem() : wmem();
 
     // LCOV_EXCL_START
     if (!memory.s)
-        return HferrorToInt(HostFunctionError::NO_MEM_EXPORTED);
+        return HfErrorToInt(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
     if (dst + dstSize > memory.s)
-        return HferrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS);
+        return HfErrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS);
     if (srcSize > dstSize)
-        return HferrorToInt(HostFunctionError::BUFFER_TOO_SMALL);
+        return HfErrorToInt(HostFunctionError::BUFFER_TOO_SMALL);
 
     memcpy(memory.p + dst, src, srcSize);
 
@@ -208,7 +208,7 @@ hfResult(wasm_val_vec_t* results, int32_t value)
 std::nullptr_t
 hfResult(wasm_val_vec_t* results, HostFunctionError value)
 {
-    results->data[0] = WASM_I32_VAL(HferrorToInt(value));
+    results->data[0] = WASM_I32_VAL(HfErrorToInt(value));
     results->num_elems = 1;
     return nullptr;
 }
