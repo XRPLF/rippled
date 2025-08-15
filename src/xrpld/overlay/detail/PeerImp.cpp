@@ -917,7 +917,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         if (ec == boost::asio::error::eof)
         {
             JLOG(journal_.info()) << "EOF";
-            return;
+            return shutdown();
         }
 
         if (ec == boost::asio::error::operation_aborted)
