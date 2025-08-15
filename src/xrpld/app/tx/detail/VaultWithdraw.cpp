@@ -193,10 +193,10 @@ VaultWithdraw::doApply()
     // to withdraw from it.
 
     auto amount = ctx_.tx[sfAmount];
-    auto const asset = vault->at(sfAsset);
+    Asset const vaultAsset = vault->at(sfAsset);
     auto const share = MPTIssue(mptIssuanceID);
     STAmount shares, assets;
-    if (amount.asset() == asset)
+    if (amount.asset() == vaultAsset)
     {
         // Fixed assets, variable shares.
         assets = amount;
@@ -224,6 +224,26 @@ VaultWithdraw::doApply()
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
         return tecINSUFFICIENT_FUNDS;
+    }
+
+    // As per calculation in assetsToSharesWithdraw and sharesToAssetsWithdraw
+    auto const sharesOutstanding = sleIssuance->at(sfOutstandingAmount);
+    if (vaultAsset.holds<Issue>() && !vaultAsset.get<Issue>().native() &&
+        Number(sharesOutstanding) == shares)
+    {
+        auto const assetScale = vault->at(sfAssetScale);
+        Number const assetsTotal =
+            vault->at(sfAssetsTotal) - vault->at(sfLossUnrealized);
+        // Withdrawing the last of shares, must ensure no dust IOU left behind
+        if (abs(assetsTotal - Number(assets)) >
+            Number(1, -1 * (assetScale + 6)))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultWithdraw: invalid rounding of assets.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+        assets = assetsTotal;
     }
 
     // The vault must have enough assets on hand. The vault may hold assets that

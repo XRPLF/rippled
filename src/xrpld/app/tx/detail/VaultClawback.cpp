@@ -23,6 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
@@ -161,15 +162,15 @@ VaultClawback::doApply()
         // LCOV_EXCL_STOP
     }
 
-    Asset const asset = vault->at(sfAsset);
+    Asset const vaultAsset = vault->at(sfAsset);
     STAmount const amount = [&]() -> STAmount {
         auto const maybeAmount = tx[~sfAmount];
         if (maybeAmount)
             return *maybeAmount;
-        return {sfAmount, asset, 0};
+        return {sfAmount, vaultAsset, 0};
     }();
     XRPL_ASSERT(
-        amount.asset() == asset,
+        amount.asset() == vaultAsset,
         "ripple::VaultClawback::doApply : matching asset");
 
     AccountID holder = tx[sfHolder];
@@ -199,10 +200,33 @@ VaultClawback::doApply()
     {
         assets = maxAssets;
         shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+        assets = std::min<Number>(
+            sharesToAssetsWithdraw(vault, sleIssuance, shares),
+            maxAssets);
     }
 
     if (shares == beast::zero)
         return tecINSUFFICIENT_FUNDS;
+
+    // As per calculation in assetsToSharesWithdraw and sharesToAssetsWithdraw
+    auto const sharesOutstanding = sleIssuance->at(sfOutstandingAmount);
+    if (vaultAsset.holds<Issue>() && !vaultAsset.get<Issue>().native() &&
+        Number(sharesOutstanding) == shares)
+    {
+        auto const assetScale = vault->at(sfAssetScale);
+        Number const assetsTotal =
+            vault->at(sfAssetsTotal) - vault->at(sfLossUnrealized);
+        // Withdrawing the last of shares, must ensure no dust IOU left behind
+        if (abs(assetsTotal - Number(assets)) >
+            Number(1, -1 * (assetScale + 6)))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultClawback: invalid rounding of assets.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+        assets = assetsTotal;
+    }
 
     vault->at(sfAssetsTotal) -= assets;
     vault->at(sfAssetsAvailable) -= assets;

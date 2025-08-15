@@ -3246,21 +3246,42 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
-                // Top up to round 1000 shares
-                tx = d.vault.deposit(
+                testcase("AssetScale redeem rest");
+                auto const rest = env.balance(d.depositor, d.shares).number();
+
+                tx = d.vault.withdraw(
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(146, -1))});
+                     .amount = STAmount(d.share, rest)});
                 env(tx);
                 env.close();
-
+                BEAST_EXPECT(env.balance(d.depositor, d.shares).number() == 0);
                 BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(100, 0)));
+                    env.balance(d.vaultAccount, d.assets).number() == 0);
                 BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(1000, 0)));
+                    env.balance(d.vaultAccount, d.shares).number() == 0);
             }
+        });
+
+        testCase(1, [&, this](Env& env, Data d) {
+            // initial setup: deposit 100 IOU, receive 1000 shares
+            auto const start = env.balance(d.depositor, d.assets).number();
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
+            BEAST_EXPECT(
+                env.balance(d.depositor, d.assets) ==
+                STAmount(d.asset, start - Number(100, 0)));
+            BEAST_EXPECT(
+                env.balance(d.vaultAccount, d.assets) ==
+                STAmount(d.asset, Number(100, 0)));
+            BEAST_EXPECT(
+                env.balance(d.vaultAccount, d.shares) ==
+                STAmount(d.share, Number(1000, 0)));
 
             {
                 testcase("AssetScale withdraw exact");
@@ -3411,22 +3432,43 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
-                // Top up to round 1000 shares
-                tx = d.vault.deposit(
+                testcase("AssetScale withdraw rest");
+                auto const rest =
+                    env.balance(d.vaultAccount, d.assets).number();
+
+                tx = d.vault.withdraw(
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
-                     .amount = STAmount(d.asset, Number(201, -1))});
+                     .amount = STAmount(d.asset, rest)});
                 env(tx);
                 env.close();
-
+                BEAST_EXPECT(env.balance(d.depositor, d.shares).number() == 0);
                 BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.assets) ==
-                    STAmount(d.asset, Number(100, 0)));
+                    env.balance(d.vaultAccount, d.assets).number() == 0);
                 BEAST_EXPECT(
-                    env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(1000, 0)));
+                    env.balance(d.vaultAccount, d.shares).number() == 0);
             }
+        });
 
+        testCase(1, [&, this](Env& env, Data d) {
+            // initial setup: deposit 100 IOU, receive 1000 shares
+            auto const start = env.balance(d.depositor, d.assets).number();
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = STAmount(d.asset, Number(100, 0))});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(env.balance(d.depositor, d.shares) == d.share(1000));
+            BEAST_EXPECT(
+                env.balance(d.depositor, d.assets) ==
+                STAmount(d.asset, start - Number(100, 0)));
+            BEAST_EXPECT(
+                env.balance(d.vaultAccount, d.assets) ==
+                STAmount(d.asset, Number(100, 0)));
+            BEAST_EXPECT(
+                env.balance(d.vaultAccount, d.shares) ==
+                STAmount(d.share, Number(1000, 0)));
             {
                 testcase("AssetScale clawback exact");
                 // assetsToSharesWithdraw:
@@ -3579,6 +3621,25 @@ class Vault_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
                     STAmount(d.share, Number(800 - 1, 0)));
+            }
+
+            {
+                testcase("AssetScale clawback rest");
+                auto const rest =
+                    env.balance(d.vaultAccount, d.assets).number();
+
+                tx = d.vault.clawback(
+                    {.issuer = d.issuer,
+                     .id = d.keylet.key,
+                     .holder = d.depositor,
+                     .amount = STAmount(d.asset, rest)});
+                env(tx);
+                env.close();
+                BEAST_EXPECT(env.balance(d.depositor, d.shares).number() == 0);
+                BEAST_EXPECT(
+                    env.balance(d.vaultAccount, d.assets).number() == 0);
+                BEAST_EXPECT(
+                    env.balance(d.vaultAccount, d.shares).number() == 0);
             }
         });
     }
