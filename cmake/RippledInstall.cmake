@@ -37,7 +37,7 @@ install(CODE "
   set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
   include(create_symbolic_link)
   create_symbolic_link(xrpl \
-    \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple)
+    \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/ripple)
 ")
 
 install (EXPORT RippleExports
@@ -53,6 +53,10 @@ write_basic_package_version_file (
 if (is_root_project AND TARGET rippled)
   install (TARGETS rippled RUNTIME DESTINATION bin)
   set_target_properties(rippled PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
+  if(package)
+    install(TARGETS validator-keys RUNTIME DESTINATION bin)
+    set_target_properties(validator-keys PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
+  endif()
   # sample configs should not overwrite existing files
   # install if-not-exists workaround as suggested by
   # https://cmake.org/Bug/view.php?id=12646
@@ -71,7 +75,7 @@ if (is_root_project AND TARGET rippled)
     set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
     include(create_symbolic_link)
     create_symbolic_link(rippled${suffix} \
-      \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
+      \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
   ")
 endif ()
 
