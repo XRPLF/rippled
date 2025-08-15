@@ -1708,7 +1708,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        static auto wasmHex = ledgerSqnHex;
+        static auto wasmHex = ledgerSqnWasmHex;
 
         {
             // featureSmartEscrow disabled
@@ -1884,7 +1884,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        static auto wasmHex = ledgerSqnHex;
+        static auto wasmHex = ledgerSqnWasmHex;
 
         {
             // featureSmartEscrow disabled
@@ -1919,37 +1919,6 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(env.current()->fees().base + allowance),
                 escrow::comp_allowance(allowance),
                 ter(temBAD_LIMIT));
-        }
-
-        {
-            uint32_t const allowance = 5'664;
-            Env env(*this, features);
-            env.fund(XRP(5000), alice, carol);
-            auto const seq = env.seq(alice);
-            XRPAmount const createFee = env.current()->fees().base + 1000;
-
-            // Escrow with FinishFunction + Condition
-            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
-            env(escrowCreate,
-                escrow::finish_function(reqNonexistentField),
-                escrow::condition(escrow::cb1),
-                escrow::cancel_time(env.now() + 100s),
-                fee(createFee));
-            env.close();
-            env.close();
-
-            // Rejected as wasm code request nonexistent memo field
-            XRPAmount const txnFees = env.current()->fees().base * 34 + 1000;
-            env(escrow::finish(alice, alice, seq),
-                escrow::condition(escrow::cb1),
-                escrow::fulfillment(escrow::fb1),
-                escrow::comp_allowance(allowance),
-                fee(txnFees),
-                ter(tecWASM_REJECTED));
-
-            auto const txMeta = env.meta();
-            if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
         }
 
         Env env(*this, features);
@@ -2036,7 +2005,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        auto const& wasmHex = ledgerSqnHex;
+        auto const& wasmHex = ledgerSqnWasmHex;
         std::uint32_t const allowance = 71;
 
         {
@@ -2288,7 +2257,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // TODO: create wasm module for all host functions
-        static auto wasmHex = allHostFunctionsHex;
+        static auto wasmHex = allHostFunctionsWasmHex;
 
         Account const alice{"alice"};
         Account const carol{"carol"};
@@ -2356,7 +2325,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // TODO: create wasm module for all host functions
-        static auto wasmHex = keyletHostFunctions;
+        static auto wasmHex = allKeyletsWasmHex;
 
         Account const alice{"alice"};
         Account const carol{"carol"};

@@ -131,7 +131,7 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
-    auto j = jlog.error();
+    auto j = jlog.warn();
 #endif
 
     wasm_byte_vec_t error_message WASM_EMPTY_VEC;

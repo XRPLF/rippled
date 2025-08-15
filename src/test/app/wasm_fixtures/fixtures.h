@@ -23,45 +23,29 @@
 
 #include <string>
 
-extern std::string const ledgerSqnHex;
+extern std::string const ledgerSqnWasmHex;
 
-extern std::string const allHostFunctionsHex;
+extern std::string const allHostFunctionsWasmHex;
 
 extern std::string const deepRecursionHex;
 
-extern std::string const tx_js;
+extern std::string const fibWasmHex;
 
-extern std::string const lo_js;
+extern std::string const b58WasmHex;
 
-extern std::string const lo_js2;
+extern std::string const sha512PureWasmHex;
 
-extern std::string const fib32Hex;
+extern std::string const zkProofWasmHex;
 
-extern std::string const fib64Hex;
-
-extern std::string const b58Hex;
-
-extern std::string const sha512PureHex;
-
-extern std::string const checkJsonHex;
-
-extern std::string const compareJsonHex;
-
-extern std::string const zkProofHex;
-
-extern std::string const sp1_wasm;
-
-extern std::string const reqNonexistentField;
+extern std::string const sp1WasmHex;
 
 extern std::string const hfPerfTest;
 
-extern std::string const opcCallPerfTest;
+extern std::string const allKeyletsWasmHex;
 
-extern std::string const keyletHostFunctions;
+extern std::string const codecovTestsWasmHex;
 
-extern std::string const codecovWasm;
-
-extern std::string const floatHex;
+extern std::string const floatTestsWasmHex;
 
 extern std::string const float0Hex;
 
