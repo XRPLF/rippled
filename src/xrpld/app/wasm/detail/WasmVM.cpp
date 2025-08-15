@@ -58,7 +58,6 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, getTxNestedArrayLen, "get_tx_nested_array_len", hfs,                                   70);
     WASM_IMPORT_FUNC2(i, getCurrentLedgerObjNestedArrayLen, "get_current_ledger_obj_nested_array_len",  hfs,    70);
     WASM_IMPORT_FUNC2(i, getLedgerObjNestedArrayLen, "get_ledger_obj_nested_array_len", hfs,                    70);
-    WASM_IMPORT_FUNC2(i, updateData, "update_data", hfs,                                                      1000);
     WASM_IMPORT_FUNC2(i, checkSignature, "check_sig", hfs,                                                    2000);
     WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                   2000);
     WASM_IMPORT_FUNC2(i, accountKeylet, "account_keylet", hfs,                                                 350);
