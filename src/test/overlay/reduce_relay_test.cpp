@@ -475,6 +475,12 @@ public:
         return id_;
     }
 
+    std::string const&
+    fingerprint() const override
+    {
+        return fingerprint_;
+    }
+
     static void
     resetId()
     {
@@ -508,6 +514,7 @@ public:
 
 private:
     inline static id_t sid_ = 0;
+    std::string fingerprint_;
     id_t id_;
     Overlay& overlay_;
     reduce_relay::Squelch<ManualClock> squelch_;
