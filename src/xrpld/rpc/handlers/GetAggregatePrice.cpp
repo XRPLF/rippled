@@ -21,7 +21,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>

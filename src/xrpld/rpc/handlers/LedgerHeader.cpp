@@ -19,7 +19,7 @@
 
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/ledger/ReadView.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/jss.h>

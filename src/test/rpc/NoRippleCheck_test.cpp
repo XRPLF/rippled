@@ -124,7 +124,8 @@ class NoRippleCheck_test : public beast::unit_test::suite
                 "noripple_check",
                 boost::lexical_cast<std::string>(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
-            BEAST_EXPECT(result[jss::error_message] == "ledgerHashNotString");
+            BEAST_EXPECT(
+                result[jss::error_message] == "Invalid field 'ledger_hash'.");
         }
 
         {  // account not found

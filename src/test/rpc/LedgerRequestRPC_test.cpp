@@ -20,7 +20,6 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/ErrorCodes.h>

@@ -22,6 +22,7 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/Batch.h>
