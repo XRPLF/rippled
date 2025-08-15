@@ -218,7 +218,7 @@ getDataAsset(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
             Currency::fromVoid(slice->data()),
             AccountID::fromVoid(slice->data() + Currency::bytes));
 
-        if (!issue.native())
+        if (issue.native())
             return Unexpected(HostFunctionError::INVALID_PARAMS);
         return Asset{issue};
     }
