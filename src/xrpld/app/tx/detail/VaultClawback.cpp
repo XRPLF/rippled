@@ -190,18 +190,7 @@ VaultClawback::doApply()
     {
         assets = amount;
         shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
-
-        auto const assetsToClawback =
-            sharesToAssetsWithdraw(vault, sleIssuance, shares);
-        if (assetsToClawback > assets)
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error())
-                << "VaultClawback: would clawback more than requested.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-        assets = assetsToClawback;
+        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
     }
 
     // Clamp to maximum.
