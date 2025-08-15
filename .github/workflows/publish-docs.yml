@@ -10,7 +10,8 @@ on:
       - '**/*.md'
       - 'docs/**'
       - 'include/**'
-      - 'src/**'
+      - 'src/libxrpl/**'
+      - 'src/xrpld/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -19,6 +20,9 @@ concurrency:
 defaults:
   run:
     shell: bash
+
+env:
+    BUILD_DIR: .build
 
 jobs:
   publish:
@@ -42,8 +46,8 @@ jobs:
           doxygen --version
       - name: Build documentation
         run: |
-          mkdir ${{ inputs.build_dir }}
-          cd ${{ inputs.build_dir }}
+          mkdir -p ${{ env.BUILD_DIR }}
+          cd ${{ env.BUILD_DIR }}
           cmake -Donly_docs=ON ..
           cmake --build . --target docs --parallel $(nproc)
       - name: Publish documentation
@@ -51,4 +55,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ${{ inputs.build_dir }}/docs/html
+          publish_dir: ${{ env.BUILD_DIR }}/docs/html
