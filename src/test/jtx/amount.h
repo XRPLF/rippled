@@ -25,6 +25,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 
@@ -57,7 +58,7 @@ struct AnyAmount;
 //
 struct None
 {
-    Issue issue;
+    Asset issue;
 };
 
 //------------------------------------------------------------------------------
@@ -67,7 +68,7 @@ struct None
 // could change that value (however unlikely).
 constexpr XRPAmount dropsPerXRP{1'000'000};
 
-/** Represents an XRP or IOU quantity
+/** Represents an XRP, IOU, or MPT quantity
     This customizes the string conversion and supports
     XRP conversions from integer and floating point.
 */
@@ -209,11 +210,9 @@ public:
 // Specifies an order book
 struct BookSpec
 {
-    AccountID account;
-    ripple::Currency currency;
+    ripple::Asset asset;
 
-    BookSpec(AccountID const& account_, ripple::Currency const& currency_)
-        : account(account_), currency(currency_)
+    BookSpec(ripple::Asset const& asset_) : asset(asset_)
     {
     }
 };
@@ -228,6 +227,10 @@ struct XRP_t
         an Issue is expected.
     */
     operator Issue() const
+    {
+        return xrpIssue();
+    }
+    operator Asset() const
     {
         return xrpIssue();
     }
@@ -275,7 +278,7 @@ struct XRP_t
     friend BookSpec
     operator~(XRP_t const&)
     {
-        return BookSpec(xrpAccount(), xrpCurrency());
+        return BookSpec(Issue{xrpCurrency(), xrpAccount()});
     }
 };
 
@@ -405,7 +408,7 @@ public:
     friend BookSpec
     operator~(IOU const& iou)
     {
-        return BookSpec(iou.account.id(), iou.currency);
+        return BookSpec(Issue{iou.currency, iou.account.id()});
     }
 };
 
@@ -431,6 +434,12 @@ public:
         : name(n), issuanceID(issuanceID_)
     {
     }
+    MPT(std::string const& n = "") : name(n), issuanceID(noMPT())
+    {
+    }
+    MPT(Asset const& asset) : name(""), issuanceID(asset.get<MPTIssue>())
+    {
+    }
 
     ripple::MPTID const&
     mpt() const
@@ -447,6 +456,14 @@ public:
     {
         return MPTIssue{issuanceID};
     }
+    operator ripple::Asset() const
+    {
+        return mpt();
+    }
+    operator ripple::MPTID() const
+    {
+        return mpt();
+    }
 
     template <class T>
         requires(sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>)
@@ -461,12 +478,17 @@ public:
     PrettyAmount
     operator()(detail::epsilon_multiple) const;
 
+    /** Returns None-of-Issue */
+    None
+    operator()(none_t) const
+    {
+        return {noMPT()};
+    }
+
     friend BookSpec
     operator~(MPT const& mpt)
     {
-        assert(false);
-        Throw<std::logic_error>("MPT is not supported");
-        return BookSpec{beast::zero, noCurrency()};
+        return BookSpec{Asset{mpt}};
     }
 };
 

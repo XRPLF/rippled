@@ -172,16 +172,40 @@ public:
 
     // Accounts in a payment are not allowed to use assets acquired during that
     // payment. The PaymentSandbox tracks the debits, credits, and owner count
-    // changes that accounts make during a payment. `balanceHook` adjusts
+    // changes that accounts make during a payment. `balanceHookIOU` adjusts
     // balances so newly acquired assets are not counted toward the balance.
     // This is required to support PaymentSandbox.
     virtual STAmount
-    balanceHook(
+    balanceHookIOU(
         AccountID const& account,
         AccountID const& issuer,
         STAmount const& amount) const
     {
+        XRPL_ASSERT(
+            amount.holds<Issue>(), "balanceHookIOU: amount is for Issue");
+
         return amount;
+    }
+
+    // balanceHookMPT adjusts balances so newly acquired assets are not counted
+    // toward the balance.
+    virtual STAmount
+    balanceHookMPT(
+        AccountID const& account,
+        MPTIssue const& issue,
+        std::int64_t amount) const
+    {
+        return STAmount{issue, amount};
+    }
+
+    // An offer owned by an issuer and selling MPT is limited by the issuer's
+    // funds available to issue, which are originally available funds less
+    // already self sold MPT amounts (MPT sell offer). This hook is used
+    // by issuerFundsToSelfIssue() function.
+    virtual STAmount
+    balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount) const
+    {
+        return STAmount{issue, amount};
     }
 
     // Accounts in a payment are not allowed to use assets acquired during that

@@ -724,7 +724,8 @@ DirectStepI<TDerived>::validFwd(
 
     auto const savCache = *cache_;
 
-    XRPL_ASSERT(!in.native, "ripple::DirectStepI::validFwd : input is not XRP");
+    XRPL_ASSERT(
+        in.holds<IOUAmount>(), "ripple::DirectStepI::validFwd : input is IOU");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -733,7 +734,7 @@ DirectStepI<TDerived>::validFwd(
     try
     {
         boost::container::flat_set<uint256> dummy;
-        fwdImp(sb, afView, dummy, in.iou);  // changes cache
+        fwdImp(sb, afView, dummy, in.get<IOUAmount>());  // changes cache
     }
     catch (FlowException const&)
     {
@@ -844,24 +845,6 @@ DirectStepI<TDerived>::qualityUpperBound(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    if (!v.rules().enabled(fixQualityUpperBound))
-    {
-        std::uint32_t const srcQOut = [&]() -> std::uint32_t {
-            if (redeems(prevStepDir) && issues(dir))
-                return transferRate(v, src_).value;
-            return QUALITY_ONE;
-        }();
-        auto dstQIn = static_cast<TDerived const*>(this)->quality(
-            v, QualityDirection::in);
-
-        if (isLast_ && dstQIn > QUALITY_ONE)
-            dstQIn = QUALITY_ONE;
-        Issue const iss{currency_, src_};
-        return {
-            Quality(getRate(STAmount(iss, srcQOut), STAmount(iss, dstQIn))),
-            dir};
-    }
-
     auto const [srcQOut, dstQIn] = redeems(dir)
         ? qualitiesSrcRedeems(v)
         : qualitiesSrcIssues(v, prevStepDir);
@@ -941,13 +924,13 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
             // issue
             if (auto book = ctx.prevStep->bookStepBook())
             {
-                if (book->out != srcIssue)
+                if (book->out.get<Issue>() != srcIssue)
                     return temBAD_PATH_LOOP;
             }
         }
 
-        if (!ctx.seenDirectIssues[0].insert(srcIssue).second ||
-            !ctx.seenDirectIssues[1].insert(dstIssue).second)
+        if (!ctx.seenDirectAssets[0].insert(srcIssue).second ||
+            !ctx.seenDirectAssets[1].insert(dstIssue).second)
         {
             JLOG(j_.debug())
                 << "DirectStepI: loop detected: Index: " << ctx.strandSize

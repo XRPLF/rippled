@@ -23,66 +23,6 @@
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
-
-/** Set Expiration on a JTx. */
-class expiration
-{
-private:
-    std::uint32_t const expry_;
-
-public:
-    explicit expiration(NetClock::time_point const& expiry)
-        : expry_{expiry.time_since_epoch().count()}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt[sfExpiration.jsonName] = expry_;
-    }
-};
-
-/** Set SourceTag on a JTx. */
-class source_tag
-{
-private:
-    std::uint32_t const tag_;
-
-public:
-    explicit source_tag(std::uint32_t tag) : tag_{tag}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt[sfSourceTag.jsonName] = tag_;
-    }
-};
-
-/** Set DestinationTag on a JTx. */
-class dest_tag
-{
-private:
-    std::uint32_t const tag_;
-
-public:
-    explicit dest_tag(std::uint32_t tag) : tag_{tag}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt[sfDestinationTag.jsonName] = tag_;
-    }
-};
-
-}  // namespace jtx
-}  // namespace test
 
 class Check_test : public beast::unit_test::suite
 {
@@ -698,9 +638,6 @@ class Check_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        bool const cashCheckMakesTrustLine =
-            features[featureCheckCashMakesTrustLine];
-
         Account const gw{"gateway"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -733,26 +670,10 @@ class Check_test : public beast::unit_test::suite
             // and fails because he hasn't got a trust line for USD.
             env(pay(gw, alice, USD(0.5)));
             env.close();
-            if (!cashCheckMakesTrustLine)
-            {
-                // If cashing a check automatically creates a trustline then
-                // this returns tesSUCCESS and the check is removed from the
-                // ledger which would mess up later tests.
-                env(check::cash(bob, chkId1, USD(10)), ter(tecNO_LINE));
-                env.close();
-            }
 
             // bob sets up the trust line, but not at a high enough limit.
             env(trust(bob, USD(9.5)));
             env.close();
-            if (!cashCheckMakesTrustLine)
-            {
-                // If cashing a check is allowed to exceed the trust line
-                // limit then this returns tesSUCCESS and the check is
-                // removed from the ledger which would mess up later tests.
-                env(check::cash(bob, chkId1, USD(10)), ter(tecPATH_PARTIAL));
-                env.close();
-            }
 
             // bob sets the trust line limit high enough but asks for more
             // than the check's SendMax.
@@ -827,7 +748,6 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, alice) == 2);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
 
-            if (cashCheckMakesTrustLine)
             {
                 // Automatic trust lines are enabled.  But one aspect of
                 // automatic trust lines is that they allow the account
@@ -969,8 +889,7 @@ class Check_test : public beast::unit_test::suite
             env(check::create(alice, bob, USD(7)));
             env.close();
 
-            env(check::cash(bob, chkId, USD(7)),
-                ter(cashCheckMakesTrustLine ? tecNO_AUTH : tecNO_LINE));
+            env(check::cash(bob, chkId, USD(7)), ter(tecNO_AUTH));
             env.close();
 
             // Now give bob a trustline for USD.  bob still can't cash the
@@ -985,26 +904,10 @@ class Check_test : public beast::unit_test::suite
             env(trust(gw, bob["USD"](1)), txflags(tfSetfAuth));
             env.close();
 
-            // bob tries to cash the check again but fails because his trust
-            // limit is too low.
-            if (!cashCheckMakesTrustLine)
-            {
-                // If cashing a check is allowed to exceed the trust line
-                // limit then this returns tesSUCCESS and the check is
-                // removed from the ledger which would mess up later tests.
-                env(check::cash(bob, chkId, USD(7)), ter(tecPATH_PARTIAL));
-                env.close();
-            }
-
-            // Two possible outcomes here depending on whether cashing a
-            // check can build a trust line:
-            //   o If it can't build a trust line, then since bob set his
-            //     limit low, he cashes the check with a DeliverMin and hits
-            //     his trust limit.
-            //  o If it can build a trust line, then the check is allowed to
-            //    exceed the trust limit and bob gets the full transfer.
+            //  The check is allowed to exceed the trust limit and bob
+            //  gets the full transfer.
             env(check::cash(bob, chkId, check::DeliverMin(USD(4))));
-            STAmount const bobGot = cashCheckMakesTrustLine ? USD(7) : USD(5);
+            STAmount const bobGot = USD(7);
             verifyDeliveredAmount(env, bobGot);
             env.require(balance(alice, USD(8) - bobGot));
             env.require(balance(bob, bobGot));
@@ -1195,8 +1098,8 @@ class Check_test : public beast::unit_test::suite
                                      double pct,
                                      double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
-            STAmount const bobStart{env.balance(bob, USD.issue()).value()};
+            STAmount const aliceStart{env.balance(alice, USD).value()};
+            STAmount const bobStart{env.balance(bob, USD).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1220,8 +1123,8 @@ class Check_test : public beast::unit_test::suite
                                        double pct,
                                        double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
-            STAmount const bobStart{env.balance(bob, USD.issue()).value()};
+            STAmount const aliceStart{env.balance(alice, USD).value()};
+            STAmount const bobStart{env.balance(bob, USD).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1284,7 +1187,7 @@ class Check_test : public beast::unit_test::suite
                                   double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of a gateway.
-            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
+            STAmount const aliceStart{env.balance(alice, USD).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1317,7 +1220,7 @@ class Check_test : public beast::unit_test::suite
                                     double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of the issuer.
-            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
+            STAmount const aliceStart{env.balance(alice, USD).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1387,22 +1290,8 @@ class Check_test : public beast::unit_test::suite
         env(pay(gw, alice, USD(20)));
         env.close();
 
-        // Before bob gets a trustline, have him try to cash a check.
-        // Should fail.
-        {
-            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
-            env(check::create(alice, bob, USD(20)));
-            env.close();
-
-            if (!features[featureCheckCashMakesTrustLine])
-            {
-                // If cashing a check automatically creates a trustline then
-                // this returns tesSUCCESS and the check is removed from the
-                // ledger which would mess up later tests.
-                env(check::cash(bob, chkId, USD(20)), ter(tecNO_LINE));
-                env.close();
-            }
-        }
+        env(check::create(alice, bob, USD(20)));
+        env.close();
 
         // Now set up bob's trustline.
         env(trust(bob, USD(20)));
@@ -1514,7 +1403,7 @@ class Check_test : public beast::unit_test::suite
             {
                 IOU const wrongCurrency{gw["EUR"]};
                 STAmount badAmount{amount};
-                badAmount.setIssue(wrongCurrency.issue());
+                badAmount.setIssue(wrongCurrency);
                 env(check::cash(bob, chkId, badAmount), ter(temMALFORMED));
                 env.close();
             }
@@ -1523,7 +1412,7 @@ class Check_test : public beast::unit_test::suite
             {
                 IOU const wrongIssuer{alice["USD"]};
                 STAmount badAmount{amount};
-                badAmount.setIssue(wrongIssuer.issue());
+                badAmount.setIssue(wrongIssuer);
                 env(check::cash(bob, chkId, badAmount), ter(temMALFORMED));
                 env.close();
             }
@@ -2017,10 +1906,6 @@ class Check_test : public beast::unit_test::suite
     {
         // Explore automatic trust line creation when a check is cashed.
         //
-        // This capability is enabled by the featureCheckCashMakesTrustLine
-        // amendment.  So this test executes only when that amendment is
-        // active.
-        assert(features[featureCheckCashMakesTrustLine]);
 
         testcase("Trust Line Creation");
 
@@ -2160,8 +2045,7 @@ class Check_test : public beast::unit_test::suite
                             return;
 
                         BEAST_EXPECT(
-                            offerAmount.issue().account ==
-                            checkAmount.issue().account);
+                            offerAmount.getIssuer() == checkAmount.getIssuer());
                         BEAST_EXPECT(
                             offerAmount.negative() == checkAmount.negative());
                         BEAST_EXPECT(
@@ -2721,11 +2605,10 @@ public:
     {
         using namespace test::jtx;
         auto const sa = testable_amendments();
-        testWithFeats(sa - featureCheckCashMakesTrustLine);
         testWithFeats(sa - disallowIncoming);
         testWithFeats(sa);
 
-        testTrustLineCreation(sa);  // Test with featureCheckCashMakesTrustLine
+        testTrustLineCreation(sa);
     }
 };
 

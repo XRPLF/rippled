@@ -21,6 +21,7 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 
 #include <xrpld/rpc/RPCHandler.h>
@@ -33,7 +34,7 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -41,16 +42,17 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how)
 {
-    fund(env, gw, accounts, XRP(30000), amts, how);
+    return fund(env, gw, accounts, XRP(30000), amts, how);
 }
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts,
-    Fund how)
+    Fund how,
+    std::optional<Account> const& mptIssuer)
 {
     for (auto const& account : accounts)
     {
@@ -60,18 +62,38 @@ fund(
         }
     }
     env.close();
+
+    std::vector<STAmount> amtsOut;
     for (auto const& account : accounts)
     {
+        int i = 0;
         for (auto const& amt : amts)
         {
-            env.trust(amt + amt, account);
-            env(pay(amt.issue().account, account, amt));
+            auto amt_ = [&]() {
+                if (amtsOut.size() == amts.size())
+                    return amtsOut[i++];
+                else if (amt.holds<MPTIssue>() && mptIssuer)
+                {
+                    MPTTester mpt(
+                        {.env = env,
+                         .issuer = *mptIssuer,
+                         .holders = accounts});
+                    return STAmount{mpt.issuanceID(), amt.mpt().value()};
+                }
+                return amt;
+            }();
+            if (amt.holds<Issue>())
+                env.trust(amt_ + amt_, account);
+            if (amtsOut.size() != amts.size())
+                amtsOut.push_back(amt_);
+            env(pay(amt_.getIssuer(), account, amt_));
         }
     }
     env.close();
+    return amtsOut;
 }
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -83,7 +105,7 @@ fund(
     if (how == Fund::All || how == Fund::Gw)
         env.fund(xrp, gw);
     env.close();
-    fund(env, accounts, xrp, amts, how);
+    return fund(env, accounts, xrp, amts, how, gw);
 }
 
 AMMTestBase::AMMTestBase()
@@ -139,30 +161,51 @@ AMMTestBase::testAMM(
                     return defXRP;
                 return a + XRP(1000);
             }
-            auto const defIOU = STAmount{a.issue(), 30000};
-            if (a <= defIOU)
-                return defIOU;
-            return a + STAmount{a.issue(), 1000};
+            auto const defAmt = STAmount{a.asset(), 30000};
+            if (a <= defAmt)
+                return defAmt;
+            return a + STAmount{a.asset(), 1000};
         };
         auto const toFund1 = tofund(asset1);
         auto const toFund2 = tofund(asset2);
         BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
+        // asset1/asset2 could be dummy MPT. In this case real MPT
+        // is created by fund(), which returns the funded amounts.
+        // The amounts then can be used to figure out the created
+        // MPT if any.
+        std::vector<STAmount> funded;
         if (!asset1.native() && !asset2.native())
-            fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+        {
+            funded =
+                fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+        }
         else if (asset1.native())
-            fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+        {
+            funded =
+                fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+            funded.insert(funded.begin(), toFund1);
+        }
         else if (asset2.native())
-            fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+        {
+            funded =
+                fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+            funded.push_back(toFund2);
+        }
+
+        auto const pool1 =
+            STAmount{funded[0].asset(), static_cast<Number>(asset1)};
+        auto const pool2 =
+            STAmount{funded[1].asset(), static_cast<Number>(asset2)};
 
         AMM ammAlice(
             env,
             alice,
-            asset1,
-            asset2,
+            pool1,
+            pool2,
             CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
         if (BEAST_EXPECT(
-                ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
+                ammAlice.expectBalances(pool1, pool2, ammAlice.tokens())))
             cb(ammAlice, env);
     }
 }
@@ -192,111 +235,6 @@ AMMTest::pathTestEnv()
         return cfg;
     }));
 }
-
-Json::Value
-AMMTest::find_paths_request(
-    jtx::Env& env,
-    jtx::Account const& src,
-    jtx::Account const& dst,
-    STAmount const& saDstAmount,
-    std::optional<STAmount> const& saSendMax,
-    std::optional<Currency> const& saSrcCurrency)
-{
-    using namespace jtx;
-
-    auto& app = env.app();
-    Resource::Charge loadType = Resource::feeReferenceRPC;
-    Resource::Consumer c;
-
-    RPC::JsonContext context{
-        {env.journal,
-         app,
-         loadType,
-         app.getOPs(),
-         app.getLedgerMaster(),
-         c,
-         Role::USER,
-         {},
-         {},
-         RPC::apiVersionIfUnspecified},
-        {},
-        {}};
-
-    Json::Value params = Json::objectValue;
-    params[jss::command] = "ripple_path_find";
-    params[jss::source_account] = toBase58(src);
-    params[jss::destination_account] = toBase58(dst);
-    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
-    if (saSendMax)
-        params[jss::send_max] = saSendMax->getJson(JsonOptions::none);
-    if (saSrcCurrency)
-    {
-        auto& sc = params[jss::source_currencies] = Json::arrayValue;
-        Json::Value j = Json::objectValue;
-        j[jss::currency] = to_string(saSrcCurrency.value());
-        sc.append(j);
-    }
-
-    Json::Value result;
-    gate g;
-    app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
-        context.params = std::move(params);
-        context.coro = coro;
-        RPC::doCommand(context, result);
-        g.signal();
-    });
-
-    using namespace std::chrono_literals;
-    BEAST_EXPECT(g.wait_for(5s));
-    BEAST_EXPECT(!result.isMember(jss::error));
-    return result;
-}
-
-std::tuple<STPathSet, STAmount, STAmount>
-AMMTest::find_paths(
-    jtx::Env& env,
-    jtx::Account const& src,
-    jtx::Account const& dst,
-    STAmount const& saDstAmount,
-    std::optional<STAmount> const& saSendMax,
-    std::optional<Currency> const& saSrcCurrency)
-{
-    Json::Value result = find_paths_request(
-        env, src, dst, saDstAmount, saSendMax, saSrcCurrency);
-    BEAST_EXPECT(!result.isMember(jss::error));
-
-    STAmount da;
-    if (result.isMember(jss::destination_amount))
-        da = amountFromJson(sfGeneric, result[jss::destination_amount]);
-
-    STAmount sa;
-    STPathSet paths;
-    if (result.isMember(jss::alternatives))
-    {
-        auto const& alts = result[jss::alternatives];
-        if (alts.size() > 0)
-        {
-            auto const& path = alts[0u];
-
-            if (path.isMember(jss::source_amount))
-                sa = amountFromJson(sfGeneric, path[jss::source_amount]);
-
-            if (path.isMember(jss::destination_amount))
-                da = amountFromJson(sfGeneric, path[jss::destination_amount]);
-
-            if (path.isMember(jss::paths_computed))
-            {
-                Json::Value p;
-                p["Paths"] = path[jss::paths_computed];
-                STParsedJSONObject po("generic", p);
-                paths = po.object->getFieldPathSet(sfPaths);
-            }
-        }
-    }
-
-    return std::make_tuple(std::move(paths), std::move(sa), std::move(da));
-}
-
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

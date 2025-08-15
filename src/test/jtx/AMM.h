@@ -38,24 +38,28 @@ namespace jtx {
 
 class LPToken
 {
-    IOUAmount const tokens_;
+    Number const tokens_;
+    Asset asset_;
 
 public:
-    LPToken(std::uint64_t tokens) : tokens_(tokens)
+    LPToken(std::uint64_t tokens) : tokens_(tokens), asset_(xrpIssue())
     {
     }
-    LPToken(IOUAmount tokens) : tokens_(tokens)
+    LPToken(IOUAmount tokens) : tokens_(tokens), asset_(xrpIssue())
     {
     }
-    IOUAmount const&
+    LPToken(STAmount tokens) : tokens_(tokens), asset_(tokens.asset())
+    {
+    }
+    STAmount
     tokens() const
     {
-        return tokens_;
+        return STAmount{asset_, tokens_};
     }
     STAmount
     tokens(Issue const& ammIssue) const
     {
-        return STAmount{tokens_, ammIssue};
+        return STAmount{ammIssue, tokens_};
     }
 };
 
@@ -79,7 +83,7 @@ struct DepositArg
     std::optional<STAmount> asset2In = std::nullopt;
     std::optional<STAmount> maxEP = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+    std::optional<std::pair<Asset, Asset>> assets = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
     std::optional<std::uint16_t> tfee = std::nullopt;
     std::optional<ter> err = std::nullopt;
@@ -91,9 +95,9 @@ struct WithdrawArg
     std::optional<LPToken> tokens = std::nullopt;
     std::optional<STAmount> asset1Out = std::nullopt;
     std::optional<STAmount> asset2Out = std::nullopt;
-    std::optional<IOUAmount> maxEP = std::nullopt;
+    std::optional<LPToken> maxEP = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+    std::optional<std::pair<Asset, Asset>> assets = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
     std::optional<ter> err = std::nullopt;
 };
@@ -104,7 +108,7 @@ struct VoteArg
     std::uint32_t tfee = 0;
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
-    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+    std::optional<std::pair<Asset, Asset>> assets = std::nullopt;
     std::optional<ter> err = std::nullopt;
 };
 
@@ -115,7 +119,7 @@ struct BidArg
     std::optional<std::variant<int, IOUAmount, STAmount>> bidMax = std::nullopt;
     std::vector<Account> authAccounts = {};
     std::optional<std::uint32_t> flags = std::nullopt;
-    std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+    std::optional<std::pair<Asset, Asset>> assets = std::nullopt;
 };
 
 /** Convenience class to test AMM functionality.
@@ -167,14 +171,21 @@ public:
         STAmount const& asset2,
         CreateArg const& arg);
 
+    static Json::Value
+    createjv(
+        AccountID const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        std::uint16_t const& tfee);
+
     /** Send amm_info RPC command
      */
     Json::Value
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
-        std::optional<Issue> issue1 = std::nullopt,
-        std::optional<Issue> issue2 = std::nullopt,
+        std::optional<Asset> asset1 = std::nullopt,
+        std::optional<Asset> asset2 = std::nullopt,
         std::optional<AccountID> const& ammAccount = std::nullopt,
         bool ignoreParams = false,
         unsigned apiVersion = RPC::apiInvalidVersion) const;
@@ -192,14 +203,14 @@ public:
      */
     std::tuple<STAmount, STAmount, STAmount>
     balances(
-        Issue const& issue1,
-        Issue const& issue2,
+        Asset const& asset1,
+        Asset const& asset2,
         std::optional<AccountID> const& account = std::nullopt) const;
 
     std::tuple<STAmount, STAmount, STAmount>
     balances(std::optional<AccountID> const& account = std::nullopt) const
     {
-        return balances(asset1_.get<Issue>(), asset2_.get<Issue>(), account);
+        return balances(asset1_.asset(), asset2_.asset(), account);
     }
 
     [[nodiscard]] bool
@@ -234,6 +245,9 @@ public:
     [[nodiscard]] bool
     ammExists() const;
 
+    static Json::Value
+    depositjv(DepositArg const& arg);
+
     IOUAmount
     deposit(
         std::optional<Account> const& account,
@@ -259,13 +273,16 @@ public:
         std::optional<STAmount> const& asset2In,
         std::optional<STAmount> const& maxEP,
         std::optional<std::uint32_t> const& flags,
-        std::optional<std::pair<Issue, Issue>> const& assets,
+        std::optional<std::pair<Asset, Asset>> const& assets,
         std::optional<jtx::seq> const& seq,
         std::optional<std::uint16_t> const& tfee = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     IOUAmount
     deposit(DepositArg const& arg);
+
+    static Json::Value
+    withdrawjv(WithdrawArg const& arg);
 
     IOUAmount
     withdraw(
@@ -294,7 +311,7 @@ public:
         std::optional<Account> const& account,
         STAmount const& asset1Out,
         std::optional<STAmount> const& asset2Out = std::nullopt,
-        std::optional<IOUAmount> const& maxEP = std::nullopt,
+        std::optional<LPToken> const& maxEP = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     IOUAmount
@@ -303,14 +320,17 @@ public:
         std::optional<LPToken> const& tokens,
         std::optional<STAmount> const& asset1Out,
         std::optional<STAmount> const& asset2Out,
-        std::optional<IOUAmount> const& maxEP,
+        std::optional<LPToken> const& maxEP,
         std::optional<std::uint32_t> const& flags,
-        std::optional<std::pair<Issue, Issue>> const& assets,
+        std::optional<std::pair<Asset, Asset>> const& assets,
         std::optional<jtx::seq> const& seq,
         std::optional<ter> const& ter = std::nullopt);
 
     IOUAmount
     withdraw(WithdrawArg const& arg);
+
+    static Json::Value
+    votejv(VoteArg const& arg);
 
     void
     vote(
@@ -318,7 +338,7 @@ public:
         std::uint32_t feeVal,
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
+        std::optional<std::pair<Asset, Asset>> const& assets = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     void
@@ -369,9 +389,15 @@ public:
         return ammRpcInfo(lp);
     }
 
+    static Json::Value
+    deletejv(
+        AccountID const& account,
+        Asset const& asset1,
+        Asset const& assets);
+
     void
     ammDelete(
-        AccountID const& deleter,
+        AccountID const& account,
         std::optional<ter> const& ter = std::nullopt);
 
     void
@@ -389,7 +415,15 @@ public:
     void
     setTokens(
         Json::Value& jv,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt);
+        std::optional<std::pair<Asset, Asset>> const& assets = std::nullopt);
+
+    Asset const&
+    operator[](std::uint8_t i)
+    {
+        if (i > 1)
+            Throw<std::runtime_error>("AMM: operator[], invalid index");
+        return i == 0 ? asset1_.asset() : asset2_.asset();
+    }
 
 private:
     AccountID
@@ -397,22 +431,6 @@ private:
         std::uint32_t tfee = 0,
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
-
-    IOUAmount
-    deposit(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
-
-    IOUAmount
-    withdraw(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<jtx::seq> const& seq,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
         std::optional<ter> const& ter = std::nullopt);
 
     void
@@ -442,20 +460,13 @@ private:
 };
 
 namespace amm {
-Json::Value
-trust(
-    AccountID const& account,
-    STAmount const& amount,
-    std::uint32_t flags = 0);
-Json::Value
-pay(Account const& account, AccountID const& to, STAmount const& amount);
 
 Json::Value
 ammClawback(
     Account const& issuer,
     Account const& holder,
-    Issue const& asset,
-    Issue const& asset2,
+    Asset const& asset,
+    Asset const& asset2,
     std::optional<STAmount> const& amount);
 }  // namespace amm
 
