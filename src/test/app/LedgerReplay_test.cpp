@@ -325,6 +325,13 @@ public:
         return false;
     }
 
+    std::string const&
+    fingerprint() const override
+    {
+        return fingerprint_;
+    }
+
+    std::string fingerprint_;
     bool ledgerReplayEnabled_;
     PublicKey nodePublicKey_;
 };
