@@ -142,7 +142,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Only generate a matrix for branches, not tags or other refs.
-    if not args.ref.startswith('refs/heads/'):
+    if not (args.ref.startswith('refs/heads/') or args.ref.startswith('refs/pull/')):
         print('matrix={}')
         exit(0)
 

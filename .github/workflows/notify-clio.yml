@@ -38,22 +38,18 @@ jobs:
   pr:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - name: Fetch PR number
-        id: cli
-        env:
-          GITHUB_TOKEN: ${{ secrets.clio_notify_token }}
+      - name: Determine PR number
+        id: extract
         run: |
-          echo "Fetching PR number associated with current commit '${{ github.sha }}'."
-          NUMBER=$(gh pr list --search=${{ github.sha }} --json=number -q '.[0].number' || echo '')
-          if [ -z "${NUMBER}" ]; then
-            echo 'Could not fetch PR number.'
+          echo "Extracting PR number from the ref name '${{ github.ref_name }}'."
+          if [[ '${{ github.ref_name }}' =~ ^refs/pull/([0-9]+)/merge$ ]]; then
+            echo "number=${BASH_REMATCH[1]}" | tee "${GITHUB_OUTPUT}"
+          else
+            echo 'Could not extract PR number.'
             exit 1
           fi
-          echo "number=${NUMBER}" | tee "${GITHUB_OUTPUT}"
     outputs:
-      number: ${{ steps.cli.outputs.number }}
+      number: ${{ steps.extract.outputs.number }}
 
   upload:
     needs: pr
@@ -65,23 +61,23 @@ jobs:
       - name: Generate outputs
         id: generate
         run: |
-          echo "Generating channel."
+          echo 'Generating channel.'
           echo channel="clio/pr_${{ needs.pr.outputs.number }}" | tee "${GITHUB_OUTPUT}"
-          echo "Extracting version."
+          echo 'Extracting version.'
           echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" | tee "${GITHUB_OUTPUT}"
       - name: Add Conan remote
         run: |
           echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
           conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
-          echo "Listing Conan remotes."
+          echo 'Listing Conan remotes.'
           conan remote list
       - name: Log into Conan remote
         run: conan remote login ${{ inputs.conan_remote_name }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
       - name: Upload package
         run: |
-          echo "Exporting package to channel ${{ steps.generate.outputs.channel }}"
+          echo 'Exporting package to channel ${{ steps.generate.outputs.channel }}.'
           conan export --channel=${{ steps.generate.outputs.channel }} .
-          echo "Uploading package version ${{ steps.generate.outputs.version }} on channel ${{ steps.generate.outputs.channel }}"
+          echo 'Uploading package version ${{ steps.generate.outputs.version }} on channel ${{ steps.generate.outputs.channel }}.'
           conan upload --confirm --check --remote=${{ inputs.conan_remote_name }} xrpl/${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.channel }}
     outputs:
       channel: ${{ steps.generate.outputs.channel }}

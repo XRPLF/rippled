@@ -33,16 +33,16 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Check configuration
         run: |
-          echo "Checking path"
+          echo 'Checking path.'
           echo ${PATH} | tr ':' '\n'
 
-          echo "Checking environment variables."
+          echo 'Checking environment variables.'
           env | sort
 
-          echo "Checking CMake version."
+          echo 'Checking CMake version.'
           cmake --version
 
-          echo "Checking Doxygen version."
+          echo 'Checking Doxygen version.'
           doxygen --version
       - name: Build documentation
         run: |

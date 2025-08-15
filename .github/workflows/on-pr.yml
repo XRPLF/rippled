@@ -124,6 +124,7 @@ jobs:
       os: 'windows'
 
   notify-clio:
+    if: ${{ github.event_name == 'pull_request' }}
     needs:
       - generate-outputs
       - build-linux

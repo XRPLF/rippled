@@ -32,13 +32,13 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Check configuration
         run: |
-          echo "Checking path"
+          echo 'Checking path.'
           echo ${PATH} | tr ':' '\n'
 
-          echo "Checking environment variables."
+          echo 'Checking environment variables.'
           env | sort
 
-          echo "Checking clang-format version."
+          echo 'Checking clang-format version.'
           clang-format --version
       - name: Format code
         run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
@@ -75,13 +75,25 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Check configuration
         run: |
-          echo "Checking path"
+          echo 'Adding NPM global bin to the path.'
+          export PATH=${PATH}:$(npm config --global get prefix)/bin
+
+          echo 'Checking path.'
           echo ${PATH} | tr ':' '\n'
 
-          echo "Checking environment variables."
+          echo 'Checking environment variables.'
           env | sort
 
-          echo "Checking prettier version."
+          echo 'Checking NVM version.'
+          nvm --version
+
+          echo 'Checking NPM version.'
+          npm --version
+
+          echo 'Checking Node.js version.'
+          node --version
+
+          echo 'Checking prettier version.'
           prettier --version
       - name: Format code
         run: prettier --check .

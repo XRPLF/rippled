@@ -82,8 +82,8 @@ jobs:
       - name: Clean workspace (MacOS)
         if: ${{ inputs.os == 'macos' }}
         run: |
-          echo "Cleaning workspace '${{ github.workspace }}'."
           WORKSPACE=${{ github.workspace }}
+          echo "Cleaning workspace '${WORKSPACE}'."
           if [ -z "${WORKSPACE}" ] || [ "${WORKSPACE}" = "/" ]; then
             echo "Invalid working directory '${WORKSPACE}'."
             exit 1
@@ -102,44 +102,44 @@ jobs:
       - name: Check configuration (Windows)
         if: ${{ inputs.os == 'windows' }}
         run: |
-          echo "Checking environment variables."
+          echo 'Checking environment variables.'
           set
 
-          echo "Checking CMake version."
+          echo 'Checking CMake version.'
           cmake --version
 
-          echo "Checking Conan version."
+          echo 'Checking Conan version.'
           conan --version
       - name: Check configuration (Linux and MacOS)
         if: ${{ inputs.os == 'linux' || inputs.os == 'macos' }}
         run: |
-          echo "Checking path"
+          echo 'Checking path.'
           echo ${PATH} | tr ':' '\n'
 
-          echo "Checking environment variables."
+          echo 'Checking environment variables.'
           env | sort
 
-          echo "Checking CMake version."
+          echo 'Checking CMake version.'
           cmake --version
 
-          echo "Checking compiler version."
+          echo 'Checking compiler version.'
           ${{ inputs.os == 'linux' && '${CC}' || 'clang' }} --version
 
-          echo "Checking Conan version."
+          echo 'Checking Conan version.'
           conan --version
 
-          echo "Checking Ninja version."
+          echo 'Checking Ninja version.'
           ninja --version
       - name: Set up Conan home directory (MacOS)
         if: ${{ inputs.os == 'macos' }}
         run: |
-          echo "Setting up Conan home directory."
+          echo 'Setting up Conan home directory.'
           export CONAN_HOME=${{ github.workspace }}/.conan
           mkdir -p ${CONAN_HOME}
       - name: Set up Conan home directory (Windows)
         if: ${{ inputs.os == 'windows' }}
         run: |
-          echo "Setting up Conan home directory."
+          echo 'Setting up Conan home directory.'
           set CONAN_HOME=${{ github.workspace }}\.conan
           mkdir -p %CONAN_HOME%
       - name: Set up Conan configuration
