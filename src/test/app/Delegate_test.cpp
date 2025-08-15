@@ -16,6 +16,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/delegate.h>
 
 #include <xrpl/protocol/Feature.h>
@@ -536,7 +537,7 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testPaymentGranular()
+    testPaymentGranular(FeatureBitset features)
     {
         testcase("test payment granular");
         using namespace jtx;
@@ -705,6 +706,158 @@ class Delegate_test : public beast::unit_test::suite
             env.require(balance(gw, alice["USD"](-50)));
             env.require(balance(alice, USD(50)));
             BEAST_EXPECT(env.balance(bob, USD) == USD(0));
+        }
+
+        // disallow cross currency payment with only PaymentBurn/PaymentMint
+        // permission
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            Account const carol{"carol"};
+            auto const USD = gw["USD"];
+
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+            env.trust(USD(50000), alice);
+            env.trust(USD(50000), bob);
+            env.trust(USD(50000), carol);
+            env(pay(gw, alice, USD(10000)));
+            env(pay(gw, bob, USD(10000)));
+            env(pay(gw, carol, USD(10000)));
+            env.close();
+
+            auto const result = features[fixDelegateV1_1]
+                ? static_cast<TER>(tecNO_DELEGATE_PERMISSION)
+                : static_cast<TER>(tesSUCCESS);
+            auto const offerCount = features[fixDelegateV1_1] ? 1 : 0;
+
+            // PaymentMint
+            {
+                env(offer(carol, XRP(100), USD(501)));
+                BEAST_EXPECT(expectOffers(env, carol, 1));
+                env(delegate::set(gw, bob, {"PaymentMint"}));
+                env.close();
+
+                // post-amendment: fixDelegateV1_1
+                // bob can not send cross currency payment on behalf of the gw,
+                // even with PaymentMint permission and gw being the issuer.
+                env(pay(gw, alice, USD(5000)),
+                    path(~USD),
+                    sendmax(XRP(1001)),
+                    txflags(tfPartialPayment),
+                    delegate::as(bob),
+                    ter(result));
+                BEAST_EXPECT(expectOffers(env, carol, offerCount));
+
+                // succeed with direct payment
+                env(pay(gw, alice, USD(100)), delegate::as(bob));
+                env.close();
+            }
+
+            // PaymentBurn
+            {
+                env(offer(bob, XRP(100), USD(501)));
+                BEAST_EXPECT(expectOffers(env, bob, 1));
+                env(delegate::set(alice, bob, {"PaymentBurn"}));
+                env.close();
+
+                // post-amendment: fixDelegateV1_1
+                // bob can not send cross currency payment on behalf of alice,
+                // even with PaymentBurn permission and gw being the issuer.
+                env(pay(alice, gw, USD(5000)),
+                    path(~USD),
+                    sendmax(XRP(1001)),
+                    txflags(tfPartialPayment),
+                    delegate::as(bob),
+                    ter(result));
+                BEAST_EXPECT(expectOffers(env, bob, offerCount));
+
+                // succeed with direct payment
+                env(pay(alice, gw, USD(100)), delegate::as(bob));
+                env.close();
+            }
+        }
+
+        // PaymentMint and PaymentBurn for MPT
+        {
+            std::string logs;
+            Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+
+            MPTTester mpt(env, gw, {.holders = {alice, bob}});
+            mpt.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTransfer});
+
+            mpt.authorize({.account = alice});
+            mpt.authorize({.account = bob});
+
+            auto const MPT = mpt["MPT"];
+            env(pay(gw, alice, MPT(500)));
+            env(pay(gw, bob, MPT(500)));
+            env.close();
+            auto aliceMPT = env.balance(alice, MPT);
+            auto bobMPT = env.balance(bob, MPT);
+
+            // PaymentMint
+            {
+                env(delegate::set(gw, bob, {"PaymentMint"}));
+                env.close();
+
+                if (!features[fixDelegateV1_1])
+                {
+                    // pre-amendment: PaymentMint is not supported for MPT
+                    env(pay(gw, alice, MPT(50)),
+                        delegate::as(bob),
+                        ter(tefEXCEPTION));
+                }
+                else
+                {
+                    env(pay(gw, alice, MPT(50)), delegate::as(bob));
+                    BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT + MPT(50));
+                    BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
+                    aliceMPT = env.balance(alice, MPT);
+                }
+            }
+
+            // PaymentBurn
+            {
+                env(delegate::set(alice, bob, {"PaymentBurn"}));
+                env.close();
+
+                if (!features[fixDelegateV1_1])
+                {
+                    // pre-amendment: PaymentBurn is not supported for MPT
+                    env(pay(alice, gw, MPT(50)),
+                        delegate::as(bob),
+                        ter(tefEXCEPTION));
+                }
+                else
+                {
+                    env(pay(alice, gw, MPT(50)), delegate::as(bob));
+                    BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(50));
+                    BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
+                    aliceMPT = env.balance(alice, MPT);
+                }
+            }
+
+            // Payment transaction for MPT is allowed for both pre and post
+            // amendment
+            {
+                env(delegate::set(
+                    alice, bob, {"PaymentBurn", "PaymentMint", "Payment"}));
+                env.close();
+                env(pay(alice, gw, MPT(50)), delegate::as(bob));
+                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(50));
+                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT);
+                aliceMPT = env.balance(alice, MPT);
+                env(pay(alice, bob, MPT(100)), delegate::as(bob));
+                BEAST_EXPECT(env.balance(alice, MPT) == aliceMPT - MPT(100));
+                BEAST_EXPECT(env.balance(bob, MPT) == bobMPT + MPT(100));
+            }
         }
     }
 
@@ -1477,8 +1630,122 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testPermissionValue(FeatureBitset features)
+    {
+        testcase("test permission value");
+        using namespace jtx;
+
+        Env env(*this, features);
+
+        Account alice{"alice"};
+        Account bob{"bob"};
+        env.fund(XRP(100000), alice, bob);
+        env.close();
+
+        auto buildRequest = [&](auto value) -> Json::Value {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::DelegateSet;
+            jv[jss::Account] = alice.human();
+            jv[sfAuthorize.jsonName] = bob.human();
+
+            Json::Value permissionsJson(Json::arrayValue);
+            Json::Value permissionValue;
+            permissionValue[sfPermissionValue.jsonName] = value;
+            Json::Value permissionObj;
+            permissionObj[sfPermission.jsonName] = permissionValue;
+            permissionsJson.append(permissionObj);
+            jv[sfPermissions.jsonName] = permissionsJson;
+
+            return jv;
+        };
+
+        // invalid permission value.
+        // neither granular permission nor transaction level permission
+        for (auto value : {0, 100000, 54321})
+        {
+            auto jv = buildRequest(value);
+            if (!features[fixDelegateV1_1])
+                env(jv);
+            else
+                env(jv, ter(temMALFORMED));
+        }
+    }
+
+    void
+    testTxReqireFeatures(FeatureBitset features)
+    {
+        testcase("test delegate disabled tx");
+        using namespace jtx;
+
+        // map of tx and required features
+        std::unordered_map<std::string, std::vector<uint256>>
+            txRequiredFeatures{
+                {"NFTokenModify",
+                 {featureNonFungibleTokensV1_1, featureDynamicNFT}},
+                {"VaultCreate", {featureSingleAssetVault, featureMPTokensV1}},
+                {"PermissionedDomainSet",
+                 {featurePermissionedDomains, featureCredentials}},
+                {"TicketCreate", {featureTicketBatch}},
+                {"CheckCreate", {featureChecks}},
+                {"CheckCash", {featureChecks}},
+                {"CheckCancel", {featureChecks}},
+                {"AMMCreate", {featureAMM}},
+                {"AMMDeposit", {featureAMM}},
+                {"AMMWithdraw", {featureAMM}},
+                {"AMMClawback", {featureAMMClawback}},
+                {"Clawback", {featureClawback}},
+            };
+
+        // fixDelegateV1_1 post-amendment: can not delegate tx if any
+        // required feature disabled.
+        {
+            auto txAmendmentDisabled = [&](FeatureBitset features,
+                                           std::string const& tx) {
+                BEAST_EXPECT(txRequiredFeatures.contains(tx));
+                for (auto const& feature : txRequiredFeatures[tx])
+                {
+                    Env env(*this, features - feature);
+
+                    Account alice{"alice"};
+                    Account bob{"bob"};
+                    env.fund(XRP(100000), alice, bob);
+                    env.close();
+
+                    if (!features[fixDelegateV1_1])
+                        env(delegate::set(alice, bob, {tx}));
+                    else
+                        env(delegate::set(alice, bob, {tx}),
+                            ter(tecNO_PERMISSION));
+                }
+            };
+
+            for (auto const& tx : txRequiredFeatures)
+                txAmendmentDisabled(features, tx.first);
+        }
+
+        // if all the required features enabled, will succeed
+        {
+            auto txAmendmentEnabled = [&](std::string const& tx) {
+                Env env(*this, features);
+
+                Account alice{"alice"};
+                Account bob{"bob"};
+                env.fund(XRP(100000), alice, bob);
+                env.close();
+
+                env(delegate::set(alice, bob, {tx}));
+            };
+
+            for (auto const& tx : txRequiredFeatures)
+                txAmendmentEnabled(tx.first);
+        }
+    }
+
+    void
     run() override
     {
+        FeatureBitset const all = jtx::testable_amendments();
+
         testFeatureDisabled();
         testDelegateSet();
         testInvalidRequest();
@@ -1487,7 +1754,8 @@ class Delegate_test : public beast::unit_test::suite
         testSequence();
         testAccountDelete();
         testDelegateTransaction();
-        testPaymentGranular();
+        testPaymentGranular(all);
+        testPaymentGranular(all - fixDelegateV1_1);
         testTrustSetGranular();
         testAccountSetGranular();
         testMPTokenIssuanceSetGranular();
@@ -1495,6 +1763,10 @@ class Delegate_test : public beast::unit_test::suite
         testSingleSignBadSecret();
         testMultiSign();
         testMultiSignQuorumNotMet();
+        testPermissionValue(all);
+        testPermissionValue(all - fixDelegateV1_1);
+        testTxReqireFeatures(all);
+        testTxReqireFeatures(all - fixDelegateV1_1);
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, ripple);

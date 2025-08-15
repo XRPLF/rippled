@@ -23,7 +23,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
 namespace ripple {
@@ -69,8 +68,10 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     for (auto const& permission : permissions)
     {
         auto const permissionValue = permission[sfPermissionValue];
-        if (!Permission::getInstance().isDelegatable(permissionValue))
-            return tecNO_PERMISSION;
+        if (auto const res = Permission::getInstance().isDelegatable(
+                permissionValue, ctx.view.rules());
+            !isTesSuccess(res))
+            return res;
     }
 
     return tesSUCCESS;
