@@ -5,10 +5,6 @@ on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
   
-env:
-  NODE_VERSION: 22.x
-  PRETTIER_VERSION: 3.6.2
-  
 jobs:
   check:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
@@ -16,7 +12,6 @@ jobs:
     container: ghcr.io/xrplf/ci/tools-rippled/prettier
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js ${{ env.NODE_VERSION }}
 
       - name: run Prettier for JS/Markdown files
         run: |
