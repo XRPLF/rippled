@@ -550,10 +550,18 @@ struct Wasm_test : public beast::unit_test::suite
 
             TestHostFunctions hf(env, 0);
             auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result && (re->cost == 91'412));
-            }
+            BEAST_EXPECT(re && re->result && (re->cost == 91'412));
+            env.close();
+        }
+
+        {
+            std::string const wasmHex = float0Hex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            TestHostFunctions hf(env, 0);
+            auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
+            BEAST_EXPECT(re && re->result && (re->cost == 6'533));
             env.close();
         }
     }
@@ -736,7 +744,6 @@ struct Wasm_test : public beast::unit_test::suite
         testFloat();
 
         testCodecovWasm();
-
         testDisabledFloat();
 
         // perfTest();
