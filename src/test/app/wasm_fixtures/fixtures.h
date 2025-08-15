@@ -39,6 +39,8 @@ extern std::string const zkProofWasmHex;
 
 extern std::string const sp1WasmHex;
 
+extern std::string const hfPerfTest;
+
 extern std::string const allKeyletsWasmHex;
 
 extern std::string const codecovTestsWasmHex;

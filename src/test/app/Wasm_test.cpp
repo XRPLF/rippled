@@ -109,8 +109,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         if (BEAST_EXPECT(re.has_value()))
         {
-            BEAST_EXPECT(re->result);
-            BEAST_EXPECT(re->cost == 3'066'129);
+            BEAST_EXPECTS(re->result, std::to_string(re->result));
+            BEAST_EXPECTS(re->cost == 3'066'129, std::to_string(re->cost));
         }
     }
 
@@ -126,8 +126,9 @@ struct Wasm_test : public beast::unit_test::suite
 
         if (BEAST_EXPECT(re.has_value()))
         {
-            BEAST_EXPECT(re->result);
-            BEAST_EXPECT(re->cost == 4'191'711'969ll);
+            BEAST_EXPECTS(re->result, std::to_string(re->result));
+            BEAST_EXPECTS(
+                re->cost == 4'191'711'969ll, std::to_string(re->cost));
         }
     }
 
@@ -143,8 +144,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         if (BEAST_EXPECT(re.has_value()))
         {
-            BEAST_EXPECT(re->result);
-            BEAST_EXPECT(re->cost == 332'205'984);
+            BEAST_EXPECTS(re->result, std::to_string(re->result));
+            BEAST_EXPECTS(re->cost == 332'205'984, std::to_string(re->cost));
         }
     }
 
@@ -176,7 +177,10 @@ struct Wasm_test : public beast::unit_test::suite
 
         // code takes 11 gas + 1 getLedgerSqn call
         if (BEAST_EXPECT(re.has_value()))
-            BEAST_EXPECT(!re->result && (re->cost == 44));
+        {
+            BEAST_EXPECTS(!re->result, std::to_string(re->result));
+            BEAST_EXPECTS(re->cost == 44, std::to_string(re->cost));
+        }
 
         env.close();
         env.close();
@@ -190,8 +194,8 @@ struct Wasm_test : public beast::unit_test::suite
         // code takes 22 gas + 2 getLedgerSqn calls
         if (BEAST_EXPECT(re.has_value()))
         {
-            BEAST_EXPECT(re->result);
-            BEAST_EXPECT(re->cost == 88);
+            BEAST_EXPECTS(re->result, std::to_string(re->result));
+            BEAST_EXPECTS(re->cost == 88, std::to_string(re->cost));
         }
     }
 
@@ -240,8 +244,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         if (BEAST_EXPECT(re.has_value()))
         {
-            BEAST_EXPECT(re->result == 6912);
-            BEAST_EXPECT(re->cost == 2);
+            BEAST_EXPECTS(re->result == 6'912, std::to_string(re->result));
+            BEAST_EXPECTS(re->cost == 2, std::to_string(re->cost));
         }
     }
 
@@ -318,8 +322,8 @@ struct Wasm_test : public beast::unit_test::suite
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(re->result);
-                BEAST_EXPECT(re->cost == 41'132);
+                BEAST_EXPECTS(re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 41'132, std::to_string(re->cost));
             }
         }
 
@@ -340,8 +344,8 @@ struct Wasm_test : public beast::unit_test::suite
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(!re->result);
-                BEAST_EXPECT(re->cost == 5831);
+                BEAST_EXPECTS(!re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 5'831, std::to_string(re->cost));
             }
         }
 
@@ -362,8 +366,8 @@ struct Wasm_test : public beast::unit_test::suite
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(!re->result);
-                BEAST_EXPECT(re->cost == 5831);
+                BEAST_EXPECTS(!re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 5'831, std::to_string(re->cost));
             }
         }
 
@@ -455,8 +459,8 @@ struct Wasm_test : public beast::unit_test::suite
 
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(re->result);
-                BEAST_EXPECT(re->cost == 872);
+                BEAST_EXPECTS(re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 872, std::to_string(re->cost));
             }
 
             env.close();
@@ -489,8 +493,8 @@ struct Wasm_test : public beast::unit_test::suite
 
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(re->result);
-                BEAST_EXPECT(re->cost == 41'132);
+                BEAST_EXPECTS(re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 41'132, std::to_string(re->cost));
             }
 
             env.close();
@@ -514,7 +518,11 @@ struct Wasm_test : public beast::unit_test::suite
 
             TestHostFunctions hf(env, 0);
             auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
-            BEAST_EXPECT(re && re->result && (re->cost == 91'412));
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 91'412, std::to_string(re->cost));
+            }
             env.close();
         }
 
@@ -525,7 +533,107 @@ struct Wasm_test : public beast::unit_test::suite
 
             TestHostFunctions hf(env, 0);
             auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
-            BEAST_EXPECT(re && re->result && (re->cost == 6'533));
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 6'533, std::to_string(re->cost));
+            }
+            env.close();
+        }
+    }
+
+    void
+    perfTest()
+    {
+        testcase("Perf test host functions");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        // std::string const funcName("test");
+        auto const& wasmHex = hfPerfTest;
+        // auto const& wasmHex = opcCallPerfTest;
+        std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+        std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+        std::string const credType = "abcde";
+        std::string const credType2 = "fghijk";
+        std::string const credType3 = "0123456";
+        // char const uri[] = "uri";
+
+        Account const alan{"alan"};
+        Account const bob{"bob"};
+        Account const issuer{"issuer"};
+
+        {
+            Env env(*this);
+            // Env env(*this, envconfig(), {}, nullptr,
+            // beast::severities::kTrace);
+            env.fund(XRP(5000), alan, bob, issuer);
+            env.close();
+
+            // // create escrow
+            // auto const seq = env.seq(alan);
+            // auto const k = keylet::escrow(alan, seq);
+            // // auto const allowance = 3'600;
+            // auto escrowCreate = escrow::create(alan, bob, XRP(1000));
+            // XRPAmount txnFees = env.current()->fees().base + 1000;
+            // env(escrowCreate,
+            //     escrow::finish_function(wasmHex),
+            //     escrow::finish_time(env.now() + 11s),
+            //     escrow::cancel_time(env.now() + 100s),
+            //     escrow::data("1000000000"),  // 1000 XRP in drops
+            //     memodata("memo1234567"),
+            //     memodata("2memo1234567"),
+            //     fee(txnFees));
+
+            // // create depositPreauth
+            // auto const k = keylet::depositPreauth(
+            //     bob,
+            //     {{issuer.id(), makeSlice(credType)},
+            //      {issuer.id(), makeSlice(credType2)},
+            //      {issuer.id(), makeSlice(credType3)}});
+            // env(deposit::authCredentials(
+            //     bob,
+            //     {{issuer, credType},
+            //      {issuer, credType2},
+            //      {issuer, credType3}}));
+
+            // cREATE nft
+            [[maybe_unused]] uint256 const nft0{
+                token::getNextID(env, alan, 0u)};
+            env(token::mint(alan, 0u));
+            auto const k = keylet::nftoffer(alan, 0);
+            [[maybe_unused]] uint256 const nft1{
+                token::getNextID(env, alan, 0u)};
+
+            env(token::mint(alan, 0u),
+                token::uri(
+                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
+            [[maybe_unused]] uint256 const nft2{
+                token::getNextID(env, alan, 0u)};
+            env(token::mint(alan, 0u));
+            env.close();
+
+            PerfHostFunctions nfs(env, k, env.tx());
+
+            auto re = runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result);
+                std::cout << "Res: " << re->result << " cost: " << re->cost
+                          << std::endl;
+            }
+
+            // env(escrow::finish(alan, alan, seq),
+            //     escrow::comp_allowance(allowance),
+            //     fee(txnFees),
+            //     ter(tesSUCCESS));
+
             env.close();
         }
     }
@@ -555,8 +663,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         if (BEAST_EXPECT(re.has_value()))
         {
-            BEAST_EXPECT(re->result);
-            BEAST_EXPECT(re->cost == 100'784);
+            BEAST_EXPECTS(re->result, std::to_string(re->result));
+            BEAST_EXPECTS(re->cost == 100'784, std::to_string(re->cost));
         }
     }
 
@@ -577,7 +685,10 @@ struct Wasm_test : public beast::unit_test::suite
             // f32 set constant, opcode disabled exception
             auto const re =
                 runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
-            BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
+            if (BEAST_EXPECT(!re.has_value()))
+            {
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+            }
         }
 
         {
@@ -585,7 +696,10 @@ struct Wasm_test : public beast::unit_test::suite
             wasm[0x117] = 0x92;
             auto const re =
                 runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
-            BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
+            if (BEAST_EXPECT(!re.has_value()))
+            {
+                BEAST_EXPECT(re.error() == tecFAILED_PROCESSING);
+            }
         }
     }
 
@@ -614,6 +728,8 @@ struct Wasm_test : public beast::unit_test::suite
 
         testCodecovWasm();
         testDisabledFloat();
+
+        // perfTest();
     }
 };
 
