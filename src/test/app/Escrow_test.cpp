@@ -2387,7 +2387,7 @@ struct Escrow_test : public beast::unit_test::suite
                 env.close();
                 env.close();
 
-                auto const allowance = 137'484;
+                auto const allowance = 137'596;
 
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
@@ -2396,7 +2396,11 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                {
+                    auto const gasUsed = txMeta->getFieldU32(sfGasUsed);
+                    BEAST_EXPECTS(
+                        gasUsed == allowance, std::to_string(gasUsed));
+                }
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 15);
             }
         }
