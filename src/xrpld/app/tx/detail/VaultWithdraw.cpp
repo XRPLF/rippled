@@ -226,25 +226,6 @@ VaultWithdraw::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
-    Number const sharesOutstanding = sleIssuance->at(sfOutstandingAmount);
-    if (vaultAsset.holds<Issue>() && !vaultAsset.get<Issue>().native() &&
-        sharesOutstanding == shares)
-    {
-        auto const assetScale = vault->at(sfAssetScale);
-        Number const assetsTotal =
-            vault->at(sfAssetsTotal) - vault->at(sfLossUnrealized);
-        // Withdrawing the last of shares, must ensure no dust IOU left behind
-        if (abs(assetsTotal - Number(assets)) >
-            Number(1, -1 * (assetScale + 6)))
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultWithdraw: invalid rounding of assets.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-        assets = assetsTotal;
-    }
-
     // The vault must have enough assets on hand. The vault may hold assets that
     // it has already pledged. That is why we look at AssetAvailable instead of
     // the pseudo-account balance.

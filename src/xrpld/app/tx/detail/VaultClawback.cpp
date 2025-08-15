@@ -216,25 +216,6 @@ VaultClawback::doApply()
     if (shares == beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
-    Number const sharesOutstanding = sleIssuance->at(sfOutstandingAmount);
-    if (vaultAsset.holds<Issue>() && !vaultAsset.get<Issue>().native() &&
-        sharesOutstanding == shares)
-    {
-        auto const assetScale = vault->at(sfAssetScale);
-        Number const assetsTotal =
-            vault->at(sfAssetsTotal) - vault->at(sfLossUnrealized);
-        // Withdrawing the last of shares, must ensure no dust IOU left behind
-        if (abs(assetsTotal - Number(assets)) >
-            Number(1, -1 * (assetScale + 6)))
-        {
-            // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultClawback: invalid rounding of assets.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-        assets = assetsTotal;
-    }
-
     vault->at(sfAssetsTotal) -= assets;
     vault->at(sfAssetsAvailable) -= assets;
     view().update(vault);
