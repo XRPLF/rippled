@@ -344,7 +344,7 @@ struct Wasm_test : public beast::unit_test::suite
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECTS(!re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
                 BEAST_EXPECTS(re->cost == 5'831, std::to_string(re->cost));
             }
         }
@@ -366,7 +366,7 @@ struct Wasm_test : public beast::unit_test::suite
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECTS(!re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
                 BEAST_EXPECTS(re->cost == 5'831, std::to_string(re->cost));
             }
         }

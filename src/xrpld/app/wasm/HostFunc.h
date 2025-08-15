@@ -54,6 +54,12 @@ enum class HostFunctionError : int32_t {
     FLOAT_COMPUTATION_ERROR = -20,
 };
 
+inline int32_t
+HfErrorToInt(HostFunctionError e)
+{
+    return static_cast<int32_t>(e);
+}
+
 std::string
 floatToString(Slice const& data);
 
