@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Fetch PR number
         run: |
-          echo 'Determining PR number from the ref name '${{ github.ref_name }}'."
+          echo 'Determining PR number from the ref name '${{ github.ref_name }}.'
 
           if [[ '${{ github.ref_name }}' =~ ^refs/pull/([0-9]+)/merge$ ]]; then
             echo "PR number: ${BASH_REMATCH[1]}."
