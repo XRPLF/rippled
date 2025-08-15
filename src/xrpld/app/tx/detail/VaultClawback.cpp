@@ -195,23 +195,30 @@ VaultClawback::doApply()
     }
 
     // Clamp to maximum.
-    Number maxAssets = *vault->at(sfAssetsAvailable);
-    if (assets > maxAssets)
+    Number const assetsAvailable = *vault->at(sfAssetsAvailable);
+    if (assets > assetsAvailable)
     {
-        assets = maxAssets;
-        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
-        assets = std::min<Number>(
-            sharesToAssetsWithdraw(vault, sleIssuance, shares),
-            maxAssets);
+        assets = assetsAvailable;
+        // Note, it is important to truncate the number of shares, since
+        // otherwise the corresponding assets might breach the AssetsAvailable
+        shares = assetsToSharesWithdraw(
+            vault, sleIssuance, assets, TruncateShares::yes);
+        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        if (assets > assetsAvailable)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultClawback: invalid rounding of shares.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     if (shares == beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
-    // As per calculation in assetsToSharesWithdraw and sharesToAssetsWithdraw
-    auto const sharesOutstanding = sleIssuance->at(sfOutstandingAmount);
+    Number const sharesOutstanding = sleIssuance->at(sfOutstandingAmount);
     if (vaultAsset.holds<Issue>() && !vaultAsset.get<Issue>().native() &&
-        Number(sharesOutstanding) == shares)
+        sharesOutstanding == shares)
     {
         auto const assetScale = vault->at(sfAssetScale);
         Number const assetsTotal =

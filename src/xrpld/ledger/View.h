@@ -930,6 +930,8 @@ sharesToAssetsDeposit(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares);
 
+enum class TruncateShares : bool { no = false, yes = true };
+
 // From the perspective of a vault,
 // return the number of shares to demand from the depositor
 // when they ask to withdraw a fixed amount of assets.
@@ -937,7 +939,8 @@ sharesToAssetsDeposit(
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets);
+    STAmount const& assets,
+    TruncateShares truncate = TruncateShares::no);
 
 // From the perspective of a vault,
 // return the number of assets to give the depositor

@@ -2849,7 +2849,8 @@ sharesToAssetsDeposit(
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets)
+    STAmount const& assets,
+    TruncateShares truncate)
 {
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
@@ -2860,7 +2861,10 @@ assetsToSharesWithdraw(
     if (assetTotal == 0)
         return shares;
     Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+    Number result = shareTotal * (assets / assetTotal);
+    if (truncate == TruncateShares::yes)
+        result = result.truncate();
+    shares = result;
     return shares;
 }
 

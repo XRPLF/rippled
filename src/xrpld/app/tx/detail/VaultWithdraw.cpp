@@ -226,10 +226,9 @@ VaultWithdraw::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // As per calculation in assetsToSharesWithdraw and sharesToAssetsWithdraw
-    auto const sharesOutstanding = sleIssuance->at(sfOutstandingAmount);
+    Number const sharesOutstanding = sleIssuance->at(sfOutstandingAmount);
     if (vaultAsset.holds<Issue>() && !vaultAsset.get<Issue>().native() &&
-        Number(sharesOutstanding) == shares)
+        sharesOutstanding == shares)
     {
         auto const assetScale = vault->at(sfAssetScale);
         Number const assetsTotal =
