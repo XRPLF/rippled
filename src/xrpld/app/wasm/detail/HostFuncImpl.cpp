@@ -792,8 +792,6 @@ WasmHostFunctionsImpl::traceAccount(
     std::string_view const& msg,
     AccountID const& account)
 {
-    if (!account)
-        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
 #ifdef DEBUG_OUTPUT
     auto j = getJournal().error();
 #else

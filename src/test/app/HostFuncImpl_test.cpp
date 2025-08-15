@@ -2021,14 +2021,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                     result.value() ==
                     msg.size() + toBase58(env.master.id()).size());
         }
-
-        // Invalid (zero) account
-        {
-            auto const result = hfs.traceAccount(msg, xrpAccount());
-            if (BEAST_EXPECT(!result.has_value()))
-                BEAST_EXPECT(
-                    result.error() == HostFunctionError::INVALID_ACCOUNT);
-        }
     }
 
     void
