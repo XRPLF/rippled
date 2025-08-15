@@ -5,8 +5,8 @@
 name: PR
 
 on:
-  push:
-    branches-ignore:
+  pull_request:
+    branches:
       - develop
       - release
       - master
@@ -20,7 +20,36 @@ on:
       - '.github/workflows/check-levelization.yml'
       - '.github/workflows/notify-clio.yml'
       - '.github/workflows/on-pr.yml'
-      # Keep the list of paths below in sync with those in `on-trigger.yml`.
+      # Keep the list of paths below in sync with those below and also in the
+      # `on-trigger.yml` file.
+      - 'cmake/**'
+      - 'conan/**'
+      - 'external/**'
+      - 'include/**'
+      - 'src/**'
+      - 'tests/**'
+      - '.clang-format'
+      - '.codecov.yml'
+      - '.pre-commit-config.yaml'
+      - 'CMakeLists.txt'
+      - 'conanfile.py'
+  push:
+    branches:
+      - develop
+      - release
+      - master
+    paths:
+      - '.github/actions/build-deps/**'
+      - '.github/actions/build-test/**'
+      - '.github/scripts/levelization/**'
+      - '.github/scripts/strategy-matrix/**'
+      - '.github/workflows/build-test.yml'
+      - '.github/workflows/check-format.yml'
+      - '.github/workflows/check-levelization.yml'
+      - '.github/workflows/notify-clio.yml'
+      - '.github/workflows/on-pr.yml'
+      # Keep the list of paths below in sync with those above and also in the
+      # `on-trigger.yml` file.
       - 'cmake/**'
       - 'conan/**'
       - 'external/**'
