@@ -20,12 +20,11 @@
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/nodestore/DummyScheduler.h>
-#include <xrpld/nodestore/Manager.h>
-#include <xrpld/unity/rocksdb.h>
-
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/rocksdb.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
 
 #include <algorithm>
 

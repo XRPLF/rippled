@@ -21,9 +21,9 @@
 #define RIPPLE_APP_LEDGER_INBOUNDTRANSACTIONS_H_INCLUDED
 
 #include <xrpld/overlay/Peer.h>
-#include <xrpld/shamap/SHAMap.h>
 
 #include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/shamap/SHAMap.h>
 
 #include <memory>
 

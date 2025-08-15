@@ -23,7 +23,7 @@ Loop: xrpld.app xrpld.rpc
   xrpld.rpc > xrpld.app
 
 Loop: xrpld.app xrpld.shamap
-  xrpld.app > xrpld.shamap
+  xrpld.shamap ~= xrpld.app
 
 Loop: xrpld.core xrpld.net
   xrpld.net > xrpld.core

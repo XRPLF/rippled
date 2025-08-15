@@ -21,7 +21,8 @@
 #define RIPPLE_APP_MISC_SHAMAPSTORE_H_INCLUDED
 
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/nodestore/Manager.h>
+
+#include <xrpl/nodestore/Manager.h>
 
 #include <optional>
 

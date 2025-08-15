@@ -10,6 +10,7 @@ install (
     opts
     ripple_syslibs
     ripple_boost
+    ripple_libs
     xrpl.imports.main
     xrpl.libpb
     xrpl.libxrpl.basics
@@ -18,6 +19,8 @@ install (
     xrpl.libxrpl.json
     xrpl.libxrpl.protocol
     xrpl.libxrpl.resource
+    xrpl.libxrpl.nodestore
+    xrpl.libxrpl.shamap
     xrpl.libxrpl.server
     xrpl.libxrpl
     antithesis-sdk-cpp

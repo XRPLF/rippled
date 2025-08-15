@@ -23,11 +23,11 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/nodestore/Database.h>
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
