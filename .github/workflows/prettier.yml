@@ -13,31 +13,10 @@ jobs:
   check:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-24.04
+    container: ghcr.io/xrplf/ci/tools-rippled/prettier
     steps:
       - uses: actions/checkout@v4
       - name: Use Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Cache node modules
-        id: cache-nodemodules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          # caching node_modules
-          path: |
-            node_modules
-            */*/node_modules
-          key: ${{ runner.os }}-deps-${{ env.NODE_VERSION }}-${{ env.PRETTIER_VERSION }}
-          restore-keys: |
-            ${{ runner.os }}-deps-${{ env.NODE_VERSION }}-
-
-      - name: Install Prettier
-        if: steps.cache-nodemodules.outputs.cache-hit != 'true'
-        run: |
-          npm i --no-save prettier@${{ env.PRETTIER_VERSION }} --registry=https://registry.npmjs.org
 
       - name: run Prettier for JS/Markdown files
         run: |
