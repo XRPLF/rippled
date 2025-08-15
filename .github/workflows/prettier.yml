@@ -15,8 +15,8 @@ jobs:
     
       - run: |
           echo $PATH
-          which mycommand || true
-          ls -al "$(dirname $(which mycommand || echo /dev/null))" || true
+          which prettier || true
+          ls -al "$(dirname $(which prettier || echo /dev/null))" || true
 
       - name: run Prettier for JS/Markdown files
         run: prettier --check .
