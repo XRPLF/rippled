@@ -42,7 +42,7 @@ jobs:
         id: extract
         run: |
           echo "Extracting PR number from the ref name '${{ github.ref_name }}'."
-          if [[ '${{ github.ref_name }}' =~ ^refs/pull/([0-9]+)/merge$ ]]; then
+          if [[ '${{ github.ref_name }}' =~ ([0-9]+)/merge$ ]]; then
             echo "number=${BASH_REMATCH[1]}" | tee "${GITHUB_OUTPUT}"
           else
             echo 'Could not extract PR number.'
