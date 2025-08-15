@@ -12,6 +12,11 @@ jobs:
     container: ghcr.io/xrplf/ci/tools-rippled-prettier
     steps:
       - uses: actions/checkout@v4
+    
+      - run: |
+          echo $PATH
+          which mycommand || true
+          ls -al "$(dirname $(which mycommand || echo /dev/null))" || true
 
       - name: run Prettier for JS/Markdown files
         run: prettier --check .
