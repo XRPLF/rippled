@@ -84,7 +84,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         if (BEAST_EXPECT(re.has_value()))
         {
-            BEAST_EXPECTS(re->result == 34432, std::to_string(re->result));
+            BEAST_EXPECTS(re->result == 34'432, std::to_string(re->result));
             BEAST_EXPECTS(re->cost == 157'452, std::to_string(re->cost));
         }
     }
@@ -341,7 +341,7 @@ struct Wasm_test : public beast::unit_test::suite
             };
             BadTestHostFunctions nfs(env);
             auto re =
-                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100000);
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(!re->result, std::to_string(re->result));
@@ -378,7 +378,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             TestHostFunctionsSink nfs(env);
             std::string funcName("recursive");
-            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 1000'000'000);
+            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 1'000'000'000);
             BEAST_EXPECT(!re && re.error());
             // std::cout << "bad case (deep recursion) result " << re.error()
             //             << std::endl;
