@@ -100,7 +100,7 @@ Env::AppBundle::~AppBundle()
     if (app)
     {
         app->getJobQueue().rendezvous();
-        app->signalStop();
+        app->signalStop("~AppBundle");
     }
     if (thread.joinable())
         thread.join();

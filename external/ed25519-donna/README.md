@@ -1,12 +1,12 @@
-[ed25519](http://ed25519.cr.yp.to/) is an 
-[Elliptic Curve Digital Signature Algortithm](http://en.wikipedia.org/wiki/Elliptic_Curve_DSA), 
-developed by [Dan Bernstein](http://cr.yp.to/djb.html), 
-[Niels Duif](http://www.nielsduif.nl/), 
-[Tanja Lange](http://hyperelliptic.org/tanja), 
-[Peter Schwabe](http://www.cryptojedi.org/users/peter/), 
+[ed25519](http://ed25519.cr.yp.to/) is an
+[Elliptic Curve Digital Signature Algortithm](http://en.wikipedia.org/wiki/Elliptic_Curve_DSA),
+developed by [Dan Bernstein](http://cr.yp.to/djb.html),
+[Niels Duif](http://www.nielsduif.nl/),
+[Tanja Lange](http://hyperelliptic.org/tanja),
+[Peter Schwabe](http://www.cryptojedi.org/users/peter/),
 and [Bo-Yin Yang](http://www.iis.sinica.edu.tw/pages/byyang/).
 
-This project provides performant, portable 32-bit & 64-bit implementations. All implementations are 
+This project provides performant, portable 32-bit & 64-bit implementations. All implementations are
 of course constant time in regard to secret data.
 
 #### Performance
@@ -52,35 +52,35 @@ are made.
 
 #### Compilation
 
-No configuration is needed **if you are compiling against OpenSSL**. 
+No configuration is needed **if you are compiling against OpenSSL**.
 
 ##### Hash Options
 
 If you are not compiling aginst OpenSSL, you will need a hash function.
 
-To use a simple/**slow** implementation of SHA-512, use `-DED25519_REFHASH` when compiling `ed25519.c`. 
+To use a simple/**slow** implementation of SHA-512, use `-DED25519_REFHASH` when compiling `ed25519.c`.
 This should never be used except to verify the code works when OpenSSL is not available.
 
-To use a custom hash function, use `-DED25519_CUSTOMHASH` when compiling `ed25519.c` and put your 
+To use a custom hash function, use `-DED25519_CUSTOMHASH` when compiling `ed25519.c` and put your
 custom hash implementation in ed25519-hash-custom.h. The hash must have a 512bit digest and implement
 
-	struct ed25519_hash_context;
+    struct ed25519_hash_context;
 
-	void ed25519_hash_init(ed25519_hash_context *ctx);
-	void ed25519_hash_update(ed25519_hash_context *ctx, const uint8_t *in, size_t inlen);
-	void ed25519_hash_final(ed25519_hash_context *ctx, uint8_t *hash);
-	void ed25519_hash(uint8_t *hash, const uint8_t *in, size_t inlen);
+    void ed25519_hash_init(ed25519_hash_context *ctx);
+    void ed25519_hash_update(ed25519_hash_context *ctx, const uint8_t *in, size_t inlen);
+    void ed25519_hash_final(ed25519_hash_context *ctx, uint8_t *hash);
+    void ed25519_hash(uint8_t *hash, const uint8_t *in, size_t inlen);
 
 ##### Random Options
 
 If you are not compiling aginst OpenSSL, you will need a random function for batch verification.
 
-To use a custom random function, use `-DED25519_CUSTOMRANDOM` when compiling `ed25519.c` and put your 
+To use a custom random function, use `-DED25519_CUSTOMRANDOM` when compiling `ed25519.c` and put your
 custom hash implementation in ed25519-randombytes-custom.h. The random function must implement:
 
-	void ED25519_FN(ed25519_randombytes_unsafe) (void *p, size_t len);
+    void ED25519_FN(ed25519_randombytes_unsafe) (void *p, size_t len);
 
-Use `-DED25519_TEST` when compiling `ed25519.c` to use a deterministically seeded, non-thread safe CSPRNG 
+Use `-DED25519_TEST` when compiling `ed25519.c` to use a deterministically seeded, non-thread safe CSPRNG
 variant of Bob Jenkins [ISAAC](http://en.wikipedia.org/wiki/ISAAC_%28cipher%29)
 
 ##### Minor options
@@ -91,80 +91,79 @@ Use `-DED25519_FORCE_32BIT` to force the use of 32 bit routines even when compil
 
 ##### 32-bit
 
-	gcc ed25519.c -m32 -O3 -c
+    gcc ed25519.c -m32 -O3 -c
 
 ##### 64-bit
 
-	gcc ed25519.c -m64 -O3 -c
+    gcc ed25519.c -m64 -O3 -c
 
 ##### SSE2
 
-	gcc ed25519.c -m32 -O3 -c -DED25519_SSE2 -msse2
-	gcc ed25519.c -m64 -O3 -c -DED25519_SSE2
+    gcc ed25519.c -m32 -O3 -c -DED25519_SSE2 -msse2
+    gcc ed25519.c -m64 -O3 -c -DED25519_SSE2
 
 clang and icc are also supported
-
 
 #### Usage
 
 To use the code, link against `ed25519.o -mbits` and:
 
-	#include "ed25519.h"
+    #include "ed25519.h"
 
 Add `-lssl -lcrypto` when using OpenSSL (Some systems don't need -lcrypto? It might be trial and error).
 
 To generate a private key, simply generate 32 bytes from a secure
 cryptographic source:
 
-	ed25519_secret_key sk;
-	randombytes(sk, sizeof(ed25519_secret_key));
+    ed25519_secret_key sk;
+    randombytes(sk, sizeof(ed25519_secret_key));
 
 To generate a public key:
 
-	ed25519_public_key pk;
-	ed25519_publickey(sk, pk);
+    ed25519_public_key pk;
+    ed25519_publickey(sk, pk);
 
 To sign a message:
 
-	ed25519_signature sig;
-	ed25519_sign(message, message_len, sk, pk, signature);
+    ed25519_signature sig;
+    ed25519_sign(message, message_len, sk, pk, signature);
 
 To verify a signature:
 
-	int valid = ed25519_sign_open(message, message_len, pk, signature) == 0;
+    int valid = ed25519_sign_open(message, message_len, pk, signature) == 0;
 
 To batch verify signatures:
 
-	const unsigned char *mp[num] = {message1, message2..}
-	size_t ml[num] = {message_len1, message_len2..}
-	const unsigned char *pkp[num] = {pk1, pk2..}
-	const unsigned char *sigp[num] = {signature1, signature2..}
-	int valid[num]
+    const unsigned char *mp[num] = {message1, message2..}
+    size_t ml[num] = {message_len1, message_len2..}
+    const unsigned char *pkp[num] = {pk1, pk2..}
+    const unsigned char *sigp[num] = {signature1, signature2..}
+    int valid[num]
 
-	/* valid[i] will be set to 1 if the individual signature was valid, 0 otherwise */
-	int all_valid = ed25519_sign_open_batch(mp, ml, pkp, sigp, num, valid) == 0;
+    /* valid[i] will be set to 1 if the individual signature was valid, 0 otherwise */
+    int all_valid = ed25519_sign_open_batch(mp, ml, pkp, sigp, num, valid) == 0;
 
-**Note**: Batch verification uses `ed25519_randombytes_unsafe`, implemented in 
-`ed25519-randombytes.h`, to generate random scalars for the verification code. 
+**Note**: Batch verification uses `ed25519_randombytes_unsafe`, implemented in
+`ed25519-randombytes.h`, to generate random scalars for the verification code.
 The default implementation now uses OpenSSLs `RAND_bytes`.
 
 Unlike the [SUPERCOP](http://bench.cr.yp.to/supercop.html) version, signatures are
-not appended to messages, and there is no need for padding in front of messages. 
-Additionally, the secret key does not contain a copy of the public key, so it is 
+not appended to messages, and there is no need for padding in front of messages.
+Additionally, the secret key does not contain a copy of the public key, so it is
 32 bytes instead of 64 bytes, and the public key must be provided to the signing
 function.
 
 ##### Curve25519
 
-Curve25519 public keys can be generated thanks to 
-[Adam Langley](http://www.imperialviolet.org/2013/05/10/fastercurve25519.html) 
+Curve25519 public keys can be generated thanks to
+[Adam Langley](http://www.imperialviolet.org/2013/05/10/fastercurve25519.html)
 leveraging Ed25519's precomputed basepoint scalar multiplication.
 
-	curved25519_key sk, pk;
-	randombytes(sk, sizeof(curved25519_key));
-	curved25519_scalarmult_basepoint(pk, sk);
+    curved25519_key sk, pk;
+    randombytes(sk, sizeof(curved25519_key));
+    curved25519_scalarmult_basepoint(pk, sk);
 
-Note the name is curved25519, a combination of curve and ed25519, to prevent 
+Note the name is curved25519, a combination of curve and ed25519, to prevent
 name clashes. Performance is slightly faster than short message ed25519
 signing due to both using the same code for the scalar multiply.
 

@@ -25,15 +25,19 @@ class Xrpl(ConanFile):
 
     requires = [
         'grpc/1.50.1',
-        'libarchive/3.7.6',
-        'nudb/2.0.8',
-        'openssl/1.1.1v',
+        'libarchive/3.8.1',
+        'nudb/2.0.9',
+        'openssl/1.1.1w',
         'soci/4.0.3',
         'zlib/1.3.1',
     ]
 
+    test_requires = [
+        'doctest/2.4.11',
+    ]
+
     tool_requires = [
-        'protobuf/3.21.9',
+        'protobuf/3.21.12',
     ]
 
     default_options = {
@@ -85,12 +89,13 @@ class Xrpl(ConanFile):
     }
 
     def set_version(self):
-        path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
-        regex = r'versionString\s?=\s?\"(.*)\"'
-        with open(path, 'r') as file:
-            matches = (re.search(regex, line) for line in file)
-            match = next(m for m in matches if m)
-            self.version = match.group(1)
+        if self.version is None:
+            path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
+            regex = r'versionString\s?=\s?\"(.*)\"'
+            with open(path, encoding='utf-8') as file:
+                matches = (re.search(regex, line) for line in file)
+                match = next(m for m in matches if m)
+                self.version = match.group(1)
 
     def configure(self):
         if self.settings.compiler == 'apple-clang':
@@ -99,20 +104,19 @@ class Xrpl(ConanFile):
     def requirements(self):
         # Conan 2 requires transitive headers to be specified
         transitive_headers_opt = {'transitive_headers': True} if conan_version.split('.')[0] == '2' else {}
-        self.requires('boost/1.83.0', force=True, **transitive_headers_opt)
-        self.requires('date/3.0.3', **transitive_headers_opt)
+        self.requires('boost/1.86.0', force=True, **transitive_headers_opt)
+        self.requires('date/3.0.4', **transitive_headers_opt)
         self.requires('lz4/1.10.0', force=True)
-        self.requires('protobuf/3.21.9', force=True)
-        self.requires('sqlite3/3.47.0', force=True)
+        self.requires('protobuf/3.21.12', force=True)
+        self.requires('sqlite3/3.49.1', force=True)
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
         if self.options.rocksdb:
-            self.requires('rocksdb/9.7.3')
-        self.requires('xxhash/0.8.2', **transitive_headers_opt)
+            self.requires('rocksdb/10.0.1')
+        self.requires('xxhash/0.8.3', **transitive_headers_opt)
 
     exports_sources = (
         'CMakeLists.txt',
-        'bin/getRippledInfo',
         'cfg/*',
         'cmake/*',
         'external/*',
@@ -163,7 +167,17 @@ class Xrpl(ConanFile):
         # `include/`, not `include/ripple/proto/`.
         libxrpl.includedirs = ['include', 'include/ripple/proto']
         libxrpl.requires = [
-            'boost::boost',
+            'boost::headers',
+            'boost::chrono',
+            'boost::container',
+            'boost::coroutine',
+            'boost::date_time',
+            'boost::filesystem',
+            'boost::json',
+            'boost::program_options',
+            'boost::regex',
+            'boost::system',
+            'boost::thread',
             'date::date',
             'grpc::grpc++',
             'libarchive::libarchive',

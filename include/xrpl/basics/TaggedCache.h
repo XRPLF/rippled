@@ -90,9 +90,6 @@ public:
     int
     getCacheSize() const;
 
-    int
-    getTrackSize() const;
-
     float
     getHitRate();
 
@@ -170,9 +167,6 @@ public:
     bool
     retrieve(key_type const& key, T& data);
 
-    mutex_type&
-    peekMutex();
-
     std::vector<key_type>
     getKeys() const;
 
@@ -193,10 +187,13 @@ public:
 
 private:
     SharedPointerType
-    initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l);
+    initialFetch(key_type const& key);
 
     void
     collect_metrics();
+
+    Mutex&
+    lockPartition(key_type const& key) const;
 
 private:
     struct Stats
@@ -300,8 +297,8 @@ private:
         [[maybe_unused]] clock_type::time_point const& now,
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
-        std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::atomic<int>& allRemoval,
+        Mutex& partitionLock);
 
     [[nodiscard]] std::thread
     sweepHelper(
@@ -310,13 +307,11 @@ private:
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        Mutex& partitionLock);
 
     beast::Journal m_journal;
     clock_type& m_clock;
     Stats m_stats;
-
-    mutex_type mutable m_mutex;
 
     // Used for logging
     std::string m_name;
@@ -328,10 +323,11 @@ private:
     clock_type::duration const m_target_age;
 
     // Number of items cached
-    int m_cache_count;
+    std::atomic<int> m_cache_count;
     cache_type m_cache;  // Hold strong reference to recent objects
-    std::uint64_t m_hits;
-    std::uint64_t m_misses;
+    std::atomic<std::uint64_t> m_hits;
+    std::atomic<std::uint64_t> m_misses;
+    mutable std::vector<mutex_type> partitionLocks_;
 };
 
 }  // namespace ripple
