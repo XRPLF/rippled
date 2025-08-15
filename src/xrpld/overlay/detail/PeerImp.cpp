@@ -777,8 +777,6 @@ PeerImp::doAccept()
         return fail("makeSharedValue: Unexpected failure");
 
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
-    JLOG(journal_.info()) << "Public Key: "
-                          << toBase58(TokenType::NodePublic, publicKey_);
 
     if (auto member = app_.cluster().member(publicKey_))
     {

@@ -796,7 +796,7 @@ ValidatorList::sendValidatorList(
                     << " validator list(s) for " << strHex(publisherKey)
                     << " with sequence range " << peerSequence << ", "
                     << newPeerSequence << " to "
-                    << peer.getRemoteAddress().to_string() << " [" << peer.id()
+                    << peer.fingerprint() << " [" << peer.id()
                     << "]";
             else
             {
@@ -807,7 +807,7 @@ ValidatorList::sendValidatorList(
                 JLOG(j.debug())
                     << "Sent validator list for " << strHex(publisherKey)
                     << " with sequence " << newPeerSequence << " to "
-                    << peer.getRemoteAddress().to_string() << " [" << peer.id()
+                    << peer.fingerprint() << " [" << peer.id()
                     << "]";
             }
         }
