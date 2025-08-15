@@ -513,72 +513,116 @@ struct Wasm_test : public beast::unit_test::suite
             std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
             TestHostFunctions hf(env, 0);
-            auto re = runEscrowWasm(wasm, funcName, {}, &hf, -1);
+            auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
+            BEAST_EXPECT(re && re->result && (re->cost == 91'412));
+            env.close();
+        }
 
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECT(re->result);
-                BEAST_EXPECTS(re->cost == 91'881, std::to_string(re->cost));
-            }
+        {
+            std::string const wasmHex = float0Hex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            TestHostFunctions hf(env, 0);
+            auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
+            BEAST_EXPECT(re && re->result && (re->cost == 6'533));
             env.close();
         }
     }
 
-    void
-    testCodecovWasm()
+    if (BEAST_EXPECT(re.has_value()))
     {
-        testcase("Codecov wasm test");
+        BEAST_EXPECT(re->result);
+        BEAST_EXPECTS(re->cost == 91'881, std::to_string(re->cost));
+    }
+    env.close();
+}
+}
 
-        using namespace test::jtx;
+void
+testCodecovWasm()
+{
+    testcase("Codecov wasm test");
 
-        // Env env{
-        //     *this,
-        //     envconfig(),
-        //     testable_amendments(),
-        //     nullptr,
-        //     beast::severities::kTrace};
-        Env env{*this};
+    using namespace test::jtx;
 
-        auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
-        Bytes const wasm(wasmStr.begin(), wasmStr.end());
-        std::string const funcName("finish");
-        TestHostFunctions hfs(env, 0);
+    // Env env{
+    //     *this,
+    //     envconfig(),
+    //     testable_amendments(),
+    //     nullptr,
+    //     beast::severities::kTrace};
+    Env env{*this};
 
-        auto re =
+    auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
+    Bytes const wasm(wasmStr.begin(), wasmStr.end());
+    std::string const funcName("finish");
+    TestHostFunctions hfs(env, 0);
+
+    auto re = runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+
+    if (BEAST_EXPECT(re.has_value()))
+    {
+        BEAST_EXPECT(re->result);
+        BEAST_EXPECT(re->cost == 100'784);
+    }
+}
+
+void
+testDisabledFloat()
+{
+    testcase("disabled float");
+
+    using namespace test::jtx;
+    Env env{*this};
+
+    auto const wasmStr = boost::algorithm::unhex(disabledFloatHex);
+    Bytes wasm(wasmStr.begin(), wasmStr.end());
+    std::string const funcName("finish");
+    TestHostFunctions hfs(env, 0);
+
+    {
+        // f32 set constant, opcode disabled exception
+        auto const re =
             runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
-
-        if (BEAST_EXPECT(re.has_value()))
-        {
-            BEAST_EXPECT(re->result);
-            BEAST_EXPECT(re->cost == 100'784);
-        }
+        BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
     }
 
-    void
-    run() override
     {
-        using namespace test::jtx;
-
-        testGetDataHelperFunctions();
-        testWasmLib();
-        testBadWasm();
-        testWasmLedgerSqn();
-
-        testWasmFib();
-        testWasmSha();
-        testWasmB58();
-
-        // runing too long
-        // testWasmSP1Verifier();
-        testWasmBG16Verifier();
-
-        testHFCost();
-
-        testEscrowWasmDN();
-        testFloat();
-
-        testCodecovWasm();
+        // f32 add, can't create module exception
+        wasm[0x117] = 0x92;
+        auto const re =
+            runEscrowWasm(wasm, funcName, {}, &hfs, 1'000'000, env.journal);
+        BEAST_EXPECT(!re && re.error() == tecFAILED_PROCESSING);
     }
+}
+
+void
+run() override
+{
+    using namespace test::jtx;
+
+    testGetDataHelperFunctions();
+    testWasmLib();
+    testBadWasm();
+    testWasmLedgerSqn();
+
+    testWasmFib();
+    testWasmSha();
+    testWasmB58();
+
+    // runing too long
+    // testWasmSP1Verifier();
+    testWasmBG16Verifier();
+
+    testHFCost();
+
+    testEscrowWasmDN();
+    testFloat();
+
+    testCodecovWasm();
+    testDisabledFloat();
+}
 };
 
 BEAST_DEFINE_TESTSUITE(Wasm, app, ripple);
