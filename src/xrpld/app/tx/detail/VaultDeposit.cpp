@@ -239,6 +239,9 @@ VaultDeposit::doApply()
 
     // Compute exchange before transferring any amounts.
     auto const shares = assetsToSharesDeposit(vault, sleIssuance, assets);
+    if (shares == beast::zero)
+        return tecINSUFFICIENT_FUNDS;
+
     XRPL_ASSERT(
         shares.asset() != assets.asset(),
         "ripple::VaultDeposit::doApply : assets are not shares");

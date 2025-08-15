@@ -201,6 +201,8 @@ VaultWithdraw::doApply()
         // Fixed assets, variable shares.
         assets = amount;
         shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+        if (shares == beast::zero)
+            return tecINSUFFICIENT_FUNDS;
         assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
     }
     else if (amount.asset() == share)
