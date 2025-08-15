@@ -96,8 +96,8 @@ Collaboration diagram for ripple::HTTPClientSSLContext:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ac963790804e59168c816f69d93661875"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPClientSSLContext.html#ac963790804e59168c816f69d93661875">HTTPClientSSLContext</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, boost::asio::ssl::context_base::method method=boost::asio::ssl::context::sslv23)</td></tr>
-<tr class="separator:ac963790804e59168c816f69d93661875"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2df5fa7a76af935e1aae10e60a18c7b4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPClientSSLContext.html#a2df5fa7a76af935e1aae10e60a18c7b4">HTTPClientSSLContext</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;sslVerifyDir, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;sslVerifyFile, bool <a class="el" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, boost::asio::ssl::context_base::method method=boost::asio::ssl::context::sslv23)</td></tr>
+<tr class="separator:a2df5fa7a76af935e1aae10e60a18c7b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abe99cfb91ab3019fc9b1333a8f6760f1"><td class="memItemLeft" align="right" valign="top">boost::asio::ssl::context &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPClientSSLContext.html#abe99cfb91ab3019fc9b1333a8f6760f1">context</a> ()</td></tr>
 <tr class="separator:abe99cfb91ab3019fc9b1333a8f6760f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a483cac371803ac0aa52dbf804dc54a6b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a> () const</td></tr>
@@ -128,10 +128,10 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00036">36</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00035">35</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ac963790804e59168c816f69d93661875" name="ac963790804e59168c816f69d93661875"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac963790804e59168c816f69d93661875">&#9670;&#160;</a></span>HTTPClientSSLContext()</h2>
+<a id="a2df5fa7a76af935e1aae10e60a18c7b4" name="a2df5fa7a76af935e1aae10e60a18c7b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2df5fa7a76af935e1aae10e60a18c7b4">&#9670;&#160;</a></span>HTTPClientSSLContext()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -142,8 +142,20 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">ripple::HTTPClientSSLContext::HTTPClientSSLContext </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sslVerifyDir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sslVerifyFile</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>sslVerify</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -170,7 +182,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00039">39</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00038">38</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>
@@ -190,7 +202,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00074">74</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00075">75</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>
@@ -209,7 +221,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00080">80</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00081">81</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>
@@ -252,7 +264,7 @@ template&lt;class T , class  = std::enable_if_t&lt;            std::is_same&lt; 
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>error_code indicating failures, if any </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00109">109</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00110">110</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>
@@ -293,7 +305,7 @@ template&lt;class T , class  = std::enable_if_t&lt;            std::is_same&lt; 
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00144">144</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00145">145</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>
@@ -354,7 +366,7 @@ template&lt;class T , class  = std::enable_if_t&lt;            std::is_same&lt; 
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00177">177</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00178">178</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>
@@ -379,7 +391,7 @@ template&lt;class T , class  = std::enable_if_t&lt;            std::is_same&lt; 
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00192">192</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00193">193</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>
@@ -403,7 +415,7 @@ template&lt;class T , class  = std::enable_if_t&lt;            std::is_same&lt; 
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00193">193</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00194">194</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>
@@ -427,7 +439,7 @@ template&lt;class T , class  = std::enable_if_t&lt;            std::is_same&lt; 
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00194">194</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClientSSLContext_8h_source.html#l00195">195</a> of file <a class="el" href="HTTPClientSSLContext_8h_source.html">HTTPClientSSLContext.h</a>.</p>
 
 </div>
 </div>

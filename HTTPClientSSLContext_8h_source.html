@@ -69,7 +69,7 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><a class="el" href="dir_a62226f9e3a6c7c5a3be455e2f87ae01.html">xrpld</a></li><li class="navelem"><a class="el" href="dir_8ab752db1bfd568bc49a33b42d67d397.html">net</a></li>  </ul>
+<li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="dir_0103a8ad82dcc2c51f5cde661b4b5cb7.html">xrpl</a></li><li class="navelem"><a class="el" href="dir_694d29d8b4364cd73747fe0bb0a9175a.html">net</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div class="header">
@@ -98,178 +98,176 @@ $(function() {
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#ifndef RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#define RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED</span></div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpld/core/Config.h&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpld/net/RegisterSSLCerts.h&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;xrpl/basics/Log.h&gt;</span></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;xrpl/basics/contract.h&gt;</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &lt;boost/asio.hpp&gt;</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &lt;boost/asio/ip/tcp.hpp&gt;</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &lt;boost/asio/ssl.hpp&gt;</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="preprocessor">#include &lt;boost/format.hpp&gt;</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html">   36</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1HTTPClientSSLContext.html">HTTPClientSSLContext</a></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>{</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#ac963790804e59168c816f69d93661875">   39</a></span>    <span class="keyword">explicit</span> <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#ac963790804e59168c816f69d93661875">HTTPClientSSLContext</a>(</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        <a class="code hl_class" href="classripple_1_1Config.html">Config</a> <span class="keyword">const</span>&amp; config,</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j,</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        boost::asio::ssl::context_base::method method =</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>            boost::asio::ssl::context::sslv23)</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        : <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>{method}, <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">j_</a>(j), <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">verify_</a>{config.SSL_VERIFY}</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    {</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        boost::system::error_code ec;</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        <span class="keywordflow">if</span> (config.<a class="code hl_variable" href="classripple_1_1Config.html#ac9ecf69a240758ad0277bd60e63ff961">SSL_VERIFY_FILE</a>.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        {</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>            <a class="code hl_function" href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">registerSSLCerts</a>(<a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>, ec, <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">j_</a>);</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>            <span class="keywordflow">if</span> (ec &amp;&amp; config.<a class="code hl_variable" href="classripple_1_1Config.html#afb69aac262fbf5bce2c5e609a878e80a">SSL_VERIFY_DIR</a>.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>                Throw&lt;std::runtime_error&gt;(boost::str(</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>                    boost::format(<span class="stringliteral">&quot;Failed to set_default_verify_paths: %s&quot;</span>) %</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>                    ec.message()));</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        }</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        {</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>            <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>.load_verify_file(config.<a class="code hl_variable" href="classripple_1_1Config.html#ac9ecf69a240758ad0277bd60e63ff961">SSL_VERIFY_FILE</a>);</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        }</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        <span class="keywordflow">if</span> (!config.<a class="code hl_variable" href="classripple_1_1Config.html#afb69aac262fbf5bce2c5e609a878e80a">SSL_VERIFY_DIR</a>.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        {</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>            <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>.add_verify_path(config.<a class="code hl_variable" href="classripple_1_1Config.html#afb69aac262fbf5bce2c5e609a878e80a">SSL_VERIFY_DIR</a>, ec);</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>            <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>                Throw&lt;std::runtime_error&gt;(boost::str(</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                    boost::format(<span class="stringliteral">&quot;Failed to add verify path: %s&quot;</span>) %</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>                    ec.message()));</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        }</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    }</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    boost::asio::ssl::context&amp;</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#abe99cfb91ab3019fc9b1333a8f6760f1">   74</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#abe99cfb91ab3019fc9b1333a8f6760f1">context</a>()</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    {</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>        <span class="keywordflow">return</span> <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>;</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    }</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keywordtype">bool</span></div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">   80</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>()<span class="keyword"> const</span></div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        <span class="keywordflow">return</span> <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">verify_</a>;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    }</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <span class="keyword">template</span> &lt;</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        <span class="keyword">class </span>T,</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>        <span class="keyword">class </span>= <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                T,</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&gt;&gt;::</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                value ||</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                T,</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&amp;&gt;&gt;::</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>                value&gt;&gt;</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>    boost::system::error_code</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a33af7033012cc39d9645120dc8d5eca4">  109</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a33af7033012cc39d9645120dc8d5eca4">preConnectVerify</a>(T&amp; strm, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; host)</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    {</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>        boost::system::error_code ec;</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        <span class="keywordflow">if</span> (!SSL_set_tlsext_host_name(strm.native_handle(), host.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/c_str.html">c_str</a>()))</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        {</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>            ec.assign(</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>                <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(::ERR_get_error()),</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>                boost::asio::error::get_ssl_category());</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        }</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!<a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>())</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        {</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            strm.set_verify_mode(boost::asio::ssl::verify_none, ec);</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        }</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        <span class="keywordflow">return</span> ec;</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    }</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span> </div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    <span class="keyword">template</span> &lt;</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        <span class="keyword">class </span>T,</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <span class="keyword">class </span>= <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>                T,</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&gt;&gt;::</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                value ||</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>                T,</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>                boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&amp;&gt;&gt;::</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>                value&gt;&gt;</div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    boost::system::error_code</div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a9ccc8776cfeb39267308d8b412379a47">  144</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a9ccc8776cfeb39267308d8b412379a47">postConnectVerify</a>(T&amp; strm, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; host)</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    {</div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        boost::system::error_code ec;</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span> </div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        <span class="keywordflow">if</span> (<a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>())</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        {</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>            strm.set_verify_mode(boost::asio::ssl::verify_peer, ec);</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            <span class="keywordflow">if</span> (!ec)</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            {</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                strm.set_verify_callback(</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                    <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                        &amp;<a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a07a3a606e568cdce3b15e260fbfbe4c0">rfc2818_verify</a>,</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                        host,</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>                        std::placeholders::_1,</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>                        std::placeholders::_2,</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>                        <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">j_</a>),</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                    ec);</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            }</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>        }</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span> </div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>        <span class="keywordflow">return</span> ec;</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>    }</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span> </div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>    <span class="keyword">static</span> <span class="keywordtype">bool</span></div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a07a3a606e568cdce3b15e260fbfbe4c0">  177</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a07a3a606e568cdce3b15e260fbfbe4c0">rfc2818_verify</a>(</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; domain,</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        <span class="keywordtype">bool</span> preverified,</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>        boost::asio::ssl::verify_context&amp; ctx,</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>    {</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        <span class="keywordflow">if</span> (boost::asio::ssl::rfc2818_verification(domain)(preverified, ctx))</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span> </div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        JLOG(j.<a class="code hl_function" href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">warn</a>()) &lt;&lt; <span class="stringliteral">&quot;Outbound SSL connection to &quot;</span> &lt;&lt; domain</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                       &lt;&lt; <span class="stringliteral">&quot; fails certificate verification&quot;</span>;</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>    }</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">  192</a></span>    boost::asio::ssl::context <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>;</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">  193</a></span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">j_</a>;</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">  194</a></span>    <span class="keywordtype">bool</span> <span class="keyword">const</span> <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">verify_</a>;</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>};</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpl/basics/Log.h&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/basics/contract.h&gt;</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;xrpl/beast/utility/Journal.h&gt;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;xrpl/net/RegisterSSLCerts.h&gt;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &lt;boost/asio.hpp&gt;</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &lt;boost/asio/ip/tcp.hpp&gt;</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &lt;boost/asio/ssl.hpp&gt;</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &lt;boost/format.hpp&gt;</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html">   35</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1HTTPClientSSLContext.html">HTTPClientSSLContext</a></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>{</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a2df5fa7a76af935e1aae10e60a18c7b4">   38</a></span>    <span class="keyword">explicit</span> <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a2df5fa7a76af935e1aae10e60a18c7b4">HTTPClientSSLContext</a>(</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; sslVerifyDir,</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; sslVerifyFile,</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        <span class="keywordtype">bool</span> <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>,</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j,</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        boost::asio::ssl::context_base::method method =</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            boost::asio::ssl::context::sslv23)</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        : <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>{method}, <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">j_</a>(j), <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">verify_</a>{<a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>}</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    {</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        boost::system::error_code ec;</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        <span class="keywordflow">if</span> (sslVerifyFile.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        {</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>            <a class="code hl_function" href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">registerSSLCerts</a>(<a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>, ec, <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">j_</a>);</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>            <span class="keywordflow">if</span> (ec &amp;&amp; sslVerifyDir.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>                Throw&lt;std::runtime_error&gt;(boost::str(</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>                    boost::format(<span class="stringliteral">&quot;Failed to set_default_verify_paths: %s&quot;</span>) %</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>                    ec.message()));</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        }</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        {</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>.load_verify_file(sslVerifyFile);</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        }</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        <span class="keywordflow">if</span> (!sslVerifyDir.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">empty</a>())</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        {</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>            <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>.add_verify_path(sslVerifyDir, ec);</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>            <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                Throw&lt;std::runtime_error&gt;(boost::str(</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>                    boost::format(<span class="stringliteral">&quot;Failed to add verify path: %s&quot;</span>) %</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>                    ec.message()));</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        }</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    }</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    boost::asio::ssl::context&amp;</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#abe99cfb91ab3019fc9b1333a8f6760f1">   75</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#abe99cfb91ab3019fc9b1333a8f6760f1">context</a>()</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    {</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        <span class="keywordflow">return</span> <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>;</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    }</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span> </div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keywordtype">bool</span></div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">   81</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <span class="keywordflow">return</span> <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">verify_</a>;</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    }</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    <span class="keyword">template</span> &lt;</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>        <span class="keyword">class </span>T,</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        <span class="keyword">class </span>= <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                T,</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&gt;&gt;::</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                value ||</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                T,</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>                boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&amp;&gt;&gt;::</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>                value&gt;&gt;</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>    boost::system::error_code</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a33af7033012cc39d9645120dc8d5eca4">  110</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a33af7033012cc39d9645120dc8d5eca4">preConnectVerify</a>(T&amp; strm, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; host)</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    {</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        boost::system::error_code ec;</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        <span class="keywordflow">if</span> (!SSL_set_tlsext_host_name(strm.native_handle(), host.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/c_str.html">c_str</a>()))</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        {</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>            ec.assign(</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>                <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(::ERR_get_error()),</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>                boost::asio::error::get_ssl_category());</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        }</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (!<a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>())</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        {</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            strm.set_verify_mode(boost::asio::ssl::verify_none, ec);</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        }</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        <span class="keywordflow">return</span> ec;</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    }</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>    <span class="keyword">template</span> &lt;</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <span class="keyword">class </span>T,</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        <span class="keyword">class </span>= <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                T,</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&gt;&gt;::</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>                value ||</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a>&lt;</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>                T,</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>                boost::asio::ssl::stream&lt;boost::asio::ip::tcp::socket&amp;&gt;&gt;::</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>                value&gt;&gt;</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    boost::system::error_code</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a9ccc8776cfeb39267308d8b412379a47">  145</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a9ccc8776cfeb39267308d8b412379a47">postConnectVerify</a>(T&amp; strm, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; host)</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    {</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        boost::system::error_code ec;</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span> </div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        <span class="keywordflow">if</span> (<a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">sslVerify</a>())</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        {</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            strm.set_verify_mode(boost::asio::ssl::verify_peer, ec);</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            <span class="keywordflow">if</span> (!ec)</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>            {</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                strm.set_verify_callback(</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                    <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                        &amp;<a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a07a3a606e568cdce3b15e260fbfbe4c0">rfc2818_verify</a>,</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>                        host,</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>                        std::placeholders::_1,</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>                        std::placeholders::_2,</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                        <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">j_</a>),</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                    ec);</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>            }</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>        }</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        <span class="keywordflow">return</span> ec;</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    }</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span> </div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    <span class="keyword">static</span> <span class="keywordtype">bool</span></div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a07a3a606e568cdce3b15e260fbfbe4c0">  178</a></span>    <a class="code hl_function" href="classripple_1_1HTTPClientSSLContext.html#a07a3a606e568cdce3b15e260fbfbe4c0">rfc2818_verify</a>(</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; domain,</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>        <span class="keywordtype">bool</span> preverified,</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        boost::asio::ssl::verify_context&amp; ctx,</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>        <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>    {</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        <span class="keywordflow">if</span> (boost::asio::ssl::rfc2818_verification(domain)(preverified, ctx))</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>            <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span> </div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>        JLOG(j.<a class="code hl_function" href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">warn</a>()) &lt;&lt; <span class="stringliteral">&quot;Outbound SSL connection to &quot;</span> &lt;&lt; domain</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>                       &lt;&lt; <span class="stringliteral">&quot; fails certificate verification&quot;</span>;</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>    }</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span> </div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">  193</a></span>    boost::asio::ssl::context <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ssl_context_</a>;</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">  194</a></span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">j_</a>;</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno"><a class="line" href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">  195</a></span>    <span class="keywordtype">bool</span> <span class="keyword">const</span> <a class="code hl_variable" href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">verify_</a>;</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>};</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span> </div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span> </div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
 <div class="ttc" id="abind_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a></div><div class="ttdeci">T bind(T... args)</div></div>
 <div class="ttc" id="ac_str_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/c_str.html">std::string::c_str</a></div><div class="ttdeci">T c_str(T... args)</div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00059">Journal.h:60</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_ad8fefe3e8ad583e1ed1bf02094ac3d8f"><div class="ttname"><a href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">beast::Journal::warn</a></div><div class="ttdeci">Stream warn() const</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00340">Journal.h:340</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html"><div class="ttname"><a href="classripple_1_1Config.html">ripple::Config</a></div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00085">Config.h:86</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_ac9ecf69a240758ad0277bd60e63ff961"><div class="ttname"><a href="classripple_1_1Config.html#ac9ecf69a240758ad0277bd60e63ff961">ripple::Config::SSL_VERIFY_FILE</a></div><div class="ttdeci">std::string SSL_VERIFY_FILE</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00216">Config.h:216</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_afb69aac262fbf5bce2c5e609a878e80a"><div class="ttname"><a href="classripple_1_1Config.html#afb69aac262fbf5bce2c5e609a878e80a">ripple::Config::SSL_VERIFY_DIR</a></div><div class="ttdeci">std::string SSL_VERIFY_DIR</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00217">Config.h:217</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html">ripple::HTTPClientSSLContext</a></div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00036">HTTPClientSSLContext.h:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a07a3a606e568cdce3b15e260fbfbe4c0"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a07a3a606e568cdce3b15e260fbfbe4c0">ripple::HTTPClientSSLContext::rfc2818_verify</a></div><div class="ttdeci">static bool rfc2818_verify(std::string const &amp;domain, bool preverified, boost::asio::ssl::verify_context &amp;ctx, beast::Journal j)</div><div class="ttdoc">callback invoked for name verification - just passes through to the asio rfc2818 implementation.</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00177">HTTPClientSSLContext.h:177</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a33af7033012cc39d9645120dc8d5eca4"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a33af7033012cc39d9645120dc8d5eca4">ripple::HTTPClientSSLContext::preConnectVerify</a></div><div class="ttdeci">boost::system::error_code preConnectVerify(T &amp;strm, std::string const &amp;host)</div><div class="ttdoc">invoked before connect/async_connect on an ssl stream to setup name verification.</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00109">HTTPClientSSLContext.h:109</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a36e03e4991fc8b5a111a5ed0b4ccc286"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">ripple::HTTPClientSSLContext::verify_</a></div><div class="ttdeci">bool const verify_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00194">HTTPClientSSLContext.h:194</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a483cac371803ac0aa52dbf804dc54a6b"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">ripple::HTTPClientSSLContext::sslVerify</a></div><div class="ttdeci">bool sslVerify() const</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00080">HTTPClientSSLContext.h:80</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a64ba6e3cd4def9f96663add6789f1667"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ripple::HTTPClientSSLContext::ssl_context_</a></div><div class="ttdeci">boost::asio::ssl::context ssl_context_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00192">HTTPClientSSLContext.h:192</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a9ccc8776cfeb39267308d8b412379a47"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a9ccc8776cfeb39267308d8b412379a47">ripple::HTTPClientSSLContext::postConnectVerify</a></div><div class="ttdeci">boost::system::error_code postConnectVerify(T &amp;strm, std::string const &amp;host)</div><div class="ttdoc">invoked after connect/async_connect but before sending data on an ssl stream - to setup name verifica...</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00144">HTTPClientSSLContext.h:144</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_abe99cfb91ab3019fc9b1333a8f6760f1"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#abe99cfb91ab3019fc9b1333a8f6760f1">ripple::HTTPClientSSLContext::context</a></div><div class="ttdeci">boost::asio::ssl::context &amp; context()</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00074">HTTPClientSSLContext.h:74</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_ac586d053a7aea2aa6f3c7b08a918bc3a"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">ripple::HTTPClientSSLContext::j_</a></div><div class="ttdeci">beast::Journal const j_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00193">HTTPClientSSLContext.h:193</a></div></div>
-<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_ac963790804e59168c816f69d93661875"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#ac963790804e59168c816f69d93661875">ripple::HTTPClientSSLContext::HTTPClientSSLContext</a></div><div class="ttdeci">HTTPClientSSLContext(Config const &amp;config, beast::Journal j, boost::asio::ssl::context_base::method method=boost::asio::ssl::context::sslv23)</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00039">HTTPClientSSLContext.h:39</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html">ripple::HTTPClientSSLContext</a></div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00035">HTTPClientSSLContext.h:36</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a07a3a606e568cdce3b15e260fbfbe4c0"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a07a3a606e568cdce3b15e260fbfbe4c0">ripple::HTTPClientSSLContext::rfc2818_verify</a></div><div class="ttdeci">static bool rfc2818_verify(std::string const &amp;domain, bool preverified, boost::asio::ssl::verify_context &amp;ctx, beast::Journal j)</div><div class="ttdoc">callback invoked for name verification - just passes through to the asio rfc2818 implementation.</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00178">HTTPClientSSLContext.h:178</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a2df5fa7a76af935e1aae10e60a18c7b4"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a2df5fa7a76af935e1aae10e60a18c7b4">ripple::HTTPClientSSLContext::HTTPClientSSLContext</a></div><div class="ttdeci">HTTPClientSSLContext(std::string const &amp;sslVerifyDir, std::string const &amp;sslVerifyFile, bool sslVerify, beast::Journal j, boost::asio::ssl::context_base::method method=boost::asio::ssl::context::sslv23)</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00038">HTTPClientSSLContext.h:38</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a33af7033012cc39d9645120dc8d5eca4"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a33af7033012cc39d9645120dc8d5eca4">ripple::HTTPClientSSLContext::preConnectVerify</a></div><div class="ttdeci">boost::system::error_code preConnectVerify(T &amp;strm, std::string const &amp;host)</div><div class="ttdoc">invoked before connect/async_connect on an ssl stream to setup name verification.</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00110">HTTPClientSSLContext.h:110</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a36e03e4991fc8b5a111a5ed0b4ccc286"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a36e03e4991fc8b5a111a5ed0b4ccc286">ripple::HTTPClientSSLContext::verify_</a></div><div class="ttdeci">bool const verify_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00195">HTTPClientSSLContext.h:195</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a483cac371803ac0aa52dbf804dc54a6b"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a483cac371803ac0aa52dbf804dc54a6b">ripple::HTTPClientSSLContext::sslVerify</a></div><div class="ttdeci">bool sslVerify() const</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00081">HTTPClientSSLContext.h:81</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a64ba6e3cd4def9f96663add6789f1667"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a64ba6e3cd4def9f96663add6789f1667">ripple::HTTPClientSSLContext::ssl_context_</a></div><div class="ttdeci">boost::asio::ssl::context ssl_context_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00193">HTTPClientSSLContext.h:193</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_a9ccc8776cfeb39267308d8b412379a47"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#a9ccc8776cfeb39267308d8b412379a47">ripple::HTTPClientSSLContext::postConnectVerify</a></div><div class="ttdeci">boost::system::error_code postConnectVerify(T &amp;strm, std::string const &amp;host)</div><div class="ttdoc">invoked after connect/async_connect but before sending data on an ssl stream - to setup name verifica...</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00145">HTTPClientSSLContext.h:145</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_abe99cfb91ab3019fc9b1333a8f6760f1"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#abe99cfb91ab3019fc9b1333a8f6760f1">ripple::HTTPClientSSLContext::context</a></div><div class="ttdeci">boost::asio::ssl::context &amp; context()</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00075">HTTPClientSSLContext.h:75</a></div></div>
+<div class="ttc" id="aclassripple_1_1HTTPClientSSLContext_html_ac586d053a7aea2aa6f3c7b08a918bc3a"><div class="ttname"><a href="classripple_1_1HTTPClientSSLContext.html#ac586d053a7aea2aa6f3c7b08a918bc3a">ripple::HTTPClientSSLContext::j_</a></div><div class="ttdeci">beast::Journal const j_</div><div class="ttdef"><b>Definition:</b> <a href="HTTPClientSSLContext_8h_source.html#l00194">HTTPClientSSLContext.h:194</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/empty.html">std::string::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="aenable_if_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a></div></div>
 <div class="ttc" id="ais_same_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_same.html">std::is_same</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00025">algorithm.h:25</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a3d2402219c73a313f9073212b2aefe16"><div class="ttname"><a href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">ripple::registerSSLCerts</a></div><div class="ttdeci">void registerSSLCerts(boost::asio::ssl::context &amp;ctx, boost::system::error_code &amp;ec, beast::Journal j)</div><div class="ttdoc">Register default SSL certificates.</div><div class="ttdef"><b>Definition:</b> <a href="RegisterSSLCerts_8cpp_source.html#l00038">RegisterSSLCerts.cpp:38</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a3d2402219c73a313f9073212b2aefe16"><div class="ttname"><a href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">ripple::registerSSLCerts</a></div><div class="ttdeci">void registerSSLCerts(boost::asio::ssl::context &amp;, boost::system::error_code &amp;, beast::Journal j)</div><div class="ttdoc">Register default SSL certificates.</div><div class="ttdef"><b>Definition:</b> <a href="RegisterSSLCerts_8cpp_source.html#l00038">RegisterSSLCerts.cpp:38</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

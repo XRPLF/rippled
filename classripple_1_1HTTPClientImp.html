@@ -154,8 +154,8 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a0b814bde19c4a0c87d61430a1c24a073"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPClient.html#a0b814bde19c4a0c87d61430a1c24a073">initializeSSLContext</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="separator:a0b814bde19c4a0c87d61430a1c24a073"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dd77dd1a472087f2e23cd889e7e4b88"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPClient.html#a5dd77dd1a472087f2e23cd889e7e4b88">initializeSSLContext</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;sslVerifyDir, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;sslVerifyFile, bool sslVerify, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="separator:a5dd77dd1a472087f2e23cd889e7e4b88"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1edef531595bafc06cbb28753944c9dc"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPClient.html#a1edef531595bafc06cbb28753944c9dc">get</a> (bool bSSL, boost::asio::io_service &amp;io_service, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/deque.html">std::deque</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; deqSites, unsigned short const port, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> responseMax, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> timeout, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(boost::system::error_code const &amp;ecResult, int iStatus, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strData)&gt; complete, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> &amp;j)</td></tr>
 <tr class="separator:a1edef531595bafc06cbb28753944c9dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25ee7c05dce684eb784b1bb699221a08"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HTTPClient.html#a25ee7c05dce684eb784b1bb699221a08">get</a> (bool bSSL, boost::asio::io_service &amp;io_service, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> strSite, unsigned short const port, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> responseMax, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> timeout, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(boost::system::error_code const &amp;ecResult, int iStatus, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strData)&gt; complete, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> &amp;j)</td></tr>
@@ -214,7 +214,7 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00050">50</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00053">53</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="af01d21d9cf38410df8cad3071a6dc553" name="af01d21d9cf38410df8cad3071a6dc553"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af01d21d9cf38410df8cad3071a6dc553">&#9670;&#160;</a></span>pointer</h2>
@@ -236,7 +236,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00510">510</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00513">513</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -279,7 +279,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00054">54</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00057">57</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -316,7 +316,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00072">72</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00075">75</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -364,7 +364,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00091">91</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00094">94</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -412,7 +412,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00114">114</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00117">117</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -431,7 +431,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00142">142</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00145">145</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -451,7 +451,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00182">182</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00185">185</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -471,7 +471,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00221">221</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00224">224</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -501,7 +501,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00231">231</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00234">234</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -521,7 +521,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00264">264</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00267">267</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -541,7 +541,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00308">308</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00311">311</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -571,7 +571,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00336">336</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00339">339</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -601,7 +601,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00365">365</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00368">368</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -631,7 +631,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00437">437</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00440">440</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -667,12 +667,12 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00469">469</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00472">472</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a0b814bde19c4a0c87d61430a1c24a073" name="a0b814bde19c4a0c87d61430a1c24a073"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0b814bde19c4a0c87d61430a1c24a073">&#9670;&#160;</a></span>initializeSSLContext()</h2>
+<a id="a5dd77dd1a472087f2e23cd889e7e4b88" name="a5dd77dd1a472087f2e23cd889e7e4b88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5dd77dd1a472087f2e23cd889e7e4b88">&#9670;&#160;</a></span>initializeSSLContext()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -683,8 +683,20 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">void ripple::HTTPClient::initializeSSLContext </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sslVerifyDir</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>sslVerifyFile</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>sslVerify</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -705,7 +717,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00039">39</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00038">38</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -785,7 +797,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00544">544</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00547">547</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -865,7 +877,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00564">564</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00567">567</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -945,7 +957,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00586">586</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00589">589</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -970,7 +982,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00512">512</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00515">515</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -994,7 +1006,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00513">513</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00516">516</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1018,7 +1030,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00514">514</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00517">517</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1042,7 +1054,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00515">515</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00518">518</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1066,7 +1078,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00516">516</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00519">519</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1090,7 +1102,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00517">517</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00520">520</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1114,7 +1126,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00518">518</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00521">521</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1138,7 +1150,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00519">519</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00522">522</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1162,7 +1174,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00520">520</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00523">523</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1186,7 +1198,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00521">521</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00524">524</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1210,7 +1222,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00522">522</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00525">525</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1234,7 +1246,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00524">524</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00527">527</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1258,7 +1270,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00529">529</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00532">532</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1282,7 +1294,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00531">531</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00534">534</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1306,7 +1318,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00534">534</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00537">537</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1330,7 +1342,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00536">536</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00539">539</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1354,7 +1366,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00537">537</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00540">540</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1378,7 +1390,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00538">538</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00541">541</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -1402,7 +1414,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8h_source.html#l00044">44</a> of file <a class="el" href="HTTPClient_8h_source.html">HTTPClient.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8h_source.html#l00043">43</a> of file <a class="el" href="HTTPClient_8h_source.html">HTTPClient.h</a>.</p>
 
 </div>
 </div>

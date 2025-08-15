@@ -3046,6 +3046,9 @@ Functions</h2></td></tr>
 <tr class="memitem:afce562bec88f81bc110dbdc1794eadcd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afce562bec88f81bc110dbdc1794eadcd">secure_erase</a> (void *dest, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> bytes)</td></tr>
 <tr class="memdesc:afce562bec88f81bc110dbdc1794eadcd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempts to clear the given blob of memory.  <a href="namespaceripple.html#afce562bec88f81bc110dbdc1794eadcd">More...</a><br /></td></tr>
 <tr class="separator:afce562bec88f81bc110dbdc1794eadcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d2402219c73a313f9073212b2aefe16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">registerSSLCerts</a> (boost::asio::ssl::context &amp;, boost::system::error_code &amp;, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a3d2402219c73a313f9073212b2aefe16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register default SSL certificates.  <a href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">More...</a><br /></td></tr>
+<tr class="separator:a3d2402219c73a313f9073212b2aefe16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08a13b62b18272366f788632359e8793"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a> (<a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;v)</td></tr>
 <tr class="memdesc:a08a13b62b18272366f788632359e8793"><td class="mdescLeft">&#160;</td><td class="mdescRight">Convert AccountID to base58 checked string.  <a href="namespaceripple.html#a08a13b62b18272366f788632359e8793">More...</a><br /></td></tr>
 <tr class="separator:a08a13b62b18272366f788632359e8793"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -4961,20 +4964,6 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="memitem:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6afbbc2fe9c45f1a268aeda92e6108ba">cleanupOnAccountDelete</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="structripple_1_1Keylet.html">Keylet</a> const &amp;ownerDirKeylet, <a class="el" href="namespaceripple.html#a40d4978b34a7cdb77b860efda3f16a7a">EntryDeleter</a> const &amp;deleter, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> &gt; maxNodesToDelete=std::nullopt)</td></tr>
 <tr class="memdesc:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cleanup owner directory entries on account delete.  <a href="namespaceripple.html#a6afbbc2fe9c45f1a268aeda92e6108ba">More...</a><br /></td></tr>
 <tr class="separator:a6afbbc2fe9c45f1a268aeda92e6108ba"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d2402219c73a313f9073212b2aefe16"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">registerSSLCerts</a> (boost::asio::ssl::context &amp;, boost::system::error_code &amp;, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="memdesc:a3d2402219c73a313f9073212b2aefe16"><td class="mdescLeft">&#160;</td><td class="mdescRight">Register default SSL certificates.  <a href="namespaceripple.html#a3d2402219c73a313f9073212b2aefe16">More...</a><br /></td></tr>
-<tr class="separator:a3d2402219c73a313f9073212b2aefe16"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a308b7ff6498ad19c844c1d36b5f0d7ae"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a308b7ff6498ad19c844c1d36b5f0d7ae">createHTTPPost</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strHost, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strMsg, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;mapRequestHeaders)</td></tr>
-<tr class="separator:a308b7ff6498ad19c844c1d36b5f0d7ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa5bf57e1a7b6f174338fefbdfbc6ded6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa5bf57e1a7b6f174338fefbdfbc6ded6">JSONRPCRequest</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strMethod, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;id)</td></tr>
-<tr class="separator:aa5bf57e1a7b6f174338fefbdfbc6ded6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab4682f4bd2ebab9ae978712b0e2ea894"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab4682f4bd2ebab9ae978712b0e2ea894">rpcCmdToJson</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;args, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;retParams, unsigned int apiVersion, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="separator:ab4682f4bd2ebab9ae978712b0e2ea894"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1675cc24642888c8fd2c1b39923086b0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; int, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1675cc24642888c8fd2c1b39923086b0">rpcClient</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;args, <a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs, unsigned int apiVersion, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;headers={})</td></tr>
-<tr class="memdesc:a1675cc24642888c8fd2c1b39923086b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal invocation of <a class="el" href="namespaceripple_1_1RPC.html" title="API version numbers used in later API versions.">RPC</a> client.  <a href="namespaceripple.html#a1675cc24642888c8fd2c1b39923086b0">More...</a><br /></td></tr>
-<tr class="separator:a1675cc24642888c8fd2c1b39923086b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60f56d685f142efe7844074b7785ea6d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1RPCSub.html">RPCSub</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a60f56d685f142efe7844074b7785ea6d">make_RPCSub</a> (<a class="el" href="classripple_1_1InfoSub_1_1Source.html">InfoSub::Source</a> &amp;source, boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;jobQueue, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strUrl, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strUsername, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPassword, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs)</td></tr>
-<tr class="separator:a60f56d685f142efe7844074b7785ea6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab289776c60bd705e640136f8248adff9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab289776c60bd705e640136f8248adff9">getFeatureValue</a> (boost::beast::http::fields const  &amp;headers, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const  &amp;feature)</td></tr>
 <tr class="memdesc:ab289776c60bd705e640136f8248adff9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get feature's header value.  <a href="namespaceripple.html#ab289776c60bd705e640136f8248adff9">More...</a><br /></td></tr>
 <tr class="separator:ab289776c60bd705e640136f8248adff9"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5097,6 +5086,17 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="separator:a35972e4575b5b8c888a45c304c60d916"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa1d2bbcba6f5e3838895165723dae5f0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa1d2bbcba6f5e3838895165723dae5f0">forwardedFor</a> (<a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> const &amp;request)</td></tr>
 <tr class="separator:aa1d2bbcba6f5e3838895165723dae5f0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a308b7ff6498ad19c844c1d36b5f0d7ae"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a308b7ff6498ad19c844c1d36b5f0d7ae">createHTTPPost</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strHost, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strMsg, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;mapRequestHeaders)</td></tr>
+<tr class="separator:a308b7ff6498ad19c844c1d36b5f0d7ae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5bf57e1a7b6f174338fefbdfbc6ded6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aa5bf57e1a7b6f174338fefbdfbc6ded6">JSONRPCRequest</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strMethod, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;params, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;id)</td></tr>
+<tr class="separator:aa5bf57e1a7b6f174338fefbdfbc6ded6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4682f4bd2ebab9ae978712b0e2ea894"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ab4682f4bd2ebab9ae978712b0e2ea894">rpcCmdToJson</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;args, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;retParams, unsigned int apiVersion, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="separator:ab4682f4bd2ebab9ae978712b0e2ea894"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1675cc24642888c8fd2c1b39923086b0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; int, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1675cc24642888c8fd2c1b39923086b0">rpcClient</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;args, <a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;config, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs, unsigned int apiVersion, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const  &amp;headers={})</td></tr>
+<tr class="memdesc:a1675cc24642888c8fd2c1b39923086b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Internal invocation of <a class="el" href="namespaceripple_1_1RPC.html" title="API version numbers used in later API versions.">RPC</a> client.  <a href="namespaceripple.html#a1675cc24642888c8fd2c1b39923086b0">More...</a><br /></td></tr>
+<tr class="separator:a1675cc24642888c8fd2c1b39923086b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a60f56d685f142efe7844074b7785ea6d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1RPCSub.html">RPCSub</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a60f56d685f142efe7844074b7785ea6d">make_RPCSub</a> (<a class="el" href="classripple_1_1InfoSub_1_1Source.html">InfoSub::Source</a> &amp;source, boost::asio::io_service &amp;io_service, <a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;jobQueue, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strUrl, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strUsername, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPassword, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs)</td></tr>
+<tr class="separator:a60f56d685f142efe7844074b7785ea6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7d1335ce20e70be939ceea8a8f6945f"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae7d1335ce20e70be939ceea8a8f6945f">isStatusRequest</a> (<a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> const &amp;request)</td></tr>
 <tr class="separator:ae7d1335ce20e70be939ceea8a8f6945f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac597446213f304f13375429394c69909"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structripple_1_1Handoff.html">Handoff</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac597446213f304f13375429394c69909">statusRequestResponse</a> (<a class="el" href="namespaceripple.html#aa265217edeb8282e636c78b50049f4c0">http_request_type</a> const &amp;request, boost::beast::http::status status)</td></tr>
@@ -5942,6 +5942,8 @@ Variables</h2></td></tr>
 <tr class="separator:afa493631a6ea5b71b91ceb86576fc328"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1330e8eb921148a60725bcfc77d0a093"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="classripple_1_1Number.html">Number</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a1330e8eb921148a60725bcfc77d0a093">one</a> {1000000000000000, -15, <a class="el" href="structripple_1_1Number_1_1unchecked.html">Number::unchecked</a>{}}</td></tr>
 <tr class="separator:a1330e8eb921148a60725bcfc77d0a093"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cce8c2bb8c05b8dc96301e32267979b"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1HTTPClientSSLContext.html">HTTPClientSSLContext</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2cce8c2bb8c05b8dc96301e32267979b">httpClientSSLContext</a></td></tr>
+<tr class="separator:a2cce8c2bb8c05b8dc96301e32267979b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f7698f565e77bb2e9e073143fdcc8f7"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1detail_1_1AccountIdCache.html">detail::AccountIdCache</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2f7698f565e77bb2e9e073143fdcc8f7">accountIdCache</a></td></tr>
 <tr class="separator:a2f7698f565e77bb2e9e073143fdcc8f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae898d2883c4703f837647d90acd7c2d5"><td class="memItemLeft" align="right" valign="top">static bool const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae898d2883c4703f837647d90acd7c2d5">readOnlySet</a></td></tr>
@@ -6063,8 +6065,6 @@ Variables</h2></td></tr>
 <tr class="separator:a1a2328148244d911a8c4f04b96aa2605"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2f9db12c47b9df1c9d34e8191159a6da"><td class="memItemLeft" align="right" valign="top">constexpr struct <a class="el" href="structripple_1_1batch__view__t.html">ripple::batch_view_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2f9db12c47b9df1c9d34e8191159a6da">batch_view</a></td></tr>
 <tr class="separator:a2f9db12c47b9df1c9d34e8191159a6da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2cce8c2bb8c05b8dc96301e32267979b"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1HTTPClientSSLContext.html">HTTPClientSSLContext</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2cce8c2bb8c05b8dc96301e32267979b">httpClientSSLContext</a></td></tr>
-<tr class="separator:a2cce8c2bb8c05b8dc96301e32267979b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a329f20572687d73e31094b0717ea7424"><td class="memItemLeft" align="right" valign="top">static constexpr char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a329f20572687d73e31094b0717ea7424">FEATURE_COMPR</a> [] = &quot;compr&quot;</td></tr>
 <tr class="separator:a329f20572687d73e31094b0717ea7424"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8096ae8c38e0d57b54d62311a0ae0e3"><td class="memItemLeft" align="right" valign="top">static constexpr char&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af8096ae8c38e0d57b54d62311a0ae0e3">FEATURE_VPRR</a> [] = &quot;vprr&quot;</td></tr>
@@ -13943,6 +13943,45 @@ template&lt;class T &gt; </div>
 <p ><a href="http://www.daemonology.net/blog/2014-09-04-how-to-zero-a-buffer.html">http://www.daemonology.net/blog/2014-09-04-how-to-zero-a-buffer.html</a> <a href="http://www.daemonology.net/blog/2014-09-06-zeroing-buffers-is-insufficient.html">http://www.daemonology.net/blog/2014-09-06-zeroing-buffers-is-insufficient.html</a> </p>
 
 <p class="definition">Definition at line <a class="el" href="secure__erase_8cpp_source.html#l00029">29</a> of file <a class="el" href="secure__erase_8cpp_source.html">secure_erase.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a3d2402219c73a313f9073212b2aefe16" name="a3d2402219c73a313f9073212b2aefe16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d2402219c73a313f9073212b2aefe16">&#9670;&#160;</a></span>registerSSLCerts()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::registerSSLCerts </td>
+          <td>(</td>
+          <td class="paramtype">boost::asio::ssl::context &amp;&#160;</td>
+          <td class="paramname"><em>ctx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::system::error_code &amp;&#160;</td>
+          <td class="paramname"><em>ec</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Register default SSL certificates. </p>
+<p >Register the system default SSL root certificates. On linux/mac, this just calls asio's <code>set_default_verify_paths</code> to look in standard operating system locations. On windows, it uses the OS certificate store accessible via CryptoAPI. </p>
+
+<p class="definition">Definition at line <a class="el" href="RegisterSSLCerts_8cpp_source.html#l00038">38</a> of file <a class="el" href="RegisterSSLCerts_8cpp_source.html">RegisterSSLCerts.cpp</a>.</p>
 
 </div>
 </div>
@@ -38827,7 +38866,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l01128">1128</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l01129">1129</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -39035,7 +39074,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00428">428</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Config_8cpp_source.html#l00429">429</a> of file <a class="el" href="Config_8cpp_source.html">Config.cpp</a>.</p>
 
 </div>
 </div>
@@ -43596,276 +43635,6 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
-<a id="a3d2402219c73a313f9073212b2aefe16" name="a3d2402219c73a313f9073212b2aefe16"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d2402219c73a313f9073212b2aefe16">&#9670;&#160;</a></span>registerSSLCerts()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::registerSSLCerts </td>
-          <td>(</td>
-          <td class="paramtype">boost::asio::ssl::context &amp;&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">boost::system::error_code &amp;&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>j</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Register default SSL certificates. </p>
-<p >Register the system default SSL root certificates. On linux/mac, this just calls asio's <code>set_default_verify_paths</code> to look in standard operating system locations. On windows, it uses the OS certificate store accessible via CryptoAPI. </p>
-
-<p class="definition">Definition at line <a class="el" href="RegisterSSLCerts_8cpp_source.html#l00038">38</a> of file <a class="el" href="RegisterSSLCerts_8cpp_source.html">RegisterSSLCerts.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a308b7ff6498ad19c844c1d36b5f0d7ae" name="a308b7ff6498ad19c844c1d36b5f0d7ae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a308b7ff6498ad19c844c1d36b5f0d7ae">&#9670;&#160;</a></span>createHTTPPost()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::createHTTPPost </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
-          <td class="paramname"><em>strHost</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
-          <td class="paramname"><em>strPath</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
-          <td class="paramname"><em>strMsg</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>mapRequestHeaders</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l00063">63</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aa5bf57e1a7b6f174338fefbdfbc6ded6" name="aa5bf57e1a7b6f174338fefbdfbc6ded6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa5bf57e1a7b6f174338fefbdfbc6ded6">&#9670;&#160;</a></span>JSONRPCRequest()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::JSONRPCRequest </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
-          <td class="paramname"><em>strMethod</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
-          <td class="paramname"><em>params</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
-          <td class="paramname"><em>id</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01338">1338</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
-
-</div>
-</div>
-<a id="ab4682f4bd2ebab9ae978712b0e2ea894" name="ab4682f4bd2ebab9ae978712b0e2ea894"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4682f4bd2ebab9ae978712b0e2ea894">&#9670;&#160;</a></span>rpcCmdToJson()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::rpcCmdToJson </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>args</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
-          <td class="paramname"><em>retParams</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned int&#160;</td>
-          <td class="paramname"><em>apiVersion</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>j</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01440">1440</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a1675cc24642888c8fd2c1b39923086b0" name="a1675cc24642888c8fd2c1b39923086b0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1675cc24642888c8fd2c1b39923086b0">&#9670;&#160;</a></span>rpcClient()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; int, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt; ripple::rpcClient </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>args</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
-          <td class="paramname"><em>config</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;&#160;</td>
-          <td class="paramname"><em>logs</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned int&#160;</td>
-          <td class="paramname"><em>apiVersion</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>headers</em> = <code>{}</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Internal invocation of <a class="el" href="namespaceripple_1_1RPC.html" title="API version numbers used in later API versions.">RPC</a> client. </p>
-<p >Used by both rippled command line as well as rippled unit tests </p>
-
-<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01481">1481</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a60f56d685f142efe7844074b7785ea6d" name="a60f56d685f142efe7844074b7785ea6d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60f56d685f142efe7844074b7785ea6d">&#9670;&#160;</a></span>make_RPCSub()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1RPCSub.html">RPCSub</a> &gt; ripple::make_RPCSub </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1InfoSub_1_1Source.html">InfoSub::Source</a> &amp;&#160;</td>
-          <td class="paramname"><em>source</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">boost::asio::io_service &amp;&#160;</td>
-          <td class="paramname"><em>io_service</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;&#160;</td>
-          <td class="paramname"><em>jobQueue</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
-          <td class="paramname"><em>strUrl</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
-          <td class="paramname"><em>strUsername</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
-          <td class="paramname"><em>strPassword</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;&#160;</td>
-          <td class="paramname"><em>logs</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="RPCSub_8cpp_source.html#l00208">208</a> of file <a class="el" href="RPCSub_8cpp_source.html">RPCSub.cpp</a>.</p>
-
-</div>
-</div>
 <a id="ab289776c60bd705e640136f8248adff9" name="ab289776c60bd705e640136f8248adff9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab289776c60bd705e640136f8248adff9">&#9670;&#160;</a></span>getFeatureValue()</h2>
 
@@ -45556,6 +45325,237 @@ template&lt;typename Predicate &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="Role_8cpp_source.html#l00262">262</a> of file <a class="el" href="Role_8cpp_source.html">Role.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a308b7ff6498ad19c844c1d36b5f0d7ae" name="a308b7ff6498ad19c844c1d36b5f0d7ae"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a308b7ff6498ad19c844c1d36b5f0d7ae">&#9670;&#160;</a></span>createHTTPPost()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::createHTTPPost </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>strHost</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>strPath</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>strMsg</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>mapRequestHeaders</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l00062">62</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aa5bf57e1a7b6f174338fefbdfbc6ded6" name="aa5bf57e1a7b6f174338fefbdfbc6ded6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5bf57e1a7b6f174338fefbdfbc6ded6">&#9670;&#160;</a></span>JSONRPCRequest()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::JSONRPCRequest </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>strMethod</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>params</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>id</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01337">1337</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ab4682f4bd2ebab9ae978712b0e2ea894" name="ab4682f4bd2ebab9ae978712b0e2ea894"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4682f4bd2ebab9ae978712b0e2ea894">&#9670;&#160;</a></span>rpcCmdToJson()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classJson_1_1Value.html">Json::Value</a> ripple::rpcCmdToJson </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
+          <td class="paramname"><em>retParams</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned int&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01439">1439</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a1675cc24642888c8fd2c1b39923086b0" name="a1675cc24642888c8fd2c1b39923086b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1675cc24642888c8fd2c1b39923086b0">&#9670;&#160;</a></span>rpcClient()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; int, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt; ripple::rpcClient </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>args</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Config.html">Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>config</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;&#160;</td>
+          <td class="paramname"><em>logs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned int&#160;</td>
+          <td class="paramname"><em>apiVersion</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>headers</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Internal invocation of <a class="el" href="namespaceripple_1_1RPC.html" title="API version numbers used in later API versions.">RPC</a> client. </p>
+<p >Used by both rippled command line as well as rippled unit tests </p>
+
+<p class="definition">Definition at line <a class="el" href="RPCCall_8cpp_source.html#l01480">1480</a> of file <a class="el" href="RPCCall_8cpp_source.html">RPCCall.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a60f56d685f142efe7844074b7785ea6d" name="a60f56d685f142efe7844074b7785ea6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a60f56d685f142efe7844074b7785ea6d">&#9670;&#160;</a></span>make_RPCSub()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1RPCSub.html">RPCSub</a> &gt; ripple::make_RPCSub </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1InfoSub_1_1Source.html">InfoSub::Source</a> &amp;&#160;</td>
+          <td class="paramname"><em>source</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">boost::asio::io_service &amp;&#160;</td>
+          <td class="paramname"><em>io_service</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1JobQueue.html">JobQueue</a> &amp;&#160;</td>
+          <td class="paramname"><em>jobQueue</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>strUrl</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>strUsername</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>strPassword</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;&#160;</td>
+          <td class="paramname"><em>logs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="RPCSub_8cpp_source.html#l00208">208</a> of file <a class="el" href="RPCSub_8cpp_source.html">RPCSub.cpp</a>.</p>
 
 </div>
 </div>
@@ -54117,6 +54117,30 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
+<a id="a2cce8c2bb8c05b8dc96301e32267979b" name="a2cce8c2bb8c05b8dc96301e32267979b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2cce8c2bb8c05b8dc96301e32267979b">&#9670;&#160;</a></span>httpClientSSLContext</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1HTTPClientSSLContext.html">HTTPClientSSLContext</a>&gt; ripple::httpClientSSLContext</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00035">35</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a2f7698f565e77bb2e9e073143fdcc8f7" name="a2f7698f565e77bb2e9e073143fdcc8f7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2f7698f565e77bb2e9e073143fdcc8f7">&#9670;&#160;</a></span>accountIdCache</h2>
 
@@ -55656,30 +55680,6 @@ template&lt;class Dest , class Src &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-
-</div>
-</div>
-<a id="a2cce8c2bb8c05b8dc96301e32267979b" name="a2cce8c2bb8c05b8dc96301e32267979b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2cce8c2bb8c05b8dc96301e32267979b">&#9670;&#160;</a></span>httpClientSSLContext</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1HTTPClientSSLContext.html">HTTPClientSSLContext</a>&gt; ripple::httpClientSSLContext</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="HTTPClient_8cpp_source.html#l00036">36</a> of file <a class="el" href="HTTPClient_8cpp_source.html">HTTPClient.cpp</a>.</p>
 
 </div>
 </div>

@@ -571,7 +571,7 @@ var searchData=
   ['msrcissuer_568',['mSrcIssuer',['../classripple_1_1Pathfinder.html#a2749cd65297c623b9376ad238c6bfa8b',1,'ripple::Pathfinder']]],
   ['mssl_569',['mSSL',['../classripple_1_1HTTPClientImp.html#a803530f42ba50674f874b43065bcb1e2',1,'ripple::HTTPClientImp::mSSL()'],['../classripple_1_1RPCSubImp.html#aee08aee607b0a207db4dd1fa98ee0b93',1,'ripple::RPCSubImp::mSSL()']]],
   ['mstats_570',['mStats',['../classripple_1_1InboundLedger.html#a9fda4b33aa77b5e2ff68d94577be5569',1,'ripple::InboundLedger']]],
-  ['mstatus_571',['mStatus',['../classripple_1_1Transaction.html#acffb1887d20e8c4ba16b6d3b40459e23',1,'ripple::Transaction::mStatus()'],['../classripple_1_1HTTPClientImp.html#ab3a9c1b3cfa60be8cfb7d191c7f27691',1,'ripple::HTTPClientImp::mStatus()']]],
+  ['mstatus_571',['mStatus',['../classripple_1_1HTTPClientImp.html#ab3a9c1b3cfa60be8cfb7d191c7f27691',1,'ripple::HTTPClientImp::mStatus()'],['../classripple_1_1Transaction.html#acffb1887d20e8c4ba16b6d3b40459e23',1,'ripple::Transaction::mStatus()']]],
   ['mstreammaps_572',['mStreamMaps',['../classripple_1_1NetworkOPsImp.html#a788f1a6db7fd452fd4c06840f0ceb602',1,'ripple::NetworkOPsImp']]],
   ['msubaccount_573',['mSubAccount',['../classripple_1_1NetworkOPsImp.html#a556fe55601cc1f11f8b60223bbe5039e',1,'ripple::NetworkOPsImp']]],
   ['msubaccounthistory_574',['mSubAccountHistory',['../classripple_1_1NetworkOPsImp.html#a3cc37d3427cb9b9aee8c7fd69e86e1a7',1,'ripple::NetworkOPsImp']]],
