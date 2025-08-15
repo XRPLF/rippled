@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
+
+#include <xrpl/ledger/CredentialHelpers.h>
 
 namespace ripple {
 namespace permissioned_dex {

@@ -20,12 +20,11 @@
 #include <test/jtx.h>
 #include <test/jtx/AMMTest.h>
 
-#include <xrpld/ledger/View.h>
-
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
