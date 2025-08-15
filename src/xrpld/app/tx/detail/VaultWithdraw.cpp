@@ -193,14 +193,17 @@ VaultWithdraw::doApply()
     // to withdraw from it.
 
     auto amount = ctx_.tx[sfAmount];
-    auto const asset = vault->at(sfAsset);
+    Asset const vaultAsset = vault->at(sfAsset);
     auto const share = MPTIssue(mptIssuanceID);
     STAmount shares, assets;
-    if (amount.asset() == asset)
+    if (amount.asset() == vaultAsset)
     {
         // Fixed assets, variable shares.
         assets = amount;
         shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+        if (shares == beast::zero)
+            return tecINSUFFICIENT_FUNDS;
+        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
     }
     else if (amount.asset() == share)
     {

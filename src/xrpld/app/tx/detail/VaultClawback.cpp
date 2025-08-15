@@ -23,6 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
@@ -161,15 +162,15 @@ VaultClawback::doApply()
         // LCOV_EXCL_STOP
     }
 
-    Asset const asset = vault->at(sfAsset);
+    Asset const vaultAsset = vault->at(sfAsset);
     STAmount const amount = [&]() -> STAmount {
         auto const maybeAmount = tx[~sfAmount];
         if (maybeAmount)
             return *maybeAmount;
-        return {sfAmount, asset, 0};
+        return {sfAmount, vaultAsset, 0};
     }();
     XRPL_ASSERT(
-        amount.asset() == asset,
+        amount.asset() == vaultAsset,
         "ripple::VaultClawback::doApply : matching asset");
 
     AccountID holder = tx[sfHolder];
@@ -190,14 +191,26 @@ VaultClawback::doApply()
     {
         assets = amount;
         shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
     }
 
     // Clamp to maximum.
-    Number maxAssets = *vault->at(sfAssetsAvailable);
-    if (assets > maxAssets)
+    Number const assetsAvailable = *vault->at(sfAssetsAvailable);
+    if (assets > assetsAvailable)
     {
-        assets = maxAssets;
-        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+        assets = assetsAvailable;
+        // Note, it is important to truncate the number of shares, since
+        // otherwise the corresponding assets might breach the AssetsAvailable
+        shares = assetsToSharesWithdraw(
+            vault, sleIssuance, assets, TruncateShares::yes);
+        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        if (assets > assetsAvailable)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultClawback: invalid rounding of shares.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     if (shares == beast::zero)

@@ -2800,22 +2800,57 @@ assetsToSharesDeposit(
     STAmount const& assets)
 {
     XRPL_ASSERT(
+        !assets.negative(),
+        "ripple::assetsToSharesDeposit : non-negative assets");
+    XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesDeposit : assets and vault match");
     Number assetTotal = vault->at(sfAssetsTotal);
-    STAmount shares{vault->at(sfShareMPTID), static_cast<Number>(assets)};
+    STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
-        return shares;
+        return STAmount{
+            shares.asset(),
+            Number(
+                assets.mantissa(), assets.exponent() + vault->at(sfAssetScale))
+                .truncate()};
+
     Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+    shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
+}
+
+[[nodiscard]] STAmount
+sharesToAssetsDeposit(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares)
+{
+    XRPL_ASSERT(
+        !shares.negative(),
+        "ripple::sharesToAssetsDeposit : non-negative shares");
+    XRPL_ASSERT(
+        shares.asset() == vault->at(sfShareMPTID),
+        "ripple::sharesToAssetsDeposit : shares and vault match");
+    Number assetTotal = vault->at(sfAssetsTotal);
+    STAmount assets{vault->at(sfAsset)};
+    if (assetTotal == 0)
+        return STAmount{
+            assets.asset(),
+            shares.mantissa(),
+            shares.exponent() - vault->at(sfAssetScale),
+            false};
+
+    Number shareTotal = issuance->at(sfOutstandingAmount);
+    assets = assetTotal * (shares / shareTotal);
+    return assets;
 }
 
 [[nodiscard]] STAmount
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets)
+    STAmount const& assets,
+    TruncateShares truncate)
 {
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
@@ -2826,7 +2861,10 @@ assetsToSharesWithdraw(
     if (assetTotal == 0)
         return shares;
     Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+    Number result = shareTotal * (assets / assetTotal);
+    if (truncate == TruncateShares::yes)
+        result = result.truncate();
+    shares = result;
     return shares;
 }
 
