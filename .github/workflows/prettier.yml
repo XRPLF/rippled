@@ -14,5 +14,4 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: run Prettier for JS/Markdown files
-        run: |
-          npx prettier --check .
+        run: prettier --check .
