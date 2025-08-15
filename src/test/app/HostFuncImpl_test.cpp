@@ -229,8 +229,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             ApplyContext ac2 = createApplyContext(env2, ov2);
             WasmHostFunctionsImpl hfs2(ac2, dummyEscrow);
             auto const result2 = hfs2.getBaseFee();
-            if (BEAST_EXPECT(!result2.has_value()))
-                BEAST_EXPECT(result2.error() == HostFunctionError::INTERNAL);
+            BEAST_EXPECT(!result2.has_value());
+            BEAST_EXPECT(result2.error() == HostFunctionError::INTERNAL);
         }
     }
 
@@ -447,9 +447,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             if (BEAST_EXPECT(actualScale.has_value()))
             {
                 BEAST_EXPECT(
-                    std::ranges::equal(
-                        *actualScale,
-                        toBytes(expectedScale));
+                    std::ranges::equal(*actualScale, toBytes(expectedScale)));
             }
         }
     }

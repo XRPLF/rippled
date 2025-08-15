@@ -663,7 +663,7 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 119'881;
+        auto const allowance = 119'883;
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &hfs, allowance, env.journal);
 
