@@ -691,7 +691,7 @@ private:
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
     std::string const&
-    fingerprint() const
+    fingerprint() const override
     {
         return fingerprint_;
     }
