@@ -52,6 +52,8 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-17' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         cmake_args = f'{cmake_args} -DUNIT_TEST_REFERENCE_FEE=1000'
                         skip = False
+                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
+                        skip = False
                 if skip:
                     continue
 

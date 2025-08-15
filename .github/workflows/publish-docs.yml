@@ -1,4 +1,5 @@
-# This workflow builds and publishes the documentation for the repository.
+# This workflow builds the documentation for the repository, and publishes it to
+# GitHub Pages when changes are merged into the default branch.
 name: Build and publish documentation
 
 on:
