@@ -3,15 +3,17 @@
 #[cfg(not(target_arch = "wasm32"))]
 extern crate std;
 
-use crate::host::{Result, Result::Err, Result::Ok};
-use xrpl_std::core::ledger_objects::current_escrow::get_current_escrow;
+use crate::host::{Error, Result, Result::Err, Result::Ok};
 use xrpl_std::core::ledger_objects::current_escrow::CurrentEscrow;
+use xrpl_std::core::ledger_objects::current_escrow::get_current_escrow;
 use xrpl_std::core::ledger_objects::ledger_object;
 use xrpl_std::core::ledger_objects::traits::CurrentEscrowFields;
+use xrpl_std::core::types::amount::asset::{Asset, IouAsset, XrpAsset};
 use xrpl_std::core::types::amount::currency_code::CurrencyCode;
+use xrpl_std::core::types::amount::mpt_id::MptId;
 use xrpl_std::core::types::keylets;
 use xrpl_std::host;
-use xrpl_std::host::trace::{trace, trace_data, trace_num, DataRepr};
+use xrpl_std::host::trace::{DataRepr, trace, trace_account, trace_data, trace_num};
 use xrpl_std::sfield;
 
 #[unsafe(no_mangle)]
@@ -27,7 +29,7 @@ pub fn object_exists(
             let slot = unsafe { host::cache_ledger_obj(keylet.as_ptr(), keylet.len(), 0) };
             if slot <= 0 {
                 let _ = trace_num("Error: ", slot.into());
-                return Err(host::Error::NoFreeSlots);
+                return Err(Error::from_code(slot));
             }
             if field == 0 {
                 let new_field = sfield::PreviousTxnID;
@@ -70,29 +72,27 @@ pub extern "C" fn finish() -> i32 {
     let escrow: CurrentEscrow = get_current_escrow();
 
     let account = escrow.get_account().unwrap_or_panic();
-    let _ = trace_data("  Account:", &account.0, DataRepr::AsHex);
+    let _ = trace_account("Account:", &account);
 
     let destination = escrow.get_destination().unwrap_or_panic();
-    let _ = trace_data("  Destination:", &destination.0, DataRepr::AsHex);
+    let _ = trace_account("Destination:", &destination);
+
+    let mut seq = 5;
 
     macro_rules! check_object_exists {
         ($keylet:expr, $type:expr, $field:expr) => {
             match object_exists($keylet, $type, $field) {
-                Ok(exists) => {
-                    if exists {
-                        let _ = trace(concat!(
-                            $type,
-                            " object exists, proceeding with escrow finish."
-                        ));
-                    } else {
-                        let _ = trace(concat!(
-                            $type,
-                            " object does not exist, aborting escrow finish."
-                        ));
-                        return 0;
-                    }
+                Ok(_exists) => {
+                    // false isn't returned
+                    let _ = trace(concat!(
+                        $type,
+                        " object exists, proceeding with escrow finish."
+                    ));
                 }
-                Err(error) => return error.code(),
+                Err(error) => {
+                    let _ = trace_num("Current seq value:", seq.try_into().unwrap());
+                    return error.code();
+                }
             }
         };
     }
@@ -100,12 +100,19 @@ pub extern "C" fn finish() -> i32 {
     let account_keylet = keylets::account_keylet(&account);
     check_object_exists!(account_keylet, "Account", sfield::Account);
 
-    let mut seq = 5;
     let currency_code: &[u8; 3] = b"USD";
     let currency: CurrencyCode = CurrencyCode::from(*currency_code);
     let line_keylet = keylets::line_keylet(&account, &destination, &currency);
     check_object_exists!(line_keylet, "Trustline", sfield::Generic);
     seq += 1;
+
+    let asset1 = Asset::XRP(XrpAsset {});
+    let asset2 = Asset::IOU(IouAsset::new(destination, currency));
+    check_object_exists!(
+        keylets::amm_keylet(&asset1, &asset2),
+        "AMM",
+        sfield::Account
+    );
 
     let check_keylet = keylets::check_keylet(&account, seq);
     check_object_exists!(check_keylet, "Check", sfield::Account);
@@ -132,7 +139,15 @@ pub extern "C" fn finish() -> i32 {
     check_object_exists!(escrow_keylet, "Escrow", sfield::Account);
     seq += 1;
 
-    let nft_offer_keylet = keylets::nft_offer_keylet(&destination, 4);
+    let mpt_issuance_keylet = keylets::mpt_issuance_keylet(&account, seq);
+    let mpt_id = MptId::new(seq.try_into().unwrap(), account);
+    check_object_exists!(mpt_issuance_keylet, "MPTIssuance", sfield::Issuer);
+    seq += 1;
+
+    let mptoken_keylet = keylets::mptoken_keylet(&mpt_id, &destination);
+    check_object_exists!(mptoken_keylet, "MPToken", sfield::Account);
+
+    let nft_offer_keylet = keylets::nft_offer_keylet(&destination, 6);
     check_object_exists!(nft_offer_keylet, "NFTokenOffer", sfield::Owner);
 
     let offer_keylet = keylets::offer_keylet(&account, seq);
@@ -143,6 +158,10 @@ pub extern "C" fn finish() -> i32 {
     check_object_exists!(paychan_keylet, "PayChannel", sfield::Account);
     seq += 1;
 
+    let pd_keylet = keylets::permissioned_domain_keylet(&account, seq);
+    check_object_exists!(pd_keylet, "PermissionedDomain", sfield::Owner);
+    seq += 1;
+
     let signers_keylet = keylets::signers_keylet(&account);
     check_object_exists!(signers_keylet, "SignerList", sfield::Generic);
     seq += 1;
@@ -150,6 +169,10 @@ pub extern "C" fn finish() -> i32 {
     seq += 1; // ticket sequence number is one greater
     let ticket_keylet = keylets::ticket_keylet(&account, seq);
     check_object_exists!(ticket_keylet, "Ticket", sfield::Account);
+    seq += 1;
+
+    let vault_keylet = keylets::vault_keylet(&account, seq);
+    check_object_exists!(vault_keylet, "Vault", sfield::Account);
     // seq += 1;
 
     1 // All keylets exist, finish the escrow.
