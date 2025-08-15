@@ -1981,10 +1981,10 @@ rippleCreditMPT(
     auto const maxAmount = maxMPTAmount(*sleIssuance);
     auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
     auto const available = availableMPTAmount(*sleIssuance);
+    auto const amt = saAmount.mpt().value();
 
     if (uSenderID == issuer)
     {
-        auto const amt = saAmount.mpt().value();
         if (view.rules().enabled(featureMPTokensV2))
         {
             // Don't overflow uint64
@@ -2000,7 +2000,6 @@ rippleCreditMPT(
         if (auto sle = view.peek(mptokenID))
         {
             auto const holderBalance = sle->getFieldU64(sfMPTAmount);
-            auto const amt = saAmount.mpt().value();
             if (holderBalance < amt)
                 return tecINSUFFICIENT_FUNDS;
             view.creditHookMPT(
@@ -2018,10 +2017,9 @@ rippleCreditMPT(
 
     if (uReceiverID == issuer)
     {
-        auto const redeem = saAmount.mpt().value();
-        if (outstanding >= redeem)
+        if (outstanding >= amt)
         {
-            sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+            sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - amt);
             view.update(sleIssuance);
         }
         else
@@ -2038,7 +2036,7 @@ rippleCreditMPT(
                 saAmount,
                 (*sle)[sfMPTAmount],
                 available);
-            (*sle)[sfMPTAmount] += saAmount.mpt().value();
+            (*sle)[sfMPTAmount] += amt;
             view.update(sle);
         }
         else

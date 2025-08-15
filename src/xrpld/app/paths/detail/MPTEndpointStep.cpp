@@ -738,8 +738,7 @@ MPTEndpointStep<TDerived>::validFwd(
     auto const savCache = *cache_;
 
     XRPL_ASSERT(
-        !in.native() && !in.isIOU(),
-        "MPTEndpoint<TDerived>::validFwd : not XRP or IOU");
+        in.holds<MPTAmount>(), "MPTEndpoint<TDerived>::validFwd : is MPT");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxPaymentFlow(sb);
@@ -748,7 +747,7 @@ MPTEndpointStep<TDerived>::validFwd(
     try
     {
         boost::container::flat_set<uint256> dummy;
-        fwdImp(sb, afView, dummy, in.mpt());  // changes cache
+        fwdImp(sb, afView, dummy, in.get<MPTAmount>());  // changes cache
     }
     catch (FlowException const&)
     {

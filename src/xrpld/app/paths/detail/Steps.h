@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
 #define RIPPLE_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
 
-#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/EitherAmount.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>

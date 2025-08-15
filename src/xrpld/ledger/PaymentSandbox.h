@@ -69,7 +69,7 @@ private:
         // to the issuer and OutstandingAmount balances out.
         std::int64_t origBalance = 0;
         // Self debit on offer selling MPT. Since the payment engine executes
-        // a payment in revers, a crediting/buying step may overflow
+        // a payment in reverse, a crediting/buying step may overflow
         // OutstandingAmount. A sell MPT offer owned by a holder can redeem any
         // amount up to the offer's amount and holder's available funds,
         // balancing out OutstandingAmount. But if the offer's owner is issuer

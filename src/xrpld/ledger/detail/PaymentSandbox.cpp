@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/MPTUtils.h>
-#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/EitherAmount.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/View.h>
 

@@ -265,7 +265,7 @@ public:
 
     /** Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
      * Unlike IOU, MPT doesn't have bi-directional relationship with an issuer,
-     * where a trustline limits an amount the can be issued to a holder.
+     * where a trustline limits an amount that can be issued to a holder.
      * Consequently, the credit step (last MPTEndpointStep or
      * BookStep buying MPT) might temporarily overflow OutstandingAmount.
      * Limiting of a step's output amount in this case is delegated to

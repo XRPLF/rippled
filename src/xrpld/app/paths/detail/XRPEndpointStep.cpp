@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/paths/Credit.h>
-#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/EitherAmount.h>
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/ledger/PaymentSandbox.h>
@@ -328,9 +328,10 @@ XRPEndpointStep<TDerived>::validFwd(
     }
 
     XRPL_ASSERT(
-        in.native(), "ripple::XRPEndpointStep::validFwd : input is XRP");
+        in.holds<XRPAmount>(),
+        "ripple::XRPEndpointStep::validFwd : input is XRP");
 
-    auto const& xrpIn = in.xrp();
+    auto const& xrpIn = in.get<XRPAmount>();
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     if (!isLast_ && balance < xrpIn)

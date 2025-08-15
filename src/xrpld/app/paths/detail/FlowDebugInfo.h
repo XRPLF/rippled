@@ -20,7 +20,7 @@
 #ifndef RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
 #define RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
 
-#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/EitherAmount.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 
 #include <xrpl/protocol/IOUAmount.h>
@@ -239,7 +239,7 @@ struct FlowDebugInfo
                                        std::vector<EitherAmount> const& amts,
                                        char delim = ';') {
                 auto get_val = [](EitherAmount const& a) -> std::string {
-                    return ripple::to_string(a.xrp());
+                    return ripple::to_string(a.get<XRPAmount>());
                 };
                 write_list(amts, get_val, delim);
             };
@@ -247,7 +247,7 @@ struct FlowDebugInfo
                                        std::vector<EitherAmount> const& amts,
                                        char delim = ';') {
                 auto get_val = [](EitherAmount const& a) -> std::string {
-                    return ripple::to_string(a.iou());
+                    return ripple::to_string(a.get<IOUAmount>());
                 };
                 write_list(amts, get_val, delim);
             };

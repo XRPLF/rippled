@@ -24,7 +24,7 @@
 #include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/paths/Credit.h>
 #include <xrpld/app/paths/Flow.h>
-#include <xrpld/app/paths/detail/AmountSpec.h>
+#include <xrpld/app/paths/detail/EitherAmount.h>
 #include <xrpld/app/paths/detail/FlatSets.h>
 #include <xrpld/app/paths/detail/FlowDebugInfo.h>
 #include <xrpld/app/paths/detail/Steps.h>
