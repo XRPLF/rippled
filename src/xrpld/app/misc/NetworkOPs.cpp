@@ -1450,6 +1450,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
     }
     if (mTransactions.empty())
     {
+        JLOG(m_journal.info()) << "No transactions to process!";
         return;
     }
 
