@@ -25,6 +25,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -269,6 +270,12 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
+    ammKeylet(Asset const& issue1, Asset const& issue2)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
     checkKeylet(AccountID const& account, std::uint32_t seq)
     {
         return Unexpected(HostFunctionError::INTERNAL);
@@ -317,6 +324,18 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
+    mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    mptokenKeylet(MPTID const& mptid, AccountID const& holder)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
     nftOfferKeylet(AccountID const& account, std::uint32_t seq)
     {
         return Unexpected(HostFunctionError::INTERNAL);
@@ -344,6 +363,12 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
+    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
     signersKeylet(AccountID const& account)
     {
         return Unexpected(HostFunctionError::INTERNAL);
@@ -351,6 +376,12 @@ struct HostFunctions
 
     virtual Expected<Bytes, HostFunctionError>
     ticketKeylet(AccountID const& account, std::uint32_t seq)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    vaultKeylet(AccountID const& account, std::uint32_t seq)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -404,7 +435,19 @@ struct HostFunctions
     }
 
     virtual Expected<int32_t, HostFunctionError>
+    traceAccount(std::string_view const& msg, AccountID const& account)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    traceAmount(std::string_view const& msg, STAmount const& amount)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

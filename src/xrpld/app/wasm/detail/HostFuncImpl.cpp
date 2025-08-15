@@ -185,12 +185,6 @@ getAnyFieldData(STBase const* obj)
             return Bytes{b, e};
         }
         break;
-        case STI_UINT256: {
-            auto const* num(static_cast<STBitString<256> const*>(obj));
-            auto const& data = num->value();
-            return Bytes{data.begin(), data.end()};
-        }
-        break;
         default:
             break;  // default to serializer
     }
@@ -487,6 +481,20 @@ WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
 }
 
 Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::ammKeylet(Asset const& issue1, Asset const& issue2)
+{
+    if (issue1 == issue2)
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    // note: this should be removed with the MPT DEX amendment
+    if (issue1.holds<MPTIssue>() || issue2.holds<MPTIssue>())
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+    auto const keylet = keylet::amm(issue1, issue2);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::checkKeylet(AccountID const& account, std::uint32_t seq)
 {
     if (!account)
@@ -575,6 +583,32 @@ WasmHostFunctionsImpl::lineKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::mptIssuanceKeylet(
+    AccountID const& issuer,
+    std::uint32_t seq)
+{
+    if (!issuer)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+    auto const keylet = keylet::mptIssuance(seq, issuer);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::mptokenKeylet(
+    MPTID const& mptid,
+    AccountID const& holder)
+{
+    if (!mptid)
+        return Unexpected(HostFunctionError::INVALID_PARAMS);
+    if (!holder)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+    auto const keylet = keylet::mptoken(mptid, holder);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::nftOfferKeylet(
     AccountID const& account,
     std::uint32_t seq)
@@ -620,6 +654,17 @@ WasmHostFunctionsImpl::paychanKeylet(
 }
 
 Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::permissionedDomainKeylet(
+    AccountID const& account,
+    std::uint32_t seq)
+{
+    if (!account)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+    auto const keylet = keylet::permissionedDomain(account, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
 WasmHostFunctionsImpl::signersKeylet(AccountID const& account)
 {
     if (!account)
@@ -634,6 +679,15 @@ WasmHostFunctionsImpl::ticketKeylet(AccountID const& account, std::uint32_t seq)
     if (!account)
         return Unexpected(HostFunctionError::INVALID_ACCOUNT);
     auto const keylet = keylet::ticket(account, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
+}
+
+Expected<Bytes, HostFunctionError>
+WasmHostFunctionsImpl::vaultKeylet(AccountID const& account, std::uint32_t seq)
+{
+    if (!account)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+    auto const keylet = keylet::vault(account, seq);
     return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
@@ -734,6 +788,24 @@ WasmHostFunctionsImpl::traceNum(std::string_view const& msg, int64_t data)
 }
 
 Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::traceAccount(
+    std::string_view const& msg,
+    AccountID const& account)
+{
+#ifdef DEBUG_OUTPUT
+    auto j = getJournal().error();
+#else
+    auto j = getJournal().trace();
+#endif
+
+    auto const accountStr = toBase58(account);
+
+    j << "WAMR TRACE ACCOUNT(" << leKey.key << "): " << msg << " "
+      << accountStr;
+    return msg.size() + accountStr.size();
+}
+
+Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::traceFloat(
     std::string_view const& msg,
     Slice const& data)
@@ -746,6 +818,21 @@ WasmHostFunctionsImpl::traceFloat(
     auto const s = floatToString(data);
     j << "WAMR TRACE FLOAT(" << leKey.key << "): " << msg << " " << s;
     return msg.size() + s.size();
+}
+
+Expected<int32_t, HostFunctionError>
+WasmHostFunctionsImpl::traceAmount(
+    std::string_view const& msg,
+    STAmount const& amount)
+{
+#ifdef DEBUG_OUTPUT
+    auto j = getJournal().error();
+#else
+    auto j = getJournal().trace();
+#endif
+    auto const amountStr = amount.getFullText();
+    j << "WAMR TRACE AMOUNT(" << leKey.key << "): " << msg << " " << amountStr;
+    return msg.size() + amountStr.size();
 }
 
 Expected<Bytes, HostFunctionError>

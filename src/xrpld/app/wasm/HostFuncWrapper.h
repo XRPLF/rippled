@@ -203,6 +203,19 @@ accountKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using ammKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+ammKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using checkKeylet_proto =
     int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
@@ -282,6 +295,27 @@ lineKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using mptIssuanceKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+mptIssuanceKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using mptokenKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+mptokenKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using nftOfferKeylet_proto =
     int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
@@ -320,6 +354,14 @@ paychanKeylet_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
+using permissionedDomainKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+permissionedDomainKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using signersKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 signersKeylet_wrap(
@@ -331,6 +373,14 @@ using ticketKeylet_proto =
     int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 ticketKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using vaultKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+vaultKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
@@ -389,10 +439,26 @@ using traceNum_proto = int32_t(uint8_t const*, int32_t, int64_t);
 wasm_trap_t*
 traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
+using traceAccount_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+traceAccount_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
 using traceFloat_proto =
     int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
 wasm_trap_t*
 traceFloat_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using traceAmount_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+traceAmount_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);

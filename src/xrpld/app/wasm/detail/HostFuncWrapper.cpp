@@ -22,6 +22,7 @@
 #include <xrpld/app/wasm/HostFuncWrapper.h>
 #include <xrpld/app/wasm/WamrVM.h>
 
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/digest.h>
 
@@ -79,7 +80,7 @@ getDataInt64(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 Expected<uint64_t, HostFunctionError>
-getDataUint64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataUInt64(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     auto const r = getDataSlice(runtime, params, i);
     if (!r)
@@ -184,6 +185,45 @@ getDataCurrency(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     }
 
     return Currency::fromVoid(slice->data());
+}
+
+template <class IW>
+static Expected<Asset, HostFunctionError>
+getDataAsset(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+{
+    auto const slice = getDataSlice(runtime, params, i);
+    if (!slice)
+    {
+        return Unexpected(slice.error());
+    }
+
+    if (slice->size() == MPTID::bytes)
+    {
+        auto const mptid = MPTID::fromVoid(slice->data());
+        return Asset{mptid};
+    }
+
+    if (slice->size() == Currency::bytes)
+    {
+        auto const currency = Currency::fromVoid(slice->data());
+        auto const issue = Issue{currency, xrpAccount()};
+        if (!issue.native())
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Asset{issue};
+    }
+
+    if (slice->size() == (AccountID::bytes + Currency::bytes))
+    {
+        auto const issue = Issue(
+            Currency::fromVoid(slice->data()),
+            AccountID::fromVoid(slice->data() + Currency::bytes));
+
+        if (issue.native())
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        return Asset{issue};
+    }
+
+    return Unexpected(HostFunctionError::INVALID_PARAMS);
 }
 
 template <class IW>
@@ -797,6 +837,33 @@ accountKeylet_wrap(
 }
 
 wasm_trap_t*
+ammKeylet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const issue1 = getDataAsset(runtime, params, index);
+    if (!issue1)
+    {
+        return hfResult(results, issue1.error());
+    }
+
+    auto const issue2 = getDataAsset(runtime, params, index);
+    if (!issue2)
+    {
+        return hfResult(results, issue2.error());
+    }
+
+    return returnResult(
+        runtime,
+        params,
+        results,
+        hf->ammKeylet(issue1.value(), issue2.value()),
+        index);
+}
+
+wasm_trap_t*
 checkKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -998,6 +1065,72 @@ lineKeylet_wrap(
 }
 
 wasm_trap_t*
+mptIssuanceKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(runtime, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const seq = getDataInt32(runtime, params, index);
+    if (!seq)
+    {
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+    }
+
+    return returnResult(
+        runtime,
+        params,
+        results,
+        hf->mptIssuanceKeylet(acc.value(), seq.value()),
+        index);
+}
+
+wasm_trap_t*
+mptokenKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const slice = getDataSlice(runtime, params, index);
+    if (!slice)
+    {
+        return hfResult(results, slice.error());
+    }
+
+    if (slice->size() != MPTID::bytes)
+    {
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+    }
+    auto const mptid = MPTID::fromVoid(slice->data());
+
+    auto const holder = getDataAccountID(runtime, params, index);
+    if (!holder)
+    {
+        return hfResult(results, holder.error());
+    }
+
+    return returnResult(
+        runtime,
+        params,
+        results,
+        hf->mptokenKeylet(mptid, holder.value()),
+        index);
+}
+
+wasm_trap_t*
 nftOfferKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -1119,6 +1252,36 @@ paychanKeylet_wrap(
 }
 
 wasm_trap_t*
+permissionedDomainKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(runtime, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const seq = getDataInt32(runtime, params, index);
+    if (!seq)
+    {
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+    }
+
+    return returnResult(
+        runtime,
+        params,
+        results,
+        hf->permissionedDomainKeylet(acc.value(), seq.value()),
+        index);
+}
+
+wasm_trap_t*
 signersKeylet_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -1165,6 +1328,36 @@ ticketKeylet_wrap(
         params,
         results,
         hf->ticketKeylet(acc.value(), seq.value()),
+        index);
+}
+
+wasm_trap_t*
+vaultKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+
+    auto const acc = getDataAccountID(runtime, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const seq = getDataInt32(runtime, params, index);
+    if (!seq)
+    {
+        return hfResult(results, seq.error());  // LCOV_EXCL_LINE
+    }
+
+    return returnResult(
+        runtime,
+        params,
+        results,
+        hf->vaultKeylet(acc.value(), seq.value()),
         index);
 }
 
@@ -1353,6 +1546,31 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 }
 
 wasm_trap_t*
+traceAccount_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    if (params->data[1].of.i32 > maxWasmDataLength)
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+
+    int i = 0;
+    auto const msg = getDataString(runtime, params, i);
+    if (!msg)
+        return hfResult(results, msg.error());
+
+    auto const account = getDataAccountID(runtime, params, i);
+    if (!account)
+        return hfResult(results, account.error());
+
+    return returnResult(
+        runtime, params, results, hf->traceAccount(*msg, *account), i);
+}
+
+wasm_trap_t*
 traceFloat_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -1375,6 +1593,46 @@ traceFloat_wrap(
 
     return returnResult(
         runtime, params, results, hf->traceFloat(*msg, *number), i);
+}
+
+wasm_trap_t*
+traceAmount_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    if (params->data[1].of.i32 > maxWasmDataLength)
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+
+    int i = 0;
+    auto const msg = getDataString(runtime, params, i);
+    if (!msg)
+        return hfResult(results, msg.error());
+
+    auto const amountSliceOpt = getDataSlice(runtime, params, i);
+    if (!amountSliceOpt)
+        return hfResult(results, amountSliceOpt.error());
+
+    auto const amountSlice = amountSliceOpt.value();
+    auto serialIter = SerialIter(amountSlice);
+
+    std::optional<STAmount> amount;
+    try
+    {
+        amount = STAmount(serialIter, sfGeneric);
+    }
+    catch (std::exception const&)
+    {
+        amount = std::nullopt;
+    }
+    if (!amount || !amount.value())
+        return hfResult(results, HostFunctionError::INVALID_PARAMS);
+
+    return returnResult(
+        runtime, params, results, hf->traceAmount(*msg, *amount), i);
 }
 
 wasm_trap_t*
@@ -1411,7 +1669,7 @@ floatFromUint_wrap(
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
     int i = 0;
-    auto const x = getDataUint64(runtime, params, i);
+    auto const x = getDataUInt64(runtime, params, i);
     if (!x)
         return hfResult(results, x.error());
 
@@ -1654,6 +1912,7 @@ floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         runtime, params, results, hf->floatLog(*x, *rounding), i);
 }
 
+// LCOV_EXCL_START
 namespace test {
 
 class MockInstanceWrapper
@@ -1673,7 +1932,6 @@ public:
     }
 };
 
-// LCOV_EXCL_START
 bool
 testGetDataIncrement()
 {
@@ -1800,7 +2058,8 @@ testGetDataIncrement()
 
     return true;
 }
-// LCOV_EXCL_STOP
 
 }  // namespace test
+// LCOV_EXCL_STOP
+
 }  // namespace ripple

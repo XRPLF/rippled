@@ -2347,6 +2347,7 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2);
 
             // set up a bunch of objects to check their keylets
+            AMM amm(env, carol, XRP(10), carol["USD"](1000));
             env(check::create(alice, carol, XRP(100)));
             env(credentials::create(alice, alice, "termsandconditions"));
             env(delegate::set(alice, carol, {"TrustSet"}));
@@ -2354,17 +2355,26 @@ struct Escrow_test : public beast::unit_test::suite
             env(did::set(alice), did::data("alice_did"));
             env(escrow::create(alice, carol, XRP(100)),
                 escrow::finish_time(env.now() + 100s));
+            MPTTester mptTester{env, alice, {.fund = false}};
+            mptTester.create();
+            mptTester.authorize({.account = carol});
             env(token::createOffer(carol, tokenId, XRP(100)),
                 token::owner(alice));
-            env(offer(alice, carol["USD"](0.1), XRP(100)));
+            env(offer(alice, carol["GBP"](0.1), XRP(100)));
             env(create(alice, carol, XRP(1000), 100s, alice.pk()));
+            pdomain::Credentials credentials{{alice, "first credential"}};
+            env(pdomain::setTx(alice, credentials));
             env(signers(alice, 1, {{carol, 1}}));
             env(ticket::create(alice, 1));
+            Vault vault{env};
+            auto [tx, _keylet] =
+                vault.create({.owner = alice, .asset = xrpIssue()});
+            env(tx);
             env.close();
 
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 12);
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 15);
             if (BEAST_EXPECTS(
-                    env.seq(alice) == 17, std::to_string(env.seq(alice))))
+                    env.seq(alice) == 20, std::to_string(env.seq(alice))))
             {
                 auto const seq = env.seq(alice);
                 XRPAmount txnFees = env.current()->fees().base + 1000;
@@ -2377,7 +2387,7 @@ struct Escrow_test : public beast::unit_test::suite
                 env.close();
                 env.close();
 
-                auto const allowance = 99'596;
+                auto const allowance = 137'596;
 
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
@@ -2386,8 +2396,12 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 12);
+                {
+                    auto const gasUsed = txMeta->getFieldU32(sfGasUsed);
+                    BEAST_EXPECTS(
+                        gasUsed == allowance, std::to_string(gasUsed));
+                }
+                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 15);
             }
         }
     }

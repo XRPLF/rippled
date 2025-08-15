@@ -161,6 +161,9 @@ public:
     accountKeylet(AccountID const& account) override;
 
     Expected<Bytes, HostFunctionError>
+    ammKeylet(Asset const& issue1, Asset const& issue2) override;
+
+    Expected<Bytes, HostFunctionError>
     checkKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
@@ -190,6 +193,12 @@ public:
         Currency const& currency) override;
 
     Expected<Bytes, HostFunctionError>
+    mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) override;
+
+    Expected<Bytes, HostFunctionError>
+    mptokenKeylet(MPTID const& mptid, AccountID const& holder) override;
+
+    Expected<Bytes, HostFunctionError>
     nftOfferKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
@@ -205,10 +214,17 @@ public:
         std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
+    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
+        override;
+
+    Expected<Bytes, HostFunctionError>
     signersKeylet(AccountID const& account) override;
 
     Expected<Bytes, HostFunctionError>
     ticketKeylet(AccountID const& account, std::uint32_t seq) override;
+
+    Expected<Bytes, HostFunctionError>
+    vaultKeylet(AccountID const& account, std::uint32_t seq) override;
 
     Expected<Bytes, HostFunctionError>
     getNFT(AccountID const& account, uint256 const& nftId) override;
@@ -235,7 +251,14 @@ public:
     traceNum(std::string_view const& msg, int64_t data) override;
 
     Expected<int32_t, HostFunctionError>
+    traceAccount(std::string_view const& msg, AccountID const& account)
+        override;
+
+    Expected<int32_t, HostFunctionError>
     traceFloat(std::string_view const& msg, Slice const& data) override;
+
+    Expected<int32_t, HostFunctionError>
+    traceAmount(std::string_view const& msg, STAmount const& amount) override;
 
     Expected<Bytes, HostFunctionError>
     floatFromInt(int64_t x, int32_t mode) override;

@@ -32,6 +32,15 @@ unsafe extern "C" {
         out_buff_len: usize,
     ) -> i32;
 
+    pub fn amm_keylet(
+        issue1_ptr: *const u8,
+        issue1_len: usize,
+        issue2_ptr: i32,
+        issue2_len: i32,
+        out_buff_ptr: *mut u8,
+        out_buff_len: usize,
+    ) -> i32;
+
     pub fn line_keylet(
         account1_ptr: *const u8,
         account1_len: usize,
