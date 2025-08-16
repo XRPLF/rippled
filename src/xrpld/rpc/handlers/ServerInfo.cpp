@@ -25,6 +25,7 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
@@ -329,6 +330,7 @@ doServerInfo(RPC::JsonContext& context)
         context.params.isMember(jss::counters) &&
             context.params[jss::counters].asBool());
 
+    ret[jss::info][jss::native_currency_code] = systemCurrencyCode();
     return ret;
 }
 
