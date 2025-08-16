@@ -56,22 +56,55 @@ namespace ripple {
 // Formatting equals sign aligned 4 spaces after longest prefix, except for
 // wrapped lines
 // clang-format off
+
 // Universal Transaction flags:
 constexpr std::uint32_t tfFullyCanonicalSig                = 0x80000000;
 constexpr std::uint32_t tfInnerBatchTxn                    = 0x40000000;
 constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig | tfInnerBatchTxn;
 constexpr std::uint32_t tfUniversalMask                    = ~tfUniversal;
 
-// AccountSet flags:
-constexpr std::uint32_t tfRequireDestTag                   = 0x00010000;
-constexpr std::uint32_t tfOptionalDestTag                  = 0x00020000;
-constexpr std::uint32_t tfRequireAuth                      = 0x00040000;
-constexpr std::uint32_t tfOptionalAuth                     = 0x00080000;
-constexpr std::uint32_t tfDisallowXRP                      = 0x00100000;
-constexpr std::uint32_t tfAllowXRP                         = 0x00200000;
-constexpr std::uint32_t tfAccountSetMask =
-    ~(tfUniversal | tfRequireDestTag | tfOptionalDestTag | tfRequireAuth |
-      tfOptionalAuth | tfDisallowXRP | tfAllowXRP);
+
+#define XMACRO(TX_FLAGS, TX_FLAG) \
+    TX_FLAGS(AccountSet, \
+    TX_FLAG(tfRequireDestTag, 0x00010000) \
+    TX_FLAG(tfOptionalDestTag, 0x00020000) \
+    TX_FLAG(tfRequireAuth, 0x00040000) \
+    TX_FLAG(tfOptionalAuth, 0x00080000) \
+    TX_FLAG(tfDisallowXRP, 0x00100000) \
+    TX_FLAG(tfAllowXRP, 0x00200000))
+
+#define TO_VALUE(name, value) constexpr std::uint32_t name = value;
+#define VALUE_TO_MAP(name, value) {#name, value},
+#define NULL_NAME(name, values) values
+XMACRO(NULL_NAME, TO_VALUE)
+
+#define TO_MAP(name, values) \
+    std::map<std::string, std::uint32_t> const name##Flags = {values};
+
+XMACRO(TO_MAP, VALUE_TO_MAP)
+
+#define TO_MASK(name, values) \
+    constexpr std::uint32_t tf##name##Mask = ~(tfUniversal values);
+#define VALUE_TO_MASK(name, value) | name
+
+XMACRO(TO_MASK, VALUE_TO_MASK)
+
+#define ALL_TX_FLAGS(name, values) name##Flags,
+
+std::vector<std::map<std::string, std::uint32_t>> const allTxFlags = {
+    XMACRO(ALL_TX_FLAGS,)
+};
+
+// // AccountSet flags:
+// constexpr std::uint32_t tfRequireDestTag                   = 0x00010000;
+// constexpr std::uint32_t tfOptionalDestTag                  = 0x00020000;
+// constexpr std::uint32_t tfRequireAuth                      = 0x00040000;
+// constexpr std::uint32_t tfOptionalAuth                     = 0x00080000;
+// constexpr std::uint32_t tfDisallowXRP                      = 0x00100000;
+// constexpr std::uint32_t tfAllowXRP                         = 0x00200000;
+// constexpr std::uint32_t tfAccountSetMask =
+//     ~(tfUniversal | tfRequireDestTag | tfOptionalDestTag | tfRequireAuth |
+//       tfOptionalAuth | tfDisallowXRP | tfAllowXRP);
 
 // AccountSet SetFlag/ClearFlag values
 constexpr std::uint32_t asfRequireDest                     =  1;

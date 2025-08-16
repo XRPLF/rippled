@@ -300,6 +300,22 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::TRANSACTION_FORMATS][f.getName()] = templateArray;
     }
 
+    // populate LedgerFormats
+    defs_[jss::LEDGER_FORMATS] = Json::objectValue;
+    for (auto const& f : LedgerFormats::getInstance())
+    {
+        auto const& soTemplate = f.getSOTemplate();
+        Json::Value templateArray = Json::arrayValue;
+        for (auto const& element : soTemplate)
+        {
+            Json::Value elementObj = Json::objectValue;
+            elementObj[jss::name] = element.sField().getName();
+            elementObj[jss::required] = element.style();
+            templateArray.append(elementObj);
+        }
+        defs_[jss::LEDGER_FORMATS][f.getName()] = templateArray;
+    }
+
     // generate hash
     {
         std::string const out = Json::FastWriter().write(defs_);
