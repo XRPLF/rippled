@@ -423,7 +423,7 @@ DirectIPaymentStep::check(
             !((*sleLine)[sfFlags] & authField) &&
             (*sleLine)[sfBalance] == beast::zero)
         {
-            JLOG(j_.warn())
+            JLOG(j_.debug())
                 << "DirectStepI: can't receive IOUs from issuer without auth."
                 << " src: " << src_;
             return terNO_AUTH;
