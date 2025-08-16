@@ -141,6 +141,14 @@ enum class ApplyTransactionResult {
     Retry
 };
 
+std::optional<std::vector<ApplyResult>>
+applyBatchTransactions(
+    Application& app,
+    OpenView& batchView,
+    STTx const& batchTxn,
+    ApplyFlags flags,
+    beast::Journal j);
+
 /** Transaction application helper
 
     Provides more detailed logging and decodes the
