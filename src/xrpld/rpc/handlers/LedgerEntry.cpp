@@ -41,8 +41,19 @@ namespace ripple {
 static std::optional<uint256>
 parseIndex(Json::Value const& params, Json::Value& jvResult)
 {
+    std::string const index = params.asString();
+    if (index == jss::amendments.c_str())
+        return keylet::amendments().key;
+    if (index == jss::fee.c_str())
+        return keylet::fees().key;
+    if (index == jss::nunl)
+        return keylet::negativeUNL().key;
+    if (index == jss::hashes)
+        // Note this only finds the "short" skip list. Use "hashes":index to get
+        // the long list.
+        return keylet::skip().key;
     uint256 uNodeIndex;
-    if (!uNodeIndex.parseHex(params.asString()))
+    if (!uNodeIndex.parseHex(index))
     {
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
@@ -446,6 +457,48 @@ parseEscrow(Json::Value const& params, Json::Value& jvResult)
     }
 
     return keylet::escrow(*id, params[jss::seq].asUInt()).key;
+}
+
+static std::optional<uint256>
+parseFixed(
+    Keylet const& keylet,
+    Json::Value const& params,
+    Json::Value& jvResult)
+{
+    if (!params.isBool())
+    {
+        uint256 uNodeIndex;
+        if (!params.isString() || !uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+    if (!params.asBool())
+    {
+        jvResult[jss::error] = "invalidParams";
+        return std::nullopt;
+    }
+
+    return keylet.key;
+}
+
+static std::optional<uint256>
+parseHashes(Json::Value const& params, Json::Value& jvResult)
+{
+    if (params.isUInt() || params.isInt())
+    {
+        // If the index doesn't parse as a UInt, throw
+        auto const index = params.asUInt();
+
+        // Return the "long" skip list for the given ledger index.
+        auto const keylet = keylet::skip(index);
+        return keylet.key;
+    }
+    // Return the key in `params` or the "short" skip list, which contains
+    // hashes since the last flag ledger.
+    return parseFixed(keylet::skip(), params, jvResult);
 }
 
 static std::optional<uint256>
@@ -936,6 +989,22 @@ struct LedgerEntry
     LedgerEntryType expectedType;
 };
 
+// Helper function to return FunctionType for objects that have a fixed
+// location. That is, they don't take parameters to compute the index.
+// e.g. amendments, fees, negative UNL, etc.
+static FunctionType
+fixed(Keylet const& keylet)
+{
+    return [&keylet](
+               Json::Value const& params,
+               Json::Value& jvResult) -> std::optional<uint256> {
+        return parseFixed(keylet, params, jvResult);
+    };
+}
+auto const parseAmendments = fixed(keylet::amendments());
+auto const parseFeeSettings = fixed(keylet::fees());
+auto const parseNegativeUNL = fixed(keylet::negativeUNL());
+
 // {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
@@ -953,7 +1022,7 @@ doLedgerEntry(RPC::JsonContext& context)
     static auto ledgerEntryParsers = std::to_array<LedgerEntry>({
         {jss::index, parseIndex, ltANY},
         {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
-        // TODO: add amendments
+        {jss::amendments, parseAmendments, ltAMENDMENTS},
         {jss::amm, parseAMM, ltAMM},
         {jss::bridge, parseBridge, ltBRIDGE},
         {jss::check, parseCheck, ltCHECK},
@@ -963,12 +1032,13 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::did, parseDID, ltDID},
         {jss::directory, parseDirectory, ltDIR_NODE},
         {jss::escrow, parseEscrow, ltESCROW},
-        // TODO: add fee, hashes
+        {jss::fee, parseFeeSettings, ltFEE_SETTINGS},
+        {jss::hashes, parseHashes, ltLEDGER_HASHES},
         {jss::mpt_issuance, parseMPTokenIssuance, ltMPTOKEN_ISSUANCE},
         {jss::mptoken, parseMPToken, ltMPTOKEN},
         // TODO: add NFT Offers
         {jss::nft_page, parseNFTokenPage, ltNFTOKEN_PAGE},
-        // TODO: add NegativeUNL
+        {jss::nunl, parseNegativeUNL, ltNEGATIVE_UNL},
         {jss::offer, parseOffer, ltOFFER},
         {jss::oracle, parseOracle, ltORACLE},
         {jss::payment_channel, parsePaymentChannel, ltPAYCHAN},
@@ -1039,6 +1109,9 @@ doLedgerEntry(RPC::JsonContext& context)
             throw;
     }
 
+    // Return the computed index regardless of whether the node exists.
+    jvResult[jss::index] = to_string(uNodeIndex);
+
     if (uNodeIndex.isZero())
     {
         jvResult[jss::error] = "entryNotFound";
@@ -1071,12 +1144,10 @@ doLedgerEntry(RPC::JsonContext& context)
         sleNode->add(s);
 
         jvResult[jss::node_binary] = strHex(s.peekData());
-        jvResult[jss::index] = to_string(uNodeIndex);
     }
     else
     {
         jvResult[jss::node] = sleNode->getJson(JsonOptions::none);
-        jvResult[jss::index] = to_string(uNodeIndex);
     }
 
     return jvResult;
