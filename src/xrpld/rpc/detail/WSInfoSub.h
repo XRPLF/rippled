@@ -20,7 +20,7 @@
 #ifndef RIPPLE_RPC_WSINFOSUB_H
 #define RIPPLE_RPC_WSINFOSUB_H
 
-#include <xrpld/net/InfoSub.h>
+#include <xrpld/rpc/InfoSub.h>
 #include <xrpld/rpc/Role.h>
 
 #include <xrpl/beast/net/IPAddressConversion.h>
