@@ -75,17 +75,11 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - name: Check configuration
         run: |
-          echo 'Adding NPM global bin to the path.'
-          export PATH=${PATH}:$(npm config --global get prefix)/bin
-
           echo 'Checking path.'
           echo ${PATH} | tr ':' '\n'
 
           echo 'Checking environment variables.'
           env | sort
-
-          echo 'Checking NVM version.'
-          nvm --version
 
           echo 'Checking NPM version.'
           npm --version
