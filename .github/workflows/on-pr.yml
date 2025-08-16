@@ -34,10 +34,6 @@ on:
       - 'CMakeLists.txt'
       - 'conanfile.py'
   push:
-    branches:
-      - develop
-      - release
-      - master
     paths:
       - '.github/actions/build-deps/**'
       - '.github/actions/build-test/**'
