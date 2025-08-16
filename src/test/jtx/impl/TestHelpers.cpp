@@ -80,10 +80,7 @@ issuerMPTEscrowed(jtx::Env const& env, jtx::MPT const& mpt)
 }
 
 jtx::PrettyAmount
-issuerBalance(
-    jtx::Env& env,
-    jtx::Account const& account,
-    Issue const& issue)
+issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue)
 {
     Json::Value params;
     params[jss::account] = account.human();
@@ -98,10 +95,7 @@ issuerBalance(
 }
 
 jtx::PrettyAmount
-issuerEscrowed(
-    jtx::Env& env,
-    jtx::Account const& account,
-    Issue const& issue)
+issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue)
 {
     Json::Value params;
     params[jss::account] = account.human();
@@ -113,7 +107,6 @@ issuerEscrowed(
     STAmount const amount = amountFromString(issue, locked.asString());
     return {amount, account.name()};
 }
-
 
 /* Path finding */
 /******************************************************************************/

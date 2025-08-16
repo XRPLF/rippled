@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/EscrowUtils.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/tx/detail/Escrow.h>
-#include <xrpld/app/misc/EscrowUtils.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
@@ -185,8 +185,7 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
 
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return createPreclaimHelper<T>(
-                        ctx, account, dest, amount);
+                    return createPreclaimHelper<T>(ctx, account, dest, amount);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
@@ -461,7 +460,8 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
         {
             if (auto const ret = std::visit(
                     [&]<typename T>(T const&) {
-                        return escrowUnlockPreclaimHelper<T>(ctx.view, dest, amount);
+                        return escrowUnlockPreclaimHelper<T>(
+                            ctx.view, dest, amount);
                     },
                     amount.asset().value());
                 !isTesSuccess(ret))

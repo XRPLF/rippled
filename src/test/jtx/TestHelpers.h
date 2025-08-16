@@ -123,16 +123,10 @@ uint64_t
 issuerMPTEscrowed(jtx::Env const& env, jtx::MPT const& mpt);
 
 jtx::PrettyAmount
-issuerBalance(
-    jtx::Env& env,
-    jtx::Account const& account,
-    Issue const& issue);
+issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue);
 
 jtx::PrettyAmount
-issuerEscrowed(
-    jtx::Env& env,
-    jtx::Account const& account,
-    Issue const& issue);
+issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue);
 
 /* Path finding */
 /******************************************************************************/

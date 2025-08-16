@@ -96,10 +96,18 @@ bool
 channelExists(ReadView const& view, uint256 const& chan);
 
 Buffer
-signClaimAuth(PublicKey const& pk, SecretKey const& sk, uint256 const& channel, STAmount const& authAmt);
+signClaimAuth(
+    PublicKey const& pk,
+    SecretKey const& sk,
+    uint256 const& channel,
+    STAmount const& authAmt);
 
 Rate
-rate(Env& env, Account const& account, Account const& dest, std::uint32_t const& seq);
+rate(
+    Env& env,
+    Account const& account,
+    Account const& dest,
+    std::uint32_t const& seq);
 
 }  // namespace paychan
 

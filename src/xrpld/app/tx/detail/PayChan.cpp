@@ -171,7 +171,8 @@ closeChannel(
 
             if (auto const ret = std::visit(
                     [&]<typename T>(T const&) {
-                        return escrowUnlockPreclaimHelper<T>(view, src, reqDelta, false);
+                        return escrowUnlockPreclaimHelper<T>(
+                            view, src, reqDelta, false);
                     },
                     reqDelta.asset().value());
                 !isTesSuccess(ret))
@@ -206,7 +207,8 @@ closeChannel(
     {
         if (!view.dirRemove(keylet::ownerDir(issuer), *optPage, key, true))
         {
-            JLOG(j.fatal()) << "Could not remove paychan from issuer owner directory";
+            JLOG(j.fatal())
+                << "Could not remove paychan from issuer owner directory";
             return tefBAD_LEDGER;
         }
     }
@@ -663,7 +665,8 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
 
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return escrowUnlockPreclaimHelper<T>(ctx.view, dest, amount);
+                    return escrowUnlockPreclaimHelper<T>(
+                        ctx.view, dest, amount);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))

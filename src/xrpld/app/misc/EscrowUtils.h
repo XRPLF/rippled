@@ -314,7 +314,8 @@ escrowUnlockPreclaimHelper<Issue>(
         return ter;
 
     // If the issuer has deep frozen the account, return tecFROZEN
-    if (checkFreeze && isDeepFrozen(view, account, amount.getCurrency(), amount.getIssuer()))
+    if (checkFreeze &&
+        isDeepFrozen(view, account, amount.getCurrency(), amount.getIssuer()))
         return tecFROZEN;
 
     return tesSUCCESS;

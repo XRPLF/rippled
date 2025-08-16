@@ -146,7 +146,11 @@ signClaimAuth(
 }
 
 Rate
-rate(Env& env, Account const& account, Account const& dest, std::uint32_t const& seq)
+rate(
+    Env& env,
+    Account const& account,
+    Account const& dest,
+    std::uint32_t const& seq)
 {
     auto const sle = env.le(keylet::payChan(account.id(), dest.id(), seq));
     if (sle->isFieldPresent(sfTransferRate))
