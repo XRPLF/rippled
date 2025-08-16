@@ -71,8 +71,9 @@ protocol = wss2
 admin = 127.0.0.1
 )rippleConfig");
 
-        p->loadFromString(boost::str(
-            toLoad % validator_data::token % validator_data::public_key));
+        p->loadFromString(
+            boost::str(
+                toLoad % validator_data::token % validator_data::public_key));
 
         setupConfigForUnitTests(*p);
 
@@ -96,6 +97,16 @@ admin = 127.0.0.1
             BEAST_EXPECT(result.isMember(jss::info));
             auto const& info = result[jss::info];
             BEAST_EXPECT(info.isMember(jss::build_version));
+
+            // Test for native_currency_code
+            BEAST_EXPECT(info.isMember(jss::native_currency_code));
+
+            // Verify the value is a string and equals "XRP"
+            BEAST_EXPECT(info[jss::native_currency_code].isString());
+            auto const nativeCurrencyCode =
+                info[jss::native_currency_code].asString();
+            BEAST_EXPECT(nativeCurrencyCode == "XRP");
+
             // Git info is not guaranteed to be present
             if (info.isMember(jss::git))
             {
@@ -110,6 +121,36 @@ admin = 127.0.0.1
                     !git.isMember(jss::branch) ||
                     (git[jss::branch].isString() &&
                      git[jss::branch].asString().size() != 0));
+            }
+        }
+
+        // Additional test to demonstrate extracting native_currency_code from
+        // JSON response
+        {
+            Env env(*this);
+            auto const serverinfo = env.rpc("server_info");
+
+            // Verify the complete JSON response structure
+            BEAST_EXPECT(serverinfo.isMember(jss::result));
+            auto const& result = serverinfo[jss::result];
+            BEAST_EXPECT(result[jss::status] == "success");
+            BEAST_EXPECT(result.isMember(jss::info));
+
+            // Extract native currency code from the response
+            auto const& info = result[jss::info];
+            if (info.isMember(jss::native_currency_code))
+            {
+                auto const currencyCode =
+                    info[jss::native_currency_code].asString();
+
+                // Verify it's the expected value
+                BEAST_EXPECT(currencyCode == "XRP");
+            }
+            else
+            {
+                fail(
+                    "native_currency_code field not found in server_info "
+                    "response");
             }
         }
 
