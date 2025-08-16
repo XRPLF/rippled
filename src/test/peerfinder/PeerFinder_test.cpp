@@ -98,7 +98,7 @@ public:
             if (!list.empty())
             {
                 BEAST_EXPECT(list.size() == 1);
-                auto const slot = logic.new_outbound_slot(list.front());
+                auto const [slot, _] = logic.new_outbound_slot(list.front());
                 BEAST_EXPECT(logic.onConnected(
                     slot, beast::IP::Endpoint::from_string("65.0.0.2:5")));
                 logic.on_closed(slot);
@@ -139,7 +139,7 @@ public:
             if (!list.empty())
             {
                 BEAST_EXPECT(list.size() == 1);
-                auto const slot = logic.new_outbound_slot(list.front());
+                auto const [slot, _] = logic.new_outbound_slot(list.front());
                 if (!BEAST_EXPECT(logic.onConnected(
                         slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
                     return;
@@ -181,14 +181,14 @@ public:
         {
             BEAST_EXPECT(list.size() == 1);
             auto const remote = list.front();
-            auto const slot1 = logic.new_outbound_slot(remote);
+            auto const [slot1, _] = logic.new_outbound_slot(remote);
             if (BEAST_EXPECT(slot1 != nullptr))
             {
                 BEAST_EXPECT(
                     logic.connectedAddresses_.count(remote.address()) == 1);
                 auto const local =
                     beast::IP::Endpoint::from_string("65.0.0.2:1024");
-                auto const slot2 = logic.new_inbound_slot(local, remote);
+                auto const [slot2, _] = logic.new_inbound_slot(local, remote);
                 BEAST_EXPECT(
                     logic.connectedAddresses_.count(remote.address()) == 1);
                 if (!BEAST_EXPECT(slot2 == nullptr))
@@ -223,12 +223,13 @@ public:
             auto const remote = list.front();
             auto const local =
                 beast::IP::Endpoint::from_string("65.0.0.2:1024");
-            auto const slot1 = logic.new_inbound_slot(local, remote);
+            auto const [slot1, _] = logic.new_inbound_slot(local, remote);
+
             if (BEAST_EXPECT(slot1 != nullptr))
             {
                 BEAST_EXPECT(
                     logic.connectedAddresses_.count(remote.address()) == 1);
-                auto const slot2 = logic.new_outbound_slot(remote);
+                auto const [slot2, _] = logic.new_outbound_slot(remote);
                 BEAST_EXPECT(
                     logic.connectedAddresses_.count(remote.address()) == 1);
                 if (!BEAST_EXPECT(slot2 == nullptr))
@@ -282,8 +283,7 @@ public:
             Counts counts;
             counts.onConfig(config);
             BEAST_EXPECT(
-                counts.out_max() == expectOut &&
-                counts.inboundSlots() == expectIn &&
+                counts.out_max() == expectOut && counts.in_max() == expectIn &&
                 config.ipLimit == expectIpLimit);
         };
 

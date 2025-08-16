@@ -261,7 +261,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    SlotImp::ptr
+    std::pair<SlotImp::ptr, Result>
     new_inbound_slot(
         beast::IP::Endpoint const& local_endpoint,
         beast::IP::Endpoint const& remote_endpoint)
@@ -282,7 +282,7 @@ public:
                 JLOG(m_journal.debug())
                     << beast::leftw(18) << "Logic dropping inbound "
                     << remote_endpoint << " because of ip limits.";
-                return SlotImp::ptr();
+                return {SlotImp::ptr(), Result::ipLimitExceeded};
             }
         }
 
@@ -292,7 +292,7 @@ public:
             JLOG(m_journal.debug())
                 << beast::leftw(18) << "Logic dropping " << remote_endpoint
                 << " as duplicate incoming";
-            return SlotImp::ptr();
+            return {SlotImp::ptr(), Result::duplicatePeer};
         }
 
         // Create the slot
@@ -314,11 +314,11 @@ public:
         // Update counts
         counts_.add(*slot);
 
-        return result.first->second;
+        return {result.first->second, Result::success};
     }
 
     // Can't check for self-connect because we don't know the local endpoint
-    SlotImp::ptr
+    std::pair<SlotImp::ptr, Result>
     new_outbound_slot(beast::IP::Endpoint const& remote_endpoint)
     {
         JLOG(m_journal.debug())
@@ -332,7 +332,7 @@ public:
             JLOG(m_journal.debug())
                 << beast::leftw(18) << "Logic dropping " << remote_endpoint
                 << " as duplicate connect";
-            return SlotImp::ptr();
+            return {SlotImp::ptr(), Result::duplicatePeer};
         }
 
         // Create the slot
@@ -353,7 +353,7 @@ public:
         // Update counts
         counts_.add(*slot);
 
-        return result.first->second;
+        return {result.first->second, Result::success};
     }
 
     bool
@@ -417,7 +417,7 @@ public:
 
         // Check for duplicate connection by key
         if (keys_.find(key) != keys_.end())
-            return Result::duplicate;
+            return Result::duplicatePeer;
 
         // If the peer belongs to a cluster or is reserved,
         // update the slot to reflect that.
@@ -430,6 +430,8 @@ public:
         {
             if (!slot->inbound())
                 bootcache_.on_success(slot->remote_endpoint());
+            if (slot->inbound() && counts_.in_max() == 0)
+                return Result::inboundDisabled;
             return Result::full;
         }
 
@@ -651,7 +653,7 @@ public:
             // 2. We have slots
             // 3. We haven't failed the firewalled test
             //
-            if (config_.wantIncoming && counts_.inboundSlots() > 0)
+            if (config_.wantIncoming && counts_.in_max() > 0)
             {
                 Endpoint ep;
                 ep.hops = 0;
