@@ -1,7 +1,6 @@
 # External Conan recipes
 
-The subdirectories in this directory contain copies of external libraries used
-by rippled.
+The subdirectories in this directory contain external libraries used by rippled.
 
 | Folder           | Upstream                                                       | Description                                                                                  |
 | :--------------- | :------------------------------------------------------------- | :------------------------------------------------------------------------------------------- |

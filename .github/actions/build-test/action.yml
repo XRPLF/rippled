@@ -1,0 +1,102 @@
+# This action build and tests the binary. The Conan dependencies must have
+# already been installed (see the build-deps action).
+name: Build and Test
+
+inputs:
+  build_dir:
+    description: 'The directory where to build.'
+    required: true
+    type: string
+  build_type:
+    description: 'The build type to use.'
+    required: true
+    type: choice
+    options:
+      - 'Debug'
+      - 'Release'
+  cmake_args:
+    description: 'Additional arguments to pass to CMake.'
+    required: false
+    type: string
+    default: ''
+  cmake_target:
+    description: 'The CMake target to build.'
+    required: true
+    type: string
+  codecov_token:
+    description: 'The Codecov token to use for uploading coverage reports.'
+    required: false
+    type: string
+    default: ''
+  os:
+    description: 'The operating system to use for the build (linux, macos, or windows).'
+    required: true
+    type: choice
+    options:
+      - 'linux'
+      - 'macos'
+      - 'windows'
+
+runs:
+  using: composite
+  steps:
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}
+      run: |
+        echo 'Configuring CMake.'
+        cmake \
+          -G '${{ inputs.os == 'windows' && 'Visual Studio 17 2022' || 'Ninja' }}' \
+          -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake \
+          -DCMAKE_BUILD_TYPE=${{ inputs.build_type }} \
+          ${{ inputs.cmake_args }} \
+          ..
+    - name: Build the binary
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}
+      run: |
+        echo 'Building binary.'
+        cmake \
+          --build . \
+          --config ${{ inputs.build_type }} \
+          --parallel $(nproc) \
+          --target ${{ inputs.cmake_target }}
+    - name: Check linking
+      if: ${{ inputs.os == 'linux' }}
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}
+      run: |
+        echo 'Checking linking.'
+        ldd ./rippled
+        if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+          echo 'The binary is statically linked.'
+        else
+          echo 'The binary is dynamically linked.'
+          exit 1
+        fi
+    - name: Verify voidstar
+      if: ${{ contains(inputs.cmake_args, '-Dvoidstar=ON') }}
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}
+      run: |
+        echo 'Verifying presence of instrumentation.'
+        ./rippled --version | grep libvoidstar
+    - name: Test the binary
+      if: ${{ inputs.cmake_target != 'coverage' }}
+      shell: bash
+      working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'windows' && inputs.build_type || '' }}
+      run: |
+        echo 'Testing binary.'
+        ./rippled --unittest --unittest-jobs $(nproc)
+        ctest -j $(nproc) --output-on-failure
+    - name: Upload coverage report
+      if: ${{ inputs.cmake_target == 'coverage' && inputs.codecov_token }}
+      uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+      with:
+        disable_search: true
+        disable_telem: true
+        fail_ci_if_error: true
+        files: ${{ inputs.build_dir }}/coverage.xml
+        plugins: noop
+        token: ${{ inputs.codecov_token }}
+        verbose: true

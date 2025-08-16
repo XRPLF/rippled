@@ -1,0 +1,170 @@
+{
+  "architecture": [
+    {
+      "platform": "linux/amd64",
+      "runner": [
+        "self-hosted",
+        "Linux",
+        "X64",
+        "heavy"
+      ]
+    },
+    {
+      "platform": "linux/arm64",
+      "runner": [
+        "self-hosted",
+        "Linux",
+        "ARM64",
+        "heavy-arm64"
+      ]
+    }
+  ],
+  "os": [
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "gcc",
+      "compiler_version": "12"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "gcc",
+      "compiler_version": "13"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "gcc",
+      "compiler_version": "14"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "gcc",
+      "compiler_version": "15"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "clang",
+      "compiler_version": "16"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "clang",
+      "compiler_version": "17"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "clang",
+      "compiler_version": "18"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "clang",
+      "compiler_version": "19"
+    },
+    {
+      "distro_name": "debian",
+      "distro_version": "bookworm",
+      "compiler_name": "clang",
+      "compiler_version": "20"
+    },
+    {
+      "distro_name": "rhel",
+      "distro_version": "9.4",
+      "compiler_name": "gcc",
+      "compiler_version": "12"
+    },
+    {
+      "distro_name": "rhel",
+      "distro_version": "9.4",
+      "compiler_name": "gcc",
+      "compiler_version": "13"
+    },
+    {
+      "distro_name": "rhel",
+      "distro_version": "9.4",
+      "compiler_name": "gcc",
+      "compiler_version": "14"
+    },
+    {
+      "distro_name": "rhel",
+      "distro_version": "9.6",
+      "compiler_name": "gcc",
+      "compiler_version": "13"
+    },
+    {
+      "distro_name": "rhel",
+      "distro_version": "9.6",
+      "compiler_name": "gcc",
+      "compiler_version": "14"
+    },
+    {
+      "distro_name": "rhel",
+      "distro_version": "9.4",
+      "compiler_name": "clang",
+      "compiler_version": "any"
+    },
+    {
+      "distro_name": "rhel",
+      "distro_version": "9.6",
+      "compiler_name": "clang",
+      "compiler_version": "any"
+    },
+    {
+      "distro_name": "ubuntu",
+      "distro_version": "jammy",
+      "compiler_name": "gcc",
+      "compiler_version": "12"
+    },
+    {
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
+      "compiler_name": "gcc",
+      "compiler_version": "13"
+    },
+    {
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
+      "compiler_name": "gcc",
+      "compiler_version": "14"
+    },
+    {
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
+      "compiler_name": "clang",
+      "compiler_version": "16"
+    },
+    {
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
+      "compiler_name": "clang",
+      "compiler_version": "17"
+    },
+    {
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
+      "compiler_name": "clang",
+      "compiler_version": "18"
+    },
+    {
+      "distro_name": "ubuntu",
+      "distro_version": "noble",
+      "compiler_name": "clang",
+      "compiler_version": "19"
+    }
+  ],
+  "build_type": [
+    "Debug",
+    "Release"
+  ],
+  "cmake_args": [
+    "-Dunity=OFF",
+    "-Dunity=ON"
+  ]
+}
