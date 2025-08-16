@@ -364,6 +364,8 @@ ConnectAttempt::processResponse()
             remote_endpoint_.address(),
             app_);
 
+        usage_.setPublicKey(publicKey);
+
         JLOG(journal_.info())
             << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
 
