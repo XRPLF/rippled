@@ -29,11 +29,11 @@ on:
       - '.pre-commit-config.yaml'
       - 'CMakeLists.txt'
       - 'conanfile.py'
-  types:
-    - opened
-    - synchronize
-    - labeled
-    - unlabeled
+    types:
+      - opened
+      - synchronize
+      - labeled
+      - unlabeled
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
