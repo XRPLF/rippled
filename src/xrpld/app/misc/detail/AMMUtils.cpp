@@ -20,13 +20,12 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/ledger/Sandbox.h>
-#include <xrpl/protocol/AMMCore.h>
-#include <xrpl/protocol/Indexes.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpld/app/misc/AMMHelpers.h>
+
 #include <cmath>
 #include <limits>
 
@@ -512,38 +511,40 @@ ammConcentratedLiquidityFeeGrowth(
 {
     // For concentrated liquidity, we need to calculate fees differently
     // based on the active liquidity in the current price range
-    
+
     auto const ammSle = view.read(keylet::amm(ammID));
     if (!ammSle)
     {
         JLOG(j.debug()) << "AMM not found for fee calculation";
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     // Get the active liquidity for the current tick range
     // This is the key difference: concentrated liquidity fees are based on
     // active liquidity, not total liquidity
-    auto const activeLiquidity = ammSle->isFieldPresent(sfAggregatedLiquidity) ? 
-        ammSle->getFieldAmount(sfAggregatedLiquidity) : 
-        ammSle->getFieldAmount(sfLPTokenBalance);
-    
+    auto const activeLiquidity = ammSle->isFieldPresent(sfAggregatedLiquidity)
+        ? ammSle->getFieldAmount(sfAggregatedLiquidity)
+        : ammSle->getFieldAmount(sfLPTokenBalance);
+
     if (activeLiquidity <= STAmount{0})
     {
         JLOG(j.debug()) << "No active liquidity for fee calculation";
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     // Calculate fee amount using the same mechanism as regular AMM
     // but applied to the active liquidity only
-    auto const feeAmount = mulRatio(amountIn, STAmount{tradingFee}, STAmount{1000000}, false);
-    
+    auto const feeAmount =
+        mulRatio(amountIn, STAmount{tradingFee}, STAmount{1000000}, false);
+
     // Fee growth per unit of active liquidity
-    auto const feeGrowthDelta = mulRatio(feeAmount, STAmount{1}, activeLiquidity, false);
-    
+    auto const feeGrowthDelta =
+        mulRatio(feeAmount, STAmount{1}, activeLiquidity, false);
+
     // Determine which asset the fee is in
     auto const asset0 = ammSle->getFieldIssue(sfAsset);
     auto const asset1 = ammSle->getFieldIssue(sfAsset2);
-    
+
     if (amountIn.issue() == asset0)
     {
         return {feeGrowthDelta, STAmount{0}};
@@ -571,44 +572,56 @@ ammConcentratedLiquidityUpdatePositionFees(
         JLOG(j.debug()) << "Position not found for fee update";
         return tecAMM_POSITION_NOT_FOUND;
     }
-    
+
     // Calculate fee growth inside the position's tick range
-    auto const [feeGrowthInside0, feeGrowthInside1] = ammConcentratedLiquidityCalculateFeeGrowthInside(
-        view, 
-        positionSle->getFieldH256(sfAMMID),
-        tickLower, 
-        tickUpper, 
-        currentTick,
-        feeGrowthGlobal0,
-        feeGrowthGlobal1,
-        j);
-    
+    auto const [feeGrowthInside0, feeGrowthInside1] =
+        ammConcentratedLiquidityCalculateFeeGrowthInside(
+            view,
+            positionSle->getFieldH256(sfAMMID),
+            tickLower,
+            tickUpper,
+            currentTick,
+            feeGrowthGlobal0,
+            feeGrowthGlobal1,
+            j);
+
     // Calculate fees owed
     auto const liquidity = positionSle->getFieldAmount(sfLiquidity);
-    auto const feeGrowthInside0Last = positionSle->getFieldAmount(sfFeeGrowthInside0LastX128);
-    auto const feeGrowthInside1Last = positionSle->getFieldAmount(sfFeeGrowthInside1LastX128);
-    
+    auto const feeGrowthInside0Last =
+        positionSle->getFieldAmount(sfFeeGrowthInside0LastX128);
+    auto const feeGrowthInside1Last =
+        positionSle->getFieldAmount(sfFeeGrowthInside1LastX128);
+
     auto const feeGrowthInside0Delta = feeGrowthInside0 - feeGrowthInside0Last;
     auto const feeGrowthInside1Delta = feeGrowthInside1 - feeGrowthInside1Last;
-    
-    auto const feesOwed0 = mulRatio(liquidity, feeGrowthInside0Delta, STAmount{1}, false);
-    auto const feesOwed1 = mulRatio(liquidity, feeGrowthInside1Delta, STAmount{1}, false);
-    
+
+    auto const feesOwed0 =
+        mulRatio(liquidity, feeGrowthInside0Delta, STAmount{1}, false);
+    auto const feesOwed1 =
+        mulRatio(liquidity, feeGrowthInside1Delta, STAmount{1}, false);
+
     // Update position
     auto const newPositionSle = std::make_shared<SLE>(*positionSle);
-    newPositionSle->setFieldAmount(sfFeeGrowthInside0LastX128, feeGrowthInside0);
-    newPositionSle->setFieldAmount(sfFeeGrowthInside1LastX128, feeGrowthInside1);
-    
-    auto const currentTokensOwed0 = newPositionSle->getFieldAmount(sfTokensOwed0);
-    auto const currentTokensOwed1 = newPositionSle->getFieldAmount(sfTokensOwed1);
-    
-    newPositionSle->setFieldAmount(sfTokensOwed0, currentTokensOwed0 + feesOwed0);
-    newPositionSle->setFieldAmount(sfTokensOwed1, currentTokensOwed1 + feesOwed1);
-    
+    newPositionSle->setFieldAmount(
+        sfFeeGrowthInside0LastX128, feeGrowthInside0);
+    newPositionSle->setFieldAmount(
+        sfFeeGrowthInside1LastX128, feeGrowthInside1);
+
+    auto const currentTokensOwed0 =
+        newPositionSle->getFieldAmount(sfTokensOwed0);
+    auto const currentTokensOwed1 =
+        newPositionSle->getFieldAmount(sfTokensOwed1);
+
+    newPositionSle->setFieldAmount(
+        sfTokensOwed0, currentTokensOwed0 + feesOwed0);
+    newPositionSle->setFieldAmount(
+        sfTokensOwed1, currentTokensOwed1 + feesOwed1);
+
     view.update(newPositionSle);
-    
-    JLOG(j.debug()) << "Updated position fees: owed0=" << feesOwed0 << " owed1=" << feesOwed1;
-    
+
+    JLOG(j.debug()) << "Updated position fees: owed0=" << feesOwed0
+                    << " owed1=" << feesOwed1;
+
     return tesSUCCESS;
 }
 
@@ -626,42 +639,48 @@ ammConcentratedLiquidityCalculateFeesOwed(
         JLOG(j.debug()) << "Position not found for fee calculation";
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     auto const tickLower = positionSle->getFieldU32(sfTickLower);
     auto const tickUpper = positionSle->getFieldU32(sfTickUpper);
-    
+
     // Get current tick from AMM
-    auto const ammSle = view.read(keylet::amm(positionSle->getFieldH256(sfAMMID)));
+    auto const ammSle =
+        view.read(keylet::amm(positionSle->getFieldH256(sfAMMID)));
     if (!ammSle)
     {
         JLOG(j.debug()) << "AMM not found for fee calculation";
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
-    
+
     // Calculate fee growth inside the position's tick range
-    auto const [feeGrowthInside0, feeGrowthInside1] = ammConcentratedLiquidityCalculateFeeGrowthInside(
-        view,
-        positionSle->getFieldH256(sfAMMID),
-        tickLower,
-        tickUpper,
-        currentTick,
-        feeGrowthGlobal0,
-        feeGrowthGlobal1,
-        j);
-    
+    auto const [feeGrowthInside0, feeGrowthInside1] =
+        ammConcentratedLiquidityCalculateFeeGrowthInside(
+            view,
+            positionSle->getFieldH256(sfAMMID),
+            tickLower,
+            tickUpper,
+            currentTick,
+            feeGrowthGlobal0,
+            feeGrowthGlobal1,
+            j);
+
     // Calculate fees owed
     auto const liquidity = positionSle->getFieldAmount(sfLiquidity);
-    auto const feeGrowthInside0Last = positionSle->getFieldAmount(sfFeeGrowthInside0LastX128);
-    auto const feeGrowthInside1Last = positionSle->getFieldAmount(sfFeeGrowthInside1LastX128);
-    
+    auto const feeGrowthInside0Last =
+        positionSle->getFieldAmount(sfFeeGrowthInside0LastX128);
+    auto const feeGrowthInside1Last =
+        positionSle->getFieldAmount(sfFeeGrowthInside1LastX128);
+
     auto const feeGrowthInside0Delta = feeGrowthInside0 - feeGrowthInside0Last;
     auto const feeGrowthInside1Delta = feeGrowthInside1 - feeGrowthInside1Last;
-    
-    auto const feesOwed0 = mulRatio(liquidity, feeGrowthInside0Delta, STAmount{1}, false);
-    auto const feesOwed1 = mulRatio(liquidity, feeGrowthInside1Delta, STAmount{1}, false);
-    
+
+    auto const feesOwed0 =
+        mulRatio(liquidity, feeGrowthInside0Delta, STAmount{1}, false);
+    auto const feesOwed1 =
+        mulRatio(liquidity, feeGrowthInside1Delta, STAmount{1}, false);
+
     return {feesOwed0, feesOwed1};
 }
 
@@ -676,15 +695,15 @@ ammConcentratedLiquidityUpdateTickFeeGrowth(
 {
     auto const tickKey = getConcentratedLiquidityTickKey(tick);
     auto const tickSle = view.read(keylet::child(tickKey));
-    
+
     if (!tickSle)
     {
         JLOG(j.debug()) << "Tick not found for fee growth update";
         return tecAMM_TICK_NOT_INITIALIZED;
     }
-    
+
     auto const newTickSle = std::make_shared<SLE>(*tickSle);
-    
+
     if (isAboveCurrentTick)
     {
         // Update fee growth outside (above current tick)
@@ -697,11 +716,11 @@ ammConcentratedLiquidityUpdateTickFeeGrowth(
         newTickSle->setFieldAmount(sfFeeGrowthOutside0X128, feeGrowthGlobal0);
         newTickSle->setFieldAmount(sfFeeGrowthOutside1X128, feeGrowthGlobal1);
     }
-    
+
     view.update(newTickSle);
-    
+
     JLOG(j.debug()) << "Updated tick " << tick << " fee growth";
-    
+
     return tesSUCCESS;
 }
 
@@ -720,36 +739,44 @@ ammConcentratedLiquidityCalculateFeeGrowthInside(
     // Get fee growth outside for lower and upper ticks
     auto const lowerTickKey = getConcentratedLiquidityTickKey(tickLower);
     auto const upperTickKey = getConcentratedLiquidityTickKey(tickUpper);
-    
+
     auto const lowerTickSle = view.read(keylet::child(lowerTickKey));
     auto const upperTickSle = view.read(keylet::child(upperTickKey));
-    
+
     STAmount feeGrowthOutside0Lower{0};
     STAmount feeGrowthOutside1Lower{0};
     STAmount feeGrowthOutside0Upper{0};
     STAmount feeGrowthOutside1Upper{0};
-    
+
     if (lowerTickSle)
     {
-        feeGrowthOutside0Lower = lowerTickSle->getFieldAmount(sfFeeGrowthOutside0X128);
-        feeGrowthOutside1Lower = lowerTickSle->getFieldAmount(sfFeeGrowthOutside1X128);
+        feeGrowthOutside0Lower =
+            lowerTickSle->getFieldAmount(sfFeeGrowthOutside0X128);
+        feeGrowthOutside1Lower =
+            lowerTickSle->getFieldAmount(sfFeeGrowthOutside1X128);
     }
-    
+
     if (upperTickSle)
     {
-        feeGrowthOutside0Upper = upperTickSle->getFieldAmount(sfFeeGrowthOutside0X128);
-        feeGrowthOutside1Upper = upperTickSle->getFieldAmount(sfFeeGrowthOutside1X128);
+        feeGrowthOutside0Upper =
+            upperTickSle->getFieldAmount(sfFeeGrowthOutside0X128);
+        feeGrowthOutside1Upper =
+            upperTickSle->getFieldAmount(sfFeeGrowthOutside1X128);
     }
-    
+
     // Calculate fee growth inside
-    // Fee growth inside = fee growth global - fee growth outside lower - fee growth outside upper
-    auto const feeGrowthInside0 = feeGrowthGlobal0 - feeGrowthOutside0Lower - feeGrowthOutside0Upper;
-    auto const feeGrowthInside1 = feeGrowthGlobal1 - feeGrowthOutside1Lower - feeGrowthOutside1Upper;
-    
+    // Fee growth inside = fee growth global - fee growth outside lower - fee
+    // growth outside upper
+    auto const feeGrowthInside0 =
+        feeGrowthGlobal0 - feeGrowthOutside0Lower - feeGrowthOutside0Upper;
+    auto const feeGrowthInside1 =
+        feeGrowthGlobal1 - feeGrowthOutside1Lower - feeGrowthOutside1Upper;
+
     return {feeGrowthInside0, feeGrowthInside1};
 }
 
-// Integrated AMM swap functions that work with both regular and concentrated liquidity
+// Integrated AMM swap functions that work with both regular and concentrated
+// liquidity
 
 /** Calculate swap output for AMM with support for concentrated liquidity
  * This function integrates with existing AMM swap logic while supporting
@@ -798,45 +825,46 @@ ammConcentratedLiquiditySwapAssetIn(
     // 1. Calculate the swap using the active liquidity
     // 2. Update fee growth for all affected positions
     // 3. Handle tick crossing if necessary
-    
+
     auto const ammSle = view.read(keylet::amm(ammID));
     if (!ammSle)
     {
         JLOG(j.debug()) << "AMM not found for concentrated liquidity swap";
         return toAmount<TOut>(getIssue(pool.out), 0);
     }
-    
+
     // Check if this is a concentrated liquidity AMM
     if (!ammSle->isFieldPresent(sfCurrentTick))
     {
         JLOG(j.debug()) << "Not a concentrated liquidity AMM";
         return toAmount<TOut>(getIssue(pool.out), 0);
     }
-    
+
     // Get current tick and sqrt price
     auto const currentTick = ammSle->getFieldS32(sfCurrentTick);
     auto const sqrtPriceX64 = ammSle->getFieldU64(sfSqrtPriceX64);
-    
+
     // Get active liquidity
-    auto const activeLiquidity = ammSle->isFieldPresent(sfAggregatedLiquidity) ? 
-        ammSle->getFieldAmount(sfAggregatedLiquidity) : 
-        ammSle->getFieldAmount(sfLPTokenBalance);
-    
+    auto const activeLiquidity = ammSle->isFieldPresent(sfAggregatedLiquidity)
+        ? ammSle->getFieldAmount(sfAggregatedLiquidity)
+        : ammSle->getFieldAmount(sfLPTokenBalance);
+
     if (activeLiquidity <= STAmount{0})
     {
-        JLOG(j.debug()) << "No active liquidity for concentrated liquidity swap";
+        JLOG(j.debug())
+            << "No active liquidity for concentrated liquidity swap";
         return toAmount<TOut>(getIssue(pool.out), 0);
     }
-    
+
     // For read-only operations, use a simplified calculation
     // For actual swaps, use the tick crossing function
-    auto const targetSqrtPriceX64 = calculateTargetSqrtPrice(
-        sqrtPriceX64, assetIn, tradingFee, j);
-    
+    auto const targetSqrtPriceX64 =
+        calculateTargetSqrtPrice(sqrtPriceX64, assetIn, tradingFee, j);
+
     // Calculate output using the price change
-    auto const output = calculateOutputForInput(
-        sqrtPriceX64, targetSqrtPriceX64, assetIn, j);
-    
+    auto const output =
+        calculateOutputForInput(sqrtPriceX64, targetSqrtPriceX64, assetIn, j);
+
     return toAmount<TOut>(getIssue(pool.out), output);
 }
 
@@ -861,97 +889,115 @@ ammConcentratedLiquiditySwapWithTickCrossing(
         JLOG(j.debug()) << "AMM not found for concentrated liquidity swap";
         return {toAmount<TOut>(getIssue(assetIn), 0), tecINTERNAL};
     }
-    
+
     auto const currentTick = ammSle->getFieldS32(sfCurrentTick);
     auto const sqrtPriceX64 = ammSle->getFieldU64(sfSqrtPriceX64);
     auto const tickSpacing = ammSle->getFieldU16(sfTickSpacing);
-    
+
     // Get current fee growth
-    auto const feeGrowthGlobal0 = ammSle->getFieldAmount(sfFeeGrowthGlobal0X128);
-    auto const feeGrowthGlobal1 = ammSle->getFieldAmount(sfFeeGrowthGlobal1X128);
-    
+    auto const feeGrowthGlobal0 =
+        ammSle->getFieldAmount(sfFeeGrowthGlobal0X128);
+    auto const feeGrowthGlobal1 =
+        ammSle->getFieldAmount(sfFeeGrowthGlobal1X128);
+
     // Calculate the target sqrt price after the swap
-    auto const targetSqrtPriceX64 = calculateTargetSqrtPrice(
-        sqrtPriceX64, assetIn, tradingFee, j);
-    
+    auto const targetSqrtPriceX64 =
+        calculateTargetSqrtPrice(sqrtPriceX64, assetIn, tradingFee, j);
+
     // Find the next initialized tick in the direction of the swap
     auto const nextTick = findNextInitializedTick(
         view, ammID, currentTick, targetSqrtPriceX64 > sqrtPriceX64, j);
-    
+
     TOut totalOutput{0};
     TIn remainingInput = assetIn;
     std::int32_t currentTickIter = currentTick;
     std::uint64_t currentSqrtPriceX64 = sqrtPriceX64;
-    
+
     // Execute the swap step by step, crossing ticks as needed
     while (remainingInput > TIn{0})
     {
         // Calculate the maximum amount we can swap before hitting the next tick
         auto const [maxInput, maxOutput, nextSqrtPriceX64] = calculateSwapStep(
-            view, ammID, currentTickIter, currentSqrtPriceX64, 
-            nextTick, remainingInput, tradingFee, j);
-        
+            view,
+            ammID,
+            currentTickIter,
+            currentSqrtPriceX64,
+            nextTick,
+            remainingInput,
+            tradingFee,
+            j);
+
         if (maxInput <= TIn{0})
         {
             JLOG(j.debug()) << "No more liquidity available for swap";
             break;
         }
-        
+
         // Execute the swap step
         auto const actualInput = std::min(remainingInput, maxInput);
         auto const actualOutput = calculateOutputForInput(
             currentSqrtPriceX64, nextSqrtPriceX64, actualInput, j);
-        
+
         totalOutput += actualOutput;
         remainingInput -= actualInput;
-        
+
         // Update fee growth for the current tick range
-        auto const feeGrowthDelta = calculateFeeGrowthForSwap(
-            actualInput, actualOutput, tradingFee, j);
-        
+        auto const feeGrowthDelta =
+            calculateFeeGrowthForSwap(actualInput, actualOutput, tradingFee, j);
+
         // Update global fee growth
-        auto const newFeeGrowthGlobal0 = feeGrowthGlobal0 + feeGrowthDelta.first;
-        auto const newFeeGrowthGlobal1 = feeGrowthGlobal1 + feeGrowthDelta.second;
-        
+        auto const newFeeGrowthGlobal0 =
+            feeGrowthGlobal0 + feeGrowthDelta.first;
+        auto const newFeeGrowthGlobal1 =
+            feeGrowthGlobal1 + feeGrowthDelta.second;
+
         // Update AMM state
         auto const newAmmSle = std::make_shared<SLE>(*ammSle);
         newAmmSle->setFieldAmount(sfFeeGrowthGlobal0X128, newFeeGrowthGlobal0);
         newAmmSle->setFieldAmount(sfFeeGrowthGlobal1X128, newFeeGrowthGlobal1);
-        
+
         // Check if we need to cross a tick
         if (nextSqrtPriceX64 != currentSqrtPriceX64)
         {
             // Cross the tick
             if (auto const ter = crossTick(
-                view, ammID, currentTickIter, nextSqrtPriceX64, 
-                newFeeGrowthGlobal0, newFeeGrowthGlobal1, j);
+                    view,
+                    ammID,
+                    currentTickIter,
+                    nextSqrtPriceX64,
+                    newFeeGrowthGlobal0,
+                    newFeeGrowthGlobal1,
+                    j);
                 ter != tesSUCCESS)
             {
                 return {totalOutput, ter};
             }
-            
+
             currentTickIter = nextTick;
             currentSqrtPriceX64 = nextSqrtPriceX64;
-            
+
             // Update AMM with new tick and price
             newAmmSle->setFieldU32(sfCurrentTick, currentTickIter);
             newAmmSle->setFieldU64(sfSqrtPriceX64, currentSqrtPriceX64);
-            
+
             // Find the next initialized tick
             auto const nextTickIter = findNextInitializedTick(
-                view, ammID, currentTickIter, 
-                targetSqrtPriceX64 > currentSqrtPriceX64, j);
-            
+                view,
+                ammID,
+                currentTickIter,
+                targetSqrtPriceX64 > currentSqrtPriceX64,
+                j);
+
             if (nextTickIter == currentTickIter)
             {
                 // No more ticks to cross
                 break;
             }
         }
-        
+
         view.update(newAmmSle);
     }
-    
+
     return {totalOutput, tesSUCCESS};
 }
 
@@ -966,38 +1012,41 @@ calculateTargetSqrtPrice(
     // SECURITY: Validate input parameters
     if (currentSqrtPriceX64 == 0)
     {
-        JLOG(j.warn()) << "calculateTargetSqrtPrice: currentSqrtPriceX64 cannot be zero";
+        JLOG(j.warn())
+            << "calculateTargetSqrtPrice: currentSqrtPriceX64 cannot be zero";
         return 0;
     }
-    
+
     if (tradingFee > 1000000)
     {
-        JLOG(j.warn()) << "calculateTargetSqrtPrice: invalid trading fee: " << tradingFee;
+        JLOG(j.warn()) << "calculateTargetSqrtPrice: invalid trading fee: "
+                       << tradingFee;
         return currentSqrtPriceX64;
     }
-    
+
     // SECURITY: Use safe arithmetic to prevent overflow
     auto const feeMultiplier = 1000000 - tradingFee;
     auto const inputValue = assetIn.getText();
-    
+
     // SECURITY: Check for division by zero and overflow
     if (feeMultiplier == 0)
     {
         JLOG(j.warn()) << "calculateTargetSqrtPrice: fee multiplier is zero";
         return currentSqrtPriceX64;
     }
-    
+
     // SECURITY: Use safe multiplication and division
     auto const scaledInput = inputValue * feeMultiplier;
     auto const deltaSqrtPrice = scaledInput / 1000000;
-    
+
     // SECURITY: Check for overflow in addition
-    if (deltaSqrtPrice > std::numeric_limits<std::uint64_t>::max() - currentSqrtPriceX64)
+    if (deltaSqrtPrice >
+        std::numeric_limits<std::uint64_t>::max() - currentSqrtPriceX64)
     {
         JLOG(j.warn()) << "calculateTargetSqrtPrice: overflow detected";
         return std::numeric_limits<std::uint64_t>::max();
     }
-    
+
     return currentSqrtPriceX64 + static_cast<std::uint64_t>(deltaSqrtPrice);
 }
 
@@ -1011,9 +1060,10 @@ findNextInitializedTick(
     beast::Journal const& j)
 {
     // This is a simplified implementation
-    // In practice, you'd need to iterate through all ticks and find the next one
+    // In practice, you'd need to iterate through all ticks and find the next
+    // one
     auto const tickSpacing = 60;  // Default tick spacing
-    
+
     if (ascending)
     {
         return currentTick + tickSpacing;
@@ -1024,7 +1074,8 @@ findNextInitializedTick(
     }
 }
 
-/** Calculate the maximum amount that can be swapped before hitting the next tick */
+/** Calculate the maximum amount that can be swapped before hitting the next
+ * tick */
 std::tuple<STAmount, STAmount, std::uint64_t>
 calculateSwapStep(
     ReadView const& view,
@@ -1039,44 +1090,46 @@ calculateSwapStep(
     // SECURITY: Validate input parameters
     if (currentSqrtPriceX64 == 0)
     {
-        JLOG(j.warn()) << "calculateSwapStep: currentSqrtPriceX64 cannot be zero";
+        JLOG(j.warn())
+            << "calculateSwapStep: currentSqrtPriceX64 cannot be zero";
         return {STAmount{0}, STAmount{0}, currentSqrtPriceX64};
     }
-    
+
     if (tradingFee > 1000000)
     {
-        JLOG(j.warn()) << "calculateSwapStep: invalid trading fee: " << tradingFee;
+        JLOG(j.warn()) << "calculateSwapStep: invalid trading fee: "
+                       << tradingFee;
         return {STAmount{0}, STAmount{0}, currentSqrtPriceX64};
     }
-    
+
     // Calculate the sqrt price at the next tick
     auto const nextSqrtPriceX64 = tickToSqrtPriceX64(nextTick);
-    
+
     // SECURITY: Check for underflow in price difference
     if (nextSqrtPriceX64 <= currentSqrtPriceX64)
     {
         JLOG(j.warn()) << "calculateSwapStep: invalid price direction";
         return {STAmount{0}, STAmount{0}, currentSqrtPriceX64};
     }
-    
+
     // SECURITY: Use safe arithmetic to prevent overflow
     auto const deltaSqrtPrice = nextSqrtPriceX64 - currentSqrtPriceX64;
     auto const feeMultiplier = 1000000 - tradingFee;
-    
+
     // SECURITY: Check for division by zero
     if (feeMultiplier == 0)
     {
         JLOG(j.warn()) << "calculateSwapStep: fee multiplier is zero";
         return {STAmount{0}, STAmount{0}, currentSqrtPriceX64};
     }
-    
+
     // SECURITY: Use safe multiplication and division
     auto const maxInputForTick = deltaSqrtPrice * 1000000 / feeMultiplier;
-    
+
     auto const actualInput = std::min(maxInput, STAmount{maxInputForTick});
     auto const actualOutput = calculateOutputForInput(
         currentSqrtPriceX64, nextSqrtPriceX64, actualInput, j);
-    
+
     return {actualInput, actualOutput, nextSqrtPriceX64};
 }
 
@@ -1091,33 +1144,35 @@ calculateOutputForInput(
     // SECURITY: Validate input parameters
     if (sqrtPriceStartX64 == 0)
     {
-        JLOG(j.warn()) << "calculateOutputForInput: sqrtPriceStartX64 cannot be zero";
+        JLOG(j.warn())
+            << "calculateOutputForInput: sqrtPriceStartX64 cannot be zero";
         return STAmount{0};
     }
-    
+
     if (input <= STAmount{0})
     {
         JLOG(j.warn()) << "calculateOutputForInput: input must be positive";
         return STAmount{0};
     }
-    
+
     // SECURITY: Check for underflow in price difference
     if (sqrtPriceEndX64 <= sqrtPriceStartX64)
     {
         JLOG(j.warn()) << "calculateOutputForInput: invalid price direction";
         return STAmount{0};
     }
-    
+
     // SECURITY: Use safe arithmetic to prevent overflow
     auto const deltaSqrtPrice = sqrtPriceEndX64 - sqrtPriceStartX64;
-    
+
     // SECURITY: Check for overflow in multiplication
-    if (deltaSqrtPrice > std::numeric_limits<std::uint64_t>::max() / input.getText())
+    if (deltaSqrtPrice >
+        std::numeric_limits<std::uint64_t>::max() / input.getText())
     {
         JLOG(j.warn()) << "calculateOutputForInput: overflow in multiplication";
         return STAmount{std::numeric_limits<std::uint64_t>::max()};
     }
-    
+
     auto const output = input * deltaSqrtPrice / sqrtPriceStartX64;
     return output;
 }
@@ -1136,23 +1191,25 @@ calculateFeeGrowthForSwap(
         JLOG(j.warn()) << "calculateFeeGrowthForSwap: input must be positive";
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     if (tradingFee > 1000000)
     {
-        JLOG(j.warn()) << "calculateFeeGrowthForSwap: invalid trading fee: " << tradingFee;
+        JLOG(j.warn()) << "calculateFeeGrowthForSwap: invalid trading fee: "
+                       << tradingFee;
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     // SECURITY: Calculate fee amount with bounds checking
-    auto const feeAmount = mulRatio(input, STAmount{tradingFee}, STAmount{1000000}, false);
-    
+    auto const feeAmount =
+        mulRatio(input, STAmount{tradingFee}, STAmount{1000000}, false);
+
     // SECURITY: Validate fee amount
     if (feeAmount > input)
     {
         JLOG(j.warn()) << "calculateFeeGrowthForSwap: fee amount exceeds input";
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     // Determine which asset the fee is in
     if (input.issue().currency == xrpCurrency())
     {
@@ -1178,24 +1235,25 @@ crossTick(
     // Get the tick data
     auto const tickKey = getConcentratedLiquidityTickKey(tick);
     auto const tickSle = view.read(keylet::child(tickKey));
-    
+
     if (!tickSle)
     {
         JLOG(j.debug()) << "Tick not found for crossing: " << tick;
         return tecAMM_TICK_NOT_INITIALIZED;
     }
-    
+
     // Update the tick's fee growth outside
     auto const newTickSle = std::make_shared<SLE>(*tickSle);
     newTickSle->setFieldAmount(sfFeeGrowthOutside0X128, feeGrowthGlobal0);
     newTickSle->setFieldAmount(sfFeeGrowthOutside1X128, feeGrowthGlobal1);
     view.update(newTickSle);
-    
+
     // Update all positions that have this tick as a boundary
     // This is a simplified implementation - in practice, you'd need to
     // iterate through all positions and update those that are affected
-    JLOG(j.debug()) << "Crossed tick " << tick << " at price " << newSqrtPriceX64;
-    
+    JLOG(j.debug()) << "Crossed tick " << tick << " at price "
+                    << newSqrtPriceX64;
+
     return tesSUCCESS;
 }
 
@@ -1208,12 +1266,12 @@ sqrtPriceX64ToTick(std::uint64_t sqrtPriceX64)
     // Convert sqrt price to price
     auto const price = static_cast<double>(sqrtPriceX64) / (1ULL << 64);
     auto const priceSquared = price * price;
-    
+
     // Convert price to tick using the formula: tick = log(price) / log(1.0001)
     auto const logPrice = std::log(priceSquared);
     auto const logBase = std::log(1.0001);
     auto const tick = static_cast<std::int32_t>(logPrice / logBase);
-    
+
     return tick;
 }
 
@@ -1224,10 +1282,11 @@ tickToSqrtPriceX64(std::int32_t tick)
     // Convert tick to price using the formula: price = 1.0001^tick
     auto const price = std::pow(1.0001, tick);
     auto const sqrtPrice = std::sqrt(price);
-    
+
     // Convert to Q64.64 format
-    auto const sqrtPriceX64 = static_cast<std::uint64_t>(sqrtPrice * (1ULL << 64));
-    
+    auto const sqrtPriceX64 =
+        static_cast<std::uint64_t>(sqrtPrice * (1ULL << 64));
+
     return sqrtPriceX64;
 }
 

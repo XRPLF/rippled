@@ -573,7 +573,8 @@ concentratedLiquidityTick(uint256 const& ammID, std::int32_t tickIndex) noexcept
 {
     return {
         ltCONCENTRATED_LIQUIDITY_TICK,
-        indexHash(LedgerNameSpace::CONCENTRATED_LIQUIDITY_TICK, ammID, tickIndex)};
+        indexHash(
+            LedgerNameSpace::CONCENTRATED_LIQUIDITY_TICK, ammID, tickIndex)};
 }
 
 Keylet

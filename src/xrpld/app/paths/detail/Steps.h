@@ -618,7 +618,10 @@ std::pair<TER, std::unique_ptr<Step>>
 make_BookStepXI(StrandContext const& ctx, Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
-make_AMMConLiquidityStepII(StrandContext const& ctx, Issue const& in, Issue const& out);
+make_AMMConLiquidityStepII(
+    StrandContext const& ctx,
+    Issue const& in,
+    Issue const& out);
 
 std::pair<TER, std::unique_ptr<Step>>
 make_AMMConLiquidityStepIX(StrandContext const& ctx, Issue const& in);

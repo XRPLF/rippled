@@ -25,9 +25,9 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AMMCore.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 
 #include <grpcpp/support/status.h>
 
@@ -263,69 +263,79 @@ doAMMInfo(RPC::JsonContext& context)
         ammResult[jss::asset2_frozen] =
             isFrozen(*ledger, ammAccountID, issue2.currency, issue2.account);
 
-    // Add concentrated liquidity information if feature is enabled and requested
+    // Add concentrated liquidity information if feature is enabled and
+    // requested
     if (ledger->rules().enabled(featureAMMConcentratedLiquidity) &&
         params.isMember(jss::include_concentrated_liquidity) &&
         params[jss::include_concentrated_liquidity].asBool())
     {
         Json::Value concentratedLiquidity(Json::objectValue);
-        
+
         // Add current tick and price information
         if (amm->isFieldPresent(sfCurrentTick))
         {
             concentratedLiquidity[jss::current_tick] = (*amm)[sfCurrentTick];
         }
-        
+
         if (amm->isFieldPresent(sfSqrtPriceX64))
         {
             concentratedLiquidity[jss::sqrt_price_x64] = (*amm)[sfSqrtPriceX64];
         }
-        
+
         if (amm->isFieldPresent(sfTickSpacing))
         {
             concentratedLiquidity[jss::tick_spacing] = (*amm)[sfTickSpacing];
         }
-        
+
         // Add position information if account is specified
         if (accountID)
         {
             Json::Value positions(Json::arrayValue);
-            
+
             // Find all positions for this account and AMM
             auto const ammID = amm->getFieldH256(sfAMMID);
             auto const root = keylet::ownerDir(*accountID);
             auto const ownerDir = ledger->read(root);
-            
+
             if (ownerDir)
             {
                 for (auto const& item : ownerDir->getFieldV256(sfIndexes))
                 {
-                    auto const sle = ledger->read({ltCONCENTRATED_LIQUIDITY_POSITION, item});
+                    auto const sle =
+                        ledger->read({ltCONCENTRATED_LIQUIDITY_POSITION, item});
                     if (sle && sle->getFieldH256(sfAMMID) == ammID)
                     {
                         Json::Value position;
                         position[jss::tick_lower] = (*sle)[sfTickLower];
                         position[jss::tick_upper] = (*sle)[sfTickUpper];
                         position[jss::position_nonce] = (*sle)[sfPositionNonce];
-                        position[jss::liquidity] = (*sle)[sfLiquidity].getJson(JsonOptions::none);
-                        position[jss::fee_growth_inside_0_last_x128] = (*sle)[sfFeeGrowthInside0LastX128].getJson(JsonOptions::none);
-                        position[jss::fee_growth_inside_1_last_x128] = (*sle)[sfFeeGrowthInside1LastX128].getJson(JsonOptions::none);
-                        position[jss::tokens_owed_0] = (*sle)[sfTokensOwed0].getJson(JsonOptions::none);
-                        position[jss::tokens_owed_1] = (*sle)[sfTokensOwed1].getJson(JsonOptions::none);
+                        position[jss::liquidity] =
+                            (*sle)[sfLiquidity].getJson(JsonOptions::none);
+                        position[jss::fee_growth_inside_0_last_x128] =
+                            (*sle)[sfFeeGrowthInside0LastX128].getJson(
+                                JsonOptions::none);
+                        position[jss::fee_growth_inside_1_last_x128] =
+                            (*sle)[sfFeeGrowthInside1LastX128].getJson(
+                                JsonOptions::none);
+                        position[jss::tokens_owed_0] =
+                            (*sle)[sfTokensOwed0].getJson(JsonOptions::none);
+                        position[jss::tokens_owed_1] =
+                            (*sle)[sfTokensOwed1].getJson(JsonOptions::none);
                         positions.append(std::move(position));
                     }
                 }
             }
-            
+
             if (positions.size() > 0)
             {
                 concentratedLiquidity[jss::positions] = std::move(positions);
             }
         }
-        
+
         if (!concentratedLiquidity.empty())
         {
-            ammResult[jss::concentrated_liquidity] = std::move(concentratedLiquidity);
+            ammResult[jss::concentrated_liquidity] =
+                std::move(concentratedLiquidity);
         }
     }
 
