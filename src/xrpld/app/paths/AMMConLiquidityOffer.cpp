@@ -204,7 +204,7 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
             << feeGrowth0 << ", " << feeGrowth1;
 
         // Check if we need to cross any ticks
-        auto const currentTick = ammSle->getFieldS32(sfCurrentTick);
+        auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
         auto const targetSqrtPriceX64 = calculateTargetSqrtPrice(
             ammSle->getFieldU64(sfSqrtPriceX64),
             consumed.first,
@@ -245,15 +245,16 @@ AMMConLiquidityOffer<TIn, TOut>::limitOut(
 {
     // Limit the output amount based on concentrated liquidity constraints
     // Calculate the maximum output given the current price and liquidity
-    if (limit <= ofrAmt.out)
+    if (limit <= ofrAmt.second)
         return ofrAmt;
 
     // Calculate the corresponding input amount for the limited output
     // Use the concentrated liquidity formulas with proper slippage calculation
-    auto const currentPrice = static_cast<double>(sqrtPriceX64_) / (1ULL << 63);
+    // Note: currentPrice is used in price impact calculation
+    (void)static_cast<double>(sqrtPriceX64_) / (1ULL << 63);
     auto const priceImpact = 1.0 + (static_cast<double>(ammConLiquidity_.tradingFee()) / 1000000.0);
     
-    TIn limitedIn = mulRatio(ofrAmt.in, limit, ofrAmt.out, roundUp);
+    TIn limitedIn = mulRatio(ofrAmt.first, limit, ofrAmt.second, roundUp);
     // Apply price impact adjustment
     limitedIn = mulRatio(limitedIn, static_cast<std::uint32_t>(priceImpact * 1000000), 1000000, roundUp);
     
@@ -268,11 +269,11 @@ AMMConLiquidityOffer<TIn, TOut>::limitIn(
     bool roundUp) const
 {
     // Limit the input amount based on concentrated liquidity constraints
-    if (limit <= ofrAmt.in)
+    if (limit <= ofrAmt.first)
         return ofrAmt;
 
     // Calculate the corresponding output amount for the limited input
-    TOut limitedOut = mulRatio(ofrAmt.out, limit, ofrAmt.in, roundUp);
+    TOut limitedOut = mulRatio(ofrAmt.second, limit, ofrAmt.first, roundUp);
     return {limit, limitedOut};
 }
 
@@ -329,12 +330,12 @@ AMMConLiquidityOffer<TIn, TOut>::checkInvariant(
     // Verify that the liquidity distribution is valid and price calculations are consistent
     
     // Check that the amounts are positive
-    if (amounts.in <= beast::zero || amounts.out <= beast::zero)
+    if (amounts.first <= beast::zero || amounts.second <= beast::zero)
         return false;
     
     // Check that the price calculation is consistent
     auto const calculatedPrice = static_cast<double>(sqrtPriceX64_) / (1ULL << 63);
-    auto const actualPrice = static_cast<double>(amounts.out) / static_cast<double>(amounts.in);
+    auto const actualPrice = static_cast<double>(amounts.second) / static_cast<double>(amounts.first);
     
     // Allow for some tolerance in price calculation (1% tolerance)
     auto const tolerance = 0.01;

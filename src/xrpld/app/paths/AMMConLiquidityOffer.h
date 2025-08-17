@@ -48,9 +48,9 @@ private:
     AMMConLiquidityPool<TIn, TOut> const& ammConLiquidity_;
     // Initial offer amounts based on aggregated concentrated liquidity
     // positions
-    TAmounts<TIn, TOut> const amounts_;
+    TAmountPair<TIn, TOut> const amounts_;
     // Current aggregated liquidity from positions within the price range
-    TAmounts<TIn, TOut> const balances_;
+    TAmountPair<TIn, TOut> const balances_;
     // The quality based on current price and liquidity distribution
     Quality const quality_;
     // Concentrated liquidity offer can be consumed once at a given iteration

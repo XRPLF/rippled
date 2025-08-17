@@ -131,6 +131,12 @@ public:
         return aggregatedLiquidity_;
     }
 
+    beast::Journal const&
+    j() const
+    {
+        return j_;
+    }
+
 private:
     /** Calculate the amount of liquidity available within a price range */
     STAmount
