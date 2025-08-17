@@ -38,18 +38,23 @@ jobs:
   pr:
     runs-on: ubuntu-latest
     steps:
-      - name: Determine PR number
-        id: extract
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Fetch PR number
+        id: fetch
+        env:
+          GITHUB_TOKEN: ${{ secrets.clio_notify_token }}
         run: |
-          echo "Extracting PR number from the ref name '${{ github.ref_name }}'."
-          if [[ '${{ github.ref_name }}' =~ ([0-9]+)/merge$ ]]; then
-            echo "number=${BASH_REMATCH[1]}" | tee "${GITHUB_OUTPUT}"
-          else
-            echo 'Could not extract PR number.'
+          echo "Fetching PR number associated with current commit '${{ github.sha }}'."
+          gh pr list --search=${{ github.sha }} --json=number
+          NUMBER=$(gh pr list --search=${{ github.sha }} --json=number -q '.[0].number' || echo '')
+          if [ -z "${NUMBER}" ]; then
+            echo 'Could not fetch PR number.'
             exit 1
           fi
+          echo "number=${NUMBER}" | tee "${GITHUB_OUTPUT}"
     outputs:
-      number: ${{ steps.extract.outputs.number }}
+      number: ${{ steps.fetch.outputs.number }}
 
   upload:
     needs: pr
@@ -84,7 +89,9 @@ jobs:
       version: ${{ steps.generate.outputs.version }}
 
   notify:
-    needs: upload
+    needs:
+      - pr
+      - upload
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.clio_notify_token }}
@@ -94,4 +101,4 @@ jobs:
           gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
           -F "client_payload[version]=${{ needs.upload.outputs.version }}@${{ needs.upload.outputs.channel }}" \
-          -F "client_payload[pr]=${{ github.event.pull_request.number }}"
+          -F "client_payload[pr]=${{ needs.pr.outputs.number }}"

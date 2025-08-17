@@ -106,6 +106,7 @@ jobs:
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
       os: 'linux'
+      strategy_matrix_all: true
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
@@ -119,6 +120,7 @@ jobs:
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
       os: 'macos'
+      strategy_matrix_all: true
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
@@ -132,6 +134,7 @@ jobs:
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
       os: 'windows'
+      strategy_matrix_all: true
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}

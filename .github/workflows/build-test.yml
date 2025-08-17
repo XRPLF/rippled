@@ -32,6 +32,11 @@ on:
         description: 'The operating system to use for the build (linux, macos, or windows).'
         required: true
         type: string
+      strategy_matrix_all:
+        description: 'Generate a strategy matrix containing all configurations.'
+        required: false
+        type: boolean
+        default: false
     secrets:
       codecov_token:
         description: 'The Codecov token to use for uploading coverage reports.'
@@ -65,7 +70,7 @@ jobs:
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
-        run: python generate.py --config=${{ inputs.os }}.json --ref=${{ github.ref }} | tee "${GITHUB_OUTPUT}"
+        run: python generate.py ${{ inputs.strategy_matrix_all && '--all' || '' }} --config=${{ inputs.os }}.json | tee "${GITHUB_OUTPUT}"
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
 

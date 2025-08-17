@@ -18,15 +18,15 @@ We will further set additional CMake arguments as follows:
 - Certain Debian Bookworm configurations will change the reference fee, enable
   codecov, and enable voidstar in PRs.
 '''
-def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict], build_type: list[str], cmake_args: list[str]) -> dict:
+def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict], build_type: list[str], cmake_args: list[str]) -> dict:
     configurations = []
     for architecture, os, build_type, cmake_args in itertools.product(architecture, os, build_type, cmake_args):
         # The default CMake target is 'all' for Linux and MacOS and 'install'
         # for Windows, but it can get overridden for certain configurations.
         cmake_target = 'install' if os["distro_name"] == 'windows' else 'all'
 
-        # Only run a subset of configurations in PRs.
-        if pr:
+        # Only generate a subset of configurations in PRs.
+        if not all:
             # Debian:
             # - Bookworm using GCC 12: Debug and Unity on linux/amd64, enable
             #   code coverage.
@@ -137,14 +137,9 @@ def generate_strategy_matrix(pr: bool, architecture: list[dict], os: list[dict],
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', help='Path to the JSON file containing the strategy matrix configuration.')
-    parser.add_argument('-r', '--ref', help='Git reference to generate the strategy matrix for (e.g. /refs/heads/develop).')
+    parser.add_argument('-a', '--all', help='Set to generate all configurations (generally used when merging a PR) or leave unset to generate a subset of configurations (generally used when committing to a PR).', action="store_true")
+    parser.add_argument('-c', '--config', help='Path to the JSON file containing the strategy matrix configurations.', required=True, type=str)
     args = parser.parse_args()
-
-    # Only generate a matrix for branches, not tags or other refs.
-    if not (args.ref.startswith('refs/heads/') or args.ref.startswith('refs/pull/')):
-        print('matrix={}')
-        exit(0)
 
     # Load the JSON configuration file.
     config = None
@@ -153,6 +148,5 @@ if __name__ == '__main__':
     if config['architecture'] is None or config['os'] is None or config['build_type'] is None or config['cmake_args'] is None:
         raise Exception('Invalid configuration file.')
 
-    # Check if the ref is a branch that should trigger a full matrix.
-    match = re.search(r'^refs/heads/(develop|master|release)$', args.ref)
-    print(f'matrix={json.dumps(generate_strategy_matrix(match is None, config['architecture'], config['os'], config['build_type'], config['cmake_args']))}')
+    # Generate the strategy matrix.
+    print(f'matrix={json.dumps(generate_strategy_matrix(args.all, config['architecture'], config['os'], config['build_type'], config['cmake_args']))}')

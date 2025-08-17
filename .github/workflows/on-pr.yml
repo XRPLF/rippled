@@ -5,11 +5,12 @@
 name: PR
 
 on:
-  pull_request:
-    branches:
+  push:
+    branches-ignore:
       - develop
       - release
       - master
+      - gh-pages
     paths:
       - '.github/actions/build-deps/**'
       - '.github/actions/build-test/**'
@@ -20,32 +21,8 @@ on:
       - '.github/workflows/check-levelization.yml'
       - '.github/workflows/notify-clio.yml'
       - '.github/workflows/on-pr.yml'
-      # Keep the list of paths below in sync with those below and also in the
-      # `on-trigger.yml` file.
-      - 'cmake/**'
-      - 'conan/**'
-      - 'external/**'
-      - 'include/**'
-      - 'src/**'
-      - 'tests/**'
-      - '.clang-format'
-      - '.codecov.yml'
-      - '.pre-commit-config.yaml'
-      - 'CMakeLists.txt'
-      - 'conanfile.py'
-  push:
-    paths:
-      - '.github/actions/build-deps/**'
-      - '.github/actions/build-test/**'
-      - '.github/scripts/levelization/**'
-      - '.github/scripts/strategy-matrix/**'
-      - '.github/workflows/build-test.yml'
-      - '.github/workflows/check-format.yml'
-      - '.github/workflows/check-levelization.yml'
-      - '.github/workflows/notify-clio.yml'
-      - '.github/workflows/on-pr.yml'
-      # Keep the list of paths below in sync with those above and also in the
-      # `on-trigger.yml` file.
+      # Keep the list of paths below in sync with those in the `on-trigger.yml`
+      # file.
       - 'cmake/**'
       - 'conan/**'
       - 'external/**'
@@ -120,7 +97,6 @@ jobs:
       os: 'windows'
 
   notify-clio:
-    if: ${{ github.event_name == 'pull_request' }}
     needs:
       - generate-outputs
       - build-linux
