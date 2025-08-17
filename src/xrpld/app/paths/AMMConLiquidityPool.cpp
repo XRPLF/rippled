@@ -97,7 +97,7 @@ mulRatio(T const& a, T const& b, T const& c, bool roundUp)
             }
         }
 
-        return STAmount{amount.issue(), result};
+        return STAmount{a.issue(), result};
     }
     // Fallback for other types
     else
@@ -348,33 +348,6 @@ AMMConLiquidityPool<TIn, TOut>::findActivePositions(ReadView const& view) const
     // Note: dirFirst requires ApplyView, but we have ReadView
     // For now, return empty map since we can't iterate directories in ReadView
     return {};
-    {
-        do
-        {
-            // Check if this entry is a concentrated liquidity position
-            auto const positionSle = view.read(keylet::child(entry));
-            if (positionSle && positionSle->getType() == ltCONCENTRATED_LIQUIDITY_POSITION)
-            {
-                // Verify this position belongs to this AMM
-                // Note: ammID is used for position filtering in the directory iteration
-                (void)ammSle->getFieldH256(sfAMMID);
-                {
-                    auto const owner = positionSle->getAccountID(sfAccount);
-                    auto const liquidity = positionSle->getFieldAmount(sfLiquidity);
-                    
-                    // Check if the position is active (within current tick range)
-                    auto const tickLower = positionSle->getFieldU32(sfTickLower);
-                    auto const tickUpper = positionSle->getFieldU32(sfTickUpper);
-                    
-                    if (currentTick_ >= tickLower && currentTick_ <= tickUpper)
-                    {
-                        positions[owner] = liquidity;
-                    }
-                }
-            }
-        // Note: dirNext requires ApplyView, but we have ReadView
-        // This loop is now unreachable due to early return above
-    }
     
     return positions;
 }

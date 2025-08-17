@@ -187,12 +187,16 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
     {
         // Calculate fee growth for this swap using integrated AMMUtils
         // functions
+        // Convert IOUAmount/XRPAmount to STAmount for AMMUtils functions
+        STAmount const amountIn = consumed.first.iou();
+        STAmount const amountOut = consumed.second.iou();
+        
         auto const [feeGrowth0, feeGrowth1] = ammConcentratedLiquidityFeeGrowth(
             view,
             ammSle->getFieldH256(sfAMMID),
             ammSle->getFieldU32(sfCurrentTick),
-            consumed.first,
-            consumed.second,
+            amountIn,
+            amountOut,
             ammSle->getFieldU16(sfTradingFee),
             ammConLiquidity_.j());
 
@@ -205,9 +209,12 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
 
         // Check if we need to cross any ticks
         auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
+        // Convert IOUAmount/XRPAmount to STAmount for AMMUtils functions
+        STAmount const amountIn = consumed.first.iou();
+        
         auto const targetSqrtPriceX64 = calculateTargetSqrtPrice(
             ammSle->getFieldU64(sfSqrtPriceX64),
-            consumed.first,
+            amountIn,
             ammSle->getFieldU16(sfTradingFee),
             ammConLiquidity_.j());
 
@@ -218,12 +225,9 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
                             << targetTick;
             
             // Execute tick crossing logic using AMMUtils
-            auto const liquidityDelta = ammConcentratedLiquidityCalculateLiquidityDelta(
-                view,
-                ammSle->getFieldU64(sfSqrtPriceX64),
-                targetSqrtPriceX64,
-                consumed.first,
-                ammConLiquidity_.j());
+            // Note: ammConcentratedLiquidityCalculateLiquidityDelta is not implemented yet
+            // For now, use a placeholder calculation
+            STAmount const liquidityDelta = STAmount{consumed.first.issue(), 0};
             
             // Update the AMM's current tick and sqrt price
             auto ammSleMutable = view.peek(keylet::amm(ammConLiquidity_.issueIn(), ammConLiquidity_.issueOut()));
@@ -251,10 +255,15 @@ AMMConLiquidityOffer<TIn, TOut>::limitOut(
     // Calculate the corresponding input amount for the limited output
     // Use the concentrated liquidity formulas with proper slippage calculation
     // Note: currentPrice is used in price impact calculation
-    (void)static_cast<double>(sqrtPriceX64_) / (1ULL << 63);
+    (void)(static_cast<double>(sqrtPriceX64_) / (1ULL << 63));
     auto const priceImpact = 1.0 + (static_cast<double>(ammConLiquidity_.tradingFee()) / 1000000.0);
     
-    TIn limitedIn = mulRatio(ofrAmt.first, limit, ofrAmt.second, roundUp);
+    // Use the appropriate mulRatio overload for the specific types
+    TIn limitedIn;
+    if constexpr (std::is_same_v<TIn, IOUAmount>)
+        limitedIn = mulRatio(ofrAmt.first, static_cast<std::uint32_t>(limit), static_cast<std::uint32_t>(ofrAmt.second), roundUp);
+    else
+        limitedIn = mulRatio(ofrAmt.first, static_cast<std::uint32_t>(limit), static_cast<std::uint32_t>(ofrAmt.second), roundUp);
     // Apply price impact adjustment
     limitedIn = mulRatio(limitedIn, static_cast<std::uint32_t>(priceImpact * 1000000), 1000000, roundUp);
     
@@ -273,7 +282,12 @@ AMMConLiquidityOffer<TIn, TOut>::limitIn(
         return ofrAmt;
 
     // Calculate the corresponding output amount for the limited input
-    TOut limitedOut = mulRatio(ofrAmt.second, limit, ofrAmt.first, roundUp);
+    // Use the appropriate mulRatio overload for the specific types
+    TOut limitedOut;
+    if constexpr (std::is_same_v<TOut, IOUAmount>)
+        limitedOut = mulRatio(ofrAmt.second, static_cast<std::uint32_t>(limit), static_cast<std::uint32_t>(ofrAmt.first), roundUp);
+    else
+        limitedOut = mulRatio(ofrAmt.second, static_cast<std::uint32_t>(limit), static_cast<std::uint32_t>(ofrAmt.first), roundUp);
     return {limit, limitedOut};
 }
 
@@ -284,7 +298,7 @@ AMMConLiquidityOffer<TIn, TOut>::isFunded() const
     // Check if there is sufficient liquidity in the concentrated liquidity positions
     // Check the aggregated liquidity within the current price range
     auto const currentLiquidity = ammConLiquidity_.getAggregatedLiquidity();
-    return currentLiquidity > beast::zero && balances_.out > beast::zero;
+    return currentLiquidity > beast::zero && balances_.second > beast::zero;
 }
 
 template <typename TIn, typename TOut>
@@ -292,7 +306,7 @@ TOut
 AMMConLiquidityOffer<TIn, TOut>::ownerFunds() const
 {
     // Return the available output amount from concentrated liquidity positions
-    return balances_.out;
+    return balances_.second;
 }
 
 template <typename TIn, typename TOut>
@@ -335,7 +349,7 @@ AMMConLiquidityOffer<TIn, TOut>::checkInvariant(
     
     // Check that the price calculation is consistent
     auto const calculatedPrice = static_cast<double>(sqrtPriceX64_) / (1ULL << 63);
-    auto const actualPrice = static_cast<double>(amounts.second) / static_cast<double>(amounts.first);
+    auto const actualPrice = static_cast<double>(static_cast<Number>(amounts.second)) / static_cast<double>(static_cast<Number>(amounts.first));
     
     // Allow for some tolerance in price calculation (1% tolerance)
     auto const tolerance = 0.01;
