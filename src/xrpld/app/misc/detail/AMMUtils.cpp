@@ -20,7 +20,7 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/detail/View.h>
+#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AMMCore.h>
