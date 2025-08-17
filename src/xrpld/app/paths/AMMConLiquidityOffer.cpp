@@ -224,10 +224,22 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
             JLOG(ammConLiquidity_.j().debug()) << "Crossing tick from " << currentTick << " to "
                             << targetTick;
             
-            // Execute tick crossing logic using AMMUtils
-            // Note: ammConcentratedLiquidityCalculateLiquidityDelta is not implemented yet
-            // For now, use a placeholder calculation
-            STAmount const liquidityDelta = STAmount{consumed.first.issue(), 0};
+            // Calculate liquidity delta for the tick crossing
+            auto const liquidityDelta = ammConcentratedLiquidityCalculateLiquidityDelta(
+                view,
+                ammSle->getFieldU64(sfSqrtPriceX64),
+                targetSqrtPriceX64,
+                amountIn,
+                ammConLiquidity_.j());
+            
+            // Execute actual tick crossing using the comprehensive function
+            auto const [fee0, fee1] = ammConcentratedLiquidityExecuteTickCrossing(
+                view,
+                ammSle->getFieldH256(sfAMMID),
+                currentTick,
+                targetTick,
+                liquidityDelta,
+                ammConLiquidity_.j());
             
             // Update the AMM's current tick and sqrt price
             auto ammSleMutable = view.peek(keylet::amm(ammConLiquidity_.issueIn(), ammConLiquidity_.issueOut()));

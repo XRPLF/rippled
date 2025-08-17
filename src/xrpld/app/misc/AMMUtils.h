@@ -183,6 +183,40 @@ ammConcentratedLiquiditySwapWithTickCrossing(
     std::uint16_t tradingFee,
     beast::Journal const& j);
 
+/** Execute a complete tick crossing for concentrated liquidity */
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityExecuteTickCrossing(
+    ApplyView& view,
+    uint256 const& ammID,
+    std::int32_t fromTick,
+    std::int32_t toTick,
+    STAmount const& liquidityDelta,
+    beast::Journal const& j);
+
+/** Find all positions that are active at a specific tick */
+std::vector<std::pair<AccountID, ConcentratedLiquidityPosition>>
+ammConcentratedLiquidityFindPositionsAtTick(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tick);
+
+/** Calculate fees owed for a position between two ticks */
+STAmount
+ammConcentratedLiquidityCalculateFeesOwed(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::uint8_t feeIndex);
+
+/** Calculate fee growth outside a specific tick */
+STAmount
+ammConcentratedLiquidityCalculateFeeGrowthOutside(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tick,
+    std::uint8_t feeIndex);
+
 std::uint64_t
 calculateTargetSqrtPrice(
     std::uint64_t currentSqrtPriceX64,
@@ -190,13 +224,13 @@ calculateTargetSqrtPrice(
     std::uint16_t tradingFee,
     beast::Journal const& j);
 
+/** Find the next initialized tick in the direction of the swap */
 std::int32_t
 findNextInitializedTick(
     ReadView const& view,
     uint256 const& ammID,
     std::int32_t currentTick,
-    bool ascending,
-    beast::Journal const& j);
+    std::uint64_t targetSqrtPriceX64);
 
 std::tuple<STAmount, STAmount, std::uint64_t>
 calculateSwapStep(
@@ -288,6 +322,23 @@ verifyAndAdjustLPTokenBalance(
     STAmount const& lpTokens,
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account);
+
+/** Calculate liquidity delta for concentrated liquidity tick crossing */
+STAmount
+ammConcentratedLiquidityCalculateLiquidityDelta(
+    ReadView const& view,
+    std::uint64_t sqrtPriceX64,
+    std::uint64_t targetSqrtPriceX64,
+    STAmount const& amount,
+    beast::Journal const& j);
+
+/** Update the position registry with a new position */
+void
+ammConcentratedLiquidityUpdatePositionRegistry(
+    uint256 const& ammID,
+    AccountID const& owner,
+    ConcentratedLiquidityPosition const& position,
+    bool add);
 
 }  // namespace ripple
 

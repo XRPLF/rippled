@@ -206,7 +206,7 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::revImp(
             // Calculate the input amount needed for the desired output
             auto const amounts = offer->amount();
             auto const inputAmount =
-                mulRatio(amounts.in, out, amounts.out, true);
+                mulRatio(amounts.first, out, amounts.second, true);
 
             // Execute the offer
             auto const consumed = TAmountPair<TIn, TOut>{inputAmount, out};
@@ -240,7 +240,7 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::fwdImp(
             // Calculate the output amount for the given input
             auto const amounts = offer->amount();
             auto const outputAmount =
-                mulRatio(amounts.out, in, amounts.in, false);
+                mulRatio(amounts.second, in, amounts.first, false);
 
             // Execute the offer
             auto const consumed = TAmountPair<TIn, TOut>{in, outputAmount};
@@ -269,9 +269,9 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::validFwd(
         {
             // Check if the input amount is valid
             auto const amounts = offer->amount();
-            if (amounts.in > beast::zero)
+            if (amounts.first > beast::zero)
             {
-                return {true, EitherAmount{amounts.out}};
+                return {true, EitherAmount{amounts.second}};
             }
         }
     }

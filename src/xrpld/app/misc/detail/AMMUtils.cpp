@@ -886,137 +886,117 @@ ammConcentratedLiquiditySwapAssetIn(
     return toAmount<TOut>(getIssue(pool.out), output);
 }
 
-// Tick crossing functions for concentrated liquidity
-
-/** Execute a swap with proper tick crossing logic
- * This is the main function that handles concentrated liquidity swaps
- * with proper tick crossing and fee growth updates
- */
-template <typename TIn, typename TOut>
-std::pair<TOut, TER>
+/** Execute a step-by-step swap with proper tick crossing */
+std::pair<STAmount, STAmount>
 ammConcentratedLiquiditySwapWithTickCrossing(
     ApplyView& view,
     uint256 const& ammID,
-    TIn const& assetIn,
+    STAmount const& amountIn,
     std::uint16_t tradingFee,
     beast::Journal const& j)
 {
     auto const ammSle = view.read(keylet::amm(ammID));
     if (!ammSle)
     {
-        JLOG(j.debug()) << "AMM not found for concentrated liquidity swap";
-        return {toAmount<TOut>(getIssue(assetIn), 0), tecINTERNAL};
+        JLOG(j.warn()) << "AMM not found for swap";
+        return {STAmount{0}, STAmount{0}};
     }
-
+    
     auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
-    auto const sqrtPriceX64 = ammSle->getFieldU64(sfSqrtPriceX64);
-    // auto const tickSpacing = ammSle->getFieldU16(sfTickSpacing);  // Unused for now
-
-    // Get current fee growth
-    auto const feeGrowthGlobal0 =
-        ammSle->getFieldAmount(sfFeeGrowthGlobal0X128);
-    auto const feeGrowthGlobal1 =
-        ammSle->getFieldAmount(sfFeeGrowthGlobal1X128);
-
-    // Calculate the target sqrt price after the swap
-    auto const targetSqrtPriceX64 =
-        calculateTargetSqrtPrice(sqrtPriceX64, assetIn, tradingFee, j);
-
-    // Find the next initialized tick in the direction of the swap
-    auto const nextTick = findNextInitializedTick(
-        view, ammID, currentTick, targetSqrtPriceX64 > sqrtPriceX64, j);
-
-    TOut totalOutput{0};
-    TIn remainingInput = assetIn;
-    std::int32_t currentTickIter = currentTick;
-    std::uint64_t currentSqrtPriceX64 = sqrtPriceX64;
-
-    // Execute the swap step by step, crossing ticks as needed
-    while (remainingInput > TIn{0})
+    auto const currentSqrtPriceX64 = ammSle->getFieldU64(sfSqrtPriceX64);
+    
+    // Calculate target sqrt price
+    auto const targetSqrtPriceX64 = calculateTargetSqrtPrice(
+        currentSqrtPriceX64, amountIn, tradingFee, j);
+    
+    // Find the next initialized tick
+    auto const nextTick = findNextInitializedTick(view, ammID, currentTick, targetSqrtPriceX64);
+    
+    // Execute the swap step
+    auto const [actualInput, actualOutput, newSqrtPriceX64] = calculateSwapStep(
+        view, ammID, currentTick, currentSqrtPriceX64, nextTick, amountIn, tradingFee, j);
+    
+    // Check if we need to cross ticks
+    auto const newTick = sqrtPriceX64ToTick(newSqrtPriceX64);
+    if (newTick != currentTick)
     {
-        // Calculate the maximum amount we can swap before hitting the next tick
-        auto const [maxInput, maxOutput, nextSqrtPriceX64] = calculateSwapStep(
-            view,
-            ammID,
-            currentTickIter,
-            currentSqrtPriceX64,
-            nextTick,
-            remainingInput,
-            tradingFee,
-            j);
-
-        if (maxInput <= TIn{0})
-        {
-            JLOG(j.debug()) << "No more liquidity available for swap";
-            break;
-        }
-
-        // Execute the swap step
-        auto const actualInput = std::min(remainingInput, maxInput);
-        auto const actualOutput = calculateOutputForInput(
-            currentSqrtPriceX64, nextSqrtPriceX64, actualInput, j);
-
-        totalOutput += actualOutput;
-        remainingInput -= actualInput;
-
-        // Update fee growth for the current tick range
-        auto const feeGrowthDelta =
-            calculateFeeGrowthForSwap(actualInput, actualOutput, tradingFee, j);
-
-        // Update global fee growth
-        auto const newFeeGrowthGlobal0 =
-            feeGrowthGlobal0 + feeGrowthDelta.first;
-        auto const newFeeGrowthGlobal1 =
-            feeGrowthGlobal1 + feeGrowthDelta.second;
-
-        // Update AMM state
-        auto const newAmmSle = std::make_shared<SLE>(*ammSle);
-        newAmmSle->setFieldAmount(sfFeeGrowthGlobal0X128, newFeeGrowthGlobal0);
-        newAmmSle->setFieldAmount(sfFeeGrowthGlobal1X128, newFeeGrowthGlobal1);
-
-        // Check if we need to cross a tick
-        if (nextSqrtPriceX64 != currentSqrtPriceX64)
-        {
-            // Cross the tick
-            if (auto const ter = crossTick(
-                    view,
-                    ammID,
-                    currentTickIter,
-                    nextSqrtPriceX64,
-                    newFeeGrowthGlobal0,
-                    newFeeGrowthGlobal1,
-                    j);
-                ter != tesSUCCESS)
-            {
-                return {totalOutput, ter};
-            }
-
-            currentTickIter = nextTick;
-            currentSqrtPriceX64 = nextSqrtPriceX64;
-
-            // Update AMM with new tick and price
-            newAmmSle->setFieldU32(sfCurrentTick, currentTickIter);
-            newAmmSle->setFieldU64(sfSqrtPriceX64, currentSqrtPriceX64);
-
-            // Find the next initialized tick
-            auto const nextTickIter = findNextInitializedTick(
-                view,
-                ammID,
-                currentTickIter,
-                targetSqrtPriceX64 > currentSqrtPriceX64,
-                j);
-
-            if (nextTickIter == currentTickIter)
-            {
-                // No more ticks to cross
-                break;
-            }
-        }
-
-        view.update(newAmmSle);
+        // Calculate liquidity delta
+        auto const liquidityDelta = ammConcentratedLiquidityCalculateLiquidityDelta(
+            view, currentSqrtPriceX64, newSqrtPriceX64, actualInput, j);
+        
+        // Execute tick crossing
+        auto const [fee0, fee1] = ammConcentratedLiquidityExecuteTickCrossing(
+            view, ammID, currentTick, newTick, liquidityDelta, j);
+        
+        JLOG(j.debug()) << "Crossed tick from " << currentTick << " to " << newTick;
     }
+    
+    return {actualInput, actualOutput};
+}
 
-    return {totalOutput, tesSUCCESS};
+/** Find the next initialized tick in the direction of the swap */
+std::int32_t
+findNextInitializedTick(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t currentTick,
+    std::uint64_t targetSqrtPriceX64)
+{
+    // Determine direction
+    auto const targetTick = sqrtPriceX64ToTick(targetSqrtPriceX64);
+    auto const direction = (targetTick > currentTick) ? 1 : -1;
+    
+    // Get the AMM to find tick spacing
+    auto const ammSle = view.read(keylet::amm(ammID));
+    if (!ammSle)
+        return targetTick;
+    
+    auto const tickSpacing = ammSle->getFieldU16(sfTickSpacing);
+    if (tickSpacing == 0)
+        return targetTick;
+    
+    // Start from the next tick in the direction
+    auto nextTick = currentTick + direction;
+    
+    // Scan for initialized ticks in the direction of the swap
+    // We'll scan up to a reasonable limit to avoid infinite loops
+    constexpr std::int32_t MAX_TICK_SCAN = 1000;
+    std::int32_t scanCount = 0;
+    
+    while (scanCount < MAX_TICK_SCAN)
+    {
+        // Ensure the tick is valid for the spacing
+        if (nextTick % tickSpacing != 0)
+        {
+            nextTick += direction;
+            scanCount++;
+            continue;
+        }
+        
+        // Check if this tick is initialized by looking for the tick object
+        auto const tickKey = getConcentratedLiquidityTickKey(nextTick);
+        auto const tickKeylet = keylet::child(tickKey);
+        auto const tickSle = view.read(tickKeylet);
+        
+        if (tickSle && tickSle->getFieldU8(sfTickInitialized) == 1)
+        {
+            // Found an initialized tick
+            return nextTick;
+        }
+        
+        // Check if we've reached the target tick
+        if ((direction > 0 && nextTick >= targetTick) || 
+            (direction < 0 && nextTick <= targetTick))
+        {
+            return targetTick;
+        }
+        
+        nextTick += direction;
+        scanCount++;
+    }
+    
+    // If we can't find an initialized tick, return the target tick
+    return targetTick;
 }
 
 /** Calculate the target sqrt price for a given input amount */
@@ -1394,6 +1374,300 @@ tickToSqrtPriceX64(std::int32_t tick)
         static_cast<std::uint64_t>(sqrtPrice * (1ULL << 63));
 
     return sqrtPriceX64;
+}
+
+STAmount
+ammConcentratedLiquidityCalculateLiquidityDelta(
+    ReadView const& view,
+    std::uint64_t sqrtPriceX64,
+    std::uint64_t targetSqrtPriceX64,
+    STAmount const& amount,
+    beast::Journal const& j)
+{
+    // Calculate the liquidity delta based on the price change and amount
+    // This follows the Uniswap V3 formula for liquidity calculation
+    
+    if (sqrtPriceX64 == 0 || targetSqrtPriceX64 == 0)
+    {
+        JLOG(j.warn()) << "ammConcentratedLiquidityCalculateLiquidityDelta: invalid sqrt prices";
+        return STAmount{0};
+    }
+    
+    if (amount <= STAmount{0})
+    {
+        JLOG(j.warn()) << "ammConcentratedLiquidityCalculateLiquidityDelta: invalid amount";
+        return STAmount{0};
+    }
+    
+    // Calculate the liquidity delta using the Uniswap V3 formula:
+    // ΔL = Δx * (√P * √P') / (√P' - √P)
+    // where Δx is the amount, √P is current sqrt price, √P' is target sqrt price
+    
+    auto const deltaSqrtPrice = targetSqrtPriceX64 - sqrtPriceX64;
+    if (deltaSqrtPrice == 0)
+    {
+        JLOG(j.debug()) << "ammConcentratedLiquidityCalculateLiquidityDelta: no price change";
+        return STAmount{0};
+    }
+    
+    // Calculate the numerator: amount * sqrtPriceX64 * targetSqrtPriceX64
+    auto const numerator = amount * sqrtPriceX64 * targetSqrtPriceX64;
+    
+    // Calculate the denominator: deltaSqrtPrice
+    auto const denominator = deltaSqrtPrice;
+    
+    // Calculate the liquidity delta
+    auto const liquidityDelta = numerator / denominator;
+    
+    return STAmount{amount.issue(), liquidityDelta};
+}
+
+/** Execute a complete tick crossing for concentrated liquidity */
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityExecuteTickCrossing(
+    ApplyView& view,
+    uint256 const& ammID,
+    std::int32_t fromTick,
+    std::int32_t toTick,
+    STAmount const& liquidityDelta,
+    beast::Journal const& j)
+{
+    // Get the AMM
+    auto const ammKeylet = keylet::amm(ammID);
+    auto const ammSle = view.read(ammKeylet);
+    if (!ammSle)
+    {
+        JLOG(j.warn()) << "AMM not found for tick crossing";
+        return {STAmount{0}, STAmount{0}};
+    }
+
+    // Update the AMM's current tick and sqrt price
+    auto ammSleMutable = view.peek(ammKeylet);
+    if (ammSleMutable)
+    {
+        ammSleMutable->setFieldU32(sfCurrentTick, toTick);
+        
+        // Update sqrt price
+        auto const newSqrtPriceX64 = tickToSqrtPriceX64(toTick);
+        ammSleMutable->setFieldU64(sfSqrtPriceX64, newSqrtPriceX64);
+    }
+    
+    // Update the tick's liquidity net
+    auto const tickKey = getConcentratedLiquidityTickKey(toTick);
+    auto const tickKeylet = keylet::child(tickKey);
+    auto const tickSle = view.read(tickKeylet);
+    
+    if (tickSle)
+    {
+        auto const currentLiquidityNet = tickSle->getFieldAmount(sfLiquidityNet);
+        auto const newLiquidityNet = currentLiquidityNet + liquidityDelta;
+        
+        auto tickSleMutable = view.peek(tickKeylet);
+        if (tickSleMutable)
+        {
+            tickSleMutable->setFieldAmount(sfLiquidityNet, newLiquidityNet);
+        }
+    }
+    else
+    {
+        // Create the tick if it doesn't exist
+        auto const newTickSle = std::make_shared<SLE>(tickKeylet);
+        newTickSle->setFieldU32(sfTickIndex, toTick);
+        newTickSle->setFieldAmount(sfLiquidityNet, liquidityDelta);
+        newTickSle->setFieldAmount(sfLiquidityGross, liquidityDelta);
+        newTickSle->setFieldU8(sfTickInitialized, 1);
+        view.insert(newTickSle);
+    }
+    
+    // Update all positions that cross this tick
+    auto const positions = ammConcentratedLiquidityFindPositionsAtTick(view, ammID, toTick);
+    for (auto const& [owner, position] : positions)
+    {
+        // Update position's fee growth
+        auto const [feeGrowth0, feeGrowth1] = ammConcentratedLiquidityCalculateFeeGrowthInside(
+            view, ammID, position.tickLower, position.tickUpper, toTick);
+        
+        auto const positionKey = getConcentratedLiquidityPositionKey(
+            owner, position.tickLower, position.tickUpper, position.nonce);
+        auto const positionKeylet = keylet::child(positionKey);
+        auto const positionSle = view.read(positionKeylet);
+        
+        if (positionSle)
+        {
+            auto positionSleMutable = view.peek(positionKeylet);
+            if (positionSleMutable)
+            {
+                positionSleMutable->setFieldAmount(sfFeeGrowthInside0LastX128, feeGrowth0);
+                positionSleMutable->setFieldAmount(sfFeeGrowthInside1LastX128, feeGrowth1);
+            }
+        }
+    }
+    
+    JLOG(j.debug()) << "Executed tick crossing from " << fromTick << " to " << toTick;
+    
+    // Return the fee amounts collected during the crossing
+    auto const fee0 = ammConcentratedLiquidityCalculateFeesOwed(view, ammID, fromTick, toTick, 0);
+    auto const fee1 = ammConcentratedLiquidityCalculateFeesOwed(view, ammID, fromTick, toTick, 1);
+    
+    return {fee0, fee1};
+}
+
+/** Find all positions that are active at a specific tick */
+std::vector<std::pair<AccountID, ConcentratedLiquidityPosition>>
+ammConcentratedLiquidityFindPositionsAtTick(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tick)
+{
+    // Use the position registry for efficient lookup
+    auto positions = g_positionRegistry.getPositionsAtTick(tick);
+    
+    // Filter positions that belong to this AMM
+    std::vector<std::pair<AccountID, ConcentratedLiquidityPosition>> ammPositions;
+    for (auto const& [owner, position] : positions)
+    {
+        // Verify this position belongs to this AMM by checking the ledger
+        auto const positionKey = getConcentratedLiquidityPositionKey(
+            owner, position.tickLower, position.tickUpper, position.nonce);
+        auto const positionKeylet = keylet::child(positionKey);
+        auto const positionSle = view.read(positionKeylet);
+        
+        if (positionSle && positionSle->getFieldH256(sfAMMID) == ammID)
+        {
+            ammPositions.emplace_back(owner, position);
+        }
+    }
+    
+    return ammPositions;
+}
+
+/** Calculate fees owed for a position between two ticks */
+STAmount
+ammConcentratedLiquidityCalculateFeesOwed(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::uint8_t feeIndex)
+{
+    // Calculate fees owed based on fee growth difference
+    auto const ammSle = view.read(keylet::amm(ammID));
+    if (!ammSle)
+        return STAmount{0};
+    
+    // Get current global fee growth
+    auto const feeGrowthGlobal = (feeIndex == 0) 
+        ? ammSle->getFieldAmount(sfFeeGrowthGlobal0X128)
+        : ammSle->getFieldAmount(sfFeeGrowthGlobal1X128);
+    
+    // Calculate fee growth outside the position range
+    auto const feeGrowthOutsideLower = ammConcentratedLiquidityCalculateFeeGrowthOutside(
+        view, ammID, tickLower, feeIndex);
+    auto const feeGrowthOutsideUpper = ammConcentratedLiquidityCalculateFeeGrowthOutside(
+        view, ammID, tickUpper, feeIndex);
+    
+    // Calculate fee growth inside the position range
+    // Fee growth inside = fee growth global - fee growth outside lower - fee growth outside upper
+    auto const feeGrowthInside = feeGrowthGlobal - feeGrowthOutsideLower - feeGrowthOutsideUpper;
+    
+    // Convert fee growth to actual fee amount
+    // This is a simplified calculation - in a full implementation,
+    // we would track the position's last fee growth and calculate the difference
+    auto const feeAmount = feeGrowthInside / STAmount{1000000};
+    
+    return feeAmount;
+}
+
+/** Calculate fee growth outside a specific tick */
+STAmount
+ammConcentratedLiquidityCalculateFeeGrowthOutside(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tick,
+    std::uint8_t feeIndex)
+{
+    // Get the tick object
+    auto const tickKey = getConcentratedLiquidityTickKey(tick);
+    auto const tickKeylet = keylet::child(tickKey);
+    auto const tickSle = view.read(tickKeylet);
+    
+    if (!tickSle)
+        return STAmount{0};
+    
+    // Get fee growth outside from the tick
+    auto const feeGrowthOutside = (feeIndex == 0)
+        ? tickSle->getFieldAmount(sfFeeGrowthOutside0X128)
+        : tickSle->getFieldAmount(sfFeeGrowthOutside1X128);
+    
+    return feeGrowthOutside;
+}
+
+/** Position registry for efficient position lookup */
+struct PositionRegistry
+{
+    std::map<uint256, std::vector<std::pair<AccountID, ConcentratedLiquidityPosition>>> ammPositions;
+    std::map<std::int32_t, std::vector<std::pair<AccountID, ConcentratedLiquidityPosition>>> tickPositions;
+    
+    void addPosition(uint256 const& ammID, AccountID const& owner, ConcentratedLiquidityPosition const& position)
+    {
+        // Add to AMM positions
+        ammPositions[ammID].emplace_back(owner, position);
+        
+        // Add to tick positions for each tick in the range
+        for (std::int32_t tick = position.tickLower; tick <= position.tickUpper; ++tick)
+        {
+            tickPositions[tick].emplace_back(owner, position);
+        }
+    }
+    
+    void removePosition(uint256 const& ammID, AccountID const& owner, ConcentratedLiquidityPosition const& position)
+    {
+        // Remove from AMM positions
+        auto& ammPos = ammPositions[ammID];
+        ammPos.erase(std::remove_if(ammPos.begin(), ammPos.end(),
+            [&](auto const& p) { return p.first == owner && p.second.nonce == position.nonce; }), ammPos.end());
+        
+        // Remove from tick positions
+        for (std::int32_t tick = position.tickLower; tick <= position.tickUpper; ++tick)
+        {
+            auto& tickPos = tickPositions[tick];
+            tickPos.erase(std::remove_if(tickPos.begin(), tickPos.end(),
+                [&](auto const& p) { return p.first == owner && p.second.nonce == position.nonce; }), tickPos.end());
+        }
+    }
+    
+    std::vector<std::pair<AccountID, ConcentratedLiquidityPosition>> getPositionsAtTick(std::int32_t tick) const
+    {
+        auto it = tickPositions.find(tick);
+        if (it != tickPositions.end())
+            return it->second;
+        return {};
+    }
+    
+    std::vector<std::pair<AccountID, ConcentratedLiquidityPosition>> getPositionsForAMM(uint256 const& ammID) const
+    {
+        auto it = ammPositions.find(ammID);
+        if (it != ammPositions.end())
+            return it->second;
+        return {};
+    }
+};
+
+// Global position registry (in a real implementation, this would be part of the ledger state)
+static PositionRegistry g_positionRegistry;
+
+/** Update the position registry with a new position */
+void
+ammConcentratedLiquidityUpdatePositionRegistry(
+    uint256 const& ammID,
+    AccountID const& owner,
+    ConcentratedLiquidityPosition const& position,
+    bool add)
+{
+    if (add)
+        g_positionRegistry.addPosition(ammID, owner, position);
+    else
+        g_positionRegistry.removePosition(ammID, owner, position);
 }
 
 }  // namespace ripple
