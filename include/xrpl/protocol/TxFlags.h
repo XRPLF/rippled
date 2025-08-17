@@ -194,6 +194,10 @@ using FlagMap = std::map<std::string, FlagValue>;
 #define TO_MAP(name, values) FlagMap const name##Flags = {values};
 XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP)
 
+FlagMap const UniversalFlags = {
+    {"tfFullyCanonicalSig", tfFullyCanonicalSig},
+    {"tfInnerBatchTxn", tfInnerBatchTxn}};
+
 // Create a list of all transaction flag maps.
 // This is used to generate the server_definitions RPC output.
 // example:
@@ -201,6 +205,7 @@ XMACRO(TO_MAP, VALUE_TO_MAP, VALUE_TO_MAP)
 //     {"AccountSet", AccountSetFlags},
 #define ALL_TX_FLAGS(name, values) {#name, name##Flags},
 std::vector<std::pair<std::string, FlagMap>> const allTxFlags = {
+    {"Universal", UniversalFlags},
     XMACRO(ALL_TX_FLAGS, NULL_OUTPUT, NULL_OUTPUT)};
 
 #undef XMACRO
