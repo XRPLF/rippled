@@ -24,19 +24,19 @@
 
 namespace ripple {
 
-/** AMMConcentratedDeposit implements adding liquidity to concentrated liquidity positions.
- *  This transaction allows liquidity providers to add liquidity to existing concentrated
- *  liquidity positions within specific price ranges. The transaction calculates the
- *  optimal amounts of both tokens to deposit based on the current price and the
- *  specified liquidity amount.
- *  
+/** AMMConcentratedDeposit implements adding liquidity to concentrated liquidity
+ * positions. This transaction allows liquidity providers to add liquidity to
+ * existing concentrated liquidity positions within specific price ranges. The
+ * transaction calculates the optimal amounts of both tokens to deposit based on
+ * the current price and the specified liquidity amount.
+ *
  *  Key features:
  *  - Add liquidity to existing positions
  *  - Automatic amount calculation based on current price
  *  - Slippage protection with maximum amounts
  *  - Fee accumulation tracking
  *  - Position state updates
- *  
+ *
  *  The transaction:
  *  - Validates the position exists and is owned by the caller
  *  - Calculates optimal token amounts for the liquidity

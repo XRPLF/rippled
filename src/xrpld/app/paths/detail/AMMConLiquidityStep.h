@@ -20,8 +20,8 @@
 #ifndef RIPPLE_APP_PATHS_DETAIL_AMMCONLIQUIDITYSTEP_H_INCLUDED
 #define RIPPLE_APP_PATHS_DETAIL_AMMCONLIQUIDITYSTEP_H_INCLUDED
 
-#include <xrpld/app/paths/AMMConLiquidityPool.h>
 #include <xrpld/app/paths/AMMConLiquidityOffer.h>
+#include <xrpld/app/paths/AMMConLiquidityPool.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/ledger/PaymentSandbox.h>
@@ -31,11 +31,12 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/STAmount.h>
-#include <functional>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
+
+#include <functional>
 
 namespace ripple {
 
@@ -43,7 +44,8 @@ template <typename TIn, typename TOut>
 using TAmounts = std::pair<TIn, TOut>;
 
 template <class TIn, class TOut, class TDerived>
-class AMMConLiquidityStep : public StepImp<TIn, TOut, AMMConLiquidityStep<TIn, TOut, TDerived>>
+class AMMConLiquidityStep
+    : public StepImp<TIn, TOut, AMMConLiquidityStep<TIn, TOut, TDerived>>
 {
 protected:
     enum class OfferType { ConcentratedLiquidity, CLOB };
@@ -88,7 +90,10 @@ protected:
     }
 
 public:
-    AMMConLiquidityStep(StrandContext const& ctx, Issue const& in, Issue const& out)
+    AMMConLiquidityStep(
+        StrandContext const& ctx,
+        Issue const& in,
+        Issue const& out)
         : maxOffersToConsume_(getMaxOffersToConsume(ctx))
         , book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)

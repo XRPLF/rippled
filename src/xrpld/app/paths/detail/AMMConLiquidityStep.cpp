@@ -17,17 +17,17 @@
 */
 //==============================================================================
 
-#include <xrpld/app/paths/detail/AMMConLiquidityStep.h>
-#include <xrpld/app/paths/AMMConLiquidityPool.h>
 #include <xrpld/app/paths/AMMConLiquidityOffer.h>
+#include <xrpld/app/paths/AMMConLiquidityPool.h>
+#include <xrpld/app/paths/detail/AMMConLiquidityStep.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
@@ -40,11 +40,12 @@ using TAmounts = std::pair<TIn, TOut>;
 // Sophisticated ratio calculation function for financial precision
 // Handles different amount types (XRPAmount, IOUAmount) with proper rounding
 template <typename T>
-T mulRatio(T const& a, T const& b, T const& c, bool roundUp)
+T
+mulRatio(T const& a, T const& b, T const& c, bool roundUp)
 {
     if (c == beast::zero)
         return beast::zero;
-    
+
     // For XRPAmount (integer-based)
     if constexpr (std::is_same_v<T, XRPAmount>)
     {
@@ -52,16 +53,16 @@ T mulRatio(T const& a, T const& b, T const& c, bool roundUp)
         __int128_t const a128 = a.drops();
         __int128_t const b128 = b.drops();
         __int128_t const c128 = c.drops();
-        
+
         __int128_t const product = a128 * b128;
         __int128_t const quotient = product / c128;
-        
+
         // Handle rounding
         if (roundUp && (product % c128) != 0)
         {
             return XRPAmount{static_cast<std::int64_t>(quotient + 1)};
         }
-        
+
         return XRPAmount{static_cast<std::int64_t>(quotient)};
     }
     // For IOUAmount (mantissa/exponent-based)
@@ -71,7 +72,7 @@ T mulRatio(T const& a, T const& b, T const& c, bool roundUp)
         // Use the existing IOUAmount arithmetic with proper rounding
         auto const product = a * b;
         auto const result = product / c;
-        
+
         if (roundUp)
         {
             // For rounding up, we need to check if there's a remainder
@@ -82,7 +83,7 @@ T mulRatio(T const& a, T const& b, T const& c, bool roundUp)
                 return result + IOUAmount{1, result.exponent()};
             }
         }
-        
+
         return result;
     }
     // For STAmount (most flexible)
@@ -91,7 +92,7 @@ T mulRatio(T const& a, T const& b, T const& c, bool roundUp)
         // STAmount has sophisticated arithmetic built-in
         auto const product = a * b;
         auto const result = product / c;
-        
+
         if (roundUp)
         {
             // Check for remainder and round up if needed
@@ -102,7 +103,7 @@ T mulRatio(T const& a, T const& b, T const& c, bool roundUp)
                 return result + STAmount{1, result.issue(), result.native()};
             }
         }
-        
+
         return result;
     }
     // Fallback for other types
@@ -133,12 +134,12 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::qualityUpperBound(
     {
         // Calculate quality based on current price
         auto const sqrtPriceX64 = ammConLiquidity_->getSqrtPriceX64();
-        auto const price = (static_cast<double>(sqrtPriceX64) / (1ULL << 64)) * 
-                           (static_cast<double>(sqrtPriceX64) / (1ULL << 64));
-        
+        auto const price = (static_cast<double>(sqrtPriceX64) / (1ULL << 64)) *
+            (static_cast<double>(sqrtPriceX64) / (1ULL << 64));
+
         return {Quality{Number{price}}, DebtDirection::issues};
     }
-    
+
     return {std::nullopt, DebtDirection::issues};
 }
 
@@ -153,19 +154,20 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::getQualityFunc(
     if (ammConLiquidity_)
     {
         auto const sqrtPriceX64 = ammConLiquidity_->getSqrtPriceX64();
-        auto const basePrice = (static_cast<double>(sqrtPriceX64) / (1ULL << 64)) * 
-                               (static_cast<double>(sqrtPriceX64) / (1ULL << 64));
-        
+        auto const basePrice =
+            (static_cast<double>(sqrtPriceX64) / (1ULL << 64)) *
+            (static_cast<double>(sqrtPriceX64) / (1ULL << 64));
+
         // Create a quality function that adjusts based on trade size
         auto qualityFunc = [basePrice](TIn const& in) -> Quality {
             // For now, return constant quality
             // In a full implementation, this would account for slippage
             return Quality{Number{basePrice}};
         };
-        
+
         return {qualityFunc, DebtDirection::issues};
     }
-    
+
     return {std::nullopt, DebtDirection::issues};
 }
 
@@ -186,7 +188,7 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::revImp(
 {
     // Reverse implementation for concentrated liquidity
     // This calculates the input amount needed to produce the desired output
-    
+
     if (ammConLiquidity_)
     {
         // Get the concentrated liquidity offer
@@ -195,16 +197,17 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::revImp(
         {
             // Calculate the input amount needed for the desired output
             auto const amounts = offer->amount();
-            auto const inputAmount = mulRatio(amounts.in, out, amounts.out, true);
-            
+            auto const inputAmount =
+                mulRatio(amounts.in, out, amounts.out, true);
+
             // Execute the offer
             auto const consumed = TAmounts<TIn, TOut>{inputAmount, out};
             offer->consume(afView, consumed);
-            
+
             return {inputAmount, out};
         }
     }
-    
+
     // Fallback to zero amounts if no concentrated liquidity available
     return {beast::zero, beast::zero};
 }
@@ -219,7 +222,7 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::fwdImp(
 {
     // Forward implementation for concentrated liquidity
     // This calculates the output amount for a given input
-    
+
     if (ammConLiquidity_)
     {
         // Get the concentrated liquidity offer
@@ -228,16 +231,17 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::fwdImp(
         {
             // Calculate the output amount for the given input
             auto const amounts = offer->amount();
-            auto const outputAmount = mulRatio(amounts.out, in, amounts.in, false);
-            
+            auto const outputAmount =
+                mulRatio(amounts.out, in, amounts.in, false);
+
             // Execute the offer
             auto const consumed = TAmounts<TIn, TOut>{in, outputAmount};
             offer->consume(afView, consumed);
-            
+
             return {in, outputAmount};
         }
     }
-    
+
     // Fallback to zero amounts if no concentrated liquidity available
     return {beast::zero, beast::zero};
 }
@@ -263,7 +267,7 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::validFwd(
             }
         }
     }
-    
+
     return {false, EitherAmount{beast::zero}};
 }
 
@@ -274,15 +278,15 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
     // Check if concentrated liquidity is available and valid
     if (!ammConLiquidity_)
         return tesSUCCESS;  // No concentrated liquidity available
-    
+
     // Check if the feature is enabled
     if (!ctx.view.rules().enabled(featureAMMConcentratedLiquidity))
         return temDISABLED;
-    
+
     // Check if there is sufficient liquidity
     if (ammConLiquidity_->getAggregatedLiquidity() <= beast::zero)
         return tesSUCCESS;  // No liquidity available
-    
+
     return tesSUCCESS;
 }
 
@@ -296,7 +300,7 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::getAMMConLiquidityOffer(
     {
         return ammConLiquidity_->getOffer(view, clobQuality);
     }
-    
+
     return std::nullopt;
 }
 
@@ -312,14 +316,16 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::consumeOffer(
 {
     // Consume the offer and update the concentrated liquidity positions
     offer.consume(sb, ofrAmt);
-    
+
     // Update fee growth for all affected positions
     if (ammConLiquidity_)
     {
         // Calculate fees based on the trading fee
-        auto const fee0 = mulRatio(ofrAmt.in, ammConLiquidity_->tradingFee(), 1000000, true);
-        auto const fee1 = mulRatio(ofrAmt.out, ammConLiquidity_->tradingFee(), 1000000, true);
-        
+        auto const fee0 =
+            mulRatio(ofrAmt.in, ammConLiquidity_->tradingFee(), 1000000, true);
+        auto const fee1 =
+            mulRatio(ofrAmt.out, ammConLiquidity_->tradingFee(), 1000000, true);
+
         // Update fee growth (this would be implemented in AMMConLiquidityPool)
         // ammConLiquidity_->updateFeeGrowth(sb, fee0, fee1);
     }
@@ -348,14 +354,26 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::execOffer(
 
 // Payment AMMConLiquidityStep template class (not offer crossing).
 template <class TIn, class TOut>
-class AMMConLiquidityPaymentStep : public AMMConLiquidityStep<TIn, TOut, AMMConLiquidityPaymentStep<TIn, TOut>>
+class AMMConLiquidityPaymentStep : public AMMConLiquidityStep<
+                                       TIn,
+                                       TOut,
+                                       AMMConLiquidityPaymentStep<TIn, TOut>>
 {
 public:
     explicit ConcentratedLiquidityPaymentStep() = default;
 
-    using AMMConLiquidityStep<TIn, TOut, AMMConLiquidityPaymentStep<TIn, TOut>>::AMMConLiquidityStep;
-    using AMMConLiquidityStep<TIn, TOut, AMMConLiquidityPaymentStep<TIn, TOut>>::qualityUpperBound;
-    using typename AMMConLiquidityStep<TIn, TOut, AMMConLiquidityPaymentStep<TIn, TOut>>::OfferType;
+    using AMMConLiquidityStep<
+        TIn,
+        TOut,
+        AMMConLiquidityPaymentStep<TIn, TOut>>::AMMConLiquidityStep;
+    using AMMConLiquidityStep<
+        TIn,
+        TOut,
+        AMMConLiquidityPaymentStep<TIn, TOut>>::qualityUpperBound;
+    using typename AMMConLiquidityStep<
+        TIn,
+        TOut,
+        AMMConLiquidityPaymentStep<TIn, TOut>>::OfferType;
 
     // Never limit self cross quality on a payment.
     template <template <typename, typename> typename Offer>
@@ -414,14 +432,27 @@ public:
 
 // Offer crossing AMMConLiquidityStep template class.
 template <class TIn, class TOut>
-class AMMConLiquidityOfferCrossingStep : public AMMConLiquidityStep<TIn, TOut, AMMConLiquidityOfferCrossingStep<TIn, TOut>>
+class AMMConLiquidityOfferCrossingStep
+    : public AMMConLiquidityStep<
+          TIn,
+          TOut,
+          AMMConLiquidityOfferCrossingStep<TIn, TOut>>
 {
 public:
     explicit ConcentratedLiquidityOfferCrossingStep() = default;
 
-    using AMMConLiquidityStep<TIn, TOut, AMMConLiquidityOfferCrossingStep<TIn, TOut>>::AMMConLiquidityStep;
-    using AMMConLiquidityStep<TIn, TOut, AMMConLiquidityOfferCrossingStep<TIn, TOut>>::qualityUpperBound;
-    using typename AMMConLiquidityStep<TIn, TOut, AMMConLiquidityOfferCrossingStep<TIn, TOut>>::OfferType;
+    using AMMConLiquidityStep<
+        TIn,
+        TOut,
+        AMMConLiquidityOfferCrossingStep<TIn, TOut>>::AMMConLiquidityStep;
+    using AMMConLiquidityStep<
+        TIn,
+        TOut,
+        AMMConLiquidityOfferCrossingStep<TIn, TOut>>::qualityUpperBound;
+    using typename AMMConLiquidityStep<
+        TIn,
+        TOut,
+        AMMConLiquidityOfferCrossingStep<TIn, TOut>>::OfferType;
 
     // Limit self cross quality on offer crossing.
     template <template <typename, typename> typename Offer>
@@ -466,7 +497,10 @@ public:
 
     // For offer crossing, rates are based on the offer's rates
     std::uint32_t
-    getOfrInRate(Step const* prevStep, AccountID const& owner, std::uint32_t trIn) const
+    getOfrInRate(
+        Step const* prevStep,
+        AccountID const& owner,
+        std::uint32_t trIn) const
     {
         // Use the offer's input rate
         return trIn;
@@ -495,21 +529,26 @@ public:
 
 template <class TIn, class TOut>
 static std::pair<TER, std::unique_ptr<Step>>
-make_AMMConLiquidityStepHelper(StrandContext const& ctx, Issue const& in, Issue const& out)
+make_AMMConLiquidityStepHelper(
+    StrandContext const& ctx,
+    Issue const& in,
+    Issue const& out)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
     if (ctx.offerCrossing)
     {
         auto offerCrossingStep =
-            std::make_unique<AMMConLiquidityOfferCrossingStep<TIn, TOut>>(ctx, in, out);
+            std::make_unique<AMMConLiquidityOfferCrossingStep<TIn, TOut>>(
+                ctx, in, out);
         ter = offerCrossingStep->check(ctx);
         r = std::move(offerCrossingStep);
     }
     else  // payment
     {
         auto paymentStep =
-            std::make_unique<AMMConLiquidityPaymentStep<TIn, TOut>>(ctx, in, out);
+            std::make_unique<AMMConLiquidityPaymentStep<TIn, TOut>>(
+                ctx, in, out);
         ter = paymentStep->check(ctx);
         r = std::move(paymentStep);
     }
@@ -520,7 +559,10 @@ make_AMMConLiquidityStepHelper(StrandContext const& ctx, Issue const& in, Issue 
 }
 
 std::pair<TER, std::unique_ptr<Step>>
-make_AMMConLiquidityStepII(StrandContext const& ctx, Issue const& in, Issue const& out)
+make_AMMConLiquidityStepII(
+    StrandContext const& ctx,
+    Issue const& in,
+    Issue const& out)
 {
     return make_AMMConLiquidityStepHelper<IOUAmount, IOUAmount>(ctx, in, out);
 }
@@ -528,13 +570,15 @@ make_AMMConLiquidityStepII(StrandContext const& ctx, Issue const& in, Issue cons
 std::pair<TER, std::unique_ptr<Step>>
 make_AMMConLiquidityStepIX(StrandContext const& ctx, Issue const& in)
 {
-    return make_AMMConLiquidityStepHelper<IOUAmount, XRPAmount>(ctx, in, xrpIssue());
+    return make_AMMConLiquidityStepHelper<IOUAmount, XRPAmount>(
+        ctx, in, xrpIssue());
 }
 
 std::pair<TER, std::unique_ptr<Step>>
 make_AMMConLiquidityStepXI(StrandContext const& ctx, Issue const& out)
 {
-    return make_AMMConLiquidityStepHelper<XRPAmount, IOUAmount>(ctx, xrpIssue(), out);
+    return make_AMMConLiquidityStepHelper<XRPAmount, IOUAmount>(
+        ctx, xrpIssue(), out);
 }
 
 }  // namespace ripple

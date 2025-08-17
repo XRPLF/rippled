@@ -24,19 +24,20 @@
 
 namespace ripple {
 
-/** AMMConcentratedCollect implements collecting accumulated fees from concentrated liquidity positions.
- *  This transaction allows liquidity providers to collect fees that have accumulated in their
- *  concentrated liquidity positions without removing liquidity. The transaction calculates the
- *  fees earned based on the position's liquidity and the trading activity that occurred within
- *  the position's price range.
- *  
+/** AMMConcentratedCollect implements collecting accumulated fees from
+ * concentrated liquidity positions. This transaction allows liquidity providers
+ * to collect fees that have accumulated in their concentrated liquidity
+ * positions without removing liquidity. The transaction calculates the fees
+ * earned based on the position's liquidity and the trading activity that
+ * occurred within the position's price range.
+ *
  *  Key features:
  *  - Collect accumulated fees from positions
  *  - Fee calculation based on liquidity and trading activity
  *  - Maximum fee collection limits
  *  - Position fee tracking updates
  *  - No liquidity removal required
- *  
+ *
  *  The transaction:
  *  - Validates the position exists and is owned by the caller
  *  - Calculates accumulated fees based on position data

@@ -41,24 +41,26 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
 
         // Test with feature enabled
         {
-            Env env{*this, FeatureBitset{featureAMM, featureAMMConcentratedLiquidity}};
+            Env env{
+                *this,
+                FeatureBitset{featureAMM, featureAMMConcentratedLiquidity}};
             fund(env, gw, {alice}, {USD(1000), BTC(1)}, Fund::All);
 
             // Create concentrated liquidity AMM
             auto const ammCreate = env.tx()
-                .type(ttAMM_CONCENTRATED_CREATE)
-                .account(alice)
-                .amount(USD(100))
-                .amount2(BTC(0.1))
-                .asset(USD)
-                .asset2(BTC)
-                .tradingFee(30)
-                .tickLower(-1000)
-                .tickUpper(1000)
-                .liquidity(IOUAmount{1000000, 0})
-                .tickSpacing(10)
-                .fee(XRP(10))
-                .seq(env.seq(alice));
+                                       .type(ttAMM_CONCENTRATED_CREATE)
+                                       .account(alice)
+                                       .amount(USD(100))
+                                       .amount2(BTC(0.1))
+                                       .asset(USD)
+                                       .asset2(BTC)
+                                       .tradingFee(30)
+                                       .tickLower(-1000)
+                                       .tickUpper(1000)
+                                       .liquidity(IOUAmount{1000000, 0})
+                                       .tickSpacing(10)
+                                       .fee(XRP(10))
+                                       .seq(env.seq(alice));
 
             env(ammCreate);
             env.close();
@@ -73,23 +75,25 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
 
         // Test with feature disabled
         {
-            Env env{*this, FeatureBitset{featureAMM}};  // Concentrated liquidity disabled
+            Env env{
+                *this,
+                FeatureBitset{featureAMM}};  // Concentrated liquidity disabled
             fund(env, gw, {alice}, {USD(1000), BTC(1)}, Fund::All);
 
             auto const ammCreate = env.tx()
-                .type(ttAMM_CONCENTRATED_CREATE)
-                .account(alice)
-                .amount(USD(100))
-                .amount2(BTC(0.1))
-                .asset(USD)
-                .asset2(BTC)
-                .tradingFee(30)
-                .tickLower(-1000)
-                .tickUpper(1000)
-                .liquidity(IOUAmount{1000000, 0})
-                .tickSpacing(10)
-                .fee(XRP(10))
-                .seq(env.seq(alice));
+                                       .type(ttAMM_CONCENTRATED_CREATE)
+                                       .account(alice)
+                                       .amount(USD(100))
+                                       .amount2(BTC(0.1))
+                                       .asset(USD)
+                                       .asset2(BTC)
+                                       .tradingFee(30)
+                                       .tickLower(-1000)
+                                       .tickUpper(1000)
+                                       .liquidity(IOUAmount{1000000, 0})
+                                       .tickSpacing(10)
+                                       .fee(XRP(10))
+                                       .seq(env.seq(alice));
 
             env(ammCreate, ter(temDISABLED));
         }
@@ -102,25 +106,26 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
 
         using namespace jtx;
 
-        Env env{*this, FeatureBitset{featureAMM, featureAMMConcentratedLiquidity}};
+        Env env{
+            *this, FeatureBitset{featureAMM, featureAMMConcentratedLiquidity}};
         fund(env, gw, {alice}, {USD(1000), BTC(1)}, Fund::All);
 
         // Test invalid tick range (lower >= upper)
         {
             auto const ammCreate = env.tx()
-                .type(ttAMM_CONCENTRATED_CREATE)
-                .account(alice)
-                .amount(USD(100))
-                .amount2(BTC(0.1))
-                .asset(USD)
-                .asset2(BTC)
-                .tradingFee(30)
-                .tickLower(1000)
-                .tickUpper(1000)  // Same as lower
-                .liquidity(IOUAmount{1000000, 0})
-                .tickSpacing(10)
-                .fee(XRP(10))
-                .seq(env.seq(alice));
+                                       .type(ttAMM_CONCENTRATED_CREATE)
+                                       .account(alice)
+                                       .amount(USD(100))
+                                       .amount2(BTC(0.1))
+                                       .asset(USD)
+                                       .asset2(BTC)
+                                       .tradingFee(30)
+                                       .tickLower(1000)
+                                       .tickUpper(1000)  // Same as lower
+                                       .liquidity(IOUAmount{1000000, 0})
+                                       .tickSpacing(10)
+                                       .fee(XRP(10))
+                                       .seq(env.seq(alice));
 
             env(ammCreate, ter(temBAD_AMM_TOKENS));
         }
@@ -128,19 +133,19 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
         // Test invalid tick range (lower > upper)
         {
             auto const ammCreate = env.tx()
-                .type(ttAMM_CONCENTRATED_CREATE)
-                .account(alice)
-                .amount(USD(100))
-                .amount2(BTC(0.1))
-                .asset(USD)
-                .asset2(BTC)
-                .tradingFee(30)
-                .tickLower(1000)
-                .tickUpper(-1000)  // Lower than lower
-                .liquidity(IOUAmount{1000000, 0})
-                .tickSpacing(10)
-                .fee(XRP(10))
-                .seq(env.seq(alice));
+                                       .type(ttAMM_CONCENTRATED_CREATE)
+                                       .account(alice)
+                                       .amount(USD(100))
+                                       .amount2(BTC(0.1))
+                                       .asset(USD)
+                                       .asset2(BTC)
+                                       .tradingFee(30)
+                                       .tickLower(1000)
+                                       .tickUpper(-1000)  // Lower than lower
+                                       .liquidity(IOUAmount{1000000, 0})
+                                       .tickSpacing(10)
+                                       .fee(XRP(10))
+                                       .seq(env.seq(alice));
 
             env(ammCreate, ter(temBAD_AMM_TOKENS));
         }
@@ -148,19 +153,19 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
         // Test invalid tick spacing
         {
             auto const ammCreate = env.tx()
-                .type(ttAMM_CONCENTRATED_CREATE)
-                .account(alice)
-                .amount(USD(100))
-                .amount2(BTC(0.1))
-                .asset(USD)
-                .asset2(BTC)
-                .tradingFee(30)
-                .tickLower(-1000)
-                .tickUpper(1000)
-                .liquidity(IOUAmount{1000000, 0})
-                .tickSpacing(0)  // Invalid spacing
-                .fee(XRP(10))
-                .seq(env.seq(alice));
+                                       .type(ttAMM_CONCENTRATED_CREATE)
+                                       .account(alice)
+                                       .amount(USD(100))
+                                       .amount2(BTC(0.1))
+                                       .asset(USD)
+                                       .asset2(BTC)
+                                       .tradingFee(30)
+                                       .tickLower(-1000)
+                                       .tickUpper(1000)
+                                       .liquidity(IOUAmount{1000000, 0})
+                                       .tickSpacing(0)  // Invalid spacing
+                                       .fee(XRP(10))
+                                       .seq(env.seq(alice));
 
             env(ammCreate, ter(temBAD_AMM_TOKENS));
         }
@@ -168,19 +173,19 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
         // Test insufficient liquidity
         {
             auto const ammCreate = env.tx()
-                .type(ttAMM_CONCENTRATED_CREATE)
-                .account(alice)
-                .amount(USD(100))
-                .amount2(BTC(0.1))
-                .asset(USD)
-                .asset2(BTC)
-                .tradingFee(30)
-                .tickLower(-1000)
-                .tickUpper(1000)
-                .liquidity(IOUAmount{100, 0})  // Too low
-                .tickSpacing(10)
-                .fee(XRP(10))
-                .seq(env.seq(alice));
+                                       .type(ttAMM_CONCENTRATED_CREATE)
+                                       .account(alice)
+                                       .amount(USD(100))
+                                       .amount2(BTC(0.1))
+                                       .asset(USD)
+                                       .asset2(BTC)
+                                       .tradingFee(30)
+                                       .tickLower(-1000)
+                                       .tickUpper(1000)
+                                       .liquidity(IOUAmount{100, 0})  // Too low
+                                       .tickSpacing(10)
+                                       .fee(XRP(10))
+                                       .seq(env.seq(alice));
 
             env(ammCreate, ter(temBAD_AMM_TOKENS));
         }
@@ -196,7 +201,9 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
             auto const tick = 1000;
             auto const sqrtPrice = tickToSqrtPriceX64(tick);
             auto const convertedTick = sqrtPriceX64ToTick(sqrtPrice);
-            BEAST_EXPECT(std::abs(convertedTick - tick) <= 1);  // Allow small rounding error
+            BEAST_EXPECT(
+                std::abs(convertedTick - tick) <=
+                1);  // Allow small rounding error
         }
 
         // Test negative tick
@@ -219,67 +226,88 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
         {
             BEAST_EXPECT(isValidTickRange(-1000, 1000, 10));
             BEAST_EXPECT(!isValidTickRange(1000, -1000, 10));  // Invalid order
-            BEAST_EXPECT(!isValidTickRange(-1000, 1000, 0));   // Invalid spacing
-                    BEAST_EXPECT(!isValidTickRange(-1000, 1000, 3));   // Not aligned with spacing
-    }
-    
-    void
-    testMultipleFeeTiers()
-    {
-        testcase("Multiple Fee Tiers");
-        
-        using namespace jtx;
-        using namespace test::jtx;
-        
-        Env env(*this);
-        
-        Account const alice("alice");
-        Account const bob("bob");
-        
-        env.fund(XRP(10000), alice, bob);
-        env.close();
-        
-        // Test all fee tiers
-        std::vector<std::pair<std::uint16_t, std::uint16_t>> feeTiers = {
-            {CONCENTRATED_LIQUIDITY_FEE_TIER_0_01, CONCENTRATED_LIQUIDITY_TICK_SPACING_0_01},
-            {CONCENTRATED_LIQUIDITY_FEE_TIER_0_05, CONCENTRATED_LIQUIDITY_TICK_SPACING_0_05},
-            {CONCENTRATED_LIQUIDITY_FEE_TIER_0_3, CONCENTRATED_LIQUIDITY_TICK_SPACING_0_3},
-            {CONCENTRATED_LIQUIDITY_FEE_TIER_1_0, CONCENTRATED_LIQUIDITY_TICK_SPACING_1_0}
-        };
-        
-        for (auto const& [fee, expectedTickSpacing] : feeTiers)
-        {
-            // Create AMM with this fee tier
-            env(amm(alice, USD(1000), BTC(100), fee, expectedTickSpacing, -1000, 1000, 1000000));
-            env.close();
-            
-            // Verify AMM was created with correct fee tier
-            auto const ammSle = env.le(keylet::amm(USD.issue(), BTC.issue()));
-            BEAST_EXPECT(ammSle);
-            BEAST_EXPECT(ammSle->getFieldU16(sfTradingFee) == fee);
-            BEAST_EXPECT(ammSle->getFieldU16(sfTickSpacing) == expectedTickSpacing);
-            
-            // Verify fee tier validation
-            BEAST_EXPECT(isValidConcentratedLiquidityFeeTier(fee));
-            BEAST_EXPECT(getConcentratedLiquidityTickSpacing(fee) == expectedTickSpacing);
-            BEAST_EXPECT(getConcentratedLiquidityFeeTier(expectedTickSpacing) == fee);
-            
-            // Test tick validation for this fee tier
-            auto const validTick = expectedTickSpacing * 10;  // Multiple of tick spacing
-            auto const invalidTick = expectedTickSpacing * 10 + 1;  // Not multiple of tick spacing
-            
-            BEAST_EXPECT(isValidTickForFeeTier(validTick, fee));
-            BEAST_EXPECT(!isValidTickForFeeTier(invalidTick, fee));
-            
-            // Clean up for next iteration
-            env(ammDelete(alice, USD, BTC));
-            env.close();
+            BEAST_EXPECT(!isValidTickRange(-1000, 1000, 0));  // Invalid spacing
+            BEAST_EXPECT(
+                !isValidTickRange(-1000, 1000, 3));  // Not aligned with spacing
         }
-        
-        // Test invalid fee tier
-        BEAST_EXPECT(!isValidConcentratedLiquidityFeeTier(999));  // Invalid fee
-        BEAST_EXPECT(!isValidConcentratedLiquidityFeeTier(1001)); // Invalid fee
-    }
+
+        void testMultipleFeeTiers()
+        {
+            testcase("Multiple Fee Tiers");
+
+            using namespace jtx;
+            using namespace test::jtx;
+
+            Env env(*this);
+
+            Account const alice("alice");
+            Account const bob("bob");
+
+            env.fund(XRP(10000), alice, bob);
+            env.close();
+
+            // Test all fee tiers
+            std::vector<std::pair<std::uint16_t, std::uint16_t>> feeTiers = {
+                {CONCENTRATED_LIQUIDITY_FEE_TIER_0_01,
+                 CONCENTRATED_LIQUIDITY_TICK_SPACING_0_01},
+                {CONCENTRATED_LIQUIDITY_FEE_TIER_0_05,
+                 CONCENTRATED_LIQUIDITY_TICK_SPACING_0_05},
+                {CONCENTRATED_LIQUIDITY_FEE_TIER_0_3,
+                 CONCENTRATED_LIQUIDITY_TICK_SPACING_0_3},
+                {CONCENTRATED_LIQUIDITY_FEE_TIER_1_0,
+                 CONCENTRATED_LIQUIDITY_TICK_SPACING_1_0}};
+
+            for (auto const& [fee, expectedTickSpacing] : feeTiers)
+            {
+                // Create AMM with this fee tier
+                env(
+                    amm(alice,
+                        USD(1000),
+                        BTC(100),
+                        fee,
+                        expectedTickSpacing,
+                        -1000,
+                        1000,
+                        1000000));
+                env.close();
+
+                // Verify AMM was created with correct fee tier
+                auto const ammSle =
+                    env.le(keylet::amm(USD.issue(), BTC.issue()));
+                BEAST_EXPECT(ammSle);
+                BEAST_EXPECT(ammSle->getFieldU16(sfTradingFee) == fee);
+                BEAST_EXPECT(
+                    ammSle->getFieldU16(sfTickSpacing) == expectedTickSpacing);
+
+                // Verify fee tier validation
+                BEAST_EXPECT(isValidConcentratedLiquidityFeeTier(fee));
+                BEAST_EXPECT(
+                    getConcentratedLiquidityTickSpacing(fee) ==
+                    expectedTickSpacing);
+                BEAST_EXPECT(
+                    getConcentratedLiquidityFeeTier(expectedTickSpacing) ==
+                    fee);
+
+                // Test tick validation for this fee tier
+                auto const validTick =
+                    expectedTickSpacing * 10;  // Multiple of tick spacing
+                auto const invalidTick = expectedTickSpacing * 10 +
+                    1;  // Not multiple of tick spacing
+
+                BEAST_EXPECT(isValidTickForFeeTier(validTick, fee));
+                BEAST_EXPECT(!isValidTickForFeeTier(invalidTick, fee));
+
+                // Clean up for next iteration
+                env(ammDelete(alice, USD, BTC));
+                env.close();
+            }
+
+            // Test invalid fee tier
+            BEAST_EXPECT(
+                !isValidConcentratedLiquidityFeeTier(999));  // Invalid fee
+            BEAST_EXPECT(
+                !isValidConcentratedLiquidityFeeTier(1001));  // Invalid fee
+        }
     }
 
     void
@@ -289,37 +317,40 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
 
         using namespace jtx;
 
-        Env env{*this, FeatureBitset{featureAMM, featureAMMConcentratedLiquidity}};
+        Env env{
+            *this, FeatureBitset{featureAMM, featureAMMConcentratedLiquidity}};
         fund(env, gw, {alice, bob}, {USD(1000), BTC(1)}, Fund::All);
 
         // Create concentrated liquidity AMM
         auto const ammCreate = env.tx()
-            .type(ttAMM_CONCENTRATED_CREATE)
-            .account(alice)
-            .amount(USD(100))
-            .amount2(BTC(0.1))
-            .asset(USD)
-            .asset2(BTC)
-            .tradingFee(30)
-            .tickLower(-1000)
-            .tickUpper(1000)
-            .liquidity(IOUAmount{1000000, 0})
-            .tickSpacing(10)
-            .fee(XRP(10))
-            .seq(env.seq(alice));
+                                   .type(ttAMM_CONCENTRATED_CREATE)
+                                   .account(alice)
+                                   .amount(USD(100))
+                                   .amount2(BTC(0.1))
+                                   .asset(USD)
+                                   .asset2(BTC)
+                                   .tradingFee(30)
+                                   .tickLower(-1000)
+                                   .tickUpper(1000)
+                                   .liquidity(IOUAmount{1000000, 0})
+                                   .tickSpacing(10)
+                                   .fee(XRP(10))
+                                   .seq(env.seq(alice));
 
         env(ammCreate);
         env.close();
 
         // Verify position was created
-        auto const positionKey = getConcentratedLiquidityPositionKey(alice.id(), -1000, 1000, 0);
+        auto const positionKey =
+            getConcentratedLiquidityPositionKey(alice.id(), -1000, 1000, 0);
         auto const positionKeylet = keylet::child(positionKey);
         auto const positionSle = env.le(positionKeylet);
         BEAST_EXPECT(positionSle);
         BEAST_EXPECT(positionSle->getFieldAccount(sfAccount) == alice.id());
         BEAST_EXPECT(positionSle->getFieldU32(sfTickLower) == -1000);
         BEAST_EXPECT(positionSle->getFieldU32(sfTickUpper) == 1000);
-        BEAST_EXPECT(positionSle->getFieldAmount(sfLiquidity) == IOUAmount{1000000, 0});
+        BEAST_EXPECT(
+            positionSle->getFieldAmount(sfLiquidity) == IOUAmount{1000000, 0});
 
         // Verify ticks were initialized
         auto const tickLowerKey = getConcentratedLiquidityTickKey(-1000);
@@ -339,24 +370,25 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
 
         using namespace jtx;
 
-        Env env{*this, FeatureBitset{featureAMM, featureAMMConcentratedLiquidity}};
+        Env env{
+            *this, FeatureBitset{featureAMM, featureAMMConcentratedLiquidity}};
         fund(env, gw, {alice, bob}, {USD(1000), BTC(1)}, Fund::All);
 
         // Create concentrated liquidity AMM
         auto const ammCreate = env.tx()
-            .type(ttAMM_CONCENTRATED_CREATE)
-            .account(alice)
-            .amount(USD(100))
-            .amount2(BTC(0.1))
-            .asset(USD)
-            .asset2(BTC)
-            .tradingFee(30)
-            .tickLower(-1000)
-            .tickUpper(1000)
-            .liquidity(IOUAmount{1000000, 0})
-            .tickSpacing(10)
-            .fee(XRP(10))
-            .seq(env.seq(alice));
+                                   .type(ttAMM_CONCENTRATED_CREATE)
+                                   .account(alice)
+                                   .amount(USD(100))
+                                   .amount2(BTC(0.1))
+                                   .asset(USD)
+                                   .asset2(BTC)
+                                   .tradingFee(30)
+                                   .tickLower(-1000)
+                                   .tickUpper(1000)
+                                   .liquidity(IOUAmount{1000000, 0})
+                                   .tickSpacing(10)
+                                   .fee(XRP(10))
+                                   .seq(env.seq(alice));
 
         env(ammCreate);
         env.close();
@@ -365,7 +397,7 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
         auto const ammKeylet = keylet::amm(USD.issue(), BTC.issue());
         auto const ammSle = env.le(ammKeylet);
         BEAST_EXPECT(ammSle);
-        
+
         auto const ammAccountID = ammSle->getFieldAccount(sfAccount);
         BEAST_EXPECT(ammAccountID != alice.id());
 
@@ -375,7 +407,7 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
         BEAST_EXPECT(ammAccountSle->getFieldAmount(sfBalance) == XRP(100));
 
         // Verify trust lines were created
-        
+
         // Test position directory management
         auto const ownerDir = env.le(keylet::ownerDir(alice.id()));
         BEAST_EXPECT(ownerDir);
@@ -405,8 +437,10 @@ struct AMMConcentratedLiquidity_test : public jtx::AMMTest
             }
         }
         BEAST_EXPECT(foundAMM);
-        auto const usdTrustLine = env.le(keylet::line(ammAccountID, USD.issue()));
-        auto const btcTrustLine = env.le(keylet::line(ammAccountID, BTC.issue()));
+        auto const usdTrustLine =
+            env.le(keylet::line(ammAccountID, USD.issue()));
+        auto const btcTrustLine =
+            env.le(keylet::line(ammAccountID, BTC.issue()));
         BEAST_EXPECT(usdTrustLine);
         BEAST_EXPECT(btcTrustLine);
         BEAST_EXPECT(usdTrustLine->getFieldAmount(sfBalance) == USD(100));

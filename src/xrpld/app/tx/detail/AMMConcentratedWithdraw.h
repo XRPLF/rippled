@@ -24,18 +24,18 @@
 
 namespace ripple {
 
-/** AMMConcentratedWithdraw implements removing liquidity from concentrated liquidity positions.
- *  This transaction allows liquidity providers to remove liquidity from their concentrated
- *  liquidity positions and receive back the underlying tokens. The transaction also optionally
- *  collects accumulated fees.
- *  
+/** AMMConcentratedWithdraw implements removing liquidity from concentrated
+ * liquidity positions. This transaction allows liquidity providers to remove
+ * liquidity from their concentrated liquidity positions and receive back the
+ * underlying tokens. The transaction also optionally collects accumulated fees.
+ *
  *  Key features:
  *  - Remove liquidity from existing positions
  *  - Automatic amount calculation based on current price
  *  - Slippage protection with minimum amounts
  *  - Optional fee collection
  *  - Position state updates
- *  
+ *
  *  The transaction:
  *  - Validates the position exists and is owned by the caller
  *  - Calculates token amounts to return based on liquidity removed

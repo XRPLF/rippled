@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/ledger/Directory.h>
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
@@ -26,11 +27,8 @@
 
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpld/app/ledger/Directory.h>
-#include <xrpld/app/misc/AMMHelpers.h>
 
 namespace ripple {
 
@@ -57,20 +55,22 @@ AMMConcentratedCreate::preflight(PreflightContext const& ctx)
 
     if (amount.issue() == amount2.issue())
     {
-        JLOG(ctx.j.debug())
-            << "AMM Concentrated Create: tokens cannot have the same currency/issuer.";
+        JLOG(ctx.j.debug()) << "AMM Concentrated Create: tokens cannot have "
+                               "the same currency/issuer.";
         return temBAD_AMM_TOKENS;
     }
 
     if (auto const err = invalidAMMAmount(amount))
     {
-        JLOG(ctx.j.debug()) << "AMM Concentrated Create: invalid asset1 amount.";
+        JLOG(ctx.j.debug())
+            << "AMM Concentrated Create: invalid asset1 amount.";
         return err;
     }
 
     if (auto const err = invalidAMMAmount(amount2))
     {
-        JLOG(ctx.j.debug()) << "AMM Concentrated Create: invalid asset2 amount.";
+        JLOG(ctx.j.debug())
+            << "AMM Concentrated Create: invalid asset2 amount.";
         return err;
     }
 
@@ -116,56 +116,67 @@ AMMConcentratedCreate::preclaim(PreclaimContext const& ctx)
             auto const accountSle = ctx.view.read(keylet::account(accountID));
             if (!accountSle || accountSle->getFieldAmount(sfBalance) < amt)
             {
-                JLOG(ctx.j.debug()) << "AMM Concentrated Create: insufficient XRP balance.";
+                JLOG(ctx.j.debug())
+                    << "AMM Concentrated Create: insufficient XRP balance.";
                 return tecUNFUNDED_AMM;
             }
         }
         else
         {
-            auto const sle = ctx.view.read(keylet::line(accountID, amt.issue()));
+            auto const sle =
+                ctx.view.read(keylet::line(accountID, amt.issue()));
             if (!sle || sle->getFieldAmount(sfBalance) < amt)
             {
-                JLOG(ctx.j.debug()) << "AMM Concentrated Create: insufficient IOU balance.";
+                JLOG(ctx.j.debug())
+                    << "AMM Concentrated Create: insufficient IOU balance.";
                 return tecUNFUNDED_AMM;
             }
-            
+
             // Check authorization
             if (auto const ter = requireAuth(ctx.view, amt.issue(), accountID))
             {
-                JLOG(ctx.j.debug()) << "AMM Concentrated Create: account not authorized for " << amt.issue();
+                JLOG(ctx.j.debug())
+                    << "AMM Concentrated Create: account not authorized for "
+                    << amt.issue();
                 return ter;
             }
-            
+
             // Check if account or currency is frozen
             if (isFrozen(ctx.view, accountID, amt.issue()))
             {
-                JLOG(ctx.j.debug()) << "AMM Concentrated Create: account or currency frozen for " << amt.issue();
+                JLOG(ctx.j.debug()) << "AMM Concentrated Create: account or "
+                                       "currency frozen for "
+                                    << amt.issue();
                 return tecFROZEN;
             }
         }
         return tesSUCCESS;
     };
-    
+
     if (auto const ter = checkBalance(amount))
         return ter;
-    
+
     if (auto const ter = checkBalance(amount2))
         return ter;
 
     if (amount2.issue().currency == xrpCurrency())
     {
-        if (ctx.view.read(keylet::account(accountID))->getFieldAmount(sfBalance) < amount2)
+        if (ctx.view.read(keylet::account(accountID))
+                ->getFieldAmount(sfBalance) < amount2)
         {
-            JLOG(ctx.j.debug()) << "AMM Concentrated Create: insufficient XRP balance for amount2.";
+            JLOG(ctx.j.debug()) << "AMM Concentrated Create: insufficient XRP "
+                                   "balance for amount2.";
             return tecUNFUNDED_AMM;
         }
     }
     else
     {
-        auto const sle = ctx.view.read(keylet::line(accountID, amount2.issue()));
+        auto const sle =
+            ctx.view.read(keylet::line(accountID, amount2.issue()));
         if (!sle || sle->getFieldAmount(sfBalance) < amount2)
         {
-            JLOG(ctx.j.debug()) << "AMM Concentrated Create: insufficient IOU balance for amount2.";
+            JLOG(ctx.j.debug()) << "AMM Concentrated Create: insufficient IOU "
+                                   "balance for amount2.";
             return tecUNFUNDED_AMM;
         }
     }
@@ -191,10 +202,12 @@ AMMConcentratedCreate::doApply()
     auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
 
     // Create AMM account
-    auto const maybeAccount = createPseudoAccount(ctx_.view(), ammKeylet.key, sfAMMID);
+    auto const maybeAccount =
+        createPseudoAccount(ctx_.view(), ammKeylet.key, sfAMMID);
     if (!maybeAccount)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Create: failed to create AMM account.";
+        JLOG(ctx_.j.debug())
+            << "AMM Concentrated Create: failed to create AMM account.";
         return tecINTERNAL;
     }
 
@@ -210,9 +223,10 @@ AMMConcentratedCreate::doApply()
     ammSle->setFieldU32(sfTickSpacing, tickSpacing);
     ammSle->setFieldU32(sfCurrentTick, tickLower);  // Start at lower tick
     ammSle->setFieldU64(sfSqrtPriceX64, tickToSqrtPriceX64(tickLower));
-    
+
     // Initialize concentrated liquidity specific fields
-    ammSle->setFieldAmount(sfAggregatedLiquidity, liquidity);  // Initial liquidity
+    ammSle->setFieldAmount(
+        sfAggregatedLiquidity, liquidity);  // Initial liquidity
     ammSle->setFieldAmount(sfFeeGrowthGlobal0X128, STAmount{0});
     ammSle->setFieldAmount(sfFeeGrowthGlobal1X128, STAmount{0});
 
@@ -233,26 +247,30 @@ AMMConcentratedCreate::doApply()
     }
 
     // Initialize ticks
-    if (auto const ter = initializeTick(ctx_.view(), tickLower, liquidity, ctx_.j);
+    if (auto const ter =
+            initializeTick(ctx_.view(), tickLower, liquidity, ctx_.j);
         ter != tesSUCCESS)
     {
         return ter;
     }
 
-    if (auto const ter = initializeTick(ctx_.view(), tickUpper, -liquidity, ctx_.j);
+    if (auto const ter =
+            initializeTick(ctx_.view(), tickUpper, -liquidity, ctx_.j);
         ter != tesSUCCESS)
     {
         return ter;
     }
 
     // Transfer assets to AMM account
-    if (auto const ter = transfer(ctx_.view(), accountID, ammAccountID, amount, ctx_.j);
+    if (auto const ter =
+            transfer(ctx_.view(), accountID, ammAccountID, amount, ctx_.j);
         ter != tesSUCCESS)
     {
         return ter;
     }
 
-    if (auto const ter = transfer(ctx_.view(), accountID, ammAccountID, amount2, ctx_.j);
+    if (auto const ter =
+            transfer(ctx_.view(), accountID, ammAccountID, amount2, ctx_.j);
         ter != tesSUCCESS)
     {
         return ter;
@@ -264,16 +282,17 @@ AMMConcentratedCreate::doApply()
     // Add AMM to directory
     auto const ammDir = keylet::ammDir(amount.issue(), amount2.issue());
     auto const page = dirAdd(
-        ctx_.view(), 
-        ammDir, 
-        ammKeylet.key, 
-        false, 
-        describeAMMDir(amount.issue(), amount2.issue()), 
+        ctx_.view(),
+        ammDir,
+        ammKeylet.key,
+        false,
+        describeAMMDir(amount.issue(), amount2.issue()),
         ctx_.j);
-    
+
     if (!page)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Create: failed to add AMM to directory";
+        JLOG(ctx_.j.debug())
+            << "AMM Concentrated Create: failed to add AMM to directory";
         return tecDIR_FULL;
     }
 
@@ -307,32 +326,38 @@ AMMConcentratedCreate::validateConcentratedLiquidityParams(
     // SECURITY: Validate fee tier and tick spacing
     if (!isValidConcentratedLiquidityFeeTier(tradingFee))
     {
-        JLOG(j.debug()) << "AMM Concentrated Create: invalid fee tier: " << tradingFee;
+        JLOG(j.debug()) << "AMM Concentrated Create: invalid fee tier: "
+                        << tradingFee;
         return temBAD_FEE;
     }
-    
+
     // SECURITY: Validate that tick spacing matches the fee tier
-    auto const expectedTickSpacing = getConcentratedLiquidityTickSpacing(tradingFee);
+    auto const expectedTickSpacing =
+        getConcentratedLiquidityTickSpacing(tradingFee);
     if (tickSpacing != expectedTickSpacing)
     {
-        JLOG(j.debug()) << "AMM Concentrated Create: tick spacing " << tickSpacing 
-                        << " does not match fee tier " << tradingFee 
-                        << " (expected: " << expectedTickSpacing << ")";
+        JLOG(j.debug()) << "AMM Concentrated Create: tick spacing "
+                        << tickSpacing << " does not match fee tier "
+                        << tradingFee << " (expected: " << expectedTickSpacing
+                        << ")";
         return temBAD_AMM_TOKENS;
     }
-    
+
     // SECURITY: Validate liquidity amount to prevent manipulation
     if (liquidity < STAmount{CONCENTRATED_LIQUIDITY_MIN_LIQUIDITY})
     {
-        JLOG(j.debug()) << "AMM Concentrated Create: liquidity below minimum: " << liquidity;
+        JLOG(j.debug()) << "AMM Concentrated Create: liquidity below minimum: "
+                        << liquidity;
         return temBAD_AMM_TOKENS;
     }
-    
+
     // SECURITY: Validate tick range bounds
-    if (tickLower < CONCENTRATED_LIQUIDITY_MIN_TICK || tickUpper > CONCENTRATED_LIQUIDITY_MAX_TICK)
+    if (tickLower < CONCENTRATED_LIQUIDITY_MIN_TICK ||
+        tickUpper > CONCENTRATED_LIQUIDITY_MAX_TICK)
     {
-        JLOG(j.debug()) << "AMM Concentrated Create: tick range out of bounds: [" 
-                        << tickLower << ", " << tickUpper << "]";
+        JLOG(j.debug())
+            << "AMM Concentrated Create: tick range out of bounds: ["
+            << tickLower << ", " << tickUpper << "]";
         return temBAD_AMM_TOKENS;
     }
 
@@ -352,7 +377,8 @@ AMMConcentratedCreate::createConcentratedLiquidityPosition(
     beast::Journal const& j)
 {
     // Create position key
-    auto const positionKey = getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
+    auto const positionKey =
+        getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
     auto const positionKeylet = keylet::child(positionKey);
 
     // Create position ledger object
@@ -372,20 +398,17 @@ AMMConcentratedCreate::createConcentratedLiquidityPosition(
     // Add position to owner's directory
     auto const ownerDir = keylet::ownerDir(owner);
     auto const page = dirAdd(
-        view, 
-        ownerDir, 
-        positionKeylet.key, 
-        false, 
-        describeOwnerDir(owner), 
-        j);
-    
+        view, ownerDir, positionKeylet.key, false, describeOwnerDir(owner), j);
+
     if (!page)
     {
-        JLOG(j.debug()) << "AMM Concentrated Create: failed to add position to directory";
+        JLOG(j.debug())
+            << "AMM Concentrated Create: failed to add position to directory";
         return tecDIR_FULL;
     }
 
-    JLOG(j.debug()) << "AMM Concentrated Create: created position " << positionKey;
+    JLOG(j.debug()) << "AMM Concentrated Create: created position "
+                    << positionKey;
 
     return tesSUCCESS;
 }

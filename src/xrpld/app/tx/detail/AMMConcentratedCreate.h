@@ -30,14 +30,14 @@ namespace ripple {
  *  concentrated liquidity allows LPs to provide liquidity within specific
  *  price ranges, enabling more efficient capital utilization and better
  *  fee generation.
- *  
+ *
  *  Key features:
  *  - Price range specification via tick boundaries
  *  - Initial liquidity provision within the range
  *  - Tick spacing for gas optimization
  *  - Position-based liquidity management
  *  - Fee collection within price ranges
- *  
+ *
  *  The transaction creates:
  *  - AMM account with concentrated liquidity support
  *  - Initial position for the creator

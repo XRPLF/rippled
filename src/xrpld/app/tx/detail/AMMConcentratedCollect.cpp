@@ -28,7 +28,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpld/app/misc/AMMUtils.h>
 
 namespace ripple {
 
@@ -51,7 +50,8 @@ AMMConcentratedCollect::preflight(PreflightContext const& ctx)
     }
 
     // Validate concentrated liquidity collect parameters
-    if (auto const err = validateConcentratedLiquidityCollectParams(ctx.tx, ctx.j))
+    if (auto const err =
+            validateConcentratedLiquidityCollectParams(ctx.tx, ctx.j))
         return err;
 
     return preflight2(ctx);
@@ -84,7 +84,8 @@ AMMConcentratedCollect::preclaim(PreclaimContext const& ctx)
     }
 
     // Check if position exists and is owned by the caller
-    auto const positionKey = getConcentratedLiquidityPositionKey(accountID, tickLower, tickUpper, positionNonce);
+    auto const positionKey = getConcentratedLiquidityPositionKey(
+        accountID, tickLower, tickUpper, positionNonce);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = ctx.view.read(positionKeylet);
     if (!positionSle)
@@ -95,7 +96,8 @@ AMMConcentratedCollect::preclaim(PreclaimContext const& ctx)
 
     if (positionSle->getFieldAccount(sfAccount) != accountID)
     {
-        JLOG(ctx.j.debug()) << "AMM Concentrated Collect: position not owned by caller.";
+        JLOG(ctx.j.debug())
+            << "AMM Concentrated Collect: position not owned by caller.";
         return tecNO_PERMISSION;
     }
 
@@ -135,7 +137,8 @@ AMMConcentratedCollect::doApply()
     auto const ammAccountID = ammSle->getFieldAccount(sfAccount);
 
     // Get position data
-    auto const positionKey = getConcentratedLiquidityPositionKey(accountID, tickLower, tickUpper, positionNonce);
+    auto const positionKey = getConcentratedLiquidityPositionKey(
+        accountID, tickLower, tickUpper, positionNonce);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = ctx_.view().read(positionKeylet);
     if (!positionSle)
@@ -145,14 +148,19 @@ AMMConcentratedCollect::doApply()
     }
 
     auto const liquidity = positionSle->getFieldAmount(sfLiquidity);
-    auto const feeGrowthInside0LastX128 = positionSle->getFieldAmount(sfFeeGrowthInside0LastX128);
-    auto const feeGrowthInside1LastX128 = positionSle->getFieldAmount(sfFeeGrowthInside1LastX128);
+    auto const feeGrowthInside0LastX128 =
+        positionSle->getFieldAmount(sfFeeGrowthInside0LastX128);
+    auto const feeGrowthInside1LastX128 =
+        positionSle->getFieldAmount(sfFeeGrowthInside1LastX128);
     auto const tokensOwed0 = positionSle->getFieldAmount(sfTokensOwed0);
     auto const tokensOwed1 = positionSle->getFieldAmount(sfTokensOwed1);
 
-    // Calculate current fee growth (simplified - in a real implementation this would be updated during trades)
-    auto const currentFeeGrowthInside0X128 = STAmount{0};  // Would be calculated from global state
-    auto const currentFeeGrowthInside1X128 = STAmount{0};  // Would be calculated from global state
+    // Calculate current fee growth (simplified - in a real implementation this
+    // would be updated during trades)
+    auto const currentFeeGrowthInside0X128 =
+        STAmount{0};  // Would be calculated from global state
+    auto const currentFeeGrowthInside1X128 =
+        STAmount{0};  // Would be calculated from global state
 
     // Calculate accumulated fees
     auto const [accumulatedFees0, accumulatedFees1] = calculateAccumulatedFees(
@@ -176,30 +184,35 @@ AMMConcentratedCollect::doApply()
         return tecPATH_DRY;
     }
 
-    // Check if AMM has sufficient balance for fee collection using existing AMM patterns
+    // Check if AMM has sufficient balance for fee collection using existing AMM
+    // patterns
     if (collectAmount0 > STAmount{0} || collectAmount1 > STAmount{0})
     {
         auto const expected = ammHolds(
             ctx_.view(),
             *ammSle,
-            collectAmount0 > STAmount{0} ? collectAmount0.issue() : std::optional<Issue>{},
-            collectAmount1 > STAmount{0} ? collectAmount1.issue() : std::optional<Issue>{},
+            collectAmount0 > STAmount{0} ? collectAmount0.issue()
+                                         : std::optional<Issue>{},
+            collectAmount1 > STAmount{0} ? collectAmount1.issue()
+                                         : std::optional<Issue>{},
             FreezeHandling::fhIGNORE_FREEZE,
             ctx_.j);
         if (!expected)
             return expected.error();
-        
+
         auto const [amount0Balance, amount1Balance, lptAMMBalance] = *expected;
-        
+
         if (collectAmount0 > amount0Balance)
         {
-            JLOG(ctx_.j.debug()) << "AMM Concentrated Collect: insufficient balance for fee collection (amount0).";
+            JLOG(ctx_.j.debug()) << "AMM Concentrated Collect: insufficient "
+                                    "balance for fee collection (amount0).";
             return tecAMM_BALANCE;
         }
-        
+
         if (collectAmount1 > amount1Balance)
         {
-            JLOG(ctx_.j.debug()) << "AMM Concentrated Collect: insufficient balance for fee collection (amount1).";
+            JLOG(ctx_.j.debug()) << "AMM Concentrated Collect: insufficient "
+                                    "balance for fee collection (amount1).";
             return tecAMM_BALANCE;
         }
     }
@@ -207,7 +220,8 @@ AMMConcentratedCollect::doApply()
     // Transfer fees from AMM to owner
     if (collectAmount0 > STAmount{0})
     {
-        if (auto const ter = transfer(ctx_.view(), ammAccountID, accountID, collectAmount0, ctx_.j);
+        if (auto const ter = transfer(
+                ctx_.view(), ammAccountID, accountID, collectAmount0, ctx_.j);
             ter != tesSUCCESS)
         {
             return ter;
@@ -216,7 +230,8 @@ AMMConcentratedCollect::doApply()
 
     if (collectAmount1 > STAmount{0})
     {
-        if (auto const ter = transfer(ctx_.view(), ammAccountID, accountID, collectAmount1, ctx_.j);
+        if (auto const ter = transfer(
+                ctx_.view(), ammAccountID, accountID, collectAmount1, ctx_.j);
             ter != tesSUCCESS)
         {
             return ter;
@@ -241,13 +256,15 @@ AMMConcentratedCollect::doApply()
     // Update tokens owed (reduce by collected amounts)
     auto const newTokensOwed0 = tokensOwed0 - collectAmount0;
     auto const newTokensOwed1 = tokensOwed1 - collectAmount1;
-    
+
     positionSle->setFieldAmount(sfTokensOwed0, newTokensOwed0);
     positionSle->setFieldAmount(sfTokensOwed1, newTokensOwed1);
 
     ctx_.view().update(positionSle);
 
-    JLOG(ctx_.j.debug()) << "AMM Concentrated Collect: collected fees for position " << positionKey;
+    JLOG(ctx_.j.debug())
+        << "AMM Concentrated Collect: collected fees for position "
+        << positionKey;
 
     return tesSUCCESS;
 }
@@ -289,12 +306,16 @@ AMMConcentratedCollect::calculateAccumulatedFees(
     STAmount const& feeGrowthInside1X128)
 {
     // Calculate fee growth delta
-    auto const feeGrowthInside0DeltaX128 = feeGrowthInside0X128 - feeGrowthInside0LastX128;
-    auto const feeGrowthInside1DeltaX128 = feeGrowthInside1X128 - feeGrowthInside1LastX128;
+    auto const feeGrowthInside0DeltaX128 =
+        feeGrowthInside0X128 - feeGrowthInside0LastX128;
+    auto const feeGrowthInside1DeltaX128 =
+        feeGrowthInside1X128 - feeGrowthInside1LastX128;
 
     // Calculate accumulated fees
-    auto const accumulatedFees0 = liquidity * feeGrowthInside0DeltaX128 / STAmount{1ULL << 128};
-    auto const accumulatedFees1 = liquidity * feeGrowthInside1DeltaX128 / STAmount{1ULL << 128};
+    auto const accumulatedFees0 =
+        liquidity * feeGrowthInside0DeltaX128 / STAmount{1ULL << 128};
+    auto const accumulatedFees1 =
+        liquidity * feeGrowthInside1DeltaX128 / STAmount{1ULL << 128};
 
     return {accumulatedFees0, accumulatedFees1};
 }
@@ -311,22 +332,28 @@ AMMConcentratedCollect::updatePositionFeeTracking(
     beast::Journal const& j)
 {
     // Get position
-    auto const positionKey = getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
+    auto const positionKey =
+        getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = view.read(positionKeylet);
     if (!positionSle)
     {
-        JLOG(j.debug()) << "AMM Concentrated Collect: position not found for fee tracking update.";
+        JLOG(j.debug()) << "AMM Concentrated Collect: position not found for "
+                           "fee tracking update.";
         return tecNO_ENTRY;
     }
 
     // Update fee growth tracking
-    positionSle->setFieldAmount(sfFeeGrowthInside0LastX128, feeGrowthInside0X128);
-    positionSle->setFieldAmount(sfFeeGrowthInside1LastX128, feeGrowthInside1X128);
+    positionSle->setFieldAmount(
+        sfFeeGrowthInside0LastX128, feeGrowthInside0X128);
+    positionSle->setFieldAmount(
+        sfFeeGrowthInside1LastX128, feeGrowthInside1X128);
 
     view.update(positionSle);
 
-    JLOG(j.debug()) << "AMM Concentrated Collect: updated fee tracking for position " << positionKey;
+    JLOG(j.debug())
+        << "AMM Concentrated Collect: updated fee tracking for position "
+        << positionKey;
 
     return tesSUCCESS;
 }

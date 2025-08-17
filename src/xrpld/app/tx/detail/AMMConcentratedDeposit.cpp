@@ -28,7 +28,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpld/app/misc/AMMHelpers.h>
 
 namespace ripple {
 
@@ -51,7 +50,8 @@ AMMConcentratedDeposit::preflight(PreflightContext const& ctx)
     }
 
     // Validate concentrated liquidity deposit parameters
-    if (auto const err = validateConcentratedLiquidityDepositParams(ctx.tx, ctx.j))
+    if (auto const err =
+            validateConcentratedLiquidityDepositParams(ctx.tx, ctx.j))
         return err;
 
     return preflight2(ctx);
@@ -84,7 +84,8 @@ AMMConcentratedDeposit::preclaim(PreclaimContext const& ctx)
     }
 
     // Check if position exists and is owned by the caller
-    auto const positionKey = getConcentratedLiquidityPositionKey(accountID, tickLower, tickUpper, 0);
+    auto const positionKey =
+        getConcentratedLiquidityPositionKey(accountID, tickLower, tickUpper, 0);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = ctx.view.read(positionKeylet);
     if (!positionSle)
@@ -95,7 +96,8 @@ AMMConcentratedDeposit::preclaim(PreclaimContext const& ctx)
 
     if (positionSle->getFieldAccount(sfAccount) != accountID)
     {
-        JLOG(ctx.j.debug()) << "AMM Concentrated Deposit: position not owned by caller.";
+        JLOG(ctx.j.debug())
+            << "AMM Concentrated Deposit: position not owned by caller.";
         return tecNO_PERMISSION;
     }
 
@@ -134,21 +136,23 @@ AMMConcentratedDeposit::doApply()
     // Calculate optimal amounts for the liquidity
     auto const sqrtPriceAX64 = tickToSqrtPriceX64(tickLower);
     auto const sqrtPriceBX64 = tickToSqrtPriceX64(tickUpper);
-    
+
     auto const [amount0, amount1] = calculateOptimalAmounts(
         liquidity, sqrtPriceX64, sqrtPriceAX64, sqrtPriceBX64);
 
     // Validate against maximum amounts
     if (amount0 > amount0Max || amount1 > amount1Max)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Deposit: amounts exceed maximum.";
+        JLOG(ctx_.j.debug())
+            << "AMM Concentrated Deposit: amounts exceed maximum.";
         return tecPATH_DRY;
     }
 
     // Validate minimum liquidity
     if (liquidity < liquidityMin)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Deposit: insufficient liquidity.";
+        JLOG(ctx_.j.debug())
+            << "AMM Concentrated Deposit: insufficient liquidity.";
         return tecPATH_DRY;
     }
 
@@ -156,42 +160,52 @@ AMMConcentratedDeposit::doApply()
     auto checkBalance = [&](STAmount const& amt) -> TER {
         if (isXRP(amt.issue()))
         {
-            auto const accountSle = ctx_.view().read(keylet::account(accountID));
+            auto const accountSle =
+                ctx_.view().read(keylet::account(accountID));
             if (!accountSle || accountSle->getFieldAmount(sfBalance) < amt)
             {
-                JLOG(ctx_.j.debug()) << "AMM Concentrated Deposit: insufficient XRP balance.";
+                JLOG(ctx_.j.debug())
+                    << "AMM Concentrated Deposit: insufficient XRP balance.";
                 return tecUNFUNDED_AMM;
             }
         }
         else
         {
-            auto const sle = ctx_.view().read(keylet::line(accountID, amt.issue()));
+            auto const sle =
+                ctx_.view().read(keylet::line(accountID, amt.issue()));
             if (!sle || sle->getFieldAmount(sfBalance) < amt)
             {
-                JLOG(ctx_.j.debug()) << "AMM Concentrated Deposit: insufficient IOU balance.";
+                JLOG(ctx_.j.debug())
+                    << "AMM Concentrated Deposit: insufficient IOU balance.";
                 return tecUNFUNDED_AMM;
             }
-            
+
             // Check authorization using existing AMM patterns
-            if (auto const ter = requireAuth(ctx_.view(), amt.issue(), accountID))
+            if (auto const ter =
+                    requireAuth(ctx_.view(), amt.issue(), accountID))
             {
-                JLOG(ctx_.j.debug()) << "AMM Concentrated Deposit: account not authorized for " << amt.issue();
+                JLOG(ctx_.j.debug())
+                    << "AMM Concentrated Deposit: account not authorized for "
+                    << amt.issue();
                 return ter;
             }
-            
-            // Check if account or currency is frozen using existing AMM patterns
+
+            // Check if account or currency is frozen using existing AMM
+            // patterns
             if (isFrozen(ctx_.view(), accountID, amt.issue()))
             {
-                JLOG(ctx_.j.debug()) << "AMM Concentrated Deposit: account or currency frozen for " << amt.issue();
+                JLOG(ctx_.j.debug()) << "AMM Concentrated Deposit: account or "
+                                        "currency frozen for "
+                                     << amt.issue();
                 return tecFROZEN;
             }
         }
         return tesSUCCESS;
     };
-    
+
     if (auto const ter = checkBalance(amount0))
         return ter;
-    
+
     if (auto const ter = checkBalance(amount1))
         return ter;
 
@@ -225,13 +239,15 @@ AMMConcentratedDeposit::doApply()
     }
 
     // Transfer tokens to AMM account
-    if (auto const ter = transfer(ctx_.view(), accountID, ammAccountID, amount0, ctx_.j);
+    if (auto const ter =
+            transfer(ctx_.view(), accountID, ammAccountID, amount0, ctx_.j);
         ter != tesSUCCESS)
     {
         return ter;
     }
 
-    if (auto const ter = transfer(ctx_.view(), accountID, ammAccountID, amount1, ctx_.j);
+    if (auto const ter =
+            transfer(ctx_.view(), accountID, ammAccountID, amount1, ctx_.j);
         ter != tesSUCCESS)
     {
         return ter;
@@ -258,16 +274,19 @@ AMMConcentratedDeposit::validateConcentratedLiquidityDepositParams(
         JLOG(j.debug()) << "AMM Concentrated Deposit: invalid tick range.";
         return temBAD_AMM_TOKENS;
     }
-    
+
     // Validate that ticks are valid for the AMM's fee tier
-    auto const ammSle = ctx.view.read(keylet::amm(asset.issue(), asset2.issue()));
+    auto const ammSle =
+        ctx.view.read(keylet::amm(asset.issue(), asset2.issue()));
     if (ammSle)
     {
         auto const tradingFee = ammSle->getFieldU16(sfTradingFee);
-        if (!isValidTickForFeeTier(tickLower, tradingFee) || 
+        if (!isValidTickForFeeTier(tickLower, tradingFee) ||
             !isValidTickForFeeTier(tickUpper, tradingFee))
         {
-            JLOG(j.debug()) << "AMM Concentrated Deposit: ticks not valid for fee tier " << tradingFee;
+            JLOG(j.debug())
+                << "AMM Concentrated Deposit: ticks not valid for fee tier "
+                << tradingFee;
             return temBAD_AMM_TOKENS;
         }
     }
@@ -275,7 +294,8 @@ AMMConcentratedDeposit::validateConcentratedLiquidityDepositParams(
     // Validate liquidity amount
     if (liquidity <= STAmount{0})
     {
-        JLOG(j.debug()) << "AMM Concentrated Deposit: invalid liquidity amount.";
+        JLOG(j.debug())
+            << "AMM Concentrated Deposit: invalid liquidity amount.";
         return temBAD_AMM_TOKENS;
     }
 
@@ -289,7 +309,8 @@ AMMConcentratedDeposit::validateConcentratedLiquidityDepositParams(
     // Validate minimum liquidity
     if (liquidityMin > liquidity)
     {
-        JLOG(j.debug()) << "AMM Concentrated Deposit: minimum liquidity too high.";
+        JLOG(j.debug())
+            << "AMM Concentrated Deposit: minimum liquidity too high.";
         return temBAD_AMM_TOKENS;
     }
 
@@ -303,7 +324,8 @@ AMMConcentratedDeposit::calculateOptimalAmounts(
     std::uint64_t sqrtPriceAX64,
     std::uint64_t sqrtPriceBX64)
 {
-    return getAmountsForLiquidity(liquidity, sqrtPriceX64, sqrtPriceAX64, sqrtPriceBX64);
+    return getAmountsForLiquidity(
+        liquidity, sqrtPriceX64, sqrtPriceAX64, sqrtPriceBX64);
 }
 
 TER
@@ -319,26 +341,31 @@ AMMConcentratedDeposit::updateConcentratedLiquidityPosition(
     beast::Journal const& j)
 {
     // Get position
-    auto const positionKey = getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
+    auto const positionKey =
+        getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = view.read(positionKeylet);
     if (!positionSle)
     {
-        JLOG(j.debug()) << "AMM Concentrated Deposit: position not found for update.";
+        JLOG(j.debug())
+            << "AMM Concentrated Deposit: position not found for update.";
         return tecNO_ENTRY;
     }
 
     // Update position
     auto const currentLiquidity = positionSle->getFieldAmount(sfLiquidity);
     auto const newLiquidity = currentLiquidity + liquidityDelta;
-    
+
     positionSle->setFieldAmount(sfLiquidity, newLiquidity);
-    positionSle->setFieldAmount(sfFeeGrowthInside0LastX128, feeGrowthInside0X128);
-    positionSle->setFieldAmount(sfFeeGrowthInside1LastX128, feeGrowthInside1X128);
+    positionSle->setFieldAmount(
+        sfFeeGrowthInside0LastX128, feeGrowthInside0X128);
+    positionSle->setFieldAmount(
+        sfFeeGrowthInside1LastX128, feeGrowthInside1X128);
 
     view.update(positionSle);
 
-    JLOG(j.debug()) << "AMM Concentrated Deposit: updated position " << positionKey;
+    JLOG(j.debug()) << "AMM Concentrated Deposit: updated position "
+                    << positionKey;
 
     return tesSUCCESS;
 }
@@ -356,14 +383,15 @@ AMMConcentratedDeposit::updateTick(
     auto const tickSle = view.read(tickKeylet);
     if (!tickSle)
     {
-        JLOG(j.debug()) << "AMM Concentrated Deposit: tick not found for update.";
+        JLOG(j.debug())
+            << "AMM Concentrated Deposit: tick not found for update.";
         return tecNO_ENTRY;
     }
 
     // Update tick
     auto const currentLiquidityNet = tickSle->getFieldAmount(sfLiquidityNet);
     auto const newLiquidityNet = currentLiquidityNet + liquidityNet;
-    
+
     tickSle->setFieldAmount(sfLiquidityNet, newLiquidityNet);
 
     view.update(tickSle);

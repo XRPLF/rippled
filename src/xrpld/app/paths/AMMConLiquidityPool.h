@@ -29,6 +29,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STAmount.h>
+
 #include <vector>
 
 namespace ripple {
@@ -36,9 +37,10 @@ namespace ripple {
 template <typename TIn, typename TOut>
 class AMMConLiquidityOffer;
 
-/** AMMConLiquidityPool class provides concentrated liquidity offers to AMMConLiquidityStep.
- * This class aggregates liquidity from multiple concentrated liquidity positions within a price range
- * and generates offers based on the current price and available liquidity.
+/** AMMConLiquidityPool class provides concentrated liquidity offers to
+ * AMMConLiquidityStep. This class aggregates liquidity from multiple
+ * concentrated liquidity positions within a price range and generates offers
+ * based on the current price and available liquidity.
  */
 template <typename TIn, typename TOut>
 class AMMConLiquidityPool
@@ -72,9 +74,10 @@ public:
     AMMConLiquidityPool&
     operator=(AMMConLiquidityPool const&) = delete;
 
-    /** Generate concentrated liquidity offer. Returns nullopt if clobQuality is provided
-     * and it is better than concentrated liquidity offer quality. Otherwise returns offer.
-     * If clobQuality is provided then offer size is set based on the quality.
+    /** Generate concentrated liquidity offer. Returns nullopt if clobQuality is
+     * provided and it is better than concentrated liquidity offer quality.
+     * Otherwise returns offer. If clobQuality is provided then offer size is
+     * set based on the quality.
      */
     std::optional<AMMConLiquidityOffer<TIn, TOut>>
     getOffer(ReadView const& view, std::optional<Quality> const& clobQuality)
@@ -146,20 +149,18 @@ private:
 
     /** Calculate the quality for a given price and liquidity */
     Quality
-    calculateQuality(
-        std::uint64_t sqrtPriceX64,
-        STAmount const& liquidity) const;
+    calculateQuality(std::uint64_t sqrtPriceX64, STAmount const& liquidity)
+        const;
 
-    /** Find all concentrated liquidity positions within the active price range */
+    /** Find all concentrated liquidity positions within the active price range
+     */
     std::vector<std::pair<AccountID, STAmount>>
     findActivePositions(ReadView const& view) const;
 
     /** Update fee growth for positions after a trade */
     void
-    updateFeeGrowth(
-        ApplyView& view,
-        STAmount const& fee0,
-        STAmount const& fee1) const;
+    updateFeeGrowth(ApplyView& view, STAmount const& fee0, STAmount const& fee1)
+        const;
 };
 
 }  // namespace ripple

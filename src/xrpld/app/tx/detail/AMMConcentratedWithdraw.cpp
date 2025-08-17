@@ -28,7 +28,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpld/app/misc/AMMHelpers.h>
 
 namespace ripple {
 
@@ -51,7 +50,8 @@ AMMConcentratedWithdraw::preflight(PreflightContext const& ctx)
     }
 
     // Validate concentrated liquidity withdraw parameters
-    if (auto const err = validateConcentratedLiquidityWithdrawParams(ctx.tx, ctx.j))
+    if (auto const err =
+            validateConcentratedLiquidityWithdrawParams(ctx.tx, ctx.j))
         return err;
 
     return preflight2(ctx);
@@ -84,7 +84,8 @@ AMMConcentratedWithdraw::preclaim(PreclaimContext const& ctx)
     }
 
     // Check if position exists and is owned by the caller
-    auto const positionKey = getConcentratedLiquidityPositionKey(accountID, tickLower, tickUpper, 0);
+    auto const positionKey =
+        getConcentratedLiquidityPositionKey(accountID, tickLower, tickUpper, 0);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = ctx.view.read(positionKeylet);
     if (!positionSle)
@@ -95,7 +96,8 @@ AMMConcentratedWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (positionSle->getFieldAccount(sfAccount) != accountID)
     {
-        JLOG(ctx.j.debug()) << "AMM Concentrated Withdraw: position not owned by caller.";
+        JLOG(ctx.j.debug())
+            << "AMM Concentrated Withdraw: position not owned by caller.";
         return tecNO_PERMISSION;
     }
 
@@ -103,7 +105,8 @@ AMMConcentratedWithdraw::preclaim(PreclaimContext const& ctx)
     auto const currentLiquidity = positionSle->getFieldAmount(sfLiquidity);
     if (currentLiquidity < liquidity)
     {
-        JLOG(ctx.j.debug()) << "AMM Concentrated Withdraw: insufficient liquidity in position.";
+        JLOG(ctx.j.debug())
+            << "AMM Concentrated Withdraw: insufficient liquidity in position.";
         return tecUNFUNDED_AMM;
     }
 
@@ -137,12 +140,14 @@ AMMConcentratedWithdraw::doApply()
     auto const sqrtPriceX64 = ammSle->getFieldU64(sfSqrtPriceX64);
 
     // Get position data
-    auto const positionKey = getConcentratedLiquidityPositionKey(accountID, tickLower, tickUpper, 0);
+    auto const positionKey =
+        getConcentratedLiquidityPositionKey(accountID, tickLower, tickUpper, 0);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = ctx_.view().read(positionKeylet);
     if (!positionSle)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Withdraw: position not found.";
+        JLOG(ctx_.j.debug())
+            << "AMM Concentrated Withdraw: position not found.";
         return tecNO_ENTRY;
     }
 
@@ -153,14 +158,15 @@ AMMConcentratedWithdraw::doApply()
     // Calculate amounts to return for the liquidity
     auto const sqrtPriceAX64 = tickToSqrtPriceX64(tickLower);
     auto const sqrtPriceBX64 = tickToSqrtPriceX64(tickUpper);
-    
+
     auto const [amount0, amount1] = calculateReturnAmounts(
         liquidity, sqrtPriceX64, sqrtPriceAX64, sqrtPriceBX64);
 
     // Validate against minimum amounts
     if (amount0 < amount0Min || amount1 < amount1Min)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Withdraw: amounts below minimum.";
+        JLOG(ctx_.j.debug())
+            << "AMM Concentrated Withdraw: amounts below minimum.";
         return tecPATH_DRY;
     }
 
@@ -174,28 +180,31 @@ AMMConcentratedWithdraw::doApply()
         ctx_.j);
     if (!expected)
         return expected.error();
-    
+
     auto const [amount0Balance, amount1Balance, lptAMMBalance] = *expected;
-    
+
     if (amount0 > amount0Balance)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Withdraw: insufficient balance for amount0.";
+        JLOG(ctx_.j.debug())
+            << "AMM Concentrated Withdraw: insufficient balance for amount0.";
         return tecAMM_BALANCE;
     }
-    
+
     if (amount1 > amount1Balance)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Withdraw: insufficient balance for amount1.";
+        JLOG(ctx_.j.debug())
+            << "AMM Concentrated Withdraw: insufficient balance for amount1.";
         return tecAMM_BALANCE;
     }
 
     // SECURITY: Validate liquidity withdrawal to prevent underflow
     if (liquidity > currentLiquidity)
     {
-        JLOG(ctx_.j.debug()) << "AMM Concentrated Withdraw: insufficient liquidity for withdrawal.";
+        JLOG(ctx_.j.debug()) << "AMM Concentrated Withdraw: insufficient "
+                                "liquidity for withdrawal.";
         return tecUNFUNDED_AMM;
     }
-    
+
     // SECURITY: Ensure atomic operation - update position first
     auto const newLiquidity = currentLiquidity - liquidity;
     if (auto const ter = updateConcentratedLiquidityPosition(
@@ -203,8 +212,8 @@ AMMConcentratedWithdraw::doApply()
             accountID,
             tickLower,
             tickUpper,
-            0,  // nonce
-            -liquidity,  // negative for withdrawal
+            0,            // nonce
+            -liquidity,   // negative for withdrawal
             STAmount{0},  // fee growth (simplified for this implementation)
             STAmount{0},
             ctx_.j);
@@ -227,13 +236,15 @@ AMMConcentratedWithdraw::doApply()
     }
 
     // Transfer tokens from AMM to caller
-    if (auto const ter = transfer(ctx_.view(), ammAccountID, accountID, amount0, ctx_.j);
+    if (auto const ter =
+            transfer(ctx_.view(), ammAccountID, accountID, amount0, ctx_.j);
         ter != tesSUCCESS)
     {
         return ter;
     }
 
-    if (auto const ter = transfer(ctx_.view(), ammAccountID, accountID, amount1, ctx_.j);
+    if (auto const ter =
+            transfer(ctx_.view(), ammAccountID, accountID, amount1, ctx_.j);
         ter != tesSUCCESS)
     {
         return ter;
@@ -282,14 +293,16 @@ AMMConcentratedWithdraw::validateConcentratedLiquidityWithdrawParams(
     // Validate liquidity amount
     if (liquidity <= STAmount{0})
     {
-        JLOG(j.debug()) << "AMM Concentrated Withdraw: invalid liquidity amount.";
+        JLOG(j.debug())
+            << "AMM Concentrated Withdraw: invalid liquidity amount.";
         return temBAD_AMM_TOKENS;
     }
 
     // Validate minimum amounts
     if (amount0Min < STAmount{0} || amount1Min < STAmount{0})
     {
-        JLOG(j.debug()) << "AMM Concentrated Withdraw: invalid minimum amounts.";
+        JLOG(j.debug())
+            << "AMM Concentrated Withdraw: invalid minimum amounts.";
         return temBAD_AMM_TOKENS;
     }
 
@@ -303,7 +316,8 @@ AMMConcentratedWithdraw::calculateReturnAmounts(
     std::uint64_t sqrtPriceAX64,
     std::uint64_t sqrtPriceBX64)
 {
-    return getAmountsForLiquidity(liquidity, sqrtPriceX64, sqrtPriceAX64, sqrtPriceBX64);
+    return getAmountsForLiquidity(
+        liquidity, sqrtPriceX64, sqrtPriceAX64, sqrtPriceBX64);
 }
 
 TER
@@ -319,32 +333,38 @@ AMMConcentratedWithdraw::updateConcentratedLiquidityPosition(
     beast::Journal const& j)
 {
     // Get position
-    auto const positionKey = getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
+    auto const positionKey =
+        getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = view.read(positionKeylet);
     if (!positionSle)
     {
-        JLOG(j.debug()) << "AMM Concentrated Withdraw: position not found for update.";
+        JLOG(j.debug())
+            << "AMM Concentrated Withdraw: position not found for update.";
         return tecNO_ENTRY;
     }
 
     // Update position
     auto const currentLiquidity = positionSle->getFieldAmount(sfLiquidity);
     auto const newLiquidity = currentLiquidity + liquidityDelta;
-    
+
     if (newLiquidity < STAmount{0})
     {
-        JLOG(j.debug()) << "AMM Concentrated Withdraw: liquidity would become negative.";
+        JLOG(j.debug())
+            << "AMM Concentrated Withdraw: liquidity would become negative.";
         return tecUNFUNDED_AMM;
     }
-    
+
     positionSle->setFieldAmount(sfLiquidity, newLiquidity);
-    positionSle->setFieldAmount(sfFeeGrowthInside0LastX128, feeGrowthInside0X128);
-    positionSle->setFieldAmount(sfFeeGrowthInside1LastX128, feeGrowthInside1X128);
+    positionSle->setFieldAmount(
+        sfFeeGrowthInside0LastX128, feeGrowthInside0X128);
+    positionSle->setFieldAmount(
+        sfFeeGrowthInside1LastX128, feeGrowthInside1X128);
 
     view.update(positionSle);
 
-    JLOG(j.debug()) << "AMM Concentrated Withdraw: updated position " << positionKey;
+    JLOG(j.debug()) << "AMM Concentrated Withdraw: updated position "
+                    << positionKey;
 
     return tesSUCCESS;
 }
@@ -362,14 +382,15 @@ AMMConcentratedWithdraw::updateTick(
     auto const tickSle = view.read(tickKeylet);
     if (!tickSle)
     {
-        JLOG(j.debug()) << "AMM Concentrated Withdraw: tick not found for update.";
+        JLOG(j.debug())
+            << "AMM Concentrated Withdraw: tick not found for update.";
         return tecNO_ENTRY;
     }
 
     // Update tick
     auto const currentLiquidityNet = tickSle->getFieldAmount(sfLiquidityNet);
     auto const newLiquidityNet = currentLiquidityNet + liquidityNet;
-    
+
     tickSle->setFieldAmount(sfLiquidityNet, newLiquidityNet);
 
     view.update(tickSle);
@@ -392,48 +413,58 @@ AMMConcentratedWithdraw::collectFees(
     beast::Journal const& j)
 {
     // Get position
-    auto const positionKey = getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
+    auto const positionKey =
+        getConcentratedLiquidityPositionKey(owner, tickLower, tickUpper, nonce);
     auto const positionKeylet = keylet::child(positionKey);
     auto const positionSle = view.read(positionKeylet);
     if (!positionSle)
     {
-        JLOG(j.debug()) << "AMM Concentrated Withdraw: position not found for fee collection.";
+        JLOG(j.debug()) << "AMM Concentrated Withdraw: position not found for "
+                           "fee collection.";
         return tecNO_ENTRY;
     }
 
     // Check if AMM has sufficient balance for fees
     if (tokensOwed0.issue().currency == xrpCurrency())
     {
-        if (view.read(keylet::account(ammAccountID))->getFieldAmount(sfBalance) < tokensOwed0)
+        if (view.read(keylet::account(ammAccountID))
+                ->getFieldAmount(sfBalance) < tokensOwed0)
         {
-            JLOG(j.debug()) << "AMM Concentrated Withdraw: insufficient XRP for fee collection.";
+            JLOG(j.debug()) << "AMM Concentrated Withdraw: insufficient XRP "
+                               "for fee collection.";
             return tecUNFUNDED_AMM;
         }
     }
     else
     {
-        auto const sle = view.read(keylet::line(ammAccountID, tokensOwed0.issue()));
+        auto const sle =
+            view.read(keylet::line(ammAccountID, tokensOwed0.issue()));
         if (!sle || sle->getFieldAmount(sfBalance) < tokensOwed0)
         {
-            JLOG(j.debug()) << "AMM Concentrated Withdraw: insufficient IOU for fee collection.";
+            JLOG(j.debug()) << "AMM Concentrated Withdraw: insufficient IOU "
+                               "for fee collection.";
             return tecUNFUNDED_AMM;
         }
     }
 
     if (tokensOwed1.issue().currency == xrpCurrency())
     {
-        if (view.read(keylet::account(ammAccountID))->getFieldAmount(sfBalance) < tokensOwed1)
+        if (view.read(keylet::account(ammAccountID))
+                ->getFieldAmount(sfBalance) < tokensOwed1)
         {
-            JLOG(j.debug()) << "AMM Concentrated Withdraw: insufficient XRP for fee collection (token1).";
+            JLOG(j.debug()) << "AMM Concentrated Withdraw: insufficient XRP "
+                               "for fee collection (token1).";
             return tecUNFUNDED_AMM;
         }
     }
     else
     {
-        auto const sle = view.read(keylet::line(ammAccountID, tokensOwed1.issue()));
+        auto const sle =
+            view.read(keylet::line(ammAccountID, tokensOwed1.issue()));
         if (!sle || sle->getFieldAmount(sfBalance) < tokensOwed1)
         {
-            JLOG(j.debug()) << "AMM Concentrated Withdraw: insufficient IOU for fee collection (token1).";
+            JLOG(j.debug()) << "AMM Concentrated Withdraw: insufficient IOU "
+                               "for fee collection (token1).";
             return tecUNFUNDED_AMM;
         }
     }
@@ -441,7 +472,8 @@ AMMConcentratedWithdraw::collectFees(
     // Transfer fees from AMM to owner
     if (tokensOwed0 > STAmount{0})
     {
-        if (auto const ter = transfer(view, ammAccountID, owner, tokensOwed0, j);
+        if (auto const ter =
+                transfer(view, ammAccountID, owner, tokensOwed0, j);
             ter != tesSUCCESS)
         {
             return ter;
@@ -450,7 +482,8 @@ AMMConcentratedWithdraw::collectFees(
 
     if (tokensOwed1 > STAmount{0})
     {
-        if (auto const ter = transfer(view, ammAccountID, owner, tokensOwed1, j);
+        if (auto const ter =
+                transfer(view, ammAccountID, owner, tokensOwed1, j);
             ter != tesSUCCESS)
         {
             return ter;
@@ -463,7 +496,8 @@ AMMConcentratedWithdraw::collectFees(
 
     view.update(positionSle);
 
-    JLOG(j.debug()) << "AMM Concentrated Withdraw: collected fees for position " << positionKey;
+    JLOG(j.debug()) << "AMM Concentrated Withdraw: collected fees for position "
+                    << positionKey;
 
     return tesSUCCESS;
 }

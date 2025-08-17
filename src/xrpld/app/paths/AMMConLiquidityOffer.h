@@ -25,8 +25,8 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 
@@ -46,7 +46,8 @@ class AMMConLiquidityOffer
 {
 private:
     AMMConLiquidityPool<TIn, TOut> const& ammConLiquidity_;
-    // Initial offer amounts based on aggregated concentrated liquidity positions
+    // Initial offer amounts based on aggregated concentrated liquidity
+    // positions
     TAmounts<TIn, TOut> const amounts_;
     // Current aggregated liquidity from positions within the price range
     TAmounts<TIn, TOut> const balances_;
@@ -100,19 +101,17 @@ public:
         return consumed_;
     }
 
-    /** Limit out of the provided offer based on concentrated liquidity constraints */
+    /** Limit out of the provided offer based on concentrated liquidity
+     * constraints */
     TAmounts<TIn, TOut>
-    limitOut(
-        TAmounts<TIn, TOut> const& ofrAmt,
-        TOut const& limit,
-        bool roundUp) const;
+    limitOut(TAmounts<TIn, TOut> const& ofrAmt, TOut const& limit, bool roundUp)
+        const;
 
-    /** Limit in of the provided offer based on concentrated liquidity constraints */
+    /** Limit in of the provided offer based on concentrated liquidity
+     * constraints */
     TAmounts<TIn, TOut>
-    limitIn(
-        TAmounts<TIn, TOut> const& ofrAmt,
-        TIn const& limit,
-        bool roundUp) const;
+    limitIn(TAmounts<TIn, TOut> const& ofrAmt, TIn const& limit, bool roundUp)
+        const;
 
     /** Check if the offer is funded within the concentrated liquidity range */
     bool
@@ -122,7 +121,8 @@ public:
     TOut
     ownerFunds() const;
 
-    /** Send assets between accounts within the concentrated liquidity context */
+    /** Send assets between accounts within the concentrated liquidity context
+     */
     TER
     send(
         ApplyView& view,
