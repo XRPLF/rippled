@@ -23,6 +23,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -30,17 +31,21 @@ namespace ripple {
 
 std::uint16_t constexpr TRADING_FEE_THRESHOLD = 1000;  // 1%
 
-// Concentrated Liquidity Fee Tiers 
-std::uint16_t constexpr CONCENTRATED_LIQUIDITY_FEE_TIER_0_01 = 10;    // 0.01%
-std::uint16_t constexpr CONCENTRATED_LIQUIDITY_FEE_TIER_0_05 = 50;    // 0.05%
-std::uint16_t constexpr CONCENTRATED_LIQUIDITY_FEE_TIER_0_3 = 300;    // 0.3%
-std::uint16_t constexpr CONCENTRATED_LIQUIDITY_FEE_TIER_1_0 = 1000;   // 1.0%
+// Concentrated Liquidity Fee Tiers
+std::uint16_t constexpr CONCENTRATED_LIQUIDITY_FEE_TIER_0_01 = 10;   // 0.01%
+std::uint16_t constexpr CONCENTRATED_LIQUIDITY_FEE_TIER_0_05 = 50;   // 0.05%
+std::uint16_t constexpr CONCENTRATED_LIQUIDITY_FEE_TIER_0_3 = 300;   // 0.3%
+std::uint16_t constexpr CONCENTRATED_LIQUIDITY_FEE_TIER_1_0 = 1000;  // 1.0%
 
 // Concentrated Liquidity Tick Spacing by Fee Tier
-std::uint16_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING_0_01 = 1;   // 0.01% fee tier
-std::uint16_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING_0_05 = 10;  // 0.05% fee tier
-std::uint16_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING_0_3 = 60;   // 0.3% fee tier
-std::uint16_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING_1_0 = 200;  // 1.0% fee tier
+std::uint16_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING_0_01 =
+    1;  // 0.01% fee tier
+std::uint16_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING_0_05 =
+    10;  // 0.05% fee tier
+std::uint16_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING_0_3 =
+    60;  // 0.3% fee tier
+std::uint16_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING_1_0 =
+    200;  // 1.0% fee tier
 
 // Auction slot
 std::uint32_t constexpr TOTAL_TIME_SLOT_SECS = 24 * 3600;
@@ -57,37 +62,43 @@ std::uint16_t constexpr VOTE_MAX_SLOTS = 8;
 std::uint32_t constexpr VOTE_WEIGHT_SCALE_FACTOR = 100000;
 
 // Concentrated Liquidity Parameters
-std::uint32_t constexpr CONCENTRATED_LIQUIDITY_MIN_TICK = -887272;  // Minimum tick index
-std::uint32_t constexpr CONCENTRATED_LIQUIDITY_MAX_TICK = 887272;   // Maximum tick index
-std::uint32_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING = 1;    // Default tick spacing
-std::uint32_t constexpr CONCENTRATED_LIQUIDITY_MAX_POSITIONS = 100; // Maximum positions per AMM
-std::uint64_t constexpr CONCENTRATED_LIQUIDITY_MIN_LIQUIDITY = 1000; // Minimum liquidity per position
+std::uint32_t constexpr CONCENTRATED_LIQUIDITY_MIN_TICK =
+    -887272;  // Minimum tick index
+std::uint32_t constexpr CONCENTRATED_LIQUIDITY_MAX_TICK =
+    887272;  // Maximum tick index
+std::uint32_t constexpr CONCENTRATED_LIQUIDITY_TICK_SPACING =
+    1;  // Default tick spacing
+std::uint32_t constexpr CONCENTRATED_LIQUIDITY_MAX_POSITIONS =
+    100;  // Maximum positions per AMM
+std::uint64_t constexpr CONCENTRATED_LIQUIDITY_MIN_LIQUIDITY =
+    1000;  // Minimum liquidity per position
 
 // Concentrated Liquidity Position Structure
-struct ConcentratedLiquidityPosition {
-    AccountID owner;           // Position owner
-    std::int32_t tickLower;    // Lower tick boundary
-    std::int32_t tickUpper;    // Upper tick boundary
-    STAmount liquidity;        // Liquidity amount
+struct ConcentratedLiquidityPosition
+{
+    AccountID owner;                    // Position owner
+    std::int32_t tickLower;             // Lower tick boundary
+    std::int32_t tickUpper;             // Upper tick boundary
+    STAmount liquidity;                 // Liquidity amount
     STAmount feeGrowthInside0LastX128;  // Fee growth tracking
     STAmount feeGrowthInside1LastX128;  // Fee growth tracking
-    STAmount tokensOwed0;      // Unclaimed fees
-    STAmount tokensOwed1;      // Unclaimed fees
-    std::uint32_t nonce;       // Position nonce for uniqueness
+    STAmount tokensOwed0;               // Unclaimed fees
+    STAmount tokensOwed1;               // Unclaimed fees
+    std::uint32_t nonce;                // Position nonce for uniqueness
 };
 
 // Concentrated Liquidity Tick Structure
-struct ConcentratedLiquidityTick {
-    std::int32_t tick;         // Tick index
-    STAmount liquidityGross;   // Total liquidity at this tick
-    STAmount liquidityNet;     // Net liquidity change
+struct ConcentratedLiquidityTick
+{
+    std::int32_t tick;               // Tick index
+    STAmount liquidityGross;         // Total liquidity at this tick
+    STAmount liquidityNet;           // Net liquidity change
     STAmount feeGrowthOutside0X128;  // Fee growth outside
     STAmount feeGrowthOutside1X128;  // Fee growth outside
-    bool initialized;           // Whether tick is initialized
+    bool initialized;                // Whether tick is initialized
 };
 
 class STObject;
-class STAmount;
 class Rules;
 
 /** Calculate Liquidity Provider Token (LPT) Currency.
@@ -236,7 +247,10 @@ getAmountsForLiquidity(
  * @return true if valid
  */
 bool
-isValidTickRange(std::int32_t tickLower, std::int32_t tickUpper, std::uint32_t tickSpacing);
+isValidTickRange(
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::uint32_t tickSpacing);
 
 /** Calculate position key for concentrated liquidity
  * @param owner Position owner

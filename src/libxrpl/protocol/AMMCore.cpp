@@ -137,9 +137,9 @@ bool
 isValidConcentratedLiquidityFeeTier(std::uint16_t fee)
 {
     return fee == CONCENTRATED_LIQUIDITY_FEE_TIER_0_01 ||
-           fee == CONCENTRATED_LIQUIDITY_FEE_TIER_0_05 ||
-           fee == CONCENTRATED_LIQUIDITY_FEE_TIER_0_3 ||
-           fee == CONCENTRATED_LIQUIDITY_FEE_TIER_1_0;
+        fee == CONCENTRATED_LIQUIDITY_FEE_TIER_0_05 ||
+        fee == CONCENTRATED_LIQUIDITY_FEE_TIER_0_3 ||
+        fee == CONCENTRATED_LIQUIDITY_FEE_TIER_1_0;
 }
 
 std::uint16_t
@@ -156,7 +156,7 @@ getConcentratedLiquidityTickSpacing(std::uint16_t fee)
         case CONCENTRATED_LIQUIDITY_FEE_TIER_1_0:
             return CONCENTRATED_LIQUIDITY_TICK_SPACING_1_0;
         default:
-            return CONCENTRATED_LIQUIDITY_TICK_SPACING_0_3; // Default to 0.3%
+            return CONCENTRATED_LIQUIDITY_TICK_SPACING_0_3;  // Default to 0.3%
     }
 }
 
@@ -174,7 +174,7 @@ getConcentratedLiquidityFeeTier(std::uint16_t tickSpacing)
         case CONCENTRATED_LIQUIDITY_TICK_SPACING_1_0:
             return CONCENTRATED_LIQUIDITY_FEE_TIER_1_0;
         default:
-            return CONCENTRATED_LIQUIDITY_FEE_TIER_0_3; // Default to 0.3%
+            return CONCENTRATED_LIQUIDITY_FEE_TIER_0_3;  // Default to 0.3%
     }
 }
 
@@ -194,7 +194,7 @@ tickToSqrtPriceX64(std::int32_t tick)
     {
         // For positive ticks: sqrt(1.0001^tick)
         // Using Q64.64 fixed point arithmetic
-        std::uint64_t constexpr Q64 = 1ULL << 64;
+        std::uint64_t constexpr Q64 = 1ULL << 63;
         double const price = std::pow(1.0001, tick);
         double const sqrtPrice = std::sqrt(price);
         return static_cast<std::uint64_t>(sqrtPrice * Q64);
@@ -204,7 +204,7 @@ tickToSqrtPriceX64(std::int32_t tick)
         // For negative ticks: sqrt(1/1.0001^|tick|)
         double const price = std::pow(1.0001, -tick);
         double const sqrtPrice = std::sqrt(1.0 / price);
-        std::uint64_t constexpr Q64 = 1ULL << 64;
+        std::uint64_t constexpr Q64 = 1ULL << 63;
         return static_cast<std::uint64_t>(sqrtPrice * Q64);
     }
 }
@@ -212,7 +212,7 @@ tickToSqrtPriceX64(std::int32_t tick)
 std::int32_t
 sqrtPriceX64ToTick(std::uint64_t sqrtPriceX64)
 {
-    std::uint64_t constexpr Q64 = 1ULL << 64;
+    std::uint64_t constexpr Q64 = 1ULL << 63;
     double const sqrtPrice = static_cast<double>(sqrtPriceX64) / Q64;
     double const price = sqrtPrice * sqrtPrice;
     double const tick = std::log(price) / std::log(1.0001);
@@ -226,14 +226,14 @@ getLiquidityForAmounts(
     std::uint64_t sqrtPriceAX64,
     std::uint64_t sqrtPriceBX64)
 {
-    std::uint64_t constexpr Q64 = 1ULL << 64;
-    
+    std::uint64_t constexpr Q64 = 1ULL << 63;
+
     // Ensure sqrtPriceA < sqrtPriceB
     if (sqrtPriceAX64 > sqrtPriceBX64)
         std::swap(sqrtPriceAX64, sqrtPriceBX64);
-    
+
     std::uint64_t sqrtPriceX64 = (sqrtPriceAX64 + sqrtPriceBX64) / 2;
-    
+
     if (sqrtPriceX64 <= sqrtPriceAX64)
     {
         // Current price is below range
@@ -247,8 +247,10 @@ getLiquidityForAmounts(
     else
     {
         // Current price is within range
-        STAmount liquidity0 = amount0 * (sqrtPriceBX64 - sqrtPriceX64) / (sqrtPriceX64 * (sqrtPriceBX64 - sqrtPriceAX64));
-        STAmount liquidity1 = amount1 * sqrtPriceX64 / (sqrtPriceBX64 - sqrtPriceAX64);
+        STAmount liquidity0 = amount0 * (sqrtPriceBX64 - sqrtPriceX64) /
+            (sqrtPriceX64 * (sqrtPriceBX64 - sqrtPriceAX64));
+        STAmount liquidity1 =
+            amount1 * sqrtPriceX64 / (sqrtPriceBX64 - sqrtPriceAX64);
         return std::min(liquidity0, liquidity1);
     }
 }
@@ -265,18 +267,18 @@ getAmountsForLiquidity(
     {
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     if (sqrtPriceAX64 == 0 || sqrtPriceBX64 == 0)
     {
         return {STAmount{0}, STAmount{0}};
     }
-    
+
     // Ensure sqrtPriceA < sqrtPriceB
     if (sqrtPriceAX64 > sqrtPriceBX64)
         std::swap(sqrtPriceAX64, sqrtPriceBX64);
-    
+
     STAmount amount0, amount1;
-    
+
     if (sqrtPriceX64 <= sqrtPriceAX64)
     {
         // Current price is below range
@@ -286,7 +288,7 @@ getAmountsForLiquidity(
         {
             return {STAmount{0}, STAmount{0}};
         }
-        
+
         auto const numerator = liquidity * (sqrtPriceBX64 - sqrtPriceAX64);
         amount0 = numerator / denominator;
         amount1 = STAmount{0};
@@ -306,29 +308,33 @@ getAmountsForLiquidity(
         {
             return {STAmount{0}, STAmount{0}};
         }
-        
+
         auto const numerator0 = liquidity * (sqrtPriceBX64 - sqrtPriceX64);
         auto const numerator1 = liquidity * (sqrtPriceX64 - sqrtPriceAX64);
-        
+
         amount0 = numerator0 / denominator;
         amount1 = numerator1;
     }
-    
+
     return {amount0, amount1};
 }
 
 bool
-isValidTickRange(std::int32_t tickLower, std::int32_t tickUpper, std::uint32_t tickSpacing)
+isValidTickRange(
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::uint32_t tickSpacing)
 {
     if (tickLower >= tickUpper)
         return false;
-    
-    if (tickLower < CONCENTRATED_LIQUIDITY_MIN_TICK || tickUpper > CONCENTRATED_LIQUIDITY_MAX_TICK)
+
+    if (tickLower < CONCENTRATED_LIQUIDITY_MIN_TICK ||
+        tickUpper > CONCENTRATED_LIQUIDITY_MAX_TICK)
         return false;
-    
+
     if (tickLower % tickSpacing != 0 || tickUpper % tickSpacing != 0)
         return false;
-    
+
     return true;
 }
 
