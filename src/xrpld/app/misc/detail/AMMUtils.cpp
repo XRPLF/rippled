@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/ledger/Sandbox.h>
+#include <xrpld/ledger/detail/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -1287,71 +1288,77 @@ crossTick(
     auto const liquidityNet = newTickSle->getFieldAmount(sfLiquidityNet);
     
     // Update all positions that have this tick as a boundary
-    // We need to iterate through all positions and update those that are affected
-    auto const positionsKey = keylet::ammPositions(ammID);
-    auto const positionsSle = view.read(positionsKey);
+    // Iterate through the AMM's owner directory to find concentrated liquidity positions
+    auto const ammAccountID = ammSle->getAccountID(sfAccount);
+    auto const ownerDirKeylet = keylet::ownerDir(ammAccountID);
     
-    if (positionsSle && positionsSle->isFieldPresent(sfPositions))
+    // Use directory iteration to find all concentrated liquidity positions
+    std::shared_ptr<SLE> page;
+    unsigned int index = 0;
+    uint256 entry;
+    
+    if (dirFirst(view, ownerDirKeylet, page, index, entry))
     {
-        auto const& positions = positionsSle->getFieldArray(sfPositions);
-        
-        for (auto const& positionObj : positions)
+        do
         {
-            auto const positionID = positionObj.getFieldH256(sfPositionID);
-            auto const positionKey = keylet::ammPosition(ammID, positionID);
-            auto const positionSle = view.read(positionKey);
-            
-            if (!positionSle)
+            auto const sle = view.read(keylet::child(entry));
+            if (!sle)
                 continue;
                 
-            auto const tickLower = positionSle->getFieldU32(sfTickLower);
-            auto const tickUpper = positionSle->getFieldU32(sfTickUpper);
-            
-            // Check if this position is affected by the tick crossing
-            if (tick == tickLower || tick == tickUpper)
+            // Check if this is a concentrated liquidity position
+            if (sle->getFieldU16(sfLedgerEntryType) == ltCONCENTRATED_LIQUIDITY_POSITION)
             {
-                // Update position fees
-                auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
-                auto const ter = ammConcentratedLiquidityUpdatePositionFees(
-                    view,
-                    positionKey,
-                    tickLower,
-                    tickUpper,
-                    currentTick,
-                    feeGrowthGlobal0,
-                    feeGrowthGlobal1,
-                    j);
-                    
-                if (ter != tesSUCCESS)
-                {
-                    JLOG(j.warn()) << "Failed to update position fees during tick crossing: " << ter;
-                    return ter;
-                }
+                auto const positionTickLower = sle->getFieldU32(sfTickLower);
+                auto const positionTickUpper = sle->getFieldU32(sfTickUpper);
                 
-                JLOG(j.debug()) << "Updated position " << positionID 
-                               << " fees during tick " << tick << " crossing";
+                // Check if this position is affected by the tick crossing
+                if (tick == positionTickLower || tick == positionTickUpper)
+                {
+                    // Update position fees
+                    auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
+                    auto const ter = ammConcentratedLiquidityUpdatePositionFees(
+                        view,
+                        keylet::child(entry),
+                        positionTickLower,
+                        positionTickUpper,
+                        currentTick,
+                        feeGrowthGlobal0,
+                        feeGrowthGlobal1,
+                        j);
+                        
+                    if (ter != tesSUCCESS)
+                    {
+                        JLOG(j.warn()) << "Failed to update position fees during tick crossing: " << ter;
+                        return ter;
+                    }
+                    
+                    JLOG(j.debug()) << "Updated position " << entry 
+                                   << " fees during tick " << tick << " crossing";
+                }
             }
-        }
+        } while (dirNext(view, ownerDirKeylet, page, index, entry));
     }
     
     // Update the AMM's active liquidity based on the liquidity delta
-    auto const currentActiveLiquidity = ammSle->isFieldPresent(sfAggregatedLiquidity)
-        ? ammSle->getFieldAmount(sfAggregatedLiquidity)
-        : ammSle->getFieldAmount(sfLPTokenBalance);
-        
-    auto const newActiveLiquidity = currentActiveLiquidity + liquidityNet;
-    
-    // Update AMM with new active liquidity
-    auto const newAmmSle = std::make_shared<SLE>(*ammSle);
-    if (newAmmSle->isFieldPresent(sfAggregatedLiquidity))
+    if (ammSle->isFieldPresent(sfAggregatedLiquidity))
     {
+        auto const currentActiveLiquidity = ammSle->getFieldAmount(sfAggregatedLiquidity);
+        auto const newActiveLiquidity = currentActiveLiquidity + liquidityNet;
+        
+        // Update AMM with new active liquidity
+        auto const newAmmSle = std::make_shared<SLE>(*ammSle);
         newAmmSle->setFieldAmount(sfAggregatedLiquidity, newActiveLiquidity);
+        view.update(newAmmSle);
+        
+        JLOG(j.debug()) << "Crossed tick " << tick << " at price " 
+                        << newSqrtPriceX64 << ", liquidity delta: " << liquidityNet
+                        << ", new active liquidity: " << newActiveLiquidity;
     }
-    view.update(newAmmSle);
-
-    JLOG(j.debug()) << "Crossed tick " << tick << " at price " 
-                    << newSqrtPriceX64 << ", liquidity delta: " << liquidityNet
-                    << ", new active liquidity: " << newActiveLiquidity;
+    else
+    {
+        JLOG(j.debug()) << "Crossed tick " << tick << " at price " 
+                        << newSqrtPriceX64 << ", liquidity delta: " << liquidityNet;
+    }
 
     return tesSUCCESS;
 }
