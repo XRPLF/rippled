@@ -1297,7 +1297,7 @@ crossTick(
     unsigned int index = 0;
     uint256 entry;
     
-    if (dirFirst(view, ownerDirKeylet, page, index, entry))
+    if (dirFirst(view, ownerDirKeylet.key, page, index, entry))
     {
         do
         {
@@ -1336,7 +1336,7 @@ crossTick(
                                    << " fees during tick " << tick << " crossing";
                 }
             }
-        } while (dirNext(view, ownerDirKeylet, page, index, entry));
+        } while (dirNext(view, ownerDirKeylet.key, page, index, entry));
     }
     
     // Update the AMM's active liquidity based on the liquidity delta
