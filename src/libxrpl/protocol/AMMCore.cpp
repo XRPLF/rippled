@@ -226,8 +226,6 @@ getLiquidityForAmounts(
     std::uint64_t sqrtPriceAX64,
     std::uint64_t sqrtPriceBX64)
 {
-    std::uint64_t constexpr Q64 = 1ULL << 63;
-
     // Ensure sqrtPriceA < sqrtPriceB
     if (sqrtPriceAX64 > sqrtPriceBX64)
         std::swap(sqrtPriceAX64, sqrtPriceBX64);
