@@ -175,10 +175,10 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
     // This involves updating the liquidity distribution and fee tracking
 
     // Get AMM information using existing AMM patterns
-    auto const ammSle = view.read(keylet::amm(ammConLiquidity_.ammID()));
+    auto const ammSle = view.read(keylet::amm(ammConLiquidity_.issueIn(), ammConLiquidity_.issueOut()));
     if (!ammSle)
     {
-        JLOG(j.warn()) << "AMM not found for liquidity update";
+        JLOG(ammConLiquidity_.j().warn()) << "AMM not found for liquidity update";
         return;
     }
 
@@ -189,17 +189,17 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
         // functions
         auto const [feeGrowth0, feeGrowth1] = ammConcentratedLiquidityFeeGrowth(
             view,
-            ammConLiquidity_.ammID(),
+            ammSle->getFieldH256(sfAMMID),
             ammSle->getFieldU32(sfCurrentTick),
             consumed.first,
             consumed.second,
             ammSle->getFieldU16(sfTradingFee),
-            j);
+            ammConLiquidity_.j());
 
         // Update all positions that are active in the current price range
         // This follows the same pattern as existing AMM offers for balance
         // updates
-        JLOG(j.debug())
+        JLOG(ammConLiquidity_.j().debug())
             << "Updated concentrated liquidity positions with fee growth: "
             << feeGrowth0 << ", " << feeGrowth1;
 
@@ -209,12 +209,12 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
             ammSle->getFieldU64(sfSqrtPriceX64),
             consumed.first,
             ammSle->getFieldU16(sfTradingFee),
-            j);
+            ammConLiquidity_.j());
 
         auto const targetTick = sqrtPriceX64ToTick(targetSqrtPriceX64);
         if (targetTick != currentTick)
         {
-            JLOG(j.debug()) << "Crossing tick from " << currentTick << " to "
+            JLOG(ammConLiquidity_.j().debug()) << "Crossing tick from " << currentTick << " to "
                             << targetTick;
             
             // Execute tick crossing logic using AMMUtils
@@ -223,7 +223,7 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
                 ammSle->getFieldU64(sfSqrtPriceX64),
                 targetSqrtPriceX64,
                 consumed.first,
-                j);
+                ammConLiquidity_.j());
             
             // Update the AMM's current tick and sqrt price
             auto ammSleMutable = view.peek(keylet::amm(ammConLiquidity_.issueIn(), ammConLiquidity_.issueOut()));
@@ -251,7 +251,7 @@ AMMConLiquidityOffer<TIn, TOut>::limitOut(
     // Calculate the corresponding input amount for the limited output
     // Use the concentrated liquidity formulas with proper slippage calculation
     auto const currentPrice = static_cast<double>(sqrtPriceX64_) / (1ULL << 63);
-    auto const priceImpact = 1.0 + (static_cast<double>(tradingFee_) / 1000000.0);
+    auto const priceImpact = 1.0 + (static_cast<double>(ammConLiquidity_.tradingFee()) / 1000000.0);
     
     TIn limitedIn = mulRatio(ofrAmt.in, limit, ofrAmt.out, roundUp);
     // Apply price impact adjustment

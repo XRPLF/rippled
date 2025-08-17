@@ -64,8 +64,8 @@ private:
 public:
     AMMConLiquidityOffer(
         AMMConLiquidityPool<TIn, TOut> const& ammConLiquidity,
-        TAmounts<TIn, TOut> const& amounts,
-        TAmounts<TIn, TOut> const& balances,
+        TAmountPair<TIn, TOut> const& amounts,
+        TAmountPair<TIn, TOut> const& balances,
         Quality const& quality,
         std::uint64_t sqrtPriceX64,
         std::int32_t tickLower,
@@ -89,11 +89,11 @@ public:
         return std::nullopt;
     }
 
-    TAmounts<TIn, TOut> const&
+    TAmountPair<TIn, TOut> const&
     amount() const;
 
     void
-    consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed);
+    consume(ApplyView& view, TAmountPair<TIn, TOut> const& consumed);
 
     bool
     fully_consumed() const
@@ -103,14 +103,14 @@ public:
 
     /** Limit out of the provided offer based on concentrated liquidity
      * constraints */
-    TAmounts<TIn, TOut>
-    limitOut(TAmounts<TIn, TOut> const& ofrAmt, TOut const& limit, bool roundUp)
+    TAmountPair<TIn, TOut>
+    limitOut(TAmountPair<TIn, TOut> const& ofrAmt, TOut const& limit, bool roundUp)
         const;
 
     /** Limit in of the provided offer based on concentrated liquidity
      * constraints */
-    TAmounts<TIn, TOut>
-    limitIn(TAmounts<TIn, TOut> const& ofrAmt, TIn const& limit, bool roundUp)
+    TAmountPair<TIn, TOut>
+    limitIn(TAmountPair<TIn, TOut> const& ofrAmt, TIn const& limit, bool roundUp)
         const;
 
     /** Check if the offer is funded within the concentrated liquidity range */
@@ -133,7 +133,7 @@ public:
 
     /** Check invariant for concentrated liquidity positions */
     bool
-    checkInvariant(TAmounts<TIn, TOut> const& amounts, beast::Journal j) const;
+    checkInvariant(TAmountPair<TIn, TOut> const& amounts, beast::Journal j) const;
 
     /** Get current sqrt price */
     std::uint64_t
