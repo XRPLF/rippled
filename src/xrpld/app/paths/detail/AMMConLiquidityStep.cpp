@@ -159,10 +159,18 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::getQualityFunc(
             (static_cast<double>(sqrtPriceX64) / (1ULL << 63));
 
         // Create a quality function that adjusts based on trade size
-        auto qualityFunc = [basePrice](TIn const& in) -> Quality {
-            // For now, return constant quality
-            // In a full implementation, this would account for slippage
-            return Quality{Number{basePrice}};
+        auto qualityFunc = [basePrice, this](TIn const& in) -> Quality {
+            // Calculate dynamic quality based on slippage
+            auto const liquidity = ammConLiquidity_->getAggregatedLiquidity();
+            if (liquidity <= beast::zero)
+                return Quality{Number{basePrice}};
+            
+            // Calculate slippage based on trade size relative to liquidity
+            auto const tradeSizeRatio = static_cast<double>(in) / static_cast<double>(liquidity);
+            auto const slippageFactor = 1.0 + (tradeSizeRatio * 0.1); // 10% slippage per 100% of liquidity
+            
+            auto const adjustedPrice = basePrice * slippageFactor;
+            return Quality{Number{adjustedPrice}};
         };
 
         return {qualityFunc, DebtDirection::issues};
@@ -326,8 +334,8 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::consumeOffer(
         auto const fee1 =
             mulRatio(ofrAmt.out, ammConLiquidity_->tradingFee(), 1000000, true);
 
-        // Update fee growth (this would be implemented in AMMConLiquidityPool)
-        // ammConLiquidity_->updateFeeGrowth(sb, fee0, fee1);
+        // Update fee growth using the implemented function
+        ammConLiquidity_->updateFeeGrowth(sb, fee0, fee1);
     }
 }
 

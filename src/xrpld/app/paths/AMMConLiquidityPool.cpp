@@ -261,8 +261,16 @@ AMMConLiquidityPool<TIn, TOut>::getOffer(
         if (newTick != currentTick)
         {
             JLOG(j_.debug())
-                << "Would cross tick from " << currentTick << " to " << newTick;
-            // In a full implementation, this would trigger tick crossing logic
+                << "Crossing tick from " << currentTick << " to " << newTick;
+            
+            // Execute tick crossing logic
+            // Calculate liquidity delta based on the trade
+            auto const liquidityDelta = calculateLiquidityDelta(
+                sqrtPriceX64_, 
+                tickToSqrtPriceX64(newTick), 
+                amount0);
+            
+            executeTickCrossing(view, currentTick_, newTick, liquidityDelta);
         }
     }
     TOut outAmount;
@@ -392,39 +400,133 @@ AMMConLiquidityPool<TIn, TOut>::calculateQuality(
 }
 
 template <typename TIn, typename TOut>
-std::vector<std::pair<AccountID, STAmount>>
-AMMConLiquidityPool<TIn, TOut>::findActivePositions(ReadView const& view) const
-{
-    std::vector<std::pair<AccountID, STAmount>> positions;
-
-    // Iterate through all concentrated liquidity positions for this AMM
-    // This would involve querying the ledger for concentrated liquidity
-    // position objects For now, return an empty vector as a placeholder
-
-    // TODO: Implement actual position lookup
-    // This would involve:
-    // 1. Finding all concentrated liquidity position objects for this AMM
-    // 2. Filtering positions that are active at the current price
-    // 3. Aggregating their liquidity
-
-    return positions;
-}
-
-template <typename TIn, typename TOut>
 void
 AMMConLiquidityPool<TIn, TOut>::updateFeeGrowth(
     ApplyView& view,
     STAmount const& fee0,
     STAmount const& fee1) const
 {
-    // Update fee growth for all active concentrated liquidity positions
-    // This would involve:
-    // 1. Finding all active positions
-    // 2. Updating their fee growth tracking
-    // 3. Distributing fees proportionally to position owners
+    // Get the AMM keylet
+    auto const ammKeylet = keylet::amm(issueIn_, issueOut_);
+    auto const ammSle = view.read(ammKeylet);
+    if (!ammSle)
+        return;
 
-    // TODO: Implement actual fee growth update
-    // This is a placeholder for the fee distribution logic
+    auto const ammID = ammSle->getFieldH256(sfAMMID);
+    
+    // Find all active positions
+    auto const positions = findActivePositions(view);
+    
+    // Update global fee growth
+    auto const currentFeeGrowth0 = ammSle->getFieldAmount(sfFeeGrowthGlobal0X128);
+    auto const currentFeeGrowth1 = ammSle->getFieldAmount(sfFeeGrowthGlobal1X128);
+    
+    auto const newFeeGrowth0 = currentFeeGrowth0 + fee0;
+    auto const newFeeGrowth1 = currentFeeGrowth1 + fee1;
+    
+    // Update AMM's global fee growth
+    auto ammSleMutable = view.peek(ammKeylet);
+    if (ammSleMutable)
+    {
+        ammSleMutable->setFieldAmount(sfFeeGrowthGlobal0X128, newFeeGrowth0);
+        ammSleMutable->setFieldAmount(sfFeeGrowthGlobal1X128, newFeeGrowth1);
+    }
+    
+    // Update fee growth for all active positions
+    for (auto const& [owner, liquidity] : positions)
+    {
+        // Find the position ledger object
+        auto const positionKey = getConcentratedLiquidityPositionKey(
+            owner, currentTick_, currentTick_, 0);  // Assuming nonce 0 for now
+        auto const positionKeylet = keylet::child(positionKey);
+        auto const positionSle = view.read(positionKeylet);
+        
+        if (positionSle)
+        {
+            // Update position's fee growth tracking
+            auto const currentInside0 = positionSle->getFieldAmount(sfFeeGrowthInside0LastX128);
+            auto const currentInside1 = positionSle->getFieldAmount(sfFeeGrowthInside1LastX128);
+            
+            auto const newInside0 = currentInside0 + fee0;
+            auto const newInside1 = currentInside1 + fee1;
+            
+            auto positionSleMutable = view.peek(positionKeylet);
+            if (positionSleMutable)
+            {
+                positionSleMutable->setFieldAmount(sfFeeGrowthInside0LastX128, newInside0);
+                positionSleMutable->setFieldAmount(sfFeeGrowthInside1LastX128, newInside1);
+            }
+        }
+    }
+}
+
+template <typename TIn, typename TOut>
+void
+AMMConLiquidityPool<TIn, TOut>::executeTickCrossing(
+    ApplyView& view,
+    std::int32_t fromTick,
+    std::int32_t toTick,
+    STAmount const& liquidityDelta) const
+{
+    // Get the AMM keylet
+    auto const ammKeylet = keylet::amm(issueIn_, issueOut_);
+    auto const ammSle = view.read(ammKeylet);
+    if (!ammSle)
+        return;
+
+    // Update the current tick in the AMM
+    auto ammSleMutable = view.peek(ammKeylet);
+    if (ammSleMutable)
+    {
+        ammSleMutable->setFieldU32(sfCurrentTick, toTick);
+        
+        // Update sqrt price
+        auto const newSqrtPriceX64 = tickToSqrtPriceX64(toTick);
+        ammSleMutable->setFieldU64(sfSqrtPriceX64, newSqrtPriceX64);
+    }
+    
+    // Update the tick's liquidity net
+    auto const tickKey = getConcentratedLiquidityTickKey(toTick);
+    auto const tickKeylet = keylet::child(tickKey);
+    auto const tickSle = view.read(tickKeylet);
+    
+    if (tickSle)
+    {
+        auto const currentLiquidityNet = tickSle->getFieldAmount(sfLiquidityNet);
+        auto const newLiquidityNet = currentLiquidityNet + liquidityDelta;
+        
+        auto tickSleMutable = view.peek(tickKeylet);
+        if (tickSleMutable)
+        {
+            tickSleMutable->setFieldAmount(sfLiquidityNet, newLiquidityNet);
+        }
+    }
+    
+    JLOG(j_.debug()) << "Executed tick crossing from " << fromTick << " to " << toTick;
+}
+
+template <typename TIn, typename TOut>
+STAmount
+AMMConLiquidityPool<TIn, TOut>::calculateLiquidityDelta(
+    std::uint64_t sqrtPriceX64,
+    std::uint64_t targetSqrtPriceX64,
+    STAmount const& amount) const
+{
+    // Calculate the liquidity delta based on the price change and amount
+    // This follows the Uniswap V3 formula for liquidity calculation
+    
+    if (sqrtPriceX64 == 0 || targetSqrtPriceX64 == 0)
+        return STAmount{0};
+    
+    // Calculate the liquidity delta using the formula:
+    // ΔL = Δx * (√P * √P') / (√P' - √P)
+    auto const deltaSqrtPrice = targetSqrtPriceX64 - sqrtPriceX64;
+    
+    if (deltaSqrtPrice == 0)
+        return STAmount{0};
+    
+    auto const liquidityDelta = amount * sqrtPriceX64 * targetSqrtPriceX64 / deltaSqrtPrice;
+    return liquidityDelta;
 }
 
 // Explicit template instantiations

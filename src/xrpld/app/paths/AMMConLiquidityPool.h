@@ -147,24 +147,30 @@ private:
         std::uint64_t sqrtPriceAX64,
         std::uint64_t sqrtPriceBX64) const;
 
-    /** Find all active concentrated liquidity positions for this AMM */
-    std::map<AccountID, STAmount>
-    findActivePositions(ReadView const& view) const;
-
     /** Calculate the quality for a given price and liquidity */
     Quality
     calculateQuality(std::uint64_t sqrtPriceX64, STAmount const& liquidity)
         const;
 
-    /** Find all concentrated liquidity positions within the active price range
-     */
-    std::vector<std::pair<AccountID, STAmount>>
-    findActivePositions(ReadView const& view) const;
-
     /** Update fee growth for positions after a trade */
     void
     updateFeeGrowth(ApplyView& view, STAmount const& fee0, STAmount const& fee1)
         const;
+
+    /** Execute tick crossing logic when price moves across tick boundaries */
+    void
+    executeTickCrossing(
+        ApplyView& view,
+        std::int32_t fromTick,
+        std::int32_t toTick,
+        STAmount const& liquidityDelta) const;
+
+    /** Calculate liquidity delta for tick crossing */
+    STAmount
+    calculateLiquidityDelta(
+        std::uint64_t sqrtPriceX64,
+        std::uint64_t targetSqrtPriceX64,
+        STAmount const& amount) const;
 };
 
 }  // namespace ripple
