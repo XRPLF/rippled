@@ -535,7 +535,7 @@ ammConcentratedLiquidityFeeGrowth(
     // Calculate fee amount using the same mechanism as regular AMM
     // but applied to the active liquidity only
     auto const feeAmount = mulRatio(
-        XRPAmount{amountIn.drops()}, 
+        amountIn.xrp(), 
         static_cast<std::uint32_t>(tradingFee), 
         static_cast<std::uint32_t>(1000000), 
         false);
@@ -544,7 +544,7 @@ ammConcentratedLiquidityFeeGrowth(
     auto const feeGrowthDelta = mulRatio(
         feeAmount, 
         static_cast<std::uint32_t>(1), 
-        static_cast<std::uint32_t>(activeLiquidity.drops()), 
+        static_cast<std::uint32_t>(activeLiquidity.mantissa()), 
         false);
 
     // Determine which asset the fee is in
@@ -602,13 +602,13 @@ ammConcentratedLiquidityUpdatePositionFees(
     auto const feeGrowthInside1Delta = feeGrowthInside1 - feeGrowthInside1Last;
 
     auto const feesOwed0 = mulRatio(
-        XRPAmount{liquidity.drops()}, 
-        static_cast<std::uint32_t>(feeGrowthInside0Delta.drops()), 
+        liquidity.xrp(), 
+        static_cast<std::uint32_t>(feeGrowthInside0Delta.mantissa()), 
         static_cast<std::uint32_t>(1), 
         false);
     auto const feesOwed1 = mulRatio(
-        XRPAmount{liquidity.drops()}, 
-        static_cast<std::uint32_t>(feeGrowthInside1Delta.drops()), 
+        liquidity.xrp(), 
+        static_cast<std::uint32_t>(feeGrowthInside1Delta.mantissa()), 
         static_cast<std::uint32_t>(1), 
         false);
 
@@ -689,13 +689,13 @@ ammConcentratedLiquidityCalculateFeesOwed(
     auto const feeGrowthInside1Delta = feeGrowthInside1 - feeGrowthInside1Last;
 
     auto const feesOwed0 = mulRatio(
-        XRPAmount{liquidity.drops()}, 
-        static_cast<std::uint32_t>(feeGrowthInside0Delta.drops()), 
+        liquidity.xrp(), 
+        static_cast<std::uint32_t>(feeGrowthInside0Delta.mantissa()), 
         static_cast<std::uint32_t>(1), 
         false);
     auto const feesOwed1 = mulRatio(
-        XRPAmount{liquidity.drops()}, 
-        static_cast<std::uint32_t>(feeGrowthInside1Delta.drops()), 
+        liquidity.xrp(), 
+        static_cast<std::uint32_t>(feeGrowthInside1Delta.mantissa()), 
         static_cast<std::uint32_t>(1), 
         false);
 
@@ -909,7 +909,7 @@ ammConcentratedLiquiditySwapWithTickCrossing(
 
     auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
     auto const sqrtPriceX64 = ammSle->getFieldU64(sfSqrtPriceX64);
-    auto const tickSpacing = ammSle->getFieldU16(sfTickSpacing);
+    // auto const tickSpacing = ammSle->getFieldU16(sfTickSpacing);  // Unused for now
 
     // Get current fee growth
     auto const feeGrowthGlobal0 =
@@ -1043,7 +1043,7 @@ calculateTargetSqrtPrice(
 
     // SECURITY: Use safe arithmetic to prevent overflow
     auto const feeMultiplier = 1000000 - tradingFee;
-    auto const inputValue = assetIn.drops();
+    auto const inputValue = assetIn.mantissa();
 
     // SECURITY: Check for division by zero and overflow
     if (feeMultiplier == 0)
@@ -1184,14 +1184,14 @@ calculateOutputForInput(
 
     // SECURITY: Check for overflow in multiplication
     if (deltaSqrtPrice >
-        std::numeric_limits<std::uint64_t>::max() / input.drops())
+        std::numeric_limits<std::uint64_t>::max() / input.mantissa())
     {
         JLOG(j.warn()) << "calculateOutputForInput: overflow in multiplication";
         return STAmount{std::numeric_limits<std::uint64_t>::max()};
     }
 
     auto const output = input * deltaSqrtPrice / sqrtPriceStartX64;
-    return STAmount{output.drops()};
+    return output;
 }
 
 /** Calculate fee growth for a swap step */
@@ -1218,7 +1218,7 @@ calculateFeeGrowthForSwap(
 
     // SECURITY: Calculate fee amount with bounds checking
     auto const feeAmount = mulRatio(
-        XRPAmount{input.drops()}, 
+        input.xrp(), 
         static_cast<std::uint32_t>(tradingFee), 
         static_cast<std::uint32_t>(1000000), 
         false);
@@ -1261,18 +1261,66 @@ crossTick(
         JLOG(j.debug()) << "Tick not found for crossing: " << tick;
         return tecAMM_TICK_NOT_INITIALIZED;
     }
+    // Get the AMM SLE to access position data
+    auto const ammSle = view.read(keylet::amm(ammID));
+    if (!ammSle)
+    {
+        JLOG(j.debug()) << "AMM not found when crossing tick";
+        return tecINTERNAL;
+    }
 
     // Update the tick's fee growth outside
     auto const newTickSle = std::make_shared<SLE>(*tickSle);
-    newTickSle->setFieldAmount(sfFeeGrowthOutside0X128, feeGrowthGlobal0);
-    newTickSle->setFieldAmount(sfFeeGrowthOutside1X128, feeGrowthGlobal1);
+    
+    // When crossing a tick, we flip the fee growth outside values
+    // This ensures proper fee accounting across tick boundaries
+    auto const feeGrowthOutside0 = 
+        feeGrowthGlobal0 - newTickSle->getFieldAmount(sfFeeGrowthOutside0X128);
+    auto const feeGrowthOutside1 = 
+        feeGrowthGlobal1 - newTickSle->getFieldAmount(sfFeeGrowthOutside1X128);
+        
+    newTickSle->setFieldAmount(sfFeeGrowthOutside0X128, feeGrowthOutside0);
+    newTickSle->setFieldAmount(sfFeeGrowthOutside1X128, feeGrowthOutside1);
     view.update(newTickSle);
 
     // Update all positions that have this tick as a boundary
-    // This is a simplified implementation - in practice, you'd need to
-    // iterate through all positions and update those that are affected
-    JLOG(j.debug()) << "Crossed tick " << tick << " at price "
-                    << newSqrtPriceX64;
+    auto const positionRoot = keylet::child(ammID);
+    auto const positions = view.getDirty(positionRoot);
+
+    for (auto const& position : positions)
+    {
+        auto const positionSle = view.read(keylet::child(position));
+        if (!positionSle)
+            continue;
+
+        // Check if this position uses the crossed tick as a boundary
+        auto const tickLower = positionSle->getFieldU32(sfTickLower);
+        auto const tickUpper = positionSle->getFieldU32(sfTickUpper);
+
+        if (tick != tickLower && tick != tickUpper)
+            continue;
+
+        // Update position fees
+        auto const ter = ammConcentratedLiquidityUpdatePositionFees(
+            view,
+            keylet::child(position),
+            tickLower,
+            tickUpper,
+            tick,
+            feeGrowthGlobal0,
+            feeGrowthGlobal1,
+            j);
+
+        if (ter != tesSUCCESS)
+        {
+            JLOG(j.warn()) << "Failed to update position fees when crossing tick";
+            return ter;
+        }
+    }
+
+    JLOG(j.debug()) << "Crossed tick " << tick << " at price " 
+                    << newSqrtPriceX64 << " with " << positions.size() 
+                    << " positions updated";
 
     return tesSUCCESS;
 }
