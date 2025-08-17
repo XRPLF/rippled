@@ -283,13 +283,12 @@ admin = 127.0.0.1
                 // // validate the format of the OracleSet transaction
                 {
                     BEAST_EXPECT(txnFormats.isMember("OracleSet"));
-                    BEAST_EXPECT(txnFormats["OracleSet"][jss::hexCode] == "51");
-                    BEAST_EXPECT(
-                        txnFormats["OracleSet"][jss::delegatability] ==
-                        "delegatable");
+                    BEAST_EXPECT(txnFormats["OracleSet"][jss::hexCode] == 51);
 
+                    // common_fields + unique_fields for the OracleSet
+                    // transaction
                     BEAST_EXPECT(
-                        txnFormats["OracleSet"][jss::sfields].size() == 6);
+                        txnFormats["OracleSet"][jss::sfields].size() == 6 + 17);
 
                     BEAST_EXPECT(
                         txnFormats["OracleSet"][jss::sfields][0u]
@@ -341,14 +340,13 @@ admin = 127.0.0.1
                         txnFormats.isMember("PermissionedDomainDelete"));
                     BEAST_EXPECT(
                         txnFormats["PermissionedDomainDelete"][jss::hexCode] ==
-                        "63");
-                    BEAST_EXPECT(
-                        txnFormats["PermissionedDomainDelete"]
-                                  [jss::delegatability] == "delegatable");
+                        63);
 
+                    // common_fields + unique_fields for the
+                    // PermissionedDomainDelete transaction
                     BEAST_EXPECT(
                         txnFormats["PermissionedDomainDelete"][jss::sfields]
-                            .size() == 1);
+                            .size() == 1 + 17);
 
                     BEAST_EXPECT(
                         txnFormats["PermissionedDomainDelete"][jss::sfields][0u]
@@ -361,13 +359,11 @@ admin = 127.0.0.1
                 // validate the format of the Clawback transaction
                 {
                     BEAST_EXPECT(txnFormats.isMember("Clawback"));
-                    BEAST_EXPECT(txnFormats["Clawback"][jss::hexCode] == "30");
-                    BEAST_EXPECT(
-                        txnFormats["Clawback"][jss::delegatability] ==
-                        "delegatable");
+                    BEAST_EXPECT(txnFormats["Clawback"][jss::hexCode] == 30);
 
+                    // common + unique fields for the Clawback transaction
                     BEAST_EXPECT(
-                        txnFormats["Clawback"][jss::sfields].size() == 2);
+                        txnFormats["Clawback"][jss::sfields].size() == 2 + 17);
 
                     BEAST_EXPECT(
                         txnFormats["Clawback"][jss::sfields][0u]
@@ -390,13 +386,11 @@ admin = 127.0.0.1
                 // validate the format of the SetFee transaction
                 {
                     BEAST_EXPECT(txnFormats.isMember("SetFee"));
-                    BEAST_EXPECT(txnFormats["SetFee"][jss::hexCode] == "101");
-                    BEAST_EXPECT(
-                        txnFormats["SetFee"][jss::delegatability] ==
-                        "notDelegatable");
+                    BEAST_EXPECT(txnFormats["SetFee"][jss::hexCode] == 101);
 
+                    // common + unique fields for the SetFee transaction
                     BEAST_EXPECT(
-                        txnFormats["SetFee"][jss::sfields].size() == 8);
+                        txnFormats["SetFee"][jss::sfields].size() == 8 + 17);
 
                     BEAST_EXPECT(
                         txnFormats["SetFee"][jss::sfields][0u]
@@ -506,10 +500,10 @@ admin = 127.0.0.1
                     Json::Value const& observedDIDLedgerEntry =
                         result[jss::result][jss::LEDGER_ENTRIES]["DID"];
 
+                    BEAST_EXPECT(observedDIDLedgerEntry[jss::hexCode] == 73);
+                    // unique + common fields for the DID Ledger Entry
                     BEAST_EXPECT(
-                        observedDIDLedgerEntry[jss::hexCode] == "0x0049");
-                    BEAST_EXPECT(
-                        observedDIDLedgerEntry[jss::sfields].size() == 7);
+                        observedDIDLedgerEntry[jss::sfields].size() == 7 + 3);
 
                     BEAST_EXPECT(
                         observedDIDLedgerEntry[jss::sfields][0u]
@@ -570,10 +564,10 @@ admin = 127.0.0.1
                     Json::Value const& observedNunlLedgerEntry =
                         result[jss::result][jss::LEDGER_ENTRIES]["NegativeUNL"];
 
+                    BEAST_EXPECT(observedNunlLedgerEntry[jss::hexCode] == 78);
+                    // unique + common fields for the NegativeUNL Ledger Entry
                     BEAST_EXPECT(
-                        observedNunlLedgerEntry[jss::hexCode] == "0x004e");
-                    BEAST_EXPECT(
-                        observedNunlLedgerEntry[jss::sfields].size() == 5);
+                        observedNunlLedgerEntry[jss::sfields].size() == 5 + 3);
 
                     BEAST_EXPECT(
                         observedNunlLedgerEntry[jss::sfields][0u]
