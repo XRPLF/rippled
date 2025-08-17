@@ -247,10 +247,15 @@ getLiquidityForAmounts(
     else
     {
         // Current price is within range
-        STAmount liquidity0 = amount0 * (sqrtPriceBX64 - sqrtPriceX64) /
+        Number liquidity0Num = amount0 * (sqrtPriceBX64 - sqrtPriceX64) /
             (sqrtPriceX64 * (sqrtPriceBX64 - sqrtPriceAX64));
-        STAmount liquidity1 =
+        Number liquidity1Num =
             amount1 * sqrtPriceX64 / (sqrtPriceBX64 - sqrtPriceAX64);
+        
+        // Convert Number back to STAmount using the same asset type
+        STAmount liquidity0(amount0.issue(), liquidity0Num);
+        STAmount liquidity1(amount1.issue(), liquidity1Num);
+        
         return std::min(liquidity0, liquidity1);
     }
 }
@@ -289,15 +294,17 @@ getAmountsForLiquidity(
             return {STAmount{0}, STAmount{0}};
         }
 
-        auto const numerator = liquidity * (sqrtPriceBX64 - sqrtPriceAX64);
-        amount0 = numerator / denominator;
+        Number numerator = liquidity * (sqrtPriceBX64 - sqrtPriceAX64);
+        Number amount0Num = numerator / denominator;
+        amount0 = STAmount(liquidity.issue(), amount0Num);
         amount1 = STAmount{0};
     }
     else if (sqrtPriceX64 >= sqrtPriceBX64)
     {
         // Current price is above range
         amount0 = STAmount{0};
-        amount1 = liquidity * (sqrtPriceBX64 - sqrtPriceAX64);
+        Number amount1Num = liquidity * (sqrtPriceBX64 - sqrtPriceAX64);
+        amount1 = STAmount(liquidity.issue(), amount1Num);
     }
     else
     {
@@ -309,11 +316,12 @@ getAmountsForLiquidity(
             return {STAmount{0}, STAmount{0}};
         }
 
-        auto const numerator0 = liquidity * (sqrtPriceBX64 - sqrtPriceX64);
-        auto const numerator1 = liquidity * (sqrtPriceX64 - sqrtPriceAX64);
+        Number numerator0 = liquidity * (sqrtPriceBX64 - sqrtPriceX64);
+        Number numerator1 = liquidity * (sqrtPriceX64 - sqrtPriceAX64);
 
-        amount0 = numerator0 / denominator;
-        amount1 = numerator1;
+        Number amount0Num = numerator0 / denominator;
+        amount0 = STAmount(liquidity.issue(), amount0Num);
+        amount1 = STAmount(liquidity.issue(), numerator1);
     }
 
     return {amount0, amount1};
