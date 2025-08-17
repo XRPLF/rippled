@@ -202,6 +202,7 @@ JSS(closed_ledger);           // out: NetworkOPs
 JSS(cluster);                 // out: PeerImp
 JSS(code);                    // out: errors
 JSS(command);                 // in: RPCHandler
+JSS(common);                  // out: RPC server_definitions
 JSS(complete);                // out: NetworkOPs, InboundLedger
 JSS(complete_ledgers);        // out: NetworkOPs, PeerImp
 JSS(consensus);               // out: NetworkOPs, LedgerConsensus

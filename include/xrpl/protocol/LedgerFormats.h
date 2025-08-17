@@ -213,6 +213,10 @@ private:
 public:
     static LedgerFormats const&
     getInstance();
+
+    // Fields shared by all txFormats:
+    static std::initializer_list<SOElement> const&
+    getCommonFields();
 };
 
 }  // namespace ripple

@@ -287,12 +287,26 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     // populate TxFormats
     defs_[jss::TRANSACTION_FORMATS] = Json::objectValue;
+
+    defs_[jss::TRANSACTION_FORMATS][jss::common] = Json::arrayValue;
+    auto txCommonFields = std::set<std::string>();
+    for (auto const& element : TxFormats::getCommonFields())
+    {
+        Json::Value elementObj = Json::objectValue;
+        elementObj[jss::name] = element.sField().getName();
+        elementObj[jss::required] = element.style();
+        defs_[jss::TRANSACTION_FORMATS][jss::common].append(elementObj);
+        txCommonFields.insert(element.sField().getName());
+    }
+
     for (auto const& f : TxFormats::getInstance())
     {
         auto const& soTemplate = f.getSOTemplate();
         Json::Value templateArray = Json::arrayValue;
         for (auto const& element : soTemplate)
         {
+            if (txCommonFields.count(element.sField().getName()) > 0)
+                continue;  // skip common fields, already added
             Json::Value elementObj = Json::objectValue;
             elementObj[jss::name] = element.sField().getName();
             elementObj[jss::required] = element.style();
@@ -303,12 +317,24 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     // populate LedgerFormats
     defs_[jss::LEDGER_FORMATS] = Json::objectValue;
+    defs_[jss::LEDGER_FORMATS][jss::common] = Json::arrayValue;
+    auto ledgerCommonFields = std::set<std::string>();
+    for (auto const& element : LedgerFormats::getCommonFields())
+    {
+        Json::Value elementObj = Json::objectValue;
+        elementObj[jss::name] = element.sField().getName();
+        elementObj[jss::required] = element.style();
+        defs_[jss::LEDGER_FORMATS][jss::common].append(elementObj);
+        ledgerCommonFields.insert(element.sField().getName());
+    }
     for (auto const& f : LedgerFormats::getInstance())
     {
         auto const& soTemplate = f.getSOTemplate();
         Json::Value templateArray = Json::arrayValue;
         for (auto const& element : soTemplate)
         {
+            if (ledgerCommonFields.count(element.sField().getName()) > 0)
+                continue;  // skip common fields, already added
             Json::Value elementObj = Json::objectValue;
             elementObj[jss::name] = element.sField().getName();
             elementObj[jss::required] = element.style();
