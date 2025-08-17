@@ -27,14 +27,13 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-
 #include <utility>
 
 namespace ripple {
 
 // Template alias for amount pairs used in AMM operations
 template <typename TIn, typename TOut>
-using TAmounts = std::pair<TIn, TOut>;
+using TAmountPair = std::pair<TIn, TOut>;
 
 class ReadView;
 class ApplyView;
@@ -159,7 +158,7 @@ TOut
 ammSwapAssetIn(
     ReadView const& view,
     uint256 const& ammID,
-    TAmounts<TIn, TOut> const& pool,
+    TAmountPair<TIn, TOut> const& pool,
     TIn const& assetIn,
     std::uint16_t tradingFee,
     beast::Journal const& j);
@@ -169,7 +168,7 @@ TOut
 ammConcentratedLiquiditySwapAssetIn(
     ReadView const& view,
     uint256 const& ammID,
-    TAmounts<TIn, TOut> const& pool,
+    TAmountPair<TIn, TOut> const& pool,
     TIn const& assetIn,
     std::uint16_t tradingFee,
     beast::Journal const& j);
@@ -240,6 +239,18 @@ sqrtPriceX64ToTick(std::uint64_t sqrtPriceX64);
 
 std::uint64_t
 tickToSqrtPriceX64(std::int32_t tick);
+
+// Helper function for calculating fee growth inside a tick range
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityCalculateFeeGrowthInside(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::int32_t currentTick,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    beast::Journal const& j);
 TER
 deleteAMMAccount(
     Sandbox& view,
