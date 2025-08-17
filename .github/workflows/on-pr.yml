@@ -39,4 +39,6 @@ jobs:
           echo 'draft=${{ github.event.pull_request.draft }}'
           echo 'label=${{ github.event.pull_request.label.name }}'
           echo 'labels=${{ toJson(github.event.pull_request.labels) }}'
+          
+          echo 'event=${{ toJson(github.event) }}'
 
