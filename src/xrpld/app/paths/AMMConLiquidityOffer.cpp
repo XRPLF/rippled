@@ -20,7 +20,7 @@
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/paths/AMMConLiquidityOffer.h>
 #include <xrpld/app/paths/AMMConLiquidityPool.h>
-#include <xrpld/app/tx/detail/AccountSend.h>
+
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 
@@ -34,7 +34,7 @@
 namespace ripple {
 
 template <typename TIn, typename TOut>
-using TAmounts = std::pair<TIn, TOut>;
+using TAmountPair = std::pair<TIn, TOut>;
 
 // Sophisticated ratio calculation function for financial precision
 // Handles different amount types (XRPAmount, IOUAmount) with proper rounding
@@ -124,8 +124,8 @@ mulRatio(T const& a, T const& b, T const& c, bool roundUp)
 template <typename TIn, typename TOut>
 AMMConLiquidityOffer<TIn, TOut>::AMMConLiquidityOffer(
     AMMConLiquidityPool<TIn, TOut> const& ammConLiquidity,
-    TAmounts<TIn, TOut> const& amounts,
-    TAmounts<TIn, TOut> const& balances,
+    TAmountPair<TIn, TOut> const& amounts,
+    TAmountPair<TIn, TOut> const& balances,
     Quality const& quality,
     std::uint64_t sqrtPriceX64,
     std::int32_t tickLower,
@@ -166,7 +166,7 @@ template <typename TIn, typename TOut>
 void
 AMMConLiquidityOffer<TIn, TOut>::consume(
     ApplyView& view,
-    TAmounts<TIn, TOut> const& consumed)
+    TAmountPair<TIn, TOut> const& consumed)
 {
     // Mark as consumed to prevent multiple uses in the same iteration
     consumed_ = true;
@@ -223,9 +223,9 @@ AMMConLiquidityOffer<TIn, TOut>::consume(
 }
 
 template <typename TIn, typename TOut>
-TAmounts<TIn, TOut>
+TAmountPair<TIn, TOut>
 AMMConLiquidityOffer<TIn, TOut>::limitOut(
-    TAmounts<TIn, TOut> const& ofrAmt,
+    TAmountPair<TIn, TOut> const& ofrAmt,
     TOut const& limit,
     bool roundUp) const
 {
@@ -242,9 +242,9 @@ AMMConLiquidityOffer<TIn, TOut>::limitOut(
 }
 
 template <typename TIn, typename TOut>
-TAmounts<TIn, TOut>
+TAmountPair<TIn, TOut>
 AMMConLiquidityOffer<TIn, TOut>::limitIn(
-    TAmounts<TIn, TOut> const& ofrAmt,
+    TAmountPair<TIn, TOut> const& ofrAmt,
     TIn const& limit,
     bool roundUp) const
 {
@@ -303,7 +303,7 @@ AMMConLiquidityOffer<TIn, TOut>::send(
 template <typename TIn, typename TOut>
 bool
 AMMConLiquidityOffer<TIn, TOut>::checkInvariant(
-    TAmounts<TIn, TOut> const& amounts,
+    TAmountPair<TIn, TOut> const& amounts,
     beast::Journal j) const
 {
     // Check the concentrated liquidity invariant

@@ -35,7 +35,7 @@
 namespace ripple {
 
 template <typename TIn, typename TOut>
-using TAmounts = std::pair<TIn, TOut>;
+using TAmountPair = std::pair<TIn, TOut>;
 
 // Sophisticated ratio calculation function for financial precision
 // Handles different amount types (XRPAmount, IOUAmount) with proper rounding
@@ -201,7 +201,7 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::revImp(
                 mulRatio(amounts.in, out, amounts.out, true);
 
             // Execute the offer
-            auto const consumed = TAmounts<TIn, TOut>{inputAmount, out};
+            auto const consumed = TAmountPair<TIn, TOut>{inputAmount, out};
             offer->consume(afView, consumed);
 
             return {inputAmount, out};
@@ -235,7 +235,7 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::fwdImp(
                 mulRatio(amounts.out, in, amounts.in, false);
 
             // Execute the offer
-            auto const consumed = TAmounts<TIn, TOut>{in, outputAmount};
+            auto const consumed = TAmountPair<TIn, TOut>{in, outputAmount};
             offer->consume(afView, consumed);
 
             return {in, outputAmount};
@@ -310,8 +310,8 @@ void
 AMMConLiquidityStep<TIn, TOut, TDerived>::consumeOffer(
     PaymentSandbox& sb,
     Offer<TIn, TOut>& offer,
-    TAmounts<TIn, TOut> const& ofrAmt,
-    TAmounts<TIn, TOut> const& stepAmt,
+    TAmountPair<TIn, TOut> const& ofrAmt,
+    TAmountPair<TIn, TOut> const& stepAmt,
     TOut const& ownerGives) const
 {
     // Consume the offer and update the concentrated liquidity positions
@@ -337,13 +337,13 @@ bool
 AMMConLiquidityStep<TIn, TOut, TDerived>::execOffer(
     PaymentSandbox& sb,
     Offer<TIn, TOut>& offer,
-    TAmounts<TIn, TOut> const& ofrAmt,
-    TAmounts<TIn, TOut> const& stepAmt,
+    TAmountPair<TIn, TOut> const& ofrAmt,
+    TAmountPair<TIn, TOut> const& stepAmt,
     TOut const& ownerGives,
     std::function<bool(
         Offer<TIn, TOut>&,
-        TAmounts<TIn, TOut> const&,
-        TAmounts<TIn, TOut> const&,
+        TAmountPair<TIn, TOut> const&,
+        TAmountPair<TIn, TOut> const&,
         TOut const&,
         std::uint32_t,
         std::uint32_t)> const& callback) const

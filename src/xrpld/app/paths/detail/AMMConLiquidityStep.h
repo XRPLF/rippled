@@ -41,7 +41,7 @@
 namespace ripple {
 
 template <typename TIn, typename TOut>
-using TAmounts = std::pair<TIn, TOut>;
+using TAmountPair = std::pair<TIn, TOut>;
 
 template <class TIn, class TOut, class TDerived>
 class AMMConLiquidityStep
@@ -212,8 +212,8 @@ public:
         TOut const& ownerGives,
         std::function<bool(
             Offer<TIn, TOut>&,
-            TAmounts<TIn, TOut> const&,
-            TAmounts<TIn, TOut> const&,
+                TAmountPair<TIn, TOut> const&,
+    TAmountPair<TIn, TOut> const&,
             TOut const&,
             std::uint32_t,
             std::uint32_t)> const& callback) const;

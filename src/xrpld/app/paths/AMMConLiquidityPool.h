@@ -53,11 +53,11 @@ private:
     Issue const issueIn_;
     Issue const issueOut_;
     // Current sqrt price in Q64.64 format
-    std::uint64_t const sqrtPriceX64_;
+    std::uint64_t sqrtPriceX64_;
     // Current tick
-    std::int32_t const currentTick_;
+    std::int32_t currentTick_;
     // Aggregated liquidity from positions within the active range
-    STAmount const aggregatedLiquidity_;
+    STAmount aggregatedLiquidity_;
     beast::Journal const j_;
 
 public:

@@ -1210,7 +1210,7 @@ calculateFeeGrowthForSwap(
         return {STAmount{0}, STAmount{0}};
     }
 
-    if (tradingFee > 10000)  // Max reasonable fee is 1% (10000 basis points)
+    if (tradingFee > 10000)  
     {
         JLOG(j.warn()) << "calculateFeeGrowthForSwap: invalid trading fee: "
                        << tradingFee;

@@ -35,7 +35,7 @@
 namespace ripple {
 
 template <typename TIn, typename TOut>
-using TAmounts = std::pair<TIn, TOut>;
+using TAmountPair = std::pair<TIn, TOut>;
 
 // Helper function for ratio calculations
 template <typename T>
@@ -120,7 +120,7 @@ mulRatio(T const& a, T const& b, T const& c, bool roundUp)
 double
 sqrtPriceX64ToPrice(std::uint64_t sqrtPriceX64)
 {
-    double const sqrtPrice = static_cast<double>(sqrtPriceX64) / (1ULL << 64);
+    double const sqrtPrice = static_cast<double>(sqrtPriceX64) / (1ULL << 63);
     return sqrtPrice * sqrtPrice;
 }
 
@@ -170,7 +170,7 @@ AMMConLiquidityPool<TIn, TOut>::AMMConLiquidityPool(
             sqrtPriceX64_ = ammSle->getFieldU64(sfSqrtPriceX64);
 
         if (ammSle->isFieldPresent(sfCurrentTick))
-            currentTick_ = ammSle->getFieldS32(sfCurrentTick);
+            currentTick_ = ammSle->getFieldU32(sfCurrentTick);
 
         // Get AMM balances using existing AMM patterns
         auto const assetInBalance = ammAccountHolds(view, ammAccountID, in);
@@ -223,7 +223,7 @@ AMMConLiquidityPool<TIn, TOut>::getOffer(
 
     // Use integrated AMM swap calculation that handles both regular and
     // concentrated liquidity
-    auto const ammSle = view.read(keylet::amm(ammAccountID_));
+    auto const ammSle = view.read(keylet::amm(issueIn_, issueOut_));
     if (!ammSle)
     {
         JLOG(j_.warn()) << "AMM not found for swap calculation";
@@ -248,7 +248,7 @@ AMMConLiquidityPool<TIn, TOut>::getOffer(
     auto const outputAmount = ammSwapAssetIn(
         view,
         ammSle->getFieldH256(sfAMMID),
-        TAmounts<TIn, TOut>{amount0, TOut{0}},  // We'll calculate the output
+        TAmountPair<TIn, TOut>{amount0, TOut{0}},  // We'll calculate the output
         amount0,
         actualTradingFee,  // Use the actual fee from the AMM
         j_);
@@ -268,12 +268,12 @@ AMMConLiquidityPool<TIn, TOut>::getOffer(
     TOut outAmount;
 
     if (isXRP(issueIn_))
-        inAmount = amount0.xrp();
+        inAmount = IOUAmount{amount0.mantissa(), amount0.exponent()};
     else
         inAmount = amount0.iou();
 
     if (isXRP(issueOut_))
-        outAmount = amount1.xrp();
+        outAmount = IOUAmount{amount1.mantissa(), amount1.exponent()};
     else
         outAmount = amount1.iou();
 
@@ -334,10 +334,10 @@ AMMConLiquidityPool<TIn, TOut>::calculateQuality(
 {
     // Calculate quality based on the current price
     // Quality is essentially the price ratio
-    auto const price = (static_cast<double>(sqrtPriceX64) / (1ULL << 64)) *
-        (static_cast<double>(sqrtPriceX64) / (1ULL << 64));
+    auto const price = (static_cast<double>(sqrtPriceX64) / (1ULL << 63)) *
+        (static_cast<double>(sqrtPriceX64) / (1ULL << 63));
 
-    return Quality{Number{price}};
+    return Quality{static_cast<std::uint64_t>(price * 1000000)};
 }
 
 template <typename TIn, typename TOut>

@@ -31,7 +31,7 @@
 namespace ripple {
 
 template <typename TIn, typename TOut>
-using TAmounts = std::pair<TIn, TOut>;
+using TAmountPair = std::pair<TIn, TOut>;
 
 template <typename TIn, typename TOut>
 class AMMConLiquidityPool;
