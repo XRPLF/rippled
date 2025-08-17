@@ -535,7 +535,7 @@ ammConcentratedLiquidityFeeGrowth(
     // Calculate fee amount using the same mechanism as regular AMM
     // but applied to the active liquidity only
     auto const feeAmount = mulRatio(
-        amountIn, 
+        XRPAmount{amountIn.drops()}, 
         static_cast<std::uint32_t>(tradingFee), 
         static_cast<std::uint32_t>(1000000), 
         false);
@@ -544,12 +544,12 @@ ammConcentratedLiquidityFeeGrowth(
     auto const feeGrowthDelta = mulRatio(
         feeAmount, 
         static_cast<std::uint32_t>(1), 
-        static_cast<std::uint32_t>(activeLiquidity.getText()), 
+        static_cast<std::uint32_t>(activeLiquidity.drops()), 
         false);
 
     // Determine which asset the fee is in
-    auto const asset0 = ammSle[sfAsset].get<Issue>();
-    auto const asset1 = ammSle[sfAsset2].get<Issue>();
+    auto const asset0 = (*ammSle)[sfAsset].get<Issue>();
+    auto const asset1 = (*ammSle)[sfAsset2].get<Issue>();
 
     if (amountIn.issue() == asset0)
     {
@@ -602,13 +602,13 @@ ammConcentratedLiquidityUpdatePositionFees(
     auto const feeGrowthInside1Delta = feeGrowthInside1 - feeGrowthInside1Last;
 
     auto const feesOwed0 = mulRatio(
-        liquidity, 
-        static_cast<std::uint32_t>(feeGrowthInside0Delta.getText()), 
+        XRPAmount{liquidity.drops()}, 
+        static_cast<std::uint32_t>(feeGrowthInside0Delta.drops()), 
         static_cast<std::uint32_t>(1), 
         false);
     auto const feesOwed1 = mulRatio(
-        liquidity, 
-        static_cast<std::uint32_t>(feeGrowthInside1Delta.getText()), 
+        XRPAmount{liquidity.drops()}, 
+        static_cast<std::uint32_t>(feeGrowthInside1Delta.drops()), 
         static_cast<std::uint32_t>(1), 
         false);
 
@@ -689,13 +689,13 @@ ammConcentratedLiquidityCalculateFeesOwed(
     auto const feeGrowthInside1Delta = feeGrowthInside1 - feeGrowthInside1Last;
 
     auto const feesOwed0 = mulRatio(
-        liquidity, 
-        static_cast<std::uint32_t>(feeGrowthInside0Delta.getText()), 
+        XRPAmount{liquidity.drops()}, 
+        static_cast<std::uint32_t>(feeGrowthInside0Delta.drops()), 
         static_cast<std::uint32_t>(1), 
         false);
     auto const feesOwed1 = mulRatio(
-        liquidity, 
-        static_cast<std::uint32_t>(feeGrowthInside1Delta.getText()), 
+        XRPAmount{liquidity.drops()}, 
+        static_cast<std::uint32_t>(feeGrowthInside1Delta.drops()), 
         static_cast<std::uint32_t>(1), 
         false);
 
@@ -859,7 +859,6 @@ ammConcentratedLiquiditySwapAssetIn(
     }
 
     // Get current tick and sqrt price
-    auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
     auto const sqrtPriceX64 = ammSle->getFieldU64(sfSqrtPriceX64);
 
     // Get active liquidity
@@ -908,7 +907,7 @@ ammConcentratedLiquiditySwapWithTickCrossing(
         return {toAmount<TOut>(getIssue(assetIn), 0), tecINTERNAL};
     }
 
-    auto const currentTick = ammSle->getFieldS32(sfCurrentTick);
+    auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
     auto const sqrtPriceX64 = ammSle->getFieldU64(sfSqrtPriceX64);
     auto const tickSpacing = ammSle->getFieldU16(sfTickSpacing);
 
@@ -1035,7 +1034,7 @@ calculateTargetSqrtPrice(
         return 0;
     }
 
-    if (tradingFee > 1000000)
+    if (tradingFee > 10000)  // Max reasonable fee is 1% (10000 basis points)
     {
         JLOG(j.warn()) << "calculateTargetSqrtPrice: invalid trading fee: "
                        << tradingFee;
@@ -1044,7 +1043,7 @@ calculateTargetSqrtPrice(
 
     // SECURITY: Use safe arithmetic to prevent overflow
     auto const feeMultiplier = 1000000 - tradingFee;
-    auto const inputValue = assetIn.getText();
+    auto const inputValue = assetIn.drops();
 
     // SECURITY: Check for division by zero and overflow
     if (feeMultiplier == 0)
@@ -1113,7 +1112,7 @@ calculateSwapStep(
         return {STAmount{0}, STAmount{0}, currentSqrtPriceX64};
     }
 
-    if (tradingFee > 1000000)
+    if (tradingFee > 10000)  // Max reasonable fee is 1% (10000 basis points)
     {
         JLOG(j.warn()) << "calculateSwapStep: invalid trading fee: "
                        << tradingFee;
@@ -1185,14 +1184,14 @@ calculateOutputForInput(
 
     // SECURITY: Check for overflow in multiplication
     if (deltaSqrtPrice >
-        std::numeric_limits<std::uint64_t>::max() / input.getText())
+        std::numeric_limits<std::uint64_t>::max() / input.drops())
     {
         JLOG(j.warn()) << "calculateOutputForInput: overflow in multiplication";
         return STAmount{std::numeric_limits<std::uint64_t>::max()};
     }
 
     auto const output = input * deltaSqrtPrice / sqrtPriceStartX64;
-    return output;
+    return STAmount{output.drops()};
 }
 
 /** Calculate fee growth for a swap step */
@@ -1219,7 +1218,7 @@ calculateFeeGrowthForSwap(
 
     // SECURITY: Calculate fee amount with bounds checking
     auto const feeAmount = mulRatio(
-        input, 
+        XRPAmount{input.drops()}, 
         static_cast<std::uint32_t>(tradingFee), 
         static_cast<std::uint32_t>(1000000), 
         false);
@@ -1306,7 +1305,7 @@ tickToSqrtPriceX64(std::int32_t tick)
 
     // Convert to Q64.64 format
     auto const sqrtPriceX64 =
-        static_cast<std::uint64_t>(sqrtPrice * (1ULL << 64));
+        static_cast<std::uint64_t>(sqrtPrice * (1ULL << 63));
 
     return sqrtPriceX64;
 }
