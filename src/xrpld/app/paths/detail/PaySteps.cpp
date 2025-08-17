@@ -18,12 +18,14 @@
 //==============================================================================
 
 #include <xrpld/app/paths/detail/Steps.h>
+#include <xrpld/app/paths/detail/AMMConLiquidityStep.h>
 #include <xrpld/ledger/ReadView.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/Feature.h>
 
 #include <algorithm>
 
@@ -121,6 +123,25 @@ toStep(
 
     XRPL_ASSERT(e2->isOffer(), "ripple::toStep : is offer");
 
+    // Check if concentrated liquidity is available and enabled
+    if (ctx.view.rules().enabled(featureAMMConcentratedLiquidity))
+    {
+        // Check if there's an AMM with concentrated liquidity for this asset pair
+        if (auto const ammSle = ctx.view.read(keylet::amm(curIssue, {outCurrency, outIssuer}));
+            ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::zero)
+        {
+            // Use concentrated liquidity step if available
+            if (isXRP(outCurrency))
+                return make_AMMConLiquidityStepIX(ctx, curIssue);
+            
+            if (isXRP(curIssue.currency))
+                return make_AMMConLiquidityStepXI(ctx, {outCurrency, outIssuer});
+            
+            return make_AMMConLiquidityStepII(ctx, curIssue, {outCurrency, outIssuer});
+        }
+    }
+
+    // Fall back to regular book steps
     if (isXRP(outCurrency))
         return make_BookStepIX(ctx, curIssue);
 

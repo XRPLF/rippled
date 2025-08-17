@@ -616,6 +616,15 @@ JSS(total_bytes_recv);        // out: Peers
 JSS(total_bytes_sent);        // out: Peers
 JSS(total_coins);             // out: LedgerToJson
 JSS(trading_fee);             // out: amm_info
+JSS(fee_growth_inside_0_last_x128);  // out: amm_info
+JSS(fee_growth_inside_1_last_x128);  // out: amm_info
+JSS(position_nonce);          // in: amm_info
+JSS(include_concentrated_liquidity); // in: amm_info
+JSS(concentrated_liquidity);  // out: amm_info
+JSS(current_tick);            // out: amm_info
+JSS(sqrt_price_x64);          // out: amm_info
+JSS(positions);               // out: amm_info
+JSS(tick_index);              // out: amm_info
 JSS(transTreeHash);           // out: ledger/Ledger.cpp
 JSS(transaction);             // in: Tx
                               // out: NetworkOPs, AcceptedLedgerTx,

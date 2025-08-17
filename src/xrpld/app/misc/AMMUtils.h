@@ -98,6 +98,142 @@ ammAccountHolds(
 /** Delete trustlines to AMM. If all trustlines are deleted then
  * AMM object and account are deleted. Otherwise tecIMPCOMPLETE is returned.
  */
+
+// Concentrated Liquidity Fee Functions
+
+/** Calculate fee growth for concentrated liquidity positions.
+ */
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityFeeGrowth(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t currentTick,
+    STAmount const& amountIn,
+    STAmount const& amountOut,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+/** Update fee growth for a concentrated liquidity position.
+ */
+TER
+ammConcentratedLiquidityUpdatePositionFees(
+    ApplyView& view,
+    Keylet const& positionKey,
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::int32_t currentTick,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    beast::Journal const& j);
+
+/** Calculate fees owed to a concentrated liquidity position.
+ */
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityCalculateFeesOwed(
+    ReadView const& view,
+    Keylet const& positionKey,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    beast::Journal const& j);
+
+/** Update tick fee growth for concentrated liquidity.
+ */
+TER
+ammConcentratedLiquidityUpdateTickFeeGrowth(
+    ApplyView& view,
+    std::int32_t tick,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    bool isAboveCurrentTick,
+    beast::Journal const& j);
+
+// Integrated AMM swap functions
+template <typename TIn, typename TOut>
+TOut
+ammSwapAssetIn(
+    ReadView const& view,
+    uint256 const& ammID,
+    TAmounts<TIn, TOut> const& pool,
+    TIn const& assetIn,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+template <typename TIn, typename TOut>
+TOut
+ammConcentratedLiquiditySwapAssetIn(
+    ReadView const& view,
+    uint256 const& ammID,
+    TAmounts<TIn, TOut> const& pool,
+    TIn const& assetIn,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+// Tick crossing functions
+template <typename TIn, typename TOut>
+std::pair<TOut, TER>
+ammConcentratedLiquiditySwapWithTickCrossing(
+    ApplyView& view,
+    uint256 const& ammID,
+    TIn const& assetIn,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+std::uint64_t
+calculateTargetSqrtPrice(
+    std::uint64_t currentSqrtPriceX64,
+    STAmount const& assetIn,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+std::int32_t
+findNextInitializedTick(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t currentTick,
+    bool ascending,
+    beast::Journal const& j);
+
+std::tuple<STAmount, STAmount, std::uint64_t>
+calculateSwapStep(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t currentTick,
+    std::uint64_t currentSqrtPriceX64,
+    std::int32_t nextTick,
+    STAmount const& maxInput,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+STAmount
+calculateOutputForInput(
+    std::uint64_t sqrtPriceStartX64,
+    std::uint64_t sqrtPriceEndX64,
+    STAmount const& input,
+    beast::Journal const& j);
+
+std::pair<STAmount, STAmount>
+calculateFeeGrowthForSwap(
+    STAmount const& input,
+    STAmount const& output,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+TER
+crossTick(
+    ApplyView& view,
+    uint256 const& ammID,
+    std::int32_t tick,
+    std::uint64_t newSqrtPriceX64,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    beast::Journal const& j);
+
+// Helper functions for price conversion
+std::int32_t
+sqrtPriceX64ToTick(std::uint64_t sqrtPriceX64);
+
+std::uint64_t
+tickToSqrtPriceX64(std::int32_t tick);
 TER
 deleteAMMAccount(
     Sandbox& view,

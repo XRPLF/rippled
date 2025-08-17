@@ -519,6 +519,27 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback, Delegation::delegatable, ({
     {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
 
+/** This transaction creates concentrated liquidity positions */
+TRANSACTION(ttAMM_CONCENTRATED_CREATE, 41, AMMConcentratedCreate, Delegation::delegatable, ({
+    sfAmount, sfAmount2, sfTradingFee, sfAsset, sfAsset2,
+    sfTickLower, sfTickUpper, sfLiquidity, sfTickSpacing
+}))
+
+TRANSACTION(ttAMM_CONCENTRATED_DEPOSIT, 42, AMMConcentratedDeposit, Delegation::delegatable, ({
+    sfAsset, sfAsset2, sfTickLower, sfTickUpper, sfLiquidity,
+    sfAmount0Max, sfAmount1Max, sfLiquidityMin
+}))
+
+TRANSACTION(ttAMM_CONCENTRATED_WITHDRAW, 43, AMMConcentratedWithdraw, Delegation::delegatable, ({
+    sfAsset, sfAsset2, sfTickLower, sfTickUpper, sfLiquidity,
+    sfAmount0Min, sfAmount1Min, sfCollectFees
+}))
+
+TRANSACTION(ttAMM_CONCENTRATED_COLLECT, 44, AMMConcentratedCollect, Delegation::delegatable, ({
+    sfAsset, sfAsset2, sfTickLower, sfTickUpper, sfPositionNonce,
+    sfAmount0Max, sfAmount1Max
+}))
+
 /** This transaction type batches together transactions. */
 TRANSACTION(ttBATCH, 71, Batch, Delegation::notDelegatable, ({
     {sfRawTransactions, soeREQUIRED},

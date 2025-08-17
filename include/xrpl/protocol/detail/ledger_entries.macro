@@ -396,6 +396,40 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
     {sfPreviousTxnLgrSeq,    soeOPTIONAL},
 }))
 
+/** A ledger object which tracks concentrated liquidity positions.
+   \sa keylet::concentratedLiquidityPosition
+*/
+LEDGER_ENTRY(ltCONCENTRATED_LIQUIDITY_POSITION, 0x0084, ConcentratedLiquidityPosition, concentrated_liquidity_position, ({
+    {sfAccount,                      soeREQUIRED},
+    {sfAMMID,                        soeREQUIRED},
+    {sfTickLower,                    soeREQUIRED},
+    {sfTickUpper,                    soeREQUIRED},
+    {sfLiquidity,                    soeREQUIRED},
+    {sfFeeGrowthInside0LastX128,     soeREQUIRED},
+    {sfFeeGrowthInside1LastX128,     soeREQUIRED},
+    {sfTokensOwed0,                  soeREQUIRED},
+    {sfTokensOwed1,                  soeREQUIRED},
+    {sfPositionNonce,                soeREQUIRED},
+    {sfOwnerNode,                    soeREQUIRED},
+    {sfPreviousTxnID,                soeREQUIRED},
+    {sfPreviousTxnLgrSeq,            soeREQUIRED},
+}))
+
+/** A ledger object which tracks concentrated liquidity ticks.
+   \sa keylet::concentratedLiquidityTick
+*/
+LEDGER_ENTRY(ltCONCENTRATED_LIQUIDITY_TICK, 0x0085, ConcentratedLiquidityTick, concentrated_liquidity_tick, ({
+    {sfAMMID,                        soeREQUIRED},
+    {sfTickIndex,                    soeREQUIRED},
+    {sfLiquidityGross,               soeREQUIRED},
+    {sfLiquidityNet,                 soeREQUIRED},
+    {sfFeeGrowthOutside0X128,        soeREQUIRED},
+    {sfFeeGrowthOutside1X128,        soeREQUIRED},
+    {sfTickInitialized,              soeREQUIRED},
+    {sfPreviousTxnID,                soeREQUIRED},
+    {sfPreviousTxnLgrSeq,            soeREQUIRED},
+}))
+
 /** A ledger object which tracks MPTokenIssuance
     \sa keylet::mptIssuance
  */

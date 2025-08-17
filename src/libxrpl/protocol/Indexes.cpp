@@ -96,6 +96,8 @@ enum class LedgerNameSpace : std::uint16_t {
     PERMISSIONED_DOMAIN = 'm',
     DELEGATE = 'E',
     VAULT = 'V',
+    CONCENTRATED_LIQUIDITY_POSITION = 'L',
+    CONCENTRATED_LIQUIDITY_TICK = 'K',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -547,6 +549,31 @@ mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept
 {
     return {
         ltMPTOKEN, indexHash(LedgerNameSpace::MPTOKEN, issuanceKey, holder)};
+}
+
+Keylet
+concentratedLiquidityPosition(
+    AccountID const& owner,
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::uint32_t nonce) noexcept
+{
+    return {
+        ltCONCENTRATED_LIQUIDITY_POSITION,
+        indexHash(
+            LedgerNameSpace::CONCENTRATED_LIQUIDITY_POSITION,
+            owner,
+            tickLower,
+            tickUpper,
+            nonce)};
+}
+
+Keylet
+concentratedLiquidityTick(uint256 const& ammID, std::int32_t tickIndex) noexcept
+{
+    return {
+        ltCONCENTRATED_LIQUIDITY_TICK,
+        indexHash(LedgerNameSpace::CONCENTRATED_LIQUIDITY_TICK, ammID, tickIndex)};
 }
 
 Keylet

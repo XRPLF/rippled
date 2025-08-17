@@ -148,8 +148,9 @@ STLedgerEntry::getJson(JsonOptions options) const
 bool
 STLedgerEntry::isThreadedType(Rules const& rules) const
 {
-    static constexpr std::array<LedgerEntryType, 5> newPreviousTxnIDTypes = {
-        ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM};
+    static constexpr std::array<LedgerEntryType, 7> newPreviousTxnIDTypes = {
+        ltDIR_NODE, ltAMENDMENTS, ltFEE_SETTINGS, ltNEGATIVE_UNL, ltAMM, 
+        ltCONCENTRATED_LIQUIDITY_POSITION, ltCONCENTRATED_LIQUIDITY_TICK};
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
     bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
