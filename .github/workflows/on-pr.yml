@@ -1,0 +1,42 @@
+name: PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - labeled
+      - unlabeled
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-1:
+    if: >-
+      ${{
+        (github.event.pull_request.action == 'opened' && !github.event.pull_request.draft) ||
+        (github.event.pull_request.action == 'synchronize' && (!github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI'))) ||
+        (github.event.pull_request.action == 'labeled' && github.event.pull_request.draft && github.event.pull_request.label.name == 'DraftRunCI') ||
+        (github.event.pull_request.action == 'unlabeled' && !github.event.pull_request.draft && github.event.pull_request.label.name == 'DraftRunCI')
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op
+        run: echo ''
+
+  test-2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo
+        run: |
+          echo 'action=${{ github.event.pull_request.action }}'
+          echo 'draft=${{ github.event.pull_request.draft }}'
+          echo 'label=${{ github.event.pull_request.label.name }}'
+          echo 'labels=${{ toJson(github.event.pull_request.labels) }}'
+
