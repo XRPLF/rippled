@@ -128,6 +128,7 @@ transResults()
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
         MAKE_ERROR(tecPRECISION_LOSS,                "The amounts used by the transaction cannot interact."),
         MAKE_ERROR(tecNO_DELEGATE_PERMISSION,        "Delegated account lacks permission to perform this transaction."),
+        MAKE_ERROR(tecFIREWALL_BLOCK,                "Transaction was blocked by firewall."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

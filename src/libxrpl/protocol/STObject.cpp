@@ -38,6 +38,7 @@
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STData.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
@@ -653,6 +654,13 @@ STObject::getAccountID(SField const& field) const
     return getFieldByValue<STAccount>(field);
 }
 
+STData
+STObject::getFieldData(SField const& field) const
+{
+    static STData const empty{field};
+    return getFieldByConstRef<STData>(field, empty);
+}
+
 Blob
 STObject::getFieldVL(SField const& field) const
 {
@@ -771,6 +779,12 @@ void
 STObject::setAccountID(SField const& field, AccountID const& v)
 {
     setFieldUsingSetValue<STAccount>(field, v);
+}
+
+void
+STObject::setFieldData(SField const& field, STData const& v)
+{
+    setFieldUsingAssignment(field, v);
 }
 
 void

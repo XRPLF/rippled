@@ -543,6 +543,8 @@ LedgerEntryTypesMatch::visitEntry(
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
             case ltVAULT:
+            case ltFIREWALL:
+            case ltWITHDRAW_PREAUTH:
                 break;
             default:
                 invalidTypeAdded_ = true;

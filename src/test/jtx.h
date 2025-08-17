@@ -42,6 +42,7 @@
 #include <test/jtx/domain.h>
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/firewall.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/invoice_id.h>
 #include <test/jtx/jtx_json.h>

@@ -172,6 +172,26 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookDirectory, soeREQUIRED},
             {sfBookNode, soeREQUIRED},
         });
+
+    add(sfFirewallRule.jsonName.c_str(),
+        sfFirewallRule.getCode(),
+        {
+            {sfLedgerEntryType, soeREQUIRED},
+            {sfFieldCode, soeREQUIRED},
+            {sfComparisonOperator, soeREQUIRED},
+            {sfFirewallValue, soeREQUIRED},
+            {sfTimePeriod, soeOPTIONAL},
+            {sfTimeStart, soeOPTIONAL},
+            {sfTimeValue, soeOPTIONAL},
+        });
+
+    add(sfFirewallSigner.jsonName.c_str(),
+        sfFirewallSigner.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfSigningPubKey, soeREQUIRED},
+            {sfTxnSignature, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

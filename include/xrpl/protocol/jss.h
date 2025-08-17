@@ -64,6 +64,8 @@ JSS(DeliverMin);           // in: TransactionSign
 JSS(Destination);          // in: TransactionSign; field.
 JSS(EPrice);               // in: AMM Deposit option
 JSS(Fee);                  // in/out: TransactionSign; field.
+JSS(FirewallRules);        // field.
+JSS(FirewallRule);         // field.
 JSS(Flags);                // in/out: TransactionSign; field.
 JSS(Holder);               // field.
 JSS(Invalid);              //

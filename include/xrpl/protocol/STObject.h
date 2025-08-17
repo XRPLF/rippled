@@ -233,6 +233,8 @@ public:
     getFieldH256(SField const& field) const;
     AccountID
     getAccountID(SField const& field) const;
+    STData
+    getFieldData(SField const& field) const;
 
     Blob
     getFieldVL(SField const& field) const;
@@ -371,7 +373,8 @@ public:
 
     void
     setAccountID(SField const& field, AccountID const&);
-
+    void
+    setFieldData(SField const& field, STData const&);
     void
     setFieldAmount(SField const& field, STAmount const&);
     void

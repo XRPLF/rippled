@@ -1,0 +1,35 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2025 Ripple Labs Inc.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#if !defined(FIREWALL_ENTRY)
+#error "undefined macro: FIREWALL_ENTRY"
+#endif
+
+/**
+ * FIREWALL_ENTRY(name, ledgerType, fields, value)
+ *
+ * This macro defines a firewall registration:
+ * name: the name of the firewall handler.
+ * ledgerType: the LedgerEntryType this firewall handles.
+ * fields: array of SField types this firewall monitors.
+ * value: the uint32 numeric value for the firewall type.
+ */
+
+/** This firewall checks account root modifications for balance and sequence limits. */
+FIREWALL_ENTRY(AccountRootFirewall, ltACCOUNT_ROOT, {&sfBalance}, 1)

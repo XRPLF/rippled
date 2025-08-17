@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/FirewallCheck.h>
 #include <xrpld/app/tx/detail/InvariantCheck.h>
 
 #include <xrpl/basics/Log.h>
@@ -158,6 +159,80 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
         result,
         fee,
         std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
+}
+
+TER
+ApplyContext::failFirewallCheck(TER const result)
+{
+    return TER{tecFIREWALL_BLOCK};
+}
+
+template <std::size_t... Is>
+TER
+ApplyContext::checkFirewallsHelper(
+    TER const result,
+    XRPAmount const fee,
+    std::index_sequence<Is...>)
+{
+    try
+    {
+        auto checkers = getFirewallChecks();
+
+        // call each check's per-entry method
+        visit([&checkers](
+                  uint256 const& index,
+                  bool isDelete,
+                  std::shared_ptr<SLE const> const& before,
+                  std::shared_ptr<SLE const> const& after) {
+            (..., std::get<Is>(checkers).visitEntry(isDelete, before, after));
+        });
+
+        // Note: do not replace this logic with a `...&&` fold expression.
+        // The fold expression will only run until the first check fails (it
+        // short-circuits). While the logic is still correct, the log
+        // message won't be. Every failed firewall should write to the log,
+        // not just the first one.
+        std::array<bool, sizeof...(Is)> finalizers{
+            {std::get<Is>(checkers).finalize(
+                tx, result, fee, *view_, journal)...}};
+
+        // call each check's finalizer to see that it passes
+        if (!std::all_of(
+                finalizers.cbegin(), finalizers.cend(), [](auto const& b) {
+                    return b;
+                }))
+        {
+            JLOG(journal.debug())
+                << "Transaction has failed one or more firewalls: "
+                << to_string(tx.getJson(JsonOptions::none));
+
+            return failFirewallCheck(result);
+        }
+    }
+    catch (std::exception const& ex)
+    {
+        JLOG(journal.debug())
+            << "Transaction caused an exception in an firewall"
+            << ", ex: " << ex.what()
+            << ", tx: " << to_string(tx.getJson(JsonOptions::none));
+
+        return failFirewallCheck(result);
+    }
+
+    return result;
+}
+
+TER
+ApplyContext::checkFirewalls(TER const result, XRPAmount const fee)
+{
+    XRPL_ASSERT(
+        isTesSuccess(result) || isTecClaim(result),
+        "ripple::ApplyContext::checkFirewalls : is tesSUCCESS or tecCLAIM");
+
+    return checkFirewallsHelper(
+        result,
+        fee,
+        std::make_index_sequence<std::tuple_size<FirewallChecks>::value>{});
 }
 
 }  // namespace ripple

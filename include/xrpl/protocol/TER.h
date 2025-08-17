@@ -362,6 +362,7 @@ enum TECcodes : TERUnderlyingType {
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
     tecNO_DELEGATE_PERMISSION = 198,
+    tecFIREWALL_BLOCK = 199,
 };
 
 //------------------------------------------------------------------------------

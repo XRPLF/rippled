@@ -42,6 +42,7 @@
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/Escrow.h>
+#include <xrpld/app/tx/detail/Firewall.h>
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
@@ -68,6 +69,7 @@
 #include <xrpld/app/tx/detail/VaultDeposit.h>
 #include <xrpld/app/tx/detail/VaultSet.h>
 #include <xrpld/app/tx/detail/VaultWithdraw.h>
+#include <xrpld/app/tx/detail/WithdrawPreauth.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
 
 #include <xrpl/protocol/TxFormats.h>

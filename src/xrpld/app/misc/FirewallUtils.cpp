@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,46 +17,42 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/SOTemplate.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpld/app/misc/FirewallUtils.h>
 
-#include <initializer_list>
+#include <xrpl/protocol/TER.h>
+
+#include <unordered_set>
 
 namespace ripple {
 
-LedgerFormats::LedgerFormats()
+bool
+hasFirewallProtection(LedgerEntryType const& type)
 {
-    // Fields shared by all ledger formats:
-    static std::initializer_list<SOElement> const commonFields{
-        {sfLedgerIndex, soeOPTIONAL},
-        {sfLedgerEntryType, soeREQUIRED},
-        {sfFlags, soeREQUIRED},
-    };
-
-#pragma push_macro("UNWRAP")
-#undef UNWRAP
-#pragma push_macro("LEDGER_ENTRY")
-#undef LEDGER_ENTRY
-
-#define UNWRAP(...) __VA_ARGS__
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
-    add(jss::name, tag, UNWRAP fields, commonFields);
-
-#include <xrpl/protocol/detail/ledger_entries.macro>
-
-#undef LEDGER_ENTRY
-#pragma pop_macro("LEDGER_ENTRY")
-#undef UNWRAP
-#pragma pop_macro("UNWRAP")
+    return Firewall::getInstance().hasFirewall(type);
 }
 
-LedgerFormats const&
-LedgerFormats::getInstance()
+std::vector<SField const*>
+getProtectedFields(LedgerEntryType const& type)
 {
-    static LedgerFormats instance;
-    return instance;
+    return Firewall::getInstance().getFieldsForLedgerType(type);
+}
+
+bool
+isFieldProtected(LedgerEntryType const& type, SField const& field)
+{
+    return Firewall::getInstance().handlesField(type, field);
+}
+
+std::vector<STObject>
+getFirewallRules(STArray const& rules, LedgerEntryType const& type)
+{
+    std::vector<STObject> matchingRules;
+    for (auto const& rule : rules)
+    {
+        if (rule.getFieldU16(sfLedgerEntryType) == type)
+            matchingRules.push_back(rule);
+    }
+    return matchingRules;
 }
 
 }  // namespace ripple
