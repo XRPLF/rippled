@@ -549,7 +549,7 @@ ammConcentratedLiquidityFeeGrowth(
 
     // Determine which asset the fee is in
     auto const asset0 = (*ammSle)[sfAsset].get<Issue>();
-    auto const asset1 = (*ammSle)[sfAsset2].get<Issue>();
+    // auto const asset1 = (*ammSle)[sfAsset2].get<Issue>();  // Unused for now
 
     if (amountIn.issue() == asset0)
     {
@@ -1191,7 +1191,7 @@ calculateOutputForInput(
     }
 
     auto const output = input * deltaSqrtPrice / sqrtPriceStartX64;
-    return output;
+    return STAmount{input.issue(), output};
 }
 
 /** Calculate fee growth for a swap step */
@@ -1283,44 +1283,75 @@ crossTick(
     newTickSle->setFieldAmount(sfFeeGrowthOutside1X128, feeGrowthOutside1);
     view.update(newTickSle);
 
+    // Get the net liquidity delta for this tick
+    auto const liquidityNet = newTickSle->getFieldAmount(sfLiquidityNet);
+    
     // Update all positions that have this tick as a boundary
-    auto const positionRoot = keylet::child(ammID);
-    auto const positions = view.getDirty(positionRoot);
-
-    for (auto const& position : positions)
+    // We need to iterate through all positions and update those that are affected
+    auto const positionsKey = keylet::ammPositions(ammID);
+    auto const positionsSle = view.read(positionsKey);
+    
+    if (positionsSle && positionsSle->isFieldPresent(sfPositions))
     {
-        auto const positionSle = view.read(keylet::child(position));
-        if (!positionSle)
-            continue;
-
-        // Check if this position uses the crossed tick as a boundary
-        auto const tickLower = positionSle->getFieldU32(sfTickLower);
-        auto const tickUpper = positionSle->getFieldU32(sfTickUpper);
-
-        if (tick != tickLower && tick != tickUpper)
-            continue;
-
-        // Update position fees
-        auto const ter = ammConcentratedLiquidityUpdatePositionFees(
-            view,
-            keylet::child(position),
-            tickLower,
-            tickUpper,
-            tick,
-            feeGrowthGlobal0,
-            feeGrowthGlobal1,
-            j);
-
-        if (ter != tesSUCCESS)
+        auto const& positions = positionsSle->getFieldArray(sfPositions);
+        
+        for (auto const& positionObj : positions)
         {
-            JLOG(j.warn()) << "Failed to update position fees when crossing tick";
-            return ter;
+            auto const positionID = positionObj.getFieldH256(sfPositionID);
+            auto const positionKey = keylet::ammPosition(ammID, positionID);
+            auto const positionSle = view.read(positionKey);
+            
+            if (!positionSle)
+                continue;
+                
+            auto const tickLower = positionSle->getFieldU32(sfTickLower);
+            auto const tickUpper = positionSle->getFieldU32(sfTickUpper);
+            
+            // Check if this position is affected by the tick crossing
+            if (tick == tickLower || tick == tickUpper)
+            {
+                // Update position fees
+                auto const currentTick = ammSle->getFieldU32(sfCurrentTick);
+                auto const ter = ammConcentratedLiquidityUpdatePositionFees(
+                    view,
+                    positionKey,
+                    tickLower,
+                    tickUpper,
+                    currentTick,
+                    feeGrowthGlobal0,
+                    feeGrowthGlobal1,
+                    j);
+                    
+                if (ter != tesSUCCESS)
+                {
+                    JLOG(j.warn()) << "Failed to update position fees during tick crossing: " << ter;
+                    return ter;
+                }
+                
+                JLOG(j.debug()) << "Updated position " << positionID 
+                               << " fees during tick " << tick << " crossing";
+            }
         }
     }
+    
+    // Update the AMM's active liquidity based on the liquidity delta
+    auto const currentActiveLiquidity = ammSle->isFieldPresent(sfAggregatedLiquidity)
+        ? ammSle->getFieldAmount(sfAggregatedLiquidity)
+        : ammSle->getFieldAmount(sfLPTokenBalance);
+        
+    auto const newActiveLiquidity = currentActiveLiquidity + liquidityNet;
+    
+    // Update AMM with new active liquidity
+    auto const newAmmSle = std::make_shared<SLE>(*ammSle);
+    if (newAmmSle->isFieldPresent(sfAggregatedLiquidity))
+    {
+        newAmmSle->setFieldAmount(sfAggregatedLiquidity, newActiveLiquidity);
+    }
+    view.update(newAmmSle);
 
     JLOG(j.debug()) << "Crossed tick " << tick << " at price " 
-                    << newSqrtPriceX64 << " with " << positions.size() 
-                    << " positions updated";
+                    << newSqrtPriceX64 << ", liquidity delta: " << liquidityNet
+                    << ", new active liquidity: " << newActiveLiquidity;
 
     return tesSUCCESS;
 }
