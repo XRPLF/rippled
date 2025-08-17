@@ -28,7 +28,13 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include <utility>
+
 namespace ripple {
+
+// Template alias for amount pairs used in AMM operations
+template <typename TIn, typename TOut>
+using TAmounts = std::pair<TIn, TOut>;
 
 class ReadView;
 class ApplyView;
