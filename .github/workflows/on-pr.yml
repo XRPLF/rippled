@@ -50,25 +50,24 @@ env:
 jobs:
   # This job works around the limitation that GitHub Actions does not support
   # using environment variables as inputs for reusable workflows. It also
-  # determines whether the workflow should run.
+  # determines whether the workflow should run:
+  # * When opened as a non-draft PR.
+  # * When a commit is added to a non-draft PR or the PR has the 'DraftRunCI'
+  #   label.
+  # * When a draft PR has the 'DraftRunCI' label added.
+  # * When a non-draft PR has the 'DraftRunCI' label removed.
+  # These checks are in part to ensure the workflow won't run needlessly while
+  # also allowing it to be triggered without having to add a no-op commit. A new
+  # workflow execution can be triggered by removing and then adding the label on
+  # a non-draft PR, or conversely by removing it and then adding it back on a
+  # draft PR; this can be useful in certain cases.
   generate-outputs:
-    # This job will run:
-    # * When opened as a non-draft PR.
-    # * When a commit is added to a non-draft PR or the PR has the 'DraftRunCI'
-    #   label.
-    # * When a draft PR has the 'DraftRunCI' label added.
-    # * When a non-draft PR has the 'DraftRunCI' label removed.
-    # The checks are in part to ensure the workflow won't run needlessly while
-    # also allowing it to be triggered without having to add a no-op commit. A
-    # new workflow execution can be triggered by removing and then adding the
-    # 'DraftRunCI' label on a non-draft PR, or conversely by removing it and
-    # then adding it back on a draft PR; this can be useful in certain cases.
     if: >-
       ${{
-        (github.event.pull_request.action == 'opened' && !github.event.pull_request.draft) ||
-        (github.event.pull_request.action == 'synchronize' && (!github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI'))) ||
-        (github.event.pull_request.action == 'labeled' && github.event.pull_request.draft && github.event.pull_request.label.name == 'DraftRunCI') ||
-        (github.event.pull_request.action == 'unlabeled' && !github.event.pull_request.draft && github.event.pull_request.label.name == 'DraftRunCI')
+        (github.event.action == 'opened' && !github.event.pull_request.draft) ||
+        (github.event.action == 'synchronize' && (!github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI'))) ||
+        (github.event.action == 'labeled' && github.event.pull_request.draft && github.event.label.name == 'DraftRunCI') ||
+        (github.event.action == 'unlabeled' && !github.event.pull_request.draft && github.event.label.name == 'DraftRunCI')
       }}
     runs-on: ubuntu-latest
     steps:
