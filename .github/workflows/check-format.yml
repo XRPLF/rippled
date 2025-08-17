@@ -5,7 +5,7 @@ name: Check format
 on: workflow_call
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-clang-format
+  group: ${{ github.workflow }}-${{ github.ref }}-format
   cancel-in-progress: true
 
 defaults:

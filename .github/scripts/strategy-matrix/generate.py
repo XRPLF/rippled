@@ -28,14 +28,15 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         # Only generate a subset of configurations in PRs.
         if not all:
             # Debian:
-            # - Bookworm using GCC 12: Debug and Unity on linux/amd64, enable
-            #   code coverage.
             # - Bookworm using GCC 13: Release and Unity on linux/arm64, set
             #   the reference fee to 500.
+            # - Bookworm using GCC 15: Debug and no Unity on linux/amd64, enable
+            #   code coverage.
             # - Bookworm using Clang 16: Debug and no Unity on linux/arm64,
             #   enable voidstar.
             # - Bookworm using Clang 17: Release and no Unity on linux/amd64,
             #   set the reference fee to 1000.
+            # - Bookworm using Clang 20: Debug and Unity on linux/amd64.
             if os['distro_name'] == 'debian':
                 skip = True
                 if os['distro_version'] == 'bookworm':

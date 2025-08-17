@@ -5,12 +5,7 @@
 name: PR
 
 on:
-  push:
-    branches-ignore:
-      - develop
-      - release
-      - master
-      - gh-pages
+  pull_request:
     paths:
       - '.github/actions/build-deps/**'
       - '.github/actions/build-test/**'
@@ -34,6 +29,11 @@ on:
       - '.pre-commit-config.yaml'
       - 'CMakeLists.txt'
       - 'conanfile.py'
+  types:
+    - opened
+    - synchronize
+    - labeled
+    - unlabeled
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -48,17 +48,28 @@ env:
   CONAN_REMOTE_URL: https://conan.ripplex.io
 
 jobs:
-  check-clang-format:
-    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    uses: ./.github/workflows/check-format.yml
-
-  check-levelization:
-    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    uses: ./.github/workflows/check-levelization.yml
-
   # This job works around the limitation that GitHub Actions does not support
-  # using environment variables as inputs for reusable workflows.
+  # using environment variables as inputs for reusable workflows. It also
+  # determines whether the workflow should run.
   generate-outputs:
+    # This job will run:
+    # * When opened as a non-draft PR.
+    # * When a commit is added to a non-draft PR or the PR has the 'DraftRunCI'
+    #   label.
+    # * When a draft PR has the 'DraftRunCI' label added.
+    # * When a non-draft PR has the 'DraftRunCI' label removed.
+    # The checks are in part to ensure the workflow won't run needlessly while
+    # also allowing it to be triggered without having to add a no-op commit. A
+    # new workflow execution can be triggered by removing and then adding the
+    # 'DraftRunCI' label on a non-draft PR, or conversely by removing it and
+    # then adding it back on a draft PR; this can be useful in certain cases.
+    if: >-
+      ${{
+        (github.event.pull_request.action == 'opened' && !github.event.pull_request.draft) ||
+        (github.event.pull_request.action == 'synchronize' && (!github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI'))) ||
+        (github.event.pull_request.action == 'labeled' && github.event.pull_request.draft && github.event.pull_request.label.name == 'DraftRunCI') ||
+        (github.event.pull_request.action == 'unlabeled' && !github.event.pull_request.draft && github.event.pull_request.label.name == 'DraftRunCI')
+      }}
     runs-on: ubuntu-latest
     steps:
       - name: No-op
@@ -67,9 +78,16 @@ jobs:
       conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
 
+  check-clang-format:
+    needs: generate-outputs
+    uses: ./.github/workflows/check-format.yml
+
+  check-levelization:
+    needs: generate-outputs
+    uses: ./.github/workflows/check-levelization.yml
+
   build-linux:
     needs: generate-outputs
-    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-test.yml
     with:
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
@@ -80,7 +98,6 @@ jobs:
 
   build-macos:
     needs: generate-outputs
-    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-test.yml
     with:
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
@@ -89,7 +106,6 @@ jobs:
 
   build-windows:
     needs: generate-outputs
-    if: ${{ github.event.pull_request.draft == false || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     uses: ./.github/workflows/build-test.yml
     with:
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
