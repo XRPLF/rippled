@@ -521,23 +521,50 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback, Delegation::delegatable, ({
 
 /** This transaction creates concentrated liquidity positions */
 TRANSACTION(ttAMM_CONCENTRATED_CREATE, 41, AMMConcentratedCreate, Delegation::delegatable, ({
-    sfAmount, sfAmount2, sfTradingFee, sfAsset, sfAsset2,
-    sfTickLower, sfTickUpper, sfLiquidity, sfTickSpacing
+    {sfAmount, soeREQUIRED},
+    {sfAmount2, soeREQUIRED},
+    {sfTradingFee, soeREQUIRED},
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfTickLower, soeREQUIRED},
+    {sfTickUpper, soeREQUIRED},
+    {sfLiquidity, soeREQUIRED},
+    {sfTickSpacing, soeREQUIRED}
 }))
 
+/** This transaction deposits liquidity into concentrated liquidity positions */
 TRANSACTION(ttAMM_CONCENTRATED_DEPOSIT, 42, AMMConcentratedDeposit, Delegation::delegatable, ({
-    sfAsset, sfAsset2, sfTickLower, sfTickUpper, sfLiquidity,
-    sfAmount0Max, sfAmount1Max, sfLiquidityMin
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfTickLower, soeREQUIRED},
+    {sfTickUpper, soeREQUIRED},
+    {sfLiquidity, soeREQUIRED},
+    {sfAmount0Max, soeREQUIRED},
+    {sfAmount1Max, soeREQUIRED},
+    {sfLiquidityMin, soeOPTIONAL}
 }))
 
+/** This transaction withdraws liquidity from concentrated liquidity positions */
 TRANSACTION(ttAMM_CONCENTRATED_WITHDRAW, 43, AMMConcentratedWithdraw, Delegation::delegatable, ({
-    sfAsset, sfAsset2, sfTickLower, sfTickUpper, sfLiquidity,
-    sfAmount0Min, sfAmount1Min, sfCollectFees
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfTickLower, soeREQUIRED},
+    {sfTickUpper, soeREQUIRED},
+    {sfLiquidity, soeREQUIRED},
+    {sfAmount0Min, soeOPTIONAL},
+    {sfAmount1Min, soeOPTIONAL},
+    {sfCollectFees, soeOPTIONAL}
 }))
 
+/** This transaction collects fees from concentrated liquidity positions */
 TRANSACTION(ttAMM_CONCENTRATED_COLLECT, 44, AMMConcentratedCollect, Delegation::delegatable, ({
-    sfAsset, sfAsset2, sfTickLower, sfTickUpper, sfPositionNonce,
-    sfAmount0Max, sfAmount1Max
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfTickLower, soeREQUIRED},
+    {sfTickUpper, soeREQUIRED},
+    {sfPositionNonce, soeREQUIRED},
+    {sfAmount0Max, soeOPTIONAL},
+    {sfAmount1Max, soeOPTIONAL}
 }))
 
 /** This transaction type batches together transactions. */
