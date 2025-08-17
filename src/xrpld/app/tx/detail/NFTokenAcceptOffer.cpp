@@ -36,7 +36,7 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx.getFlags() & tfNFTokenAcceptOfferMask)
+    if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
     auto const bo = ctx.tx[~sfNFTokenBuyOffer];

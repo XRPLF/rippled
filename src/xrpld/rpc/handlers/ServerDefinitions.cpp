@@ -25,6 +25,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
@@ -314,6 +315,23 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
             templateArray.append(elementObj);
         }
         defs_[jss::LEDGER_FORMATS][f.getName()] = templateArray;
+    }
+
+    defs_[jss::TRANSACTION_FLAGS] = Json::objectValue;
+    for (auto const& [name, value] : allTxFlags)
+    {
+        Json::Value txObj = Json::objectValue;
+        for (auto const& [flagName, flagValue] : value)
+        {
+            txObj[flagName] = flagValue;
+        }
+        defs_[jss::TRANSACTION_FLAGS][name] = txObj;
+    }
+
+    defs_[jss::ACCOUNT_SET_FLAGS] = Json::objectValue;
+    for (auto const& [name, value] : asfFlagMap)
+    {
+        defs_[jss::ACCOUNT_SET_FLAGS][name] = value;
     }
 
     // generate hash

@@ -45,6 +45,7 @@ namespace jss {
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
 JSS(AcceptedCredentials);  // out: AccountObjects
+JSS(ACCOUNT_SET_FLAGS);    // out: RPC server_definitions
 JSS(Account);              // in: TransactionSign; field.
 JSS(AMMID);                // field
 JSS(Amount);               // in: TransactionSign; field.
@@ -628,6 +629,7 @@ JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
                               // matches definitions.json format
 JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
                               // matches definitions.json format
+JSS(TRANSACTION_FLAGS);       // out: RPC server_definitions
 JSS(TRANSACTION_FORMATS);     // out: RPC server_definitions
 JSS(TYPES);                   // out: RPC server_definitions
                               // matches definitions.json format

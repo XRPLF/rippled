@@ -440,7 +440,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
     {
         auto const flags = ctx.tx.getFlags();
 
-        if (ctx.rules.enabled(fix1543) && (flags & tfPayChanClaimMask))
+        if (ctx.rules.enabled(fix1543) && (flags & tfPaymentChannelClaimMask))
             return temINVALID_FLAG;
 
         if ((flags & tfClose) && (flags & tfRenew))
