@@ -24,9 +24,17 @@
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <utility>
 
 namespace ripple {
