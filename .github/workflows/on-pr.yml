@@ -22,8 +22,8 @@ jobs:
       ${{
         (github.event.action == 'opened' && !github.event.pull_request.draft) ||
         (github.event.action == 'synchronize' && (!github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI'))) ||
-        (github.event.action == 'labeled' && github.event.pull_request.draft && github.event.pull_request.label.name == 'DraftRunCI') ||
-        (github.event.action == 'unlabeled' && !github.event.pull_request.draft && github.event.pull_request.label.name == 'DraftRunCI')
+        (github.event.action == 'labeled' && github.event.pull_request.draft && github.event.label.name == 'DraftRunCI') ||
+        (github.event.action == 'unlabeled' && !github.event.pull_request.draft && github.event.label.name == 'DraftRunCI')
       }}
     runs-on: ubuntu-latest
     steps:
@@ -37,7 +37,7 @@ jobs:
         run: |
           echo 'action=${{ github.event.action }}'
           echo 'draft=${{ github.event.pull_request.draft }}'
-          echo 'label=${{ github.event.pull_request.label.name }}'
+          echo 'label=${{ github.event.label.name }}'
           echo 'labels=${{ toJson(github.event.pull_request.labels) }}'
           
           echo 'event=${{ toJson(github.event) }}'
