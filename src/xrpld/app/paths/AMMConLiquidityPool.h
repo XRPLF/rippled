@@ -147,6 +147,10 @@ private:
         std::uint64_t sqrtPriceAX64,
         std::uint64_t sqrtPriceBX64) const;
 
+    /** Find all active concentrated liquidity positions for this AMM */
+    std::map<AccountID, STAmount>
+    findActivePositions(ReadView const& view) const;
+
     /** Calculate the quality for a given price and liquidity */
     Quality
     calculateQuality(std::uint64_t sqrtPriceX64, STAmount const& liquidity)

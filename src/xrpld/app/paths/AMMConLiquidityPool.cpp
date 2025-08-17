@@ -277,8 +277,8 @@ AMMConLiquidityPool<TIn, TOut>::getOffer(
     else
         outAmount = amount1.iou();
 
-    TAmounts<TIn, TOut> amounts{inAmount, outAmount};
-    TAmounts<TIn, TOut> balances{
+    TAmountPair<TIn, TOut> amounts{inAmount, outAmount};
+    TAmountPair<TIn, TOut> balances{
         inAmount, outAmount};  // Same as amounts for now
 
     return AMMConLiquidityOffer<TIn, TOut>(
@@ -324,6 +324,57 @@ AMMConLiquidityPool<TIn, TOut>::calculateAmountsForLiquidity(
         liquidity, sqrtPriceX64, sqrtPriceAX64, sqrtPriceBX64);
 
     return {amount0, amount1};
+}
+
+template <typename TIn, typename TOut>
+std::map<AccountID, STAmount>
+AMMConLiquidityPool<TIn, TOut>::findActivePositions(ReadView const& view) const
+{
+    std::map<AccountID, STAmount> positions;
+    
+    // Get the AMM keylet
+    auto const ammKeylet = keylet::amm(issueIn_, issueOut_);
+    auto const ammSle = view.read(ammKeylet);
+    if (!ammSle)
+        return positions;
+
+    auto const ammID = ammSle->getFieldH256(sfAMMID);
+    
+    // Iterate through the AMM's owner directory to find concentrated liquidity positions
+    auto const ownerDirKeylet = keylet::ownerDir(ammAccountID_);
+    
+    std::shared_ptr<SLE> page;
+    unsigned int index = 0;
+    uint256 entry;
+    
+    if (dirFirst(view, ownerDirKeylet.key, page, index, entry))
+    {
+        do
+        {
+            // Check if this entry is a concentrated liquidity position
+            auto const positionSle = view.read(entry);
+            if (positionSle && positionSle->getType() == ltCONCENTRATED_LIQUIDITY_POSITION)
+            {
+                // Verify this position belongs to this AMM
+                if (positionSle->getFieldH256(sfAMMID) == ammID)
+                {
+                    auto const owner = positionSle->getAccountID(sfAccount);
+                    auto const liquidity = positionSle->getFieldAmount(sfLiquidity);
+                    
+                    // Check if the position is active (within current tick range)
+                    auto const tickLower = positionSle->getFieldU32(sfTickLower);
+                    auto const tickUpper = positionSle->getFieldU32(sfTickUpper);
+                    
+                    if (currentTick_ >= tickLower && currentTick_ <= tickUpper)
+                    {
+                        positions[owner] = liquidity;
+                    }
+                }
+            }
+        } while (dirNext(view, ownerDirKeylet.key, page, index, entry));
+    }
+    
+    return positions;
 }
 
 template <typename TIn, typename TOut>

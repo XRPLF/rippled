@@ -155,8 +155,8 @@ AMMConLiquidityStep<TIn, TOut, TDerived>::getQualityFunc(
     {
         auto const sqrtPriceX64 = ammConLiquidity_->getSqrtPriceX64();
         auto const basePrice =
-            (static_cast<double>(sqrtPriceX64) / (1ULL << 64)) *
-            (static_cast<double>(sqrtPriceX64) / (1ULL << 64));
+            (static_cast<double>(sqrtPriceX64) / (1ULL << 63)) *
+            (static_cast<double>(sqrtPriceX64) / (1ULL << 63));
 
         // Create a quality function that adjusts based on trade size
         auto qualityFunc = [basePrice](TIn const& in) -> Quality {

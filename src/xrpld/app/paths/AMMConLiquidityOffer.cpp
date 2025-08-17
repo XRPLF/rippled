@@ -156,7 +156,7 @@ AMMConLiquidityOffer<TIn, TOut>::owner() const
 }
 
 template <typename TIn, typename TOut>
-TAmounts<TIn, TOut> const&
+TAmountPair<TIn, TOut> const&
 AMMConLiquidityOffer<TIn, TOut>::amount() const
 {
     return amounts_;
