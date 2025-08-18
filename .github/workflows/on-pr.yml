@@ -58,7 +58,7 @@ jobs:
   # * When a non-draft PR has the 'DraftRunCI' label removed.
   # These checks are in part to ensure the workflow won't run needlessly while
   # also allowing it to be triggered without having to add a no-op commit. A new
-  # workflow execution can be triggered by removing and then adding the label on
+  # workflow execution can be triggered by adding and then removing the label on
   # a non-draft PR, or conversely by removing it and then adding it back on a
   # draft PR; this can be useful in certain cases.
   generate-outputs:
