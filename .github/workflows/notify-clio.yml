@@ -59,7 +59,7 @@ jobs:
       - name: Upload package
         run: |
           echo 'Exporting package to channel ${{ steps.generate.outputs.channel }}.'
-          conan export --channel=${{ steps.generate.outputs.channel }} .
+          conan export --user=clio --channel=${{ steps.generate.outputs.channel }} .
           echo 'Uploading package version ${{ steps.generate.outputs.version }} on channel ${{ steps.generate.outputs.channel }}.'
           conan upload --confirm --check --remote=${{ inputs.conan_remote_name }} xrpl/${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.channel }}
     outputs:
