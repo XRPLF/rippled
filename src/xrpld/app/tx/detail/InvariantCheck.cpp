@@ -2422,7 +2422,7 @@ ValidLoan::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
+    // Loans will not exist on ledger if the Lending Protocol amendment
     // is not enabled, so there's no need to check it.
 
     for (auto const& [before, after] : loans_)

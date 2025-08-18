@@ -287,8 +287,17 @@ impairLoan(
     beast::Journal j)
 {
     // Update the Vault object(set "paper loss")
-    vaultSle->at(sfLossUnrealized) +=
-        principalOutstanding + interestOutstanding;
+    auto vaultLossUnrealizedProxy = vaultSle->at(sfLossUnrealized);
+    vaultLossUnrealizedProxy += principalOutstanding + interestOutstanding;
+    if (vaultLossUnrealizedProxy >
+        vaultSle->at(sfAssetsTotal) - vaultSle->at(sfAssetsAvailable))
+    {
+        // Having a loss greater than the vault's unavailable assets
+        // will leave the vault in an invalid / inconsistent state.
+        JLOG(j.warn()) << "Vault unrealized loss is too large, and will "
+                          "corrupt the vault.";
+        return tecLIMIT_EXCEEDED;
+    }
     view.update(vaultSle);
 
     // Update the Loan object
