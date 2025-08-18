@@ -887,6 +887,6 @@ public:
     }
 };  // namespace tests
 
-BEAST_DEFINE_TESTSUITE(IntrusiveShared, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, ripple);
 }  // namespace tests
 }  // namespace ripple
