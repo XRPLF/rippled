@@ -101,9 +101,11 @@ jobs:
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: 3.13
-      - name: Install Conan (Windows)
+      - name: Install build tools (Windows)
         if: ${{ inputs.os == 'windows' }}
-        run: pip install wheel conan
+        run: |
+          echo 'Installing build tools.'
+          pip install wheel conan
       - name: Check configuration (Windows)
         if: ${{ inputs.os == 'windows' }}
         run: |
@@ -115,6 +117,21 @@ jobs:
 
           echo 'Checking Conan version.'
           conan --version
+      - name: Install build tools (MacOS)
+        if: ${{ inputs.os == 'macos' }}
+        run: |
+          echo 'Installing build tools.'
+          for TOOL in cmake conan ninja nproc; do
+            if which ${TOOL} > /dev/null 2>&1; then
+              echo "The ${TOOL} executable already exists, skipping installation."
+            else
+              echo "The ${TOOL} executable does not exist, installing."
+              if [ "${TOOL}" = 'nproc' ]; then
+                TOOL='coreutils'
+              fi
+              brew install ${TOOL}
+            fi
+          done
       - name: Check configuration (Linux and MacOS)
         if: ${{ inputs.os == 'linux' || inputs.os == 'macos' }}
         run: |
@@ -135,6 +152,9 @@ jobs:
 
           echo 'Checking Ninja version.'
           ninja --version
+
+          echo 'Checking nproc version.'
+          nproc --version
       - name: Set up Conan home directory (MacOS)
         if: ${{ inputs.os == 'macos' }}
         run: |
