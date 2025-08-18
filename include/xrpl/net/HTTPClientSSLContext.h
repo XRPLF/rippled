@@ -20,11 +20,10 @@
 #ifndef RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
 #define RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
 
-#include <xrpld/core/Config.h>
-#include <xrpld/net/RegisterSSLCerts.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/net/RegisterSSLCerts.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -37,31 +36,33 @@ class HTTPClientSSLContext
 {
 public:
     explicit HTTPClientSSLContext(
-        Config const& config,
+        std::string const& sslVerifyDir,
+        std::string const& sslVerifyFile,
+        bool sslVerify,
         beast::Journal j,
         boost::asio::ssl::context_base::method method =
             boost::asio::ssl::context::sslv23)
-        : ssl_context_{method}, j_(j), verify_{config.SSL_VERIFY}
+        : ssl_context_{method}, j_(j), verify_{sslVerify}
     {
         boost::system::error_code ec;
 
-        if (config.SSL_VERIFY_FILE.empty())
+        if (sslVerifyFile.empty())
         {
             registerSSLCerts(ssl_context_, ec, j_);
 
-            if (ec && config.SSL_VERIFY_DIR.empty())
+            if (ec && sslVerifyDir.empty())
                 Throw<std::runtime_error>(boost::str(
                     boost::format("Failed to set_default_verify_paths: %s") %
                     ec.message()));
         }
         else
         {
-            ssl_context_.load_verify_file(config.SSL_VERIFY_FILE);
+            ssl_context_.load_verify_file(sslVerifyFile);
         }
 
-        if (!config.SSL_VERIFY_DIR.empty())
+        if (!sslVerifyDir.empty())
         {
-            ssl_context_.add_verify_path(config.SSL_VERIFY_DIR, ec);
+            ssl_context_.add_verify_path(sslVerifyDir, ec);
 
             if (ec)
                 Throw<std::runtime_error>(boost::str(

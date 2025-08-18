@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpld/net/RPCCall.h>
-#include <xrpld/net/RPCSub.h>
+#include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/RPCSub.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
