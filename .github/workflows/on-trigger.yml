@@ -48,7 +48,7 @@ jobs:
         id: generate
         run: |
           if [[ '${{ github.event_name }}' == 'push' ]]; then
-            echo 'dependencies_force_build=false' >> "${GITHUB_OUTPUT}"
+            echo 'dependencies_force_build=true' >> "${GITHUB_OUTPUT}"
             echo 'dependencies_force_upload=false' >> "${GITHUB_OUTPUT}"
           elif [[ '${{ github.event_name }}' == 'schedule' ]]; then
             echo 'dependencies_force_build=true' >> "${GITHUB_OUTPUT}"
