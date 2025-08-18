@@ -17,12 +17,11 @@
 */
 //==============================================================================
 
-#include <xrpld/net/AutoSocket.h>
-#include <xrpld/net/HTTPClient.h>
-#include <xrpld/net/HTTPClientSSLContext.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/net/AutoSocket.h>
+#include <xrpl/net/HTTPClient.h>
+#include <xrpl/net/HTTPClientSSLContext.h>
 
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -36,9 +35,13 @@ namespace ripple {
 static std::optional<HTTPClientSSLContext> httpClientSSLContext;
 
 void
-HTTPClient::initializeSSLContext(Config const& config, beast::Journal j)
+HTTPClient::initializeSSLContext(
+    std::string const& sslVerifyDir,
+    std::string const& sslVerifyFile,
+    bool sslVerify,
+    beast::Journal j)
 {
-    httpClientSSLContext.emplace(config, j);
+    httpClientSSLContext.emplace(sslVerifyDir, sslVerifyFile, sslVerify, j);
 }
 
 //------------------------------------------------------------------------------
