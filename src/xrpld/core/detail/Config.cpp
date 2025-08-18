@@ -19,7 +19,6 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/net/HTTPClient.h>
 
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -27,6 +26,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
 
@@ -409,7 +409,8 @@ Config::setup(
         legacy("database_path", boost::filesystem::absolute(dataDir).string());
     }
 
-    HTTPClient::initializeSSLContext(*this, j_);
+    HTTPClient::initializeSSLContext(
+        this->SSL_VERIFY_DIR, this->SSL_VERIFY_FILE, this->SSL_VERIFY, j_);
 
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;

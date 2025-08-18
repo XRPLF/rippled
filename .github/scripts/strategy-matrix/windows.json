@@ -1,0 +1,26 @@
+{
+  "architecture": [
+    {
+      "platform": "windows/amd64",
+      "runner": [
+        "windows-latest"
+      ]
+    }
+  ],
+  "os": [
+    {
+      "distro_name": "windows",
+      "distro_version": "",
+      "compiler_name": "",
+      "compiler_version": ""
+    }
+  ],
+  "build_type": [
+    "Debug",
+    "Release"
+  ],
+  "cmake_args": [
+    "-Dunity=OFF",
+    "-Dunity=ON"
+  ]
+}
