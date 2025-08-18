@@ -25,12 +25,12 @@ on:
         description: 'Force building of all dependencies ("yes", "no").'
         required: false
         type: string
-        default: false
+        default: 'no'
       dependencies_force_upload:
         description: 'Force uploading of all dependencies ("yes", "no").'
         required: false
         type: string
-        default: false
+        default: 'no'
       os:
         description: 'The operating system to use for the build ("linux", "macos", "windows").'
         required: true
