@@ -371,7 +371,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(units, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(units, basics, ripple);
 
 }  // namespace test
 }  // namespace ripple
