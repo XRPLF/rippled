@@ -86,7 +86,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (auto const scale = ctx.tx[~sfAssetScale])
+    if (auto const scale = ctx.tx[~sfScale])
     {
         if (scale > 18)
             return temMALFORMED;
@@ -202,14 +202,10 @@ VaultCreate::doApply()
         !isTesSuccess(ter))
         return ter;
 
-    // Note, AssetScale is set in both MPTokenIssuance and in Vault, but it has
-    // slightly different semantics between these two:
-    // * in MPTokenIssuance it is merely metadata, not used by any program logic
-    // * in Vault it is used to calculate shares to assets conversion factor
-    std::uint8_t assetScale = vaultDefaultAssetScale;
+    std::uint8_t assetScale = vaultDefaultIOUScale;
     if (asset.holds<MPTIssue>() || asset.native())
         assetScale = 0;
-    else if (auto const scale = ctx_.tx[~sfAssetScale])
+    else if (auto const scale = ctx_.tx[~sfScale])
         assetScale = *scale;
 
     auto txFlags = tx.getFlags();
@@ -258,7 +254,7 @@ VaultCreate::doApply()
         vault->at(sfWithdrawalPolicy) = *value;
     else
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
-    vault->at(sfAssetScale) = assetScale;
+    vault->at(sfScale) = assetScale;
     // No `LossUnrealized`.
     view().insert(vault);
 

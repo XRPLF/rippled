@@ -122,7 +122,7 @@ std::size_t constexpr maxDataPayloadLength = 256;
 std::uint8_t constexpr vaultStrategyFirstComeFirstServe = 1;
 
 /** Default asset scale for a Vault */
-std::uint8_t constexpr vaultDefaultAssetScale = 6;
+std::uint8_t constexpr vaultDefaultIOUScale = 6;
 
 /** Maximum recursion depth for vault shares being put as an asset inside
  * another vault; counted from 0 */

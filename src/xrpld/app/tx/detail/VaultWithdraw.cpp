@@ -226,17 +226,24 @@ VaultWithdraw::doApply()
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // The vault must have enough assets on hand. The vault may hold assets that
-    // it has already pledged. That is why we look at AssetAvailable instead of
-    // the pseudo-account balance.
-    if (*vault->at(sfAssetsAvailable) < assets)
+    auto assetsAvailable = vault->at(sfAssetsAvailable);
+    auto assetsTotal = vault->at(sfAssetsTotal);
+    [[maybe_unused]] auto lossUnrealized = vault->at(sfLossUnrealized);
+    XRPL_ASSERT(
+        lossUnrealized <= (assetsTotal - assetsAvailable),
+        "ripple::VaultWithdraw::doApply : loss and assets do balance");
+
+    // The vault must have enough assets on hand. The vault may hold assets
+    // that it has already pledged. That is why we look at AssetAvailable
+    // instead of the pseudo-account balance.
+    if (*assetsAvailable < assets)
     {
         JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
     }
 
-    vault->at(sfAssetsTotal) -= assets;
-    vault->at(sfAssetsAvailable) -= assets;
+    assetsTotal -= assets;
+    assetsAvailable -= assets;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);

@@ -195,16 +195,22 @@ VaultClawback::doApply()
     }
 
     // Clamp to maximum.
-    Number const assetsAvailable = *vault->at(sfAssetsAvailable);
-    if (assets > assetsAvailable)
+    auto assetsAvailable = vault->at(sfAssetsAvailable);
+    auto assetsTotal = vault->at(sfAssetsTotal);
+    [[maybe_unused]] auto lossUnrealized = vault->at(sfLossUnrealized);
+    XRPL_ASSERT(
+        lossUnrealized <= (assetsTotal - assetsAvailable),
+        "ripple::VaultClawback::doApply : loss and assets do balance");
+
+    if (assets > *assetsAvailable)
     {
-        assets = assetsAvailable;
+        assets = *assetsAvailable;
         // Note, it is important to truncate the number of shares, since
         // otherwise the corresponding assets might breach the AssetsAvailable
         shares = assetsToSharesWithdraw(
             vault, sleIssuance, assets, TruncateShares::yes);
         assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
-        if (assets > assetsAvailable)
+        if (assets > *assetsAvailable)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultClawback: invalid rounding of shares.";
@@ -216,8 +222,8 @@ VaultClawback::doApply()
     if (shares == beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
-    vault->at(sfAssetsTotal) -= assets;
-    vault->at(sfAssetsAvailable) -= assets;
+    assetsTotal -= assets;
+    assetsAvailable -= assets;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
