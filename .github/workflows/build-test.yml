@@ -70,7 +70,7 @@ jobs:
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
-        run: python generate.py ${{ inputs.strategy_matrix_all == 'true' && '--all' || '' }} --config=${{ inputs.os }}.json >> "${GITHUB_OUTPUT}"
+        run: python generate.py ${{ inputs.strategy_matrix_all && '--all' || '' }} --config=${{ inputs.os }}.json >> "${GITHUB_OUTPUT}"
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
 
