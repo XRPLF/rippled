@@ -55,17 +55,17 @@ runs:
         cd ${{ inputs.build_dir }}
         conan install \
           --output-folder . \
-          --build ${{ inputs.force_build && '"*"' || 'missing' }} \
+          --build ${{ inputs.force_build == 'true' && '"*"' || 'missing' }} \
           --options:host '&:tests=True' \
           --options:host '&:xrpld=True' \
           --settings:all build_type=${{ inputs.build_type }} \
           --format=json ..
     - name: Upload Conan dependencies
-      if: ${{ inputs.conan_remote_username && inputs.conan_remote_password }}
+      if: ${{ inputs.conan_remote_username != '' && inputs.conan_remote_password != '' }}
       shell: bash
       working-directory: ${{ inputs.build_dir }}
       run: |
         echo "Logging into Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
         conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
         echo 'Uploading dependencies.'
-        conan upload '*' --confirm --check ${{ inputs.force_upload && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}
+        conan upload '*' --confirm --check ${{ inputs.force_upload == 'true' && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}
