@@ -1,7 +1,10 @@
 # This workflow builds and tests the binary for various configurations.
 name: Build and test
 
-# This workflow can only be triggered by other workflows.
+# This workflow can only be triggered by other workflows. Note that the
+# workflow_call event does not support the 'choice' input type, so we use
+# 'string' instead. The workflow calls actions, which do support 'choice'. Also
+# note that the 'boolean' input type is troublesome, so we use 'string' instead.
 on:
   workflow_call:
     inputs:
@@ -19,24 +22,25 @@ on:
         required: true
         type: string
       dependencies_force_build:
-        description: 'Force building of all dependencies.'
+        description: 'Force building of all dependencies ("yes", "no").'
         required: false
-        type: boolean
+        type: string
         default: false
       dependencies_force_upload:
-        description: 'Force uploading of all dependencies.'
+        description: 'Force uploading of all dependencies ("yes", "no").'
         required: false
-        type: boolean
+        type: string
         default: false
       os:
-        description: 'The operating system to use for the build (linux, macos, or windows).'
+        description: 'The operating system to use for the build ("linux", "macos", "windows").'
         required: true
         type: string
-      strategy_matrix_all:
-        description: 'Generate a strategy matrix containing all configurations.'
+      strategy_matrix:
+        # TODO: Support additional strategies, e.g. "ubuntu" for generating all Ubuntu configurations.
+        description: 'The strategy matrix to use for generating the configurations ("minimal", "all").'
         required: false
-        type: boolean
-        default: false
+        type: string
+        default: 'minimal'
     secrets:
       codecov_token:
         description: 'The Codecov token to use for uploading coverage reports.'
@@ -70,7 +74,7 @@ jobs:
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
-        run: python generate.py ${{ inputs.strategy_matrix_all && '--all' || '' }} --config=${{ inputs.os }}.json >> "${GITHUB_OUTPUT}"
+        run: python generate.py ${{ inputs.strategy_matrix == 'all' && '--all' || '' }} --config=${{ inputs.os }}.json >> "${GITHUB_OUTPUT}"
     outputs:
       matrix: ${{ steps.generate.outputs.matrix }}
 

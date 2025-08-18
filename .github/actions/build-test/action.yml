@@ -29,7 +29,7 @@ inputs:
     type: string
     default: ''
   os:
-    description: 'The operating system to use for the build (linux, macos, or windows).'
+    description: 'The operating system to use for the build ("linux", "macos", "windows").'
     required: true
     type: choice
     options:
