@@ -91,38 +91,23 @@ jobs:
       conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
 
-  build-linux:
+  build-test:
     needs: generate-outputs
     uses: ./.github/workflows/build-test.yml
+    strategy:
+      matrix:
+        os: [linux, macos, windows]
     with:
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
       conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-      os: 'linux'
+      os: ${{ matrix.os }}
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
-
-  build-macos:
-    needs: generate-outputs
-    uses: ./.github/workflows/build-test.yml
-    with:
-      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-      os: 'macos'
-
-  build-windows:
-    needs: generate-outputs
-    uses: ./.github/workflows/build-test.yml
-    with:
-      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-      os: 'windows'
 
   notify-clio:
     needs:
       - generate-outputs
-      - build-linux
-      - build-macos
-      - build-windows
+      - build-test
     uses: ./.github/workflows/notify-clio.yml
     with:
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}

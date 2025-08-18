@@ -97,43 +97,18 @@ jobs:
       dependencies_force_build: ${{ steps.generate.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ steps.generate.outputs.dependencies_force_upload }}
 
-  build-linux:
+  build-test:
     needs: generate-outputs
     uses: ./.github/workflows/build-test.yml
+    strategy:
+      matrix:
+        os: [linux, macos, windows]
     with:
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
       conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build == 'true' }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload == 'true' }}
-      os: 'linux'
-      strategy_matrix_all: true
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-
-  build-macos:
-    needs: generate-outputs
-    uses: ./.github/workflows/build-test.yml
-    with:
-      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build == 'true' }}
-      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload == 'true' }}
-      os: 'macos'
-      strategy_matrix_all: true
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-
-  build-windows:
-    needs: generate-outputs
-    uses: ./.github/workflows/build-test.yml
-    with:
-      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build == 'true' }}
-      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload == 'true' }}
-      os: 'windows'
+      os: ${{ matrix.os }}
       strategy_matrix_all: true
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
