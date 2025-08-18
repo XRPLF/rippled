@@ -82,14 +82,14 @@ jobs:
         id: generate
         run: |
           if [[ "${{ github.event_name }}" == 'push' ]]; then
-            echo 'dependencies_force_build=false' | tee "${GITHUB_OUTPUT}"
-            echo 'dependencies_force_upload=false' | tee -a "${GITHUB_OUTPUT}"
+            echo 'dependencies_force_build=false' >> "${GITHUB_OUTPUT}"
+            echo 'dependencies_force_upload=false' >> "${GITHUB_OUTPUT}"
           elif [[ "${{ github.event_name }}" == 'schedule' ]]; then
-            echo 'dependencies_force_build=true' | tee "${GITHUB_OUTPUT}"
-            echo 'dependencies_force_upload=false' | tee -a "${GITHUB_OUTPUT}"
+            echo 'dependencies_force_build=true' >> "${GITHUB_OUTPUT}"
+            echo 'dependencies_force_upload=false' >> "${GITHUB_OUTPUT}"
           else
-            echo 'dependencies_force_build=${{ inputs.dependencies_force_build }}' | tee "${GITHUB_OUTPUT}"
-            echo 'dependencies_force_upload=${{ inputs.dependencies_force_upload }}' | tee -a "${GITHUB_OUTPUT}"
+            echo 'dependencies_force_build=${{ inputs.dependencies_force_build }}' >> "${GITHUB_OUTPUT}"
+            echo 'dependencies_force_upload=${{ inputs.dependencies_force_upload }}' >> "${GITHUB_OUTPUT}"
           fi
     outputs:
       conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}

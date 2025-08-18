@@ -45,9 +45,9 @@ jobs:
         id: generate
         run: |
           echo 'Generating channel.'
-          echo channel="clio/pr_${{ github.event.pull_request.number }}" | tee "${GITHUB_OUTPUT}"
+          echo channel="clio/pr_${{ github.event.pull_request.number }}" >> "${GITHUB_OUTPUT}"
           echo 'Extracting version.'
-          echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" | tee -a "${GITHUB_OUTPUT}"
+          echo version="$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" >> "${GITHUB_OUTPUT}"
       - name: Add Conan remote
         run: |
           echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
