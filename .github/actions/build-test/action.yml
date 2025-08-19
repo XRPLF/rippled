@@ -2,40 +2,33 @@
 # already been installed (see the build-deps action).
 name: Build and Test
 
+# Note that actions do not support 'type' and all inputs are strings, see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
 inputs:
   build_dir:
     description: 'The directory where to build.'
     required: true
-    type: string
+  build_only:
+    description: 'Whether to only build or to build and test the code ("true", "false").'
+    required: false
+    default: 'false'
   build_type:
-    description: 'The build type to use.'
+    description: 'The build type to use ("Debug", "Release").'
     required: true
-    type: choice
-    options:
-      - 'Debug'
-      - 'Release'
   cmake_args:
     description: 'Additional arguments to pass to CMake.'
     required: false
-    type: string
     default: ''
   cmake_target:
     description: 'The CMake target to build.'
     required: true
-    type: string
   codecov_token:
     description: 'The Codecov token to use for uploading coverage reports.'
     required: false
-    type: string
     default: ''
   os:
-    description: 'The operating system to use for the build (linux, macos, or windows).'
+    description: 'The operating system to use for the build ("linux", "macos", "windows").'
     required: true
-    type: choice
-    options:
-      - 'linux'
-      - 'macos'
-      - 'windows'
 
 runs:
   using: composite
@@ -82,7 +75,7 @@ runs:
         echo 'Verifying presence of instrumentation.'
         ./rippled --version | grep libvoidstar
     - name: Test the binary
-      if: ${{ inputs.cmake_target != 'coverage' }}
+      if: ${{ inputs.build_only == 'true' }}
       shell: bash
       working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'windows' && inputs.build_type || '' }}
       run: |
