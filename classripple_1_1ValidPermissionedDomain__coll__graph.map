@@ -1,4 +1,5 @@
 <map id="ripple::ValidPermissionedDomain" name="ripple::ValidPermissionedDomain">
-<area shape="rect" id="node1" title="Invariants: Permissioned Domains must have some rules and AcceptedCredentials must have length betwee..." alt="" coords="13,123,199,163"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,207,60"/>
+<area shape="rect" id="Node000001" title="Invariants: Permissioned Domains must have some rules and AcceptedCredentials must have length betwee..." alt="" coords="13,123,199,163"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,207,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,74,109,122,103,122,103,74"/>
 </map>

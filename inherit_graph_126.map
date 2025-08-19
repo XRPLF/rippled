@@ -1,13 +1,23 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="32,89,113,115"/>
-<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="192,113,403,197"/>
-<area shape="rect" id="node4" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1pair__value__compare.html" title=" " alt="" coords="192,5,403,89"/>
-<area shape="rect" id="node3" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1config__t.html" title=" " alt="" coords="455,153,665,237"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,236,140,261"/>
-<area shape="rect" id="node6" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="188,221,407,276"/>
-<area shape="rect" id="node7" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1config__t.html" title=" " alt="" coords="465,300,655,384"/>
-<area shape="rect" id="node8" title=" " alt="" coords="45,329,100,355"/>
-<area shape="rect" id="node9" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1ValueHash.html" title=" " alt="" coords="202,300,393,384"/>
-<area shape="rect" id="node10" title=" " alt="" coords="31,437,114,463"/>
-<area shape="rect" id="node11" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1KeyValueEqual.html" title=" " alt="" coords="196,408,399,492"/>
+<area shape="rect" id="Node000000" title=" " alt="" coords="32,89,113,115"/>
+<area shape="rect" id="Node000001" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="192,113,403,197"/>
+<area shape="poly" id="edge384_Node000000_Node000001" title=" " alt="" coords="127,112,192,128,191,133,126,117"/>
+<area shape="rect" id="Node000010" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1pair__value__compare.html" title=" " alt="" coords="192,5,403,89"/>
+<area shape="poly" id="edge386_Node000000_Node000010" title=" " alt="" coords="126,86,191,70,193,76,127,92"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1config__t.html" title=" " alt="" coords="455,153,665,237"/>
+<area shape="poly" id="edge385_Node000001_Node000002" title=" " alt="" coords="417,171,455,177,454,182,416,176"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="5,236,140,261"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="188,221,407,276"/>
+<area shape="poly" id="edge387_Node000009_Node000003" title=" " alt="" coords="153,246,188,246,188,251,153,251"/>
+<area shape="poly" id="edge388_Node000003_Node000002" title=" " alt="" coords="420,221,454,214,455,219,421,226"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1config__t.html" title=" " alt="" coords="465,300,655,384"/>
+<area shape="poly" id="edge389_Node000003_Node000004" title=" " alt="" coords="389,278,408,285,466,306,464,311,406,290,387,283"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="45,329,100,355"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1ValueHash.html" title=" " alt="" coords="202,300,393,384"/>
+<area shape="poly" id="edge390_Node000006_Node000005" title=" " alt="" coords="114,339,202,339,202,345,114,345"/>
+<area shape="poly" id="edge391_Node000005_Node000004" title=" " alt="" coords="407,339,464,339,464,345,407,345"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="31,437,114,463"/>
+<area shape="rect" id="Node000007" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1KeyValueEqual.html" title=" " alt="" coords="196,408,399,492"/>
+<area shape="poly" id="edge392_Node000008_Node000007" title=" " alt="" coords="128,447,196,447,196,453,128,453"/>
+<area shape="poly" id="edge393_Node000007_Node000004" title=" " alt="" coords="411,401,464,379,466,384,413,406"/>
 </map>

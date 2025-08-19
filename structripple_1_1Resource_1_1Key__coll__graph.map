@@ -1,5 +1,7 @@
 <map id="ripple::Resource::Key" name="ripple::Resource::Key">
-<area shape="rect" id="node1" title=" " alt="" coords="5,181,164,207"/>
-<area shape="rect" id="node2" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="13,93,156,119"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="33,5,136,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,181,164,207"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="13,93,156,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,133,87,181,82,181,82,133"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="33,5,136,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="87,45,87,93,82,93,82,45"/>
 </map>

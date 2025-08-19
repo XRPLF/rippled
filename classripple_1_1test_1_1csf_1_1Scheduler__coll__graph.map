@@ -1,6 +1,9 @@
 <map id="ripple::test::csf::Scheduler" name="ripple::test::csf::Scheduler">
-<area shape="rect" id="node1" title="Simulated discrete&#45;event scheduler." alt="" coords="485,41,612,81"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="215,5,385,45"/>
-<area shape="rect" id="node3" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="219,70,381,125"/>
-<area shape="rect" id="node4" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,77,165,117"/>
+<area shape="rect" id="Node000001" title="Simulated discrete&#45;event scheduler." alt="" coords="485,41,612,81"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="215,5,385,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="399,37,486,50,485,55,398,42"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="219,70,381,125"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="394,81,485,68,486,73,395,86"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,77,165,117"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="179,95,219,95,219,100,179,100"/>
 </map>

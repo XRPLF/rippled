@@ -1,4 +1,5 @@
 <map id="ripple::test::GRPCTestClientBase" name="ripple::test::GRPCTestClientBase">
-<area shape="rect" id="node1" title=" " alt="" coords="17,123,249,148"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,5,260,60"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="17,123,249,148"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,5,260,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="135,74,135,122,130,122,130,74"/>
 </map>

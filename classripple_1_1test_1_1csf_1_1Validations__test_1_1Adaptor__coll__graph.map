@@ -1,4 +1,5 @@
 <map id="ripple::test::csf::Validations_test::Adaptor" name="ripple::test::csf::Validations_test::Adaptor">
-<area shape="rect" id="node1" title=" " alt="" coords="5,108,191,148"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1LedgerOracle.html" title="Oracle maintaining unique ledgers for a simulation." alt="" coords="35,5,161,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,108,191,148"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1csf_1_1LedgerOracle.html" title="Oracle maintaining unique ledgers for a simulation." alt="" coords="35,5,161,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="101,59,101,108,95,108,95,59"/>
 </map>

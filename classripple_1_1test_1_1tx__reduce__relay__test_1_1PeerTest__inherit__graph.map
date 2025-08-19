@@ -1,7 +1,11 @@
 <map id="ripple::test::tx_reduce_relay_test::PeerTest" name="ripple::test::tx_reduce_relay_test::PeerTest">
-<area shape="rect" id="node1" title=" " alt="" coords="131,167,295,207"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerImp.html" title=" " alt="" coords="153,93,274,119"/>
-<area shape="rect" id="node3" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="5,13,101,38"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="126,5,301,45"/>
-<area shape="rect" id="node5" href="$classripple_1_1OverlayImpl_1_1Child.html" title=" " alt="" coords="325,5,472,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="131,167,295,207"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1PeerImp.html" title=" " alt="" coords="153,93,274,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="216,132,216,167,211,167,211,132"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="5,13,101,38"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="90,42,191,91,189,96,88,46"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="126,5,301,45"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="216,59,216,93,211,93,211,59"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1OverlayImpl_1_1Child.html" title=" " alt="" coords="325,5,472,45"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="343,53,242,96,240,91,341,48"/>
 </map>

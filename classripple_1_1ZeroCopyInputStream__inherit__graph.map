@@ -1,4 +1,5 @@
 <map id="ripple::ZeroCopyInputStream&lt; Buffers &gt;" name="ripple::ZeroCopyInputStream&lt; Buffers &gt;">
-<area shape="rect" id="node1" title="Implements ZeroCopyInputStream around a buffer sequence." alt="" coords="5,93,216,133"/>
-<area shape="rect" id="node2" title=" " alt="" coords="24,5,197,45"/>
+<area shape="rect" id="Node000001" title="Implements ZeroCopyInputStream around a buffer sequence." alt="" coords="5,93,216,133"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="24,5,197,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="113,59,113,93,108,93,108,59"/>
 </map>

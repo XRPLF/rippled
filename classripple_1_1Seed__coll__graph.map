@@ -1,5 +1,7 @@
 <map id="ripple::Seed" name="ripple::Seed">
-<area shape="rect" id="node1" title="Seeds are used to generate deterministic secret keys." alt="" coords="30,196,129,221"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="5,93,153,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="32,5,127,31"/>
+<area shape="rect" id="Node000001" title="Seeds are used to generate deterministic secret keys." alt="" coords="30,196,129,221"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="5,93,153,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="82,147,82,196,77,196,77,147"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="32,5,127,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="82,44,82,93,77,93,77,44"/>
 </map>

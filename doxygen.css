@@ -1,4 +1,4 @@
-/* The standard CSS for doxygen 1.9.5*/
+/* The standard CSS for doxygen 1.9.8*/
 
 html {
 /* page base colors */
@@ -39,7 +39,9 @@ html {
 
 --icon-background-color: #728DC1;
 --icon-foreground-color: white;
---icon-doc-image: url('doc.png');
+--icon-doc-image: url('doc.svg');
+--icon-folder-open-image: url('folderopen.svg');
+--icon-folder-closed-image: url('folderclosed.svg');
 
 /* brief member declaration list */
 --memdecl-background-color: #F9FAFC;
@@ -100,6 +102,7 @@ html {
 --toc-background-color: #F4F6FA;
 --toc-border-color: #D8DFEE;
 --toc-header-color: #4665A2;
+--toc-down-arrow-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='10px' width='5px' fill='grey'><text x='0' y='5' font-size='10'>&%238595;</text></svg>");
 
 /** search field */
 --search-background-color: white;
@@ -125,6 +128,7 @@ html {
 --code-preprocessor-color: #806020;
 --code-string-literal-color: #002080;
 --code-char-literal-color: #008080;
+--code-xml-cdata-color: black;
 --code-vhdl-digit-color: #FF00FF;
 --code-vhdl-char-color: #000000;
 --code-vhdl-keyword-color: #700070;
@@ -148,10 +152,15 @@ html {
 --tooltip-declaration-color: #006318;
 --tooltip-link-color: #4665A2;
 --tooltip-shadow: 1px 1px 7px gray;
+--fold-line-color: #808080;
+--fold-minus-image: url('minus.svg');
+--fold-plus-image: url('plus.svg');
+--fold-minus-image-relpath: url('../../minus.svg');
+--fold-plus-image-relpath: url('../../plus.svg');
 
 /** font-family */
 --font-family-normal: Roboto,sans-serif;
---font-family-monospace: monospace,fixed;
+--font-family-monospace: 'JetBrains Mono',Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace,fixed;
 --font-family-nav: 'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
 --font-family-title: Tahoma,Arial,sans-serif;
 --font-family-toc: Verdana,'DejaVu Sans',Geneva,sans-serif;
@@ -203,7 +212,9 @@ html {
 
 --icon-background-color: #334975;
 --icon-foreground-color: #C4CFE5;
---icon-doc-image: url('docd.png');
+--icon-doc-image: url('docd.svg');
+--icon-folder-open-image: url('folderopend.svg');
+--icon-folder-closed-image: url('folderclosedd.svg');
 
 /* brief member declaration list */
 --memdecl-background-color: #0B101A;
@@ -264,6 +275,7 @@ html {
 --toc-background-color: #151E30;
 --toc-border-color: #202E4A;
 --toc-header-color: #A3B4D7;
+--toc-down-arrow-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='10px' width='5px'><text x='0' y='5' font-size='10' fill='grey'>&%238595;</text></svg>");
 
 /** search field */
 --search-background-color: black;
@@ -289,9 +301,10 @@ html {
 --code-preprocessor-color: #65CABE;
 --code-string-literal-color: #7EC699;
 --code-char-literal-color: #00E0F0;
+--code-xml-cdata-color: #C9D1D9;
 --code-vhdl-digit-color: #FF00FF;
---code-vhdl-char-color: #000000;
---code-vhdl-keyword-color: #700070;
+--code-vhdl-char-color: #C0C0C0;
+--code-vhdl-keyword-color: #CF53C9;
 --code-vhdl-logic-color: #FF0000;
 --code-link-color: #79C0FF;
 --code-external-link-color: #79C0FF;
@@ -312,10 +325,15 @@ html {
 --tooltip-declaration-color: #20C348;
 --tooltip-link-color: #79C0FF;
 --tooltip-shadow: none;
+--fold-line-color: #808080;
+--fold-minus-image: url('minusd.svg');
+--fold-plus-image: url('plusd.svg');
+--fold-minus-image-relpath: url('../../minusd.svg');
+--fold-plus-image-relpath: url('../../plusd.svg');
 
 /** font-family */
 --font-family-normal: Roboto,sans-serif;
---font-family-monospace: monospace,fixed;
+--font-family-monospace: 'JetBrains Mono',Consolas,Monaco,'Andale Mono','Ubuntu Mono',monospace,fixed;
 --font-family-nav: 'Lucida Grande',Geneva,Helvetica,Arial,sans-serif;
 --font-family-title: Tahoma,Arial,sans-serif;
 --font-family-toc: Verdana,'DejaVu Sans',Geneva,sans-serif;
@@ -327,20 +345,6 @@ html {
 body {
     background-color: var(--page-background-color);
     color: var(--page-foreground-color);
-    scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-background-color);
-}
-
-::-webkit-scrollbar {
-        background-color: var(--scrollbar-background-color);
-	height: 10px;
-        width: 10px;
-}
-::-webkit-scrollbar-thumb {
-        background-color: var(--scrollbar-thumb-color);
-        border-radius: 8px;
-}
-::-webkit-scrollbar-corner {
-        background-color: var(--scrollbar-background-color);
 }
 
 body, table, div, p, dl {
@@ -487,6 +491,12 @@ div.qindex{
 	color: var(--index-separator-color);
 }
 
+#main-menu a:focus {
+	outline: auto;
+	z-index: 10;
+	position: relative;
+}
+
 dt.alphachar{
 	font-size: 180%;
 	font-weight: bold;
@@ -601,6 +611,16 @@ ul {
   overflow: visible;
 }
 
+ul.multicol {
+        -moz-column-gap: 1em;
+        -webkit-column-gap: 1em;
+        column-gap: 1em;
+        -moz-column-count: 3;
+        -webkit-column-count: 3;
+        column-count: 3;
+        list-style-type: none;
+}
+
 #side-nav ul {
   overflow: visible; /* reset ul rule for scroll bar in GENERATE_TREEVIEW window */
 }
@@ -642,7 +662,7 @@ div.line {
 	font-family: var(--font-family-monospace);
         font-size: 13px;
 	min-height: 13px;
-	line-height: 1.0;
+	line-height: 1.2;
 	text-wrap: unrestricted;
 	white-space: -moz-pre-wrap; /* Moz */
 	white-space: -pre-wrap;     /* Opera 4-6 */
@@ -675,6 +695,18 @@ div.line.glow {
 	box-shadow: 0 0 10px var(--glow-color);
 }
 
+span.fold {
+        margin-left: 5px;
+        margin-right: 1px;
+        margin-top: 0px;
+        margin-bottom: 0px;
+        padding: 0px;
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	background-repeat:no-repeat;
+        background-position:center;
+}
 
 span.lineno {
 	padding-right: 4px;
@@ -810,6 +842,10 @@ span.stringliteral {
 
 span.charliteral {
 	color: var(--code-char-literal-color);
+}
+
+span.xmlcdata {
+	color: var(--code-xml-cdata-color);
 }
 
 span.vhdldigit { 
@@ -1226,8 +1262,7 @@ div.directory {
     width: 24px;
     height: 18px;
     margin-bottom: 4px;
-    background-image:url('folderopen.png');
-    background-position: 0px -4px;
+    background-image:var(--icon-folder-open-image);
     background-repeat: repeat-y;
     vertical-align:top;
     display: inline-block;
@@ -1237,8 +1272,7 @@ div.directory {
     width: 24px;
     height: 18px;
     margin-bottom: 4px;
-    background-image:url('folderclosed.png');
-    background-position: 0px -4px;
+    background-image:var(--icon-folder-closed-image);
     background-repeat: repeat-y;
     vertical-align:top;
     display: inline-block;
@@ -1657,7 +1691,7 @@ div.toc {
 }
 
 div.toc li {
-        background: url("bdwn.png") no-repeat scroll 0 5px transparent;
+        background: var(--toc-down-arrow-image) no-repeat scroll 0 5px transparent;
         font: 10px/1.2 var(--font-family-toc);
         margin-top: 5px;
         padding-left: 10px;
@@ -1686,11 +1720,11 @@ div.toc li.level2 {
 }
 
 div.toc li.level3 {
-        margin-left: 30px;
+        margin-left: 15px;
 }
 
 div.toc li.level4 {
-        margin-left: 45px;
+        margin-left: 15px;
 }
 
 span.emoji {
@@ -1969,5 +2003,43 @@ tt, code, kbd, samp
 
 u {
 	text-decoration: underline;
+}
+
+details>summary {
+  list-style-type: none;
+}
+
+details > summary::-webkit-details-marker {
+    display: none;
+}
+
+details>summary::before {
+    content: "\25ba";
+    padding-right:4px;
+    font-size: 80%;
+}
+
+details[open]>summary::before {
+    content: "\25bc";
+    padding-right:4px;
+    font-size: 80%;
+}
+
+body {
+    scrollbar-color: var(--scrollbar-thumb-color) var(--scrollbar-background-color);
+}
+
+::-webkit-scrollbar {
+        background-color: var(--scrollbar-background-color);
+        height: 12px;
+        width: 12px;
+}
+::-webkit-scrollbar-thumb {
+        border-radius: 6px;
+        box-shadow: inset 0 0 12px 12px var(--scrollbar-thumb-color);
+        border: solid 2px transparent;
+}
+::-webkit-scrollbar-corner {
+        background-color: var(--scrollbar-background-color);
 }
 

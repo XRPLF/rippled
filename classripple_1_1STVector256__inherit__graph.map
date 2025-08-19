@@ -1,5 +1,7 @@
 <map id="ripple::STVector256" name="ripple::STVector256">
-<area shape="rect" id="node1" title=" " alt="" coords="70,93,218,119"/>
-<area shape="rect" id="node2" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,13,120,38"/>
-<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="144,5,307,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="70,93,218,119"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,13,120,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="86,46,134,91,130,95,82,49"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="144,5,307,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="198,57,158,95,154,91,194,53"/>
 </map>

@@ -1,8 +1,13 @@
 <map id="ripple::PlainWSPeer&lt; Handler &gt;" name="ripple::PlainWSPeer&lt; Handler &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="683,73,832,113"/>
-<area shape="rect" id="node2" href="$classripple_1_1BaseWSPeer.html" title=" " alt="" coords="451,26,630,81"/>
-<area shape="rect" id="node3" href="$classripple_1_1BasePeer.html" title=" " alt="" coords="200,5,399,45"/>
-<area shape="rect" id="node4" href="$classripple_1_1io__list_1_1work.html" title=" " alt="" coords="5,13,152,38"/>
-<area shape="rect" id="node5" href="$structripple_1_1WSSession.html" title=" " alt="" coords="230,70,369,95"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="447,105,635,159"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="683,73,832,113"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1BaseWSPeer.html" title=" " alt="" coords="451,26,630,81"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="644,70,683,77,682,82,643,75"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1BasePeer.html" title=" " alt="" coords="200,5,399,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="413,36,451,40,451,46,412,41"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1io__list_1_1work.html" title=" " alt="" coords="5,13,152,38"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="166,23,200,23,200,28,166,28"/>
+<area shape="rect" id="Node000005" href="$structripple_1_1WSSession.html" title=" " alt="" coords="230,70,369,95"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="382,70,451,62,452,67,383,75"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="447,105,635,159"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="648,110,682,104,683,109,649,115"/>
 </map>

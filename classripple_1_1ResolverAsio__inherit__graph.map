@@ -1,5 +1,7 @@
 <map id="ripple::ResolverAsio" name="ripple::ResolverAsio">
-<area shape="rect" id="node1" title=" " alt="" coords="20,79,172,104"/>
-<area shape="rect" id="node3" href="$classripple_1_1ResolverAsioImpl.html" title=" " alt="" coords="5,152,187,177"/>
-<area shape="rect" id="node2" href="$classripple_1_1Resolver.html" title=" " alt="" coords="34,5,158,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="20,79,172,104"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1ResolverAsioImpl.html" title=" " alt="" coords="5,152,187,177"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="99,118,99,152,93,152,93,118"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Resolver.html" title=" " alt="" coords="34,5,158,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,44,99,79,93,79,93,44"/>
 </map>

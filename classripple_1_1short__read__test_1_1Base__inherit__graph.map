@@ -1,5 +1,7 @@
 <map id="ripple::short_read_test::Base" name="ripple::short_read_test::Base">
-<area shape="rect" id="node1" title=" " alt="" coords="85,5,221,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1short__read__test_1_1Client.html" title=" " alt="" coords="5,93,141,133"/>
-<area shape="rect" id="node3" href="$classripple_1_1short__read__test_1_1Server.html" title=" " alt="" coords="165,93,301,133"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="85,5,221,45"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1short__read__test_1_1Client.html" title=" " alt="" coords="5,93,141,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="128,57,93,95,89,91,124,54"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1short__read__test_1_1Server.html" title=" " alt="" coords="165,93,301,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="182,54,218,91,214,95,178,57"/>
 </map>

@@ -1,6 +1,9 @@
 <map id="ripple::reduce_relay::SquelchHandler" name="ripple::reduce_relay::SquelchHandler">
-<area shape="rect" id="node1" title="Abstract class." alt="" coords="5,47,156,87"/>
-<area shape="rect" id="node2" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="219,5,365,31"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1OverlaySim.html" title=" " alt="" coords="204,55,380,80"/>
-<area shape="rect" id="node4" href="$structripple_1_1test_1_1reduce__relay__test_1_1Handler.html" title=" " alt="" coords="215,105,369,145"/>
+<area shape="rect" id="Node000001" title="Abstract class." alt="" coords="5,47,156,87"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="219,5,365,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="169,44,236,28,238,33,170,49"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1OverlaySim.html" title=" " alt="" coords="204,55,380,80"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="170,65,204,65,204,70,170,70"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1test_1_1reduce__relay__test_1_1Handler.html" title=" " alt="" coords="215,105,369,145"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="169,88,218,102,217,107,167,94"/>
 </map>

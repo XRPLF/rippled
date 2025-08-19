@@ -1,7 +1,13 @@
 <map id="ripple::ReadView::txs_type" name="ripple::ReadView::txs_type">
-<area shape="rect" id="node1" title=" " alt="" coords="225,5,420,31"/>
-<area shape="rect" id="node3" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="203,93,335,119"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="295,181,473,221"/>
-<area shape="rect" id="node5" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="5,181,192,221"/>
-<area shape="rect" id="node4" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="69,271,270,296"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="225,5,420,31"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="203,93,335,119"/>
+<area shape="poly" id="edge6_Node000003_Node000001" title=" " alt="" coords="310,44,279,94,274,91,306,41"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="295,181,473,221"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="371,169,345,94,324,32,329,30,351,92,376,167"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="288,128,315,155,350,179,347,183,312,159,285,132"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="5,181,192,221"/>
+<area shape="poly" id="edge5_Node000005_Node000003" title=" " alt="" coords="223,126,180,145,123,184,120,179,177,140,220,121"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="69,271,270,296"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="181,257,260,117,265,120,185,260"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="127,230,161,269,157,272,123,234"/>
 </map>

@@ -1,6 +1,9 @@
 <map id="Json::Writer::Impl::Collection" name="Json::Writer::Impl::Collection">
-<area shape="rect" id="node1" title=" " alt="" coords="21,271,155,311"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="5,183,171,208"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="45,95,131,120"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="19,5,157,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="21,271,155,311"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="5,183,171,208"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,222,91,270,85,270,85,222"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="45,95,131,120"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="91,134,91,182,85,182,85,134"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="19,5,157,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="91,59,91,94,85,94,85,59"/>
 </map>

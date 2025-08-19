@@ -1,8 +1,14 @@
 <map id="ripple::ConsensusParms" name="ripple::ConsensusParms">
-<area shape="rect" id="node1" title="Consensus algorithm parameters." alt="" coords="1101,127,1279,153"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="679,59,834,85"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,138,93,163"/>
-<area shape="rect" id="node6" href="$structripple_1_1ConsensusParms_1_1AvalancheCutoff.html" title=" " alt="" coords="235,161,412,201"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="665,278,849,303"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="657,161,856,215"/>
+<area shape="rect" id="Node000001" title="Consensus algorithm parameters." alt="" coords="1101,127,1279,153"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="679,59,834,85"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="848,73,958,83,1078,101,1156,125,1155,130,1077,107,958,88,847,79"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,138,93,163"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="107,140,117,139,399,126,677,124,921,127,1101,133,1101,139,921,133,677,129,399,131,118,144,107,145"/>
+<area shape="rect" id="Node000006" href="$structripple_1_1ConsensusParms_1_1AvalancheCutoff.html" title=" " alt="" coords="235,161,412,201"/>
+<area shape="poly" id="edge6_Node000006_Node000003" title=" " alt="" coords="107,154,235,169,234,174,107,160"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="665,278,849,303"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="826,303,883,310,947,312,1014,304,1046,296,1076,283,1096,270,1114,255,1145,218,1167,181,1181,152,1186,154,1172,183,1149,221,1118,258,1099,275,1079,288,1047,301,1015,310,947,318,882,316,825,308"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="657,161,856,215"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="870,175,1077,153,1103,150,1103,155,1078,159,870,181"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="426,180,657,184,657,189,426,186"/>
 </map>

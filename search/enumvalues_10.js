@@ -21,7 +21,7 @@ var searchData=
   ['private6_18',['PRIVATE6',['../namespaceripple.html#a79683ec651b1658886d9c9ce8434f972a1492bf6d7fc2ce461a9399ecbca58717',1,'ripple']]],
   ['proof_5fpath_5frequest_19',['proof_path_request',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a12daff4da9926d993515c1abbe440294',1,'ripple::TrafficCount']]],
   ['proof_5fpath_5fresponse_20',['proof_path_response',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a58bfe29c5a771bac79ae82168a063ece',1,'ripple::TrafficCount']]],
-  ['proposal_21',['proposal',['../namespaceripple.html#ad5143ceada01141772ae4aab984f94bdab314439bc1697845de3749d51dca7c15',1,'ripple::proposal()'],['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae7dce5bae6aaf31f79826a9eeb0ef3f2',1,'ripple::TrafficCount::proposal()']]],
+  ['proposal_21',['proposal',['../namespaceripple.html#ad5143ceada01141772ae4aab984f94bdab314439bc1697845de3749d51dca7c15',1,'ripple::proposal'],['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae7dce5bae6aaf31f79826a9eeb0ef3f2',1,'ripple::TrafficCount::proposal']]],
   ['proposal_5fduplicate_22',['proposal_duplicate',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a763da39beeba0ea9676a89e59bfd14eb',1,'ripple::TrafficCount']]],
   ['proposal_5funtrusted_23',['proposal_untrusted',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a5a75c17c55001c9b047fff31935c9748',1,'ripple::TrafficCount']]],
   ['proposing_24',['proposing',['../namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44',1,'ripple']]],

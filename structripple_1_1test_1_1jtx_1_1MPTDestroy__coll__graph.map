@@ -1,7 +1,11 @@
 <map id="ripple::test::jtx::MPTDestroy" name="ripple::test::jtx::MPTDestroy">
-<area shape="rect" id="node1" title=" " alt="" coords="288,107,413,147"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,160,45"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,69,160,109"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="13,144,152,184"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,208,160,248"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="288,107,413,147"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,160,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="168,47,265,82,313,104,311,109,263,86,166,52"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,69,160,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="174,99,288,115,287,121,173,105"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="13,144,152,184"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="166,168,214,168,263,161,312,144,314,149,265,167,215,173,166,174"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,208,160,248"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="173,216,219,205,263,190,298,169,327,145,330,149,301,173,265,194,220,210,174,221"/>
 </map>

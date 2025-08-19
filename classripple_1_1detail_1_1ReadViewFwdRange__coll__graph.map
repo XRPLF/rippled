@@ -1,8 +1,15 @@
 <map id="ripple::detail::ReadViewFwdRange&lt; ValueType &gt;" name="ripple::detail::ReadViewFwdRange&lt; ValueType &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="228,5,415,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,135,137,161"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="228,69,415,109"/>
-<area shape="rect" id="node6" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="233,259,410,299"/>
-<area shape="rect" id="node3" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="464,119,665,145"/>
-<area shape="rect" id="node5" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="467,214,662,239"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="228,5,415,45"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,135,137,161"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,126,159,91,227,55,256,43,258,48,229,60,161,95,105,130"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="228,69,415,109"/>
+<area shape="poly" id="edge4_Node000004_Node000002" title=" " alt="" coords="139,130,235,107,236,112,140,135"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="233,259,410,299"/>
+<area shape="poly" id="edge7_Node000006_Node000002" title=" " alt="" coords="90,170,121,208,141,226,163,242,197,257,233,267,232,272,195,262,160,246,137,230,117,212,86,174"/>
+<area shape="rect" id="Node000003" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="464,119,665,145"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="451,138,138,149,138,143,450,133"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="428,105,492,117,491,122,427,111"/>
+<area shape="rect" id="Node000005" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="467,214,662,239"/>
+<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="470,214,137,161,138,156,471,209"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="423,254,504,237,505,242,424,259"/>
 </map>

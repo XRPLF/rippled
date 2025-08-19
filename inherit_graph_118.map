@@ -1,7 +1,11 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,69,203,94"/>
-<area shape="rect" id="node2" href="$classripple_1_1Resource_1_1ResourceManager__test_1_1TestLogic.html" title=" " alt="" coords="251,5,445,45"/>
-<area shape="rect" id="node3" href="$structstd_1_1hash_3_01ripple_1_1Issue_01_4.html" title=" " alt="" coords="277,69,419,109"/>
-<area shape="rect" id="node4" href="$structboost_1_1hash_3_01ripple_1_1Issue_01_4.html" title=" " alt="" coords="493,69,643,109"/>
-<area shape="rect" id="node5" href="$classripple_1_1Resource_1_1Logic.html" title=" " alt="" coords="19,13,189,38"/>
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,69,203,94"/>
+<area shape="rect" id="Node000001" href="$classripple_1_1Resource_1_1ResourceManager__test_1_1TestLogic.html" title=" " alt="" coords="251,5,445,45"/>
+<area shape="poly" id="edge367_Node000000_Node000001" title=" " alt="" coords="173,63,260,43,261,48,174,68"/>
+<area shape="rect" id="Node000003" href="$structstd_1_1hash_3_01ripple_1_1Issue_01_4.html" title=" " alt="" coords="277,69,419,109"/>
+<area shape="poly" id="edge368_Node000000_Node000003" title=" " alt="" coords="216,82,277,84,277,90,216,88"/>
+<area shape="rect" id="Node000004" href="$structboost_1_1hash_3_01ripple_1_1Issue_01_4.html" title=" " alt="" coords="493,69,643,109"/>
+<area shape="poly" id="edge369_Node000003_Node000004" title=" " alt="" coords="432,87,493,87,493,92,432,92"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Resource_1_1Logic.html" title=" " alt="" coords="19,13,189,38"/>
+<area shape="poly" id="edge370_Node000002_Node000001" title=" " alt="" coords="202,23,250,23,250,28,202,28"/>
 </map>

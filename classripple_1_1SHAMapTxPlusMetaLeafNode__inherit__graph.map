@@ -1,7 +1,11 @@
 <map id="ripple::SHAMapTxPlusMetaLeafNode" name="ripple::SHAMapTxPlusMetaLeafNode">
-<area shape="rect" id="node1" title="A leaf node for a transaction and its associated metadata." alt="" coords="120,240,319,280"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="9,159,193,185"/>
-<area shape="rect" id="node3" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="9,79,192,104"/>
-<area shape="rect" id="node4" href="$structripple_1_1IntrusiveRefCounts.html" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,5,196,31"/>
-<area shape="rect" id="node5" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="217,152,462,192"/>
+<area shape="rect" id="Node000001" title="A leaf node for a transaction and its associated metadata." alt="" coords="120,240,319,280"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="9,159,193,185"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="129,191,195,238,192,242,126,195"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="9,79,192,104"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="103,118,103,159,98,159,98,118"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1IntrusiveRefCounts.html" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,5,196,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="103,44,103,79,98,79,98,44"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="217,152,462,192"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="303,203,247,242,244,238,300,198"/>
 </map>

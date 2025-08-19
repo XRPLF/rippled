@@ -1,4 +1,5 @@
 <map id="beast::PropertyStream" name="beast::PropertyStream">
-<area shape="rect" id="node1" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="19,5,187,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1JsonPropertyStream.html" title="A PropertyStream::Sink which produces a Json::Value of type objectValue." alt="" coords="5,79,201,104"/>
+<area shape="rect" id="Node000001" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="19,5,187,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1JsonPropertyStream.html" title="A PropertyStream::Sink which produces a Json::Value of type objectValue." alt="" coords="5,79,201,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="106,44,106,79,101,79,101,44"/>
 </map>

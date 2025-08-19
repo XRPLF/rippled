@@ -1,4 +1,5 @@
 <map id="beast::unit_test::detail::reporter&lt; class &gt;" name="beast::unit_test::detail::reporter&lt; class &gt;">
-<area shape="rect" id="node1" title="A simple test runner that writes everything to a stream in real time." alt="" coords="8,79,176,119"/>
-<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1runner.html" title="Unit test runner interface." alt="" coords="5,5,179,31"/>
+<area shape="rect" id="Node000001" title="A simple test runner that writes everything to a stream in real time." alt="" coords="8,79,176,119"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1unit__test_1_1runner.html" title="Unit test runner interface." alt="" coords="5,5,179,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,44,95,79,89,79,89,44"/>
 </map>

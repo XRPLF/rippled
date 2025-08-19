@@ -1,5 +1,7 @@
 <map id="ripple::STObject::Proxy&lt; T &gt;" name="ripple::STObject::Proxy&lt; T &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="115,5,323,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1STObject_1_1OptionalProxy.html" title=" " alt="" coords="5,79,193,119"/>
-<area shape="rect" id="node3" href="$classripple_1_1STObject_1_1ValueProxy.html" title=" " alt="" coords="217,86,461,111"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="115,5,323,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1STObject_1_1OptionalProxy.html" title=" " alt="" coords="5,79,193,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="192,41,130,81,127,76,189,36"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1STObject_1_1ValueProxy.html" title=" " alt="" coords="217,86,461,111"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="250,36,323,84,320,88,247,41"/>
 </map>

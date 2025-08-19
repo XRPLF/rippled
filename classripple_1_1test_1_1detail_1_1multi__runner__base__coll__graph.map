@@ -1,9 +1,16 @@
 <map id="ripple::test::detail::multi_runner_base&lt; IsParent &gt;" name="ripple::test::detail::multi_runner_base&lt; IsParent &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="844,121,1007,175"/>
-<area shape="rect" id="node2" href="$structripple_1_1test_1_1detail_1_1multi__runner__base_1_1inner.html" title=" " alt="" coords="509,65,671,119"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="183,6,373,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,43,93,69"/>
-<area shape="rect" id="node6" href="$structripple_1_1test_1_1detail_1_1results.html" title=" " alt="" coords="209,72,347,112"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="201,137,355,162"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="501,143,679,198"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="844,121,1007,175"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1test_1_1detail_1_1multi__runner__base_1_1inner.html" title=" " alt="" coords="509,65,671,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="686,105,844,132,843,137,685,110"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="183,6,373,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="346,32,509,70,508,76,345,37"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,43,93,69"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="106,40,117,37,182,27,183,32,118,43,107,45"/>
+<area shape="rect" id="Node000006" href="$structripple_1_1test_1_1detail_1_1results.html" title=" " alt="" coords="209,72,347,112"/>
+<area shape="poly" id="edge6_Node000006_Node000004" title=" " alt="" coords="77,75,97,87,118,96,164,103,209,102,209,107,163,108,117,101,94,92,75,79"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="201,137,355,162"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="361,132,508,104,509,110,362,137"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="361,89,508,89,508,95,361,95"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="501,143,679,198"/>
+<area shape="poly" id="edge7_Node000001_Node000007" title=" " alt="" coords="692,161,843,151,844,156,692,166"/>
 </map>

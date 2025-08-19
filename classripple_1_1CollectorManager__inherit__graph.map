@@ -1,4 +1,5 @@
 <map id="ripple::CollectorManager" name="ripple::CollectorManager">
-<area shape="rect" id="node1" title="Provides the beast::insight::Collector service." alt="" coords="17,5,200,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1CollectorManagerImp.html" title=" " alt="" coords="5,79,212,104"/>
+<area shape="rect" id="Node000001" title="Provides the beast::insight::Collector service." alt="" coords="17,5,200,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1CollectorManagerImp.html" title=" " alt="" coords="5,79,212,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,44,111,79,106,79,106,44"/>
 </map>

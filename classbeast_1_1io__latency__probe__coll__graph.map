@@ -1,6 +1,9 @@
 <map id="beast::io_latency_probe&lt; Clock &gt;" name="beast::io_latency_probe&lt; Clock &gt;">
-<area shape="rect" id="node1" title="Measures handler latency on an io_service queue." alt="" coords="200,93,377,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="5,5,164,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable_any.html" title=" " alt="" coords="188,5,389,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="414,5,502,31"/>
+<area shape="rect" id="Node000001" title="Measures handler latency on an io_service queue." alt="" coords="200,93,377,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="5,5,164,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="123,34,249,91,246,96,121,39"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable_any.html" title=" " alt="" coords="188,5,389,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="291,44,291,93,286,93,286,44"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="414,5,502,31"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="426,40,324,95,322,91,424,35"/>
 </map>

@@ -1,7 +1,11 @@
 <map id="ripple::LoadFeeTrack" name="ripple::LoadFeeTrack">
-<area shape="rect" id="node1" title="Manages the current fee schedule." alt="" coords="143,299,298,324"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,93,108,119"/>
-<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="148,93,259,119"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="130,5,277,31"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="283,93,375,119"/>
+<area shape="rect" id="Node000001" title="Manages the current fee schedule." alt="" coords="143,299,298,324"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,93,108,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="53,133,48,164,46,202,53,240,60,257,71,273,81,281,98,287,144,298,143,303,97,293,79,285,67,277,55,260,48,241,41,202,42,164,48,132"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="148,93,259,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="208,132,222,298,217,299,203,133"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="130,5,277,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="206,45,206,93,201,93,201,45"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="283,93,375,119"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="319,132,229,300,224,297,314,129"/>
 </map>

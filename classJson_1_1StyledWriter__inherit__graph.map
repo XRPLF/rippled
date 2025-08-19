@@ -1,4 +1,5 @@
 <map id="Json::StyledWriter" name="Json::StyledWriter">
-<area shape="rect" id="node1" title="Writes a Value in JSON format in a human friendly way." alt="" coords="5,79,144,104"/>
-<area shape="rect" id="node2" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="10,5,139,31"/>
+<area shape="rect" id="Node000001" title="Writes a Value in JSON format in a human friendly way." alt="" coords="5,79,144,104"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="10,5,139,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="77,44,77,79,72,79,72,44"/>
 </map>

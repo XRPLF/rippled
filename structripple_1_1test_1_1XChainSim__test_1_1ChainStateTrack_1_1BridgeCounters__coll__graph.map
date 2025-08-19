@@ -1,7 +1,11 @@
 <map id="ripple::test::XChainSim_test::ChainStateTrack::BridgeCounters" name="ripple::test::XChainSim_test::ChainStateTrack::BridgeCounters">
-<area shape="rect" id="node1" title=" " alt="" coords="102,181,273,236"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,93,164,119"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="41,5,129,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="189,93,391,119"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="239,5,341,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="102,181,273,236"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,93,164,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="108,127,162,179,158,183,104,130"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="41,5,129,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="87,45,87,93,82,93,82,45"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="189,93,391,119"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="270,130,216,183,212,179,266,127"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="239,5,341,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="293,45,293,93,287,93,287,45"/>
 </map>

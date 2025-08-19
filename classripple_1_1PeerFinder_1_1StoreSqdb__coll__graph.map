@@ -1,6 +1,9 @@
 <map id="ripple::PeerFinder::StoreSqdb" name="ripple::PeerFinder::StoreSqdb">
-<area shape="rect" id="node1" title="Database persistence for PeerFinder using SQLite." alt="" coords="27,196,163,236"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="5,93,141,133"/>
-<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="166,101,277,126"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="148,5,295,31"/>
+<area shape="rect" id="Node000001" title="Database persistence for PeerFinder using SQLite." alt="" coords="27,196,163,236"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="5,93,141,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="83,146,93,195,88,196,78,147"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="166,101,277,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="198,137,120,198,117,194,194,133"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="148,5,295,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="224,44,224,101,219,101,219,44"/>
 </map>

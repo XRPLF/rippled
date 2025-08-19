@@ -1,7 +1,11 @@
 <map id="ripple::PeerFinder::Config" name="ripple::PeerFinder::Config">
-<area shape="rect" id="node1" title="PeerFinder configuration settings." alt="" coords="101,212,237,252"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,95,93,120"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="118,95,221,120"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="245,95,331,120"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="219,5,357,45"/>
+<area shape="rect" id="Node000001" title="PeerFinder configuration settings." alt="" coords="101,212,237,252"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,95,93,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="63,131,79,159,101,186,133,210,129,214,97,190,74,162,58,134"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="118,95,221,120"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="172,134,172,212,167,212,167,134"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="245,95,331,120"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="286,135,276,163,259,190,244,203,226,214,223,210,240,199,255,186,272,160,281,133"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="219,5,357,45"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="291,59,291,94,285,94,285,59"/>
 </map>

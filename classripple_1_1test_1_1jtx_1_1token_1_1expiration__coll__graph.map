@@ -1,4 +1,5 @@
 <map id="ripple::test::jtx::token::expiration" name="ripple::test::jtx::token::expiration">
-<area shape="rect" id="node1" title="Sets the optional Expiration field on an NFTokenOffer." alt="" coords="5,93,137,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="20,5,123,31"/>
+<area shape="rect" id="Node000001" title="Sets the optional Expiration field on an NFTokenOffer." alt="" coords="5,93,137,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="20,5,123,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="74,44,74,93,69,93,69,44"/>
 </map>

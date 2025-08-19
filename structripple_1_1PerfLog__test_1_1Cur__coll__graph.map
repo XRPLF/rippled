@@ -1,6 +1,9 @@
 <map id="ripple::PerfLog_test::Cur" name="ripple::PerfLog_test::Cur">
-<area shape="rect" id="node1" title=" " alt="" coords="10,183,189,208"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,95,108,120"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="132,95,219,120"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="106,5,245,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="10,183,189,208"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,95,108,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="71,131,96,181,91,183,66,134"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="132,95,219,120"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="158,132,112,184,108,180,154,129"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="106,5,245,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="178,59,178,94,173,94,173,59"/>
 </map>

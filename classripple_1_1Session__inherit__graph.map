@@ -1,8 +1,13 @@
 <map id="ripple::Session" name="ripple::Session">
-<area shape="rect" id="node1" title="Persistent state information for a connection session." alt="" coords="5,99,123,124"/>
-<area shape="rect" id="node2" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="171,5,361,60"/>
-<area shape="rect" id="node4" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="175,84,357,139"/>
-<area shape="rect" id="node6" href="$classripple_1_1BaseHTTPPeer.html" title="Represents an active connection." alt="" coords="185,163,347,203"/>
-<area shape="rect" id="node3" href="$classripple_1_1PlainHTTPPeer.html" title=" " alt="" coords="409,13,572,53"/>
-<area shape="rect" id="node5" href="$classripple_1_1SSLHTTPPeer.html" title=" " alt="" coords="414,91,567,131"/>
+<area shape="rect" id="Node000001" title="Persistent state information for a connection session." alt="" coords="5,99,123,124"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="171,5,361,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,91,194,58,196,63,111,96"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="175,84,357,139"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="137,109,174,109,174,114,137,114"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1BaseHTTPPeer.html" title="Represents an active connection." alt="" coords="185,163,347,203"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="112,127,172,149,206,161,204,166,170,154,110,132"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1PlainHTTPPeer.html" title=" " alt="" coords="409,13,572,53"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="375,30,409,30,409,35,375,35"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1SSLHTTPPeer.html" title=" " alt="" coords="414,91,567,131"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="371,109,414,109,414,114,371,114"/>
 </map>

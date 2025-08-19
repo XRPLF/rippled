@@ -1,5 +1,7 @@
 <map id="ripple::test::jtx::AMMTest::gate" name="ripple::test::jtx::AMMTest::gate">
-<area shape="rect" id="node1" title=" " alt="" coords="105,93,231,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="5,5,176,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="201,5,293,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="105,93,231,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="5,5,176,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,39,154,91,150,95,107,43"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="201,5,293,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="230,43,186,95,182,91,226,39"/>
 </map>

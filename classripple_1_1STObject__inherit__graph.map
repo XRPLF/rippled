@@ -1,8 +1,13 @@
 <map id="ripple::STObject" name="ripple::STObject">
-<area shape="rect" id="node1" title=" " alt="" coords="178,93,303,119"/>
-<area shape="rect" id="node4" href="$classripple_1_1STLedgerEntry.html" title=" " alt="" coords="5,167,167,192"/>
-<area shape="rect" id="node5" href="$classripple_1_1STTx.html" title=" " alt="" coords="191,167,290,192"/>
-<area shape="rect" id="node6" href="$classripple_1_1STValidation.html" title=" " alt="" coords="315,167,463,192"/>
-<area shape="rect" id="node2" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="102,13,217,38"/>
-<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="241,5,403,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="178,93,303,119"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1STLedgerEntry.html" title=" " alt="" coords="5,167,167,192"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="205,127,112,169,110,164,202,122"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1STTx.html" title=" " alt="" coords="191,167,290,192"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="243,132,243,167,238,167,238,132"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1STValidation.html" title=" " alt="" coords="315,167,463,192"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="278,122,366,164,363,169,275,127"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="102,13,217,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="183,46,230,91,227,95,179,49"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="241,5,403,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="294,57,255,95,251,91,290,53"/>
 </map>

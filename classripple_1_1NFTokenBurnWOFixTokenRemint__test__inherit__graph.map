@@ -1,5 +1,7 @@
 <map id="ripple::NFTokenBurnWOFixTokenRemint_test" name="ripple::NFTokenBurnWOFixTokenRemint_test">
-<area shape="rect" id="node1" title=" " alt="" coords="28,152,221,192"/>
-<area shape="rect" id="node2" href="$classripple_1_1NFTokenBurnBaseUtil__test.html" title=" " alt="" coords="5,79,244,104"/>
-<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="43,5,206,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="28,152,221,192"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1NFTokenBurnBaseUtil__test.html" title=" " alt="" coords="5,79,244,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="127,118,127,152,122,152,122,118"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="43,5,206,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="127,44,127,79,122,79,122,44"/>
 </map>

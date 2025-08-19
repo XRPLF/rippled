@@ -1,7 +1,11 @@
 <map id="ripple::PeerFinder::Bootcache" name="ripple::PeerFinder::Bootcache">
-<area shape="rect" id="node1" title="Stores IP addresses useful for gaining initial connections." alt="" coords="177,196,313,236"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="5,93,141,133"/>
-<area shape="rect" id="node3" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="165,93,325,133"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="350,101,461,126"/>
-<area shape="rect" id="node5" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="332,5,479,31"/>
+<area shape="rect" id="Node000001" title="Stores IP addresses useful for gaining initial connections." alt="" coords="177,196,313,236"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1PeerFinder_1_1Store.html" title="Abstract persistence for PeerFinder data." alt="" coords="5,93,141,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,138,214,194,212,198,116,143"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="165,93,325,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="248,147,248,196,243,196,243,147"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="350,101,461,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="377,136,277,198,274,194,374,131"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="332,5,479,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="408,44,408,101,403,101,403,44"/>
 </map>

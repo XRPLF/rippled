@@ -1,6 +1,9 @@
 <map id="ripple::test::csf::CollectByNode&lt; CollectorType &gt;" name="ripple::test::csf::CollectByNode&lt; CollectorType &gt;">
-<area shape="rect" id="node1" title="Maintain an instance of a Collector per peer." alt="" coords="879,57,1115,97"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="589,57,776,97"/>
-<area shape="rect" id="node3" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="341,57,507,97"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,5,292,148"/>
+<area shape="rect" id="Node000001" title="Maintain an instance of a Collector per peer." alt="" coords="879,57,1115,97"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="589,57,776,97"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="790,74,879,74,879,79,790,79"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="341,57,507,97"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="520,74,589,74,589,79,520,79"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,5,292,148"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="306,74,341,74,341,79,306,79"/>
 </map>

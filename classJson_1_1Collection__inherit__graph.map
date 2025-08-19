@@ -1,6 +1,9 @@
 <map id="Json::Collection" name="Json::Collection">
-<area shape="rect" id="node1" title=" " alt="" coords="50,5,173,31"/>
-<area shape="rect" id="node2" href="$classJson_1_1Array.html" title="Represents a JSON array being written to a Writer." alt="" coords="5,79,97,104"/>
-<area shape="rect" id="node3" href="$classJson_1_1Object.html" title="Represents a JSON object being written to a Writer." alt="" coords="122,79,221,104"/>
-<area shape="rect" id="node4" href="$classJson_1_1Object_1_1Root.html" title=" " alt="" coords="103,152,240,177"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="50,5,173,31"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1Array.html" title="Represents a JSON array being written to a Writer." alt="" coords="5,79,97,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,43,63,80,59,77,91,40"/>
+<area shape="rect" id="Node000003" href="$classJson_1_1Object.html" title="Represents a JSON object being written to a Writer." alt="" coords="122,79,221,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="132,40,164,77,160,80,128,43"/>
+<area shape="rect" id="Node000004" href="$classJson_1_1Object_1_1Root.html" title=" " alt="" coords="103,152,240,177"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="174,118,174,152,169,152,169,118"/>
 </map>

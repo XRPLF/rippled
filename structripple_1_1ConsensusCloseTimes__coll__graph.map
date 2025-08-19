@@ -1,6 +1,9 @@
 <map id="ripple::ConsensusCloseTimes" name="ripple::ConsensusCloseTimes">
-<area shape="rect" id="node1" title="Stores the set of initial close times." alt="" coords="129,196,342,221"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="8,93,175,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,5,177,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="199,93,371,133"/>
+<area shape="rect" id="Node000001" title="Stores the set of initial close times." alt="" coords="129,196,342,221"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="8,93,175,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="133,139,219,194,216,198,131,143"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="5,5,177,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="94,44,94,93,89,93,89,44"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="199,93,371,133"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="271,146,244,197,239,194,266,144"/>
 </map>

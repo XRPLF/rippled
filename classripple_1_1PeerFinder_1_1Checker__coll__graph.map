@@ -1,5 +1,7 @@
 <map id="ripple::PeerFinder::Checker&lt; Protocol &gt;" name="ripple::PeerFinder::Checker&lt; Protocol &gt;">
-<area shape="rect" id="node1" title="Tests remote listening sockets to make sure they are connectible." alt="" coords="46,93,211,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="5,5,97,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="122,5,293,31"/>
+<area shape="rect" id="Node000001" title="Tests remote listening sockets to make sure they are connectible." alt="" coords="46,93,211,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="5,5,97,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="72,39,115,91,111,95,67,43"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="122,5,293,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="191,43,147,95,143,91,187,39"/>
 </map>

@@ -1,5 +1,7 @@
 <map id="ripple::RelationalDatabase::CountMinMax" name="ripple::RelationalDatabase::CountMinMax">
-<area shape="rect" id="node1" title=" " alt="" coords="20,108,215,148"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,5,93,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="134,5,237,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="20,108,215,148"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,5,93,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="47,44,47,64,53,83,63,95,76,106,73,110,59,99,48,85,42,65,42,44"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="134,5,237,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="179,45,158,85,139,109,135,106,154,83,174,42"/>
 </map>

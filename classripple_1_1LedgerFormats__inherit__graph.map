@@ -1,4 +1,5 @@
 <map id="ripple::LedgerFormats" name="ripple::LedgerFormats">
-<area shape="rect" id="node1" title="Holds the list of known ledger entry formats." alt="" coords="56,93,220,119"/>
-<area shape="rect" id="node2" href="$classripple_1_1KnownFormats.html" title=" " alt="" coords="5,5,271,45"/>
+<area shape="rect" id="Node000001" title="Holds the list of known ledger entry formats." alt="" coords="56,93,220,119"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1KnownFormats.html" title=" " alt="" coords="5,5,271,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="141,59,141,93,135,93,135,59"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="ripple::NodeStore::MemoryBackend" name="ripple::NodeStore::MemoryBackend">
-<area shape="rect" id="node1" title=" " alt="" coords="5,93,148,133"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Backend.html" title="A backend used for the NodeStore." alt="" coords="5,5,148,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,93,148,133"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1NodeStore_1_1Backend.html" title="A backend used for the NodeStore." alt="" coords="5,5,148,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,59,79,93,74,93,74,59"/>
 </map>

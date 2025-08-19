@@ -1,5 +1,7 @@
 <map id="ripple::PeerFinder::Checker&lt; Protocol &gt;::async_op&lt; Handler &gt;" name="ripple::PeerFinder::Checker&lt; Protocol &gt;::async_op&lt; Handler &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="467,13,653,67"/>
-<area shape="rect" id="node2" href="$structripple_1_1PeerFinder_1_1Checker_1_1basic__async__op.html" title=" " alt="" coords="268,13,419,67"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,220,75"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="467,13,653,67"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1PeerFinder_1_1Checker_1_1basic__async__op.html" title=" " alt="" coords="268,13,419,67"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="432,37,466,37,466,43,432,43"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,220,75"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="234,37,268,37,268,43,234,43"/>
 </map>

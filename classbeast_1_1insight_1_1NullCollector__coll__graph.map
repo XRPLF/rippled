@@ -1,4 +1,5 @@
 <map id="beast::insight::NullCollector" name="beast::insight::NullCollector">
-<area shape="rect" id="node1" title="A Collector which does not collect metrics." alt="" coords="5,79,208,104"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="19,5,195,31"/>
+<area shape="rect" id="Node000001" title="A Collector which does not collect metrics." alt="" coords="5,79,208,104"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="19,5,195,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,44,109,79,104,79,104,44"/>
 </map>

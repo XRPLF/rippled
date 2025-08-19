@@ -1,7 +1,11 @@
 <map id="ripple::STValidation" name="ripple::STValidation">
-<area shape="rect" id="node1" title=" " alt="" coords="154,181,302,207"/>
-<area shape="rect" id="node2" href="$classripple_1_1STObject.html" title=" " alt="" coords="81,101,207,126"/>
-<area shape="rect" id="node3" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,13,120,38"/>
-<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="144,5,307,45"/>
-<area shape="rect" id="node5" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="231,93,393,133"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="154,181,302,207"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1STObject.html" title=" " alt="" coords="81,101,207,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="168,134,217,179,214,183,165,137"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,13,120,38"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="85,46,135,98,131,102,81,50"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="144,5,307,45"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="200,57,157,102,153,98,196,54"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="231,93,393,133"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="284,145,242,183,239,179,280,141"/>
 </map>

@@ -1,5 +1,7 @@
 <map id="ripple::ConnectAttempt" name="ripple::ConnectAttempt">
-<area shape="rect" id="node1" title="Manages an outbound connection attempt." alt="" coords="97,93,271,119"/>
-<area shape="rect" id="node2" href="$classripple_1_1OverlayImpl_1_1Child.html" title=" " alt="" coords="5,5,152,45"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="176,5,403,45"/>
+<area shape="rect" id="Node000001" title="Manages an outbound connection attempt." alt="" coords="97,93,271,119"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1OverlayImpl_1_1Child.html" title=" " alt="" coords="5,5,152,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="117,51,170,91,167,95,113,56"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="176,5,403,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="255,56,201,95,198,91,251,51"/>
 </map>

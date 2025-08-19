@@ -1,4 +1,5 @@
 <map id="ripple::Writer" name="ripple::Writer">
-<area shape="rect" id="node1" title=" " alt="" coords="28,5,135,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1SimpleWriter.html" title="Deprecated: Writer that serializes a HTTP/1 message." alt="" coords="5,79,157,104"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="28,5,135,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1SimpleWriter.html" title="Deprecated: Writer that serializes a HTTP/1 message." alt="" coords="5,79,157,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="84,44,84,79,79,79,79,44"/>
 </map>

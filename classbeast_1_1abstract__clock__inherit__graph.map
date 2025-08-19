@@ -1,5 +1,7 @@
 <map id="beast::abstract_clock&lt; Clock &gt;" name="beast::abstract_clock&lt; Clock &gt;">
-<area shape="rect" id="node1" title="Abstract interface to a clock." alt="" coords="97,5,257,45"/>
-<area shape="rect" id="node2" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="5,93,167,148"/>
-<area shape="rect" id="node3" href="$classbeast_1_1manual__clock.html" title="Manual clock implementation." alt="" coords="191,101,347,141"/>
+<area shape="rect" id="Node000001" title="Abstract interface to a clock." alt="" coords="97,5,257,45"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="5,93,167,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="151,57,113,95,110,91,147,53"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1manual__clock.html" title="Manual clock implementation." alt="" coords="191,101,347,141"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="207,53,252,99,248,102,203,57"/>
 </map>

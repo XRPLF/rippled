@@ -1,6 +1,9 @@
 <map id="ripple::Logs" name="ripple::Logs">
-<area shape="rect" id="node1" title="Manages partitions for logging." alt="" coords="5,55,103,80"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1CaptureLogs.html" title="Log manager for CaptureSinks." alt="" coords="174,5,355,31"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1CheckMessageLogs.html" title="Log manager that searches for a specific message substring." alt="" coords="151,55,379,80"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1jtx_1_1SuiteLogs.html" title=" " alt="" coords="202,105,327,145"/>
+<area shape="rect" id="Node000001" title="Manages partitions for logging." alt="" coords="5,55,103,80"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1CaptureLogs.html" title="Log manager for CaptureSinks." alt="" coords="174,5,355,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="114,49,150,39,200,28,201,33,151,45,115,54"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1CheckMessageLogs.html" title="Log manager that searches for a specific message substring." alt="" coords="151,55,379,80"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="117,65,151,65,151,70,117,70"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1test_1_1jtx_1_1SuiteLogs.html" title=" " alt="" coords="202,105,327,145"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="115,81,203,105,201,110,114,86"/>
 </map>

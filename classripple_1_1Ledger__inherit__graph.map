@@ -1,9 +1,15 @@
 <map id="ripple::Ledger" name="ripple::Ledger">
-<area shape="rect" id="node1" title="Holds a ledger." alt="" coords="448,95,559,121"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="210,5,375,45"/>
-<area shape="rect" id="node3" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="185,70,400,95"/>
-<area shape="rect" id="node4" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,70,137,95"/>
-<area shape="rect" id="node5" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="217,119,368,145"/>
-<area shape="rect" id="node6" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="8,119,135,145"/>
-<area shape="rect" id="node7" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="211,169,374,209"/>
+<area shape="rect" id="Node000001" title="Holds a ledger." alt="" coords="448,95,559,121"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="210,5,375,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="380,47,401,55,480,93,478,98,399,60,378,52"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="185,70,400,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="412,94,448,99,447,104,412,100"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,70,137,95"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="151,80,185,80,185,85,151,85"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="217,119,368,145"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="382,119,447,112,448,117,382,124"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="8,119,135,145"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="148,129,217,129,217,135,148,135"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="211,169,374,209"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="378,162,399,155,477,118,479,123,401,160,380,167"/>
 </map>

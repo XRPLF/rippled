@@ -1,5 +1,7 @@
 <map id="ripple::InboundLedgers" name="ripple::InboundLedgers">
-<area shape="rect" id="node1" title="Manages the lifetime of inbound ledgers." alt="" coords="125,5,296,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1InboundLedgersImp.html" title=" " alt="" coords="5,86,200,111"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1MagicInboundLedgers.html" title="Simulate a network InboundLedgers." alt="" coords="225,79,415,119"/>
+<area shape="rect" id="Node000001" title="Manages the lifetime of inbound ledgers." alt="" coords="125,5,296,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1InboundLedgersImp.html" title=" " alt="" coords="5,86,200,111"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="185,41,120,88,117,84,182,37"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1MagicInboundLedgers.html" title="Simulate a network InboundLedgers." alt="" coords="225,79,415,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="239,36,295,76,292,81,236,41"/>
 </map>

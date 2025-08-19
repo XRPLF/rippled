@@ -1,7 +1,11 @@
 <map id="antithesis::JSON" name="antithesis::JSON">
-<area shape="rect" id="node1" title=" " alt="" coords="69,272,195,297"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="51,183,213,223"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,95,118,120"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/variant.html" title=" " alt="" coords="143,95,239,120"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="69,272,195,297"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="51,183,213,223"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="135,236,135,272,129,272,129,236"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,95,118,120"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="91,130,123,181,118,184,87,133"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="77,59,77,94,72,94,72,59"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/variant.html" title=" " alt="" coords="143,95,239,120"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="179,133,146,184,142,181,174,130"/>
 </map>

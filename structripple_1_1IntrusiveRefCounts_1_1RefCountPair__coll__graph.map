@@ -1,5 +1,7 @@
 <map id="ripple::IntrusiveRefCounts::RefCountPair" name="ripple::IntrusiveRefCounts::RefCountPair">
-<area shape="rect" id="node1" title="Unpack the count and tag fields from the packed atomic integer form." alt="" coords="51,167,241,207"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="185,5,288,31"/>
+<area shape="rect" id="Node000001" title="Unpack the count and tag fields from the packed atomic integer form." alt="" coords="51,167,241,207"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="52,45,47,92,51,118,60,141,72,154,86,164,83,169,68,158,56,144,45,119,42,92,47,44"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="185,5,288,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="239,45,231,93,222,120,209,144,184,168,180,165,205,141,218,118,226,92,233,44"/>
 </map>

@@ -1,8 +1,13 @@
 <map id="io_latency_probe_test::test_sampler" name="io_latency_probe_test::test_sampler">
-<area shape="rect" id="node1" title=" " alt="" coords="635,97,800,137"/>
-<area shape="rect" id="node2" href="$classbeast_1_1io__latency__probe.html" title=" " alt="" coords="329,40,506,95"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="27,5,185,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable_any.html" title=" " alt="" coords="5,55,207,80"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="62,104,150,129"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="321,119,513,159"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="635,97,800,137"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1io__latency__probe.html" title=" " alt="" coords="329,40,506,95"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="520,81,635,101,634,106,519,87"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="27,5,185,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="199,29,298,45,329,50,328,55,297,50,199,35"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable_any.html" title=" " alt="" coords="5,55,207,80"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="220,65,328,65,328,70,220,70"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="62,104,150,129"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="163,106,297,85,328,80,329,85,298,90,164,111"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="321,119,513,159"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="527,128,634,120,635,126,527,134"/>
 </map>

@@ -1,6 +1,9 @@
 <map id="ripple::LockedSociSession" name="ripple::LockedSociSession">
-<area shape="rect" id="node1" title=" " alt="" coords="60,196,249,221"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="5,93,165,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/unique_lock.html" title=" " alt="" coords="189,93,352,133"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="191,5,350,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="60,196,249,221"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="5,93,165,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,143,148,194,144,197,105,146"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/unique_lock.html" title=" " alt="" coords="189,93,352,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="238,144,171,198,168,194,235,140"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="191,5,350,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="273,44,273,93,268,93,268,44"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="ripple::AsyncObject&lt; Derived &gt;" name="ripple::AsyncObject&lt; Derived &gt;">
-<area shape="rect" id="node1" title="Mix&#45;in to track when all pending I/O is complete." alt="" coords="5,93,153,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="8,5,151,31"/>
+<area shape="rect" id="Node000001" title="Mix&#45;in to track when all pending I/O is complete." alt="" coords="5,93,153,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="8,5,151,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="82,44,82,93,77,93,77,44"/>
 </map>

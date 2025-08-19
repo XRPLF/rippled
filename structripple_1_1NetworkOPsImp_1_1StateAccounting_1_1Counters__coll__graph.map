@@ -1,5 +1,7 @@
 <map id="ripple::NetworkOPsImp::StateAccounting::Counters" name="ripple::NetworkOPsImp::StateAccounting::Counters">
-<area shape="rect" id="node1" title=" " alt="" coords="41,93,243,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="133,5,325,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="41,93,243,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="78,39,127,91,123,95,74,42"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="133,5,325,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="211,42,162,95,158,91,207,39"/>
 </map>

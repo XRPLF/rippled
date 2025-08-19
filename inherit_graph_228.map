@@ -1,17 +1,33 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="211,69,374,109"/>
-<area shape="rect" id="node2" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="503,106,614,131"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="210,5,375,45"/>
-<area shape="rect" id="node4" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="8,159,135,185"/>
-<area shape="rect" id="node5" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="217,134,368,159"/>
-<area shape="rect" id="node7" href="$classripple_1_1detail_1_1ApplyViewBase.html" title=" " alt="" coords="452,313,665,338"/>
-<area shape="rect" id="node6" href="$classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="492,234,625,259"/>
-<area shape="rect" id="node8" href="$classripple_1_1ApplyViewImpl.html" title="Editable, discardable view that can build metadata for one tx." alt="" coords="725,263,890,289"/>
-<area shape="rect" id="node9" href="$classripple_1_1PaymentSandbox.html" title="A wrapper which makes credits unavailable to balances." alt="" coords="717,313,897,338"/>
-<area shape="rect" id="node10" href="$classripple_1_1Sandbox.html" title="Discardable, editable view to a ledger." alt="" coords="746,362,869,387"/>
-<area shape="rect" id="node11" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,234,137,259"/>
-<area shape="rect" id="node12" href="$classripple_1_1ApplyView.html" title="Writeable view to a ledger, for applying a transaction." alt="" coords="225,335,361,361"/>
-<area shape="rect" id="node13" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="185,183,400,209"/>
-<area shape="rect" id="node14" href="$classripple_1_1detail_1_1CachedViewImpl.html" title=" " alt="" coords="448,183,669,209"/>
-<area shape="rect" id="node15" href="$classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching." alt="" coords="734,176,881,216"/>
+<area shape="rect" id="Node000000" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="211,69,374,109"/>
+<area shape="rect" id="Node000001" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="503,106,614,131"/>
+<area shape="poly" id="edge445_Node000000_Node000001" title=" " alt="" coords="388,97,503,110,503,115,387,102"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="210,5,375,45"/>
+<area shape="poly" id="edge446_Node000002_Node000001" title=" " alt="" coords="377,47,401,55,528,103,526,108,399,60,375,52"/>
+<area shape="rect" id="Node000011" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="8,159,135,185"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="217,134,368,159"/>
+<area shape="poly" id="edge447_Node000011_Node000003" title=" " alt="" coords="148,161,217,153,217,158,149,166"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1detail_1_1ApplyViewBase.html" title=" " alt="" coords="452,313,665,338"/>
+<area shape="poly" id="edge450_Node000011_Node000007" title=" " alt="" coords="113,188,186,219,359,273,503,310,502,315,357,278,184,224,111,193"/>
+<area shape="poly" id="edge448_Node000003_Node000001" title=" " alt="" coords="381,135,503,122,503,127,382,140"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="492,234,625,259"/>
+<area shape="poly" id="edge449_Node000003_Node000004" title=" " alt="" coords="382,160,401,168,417,181,426,194,435,207,449,219,493,236,491,241,447,224,431,211,422,197,413,185,399,173,380,164"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1ApplyViewImpl.html" title="Editable, discardable view that can build metadata for one tx." alt="" coords="725,263,890,289"/>
+<area shape="poly" id="edge451_Node000007_Node000008" title=" " alt="" coords="636,307,742,286,743,291,637,313"/>
+<area shape="rect" id="Node000009" href="$classripple_1_1PaymentSandbox.html" title="A wrapper which makes credits unavailable to balances." alt="" coords="717,313,897,338"/>
+<area shape="poly" id="edge452_Node000007_Node000009" title=" " alt="" coords="679,323,717,323,717,328,679,328"/>
+<area shape="rect" id="Node000010" href="$classripple_1_1Sandbox.html" title="Discardable, editable view to a ledger." alt="" coords="746,362,869,387"/>
+<area shape="poly" id="edge453_Node000007_Node000010" title=" " alt="" coords="637,338,746,360,745,365,636,343"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,234,137,259"/>
+<area shape="poly" id="edge460_Node000005_Node000004" title=" " alt="" coords="151,244,492,244,492,249,151,249"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1ApplyView.html" title="Writeable view to a ledger, for applying a transaction." alt="" coords="225,335,361,361"/>
+<area shape="poly" id="edge454_Node000005_Node000006" title=" " alt="" coords="103,265,142,290,186,314,241,333,239,338,184,318,139,295,100,270"/>
+<area shape="rect" id="Node000012" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="185,183,400,209"/>
+<area shape="poly" id="edge456_Node000005_Node000012" title=" " alt="" coords="141,228,236,206,237,211,142,233"/>
+<area shape="poly" id="edge455_Node000006_Node000007" title=" " alt="" coords="374,338,451,332,452,337,375,344"/>
+<area shape="poly" id="edge457_Node000012_Node000001" title=" " alt="" coords="364,177,399,168,521,129,522,134,401,173,365,183"/>
+<area shape="rect" id="Node000013" href="$classripple_1_1detail_1_1CachedViewImpl.html" title=" " alt="" coords="448,183,669,209"/>
+<area shape="poly" id="edge458_Node000012_Node000013" title=" " alt="" coords="414,193,448,193,448,199,414,199"/>
+<area shape="rect" id="Node000014" href="$classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching." alt="" coords="734,176,881,216"/>
+<area shape="poly" id="edge459_Node000013_Node000014" title=" " alt="" coords="684,193,734,193,734,199,684,199"/>
 </map>

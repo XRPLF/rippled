@@ -1,5 +1,7 @@
 <map id="ripple::STBitString&lt; Bits &gt;" name="ripple::STBitString&lt; Bits &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="79,93,217,133"/>
-<area shape="rect" id="node2" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,13,120,38"/>
-<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="144,5,323,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="79,93,217,133"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="5,13,120,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="86,46,131,91,127,95,82,50"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="144,5,323,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="207,57,169,95,165,91,203,53"/>
 </map>

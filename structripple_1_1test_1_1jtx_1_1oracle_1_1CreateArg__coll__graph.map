@@ -1,11 +1,19 @@
 <map id="ripple::test::jtx::oracle::CreateArg" name="ripple::test::jtx::oracle::CreateArg">
-<area shape="rect" id="node1" title=" " alt="" coords="765,224,900,264"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="399,7,554,47"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="407,73,546,113"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="341,137,612,207"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/tuple.html" title=" " alt="" coords="5,137,228,207"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="425,231,528,257"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="399,281,554,321"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="399,345,554,385"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="399,409,554,449"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="765,224,900,264"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="399,7,554,47"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="568,13,611,14,657,19,702,32,743,54,763,71,780,92,806,139,822,185,831,223,826,224,817,187,801,141,776,95,759,75,740,58,700,37,656,25,611,19,568,19"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="407,73,546,113"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="560,108,613,123,679,148,743,182,805,222,802,226,740,186,677,153,611,128,559,113"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="341,137,612,207"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="626,198,742,221,766,226,764,232,741,227,625,203"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/tuple.html" title=" " alt="" coords="5,137,228,207"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="242,169,341,169,341,175,242,175"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="425,231,528,257"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="542,241,765,241,765,247,542,247"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="399,281,554,321"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="567,288,741,261,765,257,766,262,742,267,568,293"/>
+<area shape="rect" id="Node000008" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="399,345,554,385"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="567,349,653,329,740,299,774,281,803,262,806,266,776,286,742,304,654,334,569,354"/>
+<area shape="rect" id="Node000009" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="399,409,554,449"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="567,416,655,394,699,376,740,352,764,332,786,308,818,263,822,266,790,311,768,336,743,357,701,381,656,399,569,421"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="ripple::JobQueue" name="ripple::JobQueue">
-<area shape="rect" id="node1" title="A pool of threads to perform work." alt="" coords="32,79,161,104"/>
-<area shape="rect" id="node2" href="$structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="5,5,188,31"/>
+<area shape="rect" id="Node000001" title="A pool of threads to perform work." alt="" coords="32,79,161,104"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1Workers_1_1Callback.html" title="Called to perform tasks as needed." alt="" coords="5,5,188,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,44,99,79,94,79,94,44"/>
 </map>

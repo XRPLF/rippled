@@ -1,13 +1,25 @@
 <map id="ripple::DirectStepI&lt; TDerived &gt;" name="ripple::DirectStepI&lt; TDerived &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="813,178,952,218"/>
-<area shape="rect" id="node2" title=" " alt="" coords="502,5,683,60"/>
-<area shape="rect" id="node3" href="$classripple_1_1base__uint.html" title=" " alt="" coords="489,85,696,125"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,155,349,180"/>
-<area shape="rect" id="node7" href="$classripple_1_1base__uint.html" title=" " alt="" coords="493,149,692,189"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,37,389,77"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,44,108,69"/>
-<area shape="rect" id="node8" href="$classripple_1_1Step.html" title="A step in a payment path." alt="" coords="545,213,641,239"/>
-<area shape="rect" id="node9" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="537,263,648,288"/>
-<area shape="rect" id="node10" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="232,263,379,288"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="510,313,675,353"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="813,178,952,218"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="502,5,683,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="697,59,745,79,791,104,835,140,868,176,864,180,831,144,788,108,743,84,695,64"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1base__uint.html" title=" " alt="" coords="489,85,696,125"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="682,126,790,159,833,175,832,180,788,165,680,131"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,155,349,180"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="362,155,465,135,518,122,520,127,466,141,364,161"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1base__uint.html" title=" " alt="" coords="493,149,692,189"/>
+<area shape="poly" id="edge7_Node000007_Node000004" title=" " alt="" coords="356,182,414,195,472,196,527,186,528,191,472,201,413,201,354,187"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,37,389,77"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="403,54,466,61,490,69,531,82,529,87,488,74,465,66,403,59"/>
+<area shape="poly" id="edge8_Node000007_Node000005" title=" " alt="" coords="403,76,436,89,467,107,479,121,491,135,513,146,511,151,488,139,475,124,464,111,434,94,401,81"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,44,108,69"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="122,54,221,54,221,59,122,59"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="706,177,813,188,813,194,706,183"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1Step.html" title="A step in a payment path." alt="" coords="545,213,641,239"/>
+<area shape="poly" id="edge9_Node000001_Node000008" title=" " alt="" coords="654,224,719,221,789,215,813,212,814,217,790,221,720,227,655,229"/>
+<area shape="rect" id="Node000009" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="537,263,648,288"/>
+<area shape="poly" id="edge10_Node000001_Node000009" title=" " alt="" coords="661,267,724,258,788,242,847,216,849,221,790,247,725,263,662,273"/>
+<area shape="rect" id="Node000010" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="232,263,379,288"/>
+<area shape="poly" id="edge11_Node000009_Node000010" title=" " alt="" coords="392,273,537,273,537,278,392,278"/>
+<area shape="rect" id="Node000011" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="510,313,675,353"/>
+<area shape="poly" id="edge12_Node000001_Node000011" title=" " alt="" coords="688,315,739,301,788,280,830,249,863,216,866,220,833,253,791,284,741,306,690,320"/>
 </map>

@@ -1,5 +1,7 @@
 <map id="beast::unit_test::selector" name="beast::unit_test::selector">
-<area shape="rect" id="node1" title=" " alt="" coords="5,197,188,223"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="53,95,140,120"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="27,5,166,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,197,188,223"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="53,95,140,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,134,99,197,94,197,94,134"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="27,5,166,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="99,59,99,94,94,94,94,59"/>
 </map>

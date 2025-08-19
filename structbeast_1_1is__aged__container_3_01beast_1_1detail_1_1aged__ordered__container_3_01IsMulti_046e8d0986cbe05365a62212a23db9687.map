@@ -1,4 +1,5 @@
 <map id="beast::is_aged_container&lt; beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt; &gt;" name="beast::is_aged_container&lt; beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt; &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,279,148"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="86,5,198,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,279,148"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="86,5,198,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="145,44,145,79,139,79,139,44"/>
 </map>

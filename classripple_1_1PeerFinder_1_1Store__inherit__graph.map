@@ -1,5 +1,7 @@
 <map id="ripple::PeerFinder::Store" name="ripple::PeerFinder::Store">
-<area shape="rect" id="node1" title="Abstract persistence for PeerFinder data." alt="" coords="131,5,267,45"/>
-<area shape="rect" id="node2" href="$structripple_1_1PeerFinder_1_1PeerFinder__test_1_1TestStore.html" title=" " alt="" coords="5,93,204,133"/>
-<area shape="rect" id="node3" href="$classripple_1_1PeerFinder_1_1StoreSqdb.html" title="Database persistence for PeerFinder using SQLite." alt="" coords="227,93,363,133"/>
+<area shape="rect" id="Node000001" title="Abstract persistence for PeerFinder data." alt="" coords="131,5,267,45"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1PeerFinder_1_1PeerFinder__test_1_1TestStore.html" title=" " alt="" coords="5,93,204,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="170,57,127,95,124,91,166,53"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1PeerFinder_1_1StoreSqdb.html" title="Database persistence for PeerFinder using SQLite." alt="" coords="227,93,363,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="233,53,276,91,272,95,229,57"/>
 </map>

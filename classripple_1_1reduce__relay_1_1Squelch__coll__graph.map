@@ -1,9 +1,15 @@
 <map id="ripple::reduce_relay::Squelch&lt; clock_type &gt;" name="ripple::reduce_relay::Squelch&lt; clock_type &gt;">
-<area shape="rect" id="node1" title="Maintains squelching of relaying messages from validators." alt="" coords="97,299,279,339"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="35,181,187,236"/>
-<area shape="rect" id="node3" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="41,93,172,119"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,5,93,31"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="118,5,213,31"/>
-<area shape="rect" id="node6" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="213,196,323,221"/>
-<area shape="rect" id="node7" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="196,93,343,119"/>
+<area shape="rect" id="Node000001" title="Maintains squelching of relaying messages from validators." alt="" coords="97,299,279,339"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="35,181,187,236"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="133,246,150,273,171,297,167,300,146,276,128,249"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="41,93,172,119"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="110,132,112,181,107,181,105,133"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,5,93,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="67,41,101,91,96,94,62,44"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="118,5,213,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="152,44,117,94,113,91,147,41"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="213,196,323,221"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="256,235,227,276,208,300,204,297,223,273,252,232"/>
+<area shape="rect" id="Node000007" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="196,93,343,119"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="272,133,271,196,265,196,266,133"/>
 </map>

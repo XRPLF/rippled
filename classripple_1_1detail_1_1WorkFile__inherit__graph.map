@@ -1,5 +1,7 @@
 <map id="ripple::detail::WorkFile" name="ripple::detail::WorkFile">
-<area shape="rect" id="node1" title=" " alt="" coords="86,93,254,119"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="5,13,151,38"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="175,5,352,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="86,93,254,119"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="5,13,151,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,45,158,91,155,95,100,49"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="175,5,352,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="232,56,186,95,182,91,229,52"/>
 </map>

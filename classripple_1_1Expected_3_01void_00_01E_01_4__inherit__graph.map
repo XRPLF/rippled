@@ -1,4 +1,5 @@
 <map id="ripple::Expected&lt; void, E &gt;" name="ripple::Expected&lt; void, E &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,108,207,133"/>
-<area shape="rect" id="node2" title=" " alt="" coords="25,5,187,60"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,108,207,133"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="25,5,187,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,74,109,108,103,108,103,74"/>
 </map>

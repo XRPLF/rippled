@@ -1,11 +1,20 @@
 <map id="ripple::detail::MultiApiJson&lt; MinVer, MaxVer &gt;" name="ripple::detail::MultiApiJson&lt; MinVer, MaxVer &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="1139,55,1320,95"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="911,5,999,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="867,55,1042,95"/>
-<area shape="rect" id="node4" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="657,63,751,88"/>
-<area shape="rect" id="node5" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="381,63,561,88"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="157,63,292,88"/>
-<area shape="rect" id="node7" title=" " alt="" coords="5,37,44,63"/>
-<area shape="rect" id="node8" title=" " alt="" coords="5,87,44,112"/>
-<area shape="rect" id="node9" href="$structripple_1_1detail_1_1MultiApiJson_1_1visitor__t.html" title=" " alt="" coords="864,120,1045,175"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="1139,55,1320,95"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="911,5,999,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1013,27,1139,54,1138,59,1012,33"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="867,55,1042,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="1056,73,1138,73,1138,78,1056,78"/>
+<area shape="rect" id="Node000004" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="657,63,751,88"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="764,73,867,73,867,78,764,78"/>
+<area shape="poly" id="edge4_Node000004_Node000004" title=" " alt="" coords="685,48,691,40,704,36,715,38,722,45,724,54,721,63,716,62,719,54,718,48,713,43,704,41,694,44,689,51"/>
+<area shape="rect" id="Node000005" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="381,63,561,88"/>
+<area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="575,73,657,73,657,78,575,78"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="157,63,292,88"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="306,73,381,73,381,78,306,78"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="5,37,44,63"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="58,51,157,64,157,69,57,57"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="5,87,44,112"/>
+<area shape="poly" id="edge8_Node000006_Node000008" title=" " alt="" coords="58,96,133,91,168,85,169,91,134,97,58,102"/>
+<area shape="rect" id="Node000009" href="$structripple_1_1detail_1_1MultiApiJson_1_1visitor__t.html" title=" " alt="" coords="864,120,1045,175"/>
+<area shape="poly" id="edge9_Node000001_Node000009" title=" " alt="" coords="1058,118,1151,93,1153,98,1059,123"/>
 </map>

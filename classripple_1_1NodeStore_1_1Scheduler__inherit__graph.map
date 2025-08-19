@@ -1,5 +1,7 @@
 <map id="ripple::NodeStore::Scheduler" name="ripple::NodeStore::Scheduler">
-<area shape="rect" id="node1" title="Scheduling for asynchronous backend activity." alt="" coords="103,5,245,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1DummyScheduler.html" title="Simple NodeStore Scheduler that just peforms the tasks synchronously." alt="" coords="5,93,148,133"/>
-<area shape="rect" id="node3" href="$classripple_1_1NodeStoreScheduler.html" title="A NodeStore::Scheduler which uses the JobQueue." alt="" coords="172,101,371,126"/>
+<area shape="rect" id="Node000001" title="Scheduling for asynchronous backend activity." alt="" coords="103,5,245,45"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1NodeStore_1_1DummyScheduler.html" title="Simple NodeStore Scheduler that just peforms the tasks synchronously." alt="" coords="5,93,148,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="144,56,100,95,96,91,141,52"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1NodeStoreScheduler.html" title="A NodeStore::Scheduler which uses the JobQueue." alt="" coords="172,101,371,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="208,53,260,98,256,102,204,57"/>
 </map>

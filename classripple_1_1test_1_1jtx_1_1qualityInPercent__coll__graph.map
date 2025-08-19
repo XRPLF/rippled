@@ -1,4 +1,5 @@
 <map id="ripple::test::jtx::qualityInPercent" name="ripple::test::jtx::qualityInPercent">
-<area shape="rect" id="node1" title="Sets the QualityIn on a trust JTx." alt="" coords="5,93,133,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="18,5,121,31"/>
+<area shape="rect" id="Node000001" title="Sets the QualityIn on a trust JTx." alt="" coords="5,93,133,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="18,5,121,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="72,44,72,93,67,93,67,44"/>
 </map>

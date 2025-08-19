@@ -1,4 +1,5 @@
 <map id="beast::insight::CounterImpl" name="beast::insight::CounterImpl">
-<area shape="rect" id="node1" title=" " alt="" coords="7,93,205,119"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,207,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="7,93,205,119"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,207,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,59,109,93,103,93,103,59"/>
 </map>

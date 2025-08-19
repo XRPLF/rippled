@@ -1,4 +1,5 @@
 <map id="ripple::NodeStore::varint_traits&lt; T, true &gt;" name="ripple::NodeStore::varint_traits&lt; T, true &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,93,179,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="48,5,136,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,93,179,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="48,5,136,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,44,95,93,89,93,89,44"/>
 </map>

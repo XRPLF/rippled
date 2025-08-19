@@ -1,4 +1,5 @@
 <map id="ripple::test::csf::Selector&lt; RAIter, Generator &gt;" name="ripple::test::csf::Selector&lt; RAIter, Generator &gt;">
-<area shape="rect" id="node1" title="Invocable that returns random samples from a range according to a discrete distribution." alt="" coords="5,93,224,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/discrete_distribution.html" title=" " alt="" coords="23,5,206,31"/>
+<area shape="rect" id="Node000001" title="Invocable that returns random samples from a range according to a discrete distribution." alt="" coords="5,93,224,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/discrete_distribution.html" title=" " alt="" coords="23,5,206,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="117,44,117,93,112,93,112,44"/>
 </map>

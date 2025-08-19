@@ -1,52 +1,120 @@
 <map id="ripple::SetSignerList" name="ripple::SetSignerList">
-<area shape="rect" id="node1" title="See the README.md for an overview of the SetSignerList transaction that this class implements." alt="" coords="2183,1375,2335,1401"/>
-<area shape="rect" id="node2" href="$classripple_1_1Transactor.html" title=" " alt="" coords="1999,773,2133,798"/>
-<area shape="rect" id="node3" href="$classripple_1_1ApplyContext.html" title="State information when applying a tx." alt="" coords="1737,283,1892,309"/>
-<area shape="rect" id="node4" href="$classripple_1_1Application.html" title=" " alt="" coords="1321,198,1461,223"/>
-<area shape="rect" id="node5" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="967,124,1135,164"/>
-<area shape="rect" id="node8" href="$classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1307,69,1475,109"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="605,103,692,129"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="569,153,728,178"/>
-<area shape="rect" id="node9" href="$classbeast_1_1List.html" title=" " alt="" coords="556,488,741,528"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="290,917,378,942"/>
-<area shape="rect" id="node11" href="$classripple_1_1STTx.html" title=" " alt="" coords="1341,1031,1440,1057"/>
-<area shape="rect" id="node18" href="$classripple_1_1base__uint.html" title=" " alt="" coords="578,955,719,995"/>
-<area shape="rect" id="node22" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="578,1247,719,1287"/>
-<area shape="rect" id="node32" href="$classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="1324,519,1457,545"/>
-<area shape="rect" id="node48" href="$classripple_1_1base__uint.html" title=" " alt="" coords="545,1311,752,1351"/>
-<area shape="rect" id="node12" href="$classripple_1_1STObject.html" title=" " alt="" coords="988,1075,1113,1101"/>
-<area shape="rect" id="node13" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="591,1069,706,1094"/>
-<area shape="rect" id="node14" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="567,1119,730,1159"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="577,1183,720,1223"/>
-<area shape="rect" id="node16" href="$classripple_1_1SOTemplate.html" title="Defines the fields and their attributes within a STObject." alt="" coords="576,1019,721,1045"/>
-<area shape="rect" id="node17" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="969,1125,1132,1165"/>
-<area shape="rect" id="node41" href="$structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="971,398,1130,423"/>
-<area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="250,1247,418,1287"/>
-<area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,1254,108,1279"/>
-<area shape="rect" id="node21" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="979,1189,1122,1229"/>
-<area shape="rect" id="node23" href="$classripple_1_1TERSubset.html" title=" " alt="" coords="1317,569,1464,609"/>
-<area shape="rect" id="node24" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="577,391,720,417"/>
-<area shape="rect" id="node42" href="$classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="963,512,1138,552"/>
-<area shape="rect" id="node25" title=" " alt="" coords="251,269,417,309"/>
-<area shape="rect" id="node26" title=" " alt="" coords="221,334,447,359"/>
-<area shape="rect" id="node27" title=" " alt="" coords="229,384,439,424"/>
-<area shape="rect" id="node28" title=" " alt="" coords="227,448,441,488"/>
-<area shape="rect" id="node29" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="287,513,381,538"/>
-<area shape="rect" id="node30" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1335,773,1446,798"/>
-<area shape="rect" id="node31" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="977,911,1124,937"/>
-<area shape="rect" id="node33" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="985,813,1117,838"/>
-<area shape="rect" id="node34" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="548,789,749,814"/>
-<area shape="rect" id="node35" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="551,739,746,765"/>
-<area shape="rect" id="node36" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="975,862,1126,887"/>
-<area shape="rect" id="node37" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="585,838,712,863"/>
-<area shape="rect" id="node38" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="547,558,750,613"/>
-<area shape="rect" id="node39" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="944,689,1157,788"/>
-<area shape="rect" id="node40" href="$classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="999,349,1102,374"/>
-<area shape="rect" id="node43" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="969,448,1132,488"/>
-<area shape="rect" id="node44" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="1313,5,1468,45"/>
-<area shape="rect" id="node45" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="1313,133,1468,173"/>
-<area shape="rect" id="node46" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1499,1368,1713,1408"/>
-<area shape="rect" id="node47" href="$structripple_1_1SignerEntries_1_1SignerEntry.html" title=" " alt="" coords="974,1368,1127,1408"/>
-<area shape="rect" id="node49" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="597,1375,700,1401"/>
-<area shape="rect" id="node50" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="571,1425,726,1465"/>
+<area shape="rect" id="Node000001" title="See the README.md for an overview of the SetSignerList transaction that this class implements." alt="" coords="2183,1375,2335,1401"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Transactor.html" title=" " alt="" coords="1999,773,2133,798"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="2078,810,2256,1374,2251,1376,2073,812"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1ApplyContext.html" title="State information when applying a tx." alt="" coords="1737,283,1892,309"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1891,310,1937,332,1958,347,1977,365,1996,399,2013,448,2039,570,2057,691,2066,772,2061,773,2052,692,2034,571,2007,450,1991,401,1973,368,1955,351,1934,336,1888,315"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1Application.html" title=" " alt="" coords="1321,198,1461,223"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="1475,207,1590,215,1653,225,1714,240,1759,259,1796,281,1793,286,1757,264,1712,245,1652,230,1589,221,1475,213"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="967,124,1135,164"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="1149,160,1325,195,1324,201,1148,166"/>
+<area shape="poly" id="edge9_Node000005_Node000005" title=" " alt="" coords="1017,108,1029,100,1051,97,1069,99,1082,105,1087,114,1085,124,1080,123,1082,115,1078,109,1068,105,1051,103,1031,105,1020,112"/>
+<area shape="rect" id="Node000009" href="$classbeast_1_1PropertyStream_1_1Item.html" title=" " alt="" coords="1307,69,1475,109"/>
+<area shape="poly" id="edge8_Node000009_Node000005" title=" " alt="" coords="1147,123,1181,117,1306,98,1307,104,1182,123,1148,128"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="605,103,692,129"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="706,117,967,136,966,141,705,123"/>
+<area shape="rect" id="Node000008" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="569,153,728,178"/>
+<area shape="poly" id="edge6_Node000005_Node000008" title=" " alt="" coords="742,163,920,157,966,153,967,158,920,163,742,169"/>
+<area shape="poly" id="edge7_Node000005_Node000009" title=" " alt="" coords="1323,117,1308,124,1296,131,1283,137,1208,150,1135,153,1135,147,1207,145,1282,132,1294,126,1305,119,1320,112"/>
+<area shape="rect" id="Node000011" href="$classbeast_1_1List.html" title=" " alt="" coords="556,488,741,528"/>
+<area shape="poly" id="edge10_Node000005_Node000011" title=" " alt="" coords="755,516,853,516,892,510,918,498,926,486,931,468,935,422,937,373,941,335,962,285,987,236,1033,163,1037,166,992,239,967,287,947,337,942,373,941,422,936,469,931,488,922,502,894,515,853,521,755,521"/>
+<area shape="rect" id="Node000012" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="290,917,378,942"/>
+<area shape="poly" id="edge11_Node000011_Node000012" title=" " alt="" coords="339,903,360,830,399,731,426,679,459,629,498,583,544,544,578,526,581,531,547,549,502,587,464,632,431,682,404,733,365,831,344,904"/>
+<area shape="rect" id="Node000015" href="$classripple_1_1STTx.html" title=" " alt="" coords="1341,1031,1440,1057"/>
+<area shape="poly" id="edge23_Node000015_Node000012" title=" " alt="" coords="392,922,471,917,521,917,582,915,635,908,726,892,769,887,815,889,864,899,921,920,930,927,935,934,939,941,945,947,976,960,1015,972,1111,990,1283,1017,1342,1030,1340,1036,1282,1023,1110,996,1014,977,974,965,943,952,934,944,930,937,926,930,919,925,863,904,814,894,770,893,727,897,636,913,583,920,521,923,471,923,392,927"/>
+<area shape="rect" id="Node000031" href="$classripple_1_1base__uint.html" title=" " alt="" coords="578,955,719,995"/>
+<area shape="poly" id="edge20_Node000031_Node000012" title=" " alt="" coords="392,935,471,947,578,962,577,967,470,952,392,940"/>
+<area shape="rect" id="Node000035" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="578,1247,719,1287"/>
+<area shape="poly" id="edge26_Node000035_Node000012" title=" " alt="" coords="375,946,412,968,452,998,492,1034,524,1077,533,1100,536,1121,532,1160,530,1196,535,1214,547,1233,562,1245,579,1254,577,1259,559,1250,543,1236,530,1216,525,1197,527,1159,531,1121,528,1101,519,1080,488,1038,449,1002,409,973,372,951"/>
+<area shape="rect" id="Node000045" href="$classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="1324,519,1457,545"/>
+<area shape="poly" id="edge55_Node000045_Node000012" title=" " alt="" coords="350,904,382,864,427,816,482,766,544,726,598,700,649,681,697,667,743,659,830,651,914,651,997,651,1084,644,1129,635,1177,622,1228,603,1281,578,1293,567,1305,555,1334,542,1336,547,1308,560,1297,571,1284,582,1230,608,1179,627,1130,640,1084,649,997,656,914,656,831,656,744,664,699,673,651,686,600,705,547,730,485,771,431,819,386,868,355,907"/>
+<area shape="rect" id="Node000079" href="$classripple_1_1base__uint.html" title=" " alt="" coords="545,1311,752,1351"/>
+<area shape="poly" id="edge65_Node000079_Node000012" title=" " alt="" coords="351,953,400,1028,434,1072,472,1111,486,1120,499,1124,511,1129,523,1141,534,1163,538,1184,534,1223,531,1260,535,1278,547,1297,560,1308,557,1312,543,1300,530,1280,525,1260,528,1222,533,1184,529,1165,519,1144,508,1134,497,1129,484,1125,469,1115,430,1075,396,1031,347,956"/>
+<area shape="poly" id="edge12_Node000003_Node000015" title=" " alt="" coords="1423,1022,1486,979,1564,916,1644,838,1680,794,1711,747,1741,686,1764,621,1781,555,1794,491,1807,379,1811,309,1816,309,1812,380,1799,492,1787,556,1769,623,1746,688,1716,749,1685,797,1648,841,1568,920,1489,983,1426,1026"/>
+<area shape="rect" id="Node000016" href="$classripple_1_1STObject.html" title=" " alt="" coords="988,1075,1113,1101"/>
+<area shape="poly" id="edge13_Node000015_Node000016" title=" " alt="" coords="1127,1076,1340,1048,1341,1053,1127,1081"/>
+<area shape="rect" id="Node000017" href="$classripple_1_1STBase.html" title="A type which can be exported to a well known binary format." alt="" coords="591,1069,706,1094"/>
+<area shape="poly" id="edge14_Node000016_Node000017" title=" " alt="" coords="720,1082,776,1084,988,1086,988,1091,776,1089,720,1087"/>
+<area shape="rect" id="Node000021" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="567,1119,730,1159"/>
+<area shape="poly" id="edge15_Node000016_Node000021" title=" " alt="" coords="744,1124,987,1093,988,1098,744,1129"/>
+<area shape="rect" id="Node000022" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="577,1183,720,1223"/>
+<area shape="poly" id="edge16_Node000016_Node000022" title=" " alt="" coords="733,1195,826,1177,874,1161,918,1139,930,1126,942,1111,987,1094,989,1099,946,1116,934,1129,922,1143,876,1166,828,1182,735,1200"/>
+<area shape="rect" id="Node000025" href="$classripple_1_1SOTemplate.html" title="Defines the fields and their attributes within a STObject." alt="" coords="576,1019,721,1045"/>
+<area shape="poly" id="edge17_Node000016_Node000025" title=" " alt="" coords="715,1045,776,1057,888,1072,988,1081,987,1086,888,1077,776,1063,714,1050"/>
+<area shape="rect" id="Node000030" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="969,1125,1132,1165"/>
+<area shape="poly" id="edge18_Node000015_Node000030" title=" " alt="" coords="1131,1119,1346,1054,1348,1059,1133,1124"/>
+<area shape="poly" id="edge19_Node000015_Node000031" title=" " alt="" coords="734,992,776,1000,938,1019,1098,1031,1341,1041,1341,1046,1098,1036,938,1024,776,1005,733,998"/>
+<area shape="rect" id="Node000065" href="$structripple_1_1LedgerHeader.html" title="Information about the notional ledger backing the view." alt="" coords="971,398,1130,423"/>
+<area shape="poly" id="edge48_Node000065_Node000031" title=" " alt="" coords="733,986,788,993,843,996,889,992,906,987,918,979,925,968,929,947,934,885,931,711,927,535,931,471,935,449,942,434,955,423,970,415,972,420,958,427,946,438,940,450,936,471,933,535,937,710,939,885,935,948,930,970,922,983,908,992,890,997,843,1001,788,998,733,992"/>
+<area shape="rect" id="Node000032" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="250,1247,418,1287"/>
+<area shape="poly" id="edge21_Node000031_Node000032" title=" " alt="" coords="408,1239,469,1205,496,1183,519,1156,529,1136,532,1118,529,1081,526,1045,531,1026,543,1006,559,993,577,984,579,988,562,997,547,1010,536,1028,531,1045,534,1081,538,1118,534,1138,524,1159,500,1186,472,1210,410,1244"/>
+<area shape="poly" id="edge27_Node000035_Node000032" title=" " alt="" coords="432,1264,578,1264,578,1269,432,1269"/>
+<area shape="poly" id="edge66_Node000079_Node000032" title=" " alt="" coords="432,1284,550,1308,549,1313,431,1289"/>
+<area shape="rect" id="Node000033" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,1254,108,1279"/>
+<area shape="poly" id="edge61_Node000001_Node000033" title=" " alt="" coords="73,1290,110,1348,137,1383,168,1418,204,1450,243,1476,287,1493,333,1500,2067,1500,2096,1497,2123,1488,2175,1461,2216,1427,2244,1399,2248,1403,2220,1431,2177,1465,2126,1493,2097,1502,2067,1505,332,1505,285,1499,241,1480,201,1454,164,1421,133,1386,106,1351,69,1292"/>
+<area shape="poly" id="edge22_Node000032_Node000033" title=" " alt="" coords="122,1264,250,1264,250,1269,122,1269"/>
+<area shape="poly" id="edge47_Node000065_Node000033" title=" " alt="" coords="55,1240,59,1043,66,899,79,743,99,587,128,445,146,384,167,330,192,287,220,255,247,239,280,229,319,224,363,225,461,239,567,265,779,332,871,363,945,384,992,395,991,400,943,389,869,368,777,337,566,270,460,244,362,230,319,230,281,234,249,244,223,259,196,290,172,333,151,385,133,447,104,588,84,744,71,900,64,1043,61,1240"/>
+<area shape="rect" id="Node000034" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="979,1189,1122,1229"/>
+<area shape="poly" id="edge24_Node000015_Node000034" title=" " alt="" coords="1134,1183,1156,1175,1221,1151,1281,1120,1332,1086,1373,1055,1376,1059,1335,1091,1284,1125,1223,1156,1158,1180,1136,1188"/>
+<area shape="poly" id="edge59_Node000002_Node000035" title=" " alt="" coords="733,1264,1049,1264,1816,1264,1854,1260,1888,1247,1918,1228,1944,1202,1967,1172,1987,1137,2018,1060,2039,980,2052,903,2062,798,2067,798,2057,904,2044,981,2023,1062,1992,1140,1971,1175,1948,1206,1921,1232,1890,1252,1855,1265,1816,1269,1049,1269,733,1269"/>
+<area shape="poly" id="edge25_Node000034_Node000035" title=" " alt="" coords="732,1252,979,1217,980,1222,733,1257"/>
+<area shape="rect" id="Node000036" href="$classripple_1_1TERSubset.html" title=" " alt="" coords="1317,569,1464,609"/>
+<area shape="poly" id="edge28_Node000003_Node000036" title=" " alt="" coords="1462,561,1473,555,1576,489,1671,417,1748,352,1798,307,1801,311,1751,356,1674,422,1579,494,1476,560,1464,566"/>
+<area shape="rect" id="Node000037" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="577,391,720,417"/>
+<area shape="poly" id="edge60_Node000002_Node000037" title=" " alt="" coords="704,385,814,356,878,343,944,333,1051,326,1158,333,1247,345,1323,359,1388,376,1448,398,1567,455,1715,536,1819,599,1917,667,2051,770,2047,775,1914,671,1816,604,1712,541,1565,460,1446,403,1387,382,1322,364,1246,350,1157,339,1051,331,944,339,879,348,815,362,705,390"/>
+<area shape="poly" id="edge29_Node000003_Node000037" title=" " alt="" coords="666,379,711,331,741,307,775,290,879,256,970,239,1052,235,1129,241,1293,265,1388,275,1499,279,1606,276,1713,279,1737,281,1737,286,1713,284,1606,281,1499,284,1387,280,1292,270,1129,247,1051,241,970,244,880,261,777,294,744,312,714,335,669,382"/>
+<area shape="poly" id="edge49_Node000065_Node000037" title=" " alt="" coords="734,403,971,407,971,412,734,408"/>
+<area shape="rect" id="Node000068" href="$classripple_1_1detail_1_1RawStateTable.html" title=" " alt="" coords="963,512,1138,552"/>
+<area shape="poly" id="edge53_Node000068_Node000037" title=" " alt="" coords="734,417,826,441,875,458,921,479,945,498,973,509,970,514,943,502,919,484,873,463,824,446,733,422"/>
+<area shape="rect" id="Node000038" title=" " alt="" coords="251,269,417,309"/>
+<area shape="poly" id="edge30_Node000037_Node000038" title=" " alt="" coords="423,311,448,319,543,356,620,389,618,394,541,360,446,324,421,316"/>
+<area shape="rect" id="Node000039" title=" " alt="" coords="221,334,447,359"/>
+<area shape="poly" id="edge31_Node000037_Node000039" title=" " alt="" coords="419,359,579,389,578,394,418,365"/>
+<area shape="rect" id="Node000040" title=" " alt="" coords="229,384,439,424"/>
+<area shape="poly" id="edge32_Node000037_Node000040" title=" " alt="" coords="452,401,577,401,577,407,452,407"/>
+<area shape="rect" id="Node000041" title=" " alt="" coords="227,448,441,488"/>
+<area shape="poly" id="edge33_Node000037_Node000041" title=" " alt="" coords="446,443,585,414,586,419,447,448"/>
+<area shape="rect" id="Node000042" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="287,513,381,538"/>
+<area shape="poly" id="edge34_Node000037_Node000042" title=" " alt="" coords="394,512,446,497,546,455,623,415,626,419,548,460,448,503,395,517"/>
+<area shape="rect" id="Node000043" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1335,773,1446,798"/>
+<area shape="poly" id="edge58_Node000002_Node000043" title=" " alt="" coords="1460,783,1998,783,1998,788,1460,788"/>
+<area shape="poly" id="edge35_Node000003_Node000043" title=" " alt="" coords="1431,764,1492,732,1567,686,1644,627,1680,593,1711,557,1733,525,1752,490,1781,417,1799,353,1809,308,1814,309,1804,354,1786,419,1757,492,1738,527,1715,560,1683,597,1648,631,1570,690,1495,737,1434,769"/>
+<area shape="rect" id="Node000044" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="977,911,1124,937"/>
+<area shape="poly" id="edge36_Node000043_Node000044" title=" " alt="" coords="1138,927,1210,920,1247,911,1281,898,1314,876,1342,848,1380,797,1384,800,1346,851,1318,880,1284,902,1248,916,1211,925,1138,932"/>
+<area shape="poly" id="edge37_Node000003_Node000045" title=" " alt="" coords="1405,506,1437,451,1472,384,1478,367,1480,351,1485,337,1497,323,1531,313,1592,306,1737,296,1737,302,1592,311,1532,319,1500,328,1489,340,1485,353,1483,368,1477,386,1442,453,1410,509"/>
+<area shape="rect" id="Node000046" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="985,813,1117,838"/>
+<area shape="poly" id="edge38_Node000045_Node000046" title=" " alt="" coords="1117,838,1159,842,1203,840,1245,828,1264,818,1281,805,1291,786,1296,757,1294,684,1291,609,1295,578,1305,556,1322,542,1325,546,1309,559,1300,580,1296,609,1299,683,1301,757,1296,787,1285,808,1267,823,1247,833,1204,845,1158,847,1116,843"/>
+<area shape="poly" id="edge50_Node000045_Node000046" title=" " alt="" coords="1129,809,1220,785,1258,770,1281,753,1295,728,1299,704,1297,680,1291,656,1286,632,1284,607,1289,581,1305,556,1322,542,1326,546,1309,559,1294,583,1289,607,1291,631,1297,655,1302,679,1304,704,1300,730,1285,756,1260,774,1222,790,1131,814"/>
+<area shape="rect" id="Node000047" href="$structripple_1_1ReadView_1_1sles__type.html" title=" " alt="" coords="548,789,749,814"/>
+<area shape="poly" id="edge39_Node000046_Node000047" title=" " alt="" coords="763,805,985,819,984,824,763,811"/>
+<area shape="rect" id="Node000049" href="$structripple_1_1ReadView_1_1txs__type.html" title=" " alt="" coords="551,739,746,765"/>
+<area shape="poly" id="edge40_Node000046_Node000049" title=" " alt="" coords="761,756,840,767,921,785,945,798,987,810,985,815,943,802,919,791,839,772,760,761"/>
+<area shape="rect" id="Node000051" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="975,862,1126,887"/>
+<area shape="poly" id="edge41_Node000045_Node000051" title=" " alt="" coords="1140,873,1225,866,1259,858,1281,846,1292,823,1297,790,1294,704,1289,617,1293,582,1305,556,1322,542,1325,546,1309,559,1298,583,1295,618,1299,704,1302,790,1298,825,1285,850,1261,863,1226,872,1140,878"/>
+<area shape="rect" id="Node000052" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="585,838,712,863"/>
+<area shape="poly" id="edge42_Node000051_Node000052" title=" " alt="" coords="726,853,975,868,975,873,726,858"/>
+<area shape="rect" id="Node000053" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="547,558,750,613"/>
+<area shape="poly" id="edge43_Node000045_Node000053" title=" " alt="" coords="764,587,949,588,1053,584,1157,576,1255,561,1339,542,1341,547,1256,566,1158,581,1054,589,949,593,764,593"/>
+<area shape="poly" id="edge52_Node000068_Node000053" title=" " alt="" coords="763,568,963,541,964,546,764,573"/>
+<area shape="rect" id="Node000054" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="944,689,1157,788"/>
+<area shape="poly" id="edge44_Node000045_Node000054" title=" " alt="" coords="1170,734,1201,728,1230,717,1257,703,1281,684,1291,668,1295,654,1293,622,1290,589,1294,572,1305,556,1322,542,1325,546,1309,559,1299,575,1295,590,1298,622,1301,654,1296,671,1285,687,1260,707,1232,722,1202,733,1172,739"/>
+<area shape="rect" id="Node000059" href="$classripple_1_1Rules.html" title="Rules controlling protocol behavior." alt="" coords="999,349,1102,374"/>
+<area shape="poly" id="edge45_Node000045_Node000059" title=" " alt="" coords="1117,366,1199,384,1243,399,1284,419,1316,442,1344,470,1383,518,1379,521,1340,473,1312,446,1281,424,1241,404,1198,389,1116,371"/>
+<area shape="poly" id="edge46_Node000045_Node000065" title=" " alt="" coords="1121,424,1158,433,1222,449,1284,471,1331,494,1370,517,1368,521,1329,499,1282,476,1220,454,1157,439,1120,429"/>
+<area shape="poly" id="edge51_Node000045_Node000068" title=" " alt="" coords="1152,529,1324,529,1324,535,1152,535"/>
+<area shape="rect" id="Node000074" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="969,448,1132,488"/>
+<area shape="poly" id="edge54_Node000045_Node000074" title=" " alt="" coords="1146,483,1324,517,1323,522,1145,488"/>
+<area shape="rect" id="Node000075" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="1313,5,1468,45"/>
+<area shape="poly" id="edge56_Node000003_Node000075" title=" " alt="" coords="1482,34,1538,47,1599,65,1660,92,1715,127,1752,165,1780,209,1800,251,1812,282,1807,284,1795,253,1775,212,1747,169,1712,131,1657,97,1597,70,1537,52,1481,39"/>
+<area shape="rect" id="Node000076" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="1313,133,1468,173"/>
+<area shape="poly" id="edge57_Node000003_Node000076" title=" " alt="" coords="1482,146,1536,147,1596,154,1657,167,1715,190,1745,210,1772,235,1807,281,1803,285,1768,239,1742,214,1712,194,1655,173,1595,159,1536,153,1482,151"/>
+<area shape="rect" id="Node000077" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1499,1368,1713,1408"/>
+<area shape="poly" id="edge62_Node000001_Node000077" title=" " alt="" coords="1727,1385,2183,1385,2183,1391,1727,1391"/>
+<area shape="rect" id="Node000078" href="$structripple_1_1SignerEntries_1_1SignerEntry.html" title=" " alt="" coords="974,1368,1127,1408"/>
+<area shape="poly" id="edge63_Node000077_Node000078" title=" " alt="" coords="1141,1385,1498,1385,1498,1391,1141,1391"/>
+<area shape="poly" id="edge64_Node000078_Node000079" title=" " alt="" coords="766,1344,920,1365,974,1373,973,1379,920,1371,765,1349"/>
+<area shape="rect" id="Node000080" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="597,1375,700,1401"/>
+<area shape="poly" id="edge67_Node000078_Node000080" title=" " alt="" coords="714,1385,974,1385,974,1391,714,1391"/>
+<area shape="rect" id="Node000063" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="571,1425,726,1465"/>
+<area shape="poly" id="edge68_Node000078_Node000063" title=" " alt="" coords="739,1431,920,1405,973,1397,974,1403,920,1411,740,1436"/>
 </map>

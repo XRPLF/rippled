@@ -1,9 +1,15 @@
 <map id="ripple::detail::Work" name="ripple::detail::Work">
-<area shape="rect" id="node1" title=" " alt="" coords="5,109,151,134"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,5,376,45"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,69,376,109"/>
-<area shape="rect" id="node6" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,133,376,173"/>
-<area shape="rect" id="node7" href="$classripple_1_1detail_1_1WorkFile.html" title=" " alt="" coords="203,198,371,223"/>
-<area shape="rect" id="node3" href="$classripple_1_1detail_1_1WorkPlain.html" title=" " alt="" coords="424,13,601,38"/>
-<area shape="rect" id="node5" href="$classripple_1_1detail_1_1WorkSSL.html" title=" " alt="" coords="429,77,597,102"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,109,151,134"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,5,376,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,99,198,55,227,43,229,48,200,60,114,104"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,69,376,109"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="164,106,198,100,199,106,165,111"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="199,133,376,173"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="165,132,199,137,198,142,164,137"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1detail_1_1WorkFile.html" title=" " alt="" coords="203,198,371,223"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="113,139,154,161,200,183,236,195,235,200,198,188,151,166,111,144"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1detail_1_1WorkPlain.html" title=" " alt="" coords="424,13,601,38"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="389,23,424,23,424,28,389,28"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1detail_1_1WorkSSL.html" title=" " alt="" coords="429,77,597,102"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="390,87,429,87,429,92,390,92"/>
 </map>

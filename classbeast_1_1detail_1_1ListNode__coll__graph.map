@@ -1,4 +1,6 @@
 <map id="beast::detail::ListNode&lt; T, Tag &gt;" name="beast::detail::ListNode&lt; T, Tag &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,123,173,163"/>
-<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,5,173,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,123,173,163"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,5,173,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,59,92,122,87,122,87,59"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="188,15,196,19,200,26,192,34,174,38,173,33,189,30,195,25,193,23,186,20"/>
 </map>

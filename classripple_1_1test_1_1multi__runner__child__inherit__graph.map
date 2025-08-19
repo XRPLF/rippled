@@ -1,5 +1,7 @@
 <map id="ripple::test::multi_runner_child" name="ripple::test::multi_runner_child">
-<area shape="rect" id="node1" title="A class to run a subset of unit tests." alt="" coords="121,108,255,148"/>
-<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1runner.html" title="Unit test runner interface." alt="" coords="5,20,179,45"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1detail_1_1multi__runner__base.html" title=" " alt="" coords="203,5,365,60"/>
+<area shape="rect" id="Node000001" title="A class to run a subset of unit tests." alt="" coords="121,108,255,148"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1unit__test_1_1runner.html" title="Unit test runner interface." alt="" coords="5,20,179,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="115,53,170,106,167,110,112,57"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1detail_1_1multi__runner__base.html" title=" " alt="" coords="203,5,365,60"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="249,72,209,110,206,106,245,68"/>
 </map>

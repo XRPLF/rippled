@@ -1,7 +1,11 @@
 <map id="AutoSocket" name="AutoSocket">
-<area shape="rect" id="node1" title=" " alt="" coords="209,196,303,221"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,93,157,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="181,101,331,126"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="355,101,466,126"/>
-<area shape="rect" id="node5" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="337,5,484,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="209,196,303,221"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,93,157,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="130,137,191,170,236,194,233,198,188,174,127,142"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="181,101,331,126"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="259,140,259,196,253,196,253,140"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="355,101,466,126"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="383,136,320,174,278,198,276,193,317,170,380,131"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="337,5,484,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="413,44,413,101,408,101,408,44"/>
 </map>

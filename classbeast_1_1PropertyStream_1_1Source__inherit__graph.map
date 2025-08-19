@@ -1,13 +1,23 @@
 <map id="beast::PropertyStream::Source" name="beast::PropertyStream::Source">
-<area shape="rect" id="node1" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,97,173,137"/>
-<area shape="rect" id="node2" href="$classripple_1_1Application.html" title=" " alt="" coords="247,5,387,31"/>
-<area shape="rect" id="node4" href="$classripple_1_1LedgerCleaner.html" title="Check the ledger/transaction databases to make sure they have continuity." alt="" coords="237,55,398,80"/>
-<area shape="rect" id="node6" href="$classripple_1_1Overlay.html" title="Manages the set of connected peers." alt="" coords="258,104,377,129"/>
-<area shape="rect" id="node8" href="$classripple_1_1PeerFinder_1_1Manager.html" title="Maintains a set of IP addresses used for getting into the network." alt="" coords="249,154,385,194"/>
-<area shape="rect" id="node10" href="$classripple_1_1Resource_1_1Manager.html" title="Tracks load and resource consumption." alt="" coords="221,219,413,244"/>
-<area shape="rect" id="node3" href="$classripple_1_1ApplicationImp.html" title=" " alt="" coords="487,5,653,31"/>
-<area shape="rect" id="node5" href="$classripple_1_1LedgerCleanerImp.html" title=" " alt="" coords="477,55,663,80"/>
-<area shape="rect" id="node7" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="497,104,643,129"/>
-<area shape="rect" id="node9" href="$classripple_1_1PeerFinder_1_1ManagerImp.html" title=" " alt="" coords="502,154,638,194"/>
-<area shape="rect" id="node11" href="$classripple_1_1Resource_1_1ManagerImp.html" title=" " alt="" coords="461,219,679,244"/>
+<area shape="rect" id="Node000001" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,97,173,137"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Application.html" title=" " alt="" coords="247,5,387,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="131,87,173,62,220,40,255,28,256,33,222,44,176,67,134,91"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1LedgerCleaner.html" title="Check the ledger/transaction databases to make sure they have continuity." alt="" coords="237,55,398,80"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="187,93,257,77,259,83,188,98"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1Overlay.html" title="Manages the set of connected peers." alt="" coords="258,104,377,129"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="187,114,258,114,258,119,187,119"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1PeerFinder_1_1Manager.html" title="Maintains a set of IP addresses used for getting into the network." alt="" coords="249,154,385,194"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="183,137,250,154,249,160,182,143"/>
+<area shape="rect" id="Node000010" href="$classripple_1_1Resource_1_1Manager.html" title="Tracks load and resource consumption." alt="" coords="221,219,413,244"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="127,143,171,175,222,204,257,216,255,221,220,208,168,179,124,147"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1ApplicationImp.html" title=" " alt="" coords="487,5,653,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="401,15,487,15,487,21,401,21"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1LedgerCleanerImp.html" title=" " alt="" coords="477,55,663,80"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="412,65,476,65,476,70,412,70"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1OverlayImpl.html" title=" " alt="" coords="497,104,643,129"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="391,114,497,114,497,119,391,119"/>
+<area shape="rect" id="Node000009" href="$classripple_1_1PeerFinder_1_1ManagerImp.html" title=" " alt="" coords="502,154,638,194"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="399,171,502,171,502,177,399,177"/>
+<area shape="rect" id="Node000011" href="$classripple_1_1Resource_1_1ManagerImp.html" title=" " alt="" coords="461,219,679,244"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="427,229,461,229,461,234,427,234"/>
 </map>

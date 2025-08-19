@@ -1,6 +1,9 @@
 <map id="ripple::QualityFunction" name="ripple::QualityFunction">
-<area shape="rect" id="node1" title="Average quality of a path as a function of out: q(out) = m * out + b, where m = &#45;1 / poolGets,..." alt="" coords="109,225,279,251"/>
-<area shape="rect" id="node2" href="$classripple_1_1Number.html" title=" " alt="" coords="5,123,124,148"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="17,5,112,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="148,123,328,148"/>
+<area shape="rect" id="Node000001" title="Average quality of a path as a function of out: q(out) = m * out + b, where m = &#45;1 / poolGets,..." alt="" coords="109,225,279,251"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Number.html" title=" " alt="" coords="5,123,124,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,154,181,223,178,227,89,159"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="17,5,112,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="67,44,67,123,62,123,62,44"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="148,123,328,148"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="230,162,201,226,197,224,225,160"/>
 </map>

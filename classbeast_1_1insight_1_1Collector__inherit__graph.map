@@ -1,9 +1,15 @@
 <map id="beast::insight::Collector" name="beast::insight::Collector">
-<area shape="rect" id="node1" title="Interface for a manager that allows collection of metrics." alt="" coords="5,77,181,102"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Group.html" title="A collector front&#45;end that manages a group of metrics." alt="" coords="260,21,417,46"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1NullCollector.html" title="A Collector which does not collect metrics." alt="" coords="237,77,440,102"/>
-<area shape="rect" id="node6" href="$classbeast_1_1insight_1_1StatsDCollector.html" title="A Collector that reports metrics to a StatsD server." alt="" coords="229,133,448,158"/>
-<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1GroupImp.html" title=" " alt="" coords="497,5,651,45"/>
-<area shape="rect" id="node5" href="$classbeast_1_1insight_1_1detail_1_1NullCollectorImp.html" title=" " alt="" coords="497,69,651,109"/>
-<area shape="rect" id="node7" href="$classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html" title=" " alt="" coords="496,133,652,173"/>
+<area shape="rect" id="Node000001" title="Interface for a manager that allows collection of metrics." alt="" coords="5,77,181,102"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1insight_1_1Group.html" title="A collector front&#45;end that manages a group of metrics." alt="" coords="260,21,417,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="163,71,281,43,283,49,164,76"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1insight_1_1NullCollector.html" title="A Collector which does not collect metrics." alt="" coords="237,77,440,102"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="195,87,237,87,237,92,195,92"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1insight_1_1StatsDCollector.html" title="A Collector that reports metrics to a StatsD server." alt="" coords="229,133,448,158"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="164,103,283,130,281,135,163,108"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1insight_1_1detail_1_1GroupImp.html" title=" " alt="" coords="497,5,651,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="431,28,496,25,496,31,431,33"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1insight_1_1detail_1_1NullCollectorImp.html" title=" " alt="" coords="497,69,651,109"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="453,87,497,87,497,92,453,92"/>
+<area shape="rect" id="Node000007" href="$classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html" title=" " alt="" coords="496,133,652,173"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="462,147,496,148,496,153,462,152"/>
 </map>

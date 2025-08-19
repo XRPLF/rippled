@@ -1,14 +1,25 @@
 <map id="ripple::TxQ::FeeMetrics" name="ripple::TxQ::FeeMetrics">
-<area shape="rect" id="node1" title="Track and use the fee escalation metrics of the current open ledger." alt="" coords="692,201,864,227"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="363,121,451,147"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="338,171,477,211"/>
-<area shape="rect" id="node4" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="312,235,503,275"/>
-<area shape="rect" id="node5" title=" " alt="" coords="13,5,204,60"/>
-<area shape="rect" id="node6" title=" " alt="" coords="7,85,210,125"/>
-<area shape="rect" id="node7" title=" " alt="" coords="7,149,210,204"/>
-<area shape="rect" id="node8" title=" " alt="" coords="15,228,202,283"/>
-<area shape="rect" id="node9" title=" " alt="" coords="5,307,212,347"/>
-<area shape="rect" id="node10" title=" " alt="" coords="13,372,204,427"/>
-<area shape="rect" id="node11" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="352,375,463,400"/>
-<area shape="rect" id="node12" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="35,451,182,476"/>
+<area shape="rect" id="Node000001" title="Track and use the fee escalation metrics of the current open ledger." alt="" coords="692,201,864,227"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="363,121,451,147"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="466,139,561,154,669,177,742,199,740,204,667,182,560,160,465,144"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="338,171,477,211"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="491,194,692,206,692,211,490,199"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="312,235,503,275"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="516,241,668,225,692,222,692,227,668,230,517,247"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="13,5,204,60"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="205,65,214,71,258,108,290,157,298,176,300,192,304,207,314,221,329,233,326,237,310,225,299,209,295,193,293,177,286,159,254,112,210,75,202,69"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="7,85,210,125"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="199,128,213,134,254,163,290,197,301,210,314,221,336,233,334,238,310,226,297,214,286,201,251,167,211,139,197,132"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="7,149,210,204"/>
+<area shape="poly" id="edge6_Node000004_Node000007" title=" " alt="" coords="224,204,331,233,330,238,223,209"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="15,228,202,283"/>
+<area shape="poly" id="edge7_Node000004_Node000008" title=" " alt="" coords="216,253,312,253,312,258,216,258"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="5,307,212,347"/>
+<area shape="poly" id="edge8_Node000004_Node000009" title=" " alt="" coords="205,301,323,273,324,278,206,307"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="13,372,204,427"/>
+<area shape="poly" id="edge9_Node000004_Node000010" title=" " alt="" coords="194,364,211,357,298,313,370,273,373,278,300,318,213,362,196,369"/>
+<area shape="rect" id="Node000011" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="352,375,463,400"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="447,366,748,224,751,229,449,371"/>
+<area shape="rect" id="Node000012" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="35,451,182,476"/>
+<area shape="poly" id="edge11_Node000011_Node000012" title=" " alt="" coords="195,449,287,430,377,398,378,403,289,435,196,455"/>
 </map>

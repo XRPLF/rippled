@@ -1,6 +1,9 @@
 <map id="ripple::test::csf::BasicSink" name="ripple::test::csf::BasicSink">
-<area shape="rect" id="node1" title="Sink that prepends simulation time to messages." alt="" coords="37,212,163,252"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,109,152,135"/>
-<area shape="rect" id="node3" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="177,95,338,149"/>
-<area shape="rect" id="node4" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="177,5,337,45"/>
+<area shape="rect" id="Node000001" title="Sink that prepends simulation time to messages." alt="" coords="37,212,163,252"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,109,152,135"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="86,147,99,211,94,212,81,148"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="177,95,338,149"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="209,160,129,214,126,210,206,155"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="177,5,337,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="260,59,260,95,255,95,255,59"/>
 </map>

@@ -1,5 +1,7 @@
 <map id="ripple::short_read_test::Server::Connection" name="ripple::short_read_test::Server::Connection">
-<area shape="rect" id="node1" title=" " alt="" coords="75,93,261,133"/>
-<area shape="rect" id="node2" href="$classripple_1_1short__read__test_1_1Base_1_1Child.html" title=" " alt="" coords="5,5,141,45"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="165,5,360,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="75,93,261,133"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1short__read__test_1_1Base_1_1Child.html" title=" " alt="" coords="5,5,141,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="106,53,149,91,145,95,103,57"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="165,5,360,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="233,57,191,95,187,91,230,53"/>
 </map>

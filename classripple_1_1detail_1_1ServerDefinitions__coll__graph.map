@@ -1,12 +1,22 @@
 <map id="ripple::detail::ServerDefinitions" name="ripple::detail::ServerDefinitions">
-<area shape="rect" id="node1" title=" " alt="" coords="160,401,384,427"/>
-<area shape="rect" id="node2" href="$classripple_1_1base__uint.html" title=" " alt="" coords="131,299,272,339"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,189,93,214"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="117,181,285,221"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="150,93,253,119"/>
-<area shape="rect" id="node6" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="311,306,404,331"/>
-<area shape="rect" id="node7" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="310,189,490,214"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="333,93,467,119"/>
-<area shape="rect" id="node9" title=" " alt="" coords="349,5,387,31"/>
-<area shape="rect" id="node10" title=" " alt="" coords="414,5,453,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="160,401,384,427"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1base__uint.html" title=" " alt="" coords="131,299,272,339"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="221,349,239,376,261,399,257,403,235,379,217,352"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,189,93,214"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,220,178,296,175,301,74,225"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="117,181,285,221"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="204,235,204,298,199,298,199,235"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="150,93,253,119"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="204,132,204,181,199,181,199,132"/>
+<area shape="rect" id="Node000006" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="311,306,404,331"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="343,344,313,379,288,403,284,399,309,376,339,340"/>
+<area shape="poly" id="edge6_Node000006_Node000006" title=" " alt="" coords="419,308,427,312,431,319,422,328,405,331,404,325,420,323,425,318,423,316,417,313"/>
+<area shape="rect" id="Node000007" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="310,189,490,214"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="394,228,364,307,359,305,389,226"/>
+<area shape="rect" id="Node000008" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="333,93,467,119"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="403,132,403,189,397,189,397,132"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="349,5,387,31"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="368,44,372,68,388,91,384,95,367,70,363,45"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="414,5,453,31"/>
+<area shape="poly" id="edge10_Node000008_Node000010" title=" " alt="" coords="426,45,407,94,402,92,421,43"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="ripple::perf::Locked&lt; T &gt;" name="ripple::perf::Locked&lt; T &gt;">
-<area shape="rect" id="node1" title="A box coupling data with a mutex for locking access to it." alt="" coords="5,93,188,119"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="51,5,143,31"/>
+<area shape="rect" id="Node000001" title="A box coupling data with a mutex for locking access to it." alt="" coords="5,93,188,119"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="51,5,143,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,45,99,93,94,93,94,45"/>
 </map>

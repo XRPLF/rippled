@@ -1,11 +1,19 @@
 <map id="ripple::LedgerMaster::Stats" name="ripple::LedgerMaster::Stats">
-<area shape="rect" id="node1" title=" " alt="" coords="1124,37,1280,77"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Hook.html" title="A reference to a handler for performing polled collection." alt="" coords="783,14,935,39"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="507,5,677,45"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="251,13,432,38"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="9,5,193,45"/>
-<area shape="rect" id="node6" href="$classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="779,74,939,99"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="507,69,677,109"/>
-<area shape="rect" id="node8" href="$classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="247,77,436,102"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,69,197,109"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="1124,37,1280,77"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1insight_1_1Hook.html" title="A reference to a handler for performing polled collection." alt="" coords="783,14,935,39"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="948,32,1124,48,1123,53,948,37"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="507,5,677,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="691,23,782,24,782,29,691,28"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="251,13,432,38"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="446,23,507,23,507,28,446,28"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="9,5,193,45"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="207,23,250,23,250,28,207,28"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="779,74,939,99"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="952,89,1025,89,1100,83,1138,75,1139,80,1100,88,1025,94,952,95"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="507,69,677,109"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="691,86,778,85,778,90,691,91"/>
+<area shape="rect" id="Node000008" href="$classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="247,77,436,102"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="450,87,506,87,506,92,450,92"/>
+<area shape="rect" id="Node000009" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,69,197,109"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="211,87,246,87,246,92,211,92"/>
 </map>

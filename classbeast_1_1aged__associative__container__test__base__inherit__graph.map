@@ -1,12 +1,21 @@
 <map id="beast::aged_associative_container_test_base" name="beast::aged_associative_container_test_base">
-<area shape="rect" id="node1" title=" " alt="" coords="216,175,395,215"/>
-<area shape="rect" id="node3" href="$classbeast_1_1aged__map__test.html" title=" " alt="" coords="459,5,626,31"/>
-<area shape="rect" id="node4" href="$classbeast_1_1aged__multimap__test.html" title=" " alt="" coords="443,55,643,80"/>
-<area shape="rect" id="node5" href="$classbeast_1_1aged__multiset__test.html" title=" " alt="" coords="447,104,638,129"/>
-<area shape="rect" id="node6" href="$classbeast_1_1aged__set__test.html" title=" " alt="" coords="464,153,621,179"/>
-<area shape="rect" id="node7" href="$classbeast_1_1aged__unordered__map__test.html" title=" " alt="" coords="457,203,628,243"/>
-<area shape="rect" id="node8" href="$classbeast_1_1aged__unordered__multimap__test.html" title=" " alt="" coords="457,267,628,307"/>
-<area shape="rect" id="node9" href="$classbeast_1_1aged__unordered__multiset__test.html" title=" " alt="" coords="457,331,628,371"/>
-<area shape="rect" id="node10" href="$classbeast_1_1aged__unordered__set__test.html" title=" " alt="" coords="457,395,628,435"/>
-<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,183,168,208"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="216,175,395,215"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1aged__map__test.html" title=" " alt="" coords="459,5,626,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="324,162,372,99,405,67,441,40,466,28,468,33,444,44,408,71,376,103,328,165"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1aged__multimap__test.html" title=" " alt="" coords="443,55,643,80"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="336,164,383,125,441,89,472,78,474,83,444,94,386,129,339,168"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1aged__multiset__test.html" title=" " alt="" coords="447,104,638,129"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="364,167,442,138,482,127,484,132,443,143,366,172"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1aged__set__test.html" title=" " alt="" coords="464,153,621,179"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="408,180,464,173,464,178,409,185"/>
+<area shape="rect" id="Node000007" href="$classbeast_1_1aged__unordered__map__test.html" title=" " alt="" coords="457,203,628,243"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="409,205,457,211,457,216,408,210"/>
+<area shape="rect" id="Node000008" href="$classbeast_1_1aged__unordered__multimap__test.html" title=" " alt="" coords="457,267,628,307"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="362,219,444,253,477,265,475,270,442,258,360,223"/>
+<area shape="rect" id="Node000009" href="$classbeast_1_1aged__unordered__multiset__test.html" title=" " alt="" coords="457,331,628,371"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="334,223,383,271,412,296,444,317,469,329,466,334,441,322,409,300,379,275,331,227"/>
+<area shape="rect" id="Node000010" href="$classbeast_1_1aged__unordered__set__test.html" title=" " alt="" coords="457,395,628,435"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="324,227,344,263,371,304,405,346,444,381,464,393,462,398,441,385,401,349,367,307,340,266,320,229"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,183,168,208"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="182,193,216,193,216,198,182,198"/>
 </map>

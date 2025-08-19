@@ -1,4 +1,5 @@
 <map id="ripple::XChainCreateAccountAttestations" name="ripple::XChainCreateAccountAttestations">
-<area shape="rect" id="node1" title=" " alt="" coords="50,93,257,133"/>
-<area shape="rect" id="node2" href="$classripple_1_1XChainAttestationsBase.html" title=" " alt="" coords="5,5,301,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="50,93,257,133"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1XChainAttestationsBase.html" title=" " alt="" coords="5,5,301,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="156,59,156,93,151,93,151,59"/>
 </map>

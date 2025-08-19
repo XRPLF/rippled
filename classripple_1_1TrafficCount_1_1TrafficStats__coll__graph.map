@@ -1,7 +1,11 @@
 <map id="ripple::TrafficCount::TrafficStats" name="ripple::TrafficCount::TrafficStats">
-<area shape="rect" id="node1" title=" " alt="" coords="88,240,232,280"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,108,118,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="142,108,349,133"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="194,13,297,38"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="88,240,232,280"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,108,118,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,144,150,238,146,241,87,147"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,59,77,108,72,108,72,59"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="142,108,349,133"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="233,147,174,241,170,238,229,144"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="194,13,297,38"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="248,52,248,108,243,108,243,52"/>
 </map>

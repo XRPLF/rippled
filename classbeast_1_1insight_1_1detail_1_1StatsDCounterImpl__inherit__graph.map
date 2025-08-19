@@ -1,7 +1,11 @@
 <map id="beast::insight::detail::StatsDCounterImpl" name="beast::insight::detail::StatsDCounterImpl">
-<area shape="rect" id="node1" title=" " alt="" coords="135,181,290,221"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1CounterImpl.html" title=" " alt="" coords="13,101,212,126"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,207,45"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDMetricBase.html" title=" " alt="" coords="238,93,393,133"/>
-<area shape="rect" id="node5" title=" " alt="" coords="231,5,407,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="135,181,290,221"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1insight_1_1CounterImpl.html" title=" " alt="" coords="13,101,212,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="138,133,192,179,189,183,135,137"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,207,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="111,59,114,100,109,100,106,59"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1insight_1_1detail_1_1StatsDMetricBase.html" title=" " alt="" coords="238,93,393,133"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="284,144,237,183,234,179,280,140"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="231,5,407,45"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="320,59,319,93,314,93,315,59"/>
 </map>

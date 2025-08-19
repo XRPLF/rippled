@@ -1,7 +1,11 @@
 <map id="ripple::NodeStore::ManagerImp" name="ripple::NodeStore::ManagerImp">
-<area shape="rect" id="node1" title=" " alt="" coords="147,211,289,251"/>
-<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1Manager.html" title="Singleton for managing NodeStore factories and back ends." alt="" coords="5,108,148,148"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="172,115,264,141"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="289,108,467,148"/>
-<area shape="rect" id="node5" href="$classripple_1_1NodeStore_1_1Factory.html" title="Base class for backend factories." alt="" coords="307,5,449,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="147,211,289,251"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1NodeStore_1_1Manager.html" title="Singleton for managing NodeStore factories and back ends." alt="" coords="5,108,148,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="116,154,193,208,190,213,113,158"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="172,115,264,141"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="221,154,221,211,215,211,215,154"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="289,108,467,148"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="338,157,249,213,247,208,335,153"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1NodeStore_1_1Factory.html" title="Base class for backend factories." alt="" coords="307,5,449,45"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="381,59,381,108,375,108,375,59"/>
 </map>

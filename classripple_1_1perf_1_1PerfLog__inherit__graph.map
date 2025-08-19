@@ -1,5 +1,7 @@
 <map id="ripple::perf::PerfLog" name="ripple::perf::PerfLog">
-<area shape="rect" id="node1" title="Singleton class that maintains performance counters and optionally writes Json&#45;formatted data to a di..." alt="" coords="117,5,266,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1perf_1_1PerfLogImp.html" title="Implementation class for PerfLog." alt="" coords="5,79,180,104"/>
-<area shape="rect" id="node3" href="$classripple_1_1perf_1_1PerfLogTest.html" title=" " alt="" coords="204,79,379,104"/>
+<area shape="rect" id="Node000001" title="Singleton class that maintains performance counters and optionally writes Json&#45;formatted data to a di..." alt="" coords="117,5,266,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1perf_1_1PerfLogImp.html" title="Implementation class for PerfLog." alt="" coords="5,79,180,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="166,41,110,81,107,76,163,36"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1perf_1_1PerfLogTest.html" title=" " alt="" coords="204,79,379,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="220,36,277,76,273,81,217,41"/>
 </map>

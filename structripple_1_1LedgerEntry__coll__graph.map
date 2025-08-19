@@ -1,5 +1,7 @@
 <map id="ripple::LedgerEntry" name="ripple::LedgerEntry">
-<area shape="rect" id="node1" title=" " alt="" coords="301,41,447,67"/>
-<area shape="rect" id="node2" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="15,5,147,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="5,55,157,125"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="301,41,447,67"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="15,5,147,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="161,25,301,42,301,48,161,30"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="5,55,157,125"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="170,76,301,60,302,66,171,82"/>
 </map>

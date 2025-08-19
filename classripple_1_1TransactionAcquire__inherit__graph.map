@@ -1,6 +1,9 @@
 <map id="ripple::TransactionAcquire" name="ripple::TransactionAcquire">
-<area shape="rect" id="node1" title=" " alt="" coords="297,63,488,88"/>
-<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="41,5,213,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,55,249,95"/>
-<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,119,215,159"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="297,63,488,88"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="41,5,213,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="204,31,250,41,336,60,335,65,249,46,203,36"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,55,249,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="263,73,297,73,297,78,263,78"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,119,215,159"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="223,114,338,85,340,91,225,119"/>
 </map>

@@ -1,6 +1,9 @@
 <map id="ripple::TOfferStreamBase&lt; TIn, TOut &gt;::StepCounter" name="ripple::TOfferStreamBase&lt; TIn, TOut &gt;::StepCounter">
-<area shape="rect" id="node1" title=" " alt="" coords="9,196,208,236"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,93,108,119"/>
-<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="132,93,243,119"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="114,5,261,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="9,196,208,236"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,93,108,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="68,130,86,171,99,195,94,197,81,173,63,133"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="132,93,243,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="173,131,125,197,120,194,169,128"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="114,5,261,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="190,45,190,93,185,93,185,45"/>
 </map>

@@ -1,10 +1,17 @@
 <map id="ripple::DatabaseCon" name="ripple::DatabaseCon">
-<area shape="rect" id="node1" title=" " alt="" coords="829,85,984,111"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="521,5,679,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="520,55,680,95"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="515,119,685,159"/>
-<area shape="rect" id="node5" href="$classripple_1_1Checkpointer.html" title=" " alt="" coords="261,127,415,152"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,119,212,159"/>
-<area shape="rect" id="node7" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="545,184,655,209"/>
-<area shape="rect" id="node8" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="265,184,411,209"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="829,85,984,111"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="521,5,679,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="678,31,806,62,871,83,869,88,805,67,677,36"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="520,55,680,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="694,80,829,90,829,95,694,85"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="515,119,685,159"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="699,123,829,106,830,111,699,129"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1Checkpointer.html" title=" " alt="" coords="261,127,415,152"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="428,137,514,137,514,142,428,142"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,119,212,159"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="226,137,261,137,261,142,226,142"/>
+<area shape="rect" id="Node000007" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="545,184,655,209"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="668,180,735,164,804,142,880,108,882,113,806,147,736,169,669,185"/>
+<area shape="rect" id="Node000008" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="265,184,411,209"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="425,194,544,194,544,199,425,199"/>
 </map>

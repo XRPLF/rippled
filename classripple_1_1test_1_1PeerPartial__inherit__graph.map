@@ -1,5 +1,7 @@
 <map id="ripple::test::PeerPartial" name="ripple::test::PeerPartial">
-<area shape="rect" id="node1" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="5,79,176,104"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1PeerSim.html" title=" " alt="" coords="13,152,168,177"/>
-<area shape="rect" id="node2" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="43,5,139,31"/>
+<area shape="rect" id="Node000001" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="5,79,176,104"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1PeerSim.html" title=" " alt="" coords="13,152,168,177"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="93,118,93,152,88,152,88,118"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="43,5,139,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,44,93,79,88,79,88,44"/>
 </map>

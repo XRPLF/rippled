@@ -1,6 +1,9 @@
 <map id="ripple::test::Batch_test::TestLedgerData" name="ripple::test::Batch_test::TestLedgerData">
-<area shape="rect" id="node1" title=" " alt="" coords="63,227,225,267"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,102,118,127"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="143,95,281,135"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="63,227,225,267"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,102,118,127"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,139,117,201,132,225,128,228,112,204,82,141"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,59,77,102,72,102,72,59"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="143,95,281,135"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="198,148,156,228,151,225,193,146"/>
 </map>

@@ -1,5 +1,7 @@
 <map id="io_latency_probe_test" name="io_latency_probe_test">
-<area shape="rect" id="node1" title=" " alt="" coords="92,93,257,119"/>
-<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,13,168,38"/>
-<area shape="rect" id="node3" href="$classbeast_1_1test_1_1enable__yield__to.html" title="Mix&#45;in to support tests using asio coroutines." alt="" coords="193,5,335,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="92,93,257,119"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,13,168,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,45,163,91,160,95,108,49"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1test_1_1enable__yield__to.html" title="Mix&#45;in to support tests using asio coroutines." alt="" coords="193,5,335,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="234,56,190,95,186,91,231,52"/>
 </map>

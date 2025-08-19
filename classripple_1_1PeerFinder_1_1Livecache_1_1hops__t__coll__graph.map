@@ -1,5 +1,7 @@
 <map id="ripple::PeerFinder::Livecache&lt; Allocator &gt;::hops_t" name="ripple::PeerFinder::Livecache&lt; Allocator &gt;::hops_t">
-<area shape="rect" id="node1" title=" " alt="" coords="296,30,464,85"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="5,5,196,45"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="11,69,190,109"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="296,30,464,85"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="5,5,196,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="210,35,296,45,296,50,209,40"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="11,69,190,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="203,75,296,64,296,70,204,80"/>
 </map>

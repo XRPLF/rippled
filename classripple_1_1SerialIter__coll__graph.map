@@ -1,5 +1,7 @@
 <map id="ripple::SerialIter" name="ripple::SerialIter">
-<area shape="rect" id="node1" title=" " alt="" coords="47,108,173,133"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,100,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="125,5,213,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="47,108,173,133"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,100,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="68,42,106,107,101,109,64,44"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="125,5,213,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="157,44,119,109,114,107,153,42"/>
 </map>

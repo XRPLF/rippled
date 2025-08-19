@@ -1,4 +1,5 @@
 <map id="beast::PropertyStream::Set" name="beast::PropertyStream::Set">
-<area shape="rect" id="node1" title=" " alt="" coords="5,93,203,119"/>
-<area shape="rect" id="node2" href="$classbeast_1_1PropertyStream.html" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="20,5,188,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,93,203,119"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1PropertyStream.html" title="Abstract stream with RAII containers that produce a property tree." alt="" coords="20,5,188,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,45,107,93,101,93,101,45"/>
 </map>

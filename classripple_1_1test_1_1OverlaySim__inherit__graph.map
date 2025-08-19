@@ -1,5 +1,7 @@
 <map id="ripple::test::OverlaySim" name="ripple::test::OverlaySim">
-<area shape="rect" id="node1" title=" " alt="" coords="79,93,255,119"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1Overlay.html" title="Simulate server&#39;s OverlayImpl." alt="" coords="5,13,156,38"/>
-<area shape="rect" id="node3" href="$classripple_1_1reduce__relay_1_1SquelchHandler.html" title="Abstract class." alt="" coords="180,5,331,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="79,93,255,119"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1Overlay.html" title="Simulate server&#39;s OverlayImpl." alt="" coords="5,13,156,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="106,45,156,91,153,95,102,49"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1reduce__relay_1_1SquelchHandler.html" title="Abstract class." alt="" coords="180,5,331,45"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="225,57,182,95,179,91,222,53"/>
 </map>

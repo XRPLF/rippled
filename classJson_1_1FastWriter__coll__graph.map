@@ -1,6 +1,9 @@
 <map id="Json::FastWriter" name="Json::FastWriter">
-<area shape="rect" id="node1" title="Outputs a Value in JSON format without formatting (not human friendly)." alt="" coords="53,183,175,208"/>
-<area shape="rect" id="node2" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="5,95,135,120"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="159,95,245,120"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="133,5,271,45"/>
+<area shape="rect" id="Node000001" title="Outputs a Value in JSON format without formatting (not human friendly)." alt="" coords="53,183,175,208"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="5,95,135,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,131,110,181,106,183,80,134"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="159,95,245,120"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="182,131,128,184,124,180,179,128"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="133,5,271,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="205,59,205,94,199,94,199,59"/>
 </map>

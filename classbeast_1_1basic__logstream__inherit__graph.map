@@ -1,6 +1,9 @@
 <map id="beast::basic_logstream&lt; CharT, Traits &gt;" name="beast::basic_logstream&lt; CharT, Traits &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,240,179,280"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="19,152,165,192"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="7,79,177,104"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="39,5,145,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,240,179,280"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="19,152,165,192"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,206,95,240,89,240,89,206"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="7,79,177,104"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="95,118,95,152,89,152,89,118"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="39,5,145,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="95,44,95,79,89,79,89,44"/>
 </map>

@@ -1,7 +1,11 @@
 <map id="ripple::DirectStepI&lt; TDerived &gt;::Cache" name="ripple::DirectStepI&lt; TDerived &gt;::Cache">
-<area shape="rect" id="node1" title=" " alt="" coords="227,225,386,265"/>
-<area shape="rect" id="node2" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="235,108,378,133"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,171,45"/>
-<area shape="rect" id="node4" title=" " alt="" coords="195,13,419,38"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="443,13,538,38"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="227,225,386,265"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="235,108,378,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="309,147,309,225,304,225,304,147"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,171,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="146,48,281,105,279,110,144,53"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="195,13,419,38"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="309,52,309,108,304,108,304,52"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="443,13,538,38"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="457,47,331,110,328,105,455,42"/>
 </map>

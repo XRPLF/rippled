@@ -1,6 +1,9 @@
 <map id="ripple::LedgerDeltaAcquire" name="ripple::LedgerDeltaAcquire">
-<area shape="rect" id="node1" title="Manage the retrieval of a ledger delta (header and transactions) from the network." alt="" coords="303,63,497,88"/>
-<area shape="rect" id="node2" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="44,5,216,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,55,255,95"/>
-<area shape="rect" id="node4" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,119,220,159"/>
+<area shape="rect" id="Node000001" title="Manage the retrieval of a ledger delta (header and transactions) from the network." alt="" coords="303,63,497,88"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="44,5,216,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="208,31,255,41,343,60,342,65,254,46,207,36"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,55,255,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="268,73,303,73,303,78,268,78"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,119,220,159"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="228,114,345,85,346,91,229,119"/>
 </map>

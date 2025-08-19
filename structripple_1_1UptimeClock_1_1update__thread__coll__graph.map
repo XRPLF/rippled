@@ -1,4 +1,5 @@
 <map id="ripple::UptimeClock::update_thread" name="ripple::UptimeClock::update_thread">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,156,119"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title=" " alt="" coords="35,5,127,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,156,119"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/thread.html" title=" " alt="" coords="35,5,127,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="83,44,83,79,78,79,78,44"/>
 </map>

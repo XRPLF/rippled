@@ -1,6 +1,9 @@
 <map id="ripple::OpenView::txData" name="ripple::OpenView::txData">
-<area shape="rect" id="node1" title=" " alt="" coords="5,313,189,339"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="12,196,183,236"/>
-<area shape="rect" id="node3" href="$classripple_1_1Serializer.html" title=" " alt="" coords="33,108,161,133"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="15,5,180,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,313,189,339"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="12,196,183,236"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,250,100,313,95,313,95,250"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1Serializer.html" title=" " alt="" coords="33,108,161,133"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="100,147,100,196,95,196,95,147"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="15,5,180,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="100,59,100,108,95,108,95,59"/>
 </map>

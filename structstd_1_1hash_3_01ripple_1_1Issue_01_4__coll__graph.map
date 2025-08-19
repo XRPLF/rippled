@@ -1,5 +1,7 @@
 <map id="std::hash&lt; ripple::Issue &gt;" name="std::hash&lt; ripple::Issue &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="268,53,409,93"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,220,60"/>
-<area shape="rect" id="node3" title=" " alt="" coords="9,84,217,139"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="268,53,409,93"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,220,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="234,52,268,58,267,63,233,57"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="9,84,217,139"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="230,89,267,82,268,87,231,94"/>
 </map>

@@ -1,5 +1,7 @@
 <map id="ripple::HTTPClientSSLContext" name="ripple::HTTPClientSSLContext">
-<area shape="rect" id="node1" title=" " alt="" coords="5,181,219,207"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="57,93,167,119"/>
-<area shape="rect" id="node3" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="39,5,185,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,181,219,207"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="57,93,167,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="115,133,115,181,109,181,109,133"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="39,5,185,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="115,45,115,93,109,93,109,45"/>
 </map>

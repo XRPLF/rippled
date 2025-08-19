@@ -1,8 +1,14 @@
 <map id="ripple::SkipListAcquire::SkipListData" name="ripple::SkipListAcquire::SkipListData">
-<area shape="rect" id="node1" title=" " alt="" coords="5,416,172,456"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="37,5,140,31"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="105,93,273,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="132,313,275,353"/>
-<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="161,211,302,251"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="297,101,385,126"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,416,172,456"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="37,5,140,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="82,45,74,77,70,112,70,335,75,378,85,415,80,416,70,379,65,335,65,112,69,76,77,43"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="105,93,273,133"/>
+<area shape="poly" id="edge6_Node000006_Node000002" title=" " alt="" coords="113,38,170,91,167,95,109,42"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="132,313,275,353"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="173,364,112,418,108,414,170,360"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="161,211,302,251"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="225,265,211,314,206,313,220,263"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="297,101,385,126"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="322,138,251,212,247,209,318,134"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="203,145,227,209,222,211,198,147"/>
 </map>

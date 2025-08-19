@@ -1,7 +1,11 @@
 <map id="ripple::PlainHTTPPeer&lt; Handler &gt;" name="ripple::PlainHTTPPeer&lt; Handler &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="449,62,612,102"/>
-<area shape="rect" id="node2" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="205,15,396,69"/>
-<area shape="rect" id="node3" href="$classripple_1_1io__list_1_1work.html" title=" " alt="" coords="5,5,152,31"/>
-<area shape="rect" id="node4" href="$classripple_1_1Session.html" title="Persistent state information for a connection session." alt="" coords="20,55,137,80"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="200,93,401,148"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="449,62,612,102"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1BaseHTTPPeer.html" title=" " alt="" coords="205,15,396,69"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="410,58,450,65,449,71,409,64"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1io__list_1_1work.html" title=" " alt="" coords="5,5,152,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="166,25,205,29,205,34,165,30"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1Session.html" title="Persistent state information for a connection session." alt="" coords="20,55,137,80"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="151,56,205,50,206,56,151,62"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="200,93,401,148"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="415,99,449,93,450,98,416,104"/>
 </map>

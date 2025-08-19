@@ -1,4 +1,5 @@
 <map id="ripple::test::SuiteJournalSink" name="ripple::test::SuiteJournalSink">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,212,104"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="35,5,182,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,212,104"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="35,5,182,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,44,111,79,106,79,106,44"/>
 </map>

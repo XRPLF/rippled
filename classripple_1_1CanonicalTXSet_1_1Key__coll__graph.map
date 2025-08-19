@@ -1,8 +1,14 @@
 <map id="ripple::CanonicalTXSet::Key" name="ripple::CanonicalTXSet::Key">
-<area shape="rect" id="node1" title=" " alt="" coords="161,328,362,353"/>
-<area shape="rect" id="node2" href="$classripple_1_1base__uint.html" title=" " alt="" coords="131,211,272,251"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,101,93,126"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="117,93,285,133"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="217,5,319,31"/>
-<area shape="rect" id="node6" href="$classripple_1_1SeqProxy.html" title="A type that represents either a sequence value or a ticket value." alt="" coords="257,159,385,185"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="161,328,362,353"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1base__uint.html" title=" " alt="" coords="131,211,272,251"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="219,262,241,303,256,326,251,329,236,305,214,264"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,101,93,126"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,132,178,208,175,213,74,137"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="117,93,285,133"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="204,147,204,210,199,210,199,147"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="217,5,319,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="244,41,230,56,210,94,206,92,226,53,240,38"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1SeqProxy.html" title="A type that represents either a sequence value or a ticket value." alt="" coords="257,159,385,185"/>
+<area shape="poly" id="edge6_Node000006_Node000005" title=" " alt="" coords="289,41,296,54,314,112,323,159,317,160,309,113,291,56,284,43"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="325,199,321,249,315,278,304,305,293,319,281,330,277,326,289,315,299,303,310,277,316,249,320,198"/>
 </map>

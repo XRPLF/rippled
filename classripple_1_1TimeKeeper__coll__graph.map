@@ -1,6 +1,9 @@
 <map id="ripple::TimeKeeper" name="ripple::TimeKeeper">
-<area shape="rect" id="node1" title="Manages various times used by the server." alt="" coords="34,196,179,221"/>
-<area shape="rect" id="node2" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,93,165,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="190,93,373,133"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="204,5,359,31"/>
+<area shape="rect" id="Node000001" title="Manages various times used by the server." alt="" coords="34,196,179,221"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1abstract__clock.html" title=" " alt="" coords="5,93,165,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,146,107,195,101,196,90,147"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="190,93,373,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="235,142,129,198,127,194,233,138"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="204,5,359,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="284,44,284,93,279,93,279,44"/>
 </map>

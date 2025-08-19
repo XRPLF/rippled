@@ -1,5 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,49,165,89"/>
-<area shape="rect" id="node2" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="213,5,375,60"/>
-<area shape="rect" id="node3" href="$classbeast_1_1manual__clock.html" title="Manual clock implementation." alt="" coords="216,85,372,125"/>
+<area shape="rect" id="Node000000" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,49,165,89"/>
+<area shape="rect" id="Node000001" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="213,5,375,60"/>
+<area shape="poly" id="edge22_Node000000_Node000001" title=" " alt="" coords="179,50,213,44,214,49,179,55"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1manual__clock.html" title="Manual clock implementation." alt="" coords="216,85,372,125"/>
+<area shape="poly" id="edge23_Node000000_Node000002" title=" " alt="" coords="179,82,216,89,215,94,179,87"/>
 </map>

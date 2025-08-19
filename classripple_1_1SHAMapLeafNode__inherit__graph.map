@@ -1,8 +1,13 @@
 <map id="ripple::SHAMapLeafNode" name="ripple::SHAMapLeafNode">
-<area shape="rect" id="node1" title=" " alt="" coords="475,70,659,95"/>
-<area shape="rect" id="node4" href="$classripple_1_1SHAMapAccountStateLeafNode.html" title="A leaf node for a state object." alt="" coords="707,5,915,45"/>
-<area shape="rect" id="node5" href="$classripple_1_1SHAMapTxLeafNode.html" title="A leaf node for a transaction." alt="" coords="711,70,911,95"/>
-<area shape="rect" id="node6" href="$classripple_1_1SHAMapTxPlusMetaLeafNode.html" title="A leaf node for a transaction and its associated metadata." alt="" coords="711,120,910,160"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="244,70,427,95"/>
-<area shape="rect" id="node3" href="$structripple_1_1IntrusiveRefCounts.html" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,70,196,95"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="475,70,659,95"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1SHAMapAccountStateLeafNode.html" title="A leaf node for a state object." alt="" coords="707,5,915,45"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="634,64,724,43,726,48,635,69"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1SHAMapTxLeafNode.html" title="A leaf node for a transaction." alt="" coords="711,70,911,95"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="672,80,710,80,710,85,672,85"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1SHAMapTxPlusMetaLeafNode.html" title="A leaf node for a transaction and its associated metadata." alt="" coords="711,120,910,160"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="635,96,726,117,724,123,634,101"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="244,70,427,95"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="441,80,474,80,474,85,441,85"/>
+<area shape="rect" id="Node000003" href="$structripple_1_1IntrusiveRefCounts.html" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,70,196,95"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="209,80,244,80,244,85,209,85"/>
 </map>

@@ -1,6 +1,9 @@
 <map id="beast::unit_test::suite::log_os&lt; CharT, Traits, Allocator &gt;" name="beast::unit_test::suite::log_os&lt; CharT, Traits, Allocator &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,240,177,295"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="19,152,164,192"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="6,79,177,104"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="38,5,145,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,240,177,295"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="19,152,164,192"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,205,94,240,89,240,89,205"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="6,79,177,104"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="94,118,94,152,89,152,89,118"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="38,5,145,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="94,44,94,79,89,79,89,44"/>
 </map>

@@ -1,5 +1,7 @@
 <map id="beast::insight::Group" name="beast::insight::Group">
-<area shape="rect" id="node1" title="A collector front&#45;end that manages a group of metrics." alt="" coords="15,79,172,104"/>
-<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1GroupImp.html" title=" " alt="" coords="16,152,171,192"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="5,5,181,31"/>
+<area shape="rect" id="Node000001" title="A collector front&#45;end that manages a group of metrics." alt="" coords="15,79,172,104"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1insight_1_1detail_1_1GroupImp.html" title=" " alt="" coords="16,152,171,192"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="96,118,96,152,91,152,91,118"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="5,5,181,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="96,44,96,79,91,79,91,44"/>
 </map>

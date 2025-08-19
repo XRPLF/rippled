@@ -1,18 +1,43 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="47,203,166,228"/>
-<area shape="rect" id="node2" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="264,33,455,73"/>
-<area shape="rect" id="node3" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="288,260,431,285"/>
-<area shape="rect" id="node4" href="$classripple_1_1MPTAmount.html" title=" " alt="" coords="287,161,432,187"/>
-<area shape="rect" id="node5" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="288,211,431,236"/>
-<area shape="rect" id="node6" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="264,97,455,137"/>
-<area shape="rect" id="node7" title=" " alt="" coords="43,5,170,31"/>
-<area shape="rect" id="node8" title=" " alt="" coords="5,153,208,179"/>
-<area shape="rect" id="node9" title=" " alt="" coords="45,55,168,80"/>
-<area shape="rect" id="node10" title=" " alt="" coords="24,288,189,313"/>
-<area shape="rect" id="node11" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="256,310,463,350"/>
-<area shape="rect" id="node12" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="272,374,447,414"/>
-<area shape="rect" id="node13" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="266,438,453,478"/>
-<area shape="rect" id="node14" href="$structripple_1_1Rate.html" title="Represents a transfer rate." alt="" coords="311,503,408,528"/>
-<area shape="rect" id="node15" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="277,553,442,593"/>
-<area shape="rect" id="node16" title=" " alt="" coords="25,104,188,129"/>
+<area shape="rect" id="Node000000" title=" " alt="" coords="47,203,166,228"/>
+<area shape="rect" id="Node000001" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="264,33,455,73"/>
+<area shape="poly" id="edge342_Node000000_Node000001" title=" " alt="" coords="178,205,206,189,218,177,224,165,230,138,235,110,242,96,254,83,272,71,275,75,258,87,247,99,240,112,235,139,229,166,222,180,210,193,180,209"/>
+<area shape="rect" id="Node000010" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="288,260,431,285"/>
+<area shape="poly" id="edge343_Node000000_Node000010" title=" " alt="" coords="177,228,303,257,302,263,176,234"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1MPTAmount.html" title=" " alt="" coords="287,161,432,187"/>
+<area shape="poly" id="edge344_Node000000_Node000005" title=" " alt="" coords="180,201,286,183,287,188,180,206"/>
+<area shape="rect" id="Node000012" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="288,211,431,236"/>
+<area shape="poly" id="edge345_Node000000_Node000012" title=" " alt="" coords="180,215,288,218,288,224,180,220"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="264,97,455,137"/>
+<area shape="poly" id="edge346_Node000000_Node000003" title=" " alt="" coords="178,200,207,189,221,179,230,169,240,159,255,148,283,134,286,139,257,152,243,162,234,173,224,183,209,194,180,205"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="43,5,170,31"/>
+<area shape="poly" id="edge347_Node000002_Node000001" title=" " alt="" coords="184,26,264,37,263,42,183,31"/>
+<area shape="poly" id="edge348_Node000002_Node000003" title=" " alt="" coords="184,29,209,40,224,50,234,61,243,72,257,82,282,94,280,99,255,87,240,76,230,65,221,54,207,44,182,34"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,153,208,179"/>
+<area shape="poly" id="edge349_Node000004_Node000001" title=" " alt="" coords="196,146,206,140,221,127,230,112,239,97,254,83,277,70,279,75,258,87,243,101,235,115,226,130,210,144,198,150"/>
+<area shape="poly" id="edge350_Node000004_Node000005" title=" " alt="" coords="222,167,287,169,286,174,222,172"/>
+<area shape="poly" id="edge351_Node000004_Node000012" title=" " alt="" coords="177,179,303,208,302,213,176,184"/>
+<area shape="poly" id="edge352_Node000004_Node000003" title=" " alt="" coords="185,148,263,133,264,138,186,153"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="45,55,168,80"/>
+<area shape="poly" id="edge353_Node000014_Node000001" title=" " alt="" coords="182,60,264,56,264,61,182,66"/>
+<area shape="poly" id="edge354_Node000014_Node000003" title=" " alt="" coords="182,79,264,95,263,101,181,84"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="24,288,189,313"/>
+<area shape="poly" id="edge355_Node000006_Node000001" title=" " alt="" coords="152,280,181,262,206,239,218,219,225,199,227,160,231,122,239,102,254,83,270,71,273,75,258,87,243,105,236,123,232,161,230,200,223,221,210,242,184,267,155,284"/>
+<area shape="poly" id="edge359_Node000006_Node000010" title=" " alt="" coords="203,287,288,278,288,283,203,293"/>
+<area shape="poly" id="edge360_Node000006_Node000005" title=" " alt="" coords="142,279,206,239,229,217,255,197,287,184,289,189,257,202,233,221,210,243,145,283"/>
+<area shape="poly" id="edge362_Node000006_Node000012" title=" " alt="" coords="153,281,255,246,302,233,303,239,257,251,155,286"/>
+<area shape="poly" id="edge363_Node000006_Node000003" title=" " alt="" coords="149,280,179,262,206,239,221,216,228,193,236,171,254,148,275,135,278,139,258,152,241,173,233,195,226,218,210,242,182,266,152,284"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="256,310,463,350"/>
+<area shape="poly" id="edge356_Node000006_Node000007" title=" " alt="" coords="203,309,256,315,255,321,203,314"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="272,374,447,414"/>
+<area shape="poly" id="edge357_Node000006_Node000008" title=" " alt="" coords="150,316,257,360,292,371,290,376,255,364,148,321"/>
+<area shape="rect" id="Node000009" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="266,438,453,478"/>
+<area shape="poly" id="edge358_Node000006_Node000009" title=" " alt="" coords="131,322,186,373,220,400,257,424,283,435,281,440,255,428,217,404,182,377,127,326"/>
+<area shape="rect" id="Node000011" href="$structripple_1_1Rate.html" title="Represents a transfer rate." alt="" coords="311,503,408,528"/>
+<area shape="poly" id="edge361_Node000006_Node000011" title=" " alt="" coords="123,325,144,362,174,406,212,450,257,488,283,500,311,508,309,513,281,505,255,492,209,454,170,409,139,364,118,327"/>
+<area shape="rect" id="Node000013" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="277,553,442,593"/>
+<area shape="poly" id="edge364_Node000006_Node000013" title=" " alt="" coords="119,326,138,372,168,429,207,488,231,515,258,539,278,551,275,555,254,543,227,519,203,491,163,432,133,374,114,328"/>
+<area shape="rect" id="Node000015" title=" " alt="" coords="25,104,188,129"/>
+<area shape="poly" id="edge365_Node000015_Node000001" title=" " alt="" coords="171,98,207,89,280,70,281,75,209,94,172,103"/>
+<area shape="poly" id="edge366_Node000015_Node000003" title=" " alt="" coords="202,114,264,114,264,119,202,119"/>
 </map>

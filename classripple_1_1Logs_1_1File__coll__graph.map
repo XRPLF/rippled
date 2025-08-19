@@ -1,9 +1,15 @@
 <map id="ripple::Logs::File" name="ripple::Logs::File">
-<area shape="rect" id="node1" title="Manages a system file containing logged output." alt="" coords="27,524,155,549"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="13,421,168,461"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ofstream.html" title=" " alt="" coords="36,333,145,359"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ofstream.html" title=" " alt="" coords="15,244,166,284"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="18,155,163,195"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="5,80,176,105"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="37,5,144,31"/>
+<area shape="rect" id="Node000001" title="Manages a system file containing logged output." alt="" coords="27,524,155,549"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="13,421,168,461"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,475,93,524,88,524,88,475"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ofstream.html" title=" " alt="" coords="36,333,145,359"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="93,372,93,421,88,421,88,372"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ofstream.html" title=" " alt="" coords="15,244,166,284"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="93,298,93,333,88,333,88,298"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="18,155,163,195"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="93,209,93,244,88,244,88,209"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="5,80,176,105"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="93,119,93,155,88,155,88,119"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="37,5,144,31"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="93,45,93,80,88,80,88,45"/>
 </map>

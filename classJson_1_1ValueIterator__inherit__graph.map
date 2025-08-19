@@ -1,4 +1,5 @@
 <map id="Json::ValueIterator" name="Json::ValueIterator">
-<area shape="rect" id="node1" title="Iterator for object and array value." alt="" coords="21,79,163,104"/>
-<area shape="rect" id="node2" href="$classJson_1_1ValueIteratorBase.html" title="base class for Value iterators." alt="" coords="5,5,179,31"/>
+<area shape="rect" id="Node000001" title="Iterator for object and array value." alt="" coords="21,79,163,104"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1ValueIteratorBase.html" title="base class for Value iterators." alt="" coords="5,5,179,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,44,95,79,89,79,89,44"/>
 </map>

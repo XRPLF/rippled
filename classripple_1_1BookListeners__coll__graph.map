@@ -1,8 +1,13 @@
 <map id="ripple::BookListeners" name="ripple::BookListeners">
-<area shape="rect" id="node1" title="Listen to public/subscribe messages from a book." alt="" coords="44,299,203,324"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="5,196,164,221"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="189,181,341,236"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="160,93,263,119"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/weak_ptr.html" title=" " alt="" coords="287,93,435,119"/>
-<area shape="rect" id="node6" title=" " alt="" coords="341,5,380,31"/>
+<area shape="rect" id="Node000001" title="Listen to public/subscribe messages from a book." alt="" coords="44,299,203,324"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/recursive_mutex.html" title=" " alt="" coords="5,196,164,221"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="96,233,121,298,116,300,92,235"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="189,181,341,236"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="218,246,141,301,138,296,215,242"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="160,93,263,119"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="226,129,253,180,248,182,221,132"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/weak_ptr.html" title=" " alt="" coords="287,93,435,119"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="342,131,292,183,288,179,338,127"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="341,5,380,31"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="363,45,363,93,358,93,358,45"/>
 </map>

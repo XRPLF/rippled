@@ -1,4 +1,6 @@
 <map id="ripple::Workers::Worker" name="ripple::Workers::Worker">
-<area shape="rect" id="node1" title=" " alt="" coords="9,93,181,119"/>
-<area shape="rect" id="node2" href="$classbeast_1_1LockFreeStack_1_1Node.html" title=" " alt="" coords="5,5,184,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="9,93,181,119"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1LockFreeStack_1_1Node.html" title=" " alt="" coords="5,5,184,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="88,59,91,93,85,93,83,59"/>
+<area shape="poly" id="edge2_Node000001_Node000002" title=" " alt="" coords="106,59,104,93,99,93,101,59"/>
 </map>

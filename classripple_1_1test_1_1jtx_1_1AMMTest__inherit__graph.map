@@ -1,8 +1,13 @@
 <map id="ripple::test::jtx::AMMTest" name="ripple::test::jtx::AMMTest">
-<area shape="rect" id="node1" title=" " alt="" coords="389,47,515,87"/>
-<area shape="rect" id="node4" href="$structripple_1_1test_1_1AMMExtended__test.html" title="Tests of AMM that use offers too." alt="" coords="567,5,794,31"/>
-<area shape="rect" id="node5" href="$structripple_1_1test_1_1AMM__test.html" title="Basic tests of AMM that do not use offers." alt="" coords="598,55,763,80"/>
-<area shape="rect" id="node6" href="$classripple_1_1test_1_1LPTokenTransfer__test.html" title=" " alt="" coords="563,104,799,129"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1jtx_1_1AMMTestBase.html" title=" " alt="" coords="216,47,341,87"/>
-<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,55,168,80"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="389,47,515,87"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1test_1_1AMMExtended__test.html" title="Tests of AMM that use offers too." alt="" coords="567,5,794,31"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="528,47,562,39,616,28,617,33,563,45,529,52"/>
+<area shape="rect" id="Node000005" href="$structripple_1_1test_1_1AMM__test.html" title="Basic tests of AMM that do not use offers." alt="" coords="598,55,763,80"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="529,65,598,65,598,70,529,70"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1test_1_1LPTokenTransfer__test.html" title=" " alt="" coords="563,104,799,129"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="529,82,563,90,617,101,616,107,562,95,528,88"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1jtx_1_1AMMTestBase.html" title=" " alt="" coords="216,47,341,87"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="355,65,389,65,389,70,355,70"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,55,168,80"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="182,65,216,65,216,70,182,70"/>
 </map>

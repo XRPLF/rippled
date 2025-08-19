@@ -1,7 +1,7 @@
 var searchData=
 [
   ['gamma_5fdistribution_0',['gamma_distribution',['http://en.cppreference.com/w/cpp/numeric/random/gamma_distribution.html',1,'std']]],
-  ['gate_1',['gate',['../classripple_1_1test_1_1Coroutine__test_1_1gate.html',1,'ripple::test::Coroutine_test::gate'],['../classripple_1_1test_1_1jtx_1_1AMMTest_1_1gate.html',1,'ripple::test::jtx::AMMTest::gate'],['../classripple_1_1test_1_1Path__test_1_1gate.html',1,'ripple::test::Path_test::gate']]],
+  ['gate_1',['gate',['../classripple_1_1test_1_1Coroutine__test_1_1gate.html',1,'ripple::test::Coroutine_test::gate'],['../classripple_1_1test_1_1Path__test_1_1gate.html',1,'ripple::test::Path_test::gate'],['../classripple_1_1test_1_1jtx_1_1AMMTest_1_1gate.html',1,'ripple::test::jtx::AMMTest::gate']]],
   ['gatewaybalances_5ftest_2',['GatewayBalances_test',['../classripple_1_1test_1_1GatewayBalances__test.html',1,'ripple::test']]],
   ['gauge_3',['Gauge',['../classbeast_1_1insight_1_1Gauge.html',1,'beast::insight']]],
   ['gaugeimpl_4',['GaugeImpl',['../classbeast_1_1insight_1_1GaugeImpl.html',1,'beast::insight']]],

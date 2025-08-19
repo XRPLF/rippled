@@ -1,11 +1,19 @@
 <map id="ripple::test::jtx::WithdrawArg" name="ripple::test::jtx::WithdrawArg">
-<area shape="rect" id="node1" title=" " alt="" coords="279,229,404,269"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,160,45"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,69,160,109"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,133,160,173"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,197,160,237"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="13,261,152,301"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="6,326,159,381"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,405,160,445"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,469,160,509"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="279,229,404,269"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,5,160,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="172,48,216,68,256,97,285,129,307,165,336,228,331,230,303,167,281,132,253,101,214,73,170,53"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,69,160,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="174,110,216,127,256,150,299,188,329,227,325,231,295,192,253,154,214,132,172,115"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,133,160,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="163,175,256,208,299,227,297,232,254,213,161,180"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,197,160,237"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="174,226,279,239,278,244,173,231"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="13,261,152,301"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="166,268,278,254,279,260,166,274"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="6,326,159,381"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="172,319,254,287,298,267,300,272,256,292,173,324"/>
+<area shape="rect" id="Node000008" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,405,160,445"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="143,397,159,390,208,365,253,335,291,301,321,268,325,271,295,305,256,339,211,370,161,394,145,402"/>
+<area shape="rect" id="Node000009" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,469,160,509"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="155,462,206,435,253,398,279,366,301,330,330,268,335,271,306,333,283,369,257,402,209,439,157,466"/>
 </map>

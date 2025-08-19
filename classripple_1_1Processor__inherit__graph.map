@@ -1,4 +1,5 @@
 <map id="ripple::Processor" name="ripple::Processor">
-<area shape="rect" id="node1" title=" " alt="" coords="60,5,191,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1GRPCServerImpl_1_1CallData.html" title=" " alt="" coords="5,79,245,119"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="60,5,191,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1GRPCServerImpl_1_1CallData.html" title=" " alt="" coords="5,79,245,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="128,44,128,79,123,79,123,44"/>
 </map>

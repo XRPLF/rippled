@@ -1,5 +1,7 @@
 <map id="ripple::PeerSetBuilder" name="ripple::PeerSetBuilder">
-<area shape="rect" id="node1" title=" " alt="" coords="124,5,287,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerSetBuilderImpl.html" title=" " alt="" coords="5,86,197,111"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1TestPeerSetBuilder.html" title="Build the TestPeerSet." alt="" coords="221,79,397,119"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="124,5,287,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1PeerSetBuilderImpl.html" title=" " alt="" coords="5,86,197,111"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="181,41,118,88,115,84,178,37"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1TestPeerSetBuilder.html" title="Build the TestPeerSet." alt="" coords="221,79,397,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="233,37,286,76,283,81,230,41"/>
 </map>

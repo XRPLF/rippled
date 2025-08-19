@@ -1,5 +1,7 @@
 <map id="beast::test::enable_yield_to" name="beast::test::enable_yield_to">
-<area shape="rect" id="node1" title="Mix&#45;in to support tests using asio coroutines." alt="" coords="123,5,266,45"/>
-<area shape="rect" id="node2" href="$classio__latency__probe__test.html" title=" " alt="" coords="5,93,171,119"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1ServerStatus__test.html" title=" " alt="" coords="195,93,410,119"/>
+<area shape="rect" id="Node000001" title="Mix&#45;in to support tests using asio coroutines." alt="" coords="123,5,266,45"/>
+<area shape="rect" id="Node000002" href="$classio__latency__probe__test.html" title=" " alt="" coords="5,93,171,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="159,56,106,95,102,91,156,51"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1ServerStatus__test.html" title=" " alt="" coords="195,93,410,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="233,51,288,91,285,95,230,56"/>
 </map>

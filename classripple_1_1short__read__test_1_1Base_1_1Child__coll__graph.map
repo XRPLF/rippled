@@ -1,8 +1,15 @@
 <map id="ripple::short_read_test::Base::Child" name="ripple::short_read_test::Base::Child">
-<area shape="rect" id="node1" title=" " alt="" coords="5,45,141,85"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="496,24,739,93"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/weak_ptr.html" title=" " alt="" coords="212,38,383,93"/>
-<area shape="rect" id="node2" href="$classripple_1_1short__read__test_1_1Base.html" title=" " alt="" coords="840,136,976,176"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="571,169,663,194"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="532,218,703,243"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,45,141,85"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="496,24,739,93"/>
+<area shape="poly" id="edge5_Node000005_Node000001" title=" " alt="" coords="143,39,212,23,285,17,359,18,431,23,496,32,495,37,431,29,359,23,285,22,212,28,144,44"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/weak_ptr.html" title=" " alt="" coords="212,38,383,93"/>
+<area shape="poly" id="edge7_Node000006_Node000001" title=" " alt="" coords="155,63,212,63,212,68,155,68"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1short__read__test_1_1Base.html" title=" " alt="" coords="840,136,976,176"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="826,153,816,152,646,144,513,141,380,132,211,108,133,88,134,83,213,103,381,127,513,135,646,138,816,147,826,147"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="571,169,663,194"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="676,174,816,161,840,159,840,165,816,167,677,179"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="532,218,703,243"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="703,213,815,185,852,173,854,179,817,191,704,218"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="753,89,817,110,871,134,868,138,815,114,751,94"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="396,61,496,59,496,64,397,66"/>
 </map>

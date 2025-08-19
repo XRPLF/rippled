@@ -1,7 +1,12 @@
 <map id="Json::StyledWriter" name="Json::StyledWriter">
-<area shape="rect" id="node1" title="Writes a Value in JSON format in a human friendly way." alt="" coords="114,275,253,300"/>
-<area shape="rect" id="node2" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="5,185,135,210"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="294,185,481,210"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="161,95,248,120"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="135,5,274,45"/>
+<area shape="rect" id="Node000001" title="Writes a Value in JSON format in a human friendly way." alt="" coords="114,275,253,300"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="5,185,135,210"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,216,170,272,167,277,94,221"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="294,185,481,210"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="349,218,211,277,209,272,347,213"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="161,95,248,120"/>
+<area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="204,134,198,183,187,275,182,274,193,182,199,133"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="242,124,365,182,362,187,240,128"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="135,5,274,45"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="207,59,207,94,202,94,202,59"/>
 </map>

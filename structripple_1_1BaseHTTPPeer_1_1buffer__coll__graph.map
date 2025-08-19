@@ -1,5 +1,7 @@
 <map id="ripple::BaseHTTPPeer&lt; Handler, Impl &gt;::buffer" name="ripple::BaseHTTPPeer&lt; Handler, Impl &gt;::buffer">
-<area shape="rect" id="node1" title=" " alt="" coords="83,108,270,148"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,5,188,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="213,5,301,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="83,108,270,148"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="5,5,188,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="115,40,165,106,160,109,111,43"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="213,5,301,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="242,43,193,109,189,106,238,40"/>
 </map>

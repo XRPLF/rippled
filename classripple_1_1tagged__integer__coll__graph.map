@@ -1,4 +1,5 @@
 <map id="ripple::tagged_integer&lt; Int, Tag &gt;" name="ripple::tagged_integer&lt; Int, Tag &gt;">
-<area shape="rect" id="node1" title="A type&#45;safe wrap around standard integral types." alt="" coords="340,57,505,97"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,292,148"/>
+<area shape="rect" id="Node000001" title="A type&#45;safe wrap around standard integral types." alt="" coords="340,57,505,97"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,292,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="305,74,340,74,340,79,305,79"/>
 </map>

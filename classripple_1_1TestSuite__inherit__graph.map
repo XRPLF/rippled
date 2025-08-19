@@ -1,12 +1,21 @@
 <map id="ripple::TestSuite" name="ripple::TestSuite">
-<area shape="rect" id="node1" title=" " alt="" coords="216,104,343,129"/>
-<area shape="rect" id="node3" href="$classripple_1_1Config__test.html" title=" " alt="" coords="434,5,574,31"/>
-<area shape="rect" id="node4" href="$classripple_1_1RPC_1_1WalletPropose__test.html" title=" " alt="" coords="391,55,617,80"/>
-<area shape="rect" id="node5" href="$classripple_1_1SociDB__test.html" title=" " alt="" coords="431,104,577,129"/>
-<area shape="rect" id="node6" href="$classripple_1_1test_1_1TestOutputSuite.html" title=" " alt="" coords="419,154,589,194"/>
-<area shape="rect" id="node10" href="$classripple_1_1tests_1_1cluster__test.html" title=" " alt="" coords="413,219,595,244"/>
-<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,104,168,129"/>
-<area shape="rect" id="node7" href="$classJson_1_1JsonObject__test.html" title=" " alt="" coords="665,112,824,137"/>
-<area shape="rect" id="node8" href="$classJson_1_1JsonWriter__test.html" title=" " alt="" coords="667,161,823,187"/>
-<area shape="rect" id="node9" href="$structJson_1_1Output__test.html" title=" " alt="" coords="678,211,811,236"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="216,104,343,129"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1Config__test.html" title=" " alt="" coords="434,5,574,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="305,93,343,65,390,40,433,26,435,31,392,44,346,69,308,97"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1RPC_1_1WalletPropose__test.html" title=" " alt="" coords="391,55,617,80"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="348,98,390,89,442,78,443,83,391,94,349,103"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1SociDB__test.html" title=" " alt="" coords="431,104,577,129"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="357,114,431,114,431,119,357,119"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1test_1_1TestOutputSuite.html" title=" " alt="" coords="419,154,589,194"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="344,130,426,151,425,157,342,135"/>
+<area shape="rect" id="Node000010" href="$classripple_1_1tests_1_1cluster__test.html" title=" " alt="" coords="413,219,595,244"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="304,138,343,172,392,204,425,216,424,221,389,208,340,176,301,142"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,104,168,129"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="182,114,216,114,216,119,182,119"/>
+<area shape="rect" id="Node000007" href="$classJson_1_1JsonObject__test.html" title=" " alt="" coords="665,112,824,137"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="602,151,681,135,683,140,604,156"/>
+<area shape="rect" id="Node000008" href="$classJson_1_1JsonWriter__test.html" title=" " alt="" coords="667,161,823,187"/>
+<area shape="poly" id="edge7_Node000006_Node000008" title=" " alt="" coords="603,171,666,171,666,177,603,177"/>
+<area shape="rect" id="Node000009" href="$structJson_1_1Output__test.html" title=" " alt="" coords="678,211,811,236"/>
+<area shape="poly" id="edge8_Node000006_Node000009" title=" " alt="" coords="604,192,683,208,681,213,602,197"/>
 </map>

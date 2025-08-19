@@ -1,6 +1,9 @@
 <map id="ripple::test::jtx::JTx::prop_list" name="ripple::test::jtx::JTx::prop_list">
-<area shape="rect" id="node1" title=" " alt="" coords="32,328,157,368"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,211,184,265"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="8,108,181,148"/>
-<area shape="rect" id="node4" href="$structripple_1_1test_1_1jtx_1_1basic__prop.html" title=" " alt="" coords="32,5,157,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="32,328,157,368"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="5,211,184,265"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,280,97,328,92,328,92,280"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="8,108,181,148"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="97,161,97,211,92,211,92,161"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1test_1_1jtx_1_1basic__prop.html" title=" " alt="" coords="32,5,157,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="97,59,97,108,92,108,92,59"/>
 </map>

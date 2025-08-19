@@ -1,7 +1,11 @@
 <map id="ripple::test::PeerPartial" name="ripple::test::PeerPartial">
-<area shape="rect" id="node1" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="5,181,176,207"/>
-<area shape="rect" id="node2" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="21,93,117,119"/>
-<area shape="rect" id="node3" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="141,93,272,119"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="105,5,193,31"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="218,5,313,31"/>
+<area shape="rect" id="Node000001" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="5,181,176,207"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="21,93,117,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="78,131,90,180,85,181,73,133"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="141,93,272,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="182,129,108,183,105,179,179,125"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="105,5,193,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="167,41,201,91,196,94,162,44"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="218,5,313,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="252,44,217,94,213,91,247,41"/>
 </map>

@@ -1,7 +1,11 @@
 <map id="ripple::ValidatorToken" name="ripple::ValidatorToken">
-<area shape="rect" id="node1" title=" " alt="" coords="63,196,225,221"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="34,108,121,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
-<area shape="rect" id="node4" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="149,108,281,133"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="169,13,263,38"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="63,196,225,221"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="34,108,121,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,144,113,170,134,194,130,197,109,174,89,147"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="78,59,80,108,74,108,73,59"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="149,108,281,133"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="198,146,175,174,156,197,152,194,171,170,194,143"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="169,13,263,38"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="218,52,217,108,212,108,213,52"/>
 </map>

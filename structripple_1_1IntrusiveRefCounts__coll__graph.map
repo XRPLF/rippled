@@ -1,5 +1,8 @@
 <map id="ripple::IntrusiveRefCounts" name="ripple::IntrusiveRefCounts">
-<area shape="rect" id="node1" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,317,196,343"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="49,5,152,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="252,161,459,187"/>
+<area shape="rect" id="Node000001" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,317,196,343"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="49,5,152,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,44,95,94,92,174,95,254,102,317,96,317,90,255,87,174,90,93,95,44"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="252,161,459,187"/>
+<area shape="poly" id="edge3_Node000003_Node000002" title=" " alt="" coords="135,35,234,91,340,159,337,164,231,96,132,39"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="329,197,234,257,123,320,121,315,231,252,326,192"/>
 </map>

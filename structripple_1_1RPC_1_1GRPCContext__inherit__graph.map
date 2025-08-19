@@ -1,4 +1,5 @@
 <map id="ripple::RPC::GRPCContext&lt; RequestType &gt;" name="ripple::RPC::GRPCContext&lt; RequestType &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,193,119"/>
-<area shape="rect" id="node2" href="$structripple_1_1RPC_1_1Context.html" title="The context of information needed to call an RPC." alt="" coords="23,5,175,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,193,119"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1RPC_1_1Context.html" title="The context of information needed to call an RPC." alt="" coords="23,5,175,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,44,102,79,97,79,97,44"/>
 </map>

@@ -1,7 +1,11 @@
 <map id="ripple::PendingSaves" name="ripple::PendingSaves">
-<area shape="rect" id="node1" title="Keeps track of which ledgers haven&#39;t been fully saved." alt="" coords="124,196,283,221"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="5,101,97,126"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="122,93,285,133"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="152,5,255,31"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="309,101,479,126"/>
+<area shape="rect" id="Node000001" title="Keeps track of which ledgers haven&#39;t been fully saved." alt="" coords="124,196,283,221"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="5,101,97,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="83,131,146,170,186,194,183,198,143,174,80,136"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="122,93,285,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="206,147,206,196,201,196,201,147"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="152,5,255,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="206,44,206,93,201,93,201,44"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="309,101,479,126"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="360,134,228,198,226,193,357,130"/>
 </map>

@@ -1,5 +1,7 @@
 <map id="ripple::XRPEndpointPaymentStep" name="ripple::XRPEndpointPaymentStep">
-<area shape="rect" id="node1" title=" " alt="" coords="5,196,241,221"/>
-<area shape="rect" id="node2" href="$classripple_1_1XRPEndpointStep.html" title=" " alt="" coords="13,108,234,148"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,241,60"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,196,241,221"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1XRPEndpointStep.html" title=" " alt="" coords="13,108,234,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="126,162,126,196,121,196,121,162"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,241,60"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="126,74,126,108,121,108,121,74"/>
 </map>

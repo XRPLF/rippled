@@ -1,4 +1,5 @@
 <map id="ripple::ValidMPTIssuance" name="ripple::ValidMPTIssuance">
-<area shape="rect" id="node1" title=" " alt="" coords="5,181,189,207"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="46,5,149,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,181,189,207"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="46,5,149,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,44,100,181,95,181,95,44"/>
 </map>

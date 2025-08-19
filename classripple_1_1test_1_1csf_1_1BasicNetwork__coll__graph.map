@@ -1,8 +1,13 @@
 <map id="ripple::test::csf::BasicNetwork&lt; Peer &gt;" name="ripple::test::csf::BasicNetwork&lt; Peer &gt;">
-<area shape="rect" id="node1" title="Peer to peer network simulator." alt="" coords="831,91,1001,131"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1Scheduler.html" title="Simulated discrete&#45;event scheduler." alt="" coords="537,35,663,75"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="215,5,385,45"/>
-<area shape="rect" id="node4" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="219,70,381,125"/>
-<area shape="rect" id="node5" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,77,165,117"/>
-<area shape="rect" id="node6" href="$classripple_1_1test_1_1csf_1_1Digraph.html" title=" " alt="" coords="485,99,715,168"/>
+<area shape="rect" id="Node000001" title="Peer to peer network simulator." alt="" coords="831,91,1001,131"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1csf_1_1Scheduler.html" title="Simulated discrete&#45;event scheduler." alt="" coords="537,35,663,75"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="677,66,831,93,830,98,676,71"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1queue__type.html" title=" " alt="" coords="215,5,385,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="399,32,537,46,536,51,399,38"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1manual__clock.html" title=" " alt="" coords="219,70,381,125"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="394,81,536,61,537,66,395,87"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="5,77,165,117"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="179,95,219,95,219,100,179,100"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1test_1_1csf_1_1Digraph.html" title=" " alt="" coords="485,99,715,168"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="728,121,830,114,831,119,729,127"/>
 </map>

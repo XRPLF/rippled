@@ -1,7 +1,11 @@
 <map id="ripple::DebugSink" name="ripple::DebugSink">
-<area shape="rect" id="node1" title=" " alt="" coords="501,77,639,102"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="223,5,400,45"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="226,69,397,109"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,77,152,102"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="265,134,357,159"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="501,77,639,102"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/reference_wrapper.html" title=" " alt="" coords="223,5,400,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="407,46,518,74,517,79,405,51"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="226,69,397,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="411,87,501,87,501,92,411,92"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,77,152,102"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="166,87,226,87,226,92,166,92"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="265,134,357,159"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="370,131,511,99,512,105,372,136"/>
 </map>

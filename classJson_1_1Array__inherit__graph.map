@@ -1,4 +1,5 @@
 <map id="Json::Array" name="Json::Array">
-<area shape="rect" id="node1" title="Represents a JSON array being written to a Writer." alt="" coords="21,79,113,104"/>
-<area shape="rect" id="node2" href="$classJson_1_1Collection.html" title=" " alt="" coords="5,5,128,31"/>
+<area shape="rect" id="Node000001" title="Represents a JSON array being written to a Writer." alt="" coords="21,79,113,104"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1Collection.html" title=" " alt="" coords="5,5,128,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="69,44,69,79,64,79,64,44"/>
 </map>

@@ -1,6 +1,10 @@
 <map id="beast::WrappedSink" name="beast::WrappedSink">
-<area shape="rect" id="node1" title="Wraps a Journal::Sink to prefix its output with a string." alt="" coords="47,183,199,208"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,95,152,120"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="177,95,263,120"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="151,5,289,45"/>
+<area shape="rect" id="Node000001" title="Wraps a Journal::Sink to prefix its output with a string." alt="" coords="47,183,199,208"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,95,152,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="89,132,100,157,115,181,111,184,95,160,84,134"/>
+<area shape="poly" id="edge2_Node000001_Node000002" title=" " alt="" coords="93,131,119,181,114,183,89,134"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="177,95,263,120"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="198,131,138,184,134,180,195,127"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="151,5,289,45"/>
+<area shape="poly" id="edge4_Node000003_Node000004" title=" " alt="" coords="223,59,223,94,217,94,217,59"/>
 </map>

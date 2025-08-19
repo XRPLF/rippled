@@ -1,5 +1,7 @@
 <map id="ripple::test::RandomAccountParams" name="ripple::test::RandomAccountParams">
-<area shape="rect" id="node1" title=" " alt="" coords="44,152,251,192"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/uniform_real_distribution.html" title=" " alt="" coords="132,5,347,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="44,152,251,192"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="68,42,86,83,111,126,130,150,126,153,106,130,81,85,63,44"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/uniform_real_distribution.html" title=" " alt="" coords="132,5,347,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="240,45,232,86,224,109,212,130,186,154,182,150,208,126,219,107,227,85,235,44"/>
 </map>

@@ -1,7 +1,11 @@
 <map id="beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;::config_t" name="beast::detail::aged_ordered_container&lt; IsMulti, IsMap, Key, T, Clock, Compare, Allocator &gt;::config_t">
-<area shape="rect" id="node1" title=" " alt="" coords="455,52,665,136"/>
-<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="192,5,403,89"/>
-<area shape="rect" id="node3" title=" " alt="" coords="32,35,113,60"/>
-<area shape="rect" id="node4" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="188,113,407,168"/>
-<area shape="rect" id="node5" title=" " alt="" coords="5,128,140,153"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="455,52,665,136"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="192,5,403,89"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="417,66,455,73,454,78,416,71"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="32,35,113,60"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="127,45,192,45,192,50,127,50"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="188,113,407,168"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="420,116,454,110,455,115,421,122"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="5,128,140,153"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="153,138,188,138,188,143,153,143"/>
 </map>

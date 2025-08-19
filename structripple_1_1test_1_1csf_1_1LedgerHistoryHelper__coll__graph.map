@@ -1,20 +1,40 @@
 <map id="ripple::test::csf::LedgerHistoryHelper" name="ripple::test::csf::LedgerHistoryHelper">
-<area shape="rect" id="node1" title="Helper for writing unit tests with controlled ledger histories." alt="" coords="1948,81,2104,121"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1csf_1_1LedgerOracle.html" title="Oracle maintaining unique ledgers for a simulation." alt="" coords="1707,5,1834,45"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="477,78,580,103"/>
-<area shape="rect" id="node9" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="829,125,1016,165"/>
-<area shape="rect" id="node13" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="835,332,1010,372"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1695,121,1847,175"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="1475,135,1561,161"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="1205,128,1344,168"/>
-<area shape="rect" id="node7" href="$classripple_1_1test_1_1csf_1_1Ledger.html" title="A ledger is a set of observed transactions and a sequence number identifying the ledger." alt="" coords="1455,251,1581,291"/>
-<area shape="rect" id="node8" href="$structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html" title=" " alt="" coords="1210,251,1339,291"/>
-<area shape="rect" id="node10" title=" " alt="" coords="341,128,716,285"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="845,189,1001,229"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="837,253,1009,293"/>
-<area shape="rect" id="node14" title=" " alt="" coords="347,309,710,467"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="851,397,994,437"/>
-<area shape="rect" id="node16" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="446,491,611,531"/>
-<area shape="rect" id="node17" title=" " alt="" coords="5,439,292,582"/>
-<area shape="rect" id="node18" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="1707,199,1835,225"/>
+<area shape="rect" id="Node000001" title="Helper for writing unit tests with controlled ledger histories." alt="" coords="1948,81,2104,121"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1csf_1_1LedgerOracle.html" title="Oracle maintaining unique ledgers for a simulation." alt="" coords="1707,5,1834,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1848,40,1925,61,1975,79,1973,84,1923,67,1846,45"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="477,78,580,103"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="594,86,921,80,1772,80,1864,83,1948,90,1948,95,1863,89,1772,85,921,85,594,91"/>
+<area shape="rect" id="Node000009" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="829,125,1016,165"/>
+<area shape="poly" id="edge10_Node000009_Node000003" title=" " alt="" coords="594,97,716,113,829,129,828,135,716,119,593,102"/>
+<area shape="rect" id="Node000013" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="835,332,1010,372"/>
+<area shape="poly" id="edge15_Node000013_Node000003" title=" " alt="" coords="594,83,656,90,688,99,718,114,742,147,776,208,809,269,831,303,871,330,868,334,827,307,805,272,771,211,738,150,714,118,686,104,655,95,594,89"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1695,121,1847,175"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="1860,129,1947,113,1948,118,1861,134"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="1475,135,1561,161"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="1575,145,1694,145,1694,151,1575,151"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="1205,128,1344,168"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="1358,145,1475,145,1475,151,1358,151"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1test_1_1csf_1_1Ledger.html" title="A ledger is a set of observed transactions and a sequence number identifying the ledger." alt="" coords="1455,251,1581,291"/>
+<area shape="poly" id="edge6_Node000004_Node000007" title=" " alt="" coords="1572,242,1712,173,1715,178,1574,247"/>
+<area shape="rect" id="Node000008" href="$structripple_1_1test_1_1csf_1_1Ledger_1_1Instance.html" title=" " alt="" coords="1210,251,1339,291"/>
+<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="1354,268,1455,268,1455,273,1354,273"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="1030,152,1106,167,1182,194,1224,220,1256,249,1253,253,1220,224,1180,198,1105,172,1029,157"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="341,128,716,285"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="729,199,805,185,828,175,860,163,862,168,830,180,806,191,730,204"/>
+<area shape="rect" id="Node000011" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="845,189,1001,229"/>
+<area shape="poly" id="edge11_Node000008_Node000011" title=" " alt="" coords="1015,212,1096,221,1182,236,1223,248,1221,253,1181,241,1096,226,1014,217"/>
+<area shape="rect" id="Node000012" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/time_point.html" title=" " alt="" coords="837,253,1009,293"/>
+<area shape="poly" id="edge12_Node000008_Node000012" title=" " alt="" coords="1022,270,1210,268,1210,274,1022,275"/>
+<area shape="poly" id="edge19_Node000007_Node000013" title=" " alt="" coords="1023,346,1175,336,1344,315,1454,288,1455,293,1344,320,1175,341,1024,352"/>
+<area shape="poly" id="edge13_Node000008_Node000013" title=" " alt="" coords="1023,326,1209,283,1210,288,1024,331"/>
+<area shape="rect" id="Node000014" title=" " alt="" coords="347,309,710,467"/>
+<area shape="poly" id="edge14_Node000013_Node000014" title=" " alt="" coords="723,368,835,357,835,363,724,373"/>
+<area shape="rect" id="Node000015" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="851,397,994,437"/>
+<area shape="poly" id="edge16_Node000008_Node000015" title=" " alt="" coords="1007,399,1093,376,1137,360,1180,340,1219,315,1251,289,1254,293,1222,320,1183,345,1139,364,1094,381,1009,404"/>
+<area shape="rect" id="Node000016" href="$classripple_1_1tagged__integer.html" title="A type&#45;safe wrap around standard integral types." alt="" coords="446,491,611,531"/>
+<area shape="poly" id="edge17_Node000015_Node000016" title=" " alt="" coords="624,494,715,476,860,435,862,440,717,481,625,499"/>
+<area shape="rect" id="Node000017" title=" " alt="" coords="5,439,292,582"/>
+<area shape="poly" id="edge18_Node000016_Node000017" title=" " alt="" coords="306,508,446,508,446,513,306,513"/>
+<area shape="rect" id="Node000018" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="1707,199,1835,225"/>
+<area shape="poly" id="edge20_Node000001_Node000018" title=" " alt="" coords="1827,192,1846,186,1921,152,1986,119,1989,124,1924,157,1848,190,1829,197"/>
 </map>

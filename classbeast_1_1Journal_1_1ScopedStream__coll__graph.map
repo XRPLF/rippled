@@ -1,9 +1,15 @@
 <map id="beast::Journal::ScopedStream" name="beast::Journal::ScopedStream">
-<area shape="rect" id="node1" title=" " alt="" coords="35,421,248,447"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,333,152,359"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostringstream.html" title=" " alt="" coords="176,333,317,359"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostringstream.html" title=" " alt="" coords="155,244,338,284"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="174,155,319,195"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="161,80,332,105"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="193,5,300,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="35,421,248,447"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,333,152,359"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,368,135,419,130,422,93,371"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostringstream.html" title=" " alt="" coords="176,333,317,359"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="224,369,157,423,154,419,220,365"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostringstream.html" title=" " alt="" coords="155,244,338,284"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="249,298,249,333,244,333,244,298"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ostream.html" title=" " alt="" coords="174,155,319,195"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="249,209,249,244,244,244,244,209"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_ios.html" title=" " alt="" coords="161,80,332,105"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="249,119,249,155,244,155,244,119"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/ios_base.html" title=" " alt="" coords="193,5,300,31"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="249,45,249,80,244,80,244,45"/>
 </map>

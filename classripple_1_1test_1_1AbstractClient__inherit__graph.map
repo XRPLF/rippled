@@ -1,6 +1,9 @@
 <map id="ripple::test::AbstractClient" name="ripple::test::AbstractClient">
-<area shape="rect" id="node1" title=" " alt="" coords="107,5,299,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1JSONRPCClient.html" title=" " alt="" coords="5,79,201,104"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1WSClient.html" title=" " alt="" coords="225,79,384,104"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1WSClientImpl.html" title=" " alt="" coords="211,152,399,177"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="107,5,299,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1JSONRPCClient.html" title=" " alt="" coords="5,79,201,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="178,41,121,81,118,76,175,36"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1WSClient.html" title=" " alt="" coords="225,79,384,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="232,36,290,76,287,81,229,41"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1test_1_1WSClientImpl.html" title=" " alt="" coords="211,152,399,177"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="307,118,307,152,302,152,302,118"/>
 </map>

@@ -1,9 +1,15 @@
 <map id="ripple::test::jtx::AMMTestBase" name="ripple::test::jtx::AMMTestBase">
-<area shape="rect" id="node1" title=" " alt="" coords="216,27,341,67"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1AMMInfo__test.html" title=" " alt="" coords="389,5,580,31"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1jtx_1_1AMMTest.html" title=" " alt="" coords="422,55,547,95"/>
-<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,35,168,60"/>
-<area shape="rect" id="node5" href="$structripple_1_1test_1_1AMMExtended__test.html" title="Tests of AMM that use offers too." alt="" coords="633,13,859,39"/>
-<area shape="rect" id="node6" href="$structripple_1_1test_1_1AMM__test.html" title="Basic tests of AMM that do not use offers." alt="" coords="663,63,829,88"/>
-<area shape="rect" id="node7" href="$classripple_1_1test_1_1LPTokenTransfer__test.html" title=" " alt="" coords="628,112,864,137"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="216,27,341,67"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1AMMInfo__test.html" title=" " alt="" coords="389,5,580,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="355,34,395,28,396,33,355,39"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1test_1_1jtx_1_1AMMTest.html" title=" " alt="" coords="422,55,547,95"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="355,55,422,64,422,70,355,60"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,35,168,60"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="182,45,216,45,216,50,182,50"/>
+<area shape="rect" id="Node000005" href="$structripple_1_1test_1_1AMMExtended__test.html" title="Tests of AMM that use offers too." alt="" coords="633,13,859,39"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="561,58,678,36,679,41,562,64"/>
+<area shape="rect" id="Node000006" href="$structripple_1_1test_1_1AMM__test.html" title="Basic tests of AMM that do not use offers." alt="" coords="663,63,829,88"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="561,73,663,73,663,78,561,78"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1test_1_1LPTokenTransfer__test.html" title=" " alt="" coords="628,112,864,137"/>
+<area shape="poly" id="edge6_Node000004_Node000007" title=" " alt="" coords="562,87,679,109,678,115,561,92"/>
 </map>

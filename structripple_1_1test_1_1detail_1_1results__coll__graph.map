@@ -1,4 +1,5 @@
 <map id="ripple::test::detail::results" name="ripple::test::detail::results">
-<area shape="rect" id="node1" title=" " alt="" coords="5,137,143,177"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="30,5,118,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,137,143,177"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="30,5,118,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="77,44,77,137,71,137,71,44"/>
 </map>

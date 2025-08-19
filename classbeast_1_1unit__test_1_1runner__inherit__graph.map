@@ -1,6 +1,9 @@
 <map id="beast::unit_test::runner" name="beast::unit_test::runner">
-<area shape="rect" id="node1" title="Unit test runner interface." alt="" coords="5,70,179,95"/>
-<area shape="rect" id="node2" href="$classbeast_1_1unit__test_1_1detail_1_1reporter.html" title="A simple test runner that writes everything to a stream in real time." alt="" coords="235,5,403,45"/>
-<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1recorder.html" title="A test runner that stores the results." alt="" coords="227,70,412,95"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1multi__runner__child.html" title="A class to run a subset of unit tests." alt="" coords="252,120,387,160"/>
+<area shape="rect" id="Node000001" title="Unit test runner interface." alt="" coords="5,70,179,95"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1unit__test_1_1detail_1_1reporter.html" title="A simple test runner that writes everything to a stream in real time." alt="" coords="235,5,403,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="156,64,239,43,240,48,157,69"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1unit__test_1_1recorder.html" title="A test runner that stores the results." alt="" coords="227,70,412,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="193,80,226,80,226,85,193,85"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1test_1_1multi__runner__child.html" title="A class to run a subset of unit tests." alt="" coords="252,120,387,160"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="157,96,252,120,251,126,156,101"/>
 </map>

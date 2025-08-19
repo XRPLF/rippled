@@ -1,5 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,20,124,45"/>
-<area shape="rect" id="node2" href="$structripple_1_1test_1_1csf_1_1Scheduler_1_1event.html" title=" " alt="" coords="172,13,303,53"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1event__impl.html" title=" " alt="" coords="351,5,517,60"/>
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,20,124,45"/>
+<area shape="rect" id="Node000001" href="$structripple_1_1test_1_1csf_1_1Scheduler_1_1event.html" title=" " alt="" coords="172,13,303,53"/>
+<area shape="poly" id="edge382_Node000000_Node000001" title=" " alt="" coords="138,30,172,30,172,35,138,35"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1csf_1_1Scheduler_1_1event__impl.html" title=" " alt="" coords="351,5,517,60"/>
+<area shape="poly" id="edge383_Node000001_Node000002" title=" " alt="" coords="316,30,350,30,350,35,316,35"/>
 </map>

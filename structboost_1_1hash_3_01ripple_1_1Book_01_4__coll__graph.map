@@ -1,9 +1,15 @@
 <map id="boost::hash&lt; ripple::Book &gt;" name="boost::hash&lt; ripple::Book &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="861,127,1011,167"/>
-<area shape="rect" id="node2" href="$structstd_1_1hash_3_01ripple_1_1Book_01_4.html" title=" " alt="" coords="671,127,812,167"/>
-<area shape="rect" id="node3" href="$structstd_1_1hash_3_01ripple_1_1Issue_01_4.html" title=" " alt="" coords="343,91,485,131"/>
-<area shape="rect" id="node4" title=" " alt="" coords="5,5,220,60"/>
-<area shape="rect" id="node5" title=" " alt="" coords="9,84,217,139"/>
-<area shape="rect" id="node6" href="$classripple_1_1hardened__hash.html" title="Seed functor once per construction." alt="" coords="331,159,497,199"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="33,163,192,203"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="861,127,1011,167"/>
+<area shape="rect" id="Node000002" href="$structstd_1_1hash_3_01ripple_1_1Book_01_4.html" title=" " alt="" coords="671,127,812,167"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="826,145,861,145,861,150,826,150"/>
+<area shape="rect" id="Node000003" href="$structstd_1_1hash_3_01ripple_1_1Issue_01_4.html" title=" " alt="" coords="343,91,485,131"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="499,118,671,137,670,142,498,123"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,5,220,60"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="232,61,344,90,343,96,231,66"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="9,84,217,139"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="230,109,343,109,343,114,230,114"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1hardened__hash.html" title="Seed functor once per construction." alt="" coords="331,159,497,199"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="511,173,646,162,670,159,671,164,647,167,512,178"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="33,163,192,203"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="206,179,330,178,330,183,206,185"/>
 </map>

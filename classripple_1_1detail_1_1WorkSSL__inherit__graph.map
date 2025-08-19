@@ -1,6 +1,9 @@
 <map id="ripple::detail::WorkSSL" name="ripple::detail::WorkSSL">
-<area shape="rect" id="node1" title=" " alt="" coords="110,167,278,192"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="5,79,183,119"/>
-<area shape="rect" id="node3" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="21,5,167,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="207,79,384,119"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="110,167,278,192"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="5,79,183,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="131,125,181,164,177,168,127,129"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="21,5,167,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="97,44,97,79,91,79,91,44"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="207,79,384,119"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="262,129,211,168,208,164,258,125"/>
 </map>

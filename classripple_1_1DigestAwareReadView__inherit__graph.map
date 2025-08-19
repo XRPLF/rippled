@@ -1,7 +1,11 @@
 <map id="ripple::DigestAwareReadView" name="ripple::DigestAwareReadView">
-<area shape="rect" id="node1" title="ReadView that associates keys with digests." alt="" coords="48,79,263,104"/>
-<area shape="rect" id="node3" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="5,152,116,177"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1CachedViewImpl.html" title=" " alt="" coords="141,152,362,177"/>
-<area shape="rect" id="node2" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="89,5,221,31"/>
-<area shape="rect" id="node5" href="$classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching." alt="" coords="178,225,325,265"/>
+<area shape="rect" id="Node000001" title="ReadView that associates keys with digests." alt="" coords="48,79,263,104"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="5,152,116,177"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="131,114,78,154,75,150,128,110"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1detail_1_1CachedViewImpl.html" title=" " alt="" coords="141,152,362,177"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="183,110,237,150,234,154,180,114"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="89,5,221,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="158,44,158,79,153,79,153,44"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching." alt="" coords="178,225,325,265"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="254,191,254,225,249,225,249,191"/>
 </map>

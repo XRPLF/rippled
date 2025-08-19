@@ -1,4 +1,5 @@
 <map id="ripple::test::jtx::basic_prop" name="ripple::test::jtx::basic_prop">
-<area shape="rect" id="node1" title=" " alt="" coords="5,5,131,45"/>
-<area shape="rect" id="node2" href="$structripple_1_1test_1_1jtx_1_1prop__type.html" title=" " alt="" coords="5,93,131,133"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,5,131,45"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1test_1_1jtx_1_1prop__type.html" title=" " alt="" coords="5,93,131,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="71,59,71,93,65,93,65,59"/>
 </map>

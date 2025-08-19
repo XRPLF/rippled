@@ -1,11 +1,19 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="5,120,181,145"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Group.html" title="A collector front&#45;end that manages a group of metrics." alt="" coords="260,5,417,31"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1NullCollector.html" title="A Collector which does not collect metrics." alt="" coords="237,120,440,145"/>
-<area shape="rect" id="node6" href="$classbeast_1_1insight_1_1StatsDCollector.html" title="A Collector that reports metrics to a StatsD server." alt="" coords="229,169,448,195"/>
-<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1GroupImp.html" title=" " alt="" coords="497,23,651,63"/>
-<area shape="rect" id="node5" href="$classbeast_1_1insight_1_1detail_1_1NullCollectorImp.html" title=" " alt="" coords="497,113,651,153"/>
-<area shape="rect" id="node7" href="$classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html" title=" " alt="" coords="496,201,652,241"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="246,55,431,95"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="235,219,442,273"/>
+<area shape="rect" id="Node000000" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="5,120,181,145"/>
+<area shape="rect" id="Node000001" href="$classbeast_1_1insight_1_1Group.html" title="A collector front&#45;end that manages a group of metrics." alt="" coords="260,5,417,31"/>
+<area shape="poly" id="edge33_Node000000_Node000001" title=" " alt="" coords="119,109,168,74,228,41,266,28,267,33,230,46,171,79,122,114"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1insight_1_1NullCollector.html" title="A Collector which does not collect metrics." alt="" coords="237,120,440,145"/>
+<area shape="poly" id="edge35_Node000000_Node000004" title=" " alt="" coords="195,130,237,130,237,135,195,135"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1insight_1_1StatsDCollector.html" title="A Collector that reports metrics to a StatsD server." alt="" coords="229,169,448,195"/>
+<area shape="poly" id="edge37_Node000000_Node000006" title=" " alt="" coords="171,145,275,167,274,172,170,151"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1insight_1_1detail_1_1GroupImp.html" title=" " alt="" coords="497,23,651,63"/>
+<area shape="poly" id="edge34_Node000001_Node000002" title=" " alt="" coords="431,25,497,32,496,38,430,31"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1insight_1_1detail_1_1NullCollectorImp.html" title=" " alt="" coords="497,113,651,153"/>
+<area shape="poly" id="edge36_Node000004_Node000005" title=" " alt="" coords="453,130,497,130,497,135,453,135"/>
+<area shape="rect" id="Node000007" href="$classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html" title=" " alt="" coords="496,201,652,241"/>
+<area shape="poly" id="edge38_Node000006_Node000007" title=" " alt="" coords="431,194,496,205,495,211,430,200"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="246,55,431,95"/>
+<area shape="poly" id="edge39_Node000003_Node000002" title=" " alt="" coords="444,58,496,51,497,56,445,64"/>
+<area shape="rect" id="Node000008" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="235,219,442,273"/>
+<area shape="poly" id="edge40_Node000008_Node000007" title=" " alt="" coords="455,231,496,226,496,232,456,236"/>
 </map>

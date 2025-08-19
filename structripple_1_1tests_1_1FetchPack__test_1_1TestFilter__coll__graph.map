@@ -1,9 +1,15 @@
 <map id="ripple::tests::FetchPack_test::TestFilter" name="ripple::tests::FetchPack_test::TestFilter">
-<area shape="rect" id="node1" title=" " alt="" coords="206,196,378,236"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapSyncFilter.html" title=" " alt="" coords="5,101,192,126"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="216,93,368,133"/>
-<area shape="rect" id="node4" title=" " alt="" coords="226,5,265,31"/>
-<area shape="rect" id="node5" title=" " alt="" coords="291,5,330,31"/>
-<area shape="rect" id="node6" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="393,101,503,126"/>
-<area shape="rect" id="node7" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="375,5,521,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="206,196,378,236"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1SHAMapSyncFilter.html" title=" " alt="" coords="5,101,192,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="134,130,257,193,254,198,132,135"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="216,93,368,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="295,147,295,196,289,196,289,147"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="226,5,265,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="254,43,264,68,279,92,274,95,259,71,249,45"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="291,5,330,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="308,44,298,94,293,93,303,43"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="393,101,503,126"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="420,136,323,198,320,194,417,131"/>
+<area shape="rect" id="Node000007" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="375,5,521,31"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="451,44,451,101,445,101,445,44"/>
 </map>

@@ -1,18 +1,37 @@
 <map id="ripple::test::jtx::msig" name="ripple::test::jtx::msig">
-<area shape="rect" id="node1" title="Set a multisignature on a JTx." alt="" coords="1661,189,1819,214"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1419,181,1561,221"/>
-<area shape="rect" id="node3" href="$structripple_1_1test_1_1jtx_1_1Reg.html" title=" " alt="" coords="1113,189,1263,214"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1jtx_1_1Account.html" title="Immutable cryptographic account descriptor." alt="" coords="815,129,941,169"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1071,61,1305,131"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="799,19,957,59"/>
-<area shape="rect" id="node7" title=" " alt="" coords="571,18,609,43"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="547,137,633,162"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="236,156,375,196"/>
-<area shape="rect" id="node10" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="525,186,655,211"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,90,349,115"/>
-<area shape="rect" id="node14" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,68,693,108"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="258,231,353,257"/>
-<area shape="rect" id="node13" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="524,238,656,263"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,7,389,47"/>
-<area shape="rect" id="node16" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,14,108,39"/>
+<area shape="rect" id="Node000001" title="Set a multisignature on a JTx." alt="" coords="1661,189,1819,214"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1419,181,1561,221"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1575,199,1661,199,1661,204,1575,204"/>
+<area shape="rect" id="Node000003" href="$structripple_1_1test_1_1jtx_1_1Reg.html" title=" " alt="" coords="1113,189,1263,214"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1277,199,1418,199,1418,204,1277,204"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1test_1_1jtx_1_1Account.html" title="Immutable cryptographic account descriptor." alt="" coords="815,129,941,169"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="924,174,952,187,982,197,1048,206,1113,206,1113,212,1048,212,981,203,950,192,921,179"/>
+<area shape="poly" id="edge4_Node000004_Node000004" title=" " alt="" coords="853,113,862,106,878,103,892,105,901,111,905,120,904,129,898,129,900,120,897,114,890,110,878,108,864,110,857,117"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1071,61,1305,131"/>
+<area shape="poly" id="edge8_Node000005_Node000004" title=" " alt="" coords="954,128,981,123,1070,108,1071,113,982,128,955,133"/>
+<area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="1074,137,1047,143,993,149,941,152,941,147,993,144,1046,137,1073,132"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="799,19,957,59"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="972,53,1071,72,1070,77,971,58"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="571,18,609,43"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="623,29,798,34,798,39,623,34"/>
+<area shape="rect" id="Node000008" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="547,137,633,162"/>
+<area shape="poly" id="edge9_Node000004_Node000008" title=" " alt="" coords="647,147,815,147,815,152,647,152"/>
+<area shape="rect" id="Node000009" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="236,156,375,196"/>
+<area shape="poly" id="edge10_Node000008_Node000009" title=" " alt="" coords="388,166,546,151,547,156,389,171"/>
+<area shape="rect" id="Node000010" href="$classripple_1_1PublicKey.html" title="A public key." alt="" coords="525,186,655,211"/>
+<area shape="poly" id="edge11_Node000004_Node000010" title=" " alt="" coords="668,184,774,167,815,159,816,164,775,172,669,190"/>
+<area shape="rect" id="Node000011" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,90,349,115"/>
+<area shape="poly" id="edge12_Node000010_Node000011" title=" " alt="" coords="349,118,414,144,487,171,532,183,531,188,486,176,412,149,347,123"/>
+<area shape="rect" id="Node000014" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,68,693,108"/>
+<area shape="poly" id="edge17_Node000014_Node000011" title=" " alt="" coords="363,97,486,91,486,96,363,102"/>
+<area shape="rect" id="Node000012" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="258,231,353,257"/>
+<area shape="poly" id="edge13_Node000010_Node000012" title=" " alt="" coords="366,232,524,206,525,212,367,237"/>
+<area shape="rect" id="Node000013" href="$classripple_1_1SecretKey.html" title="A secret key." alt="" coords="524,238,656,263"/>
+<area shape="poly" id="edge15_Node000013_Node000012" title=" " alt="" coords="367,248,413,252,524,252,524,257,413,257,366,254"/>
+<area shape="poly" id="edge14_Node000004_Node000013" title=" " alt="" coords="654,232,693,221,734,211,774,198,839,167,841,172,776,202,735,216,694,227,655,237"/>
+<area shape="poly" id="edge16_Node000004_Node000014" title=" " alt="" coords="707,101,775,115,818,127,817,132,774,120,706,106"/>
+<area shape="rect" id="Node000015" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,7,389,47"/>
+<area shape="poly" id="edge18_Node000014_Node000015" title=" " alt="" coords="403,45,497,65,496,71,402,50"/>
+<area shape="rect" id="Node000016" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,14,108,39"/>
+<area shape="poly" id="edge19_Node000015_Node000016" title=" " alt="" coords="122,24,221,24,221,29,122,29"/>
 </map>

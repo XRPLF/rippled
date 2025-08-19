@@ -1,9 +1,15 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,217,60,243"/>
-<area shape="rect" id="node2" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMap.html" title=" " alt="" coords="148,5,351,60"/>
-<area shape="rect" id="node3" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMap_3_01Base_00_01true_01_4.html" title=" " alt="" coords="154,84,345,139"/>
-<area shape="rect" id="node4" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMulti.html" title=" " alt="" coords="143,163,356,217"/>
-<area shape="rect" id="node5" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMulti_3_01Base_00_01true_01_4.html" title=" " alt="" coords="152,241,347,296"/>
-<area shape="rect" id="node6" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeUnordered.html" title=" " alt="" coords="108,320,391,375"/>
-<area shape="rect" id="node7" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeUnordered_3_01Base_00_01true_01_4.html" title=" " alt="" coords="134,399,365,453"/>
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,217,60,243"/>
+<area shape="rect" id="Node000001" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMap.html" title=" " alt="" coords="148,5,351,60"/>
+<area shape="poly" id="edge1_Node000000_Node000001" title=" " alt="" coords="37,203,45,172,59,136,79,100,106,69,126,56,147,46,149,51,128,61,110,73,83,103,64,138,50,174,42,204"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMap_3_01Base_00_01true_01_4.html" title=" " alt="" coords="154,84,345,139"/>
+<area shape="poly" id="edge2_Node000000_Node000002" title=" " alt="" coords="49,204,74,175,107,148,153,127,155,132,109,152,77,178,53,208"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMulti.html" title=" " alt="" coords="143,163,356,217"/>
+<area shape="poly" id="edge3_Node000000_Node000003" title=" " alt="" coords="73,220,142,207,143,212,74,225"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeMulti_3_01Base_00_01true_01_4.html" title=" " alt="" coords="152,241,347,296"/>
+<area shape="poly" id="edge4_Node000000_Node000004" title=" " alt="" coords="74,235,152,249,151,254,73,240"/>
+<area shape="rect" id="Node000005" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeUnordered.html" title=" " alt="" coords="108,320,391,375"/>
+<area shape="poly" id="edge5_Node000000_Node000005" title=" " alt="" coords="53,252,78,280,109,305,134,318,132,322,107,310,74,284,49,256"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1aged__associative__container__test__base_1_1MaybeUnordered_3_01Base_00_01true_01_4.html" title=" " alt="" coords="134,399,365,453"/>
+<area shape="poly" id="edge6_Node000000_Node000006" title=" " alt="" coords="42,255,50,285,64,320,84,355,110,384,135,400,132,405,106,388,79,358,59,322,45,287,37,256"/>
 </map>

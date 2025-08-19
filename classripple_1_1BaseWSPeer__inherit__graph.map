@@ -1,6 +1,9 @@
 <map id="ripple::BaseWSPeer&lt; Handler, Impl &gt;" name="ripple::BaseWSPeer&lt; Handler, Impl &gt;">
-<area shape="rect" id="node1" title="Represents an active WebSocket connection." alt="" coords="126,167,275,207"/>
-<area shape="rect" id="node2" href="$classripple_1_1BasePeer.html" title=" " alt="" coords="5,79,204,119"/>
-<area shape="rect" id="node3" href="$classripple_1_1io__list_1_1work.html" title=" " alt="" coords="31,5,178,31"/>
-<area shape="rect" id="node4" href="$structripple_1_1WSSession.html" title=" " alt="" coords="229,86,367,111"/>
+<area shape="rect" id="Node000001" title="Represents an active WebSocket connection." alt="" coords="126,167,275,207"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1BasePeer.html" title=" " alt="" coords="5,79,204,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="138,126,181,164,178,168,135,130"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1io__list_1_1work.html" title=" " alt="" coords="31,5,178,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="107,44,107,79,102,79,102,44"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1WSSession.html" title=" " alt="" coords="229,86,367,111"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="277,122,224,169,220,165,273,118"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="ripple::Rate" name="ripple::Rate">
-<area shape="rect" id="node1" title="Represents a transfer rate." alt="" coords="39,93,137,119"/>
-<area shape="rect" id="node2" title=" " alt="" coords="5,5,171,45"/>
+<area shape="rect" id="Node000001" title="Represents a transfer rate." alt="" coords="39,93,137,119"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,5,171,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,59,91,93,85,93,85,59"/>
 </map>

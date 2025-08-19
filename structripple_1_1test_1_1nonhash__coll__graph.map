@@ -1,6 +1,9 @@
 <map id="ripple::test::nonhash&lt; Bits &gt;" name="ripple::test::nonhash&lt; Bits &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="28,196,183,236"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,101,93,126"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="117,93,277,133"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="150,5,245,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="28,196,183,236"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,101,93,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="65,137,97,195,92,197,60,139"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="117,93,277,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="173,145,125,198,121,194,169,142"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="150,5,245,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="200,44,200,93,195,93,195,44"/>
 </map>

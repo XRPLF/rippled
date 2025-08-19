@@ -1,7 +1,11 @@
 <map id="ripple::InfoSub" name="ripple::InfoSub">
-<area shape="rect" id="node1" title="Manages a client&#39;s subscription to data feeds." alt="" coords="95,93,211,119"/>
-<area shape="rect" id="node3" href="$classripple_1_1RPCSub.html" title="Subscription object for JSON RPC." alt="" coords="18,167,135,192"/>
-<area shape="rect" id="node5" href="$classripple_1_1WSInfoSub.html" title=" " alt="" coords="160,167,297,192"/>
-<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="71,5,234,45"/>
-<area shape="rect" id="node4" href="$classripple_1_1RPCSubImp.html" title=" " alt="" coords="5,240,148,265"/>
+<area shape="rect" id="Node000001" title="Manages a client&#39;s subscription to data feeds." alt="" coords="95,93,211,119"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1RPCSub.html" title="Subscription object for JSON RPC." alt="" coords="18,167,135,192"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="132,130,91,168,87,164,129,126"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1WSInfoSub.html" title=" " alt="" coords="160,167,297,192"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="177,126,218,164,214,168,173,130"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="71,5,234,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="155,59,155,93,150,93,150,59"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1RPCSubImp.html" title=" " alt="" coords="5,240,148,265"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="79,206,79,240,74,240,74,206"/>
 </map>

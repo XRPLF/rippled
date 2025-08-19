@@ -1,11 +1,22 @@
 <map id="ripple::test::csf::TxCollector" name="ripple::test::csf::TxCollector">
-<area shape="rect" id="node1" title="Tracks the submission &#45;&gt; accepted &#45;&gt; validated evolution of transactions." alt="" coords="1100,77,1227,117"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="231,39,319,65"/>
-<area shape="rect" id="node8" href="$classripple_1_1test_1_1csf_1_1Histogram.html" title=" " alt="" coords="768,70,939,125"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="484,100,653,169"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="772,172,935,241"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,219,108,245"/>
-<area shape="rect" id="node6" href="$classripple_1_1test_1_1csf_1_1Tx.html" title="A single transaction." alt="" coords="204,245,347,270"/>
-<area shape="rect" id="node5" href="$structripple_1_1test_1_1csf_1_1TxCollector_1_1Tracker.html" title=" " alt="" coords="493,244,644,284"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="180,305,371,330"/>
+<area shape="rect" id="Node000001" title="Tracks the submission &#45;&gt; accepted &#45;&gt; validated evolution of transactions." alt="" coords="1100,77,1227,117"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="231,39,319,65"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="333,45,395,43,460,43,699,47,939,55,1008,53,1038,54,1077,60,1121,75,1120,80,1075,65,1038,59,1008,59,939,60,699,52,460,48,395,48,334,51"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1test_1_1csf_1_1Histogram.html" title=" " alt="" coords="768,70,939,125"/>
+<area shape="poly" id="edge11_Node000008_Node000002" title=" " alt="" coords="333,54,768,88,768,93,333,59"/>
+<area shape="rect" id="Node000009" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="484,100,653,169"/>
+<area shape="poly" id="edge10_Node000009_Node000002" title=" " alt="" coords="334,65,485,108,483,114,332,71"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="772,172,935,241"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="947,171,1105,115,1106,120,949,176"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,219,108,245"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="121,223,132,223,489,209,771,204,772,210,489,214,132,228,122,229"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1test_1_1csf_1_1Tx.html" title="A single transaction." alt="" coords="204,245,347,270"/>
+<area shape="poly" id="edge6_Node000006_Node000004" title=" " alt="" coords="122,237,204,246,203,252,121,242"/>
+<area shape="rect" id="Node000005" href="$structripple_1_1test_1_1csf_1_1TxCollector_1_1Tracker.html" title=" " alt="" coords="493,244,644,284"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="657,252,743,237,771,230,772,236,745,243,658,257"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="361,257,493,260,493,265,361,262"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="180,305,371,330"/>
+<area shape="poly" id="edge7_Node000005_Node000007" title=" " alt="" coords="384,306,459,295,509,281,511,287,461,300,385,312"/>
+<area shape="poly" id="edge8_Node000001_Node000008" title=" " alt="" coords="952,95,1100,95,1100,100,952,100"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="666,119,767,106,768,111,667,124"/>
 </map>

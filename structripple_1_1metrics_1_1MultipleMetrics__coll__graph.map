@@ -1,6 +1,9 @@
 <map id="ripple::metrics::MultipleMetrics" name="ripple::metrics::MultipleMetrics">
-<area shape="rect" id="node1" title="Run two metrics." alt="" coords="31,211,208,251"/>
-<area shape="rect" id="node2" href="$structripple_1_1metrics_1_1SingleMetrics.html" title="Run single metrics rolling average." alt="" coords="13,108,225,133"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="132,5,235,31"/>
+<area shape="rect" id="Node000001" title="Run two metrics." alt="" coords="31,211,208,251"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1metrics_1_1SingleMetrics.html" title="Run single metrics rolling average." alt="" coords="13,108,225,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="122,147,122,210,117,210,117,147"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="69,42,91,83,110,106,106,109,86,85,64,44"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="132,5,235,31"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="177,45,156,86,135,110,131,106,152,82,172,43"/>
 </map>

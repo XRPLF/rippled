@@ -1,13 +1,26 @@
 <map id="ripple::SHAMapTxLeafNode" name="ripple::SHAMapTxLeafNode">
-<area shape="rect" id="node1" title="A leaf node for a transaction." alt="" coords="263,687,463,712"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="167,605,351,630"/>
-<area shape="rect" id="node3" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="167,523,350,548"/>
-<area shape="rect" id="node4" href="$structripple_1_1IntrusiveRefCounts.html" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="163,339,354,365"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="37,5,139,31"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="239,161,446,187"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="471,154,639,194"/>
-<area shape="rect" id="node7" href="$classripple_1_1SHAMapHash.html" title=" " alt="" coords="387,435,541,460"/>
-<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="484,332,625,372"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="663,161,751,187"/>
-<area shape="rect" id="node11" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="375,597,561,637"/>
+<area shape="rect" id="Node000001" title="A leaf node for a transaction." alt="" coords="263,687,463,712"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="167,605,351,630"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="286,636,349,685,346,689,283,640"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="167,523,350,548"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="261,562,261,605,256,605,256,562"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1IntrusiveRefCounts.html" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="163,339,354,365"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="261,379,261,522,256,522,256,379"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="37,5,139,31"/>
+<area shape="poly" id="edge12_Node000003_Node000005" title=" " alt="" coords="69,43,49,68,29,99,14,135,8,173,8,448,12,461,24,472,65,492,121,508,179,520,178,525,120,514,63,497,20,476,7,463,3,449,3,172,9,133,25,97,45,65,65,39"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="82,44,69,86,61,141,62,199,69,227,81,253,107,284,139,307,175,325,210,337,208,342,173,330,137,312,103,288,76,256,64,229,57,200,55,140,64,85,76,43"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="239,161,446,187"/>
+<area shape="poly" id="edge6_Node000006_Node000005" title=" " alt="" coords="122,35,221,91,327,159,324,164,219,96,120,39"/>
+<area shape="rect" id="Node000010" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="471,154,639,194"/>
+<area shape="poly" id="edge11_Node000010_Node000005" title=" " alt="" coords="154,20,220,27,298,40,380,61,460,91,505,120,539,152,536,156,501,124,457,96,379,66,297,45,219,32,153,25"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="334,200,267,340,262,338,329,198"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1SHAMapHash.html" title=" " alt="" coords="387,435,541,460"/>
+<area shape="poly" id="edge7_Node000003_Node000007" title=" " alt="" coords="425,468,288,525,286,520,423,463"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1base__uint.html" title=" " alt="" coords="484,332,625,372"/>
+<area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="529,384,477,436,474,432,525,380"/>
+<area shape="rect" id="Node000009" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="663,161,751,187"/>
+<area shape="poly" id="edge9_Node000008_Node000009" title=" " alt="" coords="694,200,653,256,603,310,578,334,574,330,599,306,649,253,689,197"/>
+<area shape="poly" id="edge10_Node000008_Node000010" title=" " alt="" coords="557,208,557,332,552,332,552,208"/>
+<area shape="rect" id="Node000011" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="375,597,561,637"/>
+<area shape="poly" id="edge13_Node000001_Node000011" title=" " alt="" coords="434,648,380,689,376,684,430,644"/>
 </map>

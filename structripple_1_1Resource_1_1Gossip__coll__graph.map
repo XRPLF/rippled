@@ -1,7 +1,11 @@
 <map id="ripple::Resource::Gossip" name="ripple::Resource::Gossip">
-<area shape="rect" id="node1" title="Data format for exchanging consumption information across peers." alt="" coords="5,401,184,427"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="19,284,170,339"/>
-<area shape="rect" id="node3" href="$structripple_1_1Resource_1_1Gossip_1_1Item.html" title="Describes a single consumer." alt="" coords="5,181,184,221"/>
-<area shape="rect" id="node4" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="23,93,166,119"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="43,5,146,31"/>
+<area shape="rect" id="Node000001" title="Data format for exchanging consumption information across peers." alt="" coords="5,401,184,427"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="19,284,170,339"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,352,97,401,92,401,92,352"/>
+<area shape="rect" id="Node000003" href="$structripple_1_1Resource_1_1Gossip_1_1Item.html" title="Describes a single consumer." alt="" coords="5,181,184,221"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="97,235,97,284,92,284,92,235"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="23,93,166,119"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="97,132,97,181,92,181,92,132"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="43,5,146,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="97,45,97,93,92,93,92,45"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="beast::is_contiguously_hashable&lt; T[N], HashAlgorithm &gt;" name="beast::is_contiguously_hashable&lt; T[N], HashAlgorithm &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="320,27,571,67"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,272,89"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="320,27,571,67"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,272,89"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="285,45,320,45,320,50,285,50"/>
 </map>

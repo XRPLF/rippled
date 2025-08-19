@@ -1,6 +1,9 @@
 <map id="ripple::test::csf::WrongPrevLedger" name="ripple::test::csf::WrongPrevLedger">
-<area shape="rect" id="node1" title="Peer detected a wrong prior ledger during consensus." alt="" coords="741,123,879,163"/>
-<area shape="rect" id="node2" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="477,123,652,163"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,368,163"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="135,187,238,213"/>
+<area shape="rect" id="Node000001" title="Peer detected a wrong prior ledger during consensus." alt="" coords="741,123,879,163"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="477,123,652,163"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="666,140,741,140,741,145,666,145"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,368,163"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="382,112,478,127,477,132,381,117"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="135,187,238,213"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="251,189,368,172,476,155,477,160,368,177,252,194"/>
 </map>

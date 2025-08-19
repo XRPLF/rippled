@@ -1,4 +1,5 @@
 <map id="ripple::ValidationParms" name="ripple::ValidationParms">
-<area shape="rect" id="node1" title="Timing parameters to control validation staleness and expiration." alt="" coords="5,152,177,177"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="14,5,169,31"/>
+<area shape="rect" id="Node000001" title="Timing parameters to control validation staleness and expiration." alt="" coords="5,152,177,177"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="14,5,169,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,45,94,152,89,152,89,45"/>
 </map>

@@ -1,9 +1,15 @@
 <map id="beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::config_t" name="beast::detail::aged_unordered_container&lt; IsMulti, IsMap, Key, T, Clock, Hash, KeyEqual, Allocator &gt;::config_t">
-<area shape="rect" id="node1" title=" " alt="" coords="455,113,645,197"/>
-<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1ValueHash.html" title=" " alt="" coords="202,5,393,89"/>
-<area shape="rect" id="node3" title=" " alt="" coords="45,35,100,60"/>
-<area shape="rect" id="node4" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1KeyValueEqual.html" title=" " alt="" coords="196,113,399,197"/>
-<area shape="rect" id="node5" title=" " alt="" coords="31,143,114,168"/>
-<area shape="rect" id="node6" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="188,221,407,276"/>
-<area shape="rect" id="node7" title=" " alt="" coords="5,236,140,261"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="455,113,645,197"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1ValueHash.html" title=" " alt="" coords="202,5,393,89"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="406,91,456,112,454,117,404,96"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="45,35,100,60"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="114,45,202,45,202,50,114,50"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1KeyValueEqual.html" title=" " alt="" coords="196,113,399,197"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="412,153,454,153,454,158,412,158"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="31,143,114,168"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="128,153,196,153,196,158,128,158"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="188,221,407,276"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="385,214,406,206,453,188,455,193,408,211,387,219"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="5,236,140,261"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="153,246,188,246,188,251,153,251"/>
 </map>

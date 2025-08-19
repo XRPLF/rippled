@@ -1,5 +1,7 @@
 <map id="ripple::peer_in_cluster" name="ripple::peer_in_cluster">
-<area shape="rect" id="node1" title="Select all peers (except optional excluded) that are in our cluster." alt="" coords="5,181,172,207"/>
-<area shape="rect" id="node2" href="$structripple_1_1match__peer.html" title="Select the specific peer." alt="" coords="17,93,161,119"/>
-<area shape="rect" id="node3" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="41,5,137,31"/>
+<area shape="rect" id="Node000001" title="Select all peers (except optional excluded) that are in our cluster." alt="" coords="5,181,172,207"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1match__peer.html" title="Select the specific peer." alt="" coords="17,93,161,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,133,91,181,86,181,86,133"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="41,5,137,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="91,45,91,93,86,93,86,45"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="ripple::test::AccountTx_test::NodeSanity" name="ripple::test::AccountTx_test::NodeSanity">
-<area shape="rect" id="node1" title=" " alt="" coords="5,93,173,133"/>
-<area shape="rect" id="node2" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="23,5,155,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,93,173,133"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="23,5,155,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,44,92,93,87,93,87,44"/>
 </map>

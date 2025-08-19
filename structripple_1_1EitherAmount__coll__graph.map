@@ -1,12 +1,22 @@
 <map id="ripple::EitherAmount" name="ripple::EitherAmount">
-<area shape="rect" id="node1" title=" " alt="" coords="567,170,723,195"/>
-<area shape="rect" id="node2" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="351,87,493,113"/>
-<area shape="rect" id="node3" title=" " alt="" coords="35,5,201,45"/>
-<area shape="rect" id="node4" title=" " alt="" coords="6,70,230,95"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,119,165,145"/>
-<area shape="rect" id="node6" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="351,214,493,239"/>
-<area shape="rect" id="node7" title=" " alt="" coords="35,169,201,209"/>
-<area shape="rect" id="node8" title=" " alt="" coords="5,234,231,259"/>
-<area shape="rect" id="node9" title=" " alt="" coords="13,284,223,324"/>
-<area shape="rect" id="node10" title=" " alt="" coords="11,348,225,388"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="567,170,723,195"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1IOUAmount.html" title="Floating point representation of amounts with high dynamic range." alt="" coords="351,87,493,113"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="471,115,610,167,608,172,469,120"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="35,5,201,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="215,45,327,72,375,85,374,90,326,77,213,50"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="6,70,230,95"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="244,87,351,93,350,99,243,92"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="71,119,165,145"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="179,125,326,112,350,109,351,114,327,117,179,131"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1XRPAmount.html" title=" " alt="" coords="351,214,493,239"/>
+<area shape="poly" id="edge10_Node000006_Node000005" title=" " alt="" coords="180,142,231,155,318,184,390,211,389,216,317,189,230,160,178,147"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="500,209,579,193,580,198,501,214"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="35,169,201,209"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="215,198,351,215,350,221,214,204"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="5,234,231,259"/>
+<area shape="poly" id="edge7_Node000006_Node000008" title=" " alt="" coords="244,236,350,229,351,234,245,241"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="13,284,223,324"/>
+<area shape="poly" id="edge8_Node000006_Node000009" title=" " alt="" coords="210,278,370,237,372,242,211,283"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="11,348,225,388"/>
+<area shape="poly" id="edge9_Node000006_Node000010" title=" " alt="" coords="210,341,230,334,327,283,401,237,403,242,330,288,232,338,212,346"/>
 </map>

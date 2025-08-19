@@ -1,4 +1,5 @@
 <map id="ripple::PeerFinder::SourceStrings" name="ripple::PeerFinder::SourceStrings">
-<area shape="rect" id="node1" title="Provides addresses from a static set of strings." alt="" coords="5,93,141,133"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerFinder_1_1Source.html" title="A static or dynamic source of peer addresses." alt="" coords="5,5,141,45"/>
+<area shape="rect" id="Node000001" title="Provides addresses from a static set of strings." alt="" coords="5,93,141,133"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1PeerFinder_1_1Source.html" title="A static or dynamic source of peer addresses." alt="" coords="5,5,141,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="76,59,76,93,71,93,71,59"/>
 </map>

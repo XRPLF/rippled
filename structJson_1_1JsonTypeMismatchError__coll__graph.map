@@ -1,6 +1,9 @@
 <map id="Json::JsonTypeMismatchError" name="Json::JsonTypeMismatchError">
-<area shape="rect" id="node1" title=" " alt="" coords="5,197,215,223"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title=" " alt="" coords="31,95,146,120"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="171,95,257,120"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="145,5,283,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,197,215,223"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title=" " alt="" coords="31,95,146,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,133,110,197,105,198,91,134"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="171,95,257,120"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="194,132,124,199,120,195,190,128"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="145,5,283,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="217,59,217,94,211,94,211,59"/>
 </map>

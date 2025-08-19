@@ -1,4 +1,5 @@
 <map id="ripple::test::TestPeerSet" name="ripple::test::TestPeerSet">
-<area shape="rect" id="node1" title="Simulate a peerSet that supplies peers to ledger replay subtasks." alt="" coords="5,79,181,104"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="35,5,152,31"/>
+<area shape="rect" id="Node000001" title="Simulate a peerSet that supplies peers to ledger replay subtasks." alt="" coords="5,79,181,104"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="35,5,152,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="96,44,96,79,91,79,91,44"/>
 </map>

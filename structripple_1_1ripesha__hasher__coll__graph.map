@@ -1,4 +1,5 @@
 <map id="ripple::ripesha_hasher" name="ripple::ripesha_hasher">
-<area shape="rect" id="node1" title="Returns the RIPEMD&#45;160 digest of the SHA256 hash of the message." alt="" coords="7,108,174,133"/>
-<area shape="rect" id="node2" href="$structripple_1_1openssl__sha256__hasher.html" title="SHA&#45;256 digest." alt="" coords="5,5,176,45"/>
+<area shape="rect" id="Node000001" title="Returns the RIPEMD&#45;160 digest of the SHA256 hash of the message." alt="" coords="7,108,174,133"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1openssl__sha256__hasher.html" title="SHA&#45;256 digest." alt="" coords="5,5,176,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,59,93,108,88,108,88,59"/>
 </map>

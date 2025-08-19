@@ -1,6 +1,9 @@
 <map id="ripple::ApplicationImp" name="ripple::ApplicationImp">
-<area shape="rect" id="node1" title=" " alt="" coords="75,167,240,192"/>
-<area shape="rect" id="node2" href="$classripple_1_1Application.html" title=" " alt="" coords="19,93,159,119"/>
-<area shape="rect" id="node3" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,45"/>
-<area shape="rect" id="node4" href="$classBasicApp.html" title=" " alt="" coords="184,93,267,119"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="75,167,240,192"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Application.html" title=" " alt="" coords="19,93,159,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,127,148,165,144,168,108,130"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="92,59,92,93,87,93,87,59"/>
+<area shape="rect" id="Node000004" href="$classBasicApp.html" title=" " alt="" coords="184,93,267,119"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="207,130,170,168,166,165,203,127"/>
 </map>

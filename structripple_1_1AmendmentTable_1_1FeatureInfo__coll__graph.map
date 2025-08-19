@@ -1,9 +1,15 @@
 <map id="ripple::AmendmentTable::FeatureInfo" name="ripple::AmendmentTable::FeatureInfo">
-<area shape="rect" id="node1" title=" " alt="" coords="53,313,235,353"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,218,118,243"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,93,144,133"/>
-<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="143,211,284,251"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="168,101,256,126"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="280,93,448,133"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="313,5,415,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="53,313,235,353"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,218,118,243"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,253,133,312,129,315,88,256"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,93,144,133"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,147,77,218,72,218,72,147"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="143,211,284,251"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="195,264,159,315,155,312,190,261"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="168,101,256,126"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="215,140,216,210,210,210,210,140"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="280,93,448,133"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="330,144,239,213,236,209,327,140"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="313,5,415,31"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="367,44,367,93,361,93,361,44"/>
 </map>

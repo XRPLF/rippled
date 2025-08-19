@@ -1,6 +1,9 @@
 <map id="ripple::test::csf::Receive&lt; V &gt;" name="ripple::test::csf::Receive&lt; V &gt;">
-<area shape="rect" id="node1" title="A value received from another peer as part of flooding." alt="" coords="709,133,836,173"/>
-<area shape="rect" id="node2" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="419,133,625,173"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,309,177"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="106,201,209,227"/>
+<area shape="rect" id="Node000001" title="A value received from another peer as part of flooding." alt="" coords="709,133,836,173"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1tagged__integer.html" title=" " alt="" coords="419,133,625,173"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="639,150,709,150,709,155,639,155"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,309,177"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="323,117,419,133,418,138,323,122"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="106,201,209,227"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="222,201,309,186,418,167,419,173,310,191,223,206"/>
 </map>

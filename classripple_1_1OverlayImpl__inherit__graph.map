@@ -1,6 +1,9 @@
 <map id="ripple::OverlayImpl" name="ripple::OverlayImpl">
-<area shape="rect" id="node1" title=" " alt="" coords="95,181,241,207"/>
-<area shape="rect" id="node2" href="$classripple_1_1Overlay.html" title="Manages the set of connected peers." alt="" coords="30,101,149,126"/>
-<area shape="rect" id="node3" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,45"/>
-<area shape="rect" id="node4" href="$classripple_1_1reduce__relay_1_1SquelchHandler.html" title="Abstract class." alt="" coords="173,93,323,133"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="95,181,241,207"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Overlay.html" title="Manages the set of connected peers." alt="" coords="30,101,149,126"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="113,134,158,179,154,183,109,138"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1PropertyStream_1_1Source.html" title="Subclasses can be called to write to a stream and have children." alt="" coords="5,5,173,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="92,59,92,100,87,100,87,59"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1reduce__relay_1_1SquelchHandler.html" title="Abstract class." alt="" coords="173,93,323,133"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="221,145,182,183,178,179,217,141"/>
 </map>

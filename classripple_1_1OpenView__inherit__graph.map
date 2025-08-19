@@ -1,6 +1,9 @@
 <map id="ripple::OpenView" name="ripple::OpenView">
-<area shape="rect" id="node1" title="Writable ledger view that accumulates state and tx changes." alt="" coords="87,152,221,177"/>
-<area shape="rect" id="node2" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,79,137,104"/>
-<area shape="rect" id="node3" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="161,79,312,104"/>
-<area shape="rect" id="node4" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="173,5,300,31"/>
+<area shape="rect" id="Node000001" title="Writable ledger view that accumulates state and tx changes." alt="" coords="87,152,221,177"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,79,137,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,111,142,150,139,154,93,115"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="161,79,312,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="215,115,169,154,166,150,211,111"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="173,5,300,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="239,44,239,79,234,79,234,44"/>
 </map>

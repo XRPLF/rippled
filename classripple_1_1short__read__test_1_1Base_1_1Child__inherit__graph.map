@@ -1,6 +1,9 @@
 <map id="ripple::short_read_test::Base::Child" name="ripple::short_read_test::Base::Child">
-<area shape="rect" id="node1" title=" " alt="" coords="5,69,141,109"/>
-<area shape="rect" id="node2" href="$structripple_1_1short__read__test_1_1Client_1_1Connection.html" title=" " alt="" coords="191,5,373,45"/>
-<area shape="rect" id="node3" href="$structripple_1_1short__read__test_1_1Server_1_1Acceptor.html" title=" " alt="" coords="197,69,367,109"/>
-<area shape="rect" id="node4" href="$structripple_1_1short__read__test_1_1Server_1_1Connection.html" title=" " alt="" coords="189,133,375,173"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,69,141,109"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1short__read__test_1_1Client_1_1Connection.html" title=" " alt="" coords="191,5,373,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="151,63,215,43,217,48,153,68"/>
+<area shape="rect" id="Node000003" href="$structripple_1_1short__read__test_1_1Server_1_1Acceptor.html" title=" " alt="" coords="197,69,367,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="155,87,197,87,197,92,155,92"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1short__read__test_1_1Server_1_1Connection.html" title=" " alt="" coords="189,133,375,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="153,111,217,131,215,136,151,116"/>
 </map>

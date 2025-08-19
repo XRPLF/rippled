@@ -1,6 +1,9 @@
 <map id="ripple::DisputedTx&lt; Tx_t, NodeID_t &gt;" name="ripple::DisputedTx&lt; Tx_t, NodeID_t &gt;">
-<area shape="rect" id="node1" title="A transaction discovered to be in dispute during consensus." alt="" coords="57,196,205,236"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,93,93,119"/>
-<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="158,93,269,119"/>
-<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="140,5,287,31"/>
+<area shape="rect" id="Node000001" title="A transaction discovered to be in dispute during consensus." alt="" coords="57,196,205,236"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,93,93,119"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="47,132,47,152,53,171,64,184,78,194,75,198,60,187,48,173,42,153,41,132"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="158,93,269,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="208,133,186,174,161,198,158,194,182,170,203,130"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="140,5,287,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="216,45,216,93,211,93,211,45"/>
 </map>

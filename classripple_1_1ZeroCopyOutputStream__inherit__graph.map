@@ -1,4 +1,5 @@
 <map id="ripple::ZeroCopyOutputStream&lt; Streambuf &gt;" name="ripple::ZeroCopyOutputStream&lt; Streambuf &gt;">
-<area shape="rect" id="node1" title="Implements ZeroCopyOutputStream around a Streambuf." alt="" coords="5,93,227,133"/>
-<area shape="rect" id="node2" title=" " alt="" coords="24,5,208,45"/>
+<area shape="rect" id="Node000001" title="Implements ZeroCopyOutputStream around a Streambuf." alt="" coords="5,93,227,133"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="24,5,208,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,59,119,93,113,93,113,59"/>
 </map>

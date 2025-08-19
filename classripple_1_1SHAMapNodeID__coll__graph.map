@@ -1,8 +1,13 @@
 <map id="ripple::SHAMapNodeID" name="ripple::SHAMapNodeID">
-<area shape="rect" id="node1" title="Identifies a node inside a SHAMap." alt="" coords="56,313,227,339"/>
-<area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,211,168,251"/>
-<area shape="rect" id="node3" href="$classripple_1_1base__uint.html" title=" " alt="" coords="192,211,333,251"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="160,101,248,126"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="272,93,440,133"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="305,5,407,31"/>
+<area shape="rect" id="Node000001" title="Identifies a node inside a SHAMap." alt="" coords="56,313,227,339"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,211,168,251"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,261,137,312,132,314,102,264"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1base__uint.html" title=" " alt="" coords="192,211,333,251"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="229,261,158,315,155,311,225,257"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="160,101,248,126"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="219,137,255,209,251,212,214,140"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="272,93,440,133"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="334,146,280,212,276,209,330,143"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="305,5,407,31"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="359,44,359,93,353,93,353,44"/>
 </map>

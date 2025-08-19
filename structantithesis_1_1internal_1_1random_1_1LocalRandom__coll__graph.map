@@ -1,6 +1,9 @@
 <map id="antithesis::internal::random::LocalRandom" name="antithesis::internal::random::LocalRandom">
-<area shape="rect" id="node1" title=" " alt="" coords="339,47,515,87"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/random_device.html" title=" " alt="" coords="33,5,184,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/mersenne_twister_engine.html" title=" " alt="" coords="43,55,174,80"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/uniform_int_distribution.html" title=" " alt="" coords="5,105,212,145"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="339,47,515,87"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/random_device.html" title=" " alt="" coords="33,5,184,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="198,27,315,45,339,49,338,54,314,50,198,33"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/mersenne_twister_engine.html" title=" " alt="" coords="43,55,174,80"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="188,65,339,65,339,70,188,70"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/numeric/random/uniform_int_distribution.html" title=" " alt="" coords="5,105,212,145"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="225,101,338,81,339,86,226,106"/>
 </map>

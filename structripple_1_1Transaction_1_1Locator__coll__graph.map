@@ -1,4 +1,5 @@
 <map id="ripple::Transaction::Locator" name="ripple::Transaction::Locator">
-<area shape="rect" id="node1" title=" " alt="" coords="299,20,440,60"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/variant.html" title=" " alt="" coords="5,5,201,75"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="299,20,440,60"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/variant.html" title=" " alt="" coords="5,5,201,75"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="215,37,298,37,298,43,215,43"/>
 </map>

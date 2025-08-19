@@ -1,6 +1,9 @@
 <map id="ripple::PeerSet" name="ripple::PeerSet">
-<area shape="rect" id="node1" title="Supports data retrieval by managing a set of peers." alt="" coords="214,5,331,31"/>
-<area shape="rect" id="node2" href="$classripple_1_1DummyPeerSet.html" title=" " alt="" coords="5,79,175,104"/>
-<area shape="rect" id="node3" href="$classripple_1_1PeerSetImpl.html" title=" " alt="" coords="199,79,346,104"/>
-<area shape="rect" id="node4" href="$structripple_1_1test_1_1TestPeerSet.html" title="Simulate a peerSet that supplies peers to ledger replay subtasks." alt="" coords="370,79,546,104"/>
+<area shape="rect" id="Node000001" title="Supports data retrieval by managing a set of peers." alt="" coords="214,5,331,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1DummyPeerSet.html" title=" " alt="" coords="5,79,175,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="232,38,121,81,119,76,230,33"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1PeerSetImpl.html" title=" " alt="" coords="199,79,346,104"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="275,44,275,79,270,79,270,44"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1test_1_1TestPeerSet.html" title="Simulate a peerSet that supplies peers to ledger replay subtasks." alt="" coords="370,79,546,104"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="316,33,429,76,427,81,314,38"/>
 </map>

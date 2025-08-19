@@ -6,13 +6,12 @@ var searchData=
   ['xfer_5fclaims_3',['xfer_claims',['../structripple_1_1test_1_1XChainSim__test_1_1ChainStateTrack_1_1Claims.html#af0132ecc97995bbc1b759cb85c3e5e56',1,'ripple::test::XChainSim_test::ChainStateTrack::Claims']]],
   ['xferfee_5f_4',['xferFee_',['../classripple_1_1test_1_1jtx_1_1token_1_1xferFee.html#a7cf2702a40c3f86201086bb6966be844',1,'ripple::test::jtx::token::xferFee']]],
   ['xmin_5f_5',['xmin_',['../classripple_1_1test_1_1csf_1_1PowerLawDistribution.html#ae5d0dad195562fa147ba23f698709a30',1,'ripple::test::csf::PowerLawDistribution']]],
-  ['xrp_6',['xrp',['../structripple_1_1test_1_1jtx_1_1MPTInit.html#a9f750b39bec708b20d62c839b8e7e0e7',1,'ripple::test::jtx::MPTInit::xrp()'],['../structripple_1_1AmountSpec.html#a384d7bdc0d3dc3295fb3f2a86bb6272f',1,'ripple::AmountSpec::xrp()'],['../structripple_1_1EitherAmount.html#aec8b0d37cced4ef89d51eaff7fc8e6f8',1,'ripple::EitherAmount::xrp()']]],
-  ['xrp_7',['XRP',['../namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e',1,'ripple::test::jtx']]],
-  ['xrp_5fdust_8',['xrp_dust',['../structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a3f3e734dae892724281b39922b0b80b8',1,'ripple::test::jtx::XChainBridgeObjects']]],
-  ['xrp_5fledger_5fearliest_5ffees_9',['XRP_LEDGER_EARLIEST_FEES',['../namespaceripple.html#a6fc7a232cc9b90d4b5846057977fcf63',1,'ripple']]],
-  ['xrp_5fledger_5fearliest_5fseq_10',['XRP_LEDGER_EARLIEST_SEQ',['../namespaceripple.html#a2c550f167665d94744b297523ff07de2',1,'ripple']]],
-  ['xrpbooks_5f_11',['xrpBooks_',['../classripple_1_1OrderBookDB.html#ae67cc05be19080e104494e568d5a7c7d',1,'ripple::OrderBookDB']]],
-  ['xrpdomainbooks_5f_12',['xrpDomainBooks_',['../classripple_1_1OrderBookDB.html#ad6988ee147409914b441c2c3ffafb77c',1,'ripple::OrderBookDB']]],
-  ['xrpholders_13',['xrpHolders',['../structripple_1_1test_1_1jtx_1_1MPTInit.html#a501e288755b9cf4aa46faed6c1e8824e',1,'ripple::test::jtx::MPTInit']]],
-  ['xrptrustline_5f_14',['xrpTrustLine_',['../classripple_1_1NoXRPTrustLines.html#a47eaa36a43a5b46071870cf0e2790fa3',1,'ripple::NoXRPTrustLines']]]
+  ['xrp_6',['xrp',['../structripple_1_1test_1_1jtx_1_1MPTInit.html#a9f750b39bec708b20d62c839b8e7e0e7',1,'ripple::test::jtx::MPTInit::xrp'],['../structripple_1_1AmountSpec.html#a384d7bdc0d3dc3295fb3f2a86bb6272f',1,'ripple::AmountSpec::xrp'],['../structripple_1_1EitherAmount.html#aec8b0d37cced4ef89d51eaff7fc8e6f8',1,'ripple::EitherAmount::xrp'],['../namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e',1,'ripple::test::jtx::XRP']]],
+  ['xrp_5fdust_7',['xrp_dust',['../structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a3f3e734dae892724281b39922b0b80b8',1,'ripple::test::jtx::XChainBridgeObjects']]],
+  ['xrp_5fledger_5fearliest_5ffees_8',['XRP_LEDGER_EARLIEST_FEES',['../namespaceripple.html#a6fc7a232cc9b90d4b5846057977fcf63',1,'ripple']]],
+  ['xrp_5fledger_5fearliest_5fseq_9',['XRP_LEDGER_EARLIEST_SEQ',['../namespaceripple.html#a2c550f167665d94744b297523ff07de2',1,'ripple']]],
+  ['xrpbooks_5f_10',['xrpBooks_',['../classripple_1_1OrderBookDB.html#ae67cc05be19080e104494e568d5a7c7d',1,'ripple::OrderBookDB']]],
+  ['xrpdomainbooks_5f_11',['xrpDomainBooks_',['../classripple_1_1OrderBookDB.html#ad6988ee147409914b441c2c3ffafb77c',1,'ripple::OrderBookDB']]],
+  ['xrpholders_12',['xrpHolders',['../structripple_1_1test_1_1jtx_1_1MPTInit.html#a501e288755b9cf4aa46faed6c1e8824e',1,'ripple::test::jtx::MPTInit']]],
+  ['xrptrustline_5f_13',['xrpTrustLine_',['../classripple_1_1NoXRPTrustLines.html#a47eaa36a43a5b46071870cf0e2790fa3',1,'ripple::NoXRPTrustLines']]]
 ];

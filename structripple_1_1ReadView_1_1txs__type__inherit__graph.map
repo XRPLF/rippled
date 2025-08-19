@@ -1,4 +1,5 @@
 <map id="ripple::ReadView::txs_type" name="ripple::ReadView::txs_type">
-<area shape="rect" id="node1" title=" " alt="" coords="5,93,200,119"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="14,5,191,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,93,200,119"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1ReadViewFwdRange.html" title=" " alt="" coords="14,5,191,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="105,59,105,93,100,93,100,59"/>
 </map>

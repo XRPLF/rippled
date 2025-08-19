@@ -1,7 +1,11 @@
 <map id="ripple::test::jtx::MPTSet" name="ripple::test::jtx::MPTSet">
-<area shape="rect" id="node1" title=" " alt="" coords="288,112,413,152"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,11,160,51"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,75,160,115"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="13,149,152,189"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,213,160,253"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="288,112,413,152"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,11,160,51"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="174,43,220,56,265,72,298,90,326,110,323,114,295,95,263,77,218,61,173,49"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,75,160,115"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="174,105,288,121,287,126,173,110"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="13,149,152,189"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="166,174,214,173,263,167,312,150,314,155,265,172,215,178,166,179"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="5,213,160,253"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="173,221,219,211,263,195,298,174,327,150,330,154,301,178,265,200,220,216,174,226"/>
 </map>

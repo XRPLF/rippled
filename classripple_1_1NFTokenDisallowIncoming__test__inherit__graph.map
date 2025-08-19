@@ -1,5 +1,7 @@
 <map id="ripple::NFTokenDisallowIncoming_test" name="ripple::NFTokenDisallowIncoming_test">
-<area shape="rect" id="node1" title=" " alt="" coords="5,152,275,177"/>
-<area shape="rect" id="node2" href="$classripple_1_1NFTokenBaseUtil__test.html" title=" " alt="" coords="36,79,244,104"/>
-<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="59,5,221,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,152,275,177"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1NFTokenBaseUtil__test.html" title=" " alt="" coords="36,79,244,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="143,118,143,152,137,152,137,118"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="59,5,221,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="143,44,143,79,137,79,137,44"/>
 </map>

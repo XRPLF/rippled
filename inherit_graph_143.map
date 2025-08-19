@@ -1,5 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classJson_1_1ValueIteratorBase.html" title="base class for Value iterators." alt="" coords="5,31,179,56"/>
-<area shape="rect" id="node2" href="$classJson_1_1ValueConstIterator.html" title="const iterator for object and array value." alt="" coords="227,5,405,31"/>
-<area shape="rect" id="node3" href="$classJson_1_1ValueIterator.html" title="Iterator for object and array value." alt="" coords="245,55,387,80"/>
+<area shape="rect" id="Node000000" href="$classJson_1_1ValueIteratorBase.html" title="base class for Value iterators." alt="" coords="5,31,179,56"/>
+<area shape="rect" id="Node000001" href="$classJson_1_1ValueConstIterator.html" title="const iterator for object and array value." alt="" coords="227,5,405,31"/>
+<area shape="poly" id="edge400_Node000000_Node000001" title=" " alt="" coords="192,29,226,25,227,31,192,35"/>
+<area shape="rect" id="Node000002" href="$classJson_1_1ValueIterator.html" title="Iterator for object and array value." alt="" coords="245,55,387,80"/>
+<area shape="poly" id="edge401_Node000000_Node000002" title=" " alt="" coords="193,51,245,57,245,62,192,57"/>
 </map>

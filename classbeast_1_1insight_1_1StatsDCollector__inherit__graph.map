@@ -1,5 +1,7 @@
 <map id="beast::insight::StatsDCollector" name="beast::insight::StatsDCollector">
-<area shape="rect" id="node1" title="A Collector that reports metrics to a StatsD server." alt="" coords="5,79,224,104"/>
-<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html" title=" " alt="" coords="37,152,193,192"/>
-<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="27,5,203,31"/>
+<area shape="rect" id="Node000001" title="A Collector that reports metrics to a StatsD server." alt="" coords="5,79,224,104"/>
+<area shape="rect" id="Node000003" href="$classbeast_1_1insight_1_1detail_1_1StatsDCollectorImp.html" title=" " alt="" coords="37,152,193,192"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="117,118,117,152,112,152,112,118"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1insight_1_1Collector.html" title="Interface for a manager that allows collection of metrics." alt="" coords="27,5,203,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="117,44,117,79,112,79,112,44"/>
 </map>

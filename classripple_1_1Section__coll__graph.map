@@ -1,7 +1,13 @@
 <map id="ripple::Section" name="ripple::Section">
-<area shape="rect" id="node1" title="Holds a collection of configuration values." alt="" coords="683,51,797,77"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="193,51,280,77"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="411,37,563,91"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="393,115,580,141"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,44,144,84"/>
+<area shape="rect" id="Node000001" title="Holds a collection of configuration values." alt="" coords="683,51,797,77"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="193,51,280,77"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="267,42,303,27,359,20,441,18,580,23,643,34,699,49,697,54,642,39,580,28,441,24,359,26,305,32,270,47"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="411,37,563,91"/>
+<area shape="poly" id="edge4_Node000004_Node000002" title=" " alt="" coords="294,61,410,61,410,67,294,67"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="393,115,580,141"/>
+<area shape="poly" id="edge6_Node000005_Node000002" title=" " alt="" coords="293,78,305,81,430,113,429,118,303,87,291,83"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,44,144,84"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="157,61,193,61,193,67,157,67"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="577,61,682,61,682,67,577,67"/>
+<area shape="poly" id="edge5_Node000001_Node000005" title=" " alt="" coords="593,111,658,96,713,74,715,79,659,101,594,117"/>
 </map>

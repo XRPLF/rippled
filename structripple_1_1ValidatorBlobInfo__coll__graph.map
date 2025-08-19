@@ -1,6 +1,9 @@
 <map id="ripple::ValidatorBlobInfo" name="ripple::ValidatorBlobInfo">
-<area shape="rect" id="node1" title="Used to represent the information stored in the blobs_v2 Json array." alt="" coords="53,212,232,237"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,102,118,127"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="143,95,281,135"/>
+<area shape="rect" id="Node000001" title="Used to represent the information stored in the blobs_v2 Json array." alt="" coords="53,212,232,237"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,102,118,127"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,138,137,210,133,213,87,141"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="77,59,77,102,72,102,72,59"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="143,95,281,135"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="205,149,185,190,161,214,157,210,180,186,200,147"/>
 </map>

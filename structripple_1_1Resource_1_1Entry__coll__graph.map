@@ -1,8 +1,13 @@
 <map id="ripple::Resource::Entry" name="ripple::Resource::Entry">
-<area shape="rect" id="node1" title=" " alt="" coords="801,70,971,95"/>
-<area shape="rect" id="node2" title=" " alt="" coords="487,5,626,45"/>
-<area shape="rect" id="node3" href="$structripple_1_1Resource_1_1Key.html" title=" " alt="" coords="477,70,636,95"/>
-<area shape="rect" id="node4" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="207,70,349,95"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,70,108,95"/>
-<area shape="rect" id="node6" href="$classripple_1_1DecayingSample.html" title=" " alt="" coords="453,120,660,189"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="801,70,971,95"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="487,5,626,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="640,36,778,60,818,67,817,73,777,65,639,42"/>
+<area shape="rect" id="Node000003" href="$structripple_1_1Resource_1_1Key.html" title=" " alt="" coords="477,70,636,95"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="650,80,801,80,801,85,650,85"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1IP_1_1Endpoint.html" title="A version&#45;independent IP address and port combination." alt="" coords="207,70,349,95"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="363,80,477,80,477,85,363,85"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,70,108,95"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="122,80,206,80,206,85,122,85"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1DecayingSample.html" title=" " alt="" coords="453,120,660,189"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="673,127,827,93,828,98,674,132"/>
 </map>

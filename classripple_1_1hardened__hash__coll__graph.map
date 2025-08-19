@@ -1,4 +1,5 @@
 <map id="ripple::hardened_hash&lt; HashAlgorithm &gt;" name="ripple::hardened_hash&lt; HashAlgorithm &gt;">
-<area shape="rect" id="node1" title="Seed functor once per construction." alt="" coords="5,108,172,148"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="9,5,168,45"/>
+<area shape="rect" id="Node000001" title="Seed functor once per construction." alt="" coords="5,108,172,148"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="9,5,168,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,59,91,108,86,108,86,59"/>
 </map>

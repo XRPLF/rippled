@@ -10,7 +10,7 @@ var searchData=
   ['delegate_7',['DELEGATE',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba728f601ddf976d05ffa0d99cc27e8366',1,'ripple']]],
   ['deposit_5fpreauth_8',['DEPOSIT_PREAUTH',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba3327bcb6bb4b74aec018c7cf6efa8b3a',1,'ripple']]],
   ['deposit_5fpreauth_5fcredentials_9',['DEPOSIT_PREAUTH_CREDENTIALS',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba77000a1075cbe484fbfbcefad8c8229f',1,'ripple']]],
-  ['destroy_10',['destroy',['../classripple_1_1SetSignerList.html#a6a367d4aa89f471f6d9b44eb6a49e2d4a8d0fd977dbcf1fe471613a825e916913',1,'ripple::SetSignerList::destroy()'],['../namespaceripple.html#a3b64e12be521bde0f95af971c64faf71afb14982288108e1fbd6207ef55f05027',1,'ripple::destroy()'],['../namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aeafb14982288108e1fbd6207ef55f05027',1,'ripple::destroy()']]],
+  ['destroy_10',['destroy',['../classripple_1_1SetSignerList.html#a6a367d4aa89f471f6d9b44eb6a49e2d4a8d0fd977dbcf1fe471613a825e916913',1,'ripple::SetSignerList::destroy'],['../namespaceripple.html#a3b64e12be521bde0f95af971c64faf71afb14982288108e1fbd6207ef55f05027',1,'ripple::destroy'],['../namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aeafb14982288108e1fbd6207ef55f05027',1,'ripple::destroy']]],
   ['did_11',['DID',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307badbeab5095e8b54be8527724b23c371a3',1,'ripple']]],
   ['dir_5fnode_12',['DIR_NODE',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba5d46a758217bde4e7cb6ee02fafefd61',1,'ripple']]],
   ['disable_5fapi_5fprior_5fv2_13',['disable_API_prior_V2',['../structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa3ace7cc623d6c6f5783c87db5efea1bc',1,'ripple::JsonOptions']]],
@@ -22,7 +22,7 @@ var searchData=
   ['downward_19',['downward',['../classripple_1_1Number.html#a33e3d8e7a95979bd1eb22c59703c8534a25a8f50fce6cbdd3a8c0a3aa20126324',1,'ripple::Number']]],
   ['drop_20',['drop',['../namespaceripple_1_1Resource.html#ae12997de115c1cf0032794aa5ea1b15da34078bac5ac1af8f8cb7ab01d090c82e',1,'ripple::Resource']]],
   ['drop50_21',['Drop50',['../namespaceripple_1_1test.html#a6e324fd8fc463ac8f4a1d1a185511db1ad10d06eac1b72b6b66d7e8bcd74474b6',1,'ripple::test']]],
-  ['dropall_22',['DropAll',['../namespaceripple_1_1test.html#a6e324fd8fc463ac8f4a1d1a185511db1a6a6decd76984eed63a0c173f9f574487',1,'ripple::test::DropAll()'],['../namespaceripple_1_1test.html#a5aee00287e1907a9876b3247864d6f0aa6a6decd76984eed63a0c173f9f574487',1,'ripple::test::DropAll()']]],
+  ['dropall_22',['dropall',['../namespaceripple_1_1test.html#a6e324fd8fc463ac8f4a1d1a185511db1a6a6decd76984eed63a0c173f9f574487',1,'ripple::test::DropAll'],['../namespaceripple_1_1test.html#a5aee00287e1907a9876b3247864d6f0aa6a6decd76984eed63a0c173f9f574487',1,'ripple::test::DropAll']]],
   ['dropledgerdeltareply_23',['DropLedgerDeltaReply',['../namespaceripple_1_1test.html#a6e324fd8fc463ac8f4a1d1a185511db1a0cf51aa72b773c64178a944bf85ef503',1,'ripple::test']]],
   ['dropsendqueue_24',['dropSendQueue',['../namespaceripple_1_1Tuning.html#a8e0bd99f9cf1667e6f6dc82b8b369f41ac53e07d6dbec8160ba8b4631a39fe84f',1,'ripple::Tuning']]],
   ['dropskiplistreply_25',['DropSkipListReply',['../namespaceripple_1_1test.html#a6e324fd8fc463ac8f4a1d1a185511db1a1c680e775b81946aa93a83b6ad8e87d7',1,'ripple::test']]],
@@ -30,6 +30,6 @@ var searchData=
   ['dumpqueue_27',['dumpQueue',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b',1,'ripple::LedgerFill']]],
   ['dumpstate_28',['dumpState',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a22467bc2d1c3fd3a960ffa1c3742aba8',1,'ripple::LedgerFill']]],
   ['dumptxrp_29',['dumpTxrp',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34',1,'ripple::LedgerFill']]],
-  ['duplicate_30',['duplicate',['../namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a24f1b0a79473250c195c7fb84e393392',1,'ripple::PeerFinder::duplicate()'],['../classJson_1_1Value_1_1CZString.html#a2805c46fb4a72bbaed55de6d75941b6dabb2134294dd8fc37dd82d18bb794fe20',1,'Json::Value::CZString::duplicate()']]],
+  ['duplicate_30',['duplicate',['../namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a24f1b0a79473250c195c7fb84e393392',1,'ripple::PeerFinder::duplicate'],['../classJson_1_1Value_1_1CZString.html#a2805c46fb4a72bbaed55de6d75941b6dabb2134294dd8fc37dd82d18bb794fe20',1,'Json::Value::CZString::duplicate']]],
   ['duplicateoncopy_31',['duplicateOnCopy',['../classJson_1_1Value_1_1CZString.html#a2805c46fb4a72bbaed55de6d75941b6da5c18c35205a3be63ad14ce659e70fe7d',1,'Json::Value::CZString']]]
 ];

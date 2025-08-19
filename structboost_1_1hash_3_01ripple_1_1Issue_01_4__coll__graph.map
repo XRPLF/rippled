@@ -1,6 +1,9 @@
 <map id="boost::hash&lt; ripple::Issue &gt;" name="boost::hash&lt; ripple::Issue &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="457,53,607,93"/>
-<area shape="rect" id="node2" href="$structstd_1_1hash_3_01ripple_1_1Issue_01_4.html" title=" " alt="" coords="268,53,409,93"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,220,60"/>
-<area shape="rect" id="node4" title=" " alt="" coords="9,84,217,139"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="457,53,607,93"/>
+<area shape="rect" id="Node000002" href="$structstd_1_1hash_3_01ripple_1_1Issue_01_4.html" title=" " alt="" coords="268,53,409,93"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="423,70,457,70,457,75,423,75"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,220,60"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="234,52,268,58,267,63,233,57"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="9,84,217,139"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="230,89,267,82,268,87,231,94"/>
 </map>

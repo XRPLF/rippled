@@ -1,4 +1,5 @@
 <map id="ripple::test::StreamSink" name="ripple::test::StreamSink">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,180,104"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="19,5,166,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,180,104"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="19,5,166,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,44,95,79,90,79,90,44"/>
 </map>

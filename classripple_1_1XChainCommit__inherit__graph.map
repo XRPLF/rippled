@@ -1,4 +1,5 @@
 <map id="ripple::XChainCommit" name="ripple::XChainCommit">
-<area shape="rect" id="node1" title=" " alt="" coords="5,79,169,104"/>
-<area shape="rect" id="node2" href="$classripple_1_1Transactor.html" title=" " alt="" coords="20,5,155,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,169,104"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1Transactor.html" title=" " alt="" coords="20,5,155,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="90,44,90,79,85,79,85,44"/>
 </map>

@@ -1,4 +1,5 @@
 <map id="beast::unit_test::suite::log_buf&lt; CharT, Traits, Allocator &gt;" name="beast::unit_test::suite::log_buf&lt; CharT, Traits, Allocator &gt;">
-<area shape="rect" id="node1" title=" " alt="" coords="15,93,194,148"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_stringbuf.html" title=" " alt="" coords="5,5,204,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="15,93,194,148"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/io/basic_stringbuf.html" title=" " alt="" coords="5,5,204,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,59,107,93,102,93,102,59"/>
 </map>

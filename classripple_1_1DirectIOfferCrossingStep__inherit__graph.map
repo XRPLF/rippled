@@ -1,5 +1,7 @@
 <map id="ripple::DirectIOfferCrossingStep" name="ripple::DirectIOfferCrossingStep">
-<area shape="rect" id="node1" title=" " alt="" coords="5,196,232,221"/>
-<area shape="rect" id="node2" href="$classripple_1_1DirectStepI.html" title=" " alt="" coords="13,108,225,148"/>
-<area shape="rect" id="node3" title=" " alt="" coords="5,5,232,60"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,196,232,221"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1DirectStepI.html" title=" " alt="" coords="13,108,225,148"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="121,162,121,196,116,196,116,162"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="5,5,232,60"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="121,74,121,108,116,108,116,74"/>
 </map>

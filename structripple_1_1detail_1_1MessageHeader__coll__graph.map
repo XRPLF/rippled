@@ -1,5 +1,7 @@
 <map id="ripple::detail::MessageHeader" name="ripple::detail::MessageHeader">
-<area shape="rect" id="node1" title=" " alt="" coords="28,137,245,163"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="165,5,268,31"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="28,137,245,163"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="53,44,50,78,53,96,60,112,73,125,90,135,88,140,70,130,56,115,48,97,45,79,48,44"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="165,5,268,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="216,45,207,80,190,115,176,129,161,139,158,135,173,125,185,112,202,78,211,44"/>
 </map>

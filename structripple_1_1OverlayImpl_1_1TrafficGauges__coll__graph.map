@@ -1,9 +1,15 @@
 <map id="ripple::OverlayImpl::TrafficGauges" name="ripple::OverlayImpl::TrafficGauges">
-<area shape="rect" id="node1" title=" " alt="" coords="89,417,236,457"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="46,285,133,311"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,183,144,223"/>
-<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="165,285,325,311"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="168,183,339,223"/>
-<area shape="rect" id="node6" href="$classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="159,95,348,120"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="157,5,349,45"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="89,417,236,457"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="46,285,133,311"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,322,155,416,150,418,100,324"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,183,144,223"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="82,236,90,285,85,285,77,237"/>
+<area shape="rect" id="Node000004" href="$classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="165,285,325,311"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="234,324,176,418,172,416,229,321"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="168,183,339,223"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="253,236,249,285,244,285,248,236"/>
+<area shape="rect" id="Node000006" href="$classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="159,95,348,120"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="256,134,256,182,251,182,251,134"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="157,5,349,45"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="256,59,256,94,251,94,251,59"/>
 </map>

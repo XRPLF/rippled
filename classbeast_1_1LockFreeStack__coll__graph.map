@@ -1,5 +1,9 @@
 <map id="beast::LockFreeStack&lt; Element, Tag &gt;" name="beast::LockFreeStack&lt; Element, Tag &gt;">
-<area shape="rect" id="node1" title="Multiple Producer, Multiple Consumer (MPMC) intrusive stack." alt="" coords="583,8,743,48"/>
-<area shape="rect" id="node2" href="$classbeast_1_1LockFreeStack_1_1Node.html" title=" " alt="" coords="5,9,184,49"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="285,43,477,83"/>
+<area shape="rect" id="Node000001" title="Multiple Producer, Multiple Consumer (MPMC) intrusive stack." alt="" coords="583,8,743,48"/>
+<area shape="rect" id="Node000002" href="$classbeast_1_1LockFreeStack_1_1Node.html" title=" " alt="" coords="5,9,184,49"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="198,22,208,21,383,16,559,19,582,20,582,25,559,24,383,22,208,27,198,27"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="285,43,477,83"/>
+<area shape="poly" id="edge3_Node000003_Node000002" title=" " alt="" coords="198,39,285,49,285,54,197,44"/>
+<area shape="poly" id="edge4_Node000001_Node000003" title=" " alt="" coords="490,47,582,35,583,40,491,52"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="271,80,208,76,170,66,135,52,137,47,172,61,208,71,272,75"/>
 </map>

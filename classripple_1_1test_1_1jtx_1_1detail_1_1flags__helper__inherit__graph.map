@@ -1,5 +1,7 @@
 <map id="ripple::test::jtx::detail::flags_helper" name="ripple::test::jtx::detail::flags_helper">
-<area shape="rect" id="node1" title=" " alt="" coords="69,5,216,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1jtx_1_1flags.html" title="Match set account flags." alt="" coords="5,93,131,133"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1jtx_1_1nflags.html" title="Match clear account flags." alt="" coords="155,93,280,133"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="69,5,216,45"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1test_1_1jtx_1_1flags.html" title="Match set account flags." alt="" coords="5,93,131,133"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,58,87,95,83,91,115,54"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1test_1_1jtx_1_1nflags.html" title="Match clear account flags." alt="" coords="155,93,280,133"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="170,54,203,91,199,95,166,58"/>
 </map>

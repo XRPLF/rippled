@@ -1,12 +1,21 @@
 <map id="ripple::detail::WorkSSL" name="ripple::detail::WorkSSL">
-<area shape="rect" id="node1" title=" " alt="" coords="841,135,1009,160"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="537,62,714,102"/>
-<area shape="rect" id="node3" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="269,5,414,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="298,55,385,80"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="9,47,148,87"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="252,105,431,174"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="537,127,714,167"/>
-<area shape="rect" id="node8" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="519,193,732,219"/>
-<area shape="rect" id="node9" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="286,199,397,224"/>
-<area shape="rect" id="node10" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,199,152,224"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="841,135,1009,160"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="537,62,714,102"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="728,102,867,132,866,137,727,107"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="269,5,414,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="428,23,495,34,575,59,574,64,494,39,427,28"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="298,55,385,80"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="399,73,455,78,537,80,536,86,454,83,398,78"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="9,47,148,87"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="162,65,298,65,298,70,162,70"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="252,105,431,174"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="444,116,536,97,537,102,445,121"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="537,127,714,167"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="728,145,841,145,841,150,728,150"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1HTTPClientSSLContext.html" title=" " alt="" coords="519,193,732,219"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="704,188,859,157,860,163,705,193"/>
+<area shape="rect" id="Node000009" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="286,199,397,224"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="410,207,519,205,519,211,410,213"/>
+<area shape="rect" id="Node000010" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="5,199,152,224"/>
+<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="166,209,286,209,286,214,166,214"/>
 </map>
