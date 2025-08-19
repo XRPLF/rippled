@@ -262,6 +262,25 @@ class Vault_test : public beast::unit_test::suite
                 if (!asset.raw().native())
                 {
                     BEAST_EXPECT(env.balance(depositor, shares) == share(0));
+
+                    {
+                        auto tx = vault.clawback(
+                            {.issuer = issuer,
+                             .id = keylet.key,
+                             .holder = depositor,
+                             .amount = asset(10)});
+                        env(tx, ter{tecINSUFFICIENT_FUNDS});
+                        env.close();
+                    }
+
+                    {
+                        auto tx = vault.withdraw(
+                            {.depositor = depositor,
+                             .id = keylet.key,
+                             .amount = asset(10)});
+                        env(tx, ter{tecINSUFFICIENT_FUNDS});
+                        env.close();
+                    }
                 }
             }
 
@@ -376,6 +395,26 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 env.close();
                 BEAST_EXPECT(env.balance(depositor, shares) == share(0));
+
+                if (!asset.raw().native())
+                {
+                    auto tx = vault.clawback(
+                        {.issuer = issuer,
+                         .id = keylet.key,
+                         .holder = depositor,
+                         .amount = asset(0)});
+                    env(tx, ter{tecINSUFFICIENT_FUNDS});
+                    env.close();
+                }
+
+                {
+                    auto tx = vault.withdraw(
+                        {.depositor = depositor,
+                         .id = keylet.key,
+                         .amount = share(10)});
+                    env(tx, ter{tecINSUFFICIENT_FUNDS});
+                    env.close();
+                }
             }
 
             if (!asset.raw().native() && asset.raw().holds<Issue>())
