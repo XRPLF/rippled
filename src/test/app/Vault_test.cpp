@@ -119,6 +119,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(10000)});
                 env(tx, ter(tecINSUFFICIENT_FUNDS));
+                env.close();
             }
 
             {
@@ -149,6 +150,7 @@ class Vault_test : public beast::unit_test::suite
                 testcase(prefix + " fail to delete non-empty vault");
                 auto tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx, ter(tecHAS_OBLIGATIONS));
+                env.close();
             }
 
             {
@@ -156,6 +158,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.set({.owner = issuer, .id = keylet.key});
                 tx[sfAssetsMaximum] = asset(50).number();
                 env(tx, ter(tecNO_PERMISSION));
+                env.close();
             }
 
             {
@@ -164,6 +167,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfAssetsMaximum] = asset(50).number();
                 env(tx, ter(tecLIMIT_EXCEEDED));
+                env.close();
             }
 
             {
@@ -187,6 +191,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfDomainID] = to_string(base_uint<256>(42ul));
                 env(tx, ter{tecNO_PERMISSION});
+                env.close();
             }
 
             {
@@ -196,6 +201,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .amount = asset(100)});
                 env(tx, ter(tecLIMIT_EXCEEDED));
+                env.close();
             }
 
             {
@@ -281,6 +287,7 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(100)});
                 tx[sfDestination] = alice.human();
                 env(tx, ter{tecNO_PERMISSION});
+                env.close();
             }
 
             {
@@ -291,6 +298,7 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(1000)});
                 tx[sfDestination] = "0";
                 env(tx, ter(temMALFORMED));
+                env.close();
             }
 
             {
@@ -303,6 +311,7 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(1000)});
                 tx[sfDestinationTag] = "0";
                 env(tx, ter(temMALFORMED));
+                env.close();
             }
 
             if (!asset.raw().native())
@@ -316,6 +325,7 @@ class Vault_test : public beast::unit_test::suite
                 tx[sfDestination] = erin.human();
                 env(tx,
                     ter{asset.raw().holds<Issue>() ? tecNO_LINE : tecNO_AUTH});
+                env.close();
             }
 
             {
@@ -328,6 +338,7 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(100)});
                 tx[sfDestination] = dave.human();
                 env(tx, ter{tecDST_TAG_NEEDED});
+                env.close();
             }
 
             {
