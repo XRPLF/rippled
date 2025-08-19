@@ -7,13 +7,15 @@ inputs:
     description: 'The directory where to build.'
     required: true
     type: string
+  build_only:
+    description: 'Whether to only build or build and test the code ("yes", "no").'
+    required: false
+    type: string
+    default: 'no'
   build_type:
-    description: 'The build type to use.'
+    description: 'The build type to use ("Debug", "Release").'
     required: true
-    type: choice
-    options:
-      - 'Debug'
-      - 'Release'
+    type: string
   cmake_args:
     description: 'Additional arguments to pass to CMake.'
     required: false
@@ -82,7 +84,7 @@ runs:
         echo 'Verifying presence of instrumentation.'
         ./rippled --version | grep libvoidstar
     - name: Test the binary
-      if: ${{ inputs.cmake_target != 'coverage' }}
+      if: ${{ inputs.build_only == 'no' }}
       shell: bash
       working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'windows' && inputs.build_type || '' }}
       run: |

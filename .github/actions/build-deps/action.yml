@@ -9,12 +9,9 @@ inputs:
     required: true
     type: string
   build_type:
-    description: 'The build type to use.'
+    description: 'The build type to use ("Debug", "Release").'
     required: true
-    type: choice
-    options:
-      - 'Debug'
-      - 'Release'
+    type: string
   conan_remote_name:
     description: 'The name of the Conan remote to use.'
     required: true
@@ -34,20 +31,14 @@ inputs:
     type: string
     default: ''
   force_build:
-    description: 'Force building of all dependencies.'
+    description: 'Force building of all dependencies. ("yes", "no").'
     required: false
-    type: choice
-    options:
-      - 'yes'
-      - 'no'
+    type: string
     default: 'no'
   force_upload:
-    description: 'Force uploading of all dependencies.'
+    description: 'Force uploading of all dependencies. ("yes", "no").'
     required: false
-    type: choice
-    options:
-      - 'yes'
-      - 'no'
+    type: string
     default: 'no'
 
 runs:

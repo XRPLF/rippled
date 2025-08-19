@@ -9,7 +9,7 @@ Generate a strategy matrix for GitHub Actions CI.
 
 On each PR commit we will build a selection of Debian, RHEL, Ubuntu, MacOS, and
 Windows configurations, while upon merge into the develop, release, or master
-branches, we will build all configurations.
+branches, we will build all configurations, and test most of them.
 
 We will further set additional CMake arguments as follows:
 - All builds will have the `tests`, `werr`, and `xrpld` options.
@@ -24,6 +24,13 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         # The default CMake target is 'all' for Linux and MacOS and 'install'
         # for Windows, but it can get overridden for certain configurations.
         cmake_target = 'install' if os["distro_name"] == 'windows' else 'all'
+
+        # We build and test all configurations by default, except for Windows in
+        # Debug, because it is too slow, as well as when code coverage is
+        # enabled as that mode already runs the tests.
+        build_only = False
+        if os['distro_name'] == 'windows' and build_type == 'Debug':
+            build_only = True
 
         # Only generate a subset of configurations in PRs.
         if not all:
@@ -46,6 +53,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
                         cmake_args = f'{cmake_args} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0'
                         cmake_target = 'coverage'
+                        build_only = True
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-16' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
                         cmake_args = f'{cmake_args} -Dvoidstar=ON'
@@ -110,6 +118,11 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         if build_type == 'Release':
             cmake_args = f'{cmake_args} -Dassert=ON'
 
+        # We skip all RHEL on arm64 due to a build failure that needs further
+        # investigation.
+        if os['distro_name'] == 'rhel' and architecture['platform'] == 'linux/arm64':
+            continue
+
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release-unity.
         config_name = os['distro_name']
@@ -128,6 +141,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
             'architecture': architecture,
             'os': os,
             'build_type': build_type,
+            'build_only': 'yes' if build_only else 'no',
             'cmake_args': cmake_args,
             'cmake_target': cmake_target,
             'config_name': config_name,

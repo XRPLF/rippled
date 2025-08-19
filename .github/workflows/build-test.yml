@@ -2,8 +2,9 @@
 name: Build and test
 
 # This workflow can only be triggered by other workflows. Note that the
-# workflow_call event does not support the 'choice' input type, so we use
-# 'string' instead. The workflow calls actions, which do support 'choice'. Also
+# workflow_call event does not support the 'choice' input type (see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_callinputsinput_idtype),
+# so we use 'string' instead; in contrast, actions do support 'choice'. Also
 # note that the 'boolean' input type is troublesome, so we use 'string' instead.
 on:
   workflow_call:
@@ -208,6 +209,7 @@ jobs:
         uses: ./.github/actions/build-test
         with:
           build_dir: ${{ inputs.build_dir }}
+          build_only: ${{ matrix.build_only }}
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
           cmake_target: ${{ matrix.cmake_target }}
