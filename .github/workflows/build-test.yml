@@ -23,15 +23,15 @@ on:
         required: true
         type: string
       dependencies_force_build:
-        description: 'Force building of all dependencies ("yes", "no").'
+        description: 'Force building of all dependencies.'
         required: false
-        type: string
-        default: 'no'
+        type: boolean
+        default: false
       dependencies_force_upload:
-        description: 'Force uploading of all dependencies ("yes", "no").'
+        description: 'Force uploading of all dependencies.'
         required: false
-        type: string
-        default: 'no'
+        type: boolean
+        default: false
       os:
         description: 'The operating system to use for the build ("linux", "macos", "windows").'
         required: true
@@ -126,17 +126,7 @@ jobs:
         if: ${{ inputs.os == 'macos' }}
         run: |
           echo 'Installing build tools.'
-          for TOOL in cmake conan ninja nproc; do
-            if which ${TOOL} > /dev/null 2>&1; then
-              echo "The ${TOOL} executable already exists, skipping installation."
-            else
-              echo "The ${TOOL} executable does not exist, installing."
-              if [ "${TOOL}" = 'nproc' ]; then
-                TOOL='coreutils'
-              fi
-              brew install ${TOOL}
-            fi
-          done
+          brew install cmake conan ninja nproc
       - name: Check configuration (Linux and MacOS)
         if: ${{ inputs.os == 'linux' || inputs.os == 'macos' }}
         run: |

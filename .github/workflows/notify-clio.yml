@@ -59,9 +59,7 @@ jobs:
         run: conan remote login ${{ inputs.conan_remote_name }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
       - name: Upload package
         run: |
-          echo "Exporting package with user to channel '${{ steps.generate.outputs.channel }}'."
           conan export --user=${{ steps.generate.outputs.user }} --channel=${{ steps.generate.outputs.channel }} .
-          echo 'Uploading package version ${{ steps.generate.outputs.version }}.'
           conan upload --confirm --check --remote=${{ inputs.conan_remote_name }} xrpl/${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/${{ steps.generate.outputs.channel }}
     outputs:
       channel: ${{ steps.generate.outputs.channel }}

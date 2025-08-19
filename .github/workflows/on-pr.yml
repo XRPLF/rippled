@@ -71,7 +71,7 @@ jobs:
       - name: No-op
         run: echo ''
 
-  check-clang-format:
+  check-format:
     needs: should-run
     uses: ./.github/workflows/check-format.yml
 
