@@ -192,27 +192,42 @@ VaultWithdraw::doApply()
     // to deposit into it, and this means you are also indefinitely authorized
     // to withdraw from it.
 
-    auto amount = ctx_.tx[sfAmount];
+    auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
     auto const share = MPTIssue(mptIssuanceID);
-    STAmount shares, assets;
-    if (amount.asset() == vaultAsset)
+    STAmount shares = {vault->at(sfShareMPTID)}, assets;
+    try
     {
-        // Fixed assets, variable shares.
-        assets = amount;
-        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
-        if (shares == beast::zero)
-            return tecINSUFFICIENT_FUNDS;
-        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        if (amount.asset() == vaultAsset)
+        {
+            // Fixed assets, variable shares.
+            assets = amount;
+            shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+            if (shares == beast::zero)
+                return tecINSUFFICIENT_FUNDS;
+            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        }
+        else if (amount.asset() == share)
+        {
+            // Fixed shares, variable assets.
+            shares = amount;
+            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        }
+        else
+            return tefINTERNAL;  // LCOV_EXCL_LINE
     }
-    else if (amount.asset() == share)
+    catch (std::overflow_error const&)
     {
-        // Fixed shares, variable assets.
-        shares = amount;
-        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j_.debug())  //
+            << "VaultWithdraw: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", amount=" << amount.value();
+        return tecPATH_DRY;
     }
-    else
-        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (accountHolds(
             view(),

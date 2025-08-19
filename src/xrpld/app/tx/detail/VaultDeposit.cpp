@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -183,7 +184,7 @@ VaultDeposit::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto assets = ctx_.tx[sfAmount];
+    auto const amount = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
@@ -237,25 +238,42 @@ VaultDeposit::doApply()
         }
     }
 
-    // Compute exchange before transferring any amounts.
-    auto const shares = assetsToSharesDeposit(vault, sleIssuance, assets);
-    if (shares == beast::zero)
-        return tecINSUFFICIENT_FUNDS;
-
-    XRPL_ASSERT(
-        shares.asset() != assets.asset(),
-        "ripple::VaultDeposit::doApply : assets are not shares");
+    STAmount shares = {vault->at(sfShareMPTID)}, assets = amount;
+    try
     {
-        auto const assetsToTake =
-            sharesToAssetsDeposit(vault, sleIssuance, shares);
-        if (assetsToTake > assets)
+        // Compute exchange before transferring any amounts.
+        shares = assetsToSharesDeposit(vault, sleIssuance, assets);
+        if (shares == beast::zero)
+            return tecINSUFFICIENT_FUNDS;
+
+        XRPL_ASSERT(
+            shares.asset() != assets.asset(),
+            "ripple::VaultDeposit::doApply : assets are not shares");
         {
-            // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
+            auto const assetsToTake =
+                sharesToAssetsDeposit(vault, sleIssuance, shares);
+            if (assetsToTake > assets)
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.error())
+                    << "VaultDeposit: would take more than offered.";
+                return tefINTERNAL;
+                // LCOV_EXCL_STOP
+            }
+            assets = assetsToTake;
         }
-        assets = assetsToTake;
+    }
+    catch (std::overflow_error const&)
+    {
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j_.debug())  //
+            << "VaultDeposit: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", amount=" << amount;
+        return tecPATH_DRY;
     }
 
     vault->at(sfAssetsTotal) += assets;

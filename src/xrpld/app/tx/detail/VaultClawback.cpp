@@ -173,28 +173,6 @@ VaultClawback::doApply()
         amount.asset() == vaultAsset,
         "ripple::VaultClawback::doApply : matching asset");
 
-    AccountID holder = tx[sfHolder];
-    STAmount assets, shares;
-    if (amount == beast::zero)
-    {
-        Asset share = *(*vault)[sfShareMPTID];
-        shares = accountHolds(
-            view(),
-            holder,
-            share,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_);
-        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
-    }
-    else
-    {
-        assets = amount;
-        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
-        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
-    }
-
-    // Clamp to maximum.
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
     [[maybe_unused]] auto lossUnrealized = vault->at(sfLossUnrealized);
@@ -202,21 +180,59 @@ VaultClawback::doApply()
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "ripple::VaultClawback::doApply : loss and assets do balance");
 
-    if (assets > *assetsAvailable)
+    AccountID holder = tx[sfHolder];
+    STAmount shares = {vault->at(sfShareMPTID)}, assets;
+    try
     {
-        assets = *assetsAvailable;
-        // Note, it is important to truncate the number of shares, since
-        // otherwise the corresponding assets might breach the AssetsAvailable
-        shares = assetsToSharesWithdraw(
-            vault, sleIssuance, assets, TruncateShares::yes);
-        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        if (amount == beast::zero)
+        {
+            Asset share = *(*vault)[sfShareMPTID];
+            shares = accountHolds(
+                view(),
+                holder,
+                share,
+                FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
+                j_);
+            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        }
+        else
+        {
+            assets = amount;
+            shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        }
+
+        // Clamp to maximum.
         if (assets > *assetsAvailable)
         {
-            // LCOV_EXCL_START
-            JLOG(j_.error()) << "VaultClawback: invalid rounding of shares.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
+            assets = *assetsAvailable;
+            // Note, it is important to truncate the number of shares, otherwise
+            // the corresponding assets might breach the AssetsAvailable
+            shares = assetsToSharesWithdraw(
+                vault, sleIssuance, assets, TruncateShares::yes);
+            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+            if (assets > *assetsAvailable)
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.error())
+                    << "VaultClawback: invalid rounding of shares.";
+                return tefINTERNAL;
+                // LCOV_EXCL_STOP
+            }
         }
+    }
+    catch (std::overflow_error const&)
+    {
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j_.debug())  //
+            << "VaultClawback: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", amount=" << amount.value();
+        return tecPATH_DRY;
     }
 
     if (shares == beast::zero)

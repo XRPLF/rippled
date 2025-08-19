@@ -3110,6 +3110,60 @@ class Vault_test : public beast::unit_test::suite
                  .peek = peek});
         };
 
+        testCase(18, [&, this](Env& env, Data d) {
+            testcase("Scale deposit overflow on first deposit");
+            auto tx = d.vault.deposit(
+                {.depositor = d.depositor,
+                 .id = d.keylet.key,
+                 .amount = d.asset(10)});
+            env(tx, ter{tecPATH_DRY});
+            env.close();
+        });
+
+        testCase(18, [&, this](Env& env, Data d) {
+            testcase("Scale deposit overflow on second deposit");
+
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(5)});
+                env(tx);
+                env.close();
+            }
+
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(10)});
+                env(tx, ter{tecPATH_DRY});
+                env.close();
+            }
+        });
+
+        testCase(18, [&, this](Env& env, Data d) {
+            testcase("Scale deposit overflow on total shares");
+
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(5)});
+                env(tx);
+                env.close();
+            }
+
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(5)});
+                env(tx, ter{tecPATH_DRY});
+                env.close();
+            }
+        });
+
         testCase(1, [&, this](Env& env, Data d) {
             testcase("Scale deposit exact");
 
@@ -3386,6 +3440,28 @@ class Vault_test : public beast::unit_test::suite
             }
         });
 
+        testCase(18, [&, this](Env& env, Data d) {
+            testcase("Scale withdraw overflow");
+
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(5)});
+                env(tx);
+                env.close();
+            }
+
+            {
+                auto tx = d.vault.withdraw(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = STAmount(d.asset, Number(10, 0))});
+                env(tx, ter{tecPATH_DRY});
+                env.close();
+            }
+        });
+
         testCase(1, [&, this](Env& env, Data d) {
             // initial setup: deposit 100 IOU, receive 1000 shares
             auto const start = env.balance(d.depositor, d.assets).number();
@@ -3579,6 +3655,29 @@ class Vault_test : public beast::unit_test::suite
                     env.balance(d.vaultAccount, d.assets).number() == 0);
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares).number() == 0);
+            }
+        });
+
+        testCase(18, [&, this](Env& env, Data d) {
+            testcase("Scale clawback overflow");
+
+            {
+                auto tx = d.vault.deposit(
+                    {.depositor = d.depositor,
+                     .id = d.keylet.key,
+                     .amount = d.asset(5)});
+                env(tx);
+                env.close();
+            }
+
+            {
+                auto tx = d.vault.clawback(
+                    {.issuer = d.issuer,
+                     .id = d.keylet.key,
+                     .holder = d.depositor,
+                     .amount = STAmount(d.asset, Number(10, 0))});
+                env(tx, ter{tecPATH_DRY});
+                env.close();
             }
         });
 
