@@ -59,6 +59,7 @@ private:
     response_type response_;
     std::shared_ptr<PeerFinder::Slot> slot_;
     request_type req_;
+    bool shutdown_ = false;
 
 public:
     ConnectAttempt(
@@ -82,12 +83,6 @@ public:
 
 private:
     void
-    close();
-    void
-    fail(std::string const& reason);
-    void
-    fail(std::string const& name, error_code ec);
-    void
     setTimer();
     void
     cancelTimer();
@@ -102,7 +97,16 @@ private:
     void
     onRead(error_code ec);
     void
+    fail(std::string const& reason);
+    void
+    fail(std::string const& name, error_code ec);
+    void
+    shutdown();
+    void
     onShutdown(error_code ec);
+    void
+    close();
+
     void
     processResponse();
 
