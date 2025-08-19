@@ -2,6 +2,8 @@
 # already been installed (see the build-deps action).
 name: Build and Test
 
+# Note that actions do not support 'type' and all inputs are strings, see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
 inputs:
   build_dir:
     description: 'The directory where to build.'

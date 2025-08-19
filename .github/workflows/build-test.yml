@@ -2,10 +2,9 @@
 name: Build and test
 
 # This workflow can only be triggered by other workflows. Note that the
-# workflow_call event does not support the 'choice' input type (see
-# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_callinputsinput_idtype),
-# so we use 'string' instead; in contrast, actions do support 'choice'. Also
-# note that the 'boolean' input type is troublesome, so we use 'string' instead.
+# workflow_call event does not support the 'choice' input type, see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_callinputsinput_idtype,
+# so we use 'string' instead.
 on:
   workflow_call:
     inputs:
@@ -126,7 +125,7 @@ jobs:
         if: ${{ inputs.os == 'macos' }}
         run: |
           echo 'Installing build tools.'
-          brew install cmake conan ninja nproc
+          brew install cmake conan ninja coreutils
       - name: Check configuration (Linux and MacOS)
         if: ${{ inputs.os == 'linux' || inputs.os == 'macos' }}
         run: |
