@@ -81,10 +81,10 @@ jobs:
       - name: Check inputs and set outputs
         id: generate
         run: |
-          if [[ "${{ github.event_name }}" == 'push' ]]; then
+          if [[ '${{ github.event_name }}' == 'push' ]]; then
             echo 'dependencies_force_build=false' >> "${GITHUB_OUTPUT}"
             echo 'dependencies_force_upload=false' >> "${GITHUB_OUTPUT}"
-          elif [[ "${{ github.event_name }}" == 'schedule' ]]; then
+          elif [[ '${{ github.event_name }}' == 'schedule' ]]; then
             echo 'dependencies_force_build=true' >> "${GITHUB_OUTPUT}"
             echo 'dependencies_force_upload=false' >> "${GITHUB_OUTPUT}"
           else
@@ -97,44 +97,19 @@ jobs:
       dependencies_force_build: ${{ steps.generate.outputs.dependencies_force_build }}
       dependencies_force_upload: ${{ steps.generate.outputs.dependencies_force_upload }}
 
-  build-linux:
+  build-test:
     needs: generate-outputs
     uses: ./.github/workflows/build-test.yml
+    strategy:
+      matrix:
+        os: [linux, macos, windows]
     with:
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
       conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
-      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
-      os: 'linux'
-      strategy_matrix_all: true
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-
-  build-macos:
-    needs: generate-outputs
-    uses: ./.github/workflows/build-test.yml
-    with:
-      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
-      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
-      os: 'macos'
-      strategy_matrix_all: true
-    secrets:
-      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
-
-  build-windows:
-    needs: generate-outputs
-    uses: ./.github/workflows/build-test.yml
-    with:
-      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build }}
-      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload }}
-      os: 'windows'
-      strategy_matrix_all: true
+      dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build == 'true' }}
+      dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload == 'true' }}
+      os: ${{ matrix.os }}
+      strategy_matrix: 'all'
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
