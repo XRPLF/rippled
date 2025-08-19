@@ -138,19 +138,19 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfSellNFToken, 0x00000001))               \
     TRANSACTION(AMMDeposit,                               \
         TF_FLAG(tfLPToken, 0x00010000)                    \
-        TF_FLAG(tfWithdrawAll, 0x00020000)                \
-        TF_FLAG(tfOneAssetWithdrawAll, 0x00040000)        \
         TF_FLAG(tfSingleAsset, 0x00080000)                \
         TF_FLAG(tfTwoAsset, 0x00100000)                   \
         TF_FLAG(tfOneAssetLPToken, 0x00200000)            \
-        TF_FLAG(tfLimitLPToken, 0x00400000))              \
+        TF_FLAG(tfLimitLPToken, 0x00400000)               \
+        TF_FLAG(tfTwoAssetIfEmpty, 0x00800000))           \
     TRANSACTION(AMMWithdraw,                              \
         TF_FLAG2(tfLPToken, 0x00010000)                   \
+        TF_FLAG(tfWithdrawAll, 0x00020000)                \
+        TF_FLAG(tfOneAssetWithdrawAll, 0x00040000)        \
         TF_FLAG2(tfSingleAsset, 0x00080000)               \
         TF_FLAG2(tfTwoAsset, 0x00100000)                  \
         TF_FLAG2(tfOneAssetLPToken, 0x00200000)           \
-        TF_FLAG2(tfLimitLPToken, 0x00400000)              \
-        TF_FLAG(tfTwoAssetIfEmpty, 0x00800000))           \
+        TF_FLAG2(tfLimitLPToken, 0x00400000))             \
     TRANSACTION(AMMClawback,                              \
         TF_FLAG(tfClawTwoAssets, 0x00000001))             \
     TRANSACTION(XChainModifyBridge,                       \
