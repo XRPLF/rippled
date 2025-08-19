@@ -141,7 +141,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
             'architecture': architecture,
             'os': os,
             'build_type': build_type,
-            'build_only': 'yes' if build_only else 'no',
+            'build_only': 'true' if build_only else 'false',
             'cmake_args': cmake_args,
             'cmake_target': cmake_target,
             'config_name': config_name,
