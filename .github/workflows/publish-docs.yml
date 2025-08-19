@@ -28,6 +28,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     container: ghcr.io/xrplf/ci/tools-rippled-documentation
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
