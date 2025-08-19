@@ -248,6 +248,10 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate, Delegation::delegatable, ({
     {sfAmount, soeREQUIRED},
     {sfAmount2, soeREQUIRED},
     {sfTradingFee, soeREQUIRED},
+    {sfTickLower, soeOPTIONAL},
+    {sfTickUpper, soeOPTIONAL},
+    {sfLiquidity, soeOPTIONAL},
+    {sfTickSpacing, soeOPTIONAL},
 }))
 
 /** This transaction type deposits into an AMM instance */
@@ -517,19 +521,6 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback, Delegation::delegatable, ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
     {sfAmount, soeOPTIONAL, soeMPTSupported},
-}))
-
-/** This transaction creates concentrated liquidity positions */
-TRANSACTION(ttAMM_CONCENTRATED_CREATE, 41, AMMConcentratedCreate, Delegation::delegatable, ({
-    {sfAmount, soeREQUIRED},
-    {sfAmount2, soeREQUIRED},
-    {sfTradingFee, soeREQUIRED},
-    {sfAsset, soeREQUIRED},
-    {sfAsset2, soeREQUIRED},
-    {sfTickLower, soeREQUIRED},
-    {sfTickUpper, soeREQUIRED},
-    {sfLiquidity, soeREQUIRED},
-    {sfTickSpacing, soeREQUIRED}
 }))
 
 /** This transaction deposits liquidity into concentrated liquidity positions */

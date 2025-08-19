@@ -394,6 +394,12 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
     {sfOwnerNode,            soeREQUIRED},
     {sfPreviousTxnID,        soeOPTIONAL},
     {sfPreviousTxnLgrSeq,    soeOPTIONAL},
+    {sfCurrentTick,          soeOPTIONAL},
+    {sfSqrtPriceX64,         soeOPTIONAL},
+    {sfAggregatedLiquidity,  soeOPTIONAL},
+    {sfFeeGrowthGlobal0X128, soeOPTIONAL},
+    {sfFeeGrowthGlobal1X128, soeOPTIONAL},
+    {sfTickSpacing,          soeOPTIONAL},
 }))
 
 /** A ledger object which tracks concentrated liquidity positions.

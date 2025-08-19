@@ -26,22 +26,21 @@ namespace ripple {
 
 /** AMMConcentratedWithdraw implements removing liquidity from concentrated
  * liquidity positions. This transaction allows liquidity providers to remove
- * liquidity from their concentrated liquidity positions and receive back the
- * underlying tokens. The transaction also optionally collects accumulated fees.
+ * liquidity from existing concentrated liquidity positions and receive back
+ * the underlying tokens plus any accumulated fees.
  *
  *  Key features:
  *  - Remove liquidity from existing positions
  *  - Automatic amount calculation based on current price
  *  - Slippage protection with minimum amounts
- *  - Optional fee collection
+ *  - Fee collection during withdrawal
  *  - Position state updates
  *
  *  The transaction:
  *  - Validates the position exists and is owned by the caller
- *  - Calculates token amounts to return based on liquidity removed
+ *  - Calculates optimal token amounts for the liquidity removal
  *  - Updates position liquidity and fee tracking
  *  - Transfers tokens from the AMM to the caller
- *  - Optionally collects accumulated fees
  *  - Updates tick data for price tracking
  */
 class AMMConcentratedWithdraw : public Transactor
@@ -73,7 +72,7 @@ private:
         STTx const& tx,
         beast::Journal const& j);
 
-    /** Calculate amounts to return for liquidity removal */
+    /** Calculate return amounts for liquidity removal */
     static std::pair<STAmount, STAmount>
     calculateReturnAmounts(
         STAmount const& liquidity,
@@ -102,7 +101,7 @@ private:
         STAmount const& liquidityNet,
         beast::Journal const& j);
 
-    /** Collect accumulated fees */
+    /** Collect accumulated fees from position */
     static TER
     collectFees(
         ApplyView& view,
@@ -110,9 +109,6 @@ private:
         std::int32_t tickLower,
         std::int32_t tickUpper,
         std::uint32_t nonce,
-        STAmount const& tokensOwed0,
-        STAmount const& tokensOwed1,
-        AccountID const& ammAccountID,
         beast::Journal const& j);
 };
 

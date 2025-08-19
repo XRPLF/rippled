@@ -21,9 +21,9 @@
 #include <xrpld/app/tx/detail/AMMBid.h>
 #include <xrpld/app/tx/detail/AMMClawback.h>
 #include <xrpld/app/tx/detail/AMMConcentratedCollect.h>
-#include <xrpld/app/tx/detail/AMMConcentratedCreate.h>
 #include <xrpld/app/tx/detail/AMMConcentratedDeposit.h>
 #include <xrpld/app/tx/detail/AMMConcentratedWithdraw.h>
+
 #include <xrpld/app/tx/detail/AMMCreate.h>
 #include <xrpld/app/tx/detail/AMMDelete.h>
 #include <xrpld/app/tx/detail/AMMDeposit.h>

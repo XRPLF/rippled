@@ -26,24 +26,20 @@ namespace ripple {
 
 /** AMMConcentratedCollect implements collecting accumulated fees from
  * concentrated liquidity positions. This transaction allows liquidity providers
- * to collect fees that have accumulated in their concentrated liquidity
- * positions without removing liquidity. The transaction calculates the fees
- * earned based on the position's liquidity and the trading activity that
- * occurred within the position's price range.
+ * to collect fees that have accumulated in their positions without removing
+ * the underlying liquidity.
  *
  *  Key features:
  *  - Collect accumulated fees from positions
- *  - Fee calculation based on liquidity and trading activity
- *  - Maximum fee collection limits
- *  - Position fee tracking updates
- *  - No liquidity removal required
+ *  - Maintain position liquidity unchanged
+ *  - Update fee tracking state
+ *  - Transfer collected fees to position owner
  *
  *  The transaction:
  *  - Validates the position exists and is owned by the caller
- *  - Calculates accumulated fees based on position data
- *  - Transfers fees from the AMM to the caller
- *  - Updates position fee tracking data
- *  - Resets accumulated fee counters
+ *  - Calculates accumulated fees since last collection
+ *  - Updates position fee tracking state
+ *  - Transfers collected fees to the position owner
  */
 class AMMConcentratedCollect : public Transactor
 {
@@ -77,13 +73,14 @@ private:
     /** Calculate accumulated fees for the position */
     static std::pair<STAmount, STAmount>
     calculateAccumulatedFees(
-        STAmount const& liquidity,
-        STAmount const& feeGrowthInside0LastX128,
-        STAmount const& feeGrowthInside1LastX128,
-        STAmount const& feeGrowthInside0X128,
-        STAmount const& feeGrowthInside1X128);
+        ReadView const& view,
+        AccountID const& owner,
+        std::int32_t tickLower,
+        std::int32_t tickUpper,
+        std::uint32_t nonce,
+        beast::Journal const& j);
 
-    /** Update position fee tracking data */
+    /** Update position fee tracking after collection */
     static TER
     updatePositionFeeTracking(
         ApplyView& view,
