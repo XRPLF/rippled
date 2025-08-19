@@ -485,7 +485,8 @@ AccountRootsDeletedClean::finalize(
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
     [[maybe_unused]] bool const enforce =
-        view.rules().enabled(featureInvariantsV1_1);
+        view.rules().enabled(featureInvariantsV1_1) ||
+        view.rules().enabled(featureSingleAssetVault);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
         (void)enforce;
@@ -538,7 +539,8 @@ AccountRootsDeletedClean::finalize(
                 return false;
         }
 
-        // Keys directly stored in the AccountRoot object
+        // If the account is a pseudo account, then the linked object must
+        // also be deleted. e.g. AMM, Vault, etc.
         for (auto const& field : getPseudoAccountFields())
         {
             if (accountSLE->isFieldPresent(*field))
@@ -569,7 +571,7 @@ LedgerEntryTypesMatch::visitEntry(
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) case tag:
+#define LEDGER_ENTRY(tag, ...) case tag:
 
         switch (after->getType())
         {
@@ -1507,36 +1509,6 @@ ValidMPTIssuance::finalize(
 
             return true;
         }
-
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_SET)
-        {
-            if (mptIssuancesDeleted_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPT issuances";
-            }
-            else if (mptIssuancesCreated_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPT issuances";
-            }
-            else if (mptokensDeleted_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPTokens";
-            }
-            else if (mptokensCreated_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPTokens";
-            }
-
-            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
-                mptokensCreated_ == 0 && mptokensDeleted_ == 0;
-        }
-
-        if (tx.getTxnType() == ttESCROW_FINISH)
-            return true;
     }
 
     if (mptIssuancesCreated_ != 0)
