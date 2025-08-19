@@ -389,7 +389,24 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.deposit(
                     {.depositor = erin, .id = keylet.key, .amount = asset(10)});
                 env(tx);
-                env(pay(erin, depositor, share(10 * scale)));
+                env.close();
+                {
+                    auto tx = pay(erin, depositor, share(10 * scale));
+
+                    // depositor no longer has MPToken for shares
+                    env(tx, ter{tecNO_AUTH});
+                    env.close();
+
+                    // depositor will gain MPToken for shares again
+                    env(vault.deposit(
+                        {.depositor = depositor,
+                         .id = keylet.key,
+                         .amount = asset(1)}));
+                    env.close();
+
+                    env(tx);
+                    env.close();
+                }
 
                 testcase(prefix + " withdraw to authorized 3rd party");
                 // Depositor withdraws shares, destined to Erin
@@ -401,11 +418,23 @@ class Vault_test : public beast::unit_test::suite
                 env(tx);
                 // Erin returns assets to issuer
                 env(pay(erin, issuer, asset(10)));
+                env.close();
 
                 testcase(prefix + " fail to pay to unauthorized 3rd party");
                 env(trust(erin, asset(0)));
+                env.close();
+
                 // Erin has MPToken but is no longer authorized to hold assets
                 env(pay(depositor, erin, share(1)), ter{tecNO_LINE});
+                env.close();
+
+                // Depositor withdraws remaining single asset
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1)});
+                env(tx);
+                env.close();
             }
 
             {
@@ -1701,6 +1730,10 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
             env.close();
 
+            // Clawback removed shares MPToken
+            auto const mptSle = env.le(keylet::mptoken(share, depositor.id()));
+            BEAST_EXPECT(mptSle == nullptr);
+
             // Can delete empty vault, even if global lock
             tx = vault.del({.owner = owner, .id = keylet.key});
             env(tx);
@@ -1790,11 +1823,14 @@ class Vault_test : public beast::unit_test::suite
                     vault.create({.owner = owner, .asset = asset});
                 env(tx);
                 env.close();
+                auto v = env.le(keylet);
+                BEAST_EXPECT(v);
+                MPTID share = (*v)[sfShareMPTID];
 
                 tx = vault.deposit(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = asset(1000)});
+                     .amount = asset(1000)});  // all assets held by depositor
                 env(tx);
                 env.close();
 
@@ -1822,8 +1858,14 @@ class Vault_test : public beast::unit_test::suite
                     tx = vault.withdraw(
                         {.depositor = depositor,
                          .id = keylet.key,
-                         .amount = asset(100)});
+                         .amount = asset(1000)});
                     env(tx);
+                    env.close();
+
+                    // Withdraw removed shares MPToken
+                    auto const mptSle =
+                        env.le(keylet::mptoken(share, depositor.id()));
+                    BEAST_EXPECT(mptSle == nullptr);
                 }
             },
             {.requireAuth = false});

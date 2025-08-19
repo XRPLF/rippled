@@ -263,9 +263,20 @@ VaultWithdraw::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
-    if (auto ter = accountSend(
+    if (auto const ter = accountSend(
             view(), account_, vaultAccount, shares, j_, WaiveTransferFee::Yes))
         return ter;
+
+    // Try to remove MPToken for shares, if the account balance is zero. Vault
+    // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
+    if (auto const ter =
+            removeEmptyHolding(view(), account_, shares.asset(), j_);
+        isTesSuccess(ter))
+    {
+        JLOG(j_.debug())  //
+            << "VaultWithdraw: removed empty MPToken for vault shares for "
+            << toBase58(account_);
+    }
 
     auto const dstAcct = [&]() -> AccountID {
         if (ctx_.tx.isFieldPresent(sfDestination))
@@ -274,7 +285,7 @@ VaultWithdraw::doApply()
     }();
 
     // Transfer assets from vault to depositor or destination account.
-    if (auto ter = accountSend(
+    if (auto const ter = accountSend(
             view(), vaultAccount, dstAcct, assets, j_, WaiveTransferFee::Yes))
         return ter;
 

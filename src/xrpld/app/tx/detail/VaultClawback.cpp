@@ -21,6 +21,7 @@
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
@@ -244,12 +245,22 @@ VaultClawback::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
-    if (auto ter = accountSend(
+    if (auto const ter = accountSend(
             view(), holder, vaultAccount, shares, j_, WaiveTransferFee::Yes))
         return ter;
 
+    // Try to remove MPToken for shares, if the holder balance is zero. Vault
+    // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
+    if (auto const ter = removeEmptyHolding(view(), holder, shares.asset(), j_);
+        isTesSuccess(ter))
+    {
+        JLOG(j_.debug())  //
+            << "VaultClawback: removed empty MPToken for vault shares for "
+            << toBase58(holder);
+    }
+
     // Transfer assets from vault to issuer.
-    if (auto ter = accountSend(
+    if (auto const ter = accountSend(
             view(), vaultAccount, account_, assets, j_, WaiveTransferFee::Yes))
         return ter;
 

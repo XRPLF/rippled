@@ -249,19 +249,16 @@ VaultDeposit::doApply()
         XRPL_ASSERT(
             shares.asset() != assets.asset(),
             "ripple::VaultDeposit::doApply : assets are not shares");
+        auto const assetsToTake =
+            sharesToAssetsDeposit(vault, sleIssuance, shares);
+        if (assetsToTake > assets)
         {
-            auto const assetsToTake =
-                sharesToAssetsDeposit(vault, sleIssuance, shares);
-            if (assetsToTake > assets)
-            {
-                // LCOV_EXCL_START
-                JLOG(j_.error())
-                    << "VaultDeposit: would take more than offered.";
-                return tefINTERNAL;
-                // LCOV_EXCL_STOP
-            }
-            assets = assetsToTake;
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
         }
+        assets = assetsToTake;
     }
     catch (std::overflow_error const&)
     {
@@ -286,7 +283,7 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
-    if (auto ter = accountSend(
+    if (auto const ter = accountSend(
             view(), account_, vaultAccount, assets, j_, WaiveTransferFee::Yes))
         return ter;
 
@@ -306,7 +303,7 @@ VaultDeposit::doApply()
     }
 
     // Transfer shares from vault to depositor.
-    if (auto ter = accountSend(
+    if (auto const ter = accountSend(
             view(), vaultAccount, account_, shares, j_, WaiveTransferFee::Yes))
         return ter;
 
