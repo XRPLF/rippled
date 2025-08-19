@@ -32,7 +32,6 @@
 
 #include <boost/algorithm/string.hpp>
 
-#include <regex>
 #include <unordered_map>
 
 namespace ripple {
@@ -63,58 +62,83 @@ public:
     {
         return defs_;
     }
+
     static Json::Value
-    parseLedgerEntryFlags()
+    parseLedgerSpecificFlags()
     {
-        Json::Value solution = Json::objectValue;
-        std::string const ledgerFormatFile{
-            "../include/xrpl/protocol/LedgerFormats.h"};
-        std::ifstream file(ledgerFormatFile);
+        Json::Value solution;
+        // TODO: For purposes of improving software maintainability, please
+        // migrate the LedgerSpecificFlags enum into a std::unordered_map (or)
+        // use X-Macro to perform the enum -> map translation
+        std::unordered_map<std::string, unsigned int> const LSFlags = {
+            // ltACCOUNT_ROOT
+            {"lsfPasswordSpent", 0x00010000},
+            {"lsfRequireDestTag", 0x00020000},
+            {"lsfRequireAuth", 0x00040000},
+            {"lsfDisallowXRP", 0x00080000},
+            {"lsfDisableMaster", 0x00100000},
+            {"lsfNoFreeze", 0x00200000},
+            {"lsfGlobalFreeze", 0x00400000},
+            {"lsfDefaultRipple", 0x00800000},
+            {"lsfDepositAuth", 0x01000000},
 
-        if (!file.is_open())
-        {
-            Throw<std::runtime_error>(
-                "Error: Could not open file " + ledgerFormatFile);
-            return Json::Value{};
-        }
+            {"lsfDisallowIncomingNFTokenOffer", 0x04000000},
+            {"lsfDisallowIncomingCheck", 0x08000000},
+            {"lsfDisallowIncomingPayChan", 0x10000000},
+            {"lsfDisallowIncomingTrustline", 0x20000000},
+            {"lsfAllowTrustLineLocking", 0x40000000},
+            {"lsfAllowTrustLineClawback", 0x80000000},
 
-        // Read entire file into a single string
-        std::string fileContents(
-            (std::istreambuf_iterator<char>(file)),
-            std::istreambuf_iterator<char>());
-        file.close();
+            // ltOFFER
+            {"lsfPassive", 0x00010000},
+            {"lsfSell", 0x00020000},
+            {"lsfHybrid", 0x00040000},
 
-        std::smatch match;
-        auto begin = fileContents.cbegin();
-        auto end = fileContents.cend();
+            // ltRIPPLE_STATE
+            {"lsfLowReserve", 0x00010000},
+            {"lsfHighReserve", 0x00020000},
+            {"lsfLowAuth", 0x00040000},
+            {"lsfHighAuth", 0x00080000},
+            {"lsfLowNoRipple", 0x00100000},
+            {"lsfHighNoRipple", 0x00200000},
+            {"lsfLowFreeze", 0x00400000},
+            {"lsfHighFreeze", 0x00800000},
+            {"lsfLowDeepFreeze", 0x02000000},
+            {"lsfHighDeepFreeze", 0x04000000},
+            {"lsfAMMNode", 0x01000000},
 
-        std::regex ledgerSpecificFlagDef(
-            R"(^)"                         // start of the line
-            R"( *(lsf[a-zA-Z]+))"          // flag name
-            R"( *=(?:(?: *(0x[0-9]{8}),)"  // capture the hexcode
-            R"((?: *\/\/.+)?))"            // regex pattern to match comments
-            R"(|)"
-            R"((?:\n *(0x[0-9]{8}),)"  // capture the hexcode
-            R"((?: *\/\/.+)?)))"       // regex pattern to match comments
-            R"($)",                    // end of the line
-            std::regex_constants::multiline);
+            // ltSIGNER_LIST
+            {"lsfOneOwnerCount", 0x00010000},
 
-        while (std::regex_search(begin, end, match, ledgerSpecificFlagDef))
-        {
-            if (match[2].str().empty())
-            {
-                // handle the case where the flag is completely defined in one
-                // line
-                solution[match[1].str()] = match[3].str();
-            }
-            else
-            {
-                // handle the case where the flag definition is split across two
-                // lines
-                solution[match[1].str()] = match[2].str();
-            }
-            begin = match.suffix().first;
-        }
+            // ltDIR_NODE
+            {"lsfNFTokenBuyOffers", 0x00000001},
+            {"lsfNFTokenSellOffers", 0x00000002},
+
+            // ltNFTOKEN_OFFER
+            {"lsfSellNFToken", 0x00000001},
+
+            // ltMPTOKEN_ISSUANCE
+            {"lsfMPTLocked", 0x00000001},
+            {"lsfMPTCanLock", 0x00000002},
+            {"lsfMPTRequireAuth", 0x00000004},
+            {"lsfMPTCanEscrow", 0x00000008},
+            {"lsfMPTCanTrade", 0x00000010},
+            {"lsfMPTCanTransfer", 0x00000020},
+            {"lsfMPTCanClawback", 0x00000040},
+
+            // ltMPTOKEN
+            {"lsfMPTAuthorized", 0x00000002},
+
+            // ltCREDENTIAL
+            {"lsfAccepted", 0x00010000},
+
+            // ltVAULT
+            {"lsfVaultPrivate", 0x00010000},
+        };
+
+        for (auto const& f : LSFlags)
+            solution[std::string{f.first}] = f.second;
+
         return solution;
     }
 
@@ -275,7 +299,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     defs_[jss::LEDGER_ENTRIES] = parseLedgerFormats();
 
     // populate all the flags which are associated with ledger entries.
-    defs_[jss::LEDGER_ENTRY_FLAGS] = parseLedgerEntryFlags();
+    defs_[jss::LEDGER_ENTRY_FLAGS] = parseLedgerSpecificFlags();
 
     defs_[jss::TRANSACTION_FORMATS] = parseTxnFormats();
 

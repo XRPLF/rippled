@@ -260,14 +260,14 @@ admin = 127.0.0.1
                     result[jss::result].isMember(jss::LEDGER_ENTRY_FLAGS));
                 Json::Value const& leFlags =
                     result[jss::result][jss::LEDGER_ENTRY_FLAGS];
-                BEAST_EXPECT(leFlags.size() == 44);
+                BEAST_EXPECT(leFlags.size() == 43);
 
                 // test the mapped value of a few arbitrarily chosen flags
-                BEAST_EXPECT(leFlags["lsfDisallowXRP"] == "0x00080000");
-                BEAST_EXPECT(leFlags["lsfDepositAuth"] == "0x01000000");
+                BEAST_EXPECT(leFlags["lsfDisallowXRP"] == 0x00080000);
+                BEAST_EXPECT(leFlags["lsfDepositAuth"] == 0x01000000);
                 BEAST_EXPECT(
-                    leFlags["lsfAllowTrustLineClawback"] == "0x80000000");
-                BEAST_EXPECT(leFlags["lsfHighFreeze"] == "0x00800000");
+                    leFlags["lsfAllowTrustLineClawback"] == 0x80000000);
+                BEAST_EXPECT(leFlags["lsfHighFreeze"] == 0x00800000);
             }
 
             // test the response fields of the TRANSACTION_FORMATS section
