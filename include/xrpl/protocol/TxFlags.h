@@ -92,16 +92,19 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfOptionalAuth, 0x00080000)               \
         TF_FLAG(tfDisallowXRP, 0x00100000)                \
         TF_FLAG(tfAllowXRP, 0x00200000))                  \
+                                                          \
     TRANSACTION(OfferCreate,                              \
         TF_FLAG(tfPassive, 0x00010000)                    \
         TF_FLAG(tfImmediateOrCancel, 0x00020000)          \
         TF_FLAG(tfFillOrKill, 0x00040000)                 \
         TF_FLAG(tfSell, 0x00080000)                       \
         TF_FLAG(tfHybrid, 0x00100000))                    \
+                                                          \
     TRANSACTION(Payment,                                  \
         TF_FLAG(tfNoRippleDirect, 0x00010000)             \
         TF_FLAG(tfPartialPayment, 0x00020000)             \
         TF_FLAG(tfLimitQuality, 0x00040000))              \
+                                                          \
     TRANSACTION(TrustSet,                                 \
         TF_FLAG(tfSetfAuth, 0x00010000)                   \
         TF_FLAG(tfSetNoRipple, 0x00020000)                \
@@ -110,18 +113,22 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfClearFreeze, 0x00200000)                \
         TF_FLAG(tfSetDeepFreeze, 0x00400000)              \
         TF_FLAG(tfClearDeepFreeze, 0x00800000))           \
+                                                          \
     TRANSACTION(EnableAmendment,                          \
         TF_FLAG(tfGotMajority, 0x00010000)                \
         TF_FLAG(tfLostMajority, 0x00020000))              \
+                                                          \
     TRANSACTION(PaymentChannelClaim,                      \
         TF_FLAG(tfRenew, 0x00010000)                      \
         TF_FLAG(tfClose, 0x00020000))                     \
+                                                          \
     TRANSACTION(NFTokenMint,                              \
         TF_FLAG(tfBurnable, 0x00000001)                   \
         TF_FLAG(tfOnlyXRP, 0x00000002)                    \
-        TF_FLAG(tfTrustLine, 0x00000004)                  \
+        /*deprecated TF_FLAG(tfTrustLine, 0x00000004) */  \
         TF_FLAG(tfTransferable, 0x00000008)               \
         TF_FLAG(tfMutable, 0x00000010))                   \
+                                                          \
     TRANSACTION(MPTokenIssuanceCreate,                    \
         TF_FLAG(tfMPTCanLock, lsfMPTCanLock)              \
         TF_FLAG(tfMPTRequireAuth, lsfMPTRequireAuth)      \
@@ -129,13 +136,17 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfMPTCanTrade, lsfMPTCanTrade)            \
         TF_FLAG(tfMPTCanTransfer, lsfMPTCanTransfer)      \
         TF_FLAG(tfMPTCanClawback, lsfMPTCanClawback))     \
+                                                          \
     TRANSACTION(MPTokenAuthorize,                         \
         TF_FLAG(tfMPTUnauthorize, 0x00000001))            \
+                                                          \
     TRANSACTION(MPTokenIssuanceSet,                       \
         TF_FLAG(tfMPTLock, 0x00000001)                    \
         TF_FLAG(tfMPTUnlock, 0x00000002))                 \
+                                                          \
     TRANSACTION(NFTokenCreateOffer,                       \
         TF_FLAG(tfSellNFToken, 0x00000001))               \
+                                                          \
     TRANSACTION(AMMDeposit,                               \
         TF_FLAG(tfLPToken, 0x00010000)                    \
         TF_FLAG(tfSingleAsset, 0x00080000)                \
@@ -143,6 +154,7 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG(tfOneAssetLPToken, 0x00200000)            \
         TF_FLAG(tfLimitLPToken, 0x00400000)               \
         TF_FLAG(tfTwoAssetIfEmpty, 0x00800000))           \
+                                                          \
     TRANSACTION(AMMWithdraw,                              \
         TF_FLAG2(tfLPToken, 0x00010000)                   \
         TF_FLAG(tfWithdrawAll, 0x00020000)                \
@@ -151,13 +163,17 @@ constexpr std::uint32_t tfUniversalMask = ~tfUniversal;
         TF_FLAG2(tfTwoAsset, 0x00100000)                  \
         TF_FLAG2(tfOneAssetLPToken, 0x00200000)           \
         TF_FLAG2(tfLimitLPToken, 0x00400000))             \
+                                                          \
     TRANSACTION(AMMClawback,                              \
         TF_FLAG(tfClawTwoAssets, 0x00000001))             \
+                                                          \
     TRANSACTION(XChainModifyBridge,                       \
         TF_FLAG(tfClearAccountCreateAmount, 0x00010000))  \
+                                                          \
     TRANSACTION(VaultCreate,                              \
         TF_FLAG(tfVaultPrivate, lsfVaultPrivate)          \
         TF_FLAG(tfVaultShareNonTransferable, 0x00020000)) \
+                                                          \
     TRANSACTION(Batch,                                    \
         TF_FLAG(tfAllOrNothing, 0x00010000)               \
         TF_FLAG(tfOnlyOne, 0x00020000)                    \
@@ -248,11 +264,13 @@ constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask =
 // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
 // tfTrustLine flag as a way to prevent the attack.  But until the
 // amendment passes we still need to keep the old behavior available.
+constexpr std::uint32_t tfTrustLine =
+    0x00000004;  // needed for backwards compatibility
 constexpr std::uint32_t const tfNFTokenMintMaskWithoutMutable =
     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
 
 constexpr std::uint32_t const tfNFTokenMintOldMask =
-    ~(~tfNFTokenMintMask | tfTrustLine);
+    ~(~tfNFTokenMintMaskWithoutMutable | tfTrustLine);
 
 // if featureDynamicNFT enabled then new flag allowing mutable URI available.
 constexpr std::uint32_t const tfNFTokenMintOldMaskWithMutable =
