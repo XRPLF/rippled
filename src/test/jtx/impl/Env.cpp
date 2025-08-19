@@ -30,13 +30,13 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/net/HTTPClient.h>
-#include <xrpld/net/RPCCall.h>
+#include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Serializer.h>
@@ -75,7 +75,11 @@ Env::AppBundle::AppBundle(
     auto timeKeeper_ = std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
     // Hack so we don't have to call Config::setup
-    HTTPClient::initializeSSLContext(*config, debugLog());
+    HTTPClient::initializeSSLContext(
+        config->SSL_VERIFY_DIR,
+        config->SSL_VERIFY_FILE,
+        config->SSL_VERIFY,
+        debugLog());
     owned = make_Application(
         std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();

@@ -18,7 +18,7 @@
 #include <test/jtx.h>
 #include <test/jtx/utility.h>
 
-#include <xrpld/net/RPCCall.h>
+#include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/beast/unit_test.h>
@@ -6004,7 +6004,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RPCCall, app, ripple);
+BEAST_DEFINE_TESTSUITE(RPCCall, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple
