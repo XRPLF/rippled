@@ -216,6 +216,7 @@ PeerImp::stop()
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::stop, shared_from_this()));
+
     if (!socket_.is_open())
         return;
 
@@ -576,7 +577,7 @@ PeerImp::fail(std::string const& name, error_code ec)
         strand_.running_in_this_thread(),
         "ripple::PeerImp::fail : strand in this thread");
 
-    if (!socket_.is_open() || shutdown_)
+    if (!socket_.is_open())
         return;
 
     JLOG(journal_.warn()) << name << " from "
@@ -598,7 +599,7 @@ PeerImp::fail(std::string const& reason)
                 shared_from_this(),
                 reason));
 
-    if (!socket_.is_open() || shutdown_)
+    if (!socket_.is_open())
         return;
 
     // Call to name() locks, log only if the message will be outputed
@@ -617,12 +618,15 @@ PeerImp::shutdown()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::shutdown : strand in this thread");
+        "ripple::PeerImp::shutdown: strand in this thread");
 
-    if (!socket_.is_open())
+    if (!socket_.is_open() || shutdown_)
         return;
 
     shutdown_ = true;
+    error_code ec;
+    // cancel asynchronous I/O
+    socket_.cancel(ec);
 
     setTimer();
     // gracefully shutdown the SSL socket, performing a shutdown handshake
@@ -953,7 +957,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
             350ms,
             journal_);
 
-        if (!socket_.is_open())
+        if (!socket_.is_open() || shutdown_)
             return;
 
         // the error_code is produced by invokeProtocolMessage
