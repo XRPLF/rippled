@@ -27,11 +27,11 @@ inputs:
   force_build:
     description: 'Force building of all dependencies ("true", "false").'
     required: false
-    default: 'no'
+    default: 'false'
   force_upload:
     description: 'Force uploading of all dependencies ("true", "false").'
     required: false
-    default: 'no'
+    default: 'false'
 
 runs:
   using: composite

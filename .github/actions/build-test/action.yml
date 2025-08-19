@@ -9,7 +9,7 @@ inputs:
   build_only:
     description: 'Whether to only build or to build and test the code ("true", "false").'
     required: false
-    default: 'no'
+    default: 'false'
   build_type:
     description: 'The build type to use ("Debug", "Release").'
     required: true
