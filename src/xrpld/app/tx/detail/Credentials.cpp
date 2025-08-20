@@ -118,7 +118,9 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     if (ctx.view.rules().enabled(featureDisallowIncoming) &&
         ctx.view.rules().enabled(fixDisallowIncomingCredential))
     {
-        if (sleSubject->getFlags() & lsfDisallowIncomingCredential)
+        auto const id = ctx.tx[sfAccount];
+        if (id != subject &&
+            sleSubject->getFlags() & lsfDisallowIncomingCredential)
         {
             return tecNO_PERMISSION;
         }

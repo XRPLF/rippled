@@ -631,6 +631,12 @@ struct Credentials_test : public beast::unit_test::suite
                 env(jv, ter(tecNO_PERMISSION));
                 env.close();
 
+                // allow self-issued credential
+                auto const jv2 =
+                    credentials::create(subject, subject, credType);
+                env(jv2, ter(tesSUCCESS));
+                env.close();
+
                 // clear flag
                 env(fset(subject, 0, asfDisallowIncomingCredential));
                 env.close();
