@@ -182,38 +182,42 @@ VaultClawback::doApply()
         "ripple::VaultClawback::doApply : loss and assets do balance");
 
     AccountID holder = tx[sfHolder];
-    STAmount shares = {vault->at(sfShareMPTID)}, assets;
+    STAmount sharesDestroyed = {vault->at(sfShareMPTID)}, assetsRecovered;
     try
     {
         if (amount == beast::zero)
         {
             Asset const share = *(*vault)[sfShareMPTID];
-            shares = accountHolds(
+            sharesDestroyed = accountHolds(
                 view(),
                 holder,
                 share,
                 FreezeHandling::fhIGNORE_FREEZE,
                 AuthHandling::ahIGNORE_AUTH,
                 j_);
-            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+            assetsRecovered =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
         }
         else
         {
-            assets = amount;
-            shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
-            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+            assetsRecovered = amount;
+            sharesDestroyed =
+                assetsToSharesWithdraw(vault, sleIssuance, assetsRecovered);
+            assetsRecovered =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
         }
 
         // Clamp to maximum.
-        if (assets > *assetsAvailable)
+        if (assetsRecovered > *assetsAvailable)
         {
-            assets = *assetsAvailable;
+            assetsRecovered = *assetsAvailable;
             // Note, it is important to truncate the number of shares, otherwise
             // the corresponding assets might breach the AssetsAvailable
-            shares = assetsToSharesWithdraw(
-                vault, sleIssuance, assets, TruncateShares::yes);
-            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
-            if (assets > *assetsAvailable)
+            sharesDestroyed = assetsToSharesWithdraw(
+                vault, sleIssuance, assetsRecovered, TruncateShares::yes);
+            assetsRecovered =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
+            if (assetsRecovered > *assetsAvailable)
             {
                 // LCOV_EXCL_START
                 JLOG(j_.error())
@@ -236,22 +240,28 @@ VaultClawback::doApply()
         return tecPATH_DRY;
     }
 
-    if (shares == beast::zero)
+    if (sharesDestroyed == beast::zero)
         return tecPRECISION_LOSS;
 
-    assetsTotal -= assets;
-    assetsAvailable -= assets;
+    assetsTotal -= assetsRecovered;
+    assetsAvailable -= assetsRecovered;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
     if (auto const ter = accountSend(
-            view(), holder, vaultAccount, shares, j_, WaiveTransferFee::Yes))
+            view(),
+            holder,
+            vaultAccount,
+            sharesDestroyed,
+            j_,
+            WaiveTransferFee::Yes))
         return ter;
 
     // Try to remove MPToken for shares, if the holder balance is zero. Vault
     // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
-    if (auto const ter = removeEmptyHolding(view(), holder, shares.asset(), j_);
+    if (auto const ter =
+            removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
         isTesSuccess(ter))
     {
         JLOG(j_.debug())  //
@@ -261,14 +271,19 @@ VaultClawback::doApply()
 
     // Transfer assets from vault to issuer.
     if (auto const ter = accountSend(
-            view(), vaultAccount, account_, assets, j_, WaiveTransferFee::Yes))
+            view(),
+            vaultAccount,
+            account_,
+            assetsRecovered,
+            j_,
+            WaiveTransferFee::Yes))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
             vaultAccount,
-            assets.asset(),
+            assetsRecovered.asset(),
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)

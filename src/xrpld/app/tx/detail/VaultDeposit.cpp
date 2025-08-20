@@ -238,16 +238,16 @@ VaultDeposit::doApply()
         }
     }
 
-    STAmount shares = {vault->at(sfShareMPTID)}, assets;
+    STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
     try
     {
         // Compute exchange before transferring any amounts.
-        shares = assetsToSharesDeposit(vault, sleIssuance, amount);
-        if (shares == beast::zero)
+        sharesCreated = assetsToSharesDeposit(vault, sleIssuance, amount);
+        if (sharesCreated == beast::zero)
             return tecPRECISION_LOSS;
 
         auto const assetsToTake =
-            sharesToAssetsDeposit(vault, sleIssuance, shares);
+            sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (assetsToTake > amount)
         {
             // LCOV_EXCL_START
@@ -255,7 +255,7 @@ VaultDeposit::doApply()
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        assets = assetsToTake;
+        assetsDeposited = assetsToTake;
     }
     catch (std::overflow_error const&)
     {
@@ -271,11 +271,11 @@ VaultDeposit::doApply()
     }
 
     XRPL_ASSERT(
-        shares.asset() != assets.asset(),
+        sharesCreated.asset() != assetsDeposited.asset(),
         "ripple::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetsTotal) += assets;
-    vault->at(sfAssetsAvailable) += assets;
+    vault->at(sfAssetsTotal) += assetsDeposited;
+    vault->at(sfAssetsAvailable) += assetsDeposited;
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
@@ -285,14 +285,19 @@ VaultDeposit::doApply()
 
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(
-            view(), account_, vaultAccount, assets, j_, WaiveTransferFee::Yes))
+            view(),
+            account_,
+            vaultAccount,
+            assetsDeposited,
+            j_,
+            WaiveTransferFee::Yes))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
             account_,
-            assets.asset(),
+            assetsDeposited.asset(),
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
@@ -305,7 +310,12 @@ VaultDeposit::doApply()
 
     // Transfer shares from vault to depositor.
     if (auto const ter = accountSend(
-            view(), vaultAccount, account_, shares, j_, WaiveTransferFee::Yes))
+            view(),
+            vaultAccount,
+            account_,
+            sharesCreated,
+            j_,
+            WaiveTransferFee::Yes))
         return ter;
 
     return tesSUCCESS;

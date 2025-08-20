@@ -195,22 +195,24 @@ VaultWithdraw::doApply()
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
     auto const share = MPTIssue(mptIssuanceID);
-    STAmount shares = {vault->at(sfShareMPTID)}, assets;
+    STAmount sharesRedeemed = {vault->at(sfShareMPTID)}, assetsWithdrawn;
     try
     {
         if (amount.asset() == vaultAsset)
         {
             // Fixed assets, variable shares.
-            shares = assetsToSharesWithdraw(vault, sleIssuance, amount);
-            if (shares == beast::zero)
+            sharesRedeemed = assetsToSharesWithdraw(vault, sleIssuance, amount);
+            if (sharesRedeemed == beast::zero)
                 return tecPRECISION_LOSS;
-            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+            assetsWithdrawn =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
         }
         else if (amount.asset() == share)
         {
             // Fixed shares, variable assets.
-            shares = amount;
-            assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+            sharesRedeemed = amount;
+            assetsWithdrawn =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
         }
         else
             return tefINTERNAL;  // LCOV_EXCL_LINE
@@ -234,7 +236,7 @@ VaultWithdraw::doApply()
             share,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahIGNORE_AUTH,
-            j_) < shares)
+            j_) < sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
         return tecINSUFFICIENT_FUNDS;
@@ -250,26 +252,31 @@ VaultWithdraw::doApply()
     // The vault must have enough assets on hand. The vault may hold assets
     // that it has already pledged. That is why we look at AssetAvailable
     // instead of the pseudo-account balance.
-    if (*assetsAvailable < assets)
+    if (*assetsAvailable < assetsWithdrawn)
     {
         JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
     }
 
-    assetsTotal -= assets;
-    assetsAvailable -= assets;
+    assetsTotal -= assetsWithdrawn;
+    assetsAvailable -= assetsWithdrawn;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
     if (auto const ter = accountSend(
-            view(), account_, vaultAccount, shares, j_, WaiveTransferFee::Yes))
+            view(),
+            account_,
+            vaultAccount,
+            sharesRedeemed,
+            j_,
+            WaiveTransferFee::Yes))
         return ter;
 
     // Try to remove MPToken for shares, if the account balance is zero. Vault
     // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
     if (auto const ter =
-            removeEmptyHolding(view(), account_, shares.asset(), j_);
+            removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
         isTesSuccess(ter))
     {
         JLOG(j_.debug())  //
@@ -285,14 +292,19 @@ VaultWithdraw::doApply()
 
     // Transfer assets from vault to depositor or destination account.
     if (auto const ter = accountSend(
-            view(), vaultAccount, dstAcct, assets, j_, WaiveTransferFee::Yes))
+            view(),
+            vaultAccount,
+            dstAcct,
+            assetsWithdrawn,
+            j_,
+            WaiveTransferFee::Yes))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
             vaultAccount,
-            assets.asset(),
+            assetsWithdrawn.asset(),
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
