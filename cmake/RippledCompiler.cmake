@@ -16,13 +16,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 target_compile_definitions (common
   INTERFACE
     $<$<CONFIG:Debug>:DEBUG _DEBUG>
-    $<$<AND:$<BOOL:${profile}>,$<NOT:$<BOOL:${assert}>>>:NDEBUG>)
-    # ^^^^ NOTE: CMAKE release builds already have NDEBUG
-    # defined, so no need to add it explicitly except for
-    # this special case of (profile ON) and (assert OFF)
-    # -- presumably this is because we don't want profile
-    # builds asserting unless asserts were specifically
-    # requested
+    # NOTE: CMAKE release builds already have NDEBUG defined, so no need to add
+    # it explicitly except for the special case of (profile ON) and (assert
+    # OFF). Presumably this is because we don't want profile builds asserting
+    # unless asserts were specifically requested
+    $<$<AND:$<BOOL:${profile}>,$<NOT:$<BOOL:${assert}>>>:NDEBUG>
+    # TODO: Remove once we have migrated functions from OpenSSL 1.x to 3.x.
+    OPENSSL_SUPPRESS_DEPRECATED)
 
 if (MSVC)
   # remove existing exception flag since we set it to -EHa
@@ -73,7 +73,6 @@ if (MSVC)
       $<$<CONFIG:Debug>:-MTd>
       $<$<NOT:$<CONFIG:Debug>>:-MT>
       $<$<BOOL:${werr}>:-WX>
-      -DOPENSSL_SUPPRESS_DEPRECATED
       )
   target_compile_definitions (common
     INTERFACE
@@ -105,9 +104,7 @@ else ()
       # tweak gcc optimization for debug
       $<$<AND:$<BOOL:${is_gcc}>,$<CONFIG:Debug>>:-O0>
       # Add debug symbols to release config
-      $<$<CONFIG:Release>:-g>
-      -DOPENSSL_SUPPRESS_DEPRECATED
-      )
+      $<$<CONFIG:Release>:-g>)
   target_link_libraries (common
     INTERFACE
       -rdynamic
