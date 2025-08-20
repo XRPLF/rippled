@@ -106,6 +106,7 @@ struct MPTCreate
     std::optional<std::uint32_t> holderCount = std::nullopt;
     bool fund = true;
     std::optional<std::uint32_t> flags = {0};
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
     std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
@@ -139,6 +140,9 @@ struct MPTSet
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint16_t> transferFee = std::nullopt;
+    std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
     std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;

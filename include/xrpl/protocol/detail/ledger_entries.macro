@@ -412,6 +412,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfPreviousTxnID,            soeREQUIRED},
     {sfPreviousTxnLgrSeq,        soeREQUIRED},
     {sfDomainID,                 soeOPTIONAL},
+    {sfMutableFlags,             soeOPTIONAL},
 }))
 
 /** A ledger object which tracks MPToken

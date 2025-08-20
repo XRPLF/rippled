@@ -37,6 +37,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
           ctx.rules.enabled(featureSingleAssetVault)))
         return temDISABLED;
 
+    auto const isMutate = ctx.tx.isFieldPresent(sfMutableFlags) ||
+        ctx.tx.isFieldPresent(sfMPTokenMetadata) ||
+        ctx.tx.isFieldPresent(sfTransferFee);
+    if (isMutate && !ctx.rules.enabled(featureDynamicMPT))
+        return temDISABLED;
+
     if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
         return temMALFORMED;
 
@@ -57,11 +63,46 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     if (holderID && accountID == holderID)
         return temMALFORMED;
 
-    if (ctx.rules.enabled(featureSingleAssetVault))
+    if (ctx.rules.enabled(featureSingleAssetVault) ||
+        ctx.rules.enabled(featureDynamicMPT))
     {
         // Is this transaction actually changing anything ?
-        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID))
+        if (txFlags == 0 && !ctx.tx.isFieldPresent(sfDomainID) && !isMutate)
             return temMALFORMED;
+    }
+
+    if (ctx.rules.enabled(featureDynamicMPT))
+    {
+        if (isMutate && holderID)
+            return temMALFORMED;
+
+        if (isMutate && txFlags != 0)
+            return temMALFORMED;
+
+        if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
+        {
+            if (*mutableFlags & tfMPTokenIssuanceSetMutableMask)
+                return temINVALID_FLAG;
+            // can not set and clear the same flag
+            if ((*mutableFlags & tfMPTSetCanLock) &&
+                (*mutableFlags & tfMPTClearCanLock))
+                return temINVALID_FLAG;
+            if ((*mutableFlags & tfMPTSetRequireAuth) &&
+                (*mutableFlags & tfMPTClearRequireAuth))
+                return temINVALID_FLAG;
+            if ((*mutableFlags & tfMPTSetCanEscrow) &&
+                (*mutableFlags & tfMPTClearCanEscrow))
+                return temINVALID_FLAG;
+            if ((*mutableFlags & tfMPTSetCanTrade) &&
+                (*mutableFlags & tfMPTClearCanTrade))
+                return temINVALID_FLAG;
+            if ((*mutableFlags & tfMPTSetCanTransfer) &&
+                (*mutableFlags & tfMPTClearCanTransfer))
+                return temINVALID_FLAG;
+            if ((*mutableFlags & tfMPTSetCanClawback) &&
+                (*mutableFlags & tfMPTClearCanClawback))
+                return temINVALID_FLAG;
+        }
     }
 
     return preflight2(ctx);
@@ -116,7 +157,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (!sleMptIssuance->isFlag(lsfMPTCanLock))
     {
         // For readability two separate `if` rather than `||` of two conditions
-        if (!ctx.view.rules().enabled(featureSingleAssetVault))
+        if (!ctx.view.rules().enabled(featureSingleAssetVault) &&
+            !ctx.view.rules().enabled(featureDynamicMPT))
             return tecNO_PERMISSION;
         else if (ctx.tx.isFlag(tfMPTLock) || ctx.tx.isFlag(tfMPTUnlock))
             return tecNO_PERMISSION;
@@ -152,6 +194,48 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool {
+        if (!sleMptIssuance->isFieldPresent(sfMutableFlags))
+            return false;
+
+        return (*sleMptIssuance)[sfMutableFlags] & mutableFlag;
+    };
+
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
+    {
+        if (!isMutableFlag(lsfMPTCanMutateCanLock) &&
+            ((*mutableFlags & (tfMPTSetCanLock | tfMPTClearCanLock))))
+            return tecNO_PERMISSION;
+
+        if (!isMutableFlag(lsfMPTCanMutateRequireAuth) &&
+            ((*mutableFlags & (tfMPTSetRequireAuth | tfMPTClearRequireAuth))))
+            return tecNO_PERMISSION;
+
+        if (!isMutableFlag(lsfMPTCanMutateCanEscrow) &&
+            ((*mutableFlags & (tfMPTSetCanEscrow | tfMPTClearCanEscrow))))
+            return tecNO_PERMISSION;
+
+        if (!isMutableFlag(lsfMPTCanMutateCanTrade) &&
+            ((*mutableFlags & (tfMPTSetCanTrade | tfMPTClearCanTrade))))
+            return tecNO_PERMISSION;
+
+        if (!isMutableFlag(lsfMPTCanMutateCanTransfer) &&
+            ((*mutableFlags & (tfMPTSetCanTransfer | tfMPTClearCanTransfer))))
+            return tecNO_PERMISSION;
+
+        if (!isMutableFlag(lsfMPTCanMutateCanClawback) &&
+            ((*mutableFlags & (tfMPTSetCanClawback | tfMPTClearCanClawback))))
+            return tecNO_PERMISSION;
+    }
+
+    if (!isMutableFlag(lsfMPTCanMutateMetadata) &&
+        ctx.tx.isFieldPresent(sfMPTokenMetadata))
+        return tecNO_PERMISSION;
+
+    if (!isMutableFlag(lsfMPTCanMutateTransferFee) &&
+        ctx.tx.isFieldPresent(sfTransferFee))
+        return tecNO_PERMISSION;
+
     return tesSUCCESS;
 }
 
@@ -180,8 +264,47 @@ MPTokenIssuanceSet::doApply()
     else if (txFlags & tfMPTUnlock)
         flagsOut &= ~lsfMPTLocked;
 
+    if (auto const mutableFlags = ctx_.tx[~sfMutableFlags])
+    {
+        if (*mutableFlags & tfMPTSetCanLock)
+            flagsOut |= lsfMPTCanLock;
+        else if (*mutableFlags & tfMPTClearCanLock)
+            flagsOut &= ~lsfMPTCanLock;
+
+        if (*mutableFlags & tfMPTSetRequireAuth)
+            flagsOut |= lsfMPTRequireAuth;
+        else if (*mutableFlags & tfMPTClearRequireAuth)
+            flagsOut &= ~lsfMPTRequireAuth;
+
+        if (*mutableFlags & tfMPTSetCanEscrow)
+            flagsOut |= lsfMPTCanEscrow;
+        else if (*mutableFlags & tfMPTClearCanEscrow)
+            flagsOut &= ~lsfMPTCanEscrow;
+
+        if (*mutableFlags & tfMPTSetCanTrade)
+            flagsOut |= lsfMPTCanTrade;
+        else if (*mutableFlags & tfMPTClearCanTrade)
+            flagsOut &= ~lsfMPTCanTrade;
+
+        if (*mutableFlags & tfMPTSetCanTransfer)
+            flagsOut |= lsfMPTCanTransfer;
+        else if (*mutableFlags & tfMPTClearCanTransfer)
+            flagsOut &= ~lsfMPTCanTransfer;
+
+        if (*mutableFlags & tfMPTSetCanClawback)
+            flagsOut |= lsfMPTCanClawback;
+        else if (*mutableFlags & tfMPTClearCanClawback)
+            flagsOut &= ~lsfMPTCanClawback;
+    }
+
     if (flagsIn != flagsOut)
         sle->setFieldU32(sfFlags, flagsOut);
+
+    if (auto const transferFee = ctx_.tx[~sfTransferFee])
+        sle->setFieldU16(sfTransferFee, *transferFee);
+
+    if (auto const metadata = ctx_.tx[~sfMPTokenMetadata])
+        sle->setFieldVL(sfMPTokenMetadata, *metadata);
 
     if (domainID)
     {
