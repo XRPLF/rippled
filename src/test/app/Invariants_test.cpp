@@ -1483,23 +1483,6 @@ class Invariants_test : public beast::unit_test::suite
                 },
             },
             {
-                "pseudo-account has 2 pseudo-account fields set",
-                [this](SLE::pointer& sle) {
-                    BEAST_EXPECT(sle->at(~sfVaultID) && !sle->at(~sfAMMID));
-                    sle->at(~sfAMMID) = ~sle->at(~sfVaultID);
-                },
-            },
-            /*
-            {
-                "pseudo-account has 2 pseudo-account fields set",
-                [this](SLE::pointer& sle) {
-                    BEAST_EXPECT(
-                        sle->at(~sfVaultID) && !sle->at(~sfLoanBrokerID));
-                    sle->at(~sfLoanBrokerID) = ~sle->at(~sfVaultID);
-                },
-            },
-             */
-            {
                 "pseudo-account sequence changed",
                 [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
             },
@@ -1524,6 +1507,31 @@ class Invariants_test : public beast::unit_test::suite
                     if (!sle)
                         return false;
                     mod.func(sle);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createPseudo);
+        }
+        for (auto const pField : getPseudoAccountFields())
+        {
+            // createPseudo creates a vault, so sfVaultID will be set, and
+            // setting it again will not cause an error
+            if (pField == &sfVaultID)
+                continue;
+            doInvariantCheck(
+                {{"pseudo-account has 2 pseudo-account fields set"}},
+                [&](Account const& A1, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::account(pseudoAccountID));
+                    if (!sle)
+                        return false;
+
+                    auto const vaultID = ~sle->at(~sfVaultID);
+                    BEAST_EXPECT(vaultID && !sle->isFieldPresent(*pField));
+                    sle->setFieldH256(*pField, *vaultID);
+
                     ac.view().update(sle);
                     return true;
                 },
