@@ -103,7 +103,7 @@ xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 };
 
 [[nodiscard]] bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     STAmount const& value,
@@ -137,13 +137,17 @@ expectLine(
 }
 
 [[nodiscard]] bool
-expectLine(Env& env, AccountID const& account, None const&, Issue const& issue)
+expectHolding(
+    Env& env,
+    AccountID const& account,
+    None const&,
+    Issue const& issue)
 {
     return !env.le(keylet::line(account, issue));
 }
 
 [[nodiscard]] bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     None const&,
@@ -153,11 +157,11 @@ expectLine(
 }
 
 [[nodiscard]] bool
-expectLine(Env& env, AccountID const& account, None const& value)
+expectHolding(Env& env, AccountID const& account, None const& value)
 {
     return std::visit(
         [&](auto const& issue) {
-            return expectLine(env, account, value, issue);
+            return expectHolding(env, account, value, issue);
         },
         value.asset.value());
 }
