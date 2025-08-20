@@ -37,10 +37,9 @@ Release/*.*
 *.gcov
 
 # Levelization checking
-Builds/levelization/results/rawincludes.txt
-Builds/levelization/results/paths.txt
-Builds/levelization/results/includes/
-Builds/levelization/results/includedby/
+.github/scripts/levelization/results/*
+!.github/scripts/levelization/results/loops.txt
+!.github/scripts/levelization/results/ordering.txt
 
 # Ignore tmp directory.
 tmp

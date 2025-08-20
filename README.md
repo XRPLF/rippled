@@ -42,7 +42,7 @@ If you are interested in running an **API Server** (including a **Full History S
 Here are some good places to start learning the source code:
 
 - Read the markdown files in the source tree: `src/ripple/**/*.md`.
-- Read [the levelization document](./Builds/levelization) to get an idea of the internal dependency graph.
+- Read [the levelization document](.github/scripts/levelization) to get an idea of the internal dependency graph.
 - In the big picture, the `main` function constructs an `ApplicationImp` object, which implements the `Application` virtual interface. Almost every component in the application takes an `Application&` parameter in its constructor, typically named `app` and stored as a member variable `app_`. This allows most components to depend on any other component.
 
 ### Repository Contents

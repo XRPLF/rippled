@@ -1,0 +1,112 @@
+# This workflow checks if the code is properly formatted.
+name: Check format
+
+# This workflow can only be triggered by other workflows.
+on: workflow_call
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-format
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  clang-format:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/ci/tools-rippled-clang-format
+    steps:
+      # The $GITHUB_WORKSPACE and ${{ github.workspace }} might not point to the
+      # same directory for jobs running in containers. The actions/checkout step
+      # is *supposed* to checkout into $GITHUB_WORKSPACE and then add it to
+      # safe.directory (see instructions at https://github.com/actions/checkout)
+      # but that is apparently not happening for some container images. We
+      # therefore preemptively add both directories to safe.directory. See also
+      # https://github.com/actions/runner/issues/2058 for more details.
+      - name: Configure git safe.directory
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git config --global --add safe.directory ${{ github.workspace }}
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Check configuration
+        run: |
+          echo 'Checking path.'
+          echo ${PATH} | tr ':' '\n'
+
+          echo 'Checking environment variables.'
+          env | sort
+
+          echo 'Checking clang-format version.'
+          clang-format --version
+      - name: Format code
+        run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
+      - name: Check for differences
+        env:
+          MESSAGE: |
+            One or more files did not conform to the formatting specified in
+            .clang-format. Maybe you did not run 'git-clang-format' or
+            'clang-format' before committing, or your version of clang-format
+            has an incompatibility with the one used here (see the "Check
+            configuration" step above).
+
+            Run 'git-clang-format --extensions cpp,h,hpp,ipp develop' in your
+            repo, and then commit and push the changes.
+        run: |
+          DIFF=$(git status --porcelain)
+          if [ -n "${DIFF}" ]; then
+            # Print the files that changed to give the contributor a hint about
+            # what to expect when running git-clang-format on their own machine.
+            git status
+            echo "${MESSAGE}"
+            exit 1
+          fi
+
+  prettier:
+    runs-on: ubuntu-latest
+    container: ghcr.io/xrplf/ci/tools-rippled-prettier
+    steps:
+      - name: Configure git safe.directory
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+          git config --global --add safe.directory ${{ github.workspace }}
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Check configuration
+        run: |
+          echo 'Checking path.'
+          echo ${PATH} | tr ':' '\n'
+
+          echo 'Checking environment variables.'
+          env | sort
+
+          echo 'Checking NPM version.'
+          npm --version
+
+          echo 'Checking Node.js version.'
+          node --version
+
+          echo 'Checking prettier version.'
+          prettier --version
+      - name: Format code
+        run: prettier --check .
+      - name: Check for differences
+        env:
+          MESSAGE: |
+            One or more files did not conform to the formatting rules specified
+            by Prettier. Maybe you did not run 'prettier' before committing, or
+            your version of prettier has an incompatibility with the one used
+            here (see the "Check configuration" step above).
+
+            Run 'prettier --check .' in your repo, and then commit and push the
+            changes.
+        run: |
+          DIFF=$(git status --porcelain)
+          if [ -n "${DIFF}" ]; then
+            # Print the files that changed to give the contributor a hint about
+            # what to expect when running prettier on their own machine.
+            git status
+            echo "${MESSAGE}"
+            exit 1
+          fi
