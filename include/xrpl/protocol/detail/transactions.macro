@@ -36,24 +36,7 @@
  *
  * The `privileges` parameter of the TRANSACTION macro is a bitfield
  * defining which operations the transaction can perform.
- *
- * The values are only used in InvariantCheck.cpp
- * Valid values are
-    noPriv - The transaction can not do any of the enumerated operations
-    createAcct - The transaction can create a new ACCOUNT_ROOT object.
-    createPseudoAcct - The transaction can create a pseudo account,
-        which implies createAcct
-    mustDeleteAcct - The transaction must delete an ACCOUNT_ROOT object
-    mayDeleteAcct - The transaction may delete an ACCOUNT_ROOT object,
-        but does not have to
-    overrideFreeze - The transaction can override some freeze rules
-    changeNFTCounts - The transaction can mint or burn an NFT
-    createMPTIssuance - The transaction can create a new MPT issuance
-    destroyMPTIssuance - The transaction can destroy an MPT issuance
-    mustAuthorizeMPT - The transaction MUST create or delete an MPT
-        object (except by issuer)
-    mayAuthorizeMPT - The transaction MAY create or delete an MPT
-        object (except by issuer)
+ * The values are defined and used in InvariantCheck.cpp
  */
 
 /** This transaction type executes a payment. */
@@ -92,7 +75,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
 /** This transaction type completes an existing escrow. */
 TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
     Delegation::delegatable,
-    noPriv, ({
+    mayAuthorizeMPT, ({
     {sfOwner, soeREQUIRED},
     {sfOfferSequence, soeREQUIRED},
     {sfFulfillment, soeOPTIONAL},

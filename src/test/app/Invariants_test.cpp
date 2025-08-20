@@ -1484,6 +1484,127 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
+    testValidPseudoAccounts()
+    {
+        testcase << "valid pseudo accounts";
+
+        using namespace jtx;
+
+        AccountID pseudoAccountID;
+        Preclose createPseudo =
+            [&, this](Account const& a, Account const& b, Env& env) {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+                // Create vault
+                Vault vault{env};
+                auto [tx, vKeylet] =
+                    vault.create({.owner = a, .asset = xrpAsset});
+                env(tx);
+                env.close();
+                if (auto const vSle = env.le(vKeylet); BEAST_EXPECT(vSle))
+                {
+                    pseudoAccountID = vSle->at(sfAccount);
+                }
+
+                return BEAST_EXPECT(env.le(keylet::account(pseudoAccountID)));
+            };
+
+        /* Cases to check
+            "pseudo-account has 0 pseudo-account fields set"
+            "pseudo-account has 2 pseudo-account fields set"
+            "pseudo-account sequence changed"
+            "pseudo-account flags are not set"
+            "pseudo-account has a regular key"
+        */
+        struct Mod
+        {
+            std::string expectedFailure;
+            std::function<void(SLE::pointer&)> func;
+        };
+        auto const mods = std::to_array<Mod>({
+            {
+                "pseudo-account has 0 pseudo-account fields set",
+                [this](SLE::pointer& sle) {
+                    BEAST_EXPECT(sle->at(~sfVaultID));
+                    sle->at(~sfVaultID) = std::nullopt;
+                },
+            },
+            {
+                "pseudo-account sequence changed",
+                [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
+            },
+            {
+                "pseudo-account flags are not set",
+                [](SLE::pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
+            },
+            {
+                "pseudo-account has a regular key",
+                [](SLE::pointer& sle) {
+                    sle->at(sfRegularKey) = Account("regular").id();
+                },
+            },
+        });
+
+        for (auto const& mod : mods)
+        {
+            doInvariantCheck(
+                {{mod.expectedFailure}},
+                [&](Account const& A1, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::account(pseudoAccountID));
+                    if (!sle)
+                        return false;
+                    mod.func(sle);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createPseudo);
+        }
+        for (auto const pField : getPseudoAccountFields())
+        {
+            // createPseudo creates a vault, so sfVaultID will be set, and
+            // setting it again will not cause an error
+            if (pField == &sfVaultID)
+                continue;
+            doInvariantCheck(
+                {{"pseudo-account has 2 pseudo-account fields set"}},
+                [&](Account const& A1, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::account(pseudoAccountID));
+                    if (!sle)
+                        return false;
+
+                    auto const vaultID = ~sle->at(~sfVaultID);
+                    BEAST_EXPECT(vaultID && !sle->isFieldPresent(*pField));
+                    sle->setFieldH256(*pField, *vaultID);
+
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createPseudo);
+        }
+
+        // Take one of the regular accounts and set the sequence to 0, which
+        // will make it look like a pseudo-account
+        doInvariantCheck(
+            {{"pseudo-account has 0 pseudo-account fields set"},
+             {"pseudo-account sequence changed"},
+             {"pseudo-account flags are not set"}},
+            [&](Account const& A1, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+                sle->at(sfSequence) = 0;
+                ac.view().update(sle);
+                return true;
+            });
+    }
+
+    void
     testPermissionedDEX()
     {
         using namespace test::jtx;
@@ -1765,117 +1886,6 @@ class Invariants_test : public beast::unit_test::suite
                     });
             }
         }
-    }
-
-    void
-    testValidPseudoAccounts()
-    {
-        testcase << "valid pseudo accounts";
-
-        using namespace jtx;
-
-        AccountID pseudoAccountID;
-        Preclose createPseudo =
-            [&, this](Account const& a, Account const& b, Env& env) {
-                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-
-                // Create vault
-                Vault vault{env};
-                auto [tx, vKeylet] =
-                    vault.create({.owner = a, .asset = xrpAsset});
-                env(tx);
-                env.close();
-                if (auto const vSle = env.le(vKeylet); BEAST_EXPECT(vSle))
-                {
-                    pseudoAccountID = vSle->at(sfAccount);
-                }
-
-                return BEAST_EXPECT(env.le(keylet::account(pseudoAccountID)));
-            };
-
-        /* Cases to check
-            "pseudo-account has 0 pseudo-account fields set"
-            "pseudo-account has 2 pseudo-account fields set"
-            "pseudo-account sequence changed"
-            "pseudo-account flags are not set"
-            "pseudo-account has a regular key"
-        */
-        struct Mod
-        {
-            std::string expectedFailure;
-            std::function<void(SLE::pointer&)> func;
-        };
-        auto const mods = std::to_array<Mod>({
-            {
-                "pseudo-account has 0 pseudo-account fields set",
-                [this](SLE::pointer& sle) {
-                    BEAST_EXPECT(sle->at(~sfVaultID));
-                    sle->at(~sfVaultID) = std::nullopt;
-                },
-            },
-            {
-                "pseudo-account has 2 pseudo-account fields set",
-                [this](SLE::pointer& sle) {
-                    BEAST_EXPECT(sle->at(~sfVaultID) && !sle->at(~sfAMMID));
-                    sle->at(~sfAMMID) = ~sle->at(~sfVaultID);
-                },
-            },
-            {
-                "pseudo-account has 2 pseudo-account fields set",
-                [this](SLE::pointer& sle) {
-                    BEAST_EXPECT(
-                        sle->at(~sfVaultID) && !sle->at(~sfLoanBrokerID));
-                    sle->at(~sfLoanBrokerID) = ~sle->at(~sfVaultID);
-                },
-            },
-            {
-                "pseudo-account sequence changed",
-                [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
-            },
-            {
-                "pseudo-account flags are not set",
-                [](SLE::pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
-            },
-            {
-                "pseudo-account has a regular key",
-                [](SLE::pointer& sle) {
-                    sle->at(sfRegularKey) = Account("regular").id();
-                },
-            },
-        });
-
-        for (auto const& mod : mods)
-        {
-            doInvariantCheck(
-                {{mod.expectedFailure}},
-                [&](Account const& A1, Account const&, ApplyContext& ac) {
-                    auto sle = ac.view().peek(keylet::account(pseudoAccountID));
-                    if (!sle)
-                        return false;
-                    mod.func(sle);
-                    ac.view().update(sle);
-                    return true;
-                },
-                XRPAmount{},
-                STTx{ttACCOUNT_SET, [](STObject& tx) {}},
-                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                createPseudo);
-        }
-
-        // Take one of the regular accounts and set the sequence to 0, which
-        // will make it look like a pseudo-account
-        doInvariantCheck(
-            {{"pseudo-account has 0 pseudo-account fields set"},
-             {"pseudo-account sequence changed"},
-             {"pseudo-account flags are not set"}},
-            [&](Account const& A1, Account const&, ApplyContext& ac) {
-                auto sle = ac.view().peek(keylet::account(A1.id()));
-                if (!sle)
-                    return false;
-                sle->at(sfSequence) = 0;
-                ac.view().update(sle);
-                return true;
-            });
     }
 
     void

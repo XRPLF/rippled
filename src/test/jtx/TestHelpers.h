@@ -478,7 +478,7 @@ PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount);
 
 bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     STAmount const& value,
@@ -486,18 +486,18 @@ expectLine(
 
 template <typename... Amts>
 bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     STAmount const& value,
     Amts const&... amts)
 {
-    return expectLine(env, account, value, false) &&
-        expectLine(env, account, amts...);
+    return expectHolding(env, account, value, false) &&
+        expectHolding(env, account, amts...);
 }
 
 bool
-expectLine(Env& env, AccountID const& account, None const& value);
+expectHolding(Env& env, AccountID const& account, None const& value);
 
 bool
 expectOffers(
