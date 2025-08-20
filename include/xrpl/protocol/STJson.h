@@ -87,8 +87,18 @@ public:
     {
         return map_;
     }
+
     void
     set(Key const& key, Value const& value);
+
+    std::optional<STJson::Value>
+    get(Key const& key) const;
+
+    void
+    setNested(Key const& key, Key const& nestedKey, Value const& value);
+
+    std::optional<Value>
+    getNested(Key const& key, Key const& nestedKey) const;
 
     // Factory for SType value from blob (with SType marker)
     static Value
@@ -96,6 +106,7 @@ public:
 
     void
     setValue(STJson const& v);
+
 
 private:
     Map map_;

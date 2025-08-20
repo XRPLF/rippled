@@ -283,6 +283,105 @@ ContractHostFunctionsImpl::getContractData(AccountID const& account)
     return Bytes{dataBlob.begin(), dataBlob.end()};
 }
 
+Expected<Bytes, HostFunctionError>
+ContractHostFunctionsImpl::getContractDataFromKey(
+    AccountID const& account,
+    std::string_view const& keyName)
+{
+    auto& view = contractCtx.applyCtx.view();
+    AccountID const& contractAccount = contractCtx.result.contractAccount;
+    auto const sleAccount = view.read(keylet::account(account));
+    if (!sleAccount)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+    // first check if the requested state was previously cached this session
+    auto cacheEntryLookup = getDataCache(contractCtx, account);
+    if (cacheEntryLookup)
+    {
+        auto const& cacheEntry = cacheEntryLookup->get();
+        STJson const data = cacheEntry.second;
+        auto const keyValue = data.get(std::string(keyName));
+        if (!keyValue)
+            return Unexpected(HostFunctionError::INVALID_FIELD);
+
+        Serializer s;
+        keyValue.value()->add(s);
+        return Bytes{
+            s.peekData().data(), s.peekData().data() + s.peekData().size()};
+    }
+
+    auto const dataKeylet = keylet::contractData(account, contractAccount);
+    auto const dataSle = view.read(dataKeylet);
+    if (!dataSle)
+        return Unexpected(HostFunctionError::INTERNAL);
+
+    STJson const data = dataSle->getFieldJson(sfContractJson);
+    // it exists add it to cache and return it
+    if (setDataCache(contractCtx, account, data, false) !=
+        HostFunctionError::SUCCESS)
+        return Unexpected(HostFunctionError::INTERNAL);
+
+    auto const keyValue = data.get(std::string(keyName));
+    if (!keyValue)
+        return Unexpected(HostFunctionError::INVALID_FIELD);
+
+    Serializer s;
+    keyValue.value()->add(s);
+    return Bytes{
+        s.peekData().data(), s.peekData().data() + s.peekData().size()};
+}
+
+Expected<Bytes, HostFunctionError>
+ContractHostFunctionsImpl::getNestedContractDataFromKey(
+    AccountID const& account,
+    std::string_view const& nestedKeyName,
+    std::string_view const& keyName)
+{
+    auto& view = contractCtx.applyCtx.view();
+    AccountID const& contractAccount = contractCtx.result.contractAccount;
+    auto const sleAccount = view.read(keylet::account(account));
+    if (!sleAccount)
+        return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+    // first check if the requested state was previously cached this session
+    auto cacheEntryLookup = getDataCache(contractCtx, account);
+    if (cacheEntryLookup)
+    {
+        auto const& cacheEntry = cacheEntryLookup->get();
+        STJson const data = cacheEntry.second;
+        auto const keyValue =
+            data.getNested(std::string(nestedKeyName), std::string(keyName));
+        if (!keyValue)
+            return Unexpected(HostFunctionError::INVALID_FIELD);
+
+        Serializer s;
+        keyValue.value()->add(s);
+        return Bytes{
+            s.peekData().data(), s.peekData().data() + s.peekData().size()};
+    }
+
+    auto const dataKeylet = keylet::contractData(account, contractAccount);
+    auto const dataSle = view.read(dataKeylet);
+    if (!dataSle)
+        return Unexpected(HostFunctionError::INTERNAL);
+
+    STJson const data = dataSle->getFieldJson(sfContractJson);
+    // it exists add it to cache and return it
+    if (setDataCache(contractCtx, account, data, false) !=
+        HostFunctionError::SUCCESS)
+        return Unexpected(HostFunctionError::INTERNAL);
+
+    auto const keyValue =
+        data.getNested(std::string(nestedKeyName), std::string(keyName));
+    if (!keyValue)
+        return Unexpected(HostFunctionError::INVALID_FIELD);
+
+    Serializer s;
+    keyValue.value()->add(s);
+    return Bytes{
+        s.peekData().data(), s.peekData().data() + s.peekData().size()};
+}
+
 Expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::setContractData(
     AccountID const& account,
@@ -292,6 +391,63 @@ ContractHostFunctionsImpl::setContractData(
     if (data.toBlob().size() > maxSize)
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
+    if (HostFunctionError ret = setDataCache(contractCtx, account, data, true);
+        ret != HostFunctionError::SUCCESS)
+        return Unexpected(ret);
+
+    return Unexpected(HostFunctionError::INTERNAL);
+}
+
+STJson
+getContractDataOrCache(ContractContext& contractCtx, AccountID const& account)
+{
+    auto cacheEntryLookup = getDataCache(contractCtx, account);
+    if (!cacheEntryLookup)
+    {
+        AccountID const& contractAccount = contractCtx.result.contractAccount;
+        auto const dataKeylet = keylet::contractData(account, contractAccount);
+        auto& view = contractCtx.applyCtx.view();
+        auto const dataSle = view.read(dataKeylet);
+        if (dataSle)
+        {
+            // Return the STJson from the SLE
+            return dataSle->getFieldJson(sfContractJson);
+        }
+
+        // Return New STJson if not found
+        STJson data;
+        return data;
+    }
+
+    // Return the cached STJson
+    auto const& cacheEntry = cacheEntryLookup->get();
+    return cacheEntry.second;
+}
+
+Expected<int32_t, HostFunctionError>
+ContractHostFunctionsImpl::setContractDataFromKey(
+    AccountID const& account,
+    std::string_view const& keyName,
+    STJson::Value const& value)
+{
+    STJson data = getContractDataOrCache(contractCtx, account);
+    data.set(std::string(keyName), value);
+    if (HostFunctionError ret = setDataCache(contractCtx, account, data, true);
+        ret != HostFunctionError::SUCCESS)
+        return Unexpected(ret);
+
+    return Unexpected(HostFunctionError::INTERNAL);
+}
+
+Expected<int32_t, HostFunctionError>
+ContractHostFunctionsImpl::setNestedContractDataFromKey(
+    AccountID const& account,
+    std::string_view const& nestedKeyName,
+    std::string_view const& keyName,
+    STJson::Value const& value)
+{
+    STJson data = getContractDataOrCache(contractCtx, account);
+    data.setNested(std::string(nestedKeyName), std::string(keyName), value);
     if (HostFunctionError ret = setDataCache(contractCtx, account, data, true);
         ret != HostFunctionError::SUCCESS)
         return Unexpected(ret);

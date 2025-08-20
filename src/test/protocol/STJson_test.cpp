@@ -159,6 +159,8 @@ struct STJson_test : public beast::unit_test::suite
         Serializer s;
         s.add8(STI_UINT32);
         s.add32(0xDEADBEEF);
+        std::cout << "Slice: " << Slice(s.peekData().data(), s.peekData().size())
+                  << std::endl;
         SerialIter sit(s.peekData().data(), s.peekData().size());
         auto value = STJson::makeValueFromVLWithType(sit);
         BEAST_EXPECT(value->getSType() == STI_UINT32);
@@ -216,7 +218,7 @@ struct STJson_test : public beast::unit_test::suite
             STJson json;
             json.set(
                 "u64",
-                std::make_shared<STUInt64>(sfGeneric, 0x123456789ABCDEF0ull));
+                std::make_shared<STUInt64>(sfIndexNext, 0x123456789ABCDEF0ull));
             Serializer s;
             json.add(s);
             auto parsed =
@@ -230,7 +232,7 @@ struct STJson_test : public beast::unit_test::suite
         // {
         //     STJson json;
         //     uint128 val{};
-        //     json.set("u128", std::make_shared<STUInt128>(sfGeneric, val));
+        //     json.set("u128", std::make_shared<STUInt128>(sfEmailHash, val));
         //     Serializer s;
         //     json.add(s);
         //     auto parsed = STJson::fromBlob(s.peekData().data(),
@@ -245,7 +247,7 @@ struct STJson_test : public beast::unit_test::suite
             uint160 val;
             val.data()[0] = 0x01;
             val.data()[19] = 0xFF;
-            json.set("u160", std::make_shared<STUInt160>(sfGeneric, val));
+            json.set("u160", std::make_shared<STUInt160>(sfTakerPaysCurrency, val));
             Serializer s;
             json.add(s);
             auto parsed =
@@ -262,7 +264,7 @@ struct STJson_test : public beast::unit_test::suite
             uint256 val;
             val.data()[0] = 0xAA;
             val.data()[31] = 0xBB;
-            json.set("u256", std::make_shared<STUInt256>(sfGeneric, val));
+            json.set("u256", std::make_shared<STUInt256>(sfLedgerHash, val));
             Serializer s;
             json.add(s);
             auto parsed =
@@ -277,7 +279,7 @@ struct STJson_test : public beast::unit_test::suite
         {
             STJson json;
             // XRP amount
-            STAmount xrp(sfGeneric, static_cast<std::int64_t>(123456789u));
+            STAmount xrp(sfAmount, static_cast<std::int64_t>(123456789u));
             json.set("amount", std::make_shared<STAmount>(xrp));
             Serializer s;
             json.add(s);
@@ -296,7 +298,7 @@ struct STJson_test : public beast::unit_test::suite
             json.set(
                 "blob",
                 std::make_shared<STBlob>(
-                    sfGeneric, blobData.data(), blobData.size()));
+                    sfPublicKey, blobData.data(), blobData.size()));
             Serializer s;
             json.add(s);
             auto parsed =
@@ -314,7 +316,7 @@ struct STJson_test : public beast::unit_test::suite
             STJson json;
             // Use a known AccountID (20 bytes)
             AccountID acct = AccountID{};
-            json.set("acct", std::make_shared<STAccount>(sfGeneric, acct));
+            json.set("acct", std::make_shared<STAccount>(sfAccount, acct));
             Serializer s;
             json.add(s);
             auto parsed =
@@ -327,17 +329,19 @@ struct STJson_test : public beast::unit_test::suite
         // // STI_OBJECT (STObject)
         // {
         //     STJson json;
-        //     STObject obj(sfGeneric);
-        //     obj.setFieldU32(sfGeneric, 1234);
-        //     obj.setFieldU8(sfGeneric, 5);
+        //     STObject obj(sfTransactionMetaData);
+        //     obj.setFieldU32(sfNetworkID, 1234);
+        //     obj.setFieldU8(sfCloseResolution, 5);
         //     json.set("object", std::make_shared<STObject>(obj));
         //     Serializer s;
         //     json.add(s);
-        //     auto parsed = STJson::fromBlob(s.peekData().data(),
-        //     s.peekData().size()); auto parsedObj =
-        //     std::dynamic_pointer_cast<STObject>(parsed->getMap().at("object"));
-        //     BEAST_EXPECT(parsedObj->getFieldU32(sfGeneric) == 1234);
-        //     BEAST_EXPECT(parsedObj->getFieldU8(sfGeneric) == 5);
+
+        //     std::cout << "json: " << json.getJson(JsonOptions::none).toStyledString()
+        //               << std::endl;
+        //     auto parsed = STJson::fromBlob(s.peekData().data(), s.peekData().size());
+        //     auto parsedObj = std::dynamic_pointer_cast<STObject>(parsed->getMap().at("object"));
+        //     BEAST_EXPECT(parsedObj->getFieldU32(sfNetworkID) == 1234);
+        //     BEAST_EXPECT(parsedObj->getFieldU8(sfCloseResolution) == 5);
         // }
 
         // // STI_ARRAY (STArray)
@@ -402,6 +406,31 @@ struct STJson_test : public beast::unit_test::suite
                 parsed->getMap().at("currency"));
             BEAST_EXPECT(parsedCur->value() == cur);
         }
+
+        // STI_JSON (STJson) Nested JSON
+        {
+            STJson innerJson;
+            // XRP amount
+            STAmount xrp(sfAmount, static_cast<std::int64_t>(123456789u));
+            innerJson.set("amount", std::make_shared<STAmount>(xrp));
+
+            STJson json;
+            json.set("nested", std::make_shared<STJson>(innerJson));
+            Serializer s;
+            json.add(s);
+
+            std::cout << "json: " << json.getJson(JsonOptions::none).toStyledString()
+                      << std::endl;
+
+            auto parsed =
+                STJson::fromBlob(s.peekData().data(), s.peekData().size());
+            auto parsedNested = std::dynamic_pointer_cast<STJson>(
+                parsed->getMap().at("nested"));
+            BEAST_EXPECT(
+                std::dynamic_pointer_cast<STAmount>(
+                    parsedNested->getMap().at("amount"))
+                    ->mantissa() == 123456789u);
+        }
     }
 
     void
@@ -440,8 +469,8 @@ struct STJson_test : public beast::unit_test::suite
         // testFromSField();
         // testGetJson();
         // testMakeValueFromVLWithType();
-        // testSTTypes();
-        testRust();
+        testSTTypes();
+        // testRust();
     }
 };
 

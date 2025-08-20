@@ -520,8 +520,56 @@ getContractData_wrap(
     wasm_val_vec_t* results);
 
 using setContractData_proto = int32_t(uint8_t*, int32_t, uint8_t*, int32_t);
+
+using getContractDataFromKey_proto =
+    int32_t(uint8_t*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+getContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getNestedContractDataFromKey_proto = int32_t(
+    uint8_t*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+getNestedContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using setContractData_proto = int32_t(uint8_t*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 setContractData_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using setContractDataFromKey_proto =
+    int32_t(uint8_t*, int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+setContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using setNestedContractDataFromKey_proto = int32_t(
+    uint8_t*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+setNestedContractDataFromKey_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);

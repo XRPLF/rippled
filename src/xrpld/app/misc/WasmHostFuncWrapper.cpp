@@ -22,6 +22,7 @@
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/digest.h>
 
@@ -1743,6 +1744,76 @@ getContractData_wrap(
 }
 
 wasm_trap_t*
+getContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const key = getDataString(rt, params, index);
+    if (!key)
+    {
+        return hfResult(results, key.error());
+    }
+
+    return returnResult(
+        rt, params, results, hf->getContractDataFromKey(*acc, *key), index);
+}
+
+wasm_trap_t*
+getNestedContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const nested = getDataString(rt, params, index);
+    if (!nested)
+    {
+        return hfResult(results, nested.error());
+    }
+
+    auto const key = getDataString(rt, params, index);
+    if (!key)
+    {
+        return hfResult(results, key.error());
+    }
+
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->getNestedContractDataFromKey(*acc, *nested, *key),
+        index);
+}
+
+wasm_trap_t*
 setContractData_wrap(
     void* env,
     wasm_val_vec_t const* params,
@@ -1772,6 +1843,96 @@ setContractData_wrap(
 
     return returnResult(
         rt, params, results, hf->setContractData(*acc, *parsed), index);
+}
+
+wasm_trap_t*
+setContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const key = getDataString(rt, params, index);
+    if (!key)
+    {
+        return hfResult(results, key.error());
+    }
+
+    auto const data = getDataSlice(rt, params, index);
+    if (!data)
+    {
+        return hfResult(results, data.error());
+    }
+
+    SerialIter valueSit(data->data(), data->size());
+    STJson::Value const value = STJson::makeValueFromVLWithType(valueSit);
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->setContractDataFromKey(*acc, *key, value),
+        index);
+}
+
+wasm_trap_t*
+setNestedContractDataFromKey_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const acc = getDataAccountID(rt, params, index);
+    if (!acc)
+    {
+        return hfResult(results, acc.error());
+    }
+
+    auto const nested = getDataString(rt, params, index);
+    if (!nested)
+    {
+        return hfResult(results, nested.error());
+    }
+
+    auto const key = getDataString(rt, params, index);
+    if (!key)
+    {
+        return hfResult(results, key.error());
+    }
+
+    auto const data = getDataSlice(rt, params, index);
+    if (!data)
+    {
+        return hfResult(results, data.error());
+    }
+
+    SerialIter valueSit(data->data(), data->size());
+    STJson::Value const value = STJson::makeValueFromVLWithType(valueSit);
+    return returnResult(
+        rt,
+        params,
+        results,
+        hf->setNestedContractDataFromKey(*acc, *nested, *key, value),
+        index);
 }
 
 wasm_trap_t*

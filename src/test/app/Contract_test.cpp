@@ -858,7 +858,135 @@ class Contract_test : public beast::unit_test::suite
 
         auto const contractAccount = getContractOwner(env);
         env(contract::call(alice, contractAccount, "create"),
+            escrow::comp_allowance(1'000'000),
+            ter(tesSUCCESS));
+        env.close();
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        {
+            // Get contract info
+            Json::Value params;
+            params[jss::contract_account] = contractAccount;
+            params[jss::account] = alice.human();
+            auto const jrr =
+                env.rpc("json", "contract_info", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        env(contract::call(alice, contractAccount, "update"),
             escrow::comp_allowance(1000000),
+            ter(tesSUCCESS));
+        env.close();
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        {
+            // Get contract info
+            Json::Value params;
+            params[jss::contract_account] = contractAccount;
+            params[jss::account] = alice.human();
+            auto const jrr =
+                env.rpc("json", "contract_info", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+    }
+
+    void
+    testContractDataV2(FeatureBitset features)
+    {
+        testcase("contract data v2");
+
+        using namespace jtx;
+
+        test::jtx::Env env{*this, features};
+
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        // std::string contractWasmStr =
+        // loadContractWasmStr("contract_data_v2");
+        std::string contractWasmStr =
+            "0061736D0100000001360760067F7F7F7F7F7F017F60087F7F7F7F7F7F7F7F017F"
+            "60037F7F7E017F60057F7F7F7F7F017F60027F7F0060037F7F7F006000017F02CD"
+            "010608686F73745F6C69621A6765745F636F6E74726163745F646174615F66726F"
+            "6D5F6B6579000008686F73745F6C69621A7365745F636F6E74726163745F646174"
+            "615F66726F6D5F6B6579000008686F73745F6C6962217365745F6E65737465645F"
+            "636F6E74726163745F646174615F66726F6D5F6B6579000108686F73745F6C6962"
+            "0974726163655F6E756D000208686F73745F6C6962216765745F6E65737465645F"
+            "636F6E74726163745F646174615F66726F6D5F6B6579000108686F73745F6C6962"
+            "05747261636500030305040405060605030100110619037F01418080C0000B7F00"
+            "41AC81C0000B7F0041B081C0000B073705066D656D6F7279020006637265617465"
+            "00080675706461746500090A5F5F646174615F656E6403010B5F5F686561705F62"
+            "61736503020ABB0604860101037F23808080800041106B22022480808080004100"
+            "21032002410036020C024020014114419480C0800041052002410C6A4104108080"
+            "8080004104470D00200228020C220341187420034180FE03714108747220034108"
+            "764180FE0371200341187672722104410121030B20002004360204200020033602"
+            "00200241106A2480808080000B4401017F23808080800041106B22032480808080"
+            "00200320023A000F2003410236000B20004114200141052003410B6A4105108180"
+            "8080001A200341106A2480808080000BB20301027F23808080800041C0006B2200"
+            "248080808000200041206A410028009080C08000360200200041186A4100290088"
+            "80C080003703002000410029008080C08000370310200041106A419480C0800041"
+            "03108780808000200041106A419980C08000410C10878080800020004190183B00"
+            "2A200041106A4114419E80C08000410341A180C0800041062000412A6A41021082"
+            "808080001A200041346A41002900BA80C080003700002000413C6A41002800C280"
+            "C0800036000020004188283B002A200041002900B280C0800037002C200041106A"
+            "411441A780C08000410B2000412A6A41161081808080001A200041086A20004110"
+            "6A1086808080000240024002402000280208410171450D0041C680C08000411320"
+            "0028020CAD1083808080001A200041003A002A0240200041106A4114419E80C080"
+            "00410341A180C0800041062000412A6A41011084808080004101470D0041D980C0"
+            "8000411A200031002A1083808080001A410021010C030B41F380C0800041204100"
+            "410041001085808080001A0C010B419381C0800041194100410041001085808080"
+            "001A0B417F21010B200041C0006A24808080800020010BB70101027F2380808080"
+            "0041206B220024808080800041002101200041186A410028009080C08000360200"
+            "200041106A410029008880C080003703002000410029008080C080003703082000"
+            "41086A419480C0800041041087808080002000200041086A108680808000024002"
+            "402000280200410171450D0041C680C0800041132000280204AD1083808080001A"
+            "0C010B419381C0800041194100410041001085808080001A417F21010B20004120"
+            "6A24808080800020010B0BB6010100418080C0000BAC01AE123A8556F3CF911547"
+            "11376AFB0F894F832B3D636F756E74746F74616C6B65797375626B657964657374"
+            "696E6174696F6E0596915CFDEEE3A695B3EFD6BDA9AC788A368B7B526561642062"
+            "61636B20636F756E743A207B7D52656164206261636B206E65737465642076616C"
+            "75653A207B7D4661696C656420746F2072656164206261636B206E657374656420"
+            "76616C75654661696C656420746F2072656164206261636B20636F756E74";
+
+        env(contract::create(alice, contractWasmStr),
+            contract::add_instance_param(
+                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_function("create", {}),
+            contract::add_function("update", {}),
+            fee(XRP(200)),
+            ter(tesSUCCESS));
+        env.close();
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        auto const contractAccount = getContractOwner(env);
+        env(contract::call(alice, contractAccount, "create"),
+            escrow::comp_allowance(1'000'000),
             ter(tesSUCCESS));
         env.close();
 
@@ -1519,7 +1647,6 @@ class Contract_test : public beast::unit_test::suite
 
         // Check stream update
         BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-            std::cout << jv << std::endl;
             return jv[jss::type] == "contractEvent" &&
                 jv[jss::name] == "event1";
         }));
@@ -1550,6 +1677,7 @@ class Contract_test : public beast::unit_test::suite
         // testDeletePreclaim(features);
         // testDeleteDoApply(features);
         testContractData(features);
+        testContractDataV2(features);
         testParameters(features);
         testSubmit(features);
         testEvents(features);

@@ -103,9 +103,13 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, contractFuncParam, "contract_func_param", hfs,                                         70);
         WASM_IMPORT_FUNC2(i, otxnCallParam, "otxn_call_param", hfs,                                                 70);
         WASM_IMPORT_FUNC2(i, getContractData, "get_contract_data", hfs,                                             70);
+        WASM_IMPORT_FUNC2(i, getContractDataFromKey, "get_contract_data_from_key", hfs,                             70);
+        WASM_IMPORT_FUNC2(i, getNestedContractDataFromKey, "get_nested_contract_data_from_key", hfs,                70);
         WASM_IMPORT_FUNC2(i, setContractData, "set_contract_data", hfs,                                             70);
-        WASM_IMPORT_FUNC2(i, emitTxn, "emit_txn", hfs,                                                             2000);
-        WASM_IMPORT_FUNC2(i, emitEvent, "emit_event", hfs,                                                           70);
+        WASM_IMPORT_FUNC2(i, setNestedContractDataFromKey, "set_nested_contract_data_from_key", hfs,                70);
+        WASM_IMPORT_FUNC2(i, setContractDataFromKey, "set_contract_data_from_key", hfs,                             70);
+        WASM_IMPORT_FUNC2(i, emitTxn, "emit_txn", hfs,                                                            2000);
+        WASM_IMPORT_FUNC2(i, emitEvent, "emit_event", hfs,                                                          70);
 
         // clang-format on
     }

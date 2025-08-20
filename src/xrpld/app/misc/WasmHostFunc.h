@@ -491,8 +491,44 @@ struct HostFunctions
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
+    virtual Expected<Bytes, HostFunctionError>
+    getContractDataFromKey(
+        AccountID const& account,
+        std::string_view const& keyName)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    getNestedContractDataFromKey(
+        AccountID const& account,
+        std::string_view const& nestedKeyName,
+        std::string_view const& keyName)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
     virtual Expected<int32_t, HostFunctionError>
     setContractData(AccountID const& account, STJson const& data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    setContractDataFromKey(
+        AccountID const& account,
+        std::string_view const& keyName,
+        STJson::Value const& value)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    setNestedContractDataFromKey(
+        AccountID const& account,
+        std::string_view const& nestedKeyName,
+        std::string_view const& keyName,
+        STJson::Value const& value)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }

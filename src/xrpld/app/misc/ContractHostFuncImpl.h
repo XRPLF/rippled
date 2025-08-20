@@ -47,8 +47,32 @@ public:
     Expected<Bytes, HostFunctionError>
     getContractData(AccountID const& account) override;
 
+    Expected<Bytes, HostFunctionError>
+    getContractDataFromKey(
+        AccountID const& account,
+        std::string_view const& keyName) override;
+
+    Expected<Bytes, HostFunctionError>
+    getNestedContractDataFromKey(
+        AccountID const& account,
+        std::string_view const& nestedKeyName,
+        std::string_view const& keyName) override;
+
     Expected<int32_t, HostFunctionError>
     setContractData(AccountID const& account, STJson const& data) override;
+
+    Expected<int32_t, HostFunctionError>
+    setContractDataFromKey(
+        AccountID const& account,
+        std::string_view const& keyName,
+        STJson::Value const& value) override;
+
+    Expected<int32_t, HostFunctionError>
+    setNestedContractDataFromKey(
+        AccountID const& account,
+        std::string_view const& nestedKeyName,
+        std::string_view const& keyName,
+        STJson::Value const& value) override;
 
     Expected<int32_t, HostFunctionError>
     emitTxn(std::shared_ptr<STTx const> const& stxPtr) override;

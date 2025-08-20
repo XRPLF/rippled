@@ -142,7 +142,7 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
     auto typeCode = sit.get8();
     SerializedTypeID stype = static_cast<SerializedTypeID>(typeCode);
 
-    // // Dispatch to correct SType
+    // Dispatch to correct SType
     switch (stype)
     {
         case STI_UINT8:
@@ -175,15 +175,17 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
             return std::make_shared<STIssue>(sit, sfAsset);
         case STI_CURRENCY:
             return std::make_shared<STCurrency>(sit, sfBaseAsset);
-        case STI_OBJECT:
-            return std::make_shared<STObject>(sit, sfTransactionMetaData, 0);
-        case STI_ARRAY:
-            return std::make_shared<STArray>(sit, sfSigners);
+        // case STI_OBJECT:
+        //     return std::make_shared<STObject>(sit, sfTransactionMetaData, 0);
+        // case STI_ARRAY:
+        //     return std::make_shared<STArray>(sit, sfSigners);
         // case STI_PATHSET:
         //     // STPathSet(SerialIter&, SField const&)
         //     return std::make_shared<STPathSet>(sit, sfGeneric);
         // case STI_VECTOR256:
         //     return std::make_shared<STVector256>(sit, sfGeneric);
+        case STI_JSON:
+            return std::make_shared<STJson>(sit, sfContractJson);
         default:
             // Unknown type, treat as blob
             {
@@ -192,6 +194,51 @@ STJson::makeValueFromVLWithType(SerialIter& sit)
                     sfData, blob.data(), blob.size());
             }
     }
+}
+
+std::optional<STJson::Value>
+STJson::get(Key const& key) const
+{
+    auto it = map_.find(key);
+    if (it == map_.end() || !it->second)
+        return std::nullopt;
+    return it->second;
+}
+
+void
+STJson::setNested(Key const& nestedKey, Key const& key, Value const& value)
+{
+    auto it = map_.find(key);
+    std::shared_ptr<STJson> nested;
+    if (it == map_.end() || !it->second)
+    {
+        // Create new nested STJson
+        nested = std::make_shared<STJson>();
+        map_[key] = nested;
+    }
+    else
+    {
+        nested = std::dynamic_pointer_cast<STJson>(it->second);
+        if (!nested)
+        {
+            // Overwrite with new STJson if not an STJson
+            nested = std::make_shared<STJson>();
+            map_[key] = nested;
+        }
+    }
+    nested->set(nestedKey, value);
+}
+
+std::optional<STJson::Value>
+STJson::getNested(Key const& nestedKey, Key const& key) const
+{
+    auto it = map_.find(key);
+    if (it == map_.end() || !it->second)
+        return std::nullopt;
+    auto nested = std::dynamic_pointer_cast<STJson>(it->second);
+    if (!nested)
+        return std::nullopt;
+    return nested->get(nestedKey);
 }
 
 void
