@@ -6915,24 +6915,29 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             ledgerParams[jss::transactions] = true;
             ledgerParams[jss::expand] = true;
 
-            auto const ledgerResult = env.rpc("json", "ledger", to_string(ledgerParams));
+            auto const ledgerResult =
+                env.rpc("json", "ledger", to_string(ledgerParams));
 
             // Find our transaction in the ledger response
             if (BEAST_EXPECT(ledgerResult.isMember(jss::result)) &&
                 BEAST_EXPECT(ledgerResult[jss::result].isMember(jss::ledger)) &&
-                BEAST_EXPECT(ledgerResult[jss::result][jss::ledger].isMember(jss::transactions)))
+                BEAST_EXPECT(ledgerResult[jss::result][jss::ledger].isMember(
+                    jss::transactions)))
             {
-                auto const& transactions = ledgerResult[jss::result][jss::ledger][jss::transactions];
+                auto const& transactions =
+                    ledgerResult[jss::result][jss::ledger][jss::transactions];
                 bool foundTx = false;
                 for (auto const& tx : transactions)
                 {
-                    if (tx.isMember(jss::hash) && tx[jss::hash].asString() == txHash)
+                    if (tx.isMember(jss::hash) &&
+                        tx[jss::hash].asString() == txHash)
                     {
                         foundTx = true;
                         // Verify that the meta contains the nftoken_id field
                         if (BEAST_EXPECT(tx.isMember(jss::meta)))
                         {
-                            BEAST_EXPECT(tx[jss::meta].isMember(jss::nftoken_id));
+                            BEAST_EXPECT(
+                                tx[jss::meta].isMember(jss::nftoken_id));
                             if (tx[jss::meta].isMember(jss::nftoken_id))
                             {
                                 uint256 ledgerNftId;
@@ -6952,23 +6957,28 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             accountTxParams[jss::account] = alice.human();
             accountTxParams[jss::limit] = 10;
 
-            auto const accountTxResult = env.rpc("json", "account_tx", to_string(accountTxParams));
+            auto const accountTxResult =
+                env.rpc("json", "account_tx", to_string(accountTxParams));
 
             // Find our transaction in the account_tx response
             if (BEAST_EXPECT(accountTxResult.isMember(jss::result)) &&
-                BEAST_EXPECT(accountTxResult[jss::result].isMember(jss::transactions)))
+                BEAST_EXPECT(
+                    accountTxResult[jss::result].isMember(jss::transactions)))
             {
-                auto const& accountTransactions = accountTxResult[jss::result][jss::transactions];
+                auto const& accountTransactions =
+                    accountTxResult[jss::result][jss::transactions];
                 bool foundAccountTx = false;
                 for (auto const& tx : accountTransactions)
                 {
-                    if (tx.isMember(jss::hash) && tx[jss::hash].asString() == txHash)
+                    if (tx.isMember(jss::hash) &&
+                        tx[jss::hash].asString() == txHash)
                     {
                         foundAccountTx = true;
                         // Verify that the meta contains the nftoken_id field
                         if (BEAST_EXPECT(tx.isMember(jss::meta)))
                         {
-                            BEAST_EXPECT(tx[jss::meta].isMember(jss::nftoken_id));
+                            BEAST_EXPECT(
+                                tx[jss::meta].isMember(jss::nftoken_id));
                             if (tx[jss::meta].isMember(jss::nftoken_id))
                             {
                                 uint256 accountTxNftId;
@@ -6986,144 +6996,169 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
         // changed in the most recent NFTokenCancelOffer transaction
-        auto verifyNFTokenIDsInCancelOffer =
-            [&](std::vector<uint256> actualNftIDs) {
-                // Get the hash for the most recent transaction.
-                std::string const txHash{
-                    env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+        auto verifyNFTokenIDsInCancelOffer = [&](std::vector<uint256>
+                                                     actualNftIDs) {
+            // Get the hash for the most recent transaction.
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
 
-                env.close();
+            env.close();
 
-                // Test 1: Check tx RPC response
-                Json::Value const txMeta =
-                    env.rpc("tx", txHash)[jss::result][jss::meta];
+            // Test 1: Check tx RPC response
+            Json::Value const txMeta =
+                env.rpc("tx", txHash)[jss::result][jss::meta];
 
-                // Expect nftokens_ids field and verify the values
-                if (!BEAST_EXPECT(txMeta.isMember(jss::nftoken_ids)))
-                    return;
+            // Expect nftokens_ids field and verify the values
+            if (!BEAST_EXPECT(txMeta.isMember(jss::nftoken_ids)))
+                return;
 
-                // Convert NFT IDs from Json::Value to uint256
-                std::vector<uint256> metaIDs;
-                std::transform(
-                    txMeta[jss::nftoken_ids].begin(),
-                    txMeta[jss::nftoken_ids].end(),
-                    std::back_inserter(metaIDs),
-                    [this](Json::Value id) {
-                        uint256 nftID;
-                        BEAST_EXPECT(nftID.parseHex(id.asString()));
-                        return nftID;
-                    });
+            // Convert NFT IDs from Json::Value to uint256
+            std::vector<uint256> metaIDs;
+            std::transform(
+                txMeta[jss::nftoken_ids].begin(),
+                txMeta[jss::nftoken_ids].end(),
+                std::back_inserter(metaIDs),
+                [this](Json::Value id) {
+                    uint256 nftID;
+                    BEAST_EXPECT(nftID.parseHex(id.asString()));
+                    return nftID;
+                });
 
-                // Sort both array to prepare for comparison
-                std::sort(metaIDs.begin(), metaIDs.end());
-                std::sort(actualNftIDs.begin(), actualNftIDs.end());
+            // Sort both array to prepare for comparison
+            std::sort(metaIDs.begin(), metaIDs.end());
+            std::sort(actualNftIDs.begin(), actualNftIDs.end());
 
-                // Make sure the expect number of NFTs is correct
-                BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
+            // Make sure the expect number of NFTs is correct
+            BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
 
-                // Check the value of NFT ID in the meta with the
-                // actual values
-                for (size_t i = 0; i < metaIDs.size(); ++i)
-                    BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
+            // Check the value of NFT ID in the meta with the
+            // actual values
+            for (size_t i = 0; i < metaIDs.size(); ++i)
+                BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
 
-                // Test 2: Check ledger RPC response with expanded transactions
-                Json::Value ledgerParams;
-                ledgerParams[jss::ledger_index] = env.current()->info().seq - 1;
-                ledgerParams[jss::transactions] = true;
-                ledgerParams[jss::expand] = true;
+            // Test 2: Check ledger RPC response with expanded transactions
+            Json::Value ledgerParams;
+            ledgerParams[jss::ledger_index] = env.current()->info().seq - 1;
+            ledgerParams[jss::transactions] = true;
+            ledgerParams[jss::expand] = true;
 
-                auto const ledgerResult = env.rpc("json", "ledger", to_string(ledgerParams));
+            auto const ledgerResult =
+                env.rpc("json", "ledger", to_string(ledgerParams));
 
-                // Find our transaction in the ledger response
-                if (BEAST_EXPECT(ledgerResult.isMember(jss::result)) &&
-                    BEAST_EXPECT(ledgerResult[jss::result].isMember(jss::ledger)) &&
-                    BEAST_EXPECT(ledgerResult[jss::result][jss::ledger].isMember(jss::transactions)))
+            // Find our transaction in the ledger response
+            if (BEAST_EXPECT(ledgerResult.isMember(jss::result)) &&
+                BEAST_EXPECT(ledgerResult[jss::result].isMember(jss::ledger)) &&
+                BEAST_EXPECT(ledgerResult[jss::result][jss::ledger].isMember(
+                    jss::transactions)))
+            {
+                auto const& transactions =
+                    ledgerResult[jss::result][jss::ledger][jss::transactions];
+                bool foundTx = false;
+                for (auto const& tx : transactions)
                 {
-                    auto const& transactions = ledgerResult[jss::result][jss::ledger][jss::transactions];
-                    bool foundTx = false;
-                    for (auto const& tx : transactions)
+                    if (tx.isMember(jss::hash) &&
+                        tx[jss::hash].asString() == txHash)
                     {
-                        if (tx.isMember(jss::hash) && tx[jss::hash].asString() == txHash)
+                        foundTx = true;
+                        // Verify that the meta contains the nftoken_ids field
+                        if (BEAST_EXPECT(tx.isMember(jss::meta)))
                         {
-                            foundTx = true;
-                            // Verify that the meta contains the nftoken_ids field
-                            if (BEAST_EXPECT(tx.isMember(jss::meta)))
+                            BEAST_EXPECT(
+                                tx[jss::meta].isMember(jss::nftoken_ids));
+                            if (tx[jss::meta].isMember(jss::nftoken_ids))
                             {
-                                BEAST_EXPECT(tx[jss::meta].isMember(jss::nftoken_ids));
-                                if (tx[jss::meta].isMember(jss::nftoken_ids))
-                                {
-                                    // Convert NFT IDs from ledger Json::Value to uint256
-                                    std::vector<uint256> ledgerMetaIDs;
-                                    std::transform(
-                                        tx[jss::meta][jss::nftoken_ids].begin(),
-                                        tx[jss::meta][jss::nftoken_ids].end(),
-                                        std::back_inserter(ledgerMetaIDs),
-                                        [this](Json::Value id) {
-                                            uint256 nftID;
-                                            BEAST_EXPECT(nftID.parseHex(id.asString()));
-                                            return nftID;
-                                        });
+                                // Convert NFT IDs from ledger Json::Value to
+                                // uint256
+                                std::vector<uint256> ledgerMetaIDs;
+                                std::transform(
+                                    tx[jss::meta][jss::nftoken_ids].begin(),
+                                    tx[jss::meta][jss::nftoken_ids].end(),
+                                    std::back_inserter(ledgerMetaIDs),
+                                    [this](Json::Value id) {
+                                        uint256 nftID;
+                                        BEAST_EXPECT(
+                                            nftID.parseHex(id.asString()));
+                                        return nftID;
+                                    });
 
-                                    std::sort(ledgerMetaIDs.begin(), ledgerMetaIDs.end());
-                                    BEAST_EXPECT(ledgerMetaIDs.size() == actualNftIDs.size());
-                                    for (size_t i = 0; i < ledgerMetaIDs.size(); ++i)
-                                        BEAST_EXPECT(ledgerMetaIDs[i] == actualNftIDs[i]);
-                                }
+                                std::sort(
+                                    ledgerMetaIDs.begin(), ledgerMetaIDs.end());
+                                BEAST_EXPECT(
+                                    ledgerMetaIDs.size() ==
+                                    actualNftIDs.size());
+                                for (size_t i = 0; i < ledgerMetaIDs.size();
+                                     ++i)
+                                    BEAST_EXPECT(
+                                        ledgerMetaIDs[i] == actualNftIDs[i]);
                             }
-                            break;
                         }
+                        break;
                     }
-                    BEAST_EXPECT(foundTx);
                 }
+                BEAST_EXPECT(foundTx);
+            }
 
-                // Test 3: Check account_tx RPC response
-                Json::Value accountTxParams;
-                accountTxParams[jss::account] = alice.human();
-                accountTxParams[jss::limit] = 10;
+            // Test 3: Check account_tx RPC response
+            Json::Value accountTxParams;
+            accountTxParams[jss::account] = alice.human();
+            accountTxParams[jss::limit] = 10;
 
-                auto const accountTxResult = env.rpc("json", "account_tx", to_string(accountTxParams));
+            auto const accountTxResult =
+                env.rpc("json", "account_tx", to_string(accountTxParams));
 
-                // Find our transaction in the account_tx response
-                if (BEAST_EXPECT(accountTxResult.isMember(jss::result)) &&
-                    BEAST_EXPECT(accountTxResult[jss::result].isMember(jss::transactions)))
+            // Find our transaction in the account_tx response
+            if (BEAST_EXPECT(accountTxResult.isMember(jss::result)) &&
+                BEAST_EXPECT(
+                    accountTxResult[jss::result].isMember(jss::transactions)))
+            {
+                auto const& accountTransactions =
+                    accountTxResult[jss::result][jss::transactions];
+                bool foundAccountTx = false;
+                for (auto const& tx : accountTransactions)
                 {
-                    auto const& accountTransactions = accountTxResult[jss::result][jss::transactions];
-                    bool foundAccountTx = false;
-                    for (auto const& tx : accountTransactions)
+                    if (tx.isMember(jss::hash) &&
+                        tx[jss::hash].asString() == txHash)
                     {
-                        if (tx.isMember(jss::hash) && tx[jss::hash].asString() == txHash)
+                        foundAccountTx = true;
+                        // Verify that the meta contains the nftoken_ids field
+                        if (BEAST_EXPECT(tx.isMember(jss::meta)))
                         {
-                            foundAccountTx = true;
-                            // Verify that the meta contains the nftoken_ids field
-                            if (BEAST_EXPECT(tx.isMember(jss::meta)))
+                            BEAST_EXPECT(
+                                tx[jss::meta].isMember(jss::nftoken_ids));
+                            if (tx[jss::meta].isMember(jss::nftoken_ids))
                             {
-                                BEAST_EXPECT(tx[jss::meta].isMember(jss::nftoken_ids));
-                                if (tx[jss::meta].isMember(jss::nftoken_ids))
-                                {
-                                    // Convert NFT IDs from account_tx Json::Value to uint256
-                                    std::vector<uint256> accountTxMetaIDs;
-                                    std::transform(
-                                        tx[jss::meta][jss::nftoken_ids].begin(),
-                                        tx[jss::meta][jss::nftoken_ids].end(),
-                                        std::back_inserter(accountTxMetaIDs),
-                                        [this](Json::Value id) {
-                                            uint256 nftID;
-                                            BEAST_EXPECT(nftID.parseHex(id.asString()));
-                                            return nftID;
-                                        });
+                                // Convert NFT IDs from account_tx Json::Value
+                                // to uint256
+                                std::vector<uint256> accountTxMetaIDs;
+                                std::transform(
+                                    tx[jss::meta][jss::nftoken_ids].begin(),
+                                    tx[jss::meta][jss::nftoken_ids].end(),
+                                    std::back_inserter(accountTxMetaIDs),
+                                    [this](Json::Value id) {
+                                        uint256 nftID;
+                                        BEAST_EXPECT(
+                                            nftID.parseHex(id.asString()));
+                                        return nftID;
+                                    });
 
-                                    std::sort(accountTxMetaIDs.begin(), accountTxMetaIDs.end());
-                                    BEAST_EXPECT(accountTxMetaIDs.size() == actualNftIDs.size());
-                                    for (size_t i = 0; i < accountTxMetaIDs.size(); ++i)
-                                        BEAST_EXPECT(accountTxMetaIDs[i] == actualNftIDs[i]);
-                                }
+                                std::sort(
+                                    accountTxMetaIDs.begin(),
+                                    accountTxMetaIDs.end());
+                                BEAST_EXPECT(
+                                    accountTxMetaIDs.size() ==
+                                    actualNftIDs.size());
+                                for (size_t i = 0; i < accountTxMetaIDs.size();
+                                     ++i)
+                                    BEAST_EXPECT(
+                                        accountTxMetaIDs[i] == actualNftIDs[i]);
                             }
-                            break;
                         }
+                        break;
                     }
-                    BEAST_EXPECT(foundAccountTx);
                 }
-            };
+                BEAST_EXPECT(foundAccountTx);
+            }
+        };
 
         // Verify `offer_id` value equals to the offerID that was
         // changed in the most recent NFTokenCreateOffer tx
