@@ -252,7 +252,8 @@ VaultCreate::doApply()
         vault->at(sfWithdrawalPolicy) = *value;
     else
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
-    vault->at(sfScale) = scale;
+    if (scale)
+        vault->at(sfScale) = scale;
     view().insert(vault);
 
     // Explicitly create MPToken for the vault owner
