@@ -167,7 +167,9 @@ fillJsonTx(
 
             // If applicable, insert nftoken synthetic fields
             RPC::insertNFTSyntheticInJson(
-                txJson, txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+                txJson,
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
         if (!fill.ledger.open())
@@ -208,7 +210,9 @@ fillJsonTx(
 
             // If applicable, insert nftoken synthetic fields
             RPC::insertNFTSyntheticInJson(
-                txJson, txn, {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+                txJson,
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 
