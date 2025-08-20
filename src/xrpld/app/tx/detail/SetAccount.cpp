@@ -648,6 +648,14 @@ SetAccount::doApply()
             uFlagsOut |= lsfDisallowIncomingTrustline;
         else if (uClearFlag == asfDisallowIncomingTrustline)
             uFlagsOut &= ~lsfDisallowIncomingTrustline;
+
+        if (ctx_.view().rules().enabled(fixDisallowIncomingCredential))
+        {
+            if (uSetFlag == asfDisallowIncomingCredential)
+                uFlagsOut |= lsfDisallowIncomingCredential;
+            else if (uClearFlag == asfDisallowIncomingCredential)
+                uFlagsOut &= ~lsfDisallowIncomingCredential;
+        }
     }
 
     // Set or clear flags for disallowing escrow

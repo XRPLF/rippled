@@ -149,6 +149,8 @@ enum LedgerSpecificFlags {
         0x40000000,               // True, enable trustline locking
     lsfAllowTrustLineClawback =
         0x80000000,               // True, enable clawback
+    lsfDisallowIncomingCredential =
+        0x00008000,               // True, reject new credentials
 
     // ltOFFER
     lsfPassive = 0x00010000,
