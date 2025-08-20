@@ -617,13 +617,9 @@ PeerImp::fail(std::string const& reason)
 void
 PeerImp::tryAsyncShutdown()
 {
-    if (!strand_.running_in_this_thread())
-        return post(
-            strand_, std::bind(&PeerImp::tryAsyncShutdown, shared_from_this()));
-
-    // XRPL_ASSERT(
-    // strand_.running_in_this_thread(),
-    // "ripple::PeerImp::shutdown: strand in this thread");
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::PeerImp::tryAsyncShutdown : strand in this thread");
 
     if (!shutdown_ || shutdownStarted_)
         return;
@@ -647,45 +643,27 @@ PeerImp::tryAsyncShutdown()
                            << " shutdown: " << shutdown_
                            << " shutdownInProgress: " << shutdownStarted_;
     setTimer();
+
     // gracefully shutdown the SSL socket, performing a shutdown handshake
     stream_.async_shutdown(bind_executor(
         strand_,
         std::bind(
             &PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
-    // stream_.async_shutdown([this](error_code ec) {
-    // cancelTimer();
-    // close();
-    // });
 }
 
 void
 PeerImp::shutdown()
 {
-    // XRPL_ASSERT(
-    // strand_.running_in_this_thread(),
-    // "ripple::PeerImp::shutdown: strand in this thread");
-    if (!strand_.running_in_this_thread())
-        return post(strand_, std::bind(&PeerImp::shutdown, shared_from_this()));
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::PeerImp::shutdown: strand in this thread");
 
     if (!socket_.is_open())
         return;
 
     shutdown_ = true;
 
-    JLOG(journal_.debug()) << "shutdown";
-    // cancel asynchronous I/O
-    // error_code ec;
-    // auto ret = socket_.cancel(ec);
     boost::beast::get_lowest_layer(stream_).cancel();
-    // if (ec)
-    // {
-    //     JLOG(journal_.debug()) << "shutdown: cancel err: " << ec.what();
-    // }
-
-    // if (ret)
-    // {
-    //     JLOG(journal_.debug()) << "shutdown: cancel err: " << ret.what();
-    // }
 
     tryAsyncShutdown();
 };
@@ -903,7 +881,7 @@ PeerImp::doAccept()
                 if (!socket_.is_open())
                     return;
                 if (ec == boost::asio::error::operation_aborted)
-                    return;
+                    return tryAsyncShutdown();
                 if (ec)
                     return fail("onWriteResponse", ec);
                 if (write_buffer->size() == bytes_transferred)
@@ -1069,7 +1047,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
-        "ripple::PeerImp::fail : strand in this thread");
+        "ripple::PeerImp::onWriteMessage : strand in this thread");
 
     writeInProgress_ = false;
     if (!socket_.is_open())
@@ -1107,6 +1085,10 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     if (!send_queue_.empty())
     {
         writeInProgress_ = true;
+        XRPL_ASSERT(
+            !shutdownStarted_,
+            "ripple::PeerImp::onWriteMessage : shutdown started");
+
         // Timeout on writes only
         return boost::asio::async_write(
             stream_,
