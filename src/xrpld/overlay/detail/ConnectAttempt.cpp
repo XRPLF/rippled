@@ -104,20 +104,18 @@ ConnectAttempt::shutdown()
         return;
 
     shutdown_ = true;
+    stream_.next_layer().cancel();
 
-    setTimer();
+    close();
+    // setTimer();
 
-    error_code ec;
-    // cancel asynchronous I/O
-    socket_.cancel(ec);
-
-    // gracefully shutdown the SSL socket, performing a shutdown handshake
-    stream_.async_shutdown(bind_executor(
-        strand_,
-        std::bind(
-            &ConnectAttempt::onShutdown,
-            shared_from_this(),
-            std::placeholders::_1)));
+    // // gracefully shutdown the SSL socket, performing a shutdown handshake
+    // stream_.async_shutdown(bind_executor(
+    //     strand_,
+    //     std::bind(
+    //         &ConnectAttempt::onShutdown,
+    //         shared_from_this(),
+    // std::placeholders::_1)));
 }
 
 void
@@ -221,9 +219,6 @@ ConnectAttempt::onConnect(error_code ec)
 {
     cancelTimer();
 
-    if (!socket_.is_open())
-        return;
-
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
@@ -238,6 +233,9 @@ ConnectAttempt::onConnect(error_code ec)
         return fail("onConnect", ec);
 
     JLOG(journal_.trace()) << "onConnect";
+
+    if (!socket_.is_open() || shutdown_)
+        return;
 
     setTimer();
 
@@ -254,9 +252,6 @@ void
 ConnectAttempt::onHandshake(error_code ec)
 {
     cancelTimer();
-
-    if (!socket_.is_open())
-        return;
 
     if (ec)
     {
@@ -294,6 +289,9 @@ ConnectAttempt::onHandshake(error_code ec)
         remote_endpoint_.address(),
         app_);
 
+    if (!socket_.is_open() || shutdown_)
+        return;
+
     setTimer();
     boost::beast::http::async_write(
         stream_,
@@ -308,8 +306,6 @@ void
 ConnectAttempt::onWrite(error_code ec)
 {
     cancelTimer();
-    if (!socket_.is_open())
-        return;
 
     if (ec)
     {
@@ -318,6 +314,9 @@ ConnectAttempt::onWrite(error_code ec)
 
         return fail("onWrite", ec);
     }
+
+    if (!socket_.is_open() || shutdown_)
+        return;
 
     boost::beast::http::async_read(
         stream_,
@@ -334,9 +333,6 @@ ConnectAttempt::onRead(error_code ec)
 {
     cancelTimer();
 
-    if (!socket_.is_open())
-        return;
-
     if (ec)
     {
         if (ec == boost::asio::error::eof)
@@ -350,6 +346,9 @@ ConnectAttempt::onRead(error_code ec)
 
         return fail("onRead", ec);
     }
+
+    if (!socket_.is_open() || shutdown_)
+        return;
 
     processResponse();
 }
@@ -453,6 +452,9 @@ ConnectAttempt::processResponse()
                << to_string(result);
             return fail(ss.str());
         }
+
+        if (!socket_.is_open() || shutdown_)
+            return;
 
         auto const peer = std::make_shared<PeerImp>(
             app_,

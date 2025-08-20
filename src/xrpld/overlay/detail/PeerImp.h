@@ -40,6 +40,7 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
 
+#include <atomic>
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -174,7 +175,10 @@ private:
     http_response_type response_;
     boost::beast::http::fields const& headers_;
     std::queue<std::shared_ptr<Message>> send_queue_;
-    bool shutdown_ = false;
+    std::atomic<bool> shutdown_ = false;
+    std::atomic<bool> shutdownStarted_ = false;
+    std::atomic<bool> readInProgress_ = false;
+    std::atomic<bool> writeInProgress_ = false;
     int large_sendq_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
@@ -484,6 +488,9 @@ private:
      */
     void
     shutdown();
+
+    void
+    tryAsyncShutdown();
     /**
      * @brief Handles the completion of the asynchronous SSL shutdown.
      *
