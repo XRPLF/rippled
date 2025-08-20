@@ -5976,6 +5976,113 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     void
+    testFixExpiredNFTokenOfferRemoval(FeatureBitset features)
+    {
+        // Test that fixExpiredNFTokenOfferRemoval amendment properly deletes
+        // expired offers when NFTokenAcceptOffer is attempted.
+        testcase("fixExpiredNFTokenOfferRemoval");
+
+        using namespace test::jtx;
+
+        Account const issuer{"issuer"};
+        Account const buyer{"buyer"};
+
+        // Test with and without the amendment
+        for (auto const& tweakedFeatures : {
+                 features - fixExpiredNFTokenOfferRemoval,
+                 features | fixExpiredNFTokenOfferRemoval})
+        {
+            bool const amendmentEnabled = 
+                tweakedFeatures.count(fixExpiredNFTokenOfferRemoval) > 0;
+
+            Env env{*this, tweakedFeatures};
+
+            env.fund(XRP(1000), issuer, buyer);
+            env.close();
+
+            // Create an NFToken
+            uint256 const nftID = token::getNextID(env, issuer, 0, tfTransferable);
+            env(token::mint(issuer, 0), txflags(tfTransferable));
+            env.close();
+
+            // Create an offer with a short expiration time (already expired)
+            std::uint32_t const expiration = lastClose(env) - 1;  // 1 second ago
+            
+            uint256 const sellOfferIndex = keylet::nftoffer(issuer, env.seq(issuer)).key;
+            env(token::createOffer(issuer, nftID, XRP(1)),
+                token::expiration(expiration),
+                txflags(tfSellNFToken));
+            env.close();
+
+            // Before: offer exists, owner count = 2 (NFT + offer)
+            BEAST_EXPECT(ownerCount(env, issuer) == 2);
+
+            // Try to accept the expired offer
+            env(token::acceptSellOffer(buyer, sellOfferIndex), ter(tecEXPIRED));
+            env.close();
+
+            if (amendmentEnabled)
+            {
+                // After amendment: expired offer should be deleted
+                // Owner count should be 1 (only NFT remains)
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);
+                
+                // Verify the offer is actually gone from ledger
+                BEAST_EXPECT(!env.le(keylet::nftoffer(sellOfferIndex)));
+            }
+            else
+            {
+                // Before amendment: expired offer remains on ledger
+                // Owner count should still be 2 (NFT + expired offer)
+                BEAST_EXPECT(ownerCount(env, issuer) == 2);
+                
+                // Verify the offer still exists on ledger
+                BEAST_EXPECT(env.le(keylet::nftoffer(sellOfferIndex)));
+            }
+
+            // Test with buy offer as well
+            uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftID, XRP(1)),
+                token::owner(issuer),
+                token::expiration(expiration));  // Also expired
+            env.close();
+
+            std::size_t expectedBuyerCount = amendmentEnabled ? 0 : 1;
+            BEAST_EXPECT(ownerCount(env, buyer) == expectedBuyerCount);
+
+            // Try to accept the expired buy offer
+            env(token::acceptBuyOffer(issuer, buyOfferIndex), ter(tecEXPIRED));
+            env.close();
+
+            if (amendmentEnabled)
+            {
+                // After amendment: expired buy offer should be deleted
+                BEAST_EXPECT(ownerCount(env, buyer) == 0);
+                BEAST_EXPECT(!env.le(keylet::nftoffer(buyOfferIndex)));
+            }
+            else
+            {
+                // Before amendment: expired buy offer remains
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+                BEAST_EXPECT(env.le(keylet::nftoffer(buyOfferIndex)));
+            }
+
+            // Test brokered case with both offers expired
+            if (!amendmentEnabled)
+            {
+                // Only test if offers still exist (before amendment)
+                env(token::brokerOffers(buyer, buyOfferIndex, sellOfferIndex), 
+                    ter(tecEXPIRED));
+                env.close();
+                
+                // Offers should still exist
+                BEAST_EXPECT(ownerCount(env, issuer) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
+        }
+    }
+
+    void
     testBrokeredSaleToSelf(FeatureBitset features)
     {
         // There was a bug that if an account had...
@@ -8059,6 +8166,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         testNFTokenDeleteAccount(features);
         testNftXxxOffers(features);
         testFixNFTokenNegOffer(features);
+        testFixExpiredNFTokenOfferRemoval(features);
         testIOUWithTransferFee(features);
         testBrokeredSaleToSelf(features);
         testFixNFTokenRemint(features);
