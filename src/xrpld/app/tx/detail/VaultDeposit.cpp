@@ -238,24 +238,21 @@ VaultDeposit::doApply()
         }
     }
 
-    STAmount shares = {vault->at(sfShareMPTID)}, assets = amount;
+    STAmount shares = {vault->at(sfShareMPTID)}, assets;
     try
     {
         // Compute exchange before transferring any amounts.
-        shares = assetsToSharesDeposit(vault, sleIssuance, assets);
+        shares = assetsToSharesDeposit(vault, sleIssuance, amount);
         if (shares == beast::zero)
             return tecINSUFFICIENT_FUNDS;
 
-        XRPL_ASSERT(
-            shares.asset() != assets.asset(),
-            "ripple::VaultDeposit::doApply : assets are not shares");
         auto const assetsToTake =
             sharesToAssetsDeposit(vault, sleIssuance, shares);
-        if (assetsToTake > assets)
+        if (assetsToTake > amount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
-            return tefINTERNAL;
+            return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
         assets = assetsToTake;
@@ -272,6 +269,10 @@ VaultDeposit::doApply()
             << ", amount=" << amount;
         return tecPATH_DRY;
     }
+
+    XRPL_ASSERT(
+        shares.asset() != assets.asset(),
+        "ripple::VaultDeposit::doApply : assets are not shares");
 
     vault->at(sfAssetsTotal) += assets;
     vault->at(sfAssetsAvailable) += assets;

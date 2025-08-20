@@ -2805,7 +2805,7 @@ assetsToSharesDeposit(
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesDeposit : assets and vault match");
-    Number assetTotal = vault->at(sfAssetsTotal);
+    Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return STAmount{
@@ -2813,7 +2813,7 @@ assetsToSharesDeposit(
             Number(assets.mantissa(), assets.exponent() + vault->at(sfScale))
                 .truncate()};
 
-    Number shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
 }
@@ -2830,7 +2830,7 @@ sharesToAssetsDeposit(
     XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
         "ripple::sharesToAssetsDeposit : shares and vault match");
-    Number assetTotal = vault->at(sfAssetsTotal);
+    Number const assetTotal = vault->at(sfAssetsTotal);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return STAmount{
@@ -2839,7 +2839,7 @@ sharesToAssetsDeposit(
             shares.exponent() - vault->at(sfScale),
             false};
 
-    Number shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }
@@ -2859,7 +2859,7 @@ assetsToSharesWithdraw(
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     Number result = shareTotal * (assets / assetTotal);
     if (truncate == TruncateShares::yes)
         result = result.truncate();
@@ -2881,7 +2881,7 @@ sharesToAssetsWithdraw(
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }

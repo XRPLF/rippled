@@ -176,7 +176,7 @@ VaultClawback::doApply()
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
-    [[maybe_unused]] auto lossUnrealized = vault->at(sfLossUnrealized);
+    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "ripple::VaultClawback::doApply : loss and assets do balance");
@@ -187,7 +187,7 @@ VaultClawback::doApply()
     {
         if (amount == beast::zero)
         {
-            Asset share = *(*vault)[sfShareMPTID];
+            Asset const share = *(*vault)[sfShareMPTID];
             shares = accountHolds(
                 view(),
                 holder,
@@ -218,7 +218,7 @@ VaultClawback::doApply()
                 // LCOV_EXCL_START
                 JLOG(j_.error())
                     << "VaultClawback: invalid rounding of shares.";
-                return tefINTERNAL;
+                return tecINTERNAL;
                 // LCOV_EXCL_STOP
             }
         }

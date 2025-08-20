@@ -201,8 +201,7 @@ VaultWithdraw::doApply()
         if (amount.asset() == vaultAsset)
         {
             // Fixed assets, variable shares.
-            assets = amount;
-            shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+            shares = assetsToSharesWithdraw(vault, sleIssuance, amount);
             if (shares == beast::zero)
                 return tecINSUFFICIENT_FUNDS;
             assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
@@ -243,7 +242,7 @@ VaultWithdraw::doApply()
 
     auto assetsAvailable = vault->at(sfAssetsAvailable);
     auto assetsTotal = vault->at(sfAssetsTotal);
-    [[maybe_unused]] auto lossUnrealized = vault->at(sfLossUnrealized);
+    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
     XRPL_ASSERT(
         lossUnrealized <= (assetsTotal - assetsAvailable),
         "ripple::VaultWithdraw::doApply : loss and assets do balance");

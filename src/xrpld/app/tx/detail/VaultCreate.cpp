@@ -88,11 +88,11 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const scale = ctx.tx[~sfScale])
     {
-        if (scale > 18)
+        auto const vaultAsset = ctx.tx[sfAsset];
+        if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
             return temMALFORMED;
 
-        auto vaultAsset = ctx.tx[sfAsset];
-        if (vaultAsset.holds<MPTIssue>() || vaultAsset.native())
+        if (scale > vaultMaximumIOUScale)
             return temMALFORMED;
     }
 
@@ -109,8 +109,8 @@ VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
-    auto vaultAsset = ctx.tx[sfAsset];
-    auto account = ctx.tx[sfAccount];
+    auto const vaultAsset = ctx.tx[sfAsset];
+    auto const account = ctx.tx[sfAccount];
 
     if (vaultAsset.native())
         ;  // No special checks for XRP
@@ -160,7 +160,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
-    auto sequence = ctx.tx.getSeqValue();
+    auto const sequence = ctx.tx.getSeqValue();
     if (auto const accountId = pseudoAccountAddress(
             ctx.view, keylet::vault(account, sequence).key);
         accountId == beast::zero)
@@ -177,8 +177,8 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto sequence = tx.getSeqValue();
-    auto owner = view().peek(keylet::account(account_));
+    auto const sequence = tx.getSeqValue();
+    auto const owner = view().peek(keylet::account(account_));
     if (owner == nullptr)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
@@ -202,11 +202,9 @@ VaultCreate::doApply()
         !isTesSuccess(ter))
         return ter;
 
-    std::uint8_t assetScale = vaultDefaultIOUScale;
-    if (asset.holds<MPTIssue>() || asset.native())
-        assetScale = 0;
-    else if (auto const scale = ctx_.tx[~sfScale])
-        assetScale = *scale;
+    std::uint8_t const scale = (asset.holds<MPTIssue>() || asset.native())
+        ? 0
+        : ctx_.tx[~sfScale].value_or(vaultDefaultIOUScale);
 
     auto txFlags = tx.getFlags();
     std::uint32_t mptFlags = 0;
@@ -227,7 +225,7 @@ VaultCreate::doApply()
             .account = pseudoId->value(),
             .sequence = 1,
             .flags = mptFlags,
-            .assetScale = assetScale,
+            .assetScale = scale,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
         });
@@ -254,8 +252,7 @@ VaultCreate::doApply()
         vault->at(sfWithdrawalPolicy) = *value;
     else
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
-    vault->at(sfScale) = assetScale;
-    // No `LossUnrealized`.
+    vault->at(sfScale) = scale;
     view().insert(vault);
 
     return tesSUCCESS;
