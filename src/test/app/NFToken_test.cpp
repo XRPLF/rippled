@@ -6079,6 +6079,33 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 BEAST_EXPECT(ownerCount(env, issuer) == 2);
                 BEAST_EXPECT(ownerCount(env, buyer) == 1);
             }
+            else
+            {
+                // With amendment, create fresh expired offers for brokered test
+                // (previous ones were already cleaned up)
+                uint256 const sellOfferIndex2 = keylet::nftoffer(issuer, env.seq(issuer)).key;
+                env(token::createOffer(issuer, nftID, XRP(1)),
+                    token::expiration(expiration),
+                    txflags(tfSellNFToken));
+                env.close();
+
+                uint256 const buyOfferIndex2 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                env(token::createOffer(buyer, nftID, XRP(1)),
+                    token::owner(issuer),
+                    token::expiration(expiration));
+                env.close();
+
+                // Try brokered accept with both offers expired
+                env(token::brokerOffers(buyer, buyOfferIndex2, sellOfferIndex2),
+                    ter(tecEXPIRED));
+                env.close();
+                
+                // Both offers should be deleted
+                BEAST_EXPECT(ownerCount(env, issuer) == 1);  // Only NFT remains
+                BEAST_EXPECT(ownerCount(env, buyer) == 0);   // No offers
+                BEAST_EXPECT(!env.le(keylet::nftoffer(sellOfferIndex2)));
+                BEAST_EXPECT(!env.le(keylet::nftoffer(buyOfferIndex2)));
+            }
         }
     }
 
