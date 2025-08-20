@@ -1976,6 +1976,96 @@ class Vault_test : public beast::unit_test::suite
             env(vault.del({.owner = owner, .id = keylet.key}));
         });
 
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     PrettyAsset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("MPT vault owner can receive shares unless unauthorized");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(1000)});
+            env(tx);
+            env.close();
+
+            auto const issuanceId = [&env](ripple::Keylet keylet) -> MPTID {
+                auto const vault = env.le(keylet);
+                return vault->at(sfShareMPTID);
+            }(keylet);
+            PrettyAsset shares = MPTIssue(issuanceId);
+
+            {
+                // owner has MPToken for shares they did not explicitly create
+                env(pay(depositor, owner, shares(1)));
+                env.close();
+
+                tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = shares(1)});
+                env(tx);
+                env.close();
+
+                // owner's MPToken for vault shares not destroyed by withdraw
+                env(pay(depositor, owner, shares(1)));
+                env.close();
+
+                tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = owner,
+                     .amount = asset(0)});
+                env(tx);
+                env.close();
+
+                // owner's MPToken for vault shares not destroyed by clawback
+                env(pay(depositor, owner, shares(1)));
+                env.close();
+
+                // pay back, so we can destroy owner's MPToken now
+                env(pay(owner, depositor, shares(1)));
+                env.close();
+
+                {
+                    // explicitly destroy vault owners MPToken with zero balance
+                    Json::Value jv;
+                    jv[sfAccount] = owner.human();
+                    jv[sfMPTokenIssuanceID] = to_string(issuanceId);
+                    jv[sfFlags] = tfMPTUnauthorize;
+                    jv[sfTransactionType] = jss::MPTokenAuthorize;
+                    env(jv);
+                    env.close();
+                }
+
+                // owner no longer has MPToken for vault shares
+                tx = pay(depositor, owner, shares(1));
+                env(tx, ter{tecNO_AUTH});
+                env.close();
+
+                // destroy all remaining shares, so we can delete vault
+                tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = depositor,
+                     .amount = asset(0)});
+                env(tx);
+                env.close();
+
+                // will soft fail destroying MPToken for vault owner
+                env(vault.del({.owner = owner, .id = keylet.key}));
+                env.close();
+            }
+        });
+
         testCase(
             [this](
                 Env& env,

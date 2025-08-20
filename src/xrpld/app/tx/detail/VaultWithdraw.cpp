@@ -275,13 +275,17 @@ VaultWithdraw::doApply()
 
     // Try to remove MPToken for shares, if the account balance is zero. Vault
     // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
-    if (auto const ter =
-            removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
-        isTesSuccess(ter))
+    // Keep MPToken if holder is the vault owner.
+    if (account_ != vault->at(sfOwner))
     {
-        JLOG(j_.debug())  //
-            << "VaultWithdraw: removed empty MPToken for vault shares for "
-            << toBase58(account_);
+        if (auto const ter = removeEmptyHolding(
+                view(), account_, sharesRedeemed.asset(), j_);
+            isTesSuccess(ter))
+        {
+            JLOG(j_.debug())  //
+                << "VaultWithdraw: removed empty MPToken for vault shares for "
+                << toBase58(account_);
+        }
     }
 
     auto const dstAcct = [&]() -> AccountID {

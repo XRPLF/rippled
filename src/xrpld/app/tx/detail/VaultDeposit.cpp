@@ -222,7 +222,9 @@ VaultDeposit::doApply()
         }
 
         // If the vault is private, set the authorized flag for the vault owner
-        if (vault->isFlag(tfVaultPrivate))
+        // Note, account_ check is technically redudant thanks to `preclaim` but
+        // it makes sense for both readability and defensive coding.
+        if (vault->isFlag(tfVaultPrivate) && account_ == vault->at(sfOwner))
         {
             if (auto const err = authorizeMPToken(
                     view(),

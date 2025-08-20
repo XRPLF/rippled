@@ -21,6 +21,7 @@
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -135,6 +136,17 @@ VaultDelete::doApply()
         JLOG(j_.error()) << "VaultDelete: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // First, try to remove MPToken for vault shares for the vault owner.
+    // It will fail it removed already, which is fine.
+    if (auto const ter = removeEmptyHolding(
+            view(), account_, MPTIssue(vault->at(sfShareMPTID)), j_);
+        !isTesSuccess(ter))
+    {
+        JLOG(j_.debug())  //
+            << "VaultDelete: failed to remove MPToken for vault shares for "
+            << toBase58(account_);
     }
 
     if (!view().dirRemove(

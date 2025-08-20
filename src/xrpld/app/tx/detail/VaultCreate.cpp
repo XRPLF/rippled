@@ -231,7 +231,7 @@ VaultCreate::doApply()
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE
-    auto& share = *maybeShare;
+    auto const& mptIssuanceID = *maybeShare;
 
     vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = txFlags & tfVaultPrivate;
@@ -244,7 +244,7 @@ VaultCreate::doApply()
     // Leave default values for AssetTotal and AssetAvailable, both zero.
     if (auto value = tx[~sfAssetsMaximum])
         vault->at(sfAssetsMaximum) = *value;
-    vault->at(sfShareMPTID) = share;
+    vault->at(sfShareMPTID) = mptIssuanceID;
     if (auto value = tx[~sfData])
         vault->at(sfData) = *value;
     // Required field, default to vaultStrategyFirstComeFirstServe
@@ -254,6 +254,27 @@ VaultCreate::doApply()
         vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
     vault->at(sfScale) = scale;
     view().insert(vault);
+
+    // Explicitly create MPToken for the vault owner
+    if (auto const err = authorizeMPToken(
+            view(), mPriorBalance, mptIssuanceID, account_, ctx_.journal);
+        !isTesSuccess(err))
+        return err;
+
+    // If the vault is private, set the authorized flag for the vault owner
+    if (txFlags & tfVaultPrivate)
+    {
+        if (auto const err = authorizeMPToken(
+                view(),
+                mPriorBalance,
+                mptIssuanceID,
+                pseudoId,
+                ctx_.journal,
+                {},
+                account_);
+            !isTesSuccess(err))
+            return err;
+    }
 
     return tesSUCCESS;
 }

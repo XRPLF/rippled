@@ -260,13 +260,17 @@ VaultClawback::doApply()
 
     // Try to remove MPToken for shares, if the holder balance is zero. Vault
     // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
-    if (auto const ter =
-            removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
-        isTesSuccess(ter))
+    // Keep MPToken if holder is the vault owner.
+    if (holder != vault->at(sfOwner))
     {
-        JLOG(j_.debug())  //
-            << "VaultClawback: removed empty MPToken for vault shares for "
-            << toBase58(holder);
+        if (auto const ter =
+                removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+            isTesSuccess(ter))
+        {
+            JLOG(j_.debug())  //
+                << "VaultClawback: removed empty MPToken for vault shares for "
+                << toBase58(holder);
+        }
     }
 
     // Transfer assets from vault to issuer.
