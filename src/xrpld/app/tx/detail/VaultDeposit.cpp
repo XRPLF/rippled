@@ -244,7 +244,7 @@ VaultDeposit::doApply()
         // Compute exchange before transferring any amounts.
         shares = assetsToSharesDeposit(vault, sleIssuance, amount);
         if (shares == beast::zero)
-            return tecINSUFFICIENT_FUNDS;
+            return tecPRECISION_LOSS;
 
         auto const assetsToTake =
             sharesToAssetsDeposit(vault, sleIssuance, shares);

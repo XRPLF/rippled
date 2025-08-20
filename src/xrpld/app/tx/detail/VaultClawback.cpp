@@ -237,7 +237,7 @@ VaultClawback::doApply()
     }
 
     if (shares == beast::zero)
-        return tecINSUFFICIENT_FUNDS;
+        return tecPRECISION_LOSS;
 
     assetsTotal -= assets;
     assetsAvailable -= assets;

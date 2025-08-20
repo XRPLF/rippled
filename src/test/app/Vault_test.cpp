@@ -269,7 +269,7 @@ class Vault_test : public beast::unit_test::suite
                              .id = keylet.key,
                              .holder = depositor,
                              .amount = asset(10)});
-                        env(tx, ter{tecINSUFFICIENT_FUNDS});
+                        env(tx, ter{tecPRECISION_LOSS});
                         env.close();
                     }
 
@@ -278,7 +278,7 @@ class Vault_test : public beast::unit_test::suite
                             {.depositor = depositor,
                              .id = keylet.key,
                              .amount = asset(10)});
-                        env(tx, ter{tecINSUFFICIENT_FUNDS});
+                        env(tx, ter{tecPRECISION_LOSS});
                         env.close();
                     }
                 }
@@ -403,7 +403,7 @@ class Vault_test : public beast::unit_test::suite
                          .id = keylet.key,
                          .holder = depositor,
                          .amount = asset(0)});
-                    env(tx, ter{tecINSUFFICIENT_FUNDS});
+                    env(tx, ter{tecPRECISION_LOSS});
                     env.close();
                 }
 
@@ -3268,7 +3268,7 @@ class Vault_test : public beast::unit_test::suite
                 {.depositor = d.depositor,
                  .id = d.keylet.key,
                  .amount = STAmount(d.asset, Number(9, -2))});
-            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env(tx, ter{tecPRECISION_LOSS});
         });
 
         testCase(1, [&, this](Env& env, Data d) {
@@ -3598,7 +3598,7 @@ class Vault_test : public beast::unit_test::suite
                     {.depositor = d.depositor,
                      .id = d.keylet.key,
                      .amount = STAmount(d.asset, Number(4, -2))});
-                env(tx, ter{tecINSUFFICIENT_FUNDS});
+                env(tx, ter{tecPRECISION_LOSS});
             }
 
             {
@@ -3818,7 +3818,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = d.keylet.key,
                      .holder = d.depositor,
                      .amount = STAmount(d.asset, Number(4, -2))});
-                env(tx, ter{tecINSUFFICIENT_FUNDS});
+                env(tx, ter{tecPRECISION_LOSS});
             }
 
             {
