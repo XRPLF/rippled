@@ -95,7 +95,7 @@ jobs:
           echo 'Operating system compiler name: ${{ matrix.os.compiler_name }}'
           echo 'Operating system compiler version: ${{ matrix.os.compiler_version }}'
           echo 'Architecture platform: ${{ matrix.architecture.platform }}'
-          echo 'Architecture runner: ${{ matrix.architecture.runner }}'
+          echo 'Architecture runner: ${{ toJson(matrix.architecture.runner) }}'
           echo 'Build type: ${{ matrix.build_type }}'
           echo 'Build only: ${{ matrix.build_only }}'
           echo 'CMake arguments: ${{ matrix.cmake_args }}'
