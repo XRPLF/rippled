@@ -90,28 +90,16 @@ if (MSVC)
       -errorreport:none
       -machine:X64)
 else ()
-  # HACK : because these need to come first, before any warning demotion
-  string (APPEND CMAKE_CXX_FLAGS " -Wall -Wdeprecated")
-  if (wextra)
-    string (APPEND CMAKE_CXX_FLAGS " -Wextra -Wno-unused-parameter")
-  endif ()
-  # not MSVC
   target_compile_options (common
     INTERFACE
+      -Wall
+      -Wdeprecated
+      $<$<BOOL:${is_clang}>:-Wno-deprecated-declarations>
+      $<$<BOOL:${wextra}>:-Wextra -Wno-unused-parameter>
       $<$<BOOL:${werr}>:-Werror>
-      $<$<COMPILE_LANGUAGE:CXX>:
-        -frtti
-        -Wnon-virtual-dtor
-      >
-      -Wno-sign-compare
-      -Wno-char-subscripts
-      -Wno-format
-      -Wno-unused-local-typedefs
       -fstack-protector
-      $<$<BOOL:${is_gcc}>:
-        -Wno-unused-but-set-variable
-        -Wno-deprecated
-      >
+      -Wno-sign-compare
+      -Wno-unused-but-set-variable
       $<$<NOT:$<CONFIG:Debug>>:-fno-strict-aliasing>
       # tweak gcc optimization for debug
       $<$<AND:$<BOOL:${is_gcc}>,$<CONFIG:Debug>>:-O0>

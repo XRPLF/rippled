@@ -485,7 +485,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(IPEndpoint, net, beast);
+BEAST_DEFINE_TESTSUITE(IPEndpoint, beast, beast);
 
 }  // namespace IP
 }  // namespace beast
