@@ -82,10 +82,18 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
-    , journal_(sink_)
-    , p_journal_(p_sink_)
+    , journal_(
+          app_.journal("Peer"),
+          log::attributes(
+              {{"NodeID", id},
+               {"RemoteAddress", to_string(slot->remote_endpoint())},
+               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
+    , p_journal_(
+          app_.journal("Protocol"),
+          log::attributes(
+              {{"NodeID", id},
+               {"RemoteAddress", to_string(slot->remote_endpoint())},
+               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)

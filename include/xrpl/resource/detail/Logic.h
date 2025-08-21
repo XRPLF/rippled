@@ -32,6 +32,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
+#include <xrpl/telemetry/JsonLogs.h>
 
 #include <mutex>
 
@@ -132,7 +133,8 @@ public:
             }
         }
 
-        JLOG(m_journal.debug()) << "New inbound endpoint " << *entry;
+        JLOG(m_journal.debug())
+            << "New inbound endpoint " << log::param("Entry", *entry);
 
         return Consumer(*this, *entry);
     }
@@ -160,7 +162,8 @@ public:
             }
         }
 
-        JLOG(m_journal.debug()) << "New outbound endpoint " << *entry;
+        JLOG(m_journal.debug())
+            << "New outbound endpoint " << log::param("Entry", *entry);
 
         return Consumer(*this, *entry);
     }
@@ -193,7 +196,8 @@ public:
             }
         }
 
-        JLOG(m_journal.debug()) << "New unlimited endpoint " << *entry;
+        JLOG(m_journal.debug())
+            << "New unlimited endpoint " << log::param("Entry", *entry);
 
         return Consumer(*this, *entry);
     }
@@ -350,7 +354,8 @@ public:
         {
             if (iter->whenExpires <= elapsed)
             {
-                JLOG(m_journal.debug()) << "Expired " << *iter;
+                JLOG(m_journal.debug())
+                    << "Expired " << log::param("Entry", *iter);
                 auto table_iter = table_.find(*iter->key);
                 ++iter;
                 erase(table_iter);
@@ -422,7 +427,9 @@ public:
         std::lock_guard _(lock_);
         if (--entry.refcount == 0)
         {
-            JLOG(m_journal.debug()) << "Inactive " << entry;
+            JLOG(m_journal.debug())
+                << "Inactive " << log::param("Entry", entry);
+            ;
 
             switch (entry.key->kind)
             {
@@ -474,7 +481,8 @@ public:
         clock_type::time_point const now(m_clock.now());
         int const balance(entry.add(fee.cost(), now));
         JLOG(getStream(fee.cost(), m_journal))
-            << "Charging " << entry << " for " << fee << context;
+            << "Charging " << log::param("Entry", entry) << " for "
+            << log::param("Fee", fee) << context;
         return disposition(balance);
     }
 
@@ -496,7 +504,9 @@ public:
         }
         if (notify)
         {
-            JLOG(m_journal.info()) << "Load warning: " << entry;
+            JLOG(m_journal.info())
+                << "Load warning: " << log::param("Entry", entry);
+            ;
             ++m_stats.warn;
         }
         return notify;
@@ -515,8 +525,10 @@ public:
         if (balance >= dropThreshold)
         {
             JLOG(m_journal.warn())
-                << "Consumer entry " << entry << " dropped with balance "
-                << balance << " at or above drop threshold " << dropThreshold;
+                << "Consumer entry " << log::param("Entry", entry)
+                << " dropped with balance " << log::param("Entry", balance)
+                << " at or above drop threshold "
+                << log::param("Entry", dropThreshold);
 
             // Adding feeDrop at this point keeps the dropped connection
             // from re-connecting for at least a little while after it is

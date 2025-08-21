@@ -139,12 +139,12 @@ class Transactor
 {
 protected:
     ApplyContext& ctx_;
-    beast::WrappedSink sink_;
-    beast::Journal const j_;
 
     AccountID const account_;
     XRPAmount mPriorBalance;   // Balance before fees.
     XRPAmount mSourceBalance;  // Balance after fees.
+
+    beast::Journal const j_;
 
     virtual ~Transactor() = default;
     Transactor(Transactor const&) = delete;
