@@ -88,6 +88,19 @@ jobs:
     runs-on: ${{ matrix.architecture.runner }}
     container: ${{ inputs.os == 'linux' && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
     steps:
+      - name: Check strategy matrix
+        run: |
+          echo 'Operating system distro name: ${{ matrix.os.distro_name }}'
+          echo 'Operating system distro version: ${{ matrix.os.distro_version }}'
+          echo 'Operating system compiler name: ${{ matrix.os.compiler_name }}'
+          echo 'Operating system compiler version: ${{ matrix.os.compiler_version }}'
+          echo 'Architecture platform: ${{ matrix.architecture.platform }}'
+          echo 'Architecture runner: ${{ toJson(matrix.architecture.runner) }}'
+          echo 'Build type: ${{ matrix.build_type }}'
+          echo 'Build only: ${{ matrix.build_only }}'
+          echo 'CMake arguments: ${{ matrix.cmake_args }}'
+          echo 'CMake target: ${{ matrix.cmake_target }}'
+          echo 'Config name: ${{ matrix.config_name }}'
       - name: Clean workspace (MacOS)
         if: ${{ inputs.os == 'macos' }}
         run: |
