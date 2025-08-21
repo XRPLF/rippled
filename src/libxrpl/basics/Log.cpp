@@ -113,14 +113,14 @@ Logs::File::close()
 }
 
 void
-Logs::File::write(char const* text)
+Logs::File::write(std::string_view text)
 {
     if (m_stream != nullptr)
         (*m_stream) << text;
 }
 
 void
-Logs::File::writeln(char const* text)
+Logs::File::writeln(std::string_view text)
 {
     if (m_stream != nullptr)
     {
@@ -196,11 +196,15 @@ Logs::write(
     bool console)
 {
     std::string s;
-    format(s, text, level, partition);
+    std::string_view result = text;
+    if (!beast::Journal::isStructuredJournalEnabled())
+    {
+        format(s, text, level, partition);
+        result = text;
+    }
+
     std::lock_guard lock(mutex_);
-    file_.writeln(s);
-    if (!silent_)
-        std::cerr << s << '\n';
+    file_.writeln(result);
     // VFALCO TODO Fix console output
     // if (console)
     //    out_.write_console(s);

@@ -565,8 +565,7 @@ getHashesByIndex(
 
     if (!lhO || !phO)
     {
-        auto stream = j.trace();
-        JLOG(stream) << "Don't have ledger " << ledgerIndex;
+        JLOG(j.trace()) << "Don't have ledger " << ledgerIndex;
         return {};
     }
 

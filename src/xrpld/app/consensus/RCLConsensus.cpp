@@ -1129,7 +1129,25 @@ RclConsensusLogger::~RclConsensusLogger()
     outSs << header_ << "duration " << (duration.count() / 1000) << '.'
           << std::setw(3) << std::setfill('0') << (duration.count() % 1000)
           << "s. " << ss_->str();
-    j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
+
+    thread_local std::string buffer;
+    if (beast::Journal::isStructuredJournalEnabled())
+    {
+        buffer.resize(5 * 1024);
+        beast::detail::SimpleJsonWriter writer{&buffer};
+        writer.startObject();
+        writer.writeKey("Msg");
+        writer.writeString(outSs.str());
+        writer.writeKey("Tm");
+        writer.writeString(to_string(std::chrono::system_clock::now()));
+        writer.endObject();
+        writer.finish();
+    }
+    else
+    {
+        buffer = outSs.str();
+    }
+    j_.sink().writeAlways(beast::severities::kInfo, buffer);
 }
 
 }  // namespace ripple

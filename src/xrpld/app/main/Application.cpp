@@ -832,9 +832,6 @@ public:
     bool
     serverOkay(std::string& reason) override;
 
-    beast::Journal
-    journal(std::string const& name) override;
-
     //--------------------------------------------------------------------------
 
     bool
@@ -1212,8 +1209,11 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     }
 
     JLOG(m_journal.info()) << "Process starting: "
-                           << BuildInfo::getFullVersionString()
-                           << ", Instance Cookie: " << instanceCookie_;
+                           << log::param(
+                                  "RippledVersion",
+                                  BuildInfo::getFullVersionString())
+                           << ", Instance Cookie: "
+                           << log::param("InstanceCookie", instanceCookie_);
 
     if (numberOfThreads(*config_) < 2)
     {
@@ -2158,12 +2158,6 @@ ApplicationImp::serverOkay(std::string& reason)
     }
 
     return true;
-}
-
-beast::Journal
-ApplicationImp::journal(std::string const& name)
-{
-    return logs_->journal(name);
 }
 
 void

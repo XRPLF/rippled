@@ -950,15 +950,15 @@ SHAMap::fetchRoot(SHAMapHash const& hash, SHAMapSyncFilter* filter)
     {
         if (type_ == SHAMapType::TRANSACTION)
         {
-            stream << "Fetch root TXN node " << hash;
+            std::move(stream) << "Fetch root TXN node " << hash;
         }
         else if (type_ == SHAMapType::STATE)
         {
-            stream << "Fetch root STATE node " << hash;
+            std::move(stream) << "Fetch root STATE node " << hash;
         }
         else
         {
-            stream << "Fetch root SHAMap node " << hash;
+            std::move(stream) << "Fetch root SHAMap node " << hash;
         }
     }
 

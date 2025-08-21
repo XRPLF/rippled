@@ -178,7 +178,6 @@ struct Peer
     using NodeKey = Validation::NodeKey;
 
     //! Logging support that prefixes messages with the peer ID
-    beast::WrappedSink sink;
     beast::Journal j;
 
     //! Generic consensus
@@ -284,8 +283,7 @@ struct Peer
         TrustGraph<Peer*>& tg,
         CollectorRefs& c,
         beast::Journal jIn)
-        : sink(jIn, "Peer " + to_string(i) + ": ")
-        , j(sink)
+        : j(jIn, log::attributes(log::attr("Peer", "Peer " + to_string(i))))
         , consensus(s.clock(), *this, j)
         , id{i}
         , key{id, 0}

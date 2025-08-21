@@ -406,7 +406,7 @@ Slot<clock_type>::update(
                 v.state = PeerState::Selected;
             else if (v.state != PeerState::Squelched)
             {
-                if (journal_.trace())
+                if (journal_.active(beast::severities::kTrace))
                     str << k << " ";
                 v.state = PeerState::Squelched;
                 std::chrono::seconds duration =
