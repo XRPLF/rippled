@@ -25,6 +25,7 @@
 
 #include <memory>
 #include <source_location>
+#include <unordered_map>
 #include <utility>
 
 namespace ripple::log {
