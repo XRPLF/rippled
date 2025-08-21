@@ -13,9 +13,9 @@ defaults:
     shell: bash
 
 jobs:
-  clang-format:
+  pre-commit:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/ci/tools-rippled-clang-format
+    container: ghcr.io/xrplf/ci/tools-rippled-pre-commit
     steps:
       # The $GITHUB_WORKSPACE and ${{ github.workspace }} might not point to the
       # same directory for jobs running in containers. The actions/checkout step
@@ -38,74 +38,37 @@ jobs:
           echo 'Checking environment variables.'
           env | sort
 
+          echo 'Checking pre-commit version.'
+          pre-commit --version
+          
           echo 'Checking clang-format version.'
           clang-format --version
-      - name: Format code
-        run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' -o -name '*.proto' \) -exec clang-format -i {} +
-      - name: Check for differences
-        env:
-          MESSAGE: |
-            One or more files did not conform to the formatting specified in
-            .clang-format. Maybe you did not run 'git-clang-format' or
-            'clang-format' before committing, or your version of clang-format
-            has an incompatibility with the one used here (see the "Check
-            configuration" step above).
-
-            Run 'pre-commit run clang-format' in your repo, and then commit and
-            push the changes.
-        run: |
-          DIFF=$(git status --porcelain)
-          if [ -n "${DIFF}" ]; then
-            # Print the files that changed to give the contributor a hint about
-            # what to expect when running git-clang-format on their own machine.
-            git status
-            echo "${MESSAGE}"
-            exit 1
-          fi
-
-  prettier:
-    runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/ci/tools-rippled-prettier
-    steps:
-      - name: Configure git safe.directory
-        run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          git config --global --add safe.directory ${{ github.workspace }}
-      - name: Checkout repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-      - name: Check configuration
-        run: |
-          echo 'Checking path.'
-          echo ${PATH} | tr ':' '\n'
-
-          echo 'Checking environment variables.'
-          env | sort
 
           echo 'Checking NPM version.'
           npm --version
 
           echo 'Checking Node.js version.'
           node --version
-
+          
           echo 'Checking prettier version.'
           prettier --version
       - name: Format code
-        run: prettier --check .
+        run: pre-commit run --show-diff-on-failure --color=always --all-files
       - name: Check for differences
         env:
           MESSAGE: |
-            One or more files did not conform to the formatting rules specified
-            by Prettier. Maybe you did not run 'prettier' before committing, or
-            your version of prettier has an incompatibility with the one used
-            here (see the "Check configuration" step above).
+            One or more files did not conform to the formatting. Maybe you did
+            not run 'pre-commit' before committing, or your version of
+            'clang-format' or 'prettier' has an incompatibility with the ones
+            used here (see the "Check configuration" step above).
 
-            Run 'pre-commit run prettier' in your repo, and then commit and push
-            the changes.
+            Run 'pre-commit run --all-files' in your repo, and then commit and
+            push the changes.
         run: |
           DIFF=$(git status --porcelain)
           if [ -n "${DIFF}" ]; then
             # Print the files that changed to give the contributor a hint about
-            # what to expect when running prettier on their own machine.
+            # what to expect when running pre-commit on their own machine.
             git status
             echo "${MESSAGE}"
             exit 1
