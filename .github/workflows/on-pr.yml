@@ -68,8 +68,27 @@ jobs:
       }}
     runs-on: ubuntu-latest
     steps:
-      - name: No-op
-        run: true
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Number of commits
+        id: commits
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count=$( gh pr view --json commits  --jq '.commits | length' \
+            ${{ github.event.pull_request.number }} )
+          count=$[ $count + 1 ]
+          echo "count=${count}" >> "${GITHUB_OUTPUT}"
+
+          cat "${GITHUB_OUTPUT}"
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          fetch-depth: ${{ steps.commits.outputs.count }}
+      - name: Changed files
+        run: |
+          git diff --numstat ${{ github.event.pull_request.base.sha }} | sed 's/{.* => \(.*\)}/\1/' | awk '{print $NF}'
+          true
 
   check-format:
     needs: should-run
