@@ -109,8 +109,10 @@ severities::to_string(Severity severity)
         case kFatal:
             return "fatal";
         default:
-            assert(false);
+            UNREACHABLE("Unexpected severity value!");
     }
+    return "";
+
 }
 Journal::Sink::Sink(Severity thresh, bool console)
     : thresh_(thresh), m_console(console)
