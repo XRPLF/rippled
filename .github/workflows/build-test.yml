@@ -138,7 +138,7 @@ jobs:
         if: ${{ inputs.os == 'macos' }}
         run: |
           echo 'Installing build tools.'
-          brew install cmake conan ninja coreutils
+          brew install --quiet cmake conan ninja coreutils
       - name: Check configuration (Linux and MacOS)
         if: ${{ inputs.os == 'linux' || inputs.os == 'macos' }}
         run: |
