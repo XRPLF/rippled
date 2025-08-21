@@ -25,6 +25,7 @@
 
 #include <source_location>
 #include <utility>
+#include <memory>
 
 namespace ripple::log {
 
@@ -77,7 +78,7 @@ public:
     void
     setModuleName(std::string const& name) override;
 
-    std::unique_ptr<StructuredLogAttributes>
+    [[nodiscard]] std::unique_ptr<StructuredLogAttributes>
     clone() const override;
 
     void
