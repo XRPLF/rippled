@@ -3337,20 +3337,58 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // No one can accept an expired sell offer.
             env(token::acceptSellOffer(buyer, offer1), ter(tecEXPIRED));
-            env(token::acceptSellOffer(issuer, offer1), ter(tecEXPIRED));
+
+            // With fixExpiredNFTokenOfferRemoval amendment, the first accept
+            // attempt deletes the expired offer. Without the amendment,
+            // the offer remains and we can try to accept it again.
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: offer was deleted by first accept attempt
+                env(token::acceptSellOffer(issuer, offer1),
+                    ter(tecOBJECT_NOT_FOUND));
+            }
+            else
+            {
+                // Before amendment: offer still exists, second accept also
+                // fails
+                env(token::acceptSellOffer(issuer, offer1), ter(tecEXPIRED));
+            }
             env.close();
 
-            // The expired sell offer is still in the ledger.
+            // Check if the expired sell offer behavior matches amendment status
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: expired offer was deleted, so owner count
+                // decreased
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+            }
+            else
+            {
+                // Before amendment: expired offer still in ledger
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+            }
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
-            // Anyone can cancel the expired sell offer.
-            env(token::cancelOffer(issuer, {offer1}));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            // Cancel behavior depends on amendment status
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: offer was already deleted, nothing to cancel
+                // Owner counts should already be correct
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
+            else
+            {
+                // Before amendment: expired offer still exists and can be
+                // cancelled
+                env(token::cancelOffer(issuer, {offer1}));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
@@ -3401,20 +3439,58 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // An expired buy offer cannot be accepted.
             env(token::acceptBuyOffer(minter, offer1), ter(tecEXPIRED));
-            env(token::acceptBuyOffer(issuer, offer1), ter(tecEXPIRED));
+
+            // With fixExpiredNFTokenOfferRemoval amendment, the first accept
+            // attempt deletes the expired offer. Without the amendment,
+            // the offer remains and we can try to accept it again.
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: offer was deleted by first accept attempt
+                env(token::acceptBuyOffer(issuer, offer1),
+                    ter(tecOBJECT_NOT_FOUND));
+            }
+            else
+            {
+                // Before amendment: offer still exists, second accept also
+                // fails
+                env(token::acceptBuyOffer(issuer, offer1), ter(tecEXPIRED));
+            }
             env.close();
 
-            // The expired buy offer is still in the ledger.
+            // Check if the expired buy offer behavior matches amendment status
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: expired offer was deleted, so owner count
+                // decreased
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
+            else
+            {
+                // Before amendment: expired offer still in ledger
+                BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            }
 
-            // Anyone can cancel the expired buy offer.
-            env(token::cancelOffer(issuer, {offer1}));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            // Cancel behavior depends on amendment status
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: offer was already deleted, nothing to cancel
+                // Owner counts should already be correct
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
+            else
+            {
+                // Before amendment: expired offer still exists and can be
+                // cancelled
+                env(token::cancelOffer(issuer, {offer1}));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
@@ -3481,17 +3557,28 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 ter(tecEXPIRED));
             env.close();
 
-            // The expired sell offer is still in the ledger.
+            // Check if expired offers behavior matches amendment status
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
-
-            // Anyone can cancel the expired sell offer.
-            env(token::cancelOffer(buyer, {buyOffer1, sellOffer1}));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: expired offers were deleted during broker
+                // attempt
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+                // No need to cancel offers since they were already deleted
+            }
+            else
+            {
+                // Before amendment: expired offers still exist in ledger
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 2);
+                // Anyone can cancel the expired offers
+                env(token::cancelOffer(buyer, {buyOffer1, sellOffer1}));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
@@ -3558,17 +3645,28 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 ter(tecEXPIRED));
             env.close();
 
-            // The expired buy offer is still in the ledger.
+            // Check if expired offers behavior matches amendment status
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 2);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
-
-            // Anyone can cancel the expired buy offer.
-            env(token::cancelOffer(minter, {buyOffer1, sellOffer1}));
-            env.close();
-            BEAST_EXPECT(ownerCount(env, issuer) == 0);
-            BEAST_EXPECT(ownerCount(env, minter) == 1);
-            BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                // After amendment: expired offers were deleted during broker
+                // attempt
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+                // No need to cancel offers since they were already deleted
+            }
+            else
+            {
+                // Before amendment: expired offers still exist in ledger
+                BEAST_EXPECT(ownerCount(env, minter) == 2);
+                BEAST_EXPECT(ownerCount(env, buyer) == 2);
+                // Anyone can cancel the expired offers
+                env(token::cancelOffer(minter, {buyOffer1, sellOffer1}));
+                env.close();
+                BEAST_EXPECT(ownerCount(env, issuer) == 0);
+                BEAST_EXPECT(ownerCount(env, minter) == 1);
+                BEAST_EXPECT(ownerCount(env, buyer) == 1);
+            }
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
