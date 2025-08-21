@@ -77,13 +77,15 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if (hasExpired(ctx.view, (*offerSLE)[~sfExpiration]))
             {
-                // Before fixExpiredNFTokenOfferRemoval amendment, expired offers
-                // caused tecEXPIRED in preclaim, leaving them on ledger forever.
-                // After the amendment, we allow expired offers to reach doApply()
-                // where they get deleted and tecEXPIRED is returned.
+                // Before fixExpiredNFTokenOfferRemoval amendment, expired
+                // offers caused tecEXPIRED in preclaim, leaving them on ledger
+                // forever. After the amendment, we allow expired offers to
+                // reach doApply() where they get deleted and tecEXPIRED is
+                // returned.
                 if (!ctx.view.rules().enabled(fixExpiredNFTokenOfferRemoval))
                     return {nullptr, tecEXPIRED};
-                // Amendment enabled: return the expired offer to be handled in doApply
+                // Amendment enabled: return the expired offer to be handled in
+                // doApply
             }
 
             // The initial implementation had a bug that allowed a negative
@@ -532,16 +534,16 @@ NFTokenAcceptOffer::doApply()
     auto bo = loadToken(ctx_.tx[~sfNFTokenBuyOffer]);
     auto so = loadToken(ctx_.tx[~sfNFTokenSellOffer]);
 
-    // With fixExpiredNFTokenOfferRemoval amendment, check for expired offers 
-    // and delete them, returning tecEXPIRED. This ensures expired offers 
+    // With fixExpiredNFTokenOfferRemoval amendment, check for expired offers
+    // and delete them, returning tecEXPIRED. This ensures expired offers
     // are properly cleaned up from the ledger.
     if (view().rules().enabled(fixExpiredNFTokenOfferRemoval))
     {
         bool foundExpired = false;
-        
+
         if (bo && hasExpired(view(), (*bo)[~sfExpiration]))
         {
-            JLOG(j_.trace()) << "Buy offer is expired, deleting: " << bo->getIndex();
+            JLOG(j_.trace()) << "Buy offer is expired, deleting: " << bo->key();
             if (!nft::deleteTokenOffer(view(), bo))
             {
                 JLOG(j_.fatal()) << "Unable to delete expired buy offer '"
@@ -549,12 +551,13 @@ NFTokenAcceptOffer::doApply()
                 return tecINTERNAL;
             }
             foundExpired = true;
-            bo.reset(); // Clear the pointer since offer is deleted
+            bo.reset();  // Clear the pointer since offer is deleted
         }
-        
+
         if (so && hasExpired(view(), (*so)[~sfExpiration]))
         {
-            JLOG(j_.trace()) << "Sell offer is expired, deleting: " << so->getIndex();
+            JLOG(j_.trace())
+                << "Sell offer is expired, deleting: " << so->key();
             if (!nft::deleteTokenOffer(view(), so))
             {
                 JLOG(j_.fatal()) << "Unable to delete expired sell offer '"
@@ -562,9 +565,9 @@ NFTokenAcceptOffer::doApply()
                 return tecINTERNAL;
             }
             foundExpired = true;
-            so.reset(); // Clear the pointer since offer is deleted
+            so.reset();  // Clear the pointer since offer is deleted
         }
-        
+
         if (foundExpired)
             return tecEXPIRED;
     }
