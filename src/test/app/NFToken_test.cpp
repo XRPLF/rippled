@@ -6934,15 +6934,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     {
                         foundTx = true;
                         // Verify that the meta contains the nftoken_id field
-                        if (BEAST_EXPECT(tx.isMember(jss::meta)))
+                        // Check both API v1 (metaData) and v2+ (meta) field
+                        // names
+                        Json::Value const* meta = nullptr;
+                        if (tx.isMember(jss::meta))
+                            meta = &tx[jss::meta];
+                        else if (tx.isMember(jss::metaData))
+                            meta = &tx[jss::metaData];
+
+                        if (BEAST_EXPECT(meta != nullptr))
                         {
-                            BEAST_EXPECT(
-                                tx[jss::meta].isMember(jss::nftoken_id));
-                            if (tx[jss::meta].isMember(jss::nftoken_id))
+                            BEAST_EXPECT(meta->isMember(jss::nftoken_id));
+                            if (meta->isMember(jss::nftoken_id))
                             {
                                 uint256 ledgerNftId;
                                 BEAST_EXPECT(ledgerNftId.parseHex(
-                                    tx[jss::meta][jss::nftoken_id].asString()));
+                                    (*meta)[jss::nftoken_id].asString()));
                                 BEAST_EXPECT(ledgerNftId == actualNftID);
                             }
                         }
@@ -6975,15 +6982,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     {
                         foundAccountTx = true;
                         // Verify that the meta contains the nftoken_id field
-                        if (BEAST_EXPECT(tx.isMember(jss::meta)))
+                        // Check both API v1 (metaData) and v2+ (meta) field
+                        // names
+                        Json::Value const* meta = nullptr;
+                        if (tx.isMember(jss::meta))
+                            meta = &tx[jss::meta];
+                        else if (tx.isMember(jss::metaData))
+                            meta = &tx[jss::metaData];
+
+                        if (BEAST_EXPECT(meta != nullptr))
                         {
-                            BEAST_EXPECT(
-                                tx[jss::meta].isMember(jss::nftoken_id));
-                            if (tx[jss::meta].isMember(jss::nftoken_id))
+                            BEAST_EXPECT(meta->isMember(jss::nftoken_id));
+                            if (meta->isMember(jss::nftoken_id))
                             {
                                 uint256 accountTxNftId;
                                 BEAST_EXPECT(accountTxNftId.parseHex(
-                                    tx[jss::meta][jss::nftoken_id].asString()));
+                                    (*meta)[jss::nftoken_id].asString()));
                                 BEAST_EXPECT(accountTxNftId == actualNftID);
                             }
                         }
@@ -7061,18 +7075,25 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     {
                         foundTx = true;
                         // Verify that the meta contains the nftoken_ids field
-                        if (BEAST_EXPECT(tx.isMember(jss::meta)))
+                        // Check both API v1 (metaData) and v2+ (meta) field
+                        // names
+                        Json::Value const* meta = nullptr;
+                        if (tx.isMember(jss::meta))
+                            meta = &tx[jss::meta];
+                        else if (tx.isMember(jss::metaData))
+                            meta = &tx[jss::metaData];
+
+                        if (BEAST_EXPECT(meta != nullptr))
                         {
-                            BEAST_EXPECT(
-                                tx[jss::meta].isMember(jss::nftoken_ids));
-                            if (tx[jss::meta].isMember(jss::nftoken_ids))
+                            BEAST_EXPECT(meta->isMember(jss::nftoken_ids));
+                            if (meta->isMember(jss::nftoken_ids))
                             {
                                 // Convert NFT IDs from ledger Json::Value to
                                 // uint256
                                 std::vector<uint256> ledgerMetaIDs;
                                 std::transform(
-                                    tx[jss::meta][jss::nftoken_ids].begin(),
-                                    tx[jss::meta][jss::nftoken_ids].end(),
+                                    (*meta)[jss::nftoken_ids].begin(),
+                                    (*meta)[jss::nftoken_ids].end(),
                                     std::back_inserter(ledgerMetaIDs),
                                     [this](Json::Value id) {
                                         uint256 nftID;
@@ -7121,18 +7142,25 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     {
                         foundAccountTx = true;
                         // Verify that the meta contains the nftoken_ids field
-                        if (BEAST_EXPECT(tx.isMember(jss::meta)))
+                        // Check both API v1 (metaData) and v2+ (meta) field
+                        // names
+                        Json::Value const* meta = nullptr;
+                        if (tx.isMember(jss::meta))
+                            meta = &tx[jss::meta];
+                        else if (tx.isMember(jss::metaData))
+                            meta = &tx[jss::metaData];
+
+                        if (BEAST_EXPECT(meta != nullptr))
                         {
-                            BEAST_EXPECT(
-                                tx[jss::meta].isMember(jss::nftoken_ids));
-                            if (tx[jss::meta].isMember(jss::nftoken_ids))
+                            BEAST_EXPECT(meta->isMember(jss::nftoken_ids));
+                            if (meta->isMember(jss::nftoken_ids))
                             {
                                 // Convert NFT IDs from account_tx Json::Value
                                 // to uint256
                                 std::vector<uint256> accountTxMetaIDs;
                                 std::transform(
-                                    tx[jss::meta][jss::nftoken_ids].begin(),
-                                    tx[jss::meta][jss::nftoken_ids].end(),
+                                    (*meta)[jss::nftoken_ids].begin(),
+                                    (*meta)[jss::nftoken_ids].end(),
                                     std::back_inserter(accountTxMetaIDs),
                                     [this](Json::Value id) {
                                         uint256 nftID;
