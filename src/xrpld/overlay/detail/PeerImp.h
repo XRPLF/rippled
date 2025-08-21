@@ -175,10 +175,10 @@ private:
     http_response_type response_;
     boost::beast::http::fields const& headers_;
     std::queue<std::shared_ptr<Message>> send_queue_;
-    std::atomic<bool> shutdown_ = false;
-    std::atomic<bool> shutdownStarted_ = false;
-    std::atomic<bool> readInProgress_ = false;
-    std::atomic<bool> writeInProgress_ = false;
+    bool shutdown_ = false;
+    bool shutdownStarted_ = false;
+    bool readInProgress_ = false;
+    bool writeInProgress_ = false;
     int large_sendq_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
@@ -474,23 +474,30 @@ private:
     void
     fail(std::string const& reason);
 
-    /**
-     * @brief Initiates a graceful, timed, asynchronous SSL shutdown.
+    /** @brief Initiates the peer disconnection sequence.
      *
-     * This function begins the process of closing the peer connection securely.
-     * It first sets a timer to prevent the shutdown from hanging
-     * indefinitely. It then calls `async_shutdown` to perform the SSL shutdown
-     * handshake. The completion of this operation is handled by the
-     * `onShutdown` callback.
+     * This is the primary entry point to start closing a peer connection. It
+     * marks the peer for shutdown and cancels any outstanding asynchronous
+     * operations. This cancellation allows the graceful shutdown to proceed
+     * once the handlers for the cancelled operations have completed.
      *
-     * @note This function must be called from within the object's strand.
-     * It is safe to call if the socket is already closed.
+     * @note This method must be called on the peer's strand.
      */
     void
     shutdown();
 
+    /** @brief Attempts to perform a graceful SSL shutdown if conditions are
+     * met.
+     *
+     * This helper function checks if the peer is in a state where a graceful
+     * SSL shutdown can be performed (i.e., shutdown has been requested and no
+     * I/O operations are currently in progress).
+     *
+     * @note This method must be called on the peer's strand.
+     */
     void
     tryAsyncShutdown();
+
     /**
      * @brief Handles the completion of the asynchronous SSL shutdown.
      *

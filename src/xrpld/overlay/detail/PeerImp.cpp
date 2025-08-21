@@ -625,23 +625,14 @@ PeerImp::tryAsyncShutdown()
         return;
 
     if (readInProgress_ || writeInProgress_)
-    {
-        JLOG(journal_.debug())
-            << "tryAsyncShutdown: waiting - read: " << readInProgress_
-            << " write: " << writeInProgress_;
         return;
-    }
 
     shutdownStarted_ = true;
 
     XRPL_ASSERT(
         !readInProgress_ && !writeInProgress_,
-        "ripple::PeerImp::shutdown: read and write not in progress");
+        "ripple::PeerImp::tryAsyncShutdown : read and write not in progress");
 
-    JLOG(journal_.debug()) << "tryAsyncShutdown: read: " << readInProgress_
-                           << " write: " << writeInProgress_
-                           << " shutdown: " << shutdown_
-                           << " shutdownInProgress: " << shutdownStarted_;
     setTimer();
 
     // gracefully shutdown the SSL socket, performing a shutdown handshake
@@ -672,7 +663,6 @@ void
 PeerImp::onShutdown(error_code ec)
 {
     cancelTimer();
-    JLOG(journal_.debug()) << "onShutdown";
     if (ec)
     {
         // - eof: the stream was cleanly closed
@@ -683,7 +673,7 @@ PeerImp::onShutdown(error_code ec)
         if (ec != boost::asio::error::eof &&
             ec != boost::asio::error::operation_aborted)
         {
-            JLOG(journal_.warn()) << "onShutdown: " << ec.message();
+            JLOG(journal_.debug()) << "onShutdown: " << ec.message();
         }
     }
 
@@ -967,11 +957,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         }
 
         if (ec == boost::asio::error::operation_aborted)
-        {
-            JLOG(journal_.debug()) << "onReadMessage: aborted";
-
             return tryAsyncShutdown();
-        }
 
         return fail("onReadMessage", ec);
     }
@@ -1025,11 +1011,6 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     XRPL_ASSERT(
         !shutdownStarted_, "ripple::PeerImp::onReadMessage : shutdown started");
 
-    JLOG(journal_.debug()) << "onReadMessage: read: " << readInProgress_
-                           << " write: " << writeInProgress_
-                           << " shutdown: " << shutdown_
-                           << " shutdownInProgress: " << shutdownStarted_;
-
     // Timeout on writes only
     stream_.async_read_some(
         read_buffer_.prepare(std::max(Tuning::readBufferBytes, hint)),
@@ -1050,16 +1031,14 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
         "ripple::PeerImp::onWriteMessage : strand in this thread");
 
     writeInProgress_ = false;
+
     if (!socket_.is_open())
         return;
 
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
-        {
-            JLOG(journal_.debug()) << "onWriteMessage: aborted";
             return tryAsyncShutdown();
-        }
 
         return fail("onWriteMessage", ec);
     }
