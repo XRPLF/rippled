@@ -41,9 +41,7 @@
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio/error.hpp>
 #include <boost/beast/core/ostream.hpp>
-#include <boost/beast/core/stream_traits.hpp>
 
 #include <algorithm>
 #include <memory>
