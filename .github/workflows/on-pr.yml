@@ -69,49 +69,50 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: No-op
-        run: echo ''
+        run: true
 
   check-format:
     needs: should-run
     uses: ./.github/workflows/check-format.yml
-#  check-levelization:
-#    needs: should-run
-#    uses: ./.github/workflows/check-levelization.yml
-#
-#  # This job works around the limitation that GitHub Actions does not support
-#  # using environment variables as inputs for reusable workflows.
-#  generate-outputs:
-#    needs: should-run
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: No-op
-#        run: echo ''
-#    outputs:
-#      conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
-#      conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
-#
-#  build-test:
-#    needs: generate-outputs
-#    uses: ./.github/workflows/build-test.yml
-#    strategy:
-#      matrix:
-#        os: [linux, macos, windows]
-#    with:
-#      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-#      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-#      os: ${{ matrix.os }}
-#    secrets:
-#      codecov_token: ${{ secrets.CODECOV_TOKEN }}
-#
-#  notify-clio:
-#    needs:
-#      - generate-outputs
-#      - build-test
-#    uses: ./.github/workflows/notify-clio.yml
-#    with:
-#      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-#      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
-#    secrets:
-#      clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
-#      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
-#      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  check-levelization:
+    needs: should-run
+    uses: ./.github/workflows/check-levelization.yml
+
+  # This job works around the limitation that GitHub Actions does not support
+  # using environment variables as inputs for reusable workflows.
+  generate-outputs:
+    needs: should-run
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op
+        run: true
+    outputs:
+      conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+      conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
+
+  build-test:
+    needs: generate-outputs
+    uses: ./.github/workflows/build-test.yml
+    strategy:
+      matrix:
+        os: [linux, macos, windows]
+    with:
+      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
+      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
+      os: ${{ matrix.os }}
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
+
+  notify-clio:
+    needs:
+      - generate-outputs
+      - build-test
+    uses: ./.github/workflows/notify-clio.yml
+    with:
+      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
+      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
+    secrets:
+      clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
+      conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
