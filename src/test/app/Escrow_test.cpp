@@ -1756,7 +1756,8 @@ struct Escrow_test : public beast::unit_test::suite
                 return cfg;
             }),
             features);
-        XRPAmount const txnFees = env.current()->fees().base * 10 + 1000;
+        XRPAmount const txnFees =
+            env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
         // create escrow
         env.fund(XRP(5000), alice, carol);
 
@@ -1767,7 +1768,7 @@ struct Escrow_test : public beast::unit_test::suite
             // FinishFunction + CancelAfter
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
-                escrow::cancel_time(env.now() + 100s),
+                escrow::cancel_time(env.now() + 20s),
                 fee(txnFees));
             env.close();
         }
@@ -1775,7 +1776,7 @@ struct Escrow_test : public beast::unit_test::suite
             // FinishFunction + Condition + CancelAfter
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
-                escrow::cancel_time(env.now() + 100s),
+                escrow::cancel_time(env.now() + 30s),
                 escrow::condition(escrow::cb1),
                 fee(txnFees));
             env.close();
@@ -1784,7 +1785,7 @@ struct Escrow_test : public beast::unit_test::suite
             // FinishFunction + FinishAfter + CancelAfter
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
-                escrow::cancel_time(env.now() + 100s),
+                escrow::cancel_time(env.now() + 40s),
                 escrow::finish_time(env.now() + 2s),
                 fee(txnFees));
             env.close();
@@ -1793,7 +1794,7 @@ struct Escrow_test : public beast::unit_test::suite
             // FinishFunction + FinishAfter + Condition + CancelAfter
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
-                escrow::cancel_time(env.now() + 100s),
+                escrow::cancel_time(env.now() + 50s),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 2s),
                 fee(txnFees));
@@ -1841,9 +1842,18 @@ struct Escrow_test : public beast::unit_test::suite
             // FinishFunction 0 length
             env(escrowCreate,
                 escrow::finish_function(""),
-                escrow::cancel_time(env.now() + 100s),
+                escrow::cancel_time(env.now() + 60s),
                 fee(txnFees),
                 ter(temMALFORMED));
+            env.close();
+        }
+        {
+            // Not enough fees
+            env(escrowCreate,
+                escrow::finish_function(wasmHex),
+                escrow::cancel_time(env.now() + 70s),
+                fee(txnFees - 1),
+                ter(telINSUF_FEE_P));
             env.close();
         }
 
@@ -1890,7 +1900,8 @@ struct Escrow_test : public beast::unit_test::suite
             // featureSmartEscrow disabled
             Env env(*this, features - featureSmartEscrow);
             env.fund(XRP(5000), alice, carol);
-            XRPAmount const txnFees = env.current()->fees().base + 1000;
+            XRPAmount const txnFees =
+                env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
             env(escrow::finish(carol, alice, 1),
                 fee(txnFees),
                 escrow::comp_allowance(4),
@@ -1929,7 +1940,8 @@ struct Escrow_test : public beast::unit_test::suite
         for (auto i = env.current()->seq(); i <= 257; ++i)
             env.close();
 
-        XRPAmount const txnFees = env.current()->fees().base + 1000;
+        XRPAmount const txnFees =
+            env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
         env.fund(XRP(5000), alice, carol);
 
         // create escrow
@@ -1986,7 +1998,10 @@ struct Escrow_test : public beast::unit_test::suite
 
             auto const allowance = 100;
             env(escrow::finish(carol, alice, seq2),
-                fee(env.current()->fees().base + allowance),
+                fee(env.current()->fees().base +
+                    (allowance * env.current()->fees().gasPrice) /
+                        MICRO_DROPS_PER_DROP +
+                    1),
                 escrow::comp_allowance(allowance),
                 ter(tefNO_WASM));
         }
@@ -2007,6 +2022,17 @@ struct Escrow_test : public beast::unit_test::suite
         // getLedgerSqn() >= 5}
         auto const& wasmHex = ledgerSqnWasmHex;
         std::uint32_t const allowance = 71;
+        auto escrowCreate = escrow::create(alice, carol, XRP(1000));
+        auto [createFee, finishFee] = [&]() {
+            Env env(*this, features);
+            auto createFee =
+                env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
+            auto finishFee = env.current()->fees().base +
+                (allowance * env.current()->fees().gasPrice) /
+                    MICRO_DROPS_PER_DROP +
+                1;
+            return std::make_pair(createFee, finishFee);
+        }();
 
         {
             // basic FinishFunction situation
@@ -2015,38 +2041,36 @@ struct Escrow_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
-                fee(txnFees));
+                fee(createFee));
             env.close();
 
             if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
             {
-                env.require(balance(alice, XRP(4000) - txnFees));
+                env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
 
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecWASM_REJECTED));
                 env(escrow::finish(alice, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecWASM_REJECTED));
                 env(escrow::finish(alice, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecWASM_REJECTED));
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecWASM_REJECTED));
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecWASM_REJECTED));
                 env.close();
 
@@ -2058,7 +2082,7 @@ struct Escrow_test : public beast::unit_test::suite
                 }
 
                 env(escrow::finish(alice, alice, seq),
-                    fee(txnFees),
+                    fee(finishFee),
                     escrow::comp_allowance(allowance),
                     ter(tesSUCCESS));
 
@@ -2079,34 +2103,31 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             auto const seq = env.seq(alice);
             // create escrow
-            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
-            XRPAmount const createFee = env.current()->fees().base + 1000;
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::condition(escrow::cb1),
                 escrow::cancel_time(env.now() + 100s),
                 fee(createFee));
             env.close();
+            auto const conditionFinishFee = finishFee +
+                env.current()->fees().base * (32 + (escrow::fb1.size() / 16));
 
             if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
             {
                 env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
 
-                XRPAmount const txnFees =
-                    env.current()->fees().base * 34 + 1000;
-
                 // no fulfillment provided, function fails
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecCRYPTOCONDITION_ERROR));
                 // fulfillment provided, function fails
                 env(escrow::finish(carol, alice, seq),
                     escrow::condition(escrow::cb1),
                     escrow::fulfillment(escrow::fb1),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(conditionFinishFee),
                     ter(tecWASM_REJECTED));
                 if (BEAST_EXPECT(env.meta()->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(
@@ -2115,21 +2136,21 @@ struct Escrow_test : public beast::unit_test::suite
                 // no fulfillment provided, function succeeds
                 env(escrow::finish(alice, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(conditionFinishFee),
                     ter(tecCRYPTOCONDITION_ERROR));
                 // wrong fulfillment provided, function succeeds
                 env(escrow::finish(alice, alice, seq),
                     escrow::condition(escrow::cb1),
                     escrow::fulfillment(escrow::fb2),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(conditionFinishFee),
                     ter(tecCRYPTOCONDITION_ERROR));
                 // fulfillment provided, function succeeds, tx succeeds
                 env(escrow::finish(alice, alice, seq),
                     escrow::condition(escrow::cb1),
                     escrow::fulfillment(escrow::fb1),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(conditionFinishFee),
                     ter(tesSUCCESS));
 
                 auto const txMeta = env.meta();
@@ -2150,37 +2171,35 @@ struct Escrow_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
             auto const ts = env.now() + 97s;
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::finish_time(ts),
                 escrow::cancel_time(env.now() + 1000s),
-                fee(txnFees));
+                fee(createFee));
             env.close();
 
             if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
             {
-                env.require(balance(alice, XRP(4000) - txnFees));
+                env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
 
                 // finish time hasn't passed, function fails
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees + 1),
+                    fee(finishFee + 1),
                     ter(tecNO_PERMISSION));
                 env.close();
                 // finish time hasn't passed, function succeeds
                 for (; env.now() < ts; env.close())
                     env(escrow::finish(carol, alice, seq),
                         escrow::comp_allowance(allowance),
-                        fee(txnFees + 2),
+                        fee(finishFee + 2),
                         ter(tecNO_PERMISSION));
 
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees + 1),
+                    fee(finishFee + 1),
                     ter(tesSUCCESS));
 
                 auto const txMeta = env.meta();
@@ -2200,31 +2219,29 @@ struct Escrow_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::finish_time(env.now() + 2s),
                 escrow::cancel_time(env.now() + 100s),
-                fee(txnFees));
+                fee(createFee));
             // Don't close the ledger here
 
             if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
             {
-                env.require(balance(alice, XRP(4000) - txnFees));
+                env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
 
                 // finish time hasn't passed, function fails
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecNO_PERMISSION));
                 env.close();
 
                 // finish time has passed, function fails
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecWASM_REJECTED));
                 if (BEAST_EXPECT(env.meta()->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(
@@ -2233,7 +2250,7 @@ struct Escrow_test : public beast::unit_test::suite
                 // finish time has passed, function succeeds, tx succeeds
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tesSUCCESS));
 
                 auto const txMeta = env.meta();
@@ -2269,7 +2286,8 @@ struct Escrow_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             auto escrowCreate = escrow::create(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
+            XRPAmount txnFees =
+                env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::finish_time(env.now() + 11s),
@@ -2278,17 +2296,23 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(txnFees));
             env.close();
 
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            if (BEAST_EXPECT(
+                    (*env.le(alice))[sfOwnerCount] ==
+                    (1 + wasmHex.size() / 2 / 500)))
             {
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
 
                 auto const allowance = 1'000'000;
+                XRPAmount const finishFee = env.current()->fees().base +
+                    (allowance * env.current()->fees().gasPrice) /
+                        MICRO_DROPS_PER_DROP +
+                    1;
 
                 // FinishAfter time hasn't passed
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tecNO_PERMISSION));
                 env.close();
                 env.close();
@@ -2301,7 +2325,7 @@ struct Escrow_test : public beast::unit_test::suite
 
                 env(escrow::finish(alice, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees),
+                    fee(finishFee),
                     ter(tesSUCCESS));
 
                 auto const txMeta = env.meta();
@@ -2377,7 +2401,8 @@ struct Escrow_test : public beast::unit_test::suite
                     env.seq(alice) == 20, std::to_string(env.seq(alice))))
             {
                 auto const seq = env.seq(alice);
-                XRPAmount txnFees = env.current()->fees().base + 1000;
+                XRPAmount txnFees =
+                    env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
                 env(escrow::create(alice, carol, XRP(1000)),
                     escrow::finish_function(wasmHex),
                     escrow::finish_time(env.now() + 2s),
@@ -2388,10 +2413,13 @@ struct Escrow_test : public beast::unit_test::suite
                 env.close();
 
                 auto const allowance = 137'596;
-
+                auto const finishFee = env.current()->fees().base +
+                    (allowance * env.current()->fees().gasPrice) /
+                        MICRO_DROPS_PER_DROP +
+                    1;
                 env(escrow::finish(carol, alice, seq),
                     escrow::comp_allowance(allowance),
-                    fee(txnFees));
+                    fee(finishFee));
                 env.close();
 
                 auto const txMeta = env.meta();
