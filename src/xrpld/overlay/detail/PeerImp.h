@@ -71,8 +71,6 @@ private:
 
     Application& app_;
     id_t const id_;
-    beast::WrappedSink sink_;
-    beast::WrappedSink p_sink_;
     beast::Journal const journal_;
     beast::Journal const p_journal_;
     std::unique_ptr<stream_type> stream_ptr_;
@@ -456,9 +454,6 @@ private:
     void
     cancelTimer();
 
-    static std::string
-    makePrefix(id_t id);
-
     // Called when the timer wait completes
     void
     onTimer(boost::system::error_code const& ec);
@@ -662,10 +657,18 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
-    , journal_(sink_)
-    , p_journal_(p_sink_)
+    , journal_(
+          app_.journal("Peer"),
+          log::attributes(
+              {{"NodeID", id},
+               {"RemoteAddress", to_string(slot->remote_endpoint())},
+               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
+    , p_journal_(
+          app_.journal("Protocol"),
+          log::attributes(
+              {{"NodeID", id},
+               {"RemoteAddress", to_string(slot->remote_endpoint())},
+               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)

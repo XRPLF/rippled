@@ -165,8 +165,7 @@ OverlayImpl::onHandoff(
     endpoint_type remote_endpoint)
 {
     auto const id = next_id_++;
-    beast::WrappedSink sink(app_.logs()["Peer"], makePrefix(id));
-    beast::Journal journal(sink);
+    auto journal = app_.journal("Peer", log::attributes({{"NodeID", id}}));
 
     Handoff handoff;
     if (processRequest(request, handoff))
@@ -330,14 +329,6 @@ OverlayImpl::isPeerUpgrade(http_request_type const& request)
         return false;
     auto const versions = parseProtocolVersions(request["Upgrade"]);
     return !versions.empty();
-}
-
-std::string
-OverlayImpl::makePrefix(std::uint32_t id)
-{
-    std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
-    return ss.str();
 }
 
 std::shared_ptr<Writer>

@@ -38,6 +38,9 @@
 
 namespace ripple {
 
+std::unique_ptr<beast::Journal::StructuredLogAttributes>
+    Logs::globalLogAttributes_;
+
 Logs::Sink::Sink(
     std::string const& partition,
     beast::severities::Severity thresh,
@@ -157,9 +160,22 @@ Logs::operator[](std::string const& name)
 }
 
 beast::Journal
-Logs::journal(std::string const& name)
+Logs::journal(
+    std::string const& name,
+    std::unique_ptr<beast::Journal::StructuredLogAttributes> attributes)
 {
-    return beast::Journal(get(name));
+    if (globalLogAttributes_)
+    {
+        if (attributes)
+        {
+            attributes->combine(globalLogAttributes_);
+        }
+        else
+        {
+            attributes = globalLogAttributes_->clone();
+        }
+    }
+    return beast::Journal(get(name), name, std::move(attributes));
 }
 
 beast::severities::Severity
@@ -332,36 +348,39 @@ Logs::format(
 {
     output.reserve(message.size() + partition.size() + 100);
 
-    output = to_string(std::chrono::system_clock::now());
-
-    output += " ";
-    if (!partition.empty())
-        output += partition + ":";
-
-    using namespace beast::severities;
-    switch (severity)
+    if (!beast::Journal::isStructuredJournalEnabled())
     {
-        case kTrace:
-            output += "TRC ";
-            break;
-        case kDebug:
-            output += "DBG ";
-            break;
-        case kInfo:
-            output += "NFO ";
-            break;
-        case kWarning:
-            output += "WRN ";
-            break;
-        case kError:
-            output += "ERR ";
-            break;
-        default:
-            UNREACHABLE("ripple::Logs::format : invalid severity");
-            [[fallthrough]];
-        case kFatal:
-            output += "FTL ";
-            break;
+        output = to_string(std::chrono::system_clock::now());
+
+        output += " ";
+        if (!partition.empty())
+            output += partition + ":";
+
+        using namespace beast::severities;
+        switch (severity)
+        {
+            case kTrace:
+                output += "TRC ";
+                break;
+            case kDebug:
+                output += "DBG ";
+                break;
+            case kInfo:
+                output += "NFO ";
+                break;
+            case kWarning:
+                output += "WRN ";
+                break;
+            case kError:
+                output += "ERR ";
+                break;
+            default:
+                UNREACHABLE("ripple::Logs::format : invalid severity");
+                [[fallthrough]];
+            case kFatal:
+                output += "FTL ";
+                break;
+        }
     }
 
     output += message;
