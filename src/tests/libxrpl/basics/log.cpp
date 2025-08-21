@@ -72,10 +72,10 @@ public:
     {
     }
 
-    virtual std::unique_ptr<beast::Journal::Sink>
+    std::unique_ptr<beast::Journal::Sink>
     makeSink(
         std::string const& partition,
-        beast::severities::Severity startingLevel)
+        beast::severities::Severity startingLevel) override
     {
         return std::make_unique<Sink>(partition, startingLevel, *this);
     }
