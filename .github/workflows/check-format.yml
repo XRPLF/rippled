@@ -41,7 +41,7 @@ jobs:
           echo 'Checking clang-format version.'
           clang-format --version
       - name: Format code
-        run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format -i {} +
+        run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' -o -name '*.proto' \) -exec clang-format -i {} +
       - name: Check for differences
         env:
           MESSAGE: |
@@ -51,8 +51,8 @@ jobs:
             has an incompatibility with the one used here (see the "Check
             configuration" step above).
 
-            Run 'git-clang-format --extensions cpp,h,hpp,ipp develop' in your
-            repo, and then commit and push the changes.
+            Run 'pre-commit run clang-format' in your repo, and then commit and
+            push the changes.
         run: |
           DIFF=$(git status --porcelain)
           if [ -n "${DIFF}" ]; then
@@ -99,8 +99,8 @@ jobs:
             your version of prettier has an incompatibility with the one used
             here (see the "Check configuration" step above).
 
-            Run 'prettier --check .' in your repo, and then commit and push the
-            changes.
+            Run 'pre-commit run prettier' in your repo, and then commit and push
+            the changes.
         run: |
           DIFF=$(git status --porcelain)
           if [ -n "${DIFF}" ]; then

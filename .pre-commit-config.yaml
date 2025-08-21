@@ -1,6 +1,34 @@
-# .pre-commit-config.yaml
+# To run pre-commit hooks, first install pre-commit, e.g.:
+# - `brew install pre-commit` (MacOS)
+# - `apt install pre-commit` (Ubuntu)
+# - `pip install pre-commit` (Python/pip)
+# Then, run the following command to install the git hook scripts:
+# - `pre-commit install`
+# You can run all configured hooks against all files with:
+# - `pre-commit run --all-files`
+# To manually run a specific hook, use:
+# - `pre-commit run <hook_id> --all-files`
+# To run the hooks against only the files changed in the current commit, use:
+# - `pre-commit run`
+
+# Install clang-format via `pip install clang-format==${CLANG_VERSION}`, and
+# install prettier via `npm install prettier@${PRETTIER_VERSION}`. Refer to
+# https://github.com/XRPLF/ci/blob/main/.github/workflows/tools-rippled.yml to
+# see the versions used in the CI pipeline. You will need to have the exact same
+# versions of the tools installed on your system to produce the same results as
+# the CI pipeline.
 repos:
-  - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v18.1.8
+  - repo: local
     hooks:
       - id: clang-format
+        name: clang-format
+        language: system
+        entry: clang-format -i
+        files: '\.(cpp|hpp|h|ipp|proto)$'
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        language: system
+        entry: prettier --write
+        types: [markdown, json, yaml]
