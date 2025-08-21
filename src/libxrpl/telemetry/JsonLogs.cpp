@@ -20,6 +20,8 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/telemetry/JsonLogs.h>
 
+#include <thread>
+
 namespace ripple::log {
 
 thread_local JsonStructuredJournal::Logger
