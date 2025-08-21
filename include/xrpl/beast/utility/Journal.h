@@ -22,6 +22,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <source_location>
 #include <sstream>
 
 namespace beast {
@@ -42,6 +43,9 @@ enum Severity {
     kDisabled,
     kNone = kDisabled
 };
+
+std::string
+to_string(Severity severity);
 }  // namespace severities
 
 /** A generic endpoint for log messages.
@@ -61,15 +65,67 @@ class Journal
 public:
     class Sink;
 
+    class StructuredJournalImpl;
+
+    class StructuredLogAttributes;
+
 private:
     // Severity level / threshold of a Journal message.
     using Severity = severities::Severity;
 
+    std::unique_ptr<StructuredLogAttributes> m_attributes;
+
+    static StructuredJournalImpl* m_structuredJournalImpl;
+
     // Invariant: m_sink always points to a valid Sink
-    Sink* m_sink;
+    Sink* m_sink = nullptr;
 
 public:
     //--------------------------------------------------------------------------
+
+    static void
+    enableStructuredJournal(StructuredJournalImpl* impl)
+    {
+        m_structuredJournalImpl = impl;
+    }
+
+    static bool
+    isStructuredJournalEnabled()
+    {
+        return m_structuredJournalImpl;
+    }
+
+    class StructuredJournalImpl
+    {
+    public:
+        StructuredJournalImpl() = default;
+        StructuredJournalImpl(StructuredJournalImpl const&) = default;
+        virtual void
+        initMessageContext(std::source_location location) = 0;
+        virtual void
+        flush(
+            Sink* sink,
+            severities::Severity level,
+            std::string const& text,
+            StructuredLogAttributes* attributes) = 0;
+        virtual ~StructuredJournalImpl() = default;
+    };
+
+    class StructuredLogAttributes
+    {
+    public:
+        StructuredLogAttributes() = default;
+        StructuredLogAttributes(StructuredLogAttributes const&) = default;
+        virtual void
+        setModuleName(std::string const& name) = 0;
+        virtual std::unique_ptr<StructuredLogAttributes>
+        clone() const = 0;
+        virtual void
+        combine(std::unique_ptr<StructuredLogAttributes> const& attributes) = 0;
+        virtual void
+        combine(std::unique_ptr<StructuredLogAttributes>&& attributes) = 0;
+        virtual ~StructuredLogAttributes() = default;
+    };
 
     /** Abstraction for the underlying message destination. */
     class Sink
@@ -150,16 +206,28 @@ public:
     {
     public:
         ScopedStream(ScopedStream const& other)
-            : ScopedStream(other.m_sink, other.m_level)
+            : ScopedStream(
+                  other.m_attributes ? other.m_attributes->clone() : nullptr,
+                  other.m_sink,
+                  other.m_level)
         {
         }
 
-        ScopedStream(Sink& sink, Severity level);
+        ScopedStream(
+            std::unique_ptr<StructuredLogAttributes> attributes,
+            Sink& sink,
+            Severity level);
 
         template <typename T>
-        ScopedStream(Stream const& stream, T const& t);
+        ScopedStream(
+            std::unique_ptr<StructuredLogAttributes> attributes,
+            Stream const& stream,
+            T const& t);
 
-        ScopedStream(Stream const& stream, std::ostream& manip(std::ostream&));
+        ScopedStream(
+            std::unique_ptr<StructuredLogAttributes> attributes,
+            Stream const& stream,
+            std::ostream& manip(std::ostream&));
 
         ScopedStream&
         operator=(ScopedStream const&) = delete;
@@ -180,6 +248,7 @@ public:
         operator<<(T const& t) const;
 
     private:
+        std::unique_ptr<StructuredLogAttributes> m_attributes;
         Sink& m_sink;
         Severity const m_level;
         std::ostringstream mutable m_ostream;
@@ -214,7 +283,11 @@ public:
 
             Constructor is inlined so checking active() very inexpensive.
         */
-        Stream(Sink& sink, Severity level) : m_sink(sink), m_level(level)
+        Stream(
+            std::unique_ptr<StructuredLogAttributes> attributes,
+            Sink& sink,
+            Severity level)
+            : m_attributes(std::move(attributes)), m_sink(sink), m_level(level)
         {
             XRPL_ASSERT(
                 m_level < severities::kDisabled,
@@ -222,7 +295,11 @@ public:
         }
 
         /** Construct or copy another Stream. */
-        Stream(Stream const& other) : Stream(other.m_sink, other.m_level)
+        Stream(Stream const& other)
+            : Stream(
+                  other.m_attributes ? other.m_attributes->clone() : nullptr,
+                  other.m_sink,
+                  other.m_level)
         {
         }
 
@@ -269,6 +346,7 @@ public:
         /** @} */
 
     private:
+        std::unique_ptr<StructuredLogAttributes> m_attributes;
         Sink& m_sink;
         Severity m_level;
     };
@@ -287,9 +365,90 @@ public:
     /** Journal has no default constructor. */
     Journal() = delete;
 
-    /** Create a journal that writes to the specified sink. */
-    explicit Journal(Sink& sink) : m_sink(&sink)
+    [[deprecated]]
+    Journal(Journal const& other)
+        : Journal(other, nullptr)
     {
+    }
+
+    Journal(
+        Journal const& other,
+        std::unique_ptr<StructuredLogAttributes> attributes)
+        : m_sink(other.m_sink)
+    {
+        if (attributes)
+        {
+            m_attributes = std::move(attributes);
+        }
+        if (other.m_attributes)
+        {
+            if (m_attributes)
+            {
+                m_attributes->combine(other.m_attributes);
+            }
+            else
+            {
+                m_attributes = other.m_attributes->clone();
+            }
+        }
+    }
+
+    Journal(
+        Journal&& other,
+        std::unique_ptr<StructuredLogAttributes> attributes = {}) noexcept
+        : m_sink(other.m_sink)
+    {
+        if (attributes)
+        {
+            m_attributes = std::move(attributes);
+        }
+        if (other.m_attributes)
+        {
+            if (m_attributes)
+            {
+                m_attributes->combine(std::move(other.m_attributes));
+            }
+            else
+            {
+                m_attributes = std::move(other.m_attributes);
+            }
+        }
+    }
+
+    /** Create a journal that writes to the specified sink. */
+    Journal(
+        Sink& sink,
+        std::string const& name = {},
+        std::unique_ptr<StructuredLogAttributes> attributes = {})
+        : m_sink(&sink)
+    {
+        if (attributes)
+        {
+            m_attributes = std::move(attributes);
+            m_attributes->setModuleName(name);
+        }
+    }
+
+    Journal&
+    operator=(Journal const& other)
+    {
+        m_sink = other.m_sink;
+        if (other.m_attributes)
+        {
+            m_attributes = other.m_attributes->clone();
+        }
+        return *this;
+    }
+
+    Journal&
+    operator=(Journal&& other) noexcept
+    {
+        m_sink = other.m_sink;
+        if (other.m_attributes)
+        {
+            m_attributes = std::move(other.m_attributes);
+        }
+        return *this;
     }
 
     /** Returns the Sink associated with this Journal. */
@@ -303,7 +462,8 @@ public:
     Stream
     stream(Severity level) const
     {
-        return Stream(*m_sink, level);
+        return Stream(
+            m_attributes ? m_attributes->clone() : nullptr, *m_sink, level);
     }
 
     /** Returns `true` if any message would be logged at this severity level.
@@ -319,39 +479,81 @@ public:
     /** Severity stream access functions. */
     /** @{ */
     Stream
-    trace() const
+    trace(std::source_location location = std::source_location::current()) const
     {
-        return {*m_sink, severities::kTrace};
+        if (m_structuredJournalImpl)
+        {
+            m_structuredJournalImpl->initMessageContext(location);
+        }
+        return {
+            m_attributes ? m_attributes->clone() : nullptr,
+            *m_sink,
+            severities::kTrace};
     }
 
     Stream
-    debug() const
+    debug(std::source_location location = std::source_location::current()) const
     {
-        return {*m_sink, severities::kDebug};
+        if (m_structuredJournalImpl)
+        {
+            m_structuredJournalImpl->initMessageContext(location);
+        }
+        return {
+            m_attributes ? m_attributes->clone() : nullptr,
+            *m_sink,
+            severities::kDebug};
     }
 
     Stream
-    info() const
+    info(std::source_location location = std::source_location::current()) const
     {
-        return {*m_sink, severities::kInfo};
+        if (m_structuredJournalImpl)
+        {
+            m_structuredJournalImpl->initMessageContext(location);
+        }
+        return {
+            m_attributes ? m_attributes->clone() : nullptr,
+            *m_sink,
+            severities::kInfo};
     }
 
     Stream
-    warn() const
+    warn(std::source_location location = std::source_location::current()) const
     {
-        return {*m_sink, severities::kWarning};
+        if (m_structuredJournalImpl)
+        {
+            m_structuredJournalImpl->initMessageContext(location);
+        }
+        return {
+            m_attributes ? m_attributes->clone() : nullptr,
+            *m_sink,
+            severities::kWarning};
     }
 
     Stream
-    error() const
+    error(std::source_location location = std::source_location::current()) const
     {
-        return {*m_sink, severities::kError};
+        if (m_structuredJournalImpl)
+        {
+            m_structuredJournalImpl->initMessageContext(location);
+        }
+        return {
+            m_attributes ? m_attributes->clone() : nullptr,
+            *m_sink,
+            severities::kError};
     }
 
     Stream
-    fatal() const
+    fatal(std::source_location location = std::source_location::current()) const
     {
-        return {*m_sink, severities::kFatal};
+        if (m_structuredJournalImpl)
+        {
+            m_structuredJournalImpl->initMessageContext(location);
+        }
+        return {
+            m_attributes ? m_attributes->clone() : nullptr,
+            *m_sink,
+            severities::kFatal};
     }
     /** @} */
 };
@@ -368,8 +570,11 @@ static_assert(std::is_nothrow_destructible<Journal>::value == true, "");
 //------------------------------------------------------------------------------
 
 template <typename T>
-Journal::ScopedStream::ScopedStream(Journal::Stream const& stream, T const& t)
-    : ScopedStream(stream.sink(), stream.level())
+Journal::ScopedStream::ScopedStream(
+    std::unique_ptr<StructuredLogAttributes> attributes,
+    Stream const& stream,
+    T const& t)
+    : ScopedStream(std::move(attributes), stream.sink(), stream.level())
 {
     m_ostream << t;
 }
@@ -388,7 +593,7 @@ template <typename T>
 Journal::ScopedStream
 Journal::Stream::operator<<(T const& t) const
 {
-    return ScopedStream(*this, t);
+    return {m_attributes ? m_attributes->clone() : nullptr, *this, t};
 }
 
 namespace detail {

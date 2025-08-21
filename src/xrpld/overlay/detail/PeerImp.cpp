@@ -77,10 +77,18 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
-    , journal_(sink_)
-    , p_journal_(p_sink_)
+    , journal_(
+          app_.journal("Peer"),
+          log::attributes(
+              {{"NodeID", id},
+               {"RemoteAddress", to_string(slot->remote_endpoint())},
+               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
+    , p_journal_(
+          app_.journal("Protocol"),
+          log::attributes(
+              {{"NodeID", id},
+               {"RemoteAddress", to_string(slot->remote_endpoint())},
+               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
@@ -313,7 +321,8 @@ PeerImp::sendTxQueue()
         std::for_each(txQueue_.begin(), txQueue_.end(), [&](auto const& hash) {
             ht.add_hashes(hash.data(), hash.size());
         });
-        JLOG(p_journal_.trace()) << "sendTxQueue " << txQueue_.size();
+        JLOG(p_journal_.trace())
+            << "sendTxQueue " << log::param("TxQueueSize", txQueue_.size());
         txQueue_.clear();
         send(std::make_shared<Message>(ht, protocol::mtHAVE_TRANSACTIONS));
     }
@@ -333,7 +342,8 @@ PeerImp::addTxQueue(uint256 const& hash)
     }
 
     txQueue_.insert(hash);
-    JLOG(p_journal_.trace()) << "addTxQueue " << txQueue_.size();
+    JLOG(p_journal_.trace())
+        << "addTxQueue " << log::param("TxQueueSize", txQueue_.size());
 }
 
 void
@@ -345,7 +355,8 @@ PeerImp::removeTxQueue(uint256 const& hash)
             std::bind(&PeerImp::removeTxQueue, shared_from_this(), hash));
 
     auto removed = txQueue_.erase(hash);
-    JLOG(p_journal_.trace()) << "removeTxQueue " << removed;
+    JLOG(p_journal_.trace())
+        << "removeTxQueue " << log::param("ElementsRemoved", removed);
 }
 
 void
@@ -486,7 +497,8 @@ PeerImp::json()
 
             default:
                 JLOG(p_journal_.warn())
-                    << "Unknown status: " << last_status.newstatus();
+                    << "Unknown status: "
+                    << log::param("NodeStatus", last_status.newstatus());
         }
     }
 
@@ -609,8 +621,10 @@ PeerImp::fail(std::string const& reason)
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
     {
         std::string const n = name();
-        JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
-                              << " failed: " << reason;
+        JLOG(journal_.warn())
+            << log::param(
+                   "RemoteAddress", n.empty() ? remote_address_.to_string() : n)
+            << " failed: " << reason;
     }
     close();
 }
@@ -624,8 +638,11 @@ PeerImp::fail(std::string const& name, error_code ec)
     if (socket_.is_open())
     {
         JLOG(journal_.warn())
-            << name << " from " << toBase58(TokenType::NodePublic, publicKey_)
-            << " at " << remote_address_.to_string() << ": " << ec.message();
+            << log::param("Name", name) << " from "
+            << log::param(
+                   "PublicKey", toBase58(TokenType::NodePublic, publicKey_))
+            << " at " << log::param("RemoteAddress", remote_address_) << ": "
+            << log::param("ErrorMessage", ec.message());
     }
     close();
 }
@@ -659,7 +676,8 @@ PeerImp::setTimer()
 
     if (ec)
     {
-        JLOG(journal_.error()) << "setTimer: " << ec.message();
+        JLOG(journal_.error())
+            << "setTimer: " << log::param("ErrorMessage", ec.message());
         return;
     }
     timer_.async_wait(bind_executor(
@@ -678,14 +696,6 @@ PeerImp::cancelTimer()
 
 //------------------------------------------------------------------------------
 
-std::string
-PeerImp::makePrefix(id_t id)
-{
-    std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
-    return ss.str();
-}
-
 void
 PeerImp::onTimer(error_code const& ec)
 {
@@ -698,7 +708,8 @@ PeerImp::onTimer(error_code const& ec)
     if (ec)
     {
         // This should never happen
-        JLOG(journal_.error()) << "onTimer: " << ec.message();
+        JLOG(journal_.error())
+            << "onTimer: " << log::param("ErrorMessage", ec.message());
         return close();
     }
 
@@ -770,7 +781,8 @@ PeerImp::doAccept()
         read_buffer_.size() == 0,
         "ripple::PeerImp::doAccept : empty read buffer");
 
-    JLOG(journal_.debug()) << "doAccept: " << remote_address_;
+    JLOG(journal_.debug()) << "doAccept: "
+                           << log::param("RemoteAddress", remote_address_);
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
 
@@ -779,9 +791,12 @@ PeerImp::doAccept()
     if (!sharedValue)
         return fail("makeSharedValue: Unexpected failure");
 
-    JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
+    JLOG(journal_.info()) << "Protocol: "
+                          << log::param("Protocol", to_string(protocol_));
     JLOG(journal_.info()) << "Public Key: "
-                          << toBase58(TokenType::NodePublic, publicKey_);
+                          << log::param(
+                                 "PublicKey",
+                                 toBase58(TokenType::NodePublic, publicKey_));
 
     if (auto member = app_.cluster().member(publicKey_))
     {
@@ -789,7 +804,8 @@ PeerImp::doAccept()
             std::unique_lock lock{nameMutex_};
             name_ = *member;
         }
-        JLOG(journal_.info()) << "Cluster name: " << *member;
+        JLOG(journal_.info())
+            << "Cluster name: " << log::param("ClusterName", *member);
     }
 
     overlay_.activate(shared_from_this());
@@ -1051,8 +1067,10 @@ PeerImp::onMessageBegin(
         overlay_.addTxMetrics(
             static_cast<MessageType>(type), static_cast<std::uint64_t>(size));
     }
-    JLOG(journal_.trace()) << "onMessageBegin: " << type << " " << size << " "
-                           << uncompressed_size << " " << isCompressed;
+    JLOG(journal_.trace()) << "onMessageBegin: " << log::param("Type", type)
+                           << " " << log::param("Size", size) << " "
+                           << log::param("UncompressedSize", uncompressed_size)
+                           << " " << log::param("IsCompressed", isCompressed);
 }
 
 void
@@ -1219,8 +1237,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 
         if (!result)
         {
-            JLOG(p_journal_.error()) << "failed to parse incoming endpoint: {"
-                                     << tm.endpoint() << "}";
+            JLOG(p_journal_.error())
+                << "failed to parse incoming endpoint: {"
+                << log::param("EndPoint", tm.endpoint()) << "}";
             malformed++;
             continue;
         }
@@ -1283,14 +1302,21 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
+        beast::Journal protocolJournal{
+            p_journal_,
+            log::attributes({
+                {"TransactionID", to_string(txID)},
+                {"RawTransaction", strHex(m->rawtransaction())},
+            })};
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
         if (stx->isFlag(tfInnerBatchTxn) &&
             getCurrentTransactionRules()->enabled(featureBatch))
         {
-            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
-                                       "tfInnerBatchTxn (handleTransaction).";
+            JLOG(protocolJournal.warn())
+                << "Ignoring Network relayed Tx containing "
+                   "tfInnerBatchTxn (handleTransaction).";
             fee_.update(Resource::feeModerateBurdenPeer, "inner batch txn");
             return;
         }
@@ -1305,7 +1331,8 @@ PeerImp::handleTransaction(
             if (any(flags & HashRouterFlags::BAD))
             {
                 fee_.update(Resource::feeUselessData, "known bad");
-                JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
+                JLOG(protocolJournal.debug())
+                    << "Ignoring known bad tx " << txID;
             }
 
             // Erase only if the server has seen this tx. If the server has not
@@ -1320,7 +1347,7 @@ PeerImp::handleTransaction(
             return;
         }
 
-        JLOG(p_journal_.debug()) << "Got tx " << txID;
+        JLOG(protocolJournal.debug()) << "Got tx " << txID;
 
         bool checkSignature = true;
         if (cluster())
@@ -1344,7 +1371,7 @@ PeerImp::handleTransaction(
 
         if (app_.getLedgerMaster().getValidatedLedgerAge() > 4min)
         {
-            JLOG(p_journal_.trace())
+            JLOG(protocolJournal.trace())
                 << "No new transactions until synchronized";
         }
         else if (
@@ -1352,7 +1379,7 @@ PeerImp::handleTransaction(
             app_.config().MAX_TRANSACTIONS)
         {
             overlay_.incJqTransOverflow();
-            JLOG(p_journal_.info()) << "Transaction queue is full";
+            JLOG(protocolJournal.info()) << "Transaction queue is full";
         }
         else
         {
@@ -1374,7 +1401,7 @@ PeerImp::handleTransaction(
     {
         JLOG(p_journal_.warn())
             << "Transaction invalid: " << strHex(m->rawtransaction())
-            << ". Exception: " << ex.what();
+            << ". Exception: " << log::param("Reason", ex.what());
     }
 }
 
@@ -1383,7 +1410,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
     auto badData = [&](std::string const& msg) {
         fee_.update(Resource::feeInvalidData, "get_ledger " + msg);
-        JLOG(p_journal_.warn()) << "TMGetLedger: " << msg;
+        JLOG(p_journal_.warn())
+            << "TMGetLedger: " << log::param("PeerMessage", msg);
     };
     auto const itype{m->itype()};
 
@@ -1582,7 +1610,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 {
     auto badData = [&](std::string const& msg) {
         fee_.update(Resource::feeInvalidData, msg);
-        JLOG(p_journal_.warn()) << "TMLedgerData: " << msg;
+        JLOG(p_journal_.warn())
+            << "TMLedgerData: " << log::param("PeerMessage", msg);
     };
 
     // Verify ledger hash
@@ -1864,7 +1893,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         }
         if (peerChangedLedgers)
         {
-            JLOG(p_journal_.debug()) << "LCL is " << closedLedgerHash;
+            JLOG(p_journal_.debug())
+                << "LCL is "
+                << log::param("ClosedLedgerHash", closedLedgerHash);
         }
         else
         {

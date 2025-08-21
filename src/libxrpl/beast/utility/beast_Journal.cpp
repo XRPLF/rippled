@@ -25,6 +25,8 @@
 
 namespace beast {
 
+Journal::StructuredJournalImpl* Journal::m_structuredJournalImpl = nullptr;
+
 //------------------------------------------------------------------------------
 
 // A Sink that does nothing.
@@ -87,6 +89,29 @@ Journal::getNullSink()
 
 //------------------------------------------------------------------------------
 
+std::string
+severities::to_string(Severity severity)
+{
+    switch (severity)
+    {
+        case kDisabled:
+            return "disabled";
+        case kTrace:
+            return "trace";
+        case kDebug:
+            return "debug";
+        case kInfo:
+            return "info";
+        case kWarning:
+            return "warning";
+        case kError:
+            return "error";
+        case kFatal:
+            return "fatal";
+        default:
+            assert(false);
+    }
+}
 Journal::Sink::Sink(Severity thresh, bool console)
     : thresh_(thresh), m_console(console)
 {
@@ -126,17 +151,21 @@ Journal::Sink::threshold(Severity thresh)
 
 //------------------------------------------------------------------------------
 
-Journal::ScopedStream::ScopedStream(Sink& sink, Severity level)
-    : m_sink(sink), m_level(level)
+Journal::ScopedStream::ScopedStream(
+    std::unique_ptr<StructuredLogAttributes> attributes,
+    Sink& sink,
+    Severity level)
+    : m_attributes(std::move(attributes)), m_sink(sink), m_level(level)
 {
     // Modifiers applied from all ctors
     m_ostream << std::boolalpha << std::showbase;
 }
 
 Journal::ScopedStream::ScopedStream(
+    std::unique_ptr<StructuredLogAttributes> attributes,
     Stream const& stream,
     std::ostream& manip(std::ostream&))
-    : ScopedStream(stream.sink(), stream.level())
+    : ScopedStream(std::move(attributes), stream.sink(), stream.level())
 {
     m_ostream << manip;
 }
@@ -147,9 +176,29 @@ Journal::ScopedStream::~ScopedStream()
     if (!s.empty())
     {
         if (s == "\n")
-            m_sink.write(m_level, "");
+        {
+            if (m_structuredJournalImpl)
+            {
+                m_structuredJournalImpl->flush(
+                    &m_sink, m_level, "", m_attributes.get());
+            }
+            else
+            {
+                m_sink.write(m_level, "");
+            }
+        }
         else
-            m_sink.write(m_level, s);
+        {
+            if (m_structuredJournalImpl)
+            {
+                m_structuredJournalImpl->flush(
+                    &m_sink, m_level, s, m_attributes.get());
+            }
+            else
+            {
+                m_sink.write(m_level, s);
+            }
+        }
     }
 }
 
@@ -164,7 +213,7 @@ Journal::ScopedStream::operator<<(std::ostream& manip(std::ostream&)) const
 Journal::ScopedStream
 Journal::Stream::operator<<(std::ostream& manip(std::ostream&)) const
 {
-    return ScopedStream(*this, manip);
+    return {m_attributes ? m_attributes->clone() : nullptr, *this, manip};
 }
 
 }  // namespace beast

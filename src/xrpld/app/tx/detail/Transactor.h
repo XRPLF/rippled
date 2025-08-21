@@ -26,6 +26,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/telemetry/JsonLogs.h>
 
 namespace ripple {
 
@@ -52,7 +53,11 @@ public:
         , rules(rules_)
         , flags(flags_)
         , parentBatchId(parentBatchId_)
-        , j(j_)
+        , j(j_,
+            log::attributes({
+                {"TransactionID", to_string(tx.getTransactionID())},
+                {"AccountID", to_string(tx.getAccountID(sfAccount))},
+            }))
     {
         XRPL_ASSERT(
             (flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
@@ -100,7 +105,11 @@ public:
         , flags(flags_)
         , tx(tx_)
         , parentBatchId(parentBatchId_)
-        , j(j_)
+        , j(j_,
+            log::attributes({
+                {"TransactionID", {to_string(tx.getTransactionID())}},
+                {"AccountID", to_string(tx.getAccountID(sfAccount))},
+            }))
     {
         XRPL_ASSERT(
             parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
@@ -138,11 +147,12 @@ class Transactor
 {
 protected:
     ApplyContext& ctx_;
-    beast::Journal const j_;
 
     AccountID const account_;
     XRPAmount mPriorBalance;   // Balance before fees.
     XRPAmount mSourceBalance;  // Balance after fees.
+
+    beast::Journal const j_;
 
     virtual ~Transactor() = default;
     Transactor(Transactor const&) = delete;

@@ -25,6 +25,7 @@
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/LowestLayer.h>
 #include <xrpl/server/detail/io_list.h>
+#include <xrpl/telemetry/JsonLogs.h>
 
 #include <boost/asio.hpp>
 
@@ -47,7 +48,6 @@ protected:
     Port const& port_;
     Handler& handler_;
     endpoint_type remote_address_;
-    beast::WrappedSink sink_;
     beast::Journal const j_;
 
     boost::asio::executor_work_guard<boost::asio::executor> work_;
@@ -84,13 +84,13 @@ BasePeer<Handler, Impl>::BasePeer(
     : port_(port)
     , handler_(handler)
     , remote_address_(remote_address)
-    , sink_(
-          journal.sink(),
-          [] {
-              static std::atomic<unsigned> id{0};
-              return "##" + std::to_string(++id) + " ";
-          }())
-    , j_(sink_)
+    , j_(journal,
+         log::attributes(
+             {{"PeerID",
+               [] {
+                   static std::atomic<unsigned> id{0};
+                   return "##" + std::to_string(++id) + " ";
+               }()}}))
     , work_(executor)
     , strand_(executor)
 {
