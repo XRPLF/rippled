@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/ToString.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/telemetry/JsonLogs.h>
-#include <xrpl/basics/ToString.h>
 
 #include <thread>
 
