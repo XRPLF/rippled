@@ -21,6 +21,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/telemetry/JsonLogs.h>
 
+#include <chrono>
 #include <thread>
 
 namespace ripple::log {
