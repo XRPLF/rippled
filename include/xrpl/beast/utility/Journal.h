@@ -365,8 +365,7 @@ public:
     /** Journal has no default constructor. */
     Journal() = delete;
 
-    Journal(Journal const& other)
-        : Journal(other, nullptr)
+    Journal(Journal const& other) : Journal(other, nullptr)
     {
     }
 
