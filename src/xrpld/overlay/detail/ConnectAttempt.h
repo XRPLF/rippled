@@ -22,8 +22,6 @@
 
 #include <xrpld/overlay/detail/OverlayImpl.h>
 
-#include <atomic>
-
 namespace ripple {
 
 /** Manages an outbound connection attempt. */
@@ -61,7 +59,9 @@ private:
     response_type response_;
     std::shared_ptr<PeerFinder::Slot> slot_;
     request_type req_;
-    std::atomic<bool> shutdown_ = false;
+    bool shutdown_ = false;
+    bool isIOInProgress_ = false;
+    bool shutdownStarted_ = false;
 
 public:
     ConnectAttempt(
@@ -104,6 +104,8 @@ private:
     fail(std::string const& name, error_code ec);
     void
     shutdown();
+    void
+    tryAsyncShutdown();
     void
     onShutdown(error_code ec);
     void

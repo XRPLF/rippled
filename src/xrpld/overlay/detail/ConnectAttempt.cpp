@@ -83,6 +83,8 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
+    isIOInProgress_ = true;
+
     stream_.next_layer().async_connect(
         remote_endpoint_,
         strand_.wrap(std::bind(
@@ -100,22 +102,44 @@ ConnectAttempt::shutdown()
         strand_.running_in_this_thread(),
         "ripple::ConnectAttempt::shutdown: strand in this thread");
 
-    if (!socket_.is_open() || shutdown_)
+    if (!socket_.is_open())
         return;
 
     shutdown_ = true;
-    stream_.next_layer().cancel();
 
-    close();
-    // setTimer();
+    boost::beast::get_lowest_layer(stream_).cancel();
 
-    // // gracefully shutdown the SSL socket, performing a shutdown handshake
-    // stream_.async_shutdown(bind_executor(
-    //     strand_,
-    //     std::bind(
-    //         &ConnectAttempt::onShutdown,
-    //         shared_from_this(),
-    // std::placeholders::_1)));
+    tryAsyncShutdown();
+}
+
+void
+ConnectAttempt::tryAsyncShutdown()
+{
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::ConnectAttempt::tryAsyncShutdown : strand in this thread");
+
+    if (!shutdown_ || shutdownStarted_)
+        return;
+
+    if (isIOInProgress_)
+        return;
+
+    shutdownStarted_ = true;
+
+    XRPL_ASSERT(
+        !isIOInProgress_,
+        "ripple::ConnectAttempt::tryAsyncShutdown: io not in progress");
+
+    setTimer();
+
+    // gracefully shutdown the SSL socket, performing a shutdown handshake
+    stream_.async_shutdown(bind_executor(
+        strand_,
+        std::bind(
+            &ConnectAttempt::onShutdown,
+            shared_from_this(),
+            std::placeholders::_1)));
 }
 
 void
@@ -133,7 +157,7 @@ ConnectAttempt::onShutdown(error_code ec)
         if (ec != boost::asio::error::eof &&
             ec != boost::asio::error::operation_aborted)
         {
-            JLOG(journal_.warn()) << "onShutdown: " << ec.message();
+            JLOG(journal_.debug()) << "onShutdown: " << ec.message();
         }
     }
 
@@ -204,7 +228,7 @@ ConnectAttempt::onTimer(error_code ec)
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
-            return;
+            return tryAsyncShutdown();
 
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
@@ -219,13 +243,18 @@ ConnectAttempt::onConnect(error_code ec)
 {
     cancelTimer();
 
+    isIOInProgress_ = false;
+
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
-            return;
+            return tryAsyncShutdown();
 
         return fail("onConnect", ec);
     }
+
+    if (!socket_.is_open())
+        return;
 
     // check if connection has really been established
     socket_.local_endpoint(ec);
@@ -234,10 +263,12 @@ ConnectAttempt::onConnect(error_code ec)
 
     JLOG(journal_.trace()) << "onConnect";
 
-    if (!socket_.is_open() || shutdown_)
-        return;
+    if (shutdown_)
+        return tryAsyncShutdown();
 
     setTimer();
+
+    isIOInProgress_ = true;
 
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     stream_.async_handshake(
@@ -253,10 +284,12 @@ ConnectAttempt::onHandshake(error_code ec)
 {
     cancelTimer();
 
+    isIOInProgress_ = false;
+
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
-            return;
+            return tryAsyncShutdown();
 
         return fail("onHandshake", ec);
     }
@@ -289,10 +322,13 @@ ConnectAttempt::onHandshake(error_code ec)
         remote_endpoint_.address(),
         app_);
 
-    if (!socket_.is_open() || shutdown_)
-        return;
+    if (shutdown_)
+        return tryAsyncShutdown();
 
     setTimer();
+
+    isIOInProgress_ = true;
+
     boost::beast::http::async_write(
         stream_,
         req_,
@@ -307,16 +343,21 @@ ConnectAttempt::onWrite(error_code ec)
 {
     cancelTimer();
 
+    isIOInProgress_ = false;
+
     if (ec)
     {
         if (ec == boost::asio::error::operation_aborted)
-            return;
+            return tryAsyncShutdown();
 
         return fail("onWrite", ec);
     }
 
-    if (!socket_.is_open() || shutdown_)
-        return;
+    if (shutdown_)
+        return tryAsyncShutdown();
+
+    setTimer();
+    isIOInProgress_ = true;
 
     boost::beast::http::async_read(
         stream_,
@@ -333,6 +374,8 @@ ConnectAttempt::onRead(error_code ec)
 {
     cancelTimer();
 
+    isIOInProgress_ = false;
+
     if (ec)
     {
         if (ec == boost::asio::error::eof)
@@ -342,13 +385,13 @@ ConnectAttempt::onRead(error_code ec)
         }
 
         if (ec == boost::asio::error::operation_aborted)
-            return;
+            return tryAsyncShutdown();
 
         return fail("onRead", ec);
     }
 
-    if (!socket_.is_open() || shutdown_)
-        return;
+    if (shutdown_)
+        return tryAsyncShutdown();
 
     processResponse();
 }
@@ -453,8 +496,11 @@ ConnectAttempt::processResponse()
             return fail(ss.str());
         }
 
-        if (!socket_.is_open() || shutdown_)
+        if (!socket_.is_open())
             return;
+
+        if (shutdown_)
+            return tryAsyncShutdown();
 
         auto const peer = std::make_shared<PeerImp>(
             app_,
