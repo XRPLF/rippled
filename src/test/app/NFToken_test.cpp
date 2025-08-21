@@ -6006,9 +6006,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 0), txflags(tfTransferable));
             env.close();
 
-            // Create an offer with a short expiration time (already expired)
+            // Create an offer with a short expiration time
             std::uint32_t const expiration =
-                lastClose(env) - 1;  // 1 second ago
+                lastClose(env) + 2;  // 2 seconds from now
 
             uint256 const sellOfferIndex =
                 keylet::nftoffer(issuer, env.seq(issuer)).key;
@@ -6019,6 +6019,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Before: offer exists, owner count = 2 (NFT + offer)
             BEAST_EXPECT(ownerCount(env, issuer) == 2);
+
+            // Advance time to make the offer expired
+            // Close ledgers to advance time past expiration
+            env.close();
+            env.close();
+            env.close();
 
             // Try to accept the expired offer
             env(token::acceptSellOffer(buyer, sellOfferIndex), ter(tecEXPIRED));
@@ -6048,7 +6054,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftID, XRP(1)),
                 token::owner(issuer),
-                token::expiration(expiration));  // Also expired
+                token::expiration(expiration));  // Will also be expired after ledger advance
             env.close();
 
             // After creating buy offer, it should exist regardless of amendment
