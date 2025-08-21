@@ -6019,8 +6019,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 0), txflags(tfTransferable));
             env.close();
 
-            // Create sell offer that will expire in 10 seconds
-            std::uint32_t const expiration = lastClose(env) + 10;
+            // Create sell offer that will expire in 25 seconds
+            std::uint32_t const expiration = lastClose(env) + 25;
             uint256 const sellOfferIndex =
                 keylet::nftoffer(issuer, env.seq(issuer)).key;
             env(token::createOffer(issuer, nftID, XRP(1)),
@@ -6033,7 +6033,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(env.le(keylet::nftoffer(sellOfferIndex)));
 
             // Advance time past expiration
-            env.close(std::chrono::seconds(15));
+            while (lastClose(env) < expiration)
+                env.close();
 
             // Try to accept the expired offer
             env(token::acceptSellOffer(buyer, sellOfferIndex), ter(tecEXPIRED));
@@ -6080,8 +6081,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 0), txflags(tfTransferable));
             env.close();
 
-            // Create buy offer that will expire in 10 seconds
-            std::uint32_t const expiration = lastClose(env) + 10;
+            // Create buy offer that will expire in 25 seconds
+            std::uint32_t const expiration = lastClose(env) + 25;
             uint256 const buyOfferIndex =
                 keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftID, XRP(1)),
@@ -6094,7 +6095,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(env.le(keylet::nftoffer(buyOfferIndex)));
 
             // Advance time past expiration
-            env.close(std::chrono::seconds(15));
+            while (lastClose(env) < expiration)
+                env.close();
 
             // Try to accept the expired offer
             env(token::acceptBuyOffer(issuer, buyOfferIndex), ter(tecEXPIRED));
@@ -6142,8 +6144,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 0), txflags(tfTransferable));
             env.close();
 
-            // Create both offers that will expire in 10 seconds
-            std::uint32_t const expiration = lastClose(env) + 10;
+            // Create both offers that will expire in 25 seconds
+            std::uint32_t const expiration = lastClose(env) + 25;
 
             uint256 const sellOfferIndex =
                 keylet::nftoffer(issuer, env.seq(issuer)).key;
@@ -6167,7 +6169,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(env.le(keylet::nftoffer(buyOfferIndex)));
 
             // Advance time past expiration
-            env.close(std::chrono::seconds(15));
+            while (lastClose(env) < expiration)
+                env.close();
 
             // Try to broker the expired offers
             env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex),
