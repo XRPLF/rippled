@@ -4,29 +4,28 @@ package protocol;
 // Unused numbers in the list below may have been used previously. Please don't
 // reassign them for reuse unless you are 100% certain that there won't be a
 // conflict. Even if you're sure, it's probably best to assign a new type.
-enum MessageType
-{
-    mtMANIFESTS                 = 2;
-    mtPING                      = 3;
-    mtCLUSTER                   = 5;
-    mtENDPOINTS                 = 15;
-    mtTRANSACTION               = 30;
-    mtGET_LEDGER                = 31;
-    mtLEDGER_DATA               = 32;
-    mtPROPOSE_LEDGER            = 33;
-    mtSTATUS_CHANGE             = 34;
-    mtHAVE_SET                  = 35;
-    mtVALIDATION                = 41;
-    mtGET_OBJECTS               = 42;
-    mtVALIDATORLIST             = 54;
-    mtSQUELCH                   = 55;
-    mtVALIDATORLISTCOLLECTION   = 56;
-    mtPROOF_PATH_REQ            = 57;
-    mtPROOF_PATH_RESPONSE       = 58;
-    mtREPLAY_DELTA_REQ          = 59;
-    mtREPLAY_DELTA_RESPONSE     = 60;
-    mtHAVE_TRANSACTIONS         = 63;
-    mtTRANSACTIONS              = 64;
+enum MessageType {
+  mtMANIFESTS = 2;
+  mtPING = 3;
+  mtCLUSTER = 5;
+  mtENDPOINTS = 15;
+  mtTRANSACTION = 30;
+  mtGET_LEDGER = 31;
+  mtLEDGER_DATA = 32;
+  mtPROPOSE_LEDGER = 33;
+  mtSTATUS_CHANGE = 34;
+  mtHAVE_SET = 35;
+  mtVALIDATION = 41;
+  mtGET_OBJECTS = 42;
+  mtVALIDATORLIST = 54;
+  mtSQUELCH = 55;
+  mtVALIDATORLISTCOLLECTION = 56;
+  mtPROOF_PATH_REQ = 57;
+  mtPROOF_PATH_RESPONSE = 58;
+  mtREPLAY_DELTA_REQ = 59;
+  mtREPLAY_DELTA_RESPONSE = 60;
+  mtHAVE_TRANSACTIONS = 63;
+  mtTRANSACTIONS = 64;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -36,352 +35,309 @@ enum MessageType
 //------------------------------------------------------------------------------
 
 /* Provides the current ephemeral key for a validator. */
-message TMManifest
-{
-    // A Manifest object in the Ripple serialization format.
-    required bytes stobject = 1;
+message TMManifest {
+  // A Manifest object in the Ripple serialization format.
+  required bytes stobject = 1;
 }
 
-message TMManifests
-{
-    repeated TMManifest list = 1;
+message TMManifests {
+  repeated TMManifest list = 1;
 
-    // The manifests sent when a peer first connects to another peer are `history`.
-    optional bool history = 2 [deprecated=true];
+  // The manifests sent when a peer first connects to another peer are `history`.
+  optional bool history = 2 [deprecated = true];
 }
 
 //------------------------------------------------------------------------------
 
 // The status of a node in our cluster
-message TMClusterNode
-{
-    required string          publicKey       = 1;
-    required uint32          reportTime      = 2;
-    required uint32          nodeLoad        = 3;
-    optional string          nodeName        = 4;
-    optional string          address         = 5;
+message TMClusterNode {
+  required string publicKey = 1;
+  required uint32 reportTime = 2;
+  required uint32 nodeLoad = 3;
+  optional string nodeName = 4;
+  optional string address = 5;
 }
 
 // Sources that are placing load on the server
-message TMLoadSource
-{
-    required string          name            = 1;
-    required uint32          cost            = 2;
-    optional uint32          count           = 3; // number of connections
+message TMLoadSource {
+  required string name = 1;
+  required uint32 cost = 2;
+  optional uint32 count = 3;  // number of connections
 }
 
 // The status of all nodes in the cluster
-message TMCluster
-{
-    repeated TMClusterNode   clusterNodes    = 1;
-    repeated TMLoadSource    loadSources     = 2;
+message TMCluster {
+  repeated TMClusterNode clusterNodes = 1;
+  repeated TMLoadSource loadSources = 2;
 }
 
 // Node public key
-message TMLink
-{
-    required bytes nodePubKey       = 1 [deprecated=true]; // node public key
+message TMLink {
+  required bytes nodePubKey = 1 [deprecated = true];  // node public key
 }
 
 // Peer public key
-message TMPublicKey
-{
-    required bytes publicKey = 1;
+message TMPublicKey {
+  required bytes publicKey = 1;
 }
 
 // A transaction can have only one input and one output.
 // If you want to send an amount that is greater than any single address of yours
 // you must first combine coins from one address to another.
 
-enum TransactionStatus
-{
-    tsNEW               = 1;    // origin node did/could not validate
-    tsCURRENT           = 2;    // scheduled to go in this ledger
-    tsCOMMITED          = 3;    // in a closed ledger
-    tsREJECT_CONFLICT   = 4;
-    tsREJECT_INVALID    = 5;
-    tsREJECT_FUNDS      = 6;
-    tsHELD_SEQ          = 7;
-    tsHELD_LEDGER       = 8;    // held for future ledger
+enum TransactionStatus {
+  tsNEW = 1;       // origin node did/could not validate
+  tsCURRENT = 2;   // scheduled to go in this ledger
+  tsCOMMITED = 3;  // in a closed ledger
+  tsREJECT_CONFLICT = 4;
+  tsREJECT_INVALID = 5;
+  tsREJECT_FUNDS = 6;
+  tsHELD_SEQ = 7;
+  tsHELD_LEDGER = 8;  // held for future ledger
 }
 
-message TMTransaction
-{
-    required bytes rawTransaction           = 1;
-    required TransactionStatus status       = 2;
-    optional uint64 receiveTimestamp        = 3;
-    optional bool deferred                  = 4;    // not applied to open ledger
+message TMTransaction {
+  required bytes rawTransaction = 1;
+  required TransactionStatus status = 2;
+  optional uint64 receiveTimestamp = 3;
+  optional bool deferred = 4;  // not applied to open ledger
 }
 
-message TMTransactions
-{
-    repeated TMTransaction transactions = 1;
+message TMTransactions {
+  repeated TMTransaction transactions = 1;
 }
 
-
-enum NodeStatus
-{
-    nsCONNECTING    = 1;        // acquiring connections
-    nsCONNECTED     = 2;        // convinced we are connected to the real network
-    nsMONITORING    = 3;        // we know what the previous ledger is
-    nsVALIDATING    = 4;        // we have the full ledger contents
-    nsSHUTTING      = 5;        // node is shutting down
+enum NodeStatus {
+  nsCONNECTING = 1;  // acquiring connections
+  nsCONNECTED = 2;   // convinced we are connected to the real network
+  nsMONITORING = 3;  // we know what the previous ledger is
+  nsVALIDATING = 4;  // we have the full ledger contents
+  nsSHUTTING = 5;    // node is shutting down
 }
 
-enum NodeEvent
-{
-    neCLOSING_LEDGER    = 1;    // closing a ledger because its close time has come
-    neACCEPTED_LEDGER   = 2;    // accepting a closed ledger, we have finished computing it
-    neSWITCHED_LEDGER   = 3;    // changing due to network consensus
-    neLOST_SYNC         = 4;
+enum NodeEvent {
+  neCLOSING_LEDGER = 1;   // closing a ledger because its close time has come
+  neACCEPTED_LEDGER = 2;  // accepting a closed ledger, we have finished computing it
+  neSWITCHED_LEDGER = 3;  // changing due to network consensus
+  neLOST_SYNC = 4;
 }
 
-message TMStatusChange
-{
-    optional NodeStatus newStatus       = 1;
-    optional NodeEvent newEvent         = 2;
-    optional uint32 ledgerSeq           = 3;
-    optional bytes ledgerHash           = 4;
-    optional bytes ledgerHashPrevious   = 5;
-    optional uint64 networkTime         = 6;
-    optional uint32 firstSeq            = 7;
-    optional uint32 lastSeq             = 8;
+message TMStatusChange {
+  optional NodeStatus newStatus = 1;
+  optional NodeEvent newEvent = 2;
+  optional uint32 ledgerSeq = 3;
+  optional bytes ledgerHash = 4;
+  optional bytes ledgerHashPrevious = 5;
+  optional uint64 networkTime = 6;
+  optional uint32 firstSeq = 7;
+  optional uint32 lastSeq = 8;
 }
-
 
 // Announce to the network our position on a closing ledger
-message TMProposeSet
-{
-    required uint32 proposeSeq          = 1;
-    required bytes currentTxHash        = 2;    // the hash of the ledger we are proposing
-    required bytes nodePubKey           = 3;
-    required uint32 closeTime           = 4;
-    required bytes signature            = 5;    // signature of above fields
-    required bytes previousledger       = 6;
-    repeated bytes addedTransactions    = 10;   // not required if number is large
-    repeated bytes removedTransactions  = 11;   // not required if number is large
+message TMProposeSet {
+  required uint32 proposeSeq = 1;
+  required bytes currentTxHash = 2;  // the hash of the ledger we are proposing
+  required bytes nodePubKey = 3;
+  required uint32 closeTime = 4;
+  required bytes signature = 5;  // signature of above fields
+  required bytes previousledger = 6;
+  repeated bytes addedTransactions = 10;    // not required if number is large
+  repeated bytes removedTransactions = 11;  // not required if number is large
 
-    // node vouches signature is correct
-    optional bool checkedSignature      = 7     [deprecated=true];
+  // node vouches signature is correct
+  optional bool checkedSignature = 7 [deprecated = true];
 
-    // Number of hops traveled
-    optional uint32 hops                = 12    [deprecated=true];
+  // Number of hops traveled
+  optional uint32 hops = 12 [deprecated = true];
 }
 
-enum TxSetStatus
-{
-    tsHAVE      = 1;    // We have this set locally
-    tsCAN_GET   = 2;    // We have a peer with this set
-    tsNEED      = 3;    // We need this set and can't get it
+enum TxSetStatus {
+  tsHAVE = 1;     // We have this set locally
+  tsCAN_GET = 2;  // We have a peer with this set
+  tsNEED = 3;     // We need this set and can't get it
 }
 
-message TMHaveTransactionSet
-{
-    required TxSetStatus status     = 1;
-    required bytes hash             = 2;
+message TMHaveTransactionSet {
+  required TxSetStatus status = 1;
+  required bytes hash = 2;
 }
 
 // Validator list (UNL)
-message TMValidatorList
-{
-    required bytes manifest         = 1;
-    required bytes blob             = 2;
-    required bytes signature        = 3;
-    required uint32 version         = 4;
+message TMValidatorList {
+  required bytes manifest = 1;
+  required bytes blob = 2;
+  required bytes signature = 3;
+  required uint32 version = 4;
 }
 
 // Validator List v2
-message ValidatorBlobInfo
-{
-    optional bytes manifest         = 1;
-    required bytes blob             = 2;
-    required bytes signature        = 3;
+message ValidatorBlobInfo {
+  optional bytes manifest = 1;
+  required bytes blob = 2;
+  required bytes signature = 3;
 }
 
 // Collection of Validator List v2 (UNL)
-message TMValidatorListCollection
-{
-    required uint32 version          = 1;
-    required bytes manifest          = 2;
-    repeated ValidatorBlobInfo blobs = 3;
+message TMValidatorListCollection {
+  required uint32 version = 1;
+  required bytes manifest = 2;
+  repeated ValidatorBlobInfo blobs = 3;
 }
 
 // Used to sign a final closed ledger after reprocessing
-message TMValidation
-{
-    // The serialized validation
-    required bytes validation = 1;
+message TMValidation {
+  // The serialized validation
+  required bytes validation = 1;
 
-    // node vouches signature is correct
-    optional bool checkedSignature = 2 [deprecated = true];
+  // node vouches signature is correct
+  optional bool checkedSignature = 2 [deprecated = true];
 
-    // Number of hops traveled
-    optional uint32 hops = 3           [deprecated = true];
+  // Number of hops traveled
+  optional uint32 hops = 3 [deprecated = true];
 }
 
 // An array of Endpoint messages
-message TMEndpoints
-{
-    // Previously used - don't reuse.
-    reserved 2;
+message TMEndpoints {
+  // Previously used - don't reuse.
+  reserved 2;
 
-    // This field is used to allow the TMEndpoints message format to be
-    // modified as necessary in the future.
-    required uint32         version = 1;
+  // This field is used to allow the TMEndpoints message format to be
+  // modified as necessary in the future.
+  required uint32 version = 1;
 
-    // An update to the Endpoint type that uses a string
-    // to represent endpoints, thus allowing ipv6 or ipv4 addresses
-    message TMEndpointv2
-    {
-        required string endpoint = 1;
-        required uint32 hops     = 2;
-    }
-    repeated TMEndpointv2   endpoints_v2 = 3;
+  // An update to the Endpoint type that uses a string
+  // to represent endpoints, thus allowing ipv6 or ipv4 addresses
+  message TMEndpointv2 {
+    required string endpoint = 1;
+    required uint32 hops = 2;
+  }
+  repeated TMEndpointv2 endpoints_v2 = 3;
 };
 
-message TMIndexedObject
-{
-    optional bytes hash         = 1;
-    optional bytes nodeID       = 2;
-    optional bytes index        = 3;
-    optional bytes data         = 4;
-    optional uint32 ledgerSeq   = 5;
+message TMIndexedObject {
+  optional bytes hash = 1;
+  optional bytes nodeID = 2;
+  optional bytes index = 3;
+  optional bytes data = 4;
+  optional uint32 ledgerSeq = 5;
 }
 
-message TMGetObjectByHash
-{
-    enum ObjectType {
-        otUNKNOWN           = 0;
-        otLEDGER            = 1;
-        otTRANSACTION       = 2;
-        otTRANSACTION_NODE  = 3;
-        otSTATE_NODE        = 4;
-        otCAS_OBJECT        = 5;
-        otFETCH_PACK        = 6;
-        otTRANSACTIONS      = 7;
-    }
+message TMGetObjectByHash {
+  enum ObjectType {
+    otUNKNOWN = 0;
+    otLEDGER = 1;
+    otTRANSACTION = 2;
+    otTRANSACTION_NODE = 3;
+    otSTATE_NODE = 4;
+    otCAS_OBJECT = 5;
+    otFETCH_PACK = 6;
+    otTRANSACTIONS = 7;
+  }
 
-    required ObjectType type            = 1;
-    required bool query                 = 2;    // is this a query or a reply?
-    optional uint32 seq                 = 3;    // used to match replies to queries
-    optional bytes ledgerHash           = 4;    // the hash of the ledger these queries are for
-    optional bool fat                   = 5;    // return related nodes
-    repeated TMIndexedObject objects    = 6;    // the specific objects requested
+  required ObjectType type = 1;
+  required bool query = 2;               // is this a query or a reply?
+  optional uint32 seq = 3;               // used to match replies to queries
+  optional bytes ledgerHash = 4;         // the hash of the ledger these queries are for
+  optional bool fat = 5;                 // return related nodes
+  repeated TMIndexedObject objects = 6;  // the specific objects requested
 }
 
-
-message TMLedgerNode
-{
-    required bytes nodedata         = 1;
-    optional bytes nodeid           = 2;    // missing for ledger base data
+message TMLedgerNode {
+  required bytes nodedata = 1;
+  optional bytes nodeid = 2;  // missing for ledger base data
 }
 
-enum TMLedgerInfoType
-{
-    liBASE          = 0;        // basic ledger info
-    liTX_NODE       = 1;        // transaction node
-    liAS_NODE       = 2;        // account state node
-    liTS_CANDIDATE  = 3;        // candidate transaction set
+enum TMLedgerInfoType {
+  liBASE = 0;          // basic ledger info
+  liTX_NODE = 1;       // transaction node
+  liAS_NODE = 2;       // account state node
+  liTS_CANDIDATE = 3;  // candidate transaction set
 }
 
-enum TMLedgerType
-{
-    ltACCEPTED      = 0;
-    ltCURRENT       = 1;        // no longer supported
-    ltCLOSED        = 2;
+enum TMLedgerType {
+  ltACCEPTED = 0;
+  ltCURRENT = 1;  // no longer supported
+  ltCLOSED = 2;
 }
 
-enum TMQueryType
-{
-    qtINDIRECT      = 0;
+enum TMQueryType {
+  qtINDIRECT = 0;
 }
 
-message TMGetLedger
-{
-    required TMLedgerInfoType itype = 1;
-    optional TMLedgerType ltype     = 2;
-    optional bytes ledgerHash       = 3;    // Can also be the transaction set hash if liTS_CANDIDATE
-    optional uint32 ledgerSeq       = 4;
-    repeated bytes nodeIDs          = 5;
-    optional uint64 requestCookie   = 6;
-    optional TMQueryType queryType  = 7;
-    optional uint32 queryDepth      = 8;    // How deep to go, number of extra levels
+message TMGetLedger {
+  required TMLedgerInfoType itype = 1;
+  optional TMLedgerType ltype = 2;
+  optional bytes ledgerHash = 3;  // Can also be the transaction set hash if liTS_CANDIDATE
+  optional uint32 ledgerSeq = 4;
+  repeated bytes nodeIDs = 5;
+  optional uint64 requestCookie = 6;
+  optional TMQueryType queryType = 7;
+  optional uint32 queryDepth = 8;  // How deep to go, number of extra levels
 }
 
-enum TMReplyError
-{
-    reNO_LEDGER                     = 1;    // We don't have the ledger you are asking about
-    reNO_NODE                       = 2;    // We don't have any of the nodes you are asking for
-    reBAD_REQUEST                   = 3;    // The request is wrong, e.g. wrong format
+enum TMReplyError {
+  reNO_LEDGER = 1;    // We don't have the ledger you are asking about
+  reNO_NODE = 2;      // We don't have any of the nodes you are asking for
+  reBAD_REQUEST = 3;  // The request is wrong, e.g. wrong format
 }
 
-message TMLedgerData
-{
-    required bytes ledgerHash       = 1;
-    required uint32 ledgerSeq       = 2;
-    required TMLedgerInfoType type  = 3;
-    repeated TMLedgerNode nodes     = 4;
-    optional uint32 requestCookie   = 5;
-    optional TMReplyError error     = 6;
+message TMLedgerData {
+  required bytes ledgerHash = 1;
+  required uint32 ledgerSeq = 2;
+  required TMLedgerInfoType type = 3;
+  repeated TMLedgerNode nodes = 4;
+  optional uint32 requestCookie = 5;
+  optional TMReplyError error = 6;
 }
 
-message TMPing
-{
-    enum pingType {
-        ptPING = 0; // we want a reply
-        ptPONG = 1; // this is a reply
-    }
-    required pingType type      = 1;
-    optional uint32 seq         = 2; // detect stale replies, ensure other side is reading
-    optional uint64 pingTime    = 3; // know when we think we sent the ping
-    optional uint64 netTime     = 4;
+message TMPing {
+  enum pingType {
+    ptPING = 0;  // we want a reply
+    ptPONG = 1;  // this is a reply
+  }
+  required pingType type = 1;
+  optional uint32 seq = 2;       // detect stale replies, ensure other side is reading
+  optional uint64 pingTime = 3;  // know when we think we sent the ping
+  optional uint64 netTime = 4;
 }
 
-message TMSquelch
-{
-    required bool squelch           = 1; // squelch if true, otherwise unsquelch
-    required bytes validatorPubKey  = 2; // validator's public key
-    optional uint32 squelchDuration = 3; // squelch duration in seconds
+message TMSquelch {
+  required bool squelch = 1;            // squelch if true, otherwise unsquelch
+  required bytes validatorPubKey = 2;   // validator's public key
+  optional uint32 squelchDuration = 3;  // squelch duration in seconds
 }
 
-enum TMLedgerMapType
-{
-    lmTRANASCTION   = 1;        // transaction map
-    lmACCOUNT_STATE = 2;        // account state map
+enum TMLedgerMapType {
+  lmTRANASCTION = 1;    // transaction map
+  lmACCOUNT_STATE = 2;  // account state map
 }
 
-message TMProofPathRequest
-{
-    required bytes key = 1;
-    required bytes ledgerHash = 2;
-    required TMLedgerMapType type = 3;
+message TMProofPathRequest {
+  required bytes key = 1;
+  required bytes ledgerHash = 2;
+  required TMLedgerMapType type = 3;
 }
 
-message TMProofPathResponse
-{
-    required bytes key = 1;
-    required bytes ledgerHash = 2;
-    required TMLedgerMapType type = 3;
-    optional bytes ledgerHeader = 4;
-    repeated bytes path = 5;
-    optional TMReplyError error = 6;
+message TMProofPathResponse {
+  required bytes key = 1;
+  required bytes ledgerHash = 2;
+  required TMLedgerMapType type = 3;
+  optional bytes ledgerHeader = 4;
+  repeated bytes path = 5;
+  optional TMReplyError error = 6;
 }
 
-message TMReplayDeltaRequest
-{
-    required bytes ledgerHash = 1;
+message TMReplayDeltaRequest {
+  required bytes ledgerHash = 1;
 }
 
-message TMReplayDeltaResponse
-{
-    required bytes ledgerHash = 1;
-    optional bytes ledgerHeader = 2;
-    repeated bytes transaction = 3;
-    optional TMReplyError error = 4;
+message TMReplayDeltaResponse {
+  required bytes ledgerHash = 1;
+  optional bytes ledgerHeader = 2;
+  repeated bytes transaction = 3;
+  optional TMReplyError error = 4;
 }
 
-message TMHaveTransactions
-{
-    repeated bytes hashes = 1;
+message TMHaveTransactions {
+  repeated bytes hashes = 1;
 }
-

@@ -100,3 +100,8 @@ Language: JavaScript
 ---
 Language: Json
 IndentWidth: 2
+---
+Language: Proto
+BasedOnStyle: Google
+ColumnLimit: 0
+IndentWidth: 2
