@@ -49,22 +49,10 @@ jobs:
 
           echo 'Checking nproc version.'
           nproc --version
-      - name: Set up Conan home directory (MacOS)
-        if: ${{ inputs.os == 'macos' }}
-        run: |
-          echo 'Setting up Conan home directory.'
-          export CONAN_HOME=${{ github.workspace }}/.conan
-          mkdir -p ${CONAN_HOME}
-      - name: Set up Conan home directory (Windows)
-        if: ${{ inputs.os == 'windows' }}
-        run: |
-          echo 'Setting up Conan home directory.'
-          set CONAN_HOME=${{ github.workspace }}\.conan
-          mkdir -p %CONAN_HOME%
       - name: Set up Conan configuration
         run: |
           echo 'Installing configuration.'
-          cat conan/global.conf ${{ inputs.os == 'linux' && '>>' || '>' }} $(conan config home)/global.conf
+          cat conan/global.conf >> $(conan config home)/global.conf
 
           echo 'Conan configuration:'
           conan config show '*'
@@ -78,28 +66,20 @@ jobs:
       - name: Set up Conan remote
         shell: bash
         run: |
-          echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
-          conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+          echo "Adding Conan remote '${{ env.CONAN_REMOTE_NAME }}' at ${{ env.CONAN_REMOTE_URL }}."
+          conan remote add --index 0 --force ${{ env.CONAN_REMOTE_NAME }} ${{ env.CONAN_REMOTE_URL }}
 
           echo 'Listing Conan remotes.'
           conan remote list
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
-          build_dir: ${{ inputs.build_dir }}
-          build_type: ${{ matrix.build_type }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
-          conan_remote_url: ${{ inputs.conan_remote_url }}
+          build_dir: .build
+          build_type: Debug
+          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+          conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
           conan_remote_username: ${{ secrets.conan_remote_username }}
           conan_remote_password: ${{ secrets.conan_remote_password }}
-          force_build: ${{ inputs.dependencies_force_build }}
-          force_upload: ${{ inputs.dependencies_force_upload }}
+          force_build: false
+          force_upload: false
 
-    #   - name: Set up Node.js
-    #     uses: actions/setup-node@v4
-    #     with:
-    #       node-version: "20"
-    #       cache: "npm"
-
-    #   - name: Install JavaScript dependencies
-    #     run: npm ci
