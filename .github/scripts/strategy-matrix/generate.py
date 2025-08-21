@@ -137,14 +137,17 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         if '-Dunity=ON' in cmake_args:
             config_name += '-unity'
 
+        # Add the configuration to the list, with the most unique fields first,
+        # so that they are easier to identify in the GitHub Actions UI, as long
+        # names get truncated.
         configurations.append({
-            'architecture': architecture,
-            'os': os,
-            'build_type': build_type,
-            'build_only': 'true' if build_only else 'false',
+            'config_name': config_name,
             'cmake_args': cmake_args,
             'cmake_target': cmake_target,
-            'config_name': config_name,
+            'build_only': 'true' if build_only else 'false',
+            'build_type': build_type,
+            'os': os,
+            'architecture': architecture,
         })
 
     return {'include': configurations}
