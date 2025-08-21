@@ -6051,8 +6051,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 token::expiration(expiration));  // Also expired
             env.close();
 
-            std::size_t expectedBuyerCount = amendmentEnabled ? 0 : 1;
-            BEAST_EXPECT(ownerCount(env, buyer) == expectedBuyerCount);
+            // After creating buy offer, it should exist regardless of amendment
+            BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
             // Try to accept the expired buy offer
             env(token::acceptBuyOffer(issuer, buyOfferIndex), ter(tecEXPIRED));
