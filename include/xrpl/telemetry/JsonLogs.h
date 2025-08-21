@@ -23,12 +23,10 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 
-#include <iostream>
 #include <source_location>
 #include <utility>
 
-namespace ripple {
-namespace log {
+namespace ripple::log {
 
 template <typename T>
 class LogParameter
@@ -215,7 +213,6 @@ attributes(std::initializer_list<JsonLogAttributes::Pair> const& fields)
     return std::make_unique<JsonLogAttributes>(fields);
 }
 
-}  // namespace log
-}  // namespace ripple
+}  // namespace ripple::log
 
 #endif
