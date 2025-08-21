@@ -14,6 +14,7 @@ libxrpl.server > xrpl.basics
 libxrpl.server > xrpl.json
 libxrpl.server > xrpl.protocol
 libxrpl.server > xrpl.server
+libxrpl.telemetry > xrpl.basics
 libxrpl.telemetry > xrpl.json
 libxrpl.telemetry > xrpl.telemetry
 test.app > test.jtx

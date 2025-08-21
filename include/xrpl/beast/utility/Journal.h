@@ -365,7 +365,6 @@ public:
     /** Journal has no default constructor. */
     Journal() = delete;
 
-    [[deprecated]]
     Journal(Journal const& other)
         : Journal(other, nullptr)
     {
