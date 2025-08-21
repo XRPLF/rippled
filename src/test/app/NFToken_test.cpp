@@ -6050,8 +6050,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             }
 
             // Test with buy offer as well
-            // Create a fresh expiration time for the buy offer
-            std::uint32_t const buyExpiration = lastClose(env) + 2;
+            // Create a buy offer with a reasonable expiration time
+            std::uint32_t const buyExpiration = lastClose(env) + 10;
             uint256 const buyOfferIndex =
                 keylet::nftoffer(buyer, env.seq(buyer)).key;
             env(token::createOffer(buyer, nftID, XRP(1)),
@@ -6059,13 +6059,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 token::expiration(buyExpiration));
             env.close();
 
-            // Advance time to make the buy offer expired
-            env.close();
-            env.close();
-            env.close();
-
             // After creating buy offer, it should exist regardless of amendment
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
+
+            // Advance time past the expiration
+            while (lastClose(env) < buyExpiration)
+                env.close();
 
             // Try to accept the expired buy offer
             env(token::acceptBuyOffer(issuer, buyOfferIndex), ter(tecEXPIRED));
@@ -6100,7 +6099,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             {
                 // With amendment, create fresh expired offers for brokered test
                 // (previous ones were already cleaned up)
-                std::uint32_t const brokeredExpiration = lastClose(env) + 2;
+                std::uint32_t const brokeredExpiration = lastClose(env) + 10;
                 uint256 const sellOfferIndex2 =
                     keylet::nftoffer(issuer, env.seq(issuer)).key;
                 env(token::createOffer(issuer, nftID, XRP(1)),
@@ -6115,10 +6114,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     token::expiration(brokeredExpiration));
                 env.close();
 
-                // Advance time to make both offers expired
-                env.close();
-                env.close();
-                env.close();
+                // Advance time past the expiration  
+                while (lastClose(env) < brokeredExpiration)
+                    env.close();
 
                 // Try brokered accept with both offers expired
                 env(token::brokerOffers(buyer, buyOfferIndex2, sellOfferIndex2),
