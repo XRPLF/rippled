@@ -690,6 +690,9 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
         DEBUG_LOGFILE = strTemp;
 
+    if (getSingleSection(secConfig, SECTION_LOG_STYLE, strTemp, j_))
+        LOG_STYLE = LogStyle::fromString(strTemp);
+
     if (getSingleSection(secConfig, SECTION_SWEEP_INTERVAL, strTemp, j_))
     {
         SWEEP_INTERVAL = beast::lexicalCastThrow<std::size_t>(strTemp);
@@ -1076,6 +1079,16 @@ Config::loadFromString(std::string const& fileContents)
                 "the maximum number of allowed peers (peers_max)");
         }
     }
+}
+
+LogStyle::LogStyle
+LogStyle::fromString(std::string const& str)
+{
+    if (str == "json")
+    {
+        return Json;
+    }
+    return LogFmt;
 }
 
 boost::filesystem::path

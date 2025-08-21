@@ -1107,8 +1107,10 @@ RCLConsensus::startRound(
 RclConsensusLogger::RclConsensusLogger(
     char const* label,
     bool const validating,
-    beast::Journal j)
-    : j_(j)
+    beast::Journal j,
+    std::source_location location)
+    : j_(j, log::attributes({{"Role", "ConsensusLogger"}, {"Label", label}}))
+    , location_(location)
 {
     if (!validating && !j.info())
         return;
@@ -1125,11 +1127,11 @@ RclConsensusLogger::~RclConsensusLogger()
         return;
     auto const duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - start_);
-    std::stringstream outSs;
-    outSs << header_ << "duration " << (duration.count() / 1000) << '.'
-          << std::setw(3) << std::setfill('0') << (duration.count() % 1000)
-          << "s. " << ss_->str();
-    j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
+
+    j_.info(location_) << header_ << "duration " << (duration.count() / 1000)
+                       << '.' << std::setw(3) << std::setfill('0')
+                       << (duration.count() % 1000) << "s. " << ss_->str()
+                       << log::field("Duration", duration.count());
 }
 
 }  // namespace ripple

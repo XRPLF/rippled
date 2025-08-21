@@ -85,8 +85,14 @@ target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
 add_module(xrpl json)
 target_link_libraries(xrpl.libxrpl.json PUBLIC xrpl.libxrpl.basics)
 
+add_module(xrpl telemetry)
+target_link_libraries(xrpl.libxrpl.telemetry PUBLIC xrpl.libxrpl.json)
+
 add_module(xrpl crypto)
-target_link_libraries(xrpl.libxrpl.crypto PUBLIC xrpl.libxrpl.basics)
+target_link_libraries(xrpl.libxrpl.crypto PUBLIC
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.telemetry
+)
 
 # Level 04
 add_module(xrpl protocol)
@@ -127,6 +133,7 @@ target_link_modules(xrpl PUBLIC
   beast
   crypto
   json
+  telemetry
   protocol
   resource
   server

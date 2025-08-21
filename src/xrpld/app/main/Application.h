@@ -258,7 +258,10 @@ public:
     serverOkay(std::string& reason) = 0;
 
     virtual beast::Journal
-    journal(std::string const& name) = 0;
+    journal(
+        std::string const& name,
+        std::unique_ptr<beast::Journal::StructuredLogAttributes> attributes =
+            {}) = 0;
 
     /* Returns the number of file descriptors the application needs */
     virtual int

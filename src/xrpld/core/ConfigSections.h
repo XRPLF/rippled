@@ -48,6 +48,7 @@ struct ConfigSection
 #define SECTION_CLUSTER_NODES "cluster_nodes"
 #define SECTION_COMPRESSION "compression"
 #define SECTION_DEBUG_LOGFILE "debug_logfile"
+#define SECTION_LOG_STYLE "log_style"
 #define SECTION_ELB_SUPPORT "elb_support"
 #define SECTION_FEE_DEFAULT "fee_default"
 #define SECTION_FETCH_DEPTH "fetch_depth"
