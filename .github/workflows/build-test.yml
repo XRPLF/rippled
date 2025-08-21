@@ -9,25 +9,25 @@ on:
   workflow_call:
     inputs:
       build_dir:
-        description: 'The directory where to build.'
+        description: "The directory where to build."
         required: false
         type: string
-        default: '.build'
+        default: ".build"
       conan_remote_name:
-        description: 'The name of the Conan remote to use.'
+        description: "The name of the Conan remote to use."
         required: true
         type: string
       conan_remote_url:
-        description: 'The URL of the Conan endpoint to use.'
+        description: "The URL of the Conan endpoint to use."
         required: true
         type: string
       dependencies_force_build:
-        description: 'Force building of all dependencies.'
+        description: "Force building of all dependencies."
         required: false
         type: boolean
         default: false
       dependencies_force_upload:
-        description: 'Force uploading of all dependencies.'
+        description: "Force uploading of all dependencies."
         required: false
         type: boolean
         default: false
@@ -40,16 +40,16 @@ on:
         description: 'The strategy matrix to use for generating the configurations ("minimal", "all").'
         required: false
         type: string
-        default: 'minimal'
+        default: "minimal"
     secrets:
       codecov_token:
-        description: 'The Codecov token to use for uploading coverage reports.'
+        description: "The Codecov token to use for uploading coverage reports."
         required: false
       conan_remote_username:
-        description: 'The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
+        description: "The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded."
         required: false
       conan_remote_password:
-        description: 'The password for logging into the Conan remote. If not provided, the dependencies will not be uploaded.'
+        description: "The password for logging into the Conan remote. If not provided, the dependencies will not be uploaded."
         required: false
 
 concurrency:

@@ -30,5 +30,4 @@ repos:
       - id: prettier
         name: prettier
         language: system
-        entry: prettier --write
-        types: [markdown, json, yaml]
+        entry: prettier --ignore-unknown --write
