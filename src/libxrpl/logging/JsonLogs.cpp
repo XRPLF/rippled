@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpl/logging/JsonLogs.h>
+#include <xrpl/telemetry/JsonLogs.h>
+#include <xrpl/json/to_string.h>
+
 namespace ripple {
 namespace log {
 
@@ -100,14 +102,14 @@ JsonStructuredJournal::Logger::write(
     threadIdStream << std::this_thread::get_id();
     globalContext["ThreadId"] = threadIdStream.str();
     globalContext["Params"] = messageParams;
-    globalContext["Level"] = Logs::toString(Logs::fromSeverity(level));
+    globalContext["Level"] = beast::severities::to_string(level);
     globalContext["Message"] = text;
     globalContext["Time"] =
         to_string(std::chrono::duration_cast<std::chrono::milliseconds>(
                       std::chrono::system_clock::now().time_since_epoch())
                       .count());
 
-    sink->write(level, Json::jsonAsString(globalContext));
+    sink->write(level, to_string(globalContext));
 }
 
 JsonStructuredJournal::Logger
