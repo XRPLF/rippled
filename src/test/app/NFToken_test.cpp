@@ -1171,18 +1171,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
         // The buy offer must not have expired.
-        if (features[fixExpiredNFTokenOfferRemoval])
-        {
-            // With amendment: expired offers may reach type validation
-            env(token::acceptBuyOffer(buyer, aliceExpOfferIndex),
-                ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
-        }
-        else
-        {
-            // Without amendment: expired offers fail early
-            env(token::acceptBuyOffer(buyer, aliceExpOfferIndex),
-                ter(tecEXPIRED));
-        }
+        // Note: aliceExpOfferIndex is a sell offer, so this should fail with
+        // type mismatch
+        env(token::acceptBuyOffer(buyer, aliceExpOfferIndex),
+            ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 0);
 
@@ -1201,9 +1193,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // The sell offer must not have expired.
         if (features[fixExpiredNFTokenOfferRemoval])
         {
-            // With amendment: expired offers may reach type validation
+            // With amendment: expired offers are deleted and return tecEXPIRED
             env(token::acceptSellOffer(buyer, aliceExpOfferIndex),
-                ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
+                ter(tecEXPIRED));
         }
         else
         {
@@ -1224,7 +1216,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
         env(pay(gw, buyer, gwAUD(30)));
         env.close();
-        BEAST_EXPECT(ownerCount(env, alice) == 7);
+        // Alice's count is 7 without amendment (expired offer still exists),
+        // 6 with amendment (expired offer was deleted)
+        if (features[fixExpiredNFTokenOfferRemoval])
+        {
+            BEAST_EXPECT(ownerCount(env, alice) == 6);
+        }
+        else
+        {
+            BEAST_EXPECT(ownerCount(env, alice) == 7);
+        }
         BEAST_EXPECT(ownerCount(env, buyer) == 1);
 
         // We're about to exercise offer brokering, so we need
@@ -1314,7 +1315,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::acceptBuyOffer(buyer, plainOfferIndex),
                 ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
             env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == 7);
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                BEAST_EXPECT(ownerCount(env, alice) == 6);
+            }
+            else
+            {
+                BEAST_EXPECT(ownerCount(env, alice) == 7);
+            }
 
             // An account can't accept its own offer.
             env(token::acceptBuyOffer(buyer, buyerOfferIndex),
@@ -1340,7 +1348,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
                 env(token::acceptSellOffer(gw, offerIndex));
                 env.close();
-                BEAST_EXPECT(ownerCount(env, alice) == 7);
+                if (features[fixExpiredNFTokenOfferRemoval])
+                {
+                    BEAST_EXPECT(ownerCount(env, alice) == 6);
+                }
+                else
+                {
+                    BEAST_EXPECT(ownerCount(env, alice) == 7);
+                }
             }
             env(pay(gw, buyer, gwAUD(30)));
             env.close();
@@ -1371,7 +1386,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::acceptSellOffer(alice, buyerOfferIndex),
                 ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
             env.close();
-            BEAST_EXPECT(ownerCount(env, alice) == 7);
+            if (features[fixExpiredNFTokenOfferRemoval])
+            {
+                BEAST_EXPECT(ownerCount(env, alice) == 6);
+            }
+            else
+            {
+                BEAST_EXPECT(ownerCount(env, alice) == 7);
+            }
 
             // An account can't accept its own offer.
             env(token::acceptSellOffer(alice, plainOfferIndex),
@@ -1397,7 +1419,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
                 env(token::acceptSellOffer(alice, offerIndex));
                 env.close();
-                BEAST_EXPECT(ownerCount(env, alice) == 7);
+                if (features[fixExpiredNFTokenOfferRemoval])
+                {
+                    BEAST_EXPECT(ownerCount(env, alice) == 6);
+                }
+                else
+                {
+                    BEAST_EXPECT(ownerCount(env, alice) == 7);
+                }
             }
             env(pay(buyer, gw, gwAUD(30)));
             env.close();
@@ -3579,11 +3608,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // If the sell offer is expired it cannot be brokered.
             if (features[fixExpiredNFTokenOfferRemoval])
             {
-                // With amendment: expired offers now reach type validation,
-                // which may expose issues with offer setup that were previously
-                // hidden by early expiration rejection
+                // With amendment: expired offers are deleted and return
+                // tecEXPIRED
                 env(token::brokerOffers(issuer, buyOffer1, sellOffer1),
-                    ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
+                    ter(tecEXPIRED));
             }
             else
             {
@@ -3663,7 +3691,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(lastClose(env) < expiration);
             BEAST_EXPECT(ownerCount(env, issuer) == 0);
             BEAST_EXPECT(ownerCount(env, minter) == 3);
-            BEAST_EXPECT(ownerCount(env, buyer) == 2);
+            BEAST_EXPECT(ownerCount(env, buyer) == 3);
 
             // An unexpired offer can be brokered.
             env(token::brokerOffers(issuer, buyOffer0, sellOffer0));
@@ -3679,9 +3707,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // If the buy offer is expired it cannot be brokered.
             if (features[fixExpiredNFTokenOfferRemoval])
             {
-                // With amendment: expired offers now reach type validation
+                // With amendment: expired offers are deleted and return
+                // tecEXPIRED
                 env(token::brokerOffers(issuer, buyOffer1, sellOffer1),
-                    ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
+                    ter(tecEXPIRED));
             }
             else
             {
@@ -3780,9 +3809,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // If the offers are expired they cannot be brokered.
             if (features[fixExpiredNFTokenOfferRemoval])
             {
-                // With amendment: expired offers now reach type validation
+                // With amendment: expired offers are deleted and return
+                // tecEXPIRED
                 env(token::brokerOffers(issuer, buyOffer1, sellOffer1),
-                    ter(tecNFTOKEN_OFFER_TYPE_MISMATCH));
+                    ter(tecEXPIRED));
             }
             else
             {
@@ -8454,20 +8484,25 @@ public:
         static FeatureBitset const all{testable_amendments()};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        static std::array<FeatureBitset, 8> const feats{
+        static std::array<FeatureBitset, 9> const feats{
             all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT,
+                fixNFTokenReserve - featureNFTokenMintOffer -
+                featureDynamicNFT - fixExpiredNFTokenOfferRemoval,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
                 fixNFTokenRemint - fixNFTokenReserve - featureNFTokenMintOffer -
-                featureDynamicNFT,
+                featureDynamicNFT - fixExpiredNFTokenOfferRemoval,
             all - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT,
+                fixNFTokenReserve - featureNFTokenMintOffer -
+                featureDynamicNFT - fixExpiredNFTokenOfferRemoval,
             all - fixNFTokenRemint - fixNFTokenReserve -
-                featureNFTokenMintOffer - featureDynamicNFT,
+                featureNFTokenMintOffer - featureDynamicNFT -
+                fixExpiredNFTokenOfferRemoval,
             all - fixNFTokenReserve - featureNFTokenMintOffer -
-                featureDynamicNFT,
-            all - featureNFTokenMintOffer - featureDynamicNFT,
-            all - featureDynamicNFT,
+                featureDynamicNFT - fixExpiredNFTokenOfferRemoval,
+            all - featureNFTokenMintOffer - featureDynamicNFT -
+                fixExpiredNFTokenOfferRemoval,
+            all - featureDynamicNFT - fixExpiredNFTokenOfferRemoval,
+            all - fixExpiredNFTokenOfferRemoval,
             all};
 
         if (BEAST_EXPECT(instance < feats.size()))
@@ -8538,12 +8573,21 @@ class NFTokenWOModify_test : public NFTokenBaseUtil_test
     }
 };
 
+class NFTokenWOExpiredOfferRemoval_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        NFTokenBaseUtil_test::run(7);
+    }
+};
+
 class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(7, true);
+        NFTokenBaseUtil_test::run(8, true);
     }
 };
 
@@ -8554,6 +8598,7 @@ BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOExpiredOfferRemoval, app, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, app, ripple, 2);
 
 }  // namespace ripple
