@@ -112,7 +112,6 @@ severities::to_string(Severity severity)
             UNREACHABLE("Unexpected severity value!");
     }
     return "";
-
 }
 Journal::Sink::Sink(Severity thresh, bool console)
     : thresh_(thresh), m_console(console)
