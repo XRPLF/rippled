@@ -23,9 +23,9 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 
+#include <memory>
 #include <source_location>
 #include <utility>
-#include <memory>
 
 namespace ripple::log {
 
