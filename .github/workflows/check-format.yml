@@ -57,7 +57,7 @@ jobs:
           pre-commit run \
             --show-diff-on-failure \
             --color=always \
-            --from-ref origin/${{ github.event.pull_request.base.ref }} \
+            --from-ref ${{ github.event.pull_request.base.ref }} \
             --to-ref HEAD \
             --all-files
       - name: Check for differences
