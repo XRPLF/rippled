@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpl/telemetry/JsonLogs.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/telemetry/JsonLogs.h>
 
 namespace ripple {
 namespace log {
