@@ -65,7 +65,7 @@ accountFromString(
     @param[out] result account ID decoded from string
     @param strIdent public key, account ID, or regular seed.
     @param bStrict Only allow account id or public key.
-    @return code representing error, or rpcSUCCES on success
+    @return code representing error, or rpcSUCCESS on success
 */
 error_code_i
 accountFromStringWithCode(

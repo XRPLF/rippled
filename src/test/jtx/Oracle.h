@@ -151,7 +151,7 @@ public:
         std::optional<AnyValue> const& quoteAsset,
         std::optional<OraclesData> const& oracles = std::nullopt,
         std::optional<AnyValue> const& trim = std::nullopt,
-        std::optional<AnyValue> const& timeTreshold = std::nullopt);
+        std::optional<AnyValue> const& timeThreshold = std::nullopt);
 
     std::uint32_t
     documentID() const
@@ -169,7 +169,7 @@ public:
     exists(Env& env, AccountID const& account, std::uint32_t documentID);
 
     [[nodiscard]] bool
-    expectPrice(DataSeries const& pricess) const;
+    expectPrice(DataSeries const& prices) const;
 
     [[nodiscard]] bool
     expectLastUpdateTime(std::uint32_t lastUpdateTime) const;

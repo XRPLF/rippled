@@ -355,7 +355,7 @@ populateJsonResponse(
                     else
                         UNREACHABLE(
                             "ripple::populateJsonResponse : missing "
-                            "transaction medatata");
+                            "transaction metadata");
                 }
             }
         }

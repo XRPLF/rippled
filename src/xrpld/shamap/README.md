@@ -226,7 +226,7 @@ The `fetchNodeNT()` method goes through three phases:
 
     Any SHAMapLeafNode that is immutable has a sequence number of zero
     (sharable). When a mutable `SHAMap` is created then its SHAMapTreeNodes are
-    given non-zero sequence numbers (unsharable). But all nodes in the
+    given non-zero sequence numbers (unshareable). But all nodes in the
     TreeNodeCache are immutable, so if one is found here, its sequence number
     will be 0.
 

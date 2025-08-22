@@ -992,7 +992,7 @@ class MPToken_test : public beast::unit_test::suite
                 sendmax(XRP(100)),
                 ter(temMALFORMED));
             env(pay(alice, carol, MPT(100)),
-                delivermin(XRP(100)),
+                deliver_min(XRP(100)),
                 ter(temBAD_AMOUNT));
             // sendMax MPT is invalid with IOU or XRP
             auto const USD = alice["USD"];
@@ -1003,10 +1003,10 @@ class MPToken_test : public beast::unit_test::suite
                 sendmax(MPT(100)),
                 ter(temMALFORMED));
             env(pay(alice, carol, USD(100)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 ter(temBAD_AMOUNT));
             env(pay(alice, carol, XRP(100)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 ter(temBAD_AMOUNT));
             // sendmax and amount are different MPT issue
             test::jtx::MPT const MPT1(
@@ -1552,13 +1552,13 @@ class MPToken_test : public beast::unit_test::suite
             // deliver amount < deliverMin
             env(pay(bob, alice, MPT(100)),
                 sendmax(MPT(99)),
-                delivermin(MPT(100)),
+                deliver_min(MPT(100)),
                 txflags(tfPartialPayment),
                 ter(tecPATH_PARTIAL));
             // Payment succeeds if deliver amount >= deliverMin
             env(pay(bob, alice, MPT(100)),
                 sendmax(MPT(99)),
-                delivermin(MPT(99)),
+                deliver_min(MPT(99)),
                 txflags(tfPartialPayment));
         }
 

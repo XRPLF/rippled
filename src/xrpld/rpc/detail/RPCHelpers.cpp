@@ -190,7 +190,7 @@ getAccountObjects(
 
     auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
 
-    // this is a mutable version of limit, used to seemlessly switch
+    // this is a mutable version of limit, used to seamlessly switch
     // to iterating directory entries when nftokenpages are exhausted
     uint32_t mlimit = limit;
 
@@ -586,7 +586,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
     return Status::OK;
 }
 
-// Explicit instantiaion of above three functions
+// Explicit instantiation of above three functions
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context&);
 
