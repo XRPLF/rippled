@@ -99,12 +99,6 @@ floatLogImpl(Slice const& x, int32_t mode);
 
 struct HostFunctions
 {
-    virtual beast::Journal
-    getJournal()
-    {
-        return beast::Journal{beast::Journal::getNullSink()};
-    }
-
     // LCOV_EXCL_START
     virtual void
     setRT(void const*)
@@ -115,6 +109,12 @@ struct HostFunctions
     getRT() const
     {
         return nullptr;
+    }
+
+    virtual beast::Journal
+    getJournal()
+    {
+        return beast::Journal{beast::Journal::getNullSink()};
     }
 
     virtual Expected<std::uint32_t, HostFunctionError>
