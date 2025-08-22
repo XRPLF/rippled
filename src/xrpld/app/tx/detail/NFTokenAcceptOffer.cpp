@@ -369,7 +369,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
     auto const& offer = bo ? bo : so;
     if (!offer)
         // Purely defensive, should be caught in preflight.
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& tokenID = offer->at(sfNFTokenID);
     auto const& amount = offer->at(sfAmount);
@@ -412,7 +412,7 @@ NFTokenAcceptOffer::pay(
 {
     // This should never happen, but it's easy and quick to check.
     if (amount < beast::zero)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const result = accountSend(view(), from, to, amount, j_);
 
@@ -441,7 +441,7 @@ NFTokenAcceptOffer::transferNFToken(
     auto tokenAndPage = nft::findTokenAndPage(view(), seller, nftokenID);
 
     if (!tokenAndPage)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto const ret = nft::removeToken(
             view(), seller, nftokenID, std::move(tokenAndPage->page));
@@ -450,7 +450,7 @@ NFTokenAcceptOffer::transferNFToken(
 
     auto const sleBuyer = view().read(keylet::account(buyer));
     if (!sleBuyer)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     std::uint32_t const buyerOwnerCountBefore =
         sleBuyer->getFieldU32(sfOwnerCount);
@@ -546,9 +546,11 @@ NFTokenAcceptOffer::doApply()
             JLOG(j_.trace()) << "Buy offer is expired, deleting: " << bo->key();
             if (!nft::deleteTokenOffer(view(), bo))
             {
+                // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Unable to delete expired buy offer '"
                                  << to_string(bo->key()) << "': ignoring";
                 return tecINTERNAL;
+                // LCOV_EXCL_STOP
             }
             foundExpired = true;
             bo.reset();  // Clear the pointer since offer is deleted
@@ -560,9 +562,11 @@ NFTokenAcceptOffer::doApply()
                 << "Sell offer is expired, deleting: " << so->key();
             if (!nft::deleteTokenOffer(view(), so))
             {
+                // LCOV_EXCL_START
                 JLOG(j_.fatal()) << "Unable to delete expired sell offer '"
                                  << to_string(so->key()) << "': ignoring";
                 return tecINTERNAL;
+                // LCOV_EXCL_STOP
             }
             foundExpired = true;
             so.reset();  // Clear the pointer since offer is deleted
@@ -574,16 +578,20 @@ NFTokenAcceptOffer::doApply()
 
     if (bo && !nft::deleteTokenOffer(view(), bo))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete buy offer '"
                          << to_string(bo->key()) << "': ignoring";
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     if (so && !nft::deleteTokenOffer(view(), so))
     {
+        // LCOV_EXCL_START
         JLOG(j_.fatal()) << "Unable to delete sell offer '"
                          << to_string(so->key()) << "': ignoring";
         return tecINTERNAL;
+        // LCOV_EXCL_STOP
     }
 
     // Bridging two different offers
@@ -654,7 +662,7 @@ NFTokenAcceptOffer::doApply()
     if (so)
         return acceptOffer(so);
 
-    return tecINTERNAL;
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 }  // namespace ripple
