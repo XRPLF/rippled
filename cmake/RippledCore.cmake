@@ -105,6 +105,15 @@ target_link_libraries(xrpl.libxrpl.protocol PUBLIC
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
+# Level 06
+add_module(xrpl net)
+target_link_libraries(xrpl.libxrpl.net PUBLIC
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.json
+  xrpl.libxrpl.protocol
+  xrpl.libxrpl.resource
+)
+
 add_module(xrpl server)
 target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
 
@@ -127,6 +136,7 @@ target_link_modules(xrpl PUBLIC
   protocol
   resource
   server
+  net
 )
 
 # All headers in libxrpl are in modules.
