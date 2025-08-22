@@ -2,21 +2,11 @@
   "architecture": [
     {
       "platform": "linux/amd64",
-      "runner": [
-        "self-hosted",
-        "Linux",
-        "X64",
-        "heavy"
-      ]
+      "runner": ["self-hosted", "Linux", "X64", "heavy"]
     },
     {
       "platform": "linux/arm64",
-      "runner": [
-        "self-hosted",
-        "Linux",
-        "ARM64",
-        "heavy-arm64"
-      ]
+      "runner": ["self-hosted", "Linux", "ARM64", "heavy-arm64"]
     }
   ],
   "os": [
@@ -159,12 +149,6 @@
       "compiler_version": "19"
     }
   ],
-  "build_type": [
-    "Debug",
-    "Release"
-  ],
-  "cmake_args": [
-    "-Dunity=OFF",
-    "-Dunity=ON"
-  ]
+  "build_type": ["Debug", "Release"],
+  "cmake_args": ["-Dunity=OFF", "-Dunity=ON"]
 }
