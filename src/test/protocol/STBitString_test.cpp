@@ -30,7 +30,9 @@ struct STBitString_test : public beast::unit_test::suite
         testcase("Construction and Basics");
         auto isZero = [](auto const& bs) {
             return std::all_of(
-                bs.begin(), bs.end(), [](auto b) { return b == 0; });
+                bs.value().begin(), bs.value().end(), [](auto b) {
+                    return b == 0;
+                });
         };
 
         // Test STBitString<128>
