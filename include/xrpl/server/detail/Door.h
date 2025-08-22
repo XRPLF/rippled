@@ -164,7 +164,7 @@ template <class Handler>
 void
 Door<Handler>::Detector::run()
 {
-    ripple::util::spawn(
+    util::spawn(
         strand_,
         std::bind(
             &Detector::do_detect,
@@ -307,7 +307,7 @@ template <class Handler>
 void
 Door<Handler>::run()
 {
-    ripple::util::spawn(
+    util::spawn(
         strand_,
         std::bind(
             &Door<Handler>::do_accept,

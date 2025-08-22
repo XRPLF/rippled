@@ -35,7 +35,7 @@ namespace PeerFinder {
 class ManagerImp : public Manager
 {
 public:
-    boost::asio::io_context& io_service_;
+    boost::asio::io_context& io_context_;
     std::optional<boost::asio::executor_work_guard<
         boost::asio::io_context::executor_type>>
         work_;
@@ -49,18 +49,18 @@ public:
     //--------------------------------------------------------------------------
 
     ManagerImp(
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         clock_type& clock,
         beast::Journal journal,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector)
         : Manager()
-        , io_service_(io_service)
-        , work_(std::in_place, boost::asio::make_work_guard(io_service_))
+        , io_context_(io_context)
+        , work_(std::in_place, boost::asio::make_work_guard(io_context_))
         , m_clock(clock)
         , m_journal(journal)
         , m_store(journal)
-        , checker_(io_service_)
+        , checker_(io_context_)
         , m_logic(clock, m_store, checker_, journal)
         , m_config(config)
         , m_stats(std::bind(&ManagerImp::collect_metrics, this), collector)
@@ -274,14 +274,14 @@ Manager::Manager() noexcept : beast::PropertyStream::Source("peerfinder")
 
 std::unique_ptr<Manager>
 make_Manager(
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     clock_type& clock,
     beast::Journal journal,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<ManagerImp>(
-        io_service, clock, journal, config, collector);
+        io_context, clock, journal, config, collector);
 }
 
 }  // namespace PeerFinder

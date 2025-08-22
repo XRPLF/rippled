@@ -102,7 +102,7 @@ public:
 
     /** Detach the session.
         This holds the session open so that the response can be sent
-        asynchronously. Calls to io_service::run made by the server
+        asynchronously. Calls to io_context::run made by the server
         will not return until all detached sessions are closed.
     */
     virtual std::shared_ptr<Session>

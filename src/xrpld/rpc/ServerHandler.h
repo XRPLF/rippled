@@ -122,7 +122,7 @@ public:
     ServerHandler(
         ServerHandlerCreator const&,
         Application& app,
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         JobQueue& jobQueue,
         NetworkOPs& networkOPs,
         Resource::Manager& resourceManager,

@@ -175,7 +175,7 @@ private:
             : (void)nDisabled--;
         auto stream_ptr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_context&>(
-                env.app().getIOService())),
+                env.app().getIOContext())),
             *context_);
         beast::IP::Endpoint local(
             boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));

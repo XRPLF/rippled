@@ -26,7 +26,7 @@
 #include <thread>
 #include <vector>
 
-// This is so that the io_service can outlive all the children
+// This is so that the io_context can outlive all the children
 class BasicApp
 {
 private:
@@ -34,16 +34,16 @@ private:
         boost::asio::io_context::executor_type>>
         work_;
     std::vector<std::thread> threads_;
-    boost::asio::io_context io_service_;
+    boost::asio::io_context io_context_;
 
 public:
     BasicApp(std::size_t numberOfThreads);
     ~BasicApp();
 
     boost::asio::io_context&
-    get_io_service()
+    get_io_context()
     {
-        return io_service_;
+        return io_context_;
     }
 };
 

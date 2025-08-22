@@ -125,7 +125,7 @@ public:
 
     beast::Journal m_journal;
 
-    boost::asio::io_context& m_io_service;
+    boost::asio::io_context& m_io_context;
     boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
     boost::asio::ip::tcp::resolver m_resolver;
 
@@ -156,12 +156,12 @@ public:
     std::deque<Work> m_work;
 
     ResolverAsioImpl(
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         beast::Journal journal)
         : m_journal(journal)
-        , m_io_service(io_service)
-        , m_strand(boost::asio::make_strand(io_service))
-        , m_resolver(io_service)
+        , m_io_context(io_context)
+        , m_strand(boost::asio::make_strand(io_context))
+        , m_resolver(io_context)
         , m_asyncHandlersCompleted(true)
         , m_stop_called(false)
         , m_stopped(true)
@@ -218,7 +218,7 @@ public:
         if (m_stop_called.exchange(true) == false)
         {
             boost::asio::dispatch(
-                m_io_service,
+                m_io_context,
                 boost::asio::bind_executor(
                     m_strand,
                     std::bind(
@@ -256,7 +256,7 @@ public:
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
         boost::asio::dispatch(
-            m_io_service,
+            m_io_context,
             boost::asio::bind_executor(
                 m_strand,
                 std::bind(
@@ -314,7 +314,7 @@ public:
         handler(name, addresses);
 
         boost::asio::post(
-            m_io_service,
+            m_io_context,
             boost::asio::bind_executor(
                 m_strand,
                 std::bind(
@@ -402,7 +402,7 @@ public:
             JLOG(m_journal.error()) << "Unable to parse '" << name << "'";
 
             boost::asio::post(
-                m_io_service,
+                m_io_context,
                 boost::asio::bind_executor(
                     m_strand,
                     std::bind(
@@ -447,7 +447,7 @@ public:
             if (m_work.size() > 0)
             {
                 boost::asio::post(
-                    m_io_service,
+                    m_io_context,
                     boost::asio::bind_executor(
                         m_strand,
                         std::bind(
@@ -462,9 +462,9 @@ public:
 //-----------------------------------------------------------------------------
 
 std::unique_ptr<ResolverAsio>
-ResolverAsio::New(boost::asio::io_context& io_service, beast::Journal journal)
+ResolverAsio::New(boost::asio::io_context& io_context, beast::Journal journal)
 {
-    return std::make_unique<ResolverAsioImpl>(io_service, journal);
+    return std::make_unique<ResolverAsioImpl>(io_context, journal);
 }
 
 //-----------------------------------------------------------------------------

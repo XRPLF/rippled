@@ -61,9 +61,9 @@ public:
             t.join();
     }
 
-    /// Return the `io_service` associated with the object
+    /// Return the `io_context` associated with the object
     boost::asio::io_context&
-    get_io_service()
+    get_io_context()
     {
         return ios_;
     }

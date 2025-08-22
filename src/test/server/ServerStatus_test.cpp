@@ -166,7 +166,7 @@ class ServerStatus_test : public beast::unit_test::suite,
     {
         using namespace boost::asio;
         using namespace boost::beast::http;
-        io_context& ios = get_io_service();
+        io_context& ios = get_io_context();
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
@@ -476,7 +476,7 @@ class ServerStatus_test : public beast::unit_test::suite,
         auto req_string = boost::lexical_cast<std::string>(req);
         req_string.erase(req_string.find_last_of("13"), std::string::npos);
 
-        io_context& ios = get_io_service();
+        io_context& ios = get_io_context();
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
@@ -609,7 +609,7 @@ class ServerStatus_test : public beast::unit_test::suite,
             env.app().config()["port_rpc"].get<std::string>("ip").value();
 
         boost::system::error_code ec;
-        io_context& ios = get_io_service();
+        io_context& ios = get_io_context();
         ip::tcp::resolver r{ios};
 
         Json::Value jr;
@@ -726,7 +726,7 @@ class ServerStatus_test : public beast::unit_test::suite,
             env.app().config()["port_ws"].get<std::string>("ip").value();
         boost::system::error_code ec;
 
-        io_context& ios = get_io_service();
+        io_context& ios = get_io_context();
         ip::tcp::resolver r{ios};
 
         auto it = r.async_resolve(ip, std::to_string(port), yield[ec]);

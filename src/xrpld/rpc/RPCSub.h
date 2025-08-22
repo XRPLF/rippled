@@ -40,11 +40,11 @@ protected:
     explicit RPCSub(InfoSub::Source& source);
 };
 
-// VFALCO Why is the io_service needed?
+// VFALCO Why is the io_context needed?
 std::shared_ptr<RPCSub>
 make_RPCSub(
     InfoSub::Source& source,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     JobQueue& jobQueue,
     std::string const& strUrl,
     std::string const& strUsername,

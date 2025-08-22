@@ -33,7 +33,7 @@
 
 namespace beast {
 
-/** Measures handler latency on an io_service queue. */
+/** Measures handler latency on an io_context queue. */
 template <class Clock>
 class io_latency_probe
 {
@@ -65,16 +65,16 @@ public:
         cancel(lock, true);
     }
 
-    /** Return the io_service associated with the latency probe. */
+    /** Return the io_context associated with the latency probe. */
     /** @{ */
     boost::asio::io_context&
-    get_io_service()
+    get_io_context()
     {
         return m_ios;
     }
 
     boost::asio::io_context const&
-    get_io_service() const
+    get_io_context() const
     {
         return m_ios;
     }

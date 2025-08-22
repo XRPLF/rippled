@@ -358,7 +358,7 @@ BaseHTTPPeer<Handler, Impl>::on_write(
         return;
     if (graceful_)
         return do_close();
-    ripple::util::spawn(
+    util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
@@ -377,7 +377,7 @@ BaseHTTPPeer<Handler, Impl>::do_writer(
     {
         auto const p = impl().shared_from_this();
         resume = std::function<void(void)>([this, p, writer, keep_alive]() {
-            ripple::util::spawn(
+            util::spawn(
                 strand_,
                 std::bind(
                     &BaseHTTPPeer<Handler, Impl>::do_writer,
@@ -408,7 +408,7 @@ BaseHTTPPeer<Handler, Impl>::do_writer(
     if (!keep_alive)
         return do_close();
 
-    ripple::util::spawn(
+    util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,
@@ -450,7 +450,7 @@ BaseHTTPPeer<Handler, Impl>::write(
     std::shared_ptr<Writer> const& writer,
     bool keep_alive)
 {
-    ripple::util::spawn(
+    util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_writer,
@@ -492,7 +492,7 @@ BaseHTTPPeer<Handler, Impl>::complete()
     }
 
     // keep-alive
-    ripple::util::spawn(
+    util::spawn(
         strand_,
         std::bind(
             &BaseHTTPPeer<Handler, Impl>::do_read,

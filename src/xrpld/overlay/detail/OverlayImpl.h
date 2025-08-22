@@ -100,7 +100,7 @@ private:
     };
 
     Application& app_;
-    boost::asio::io_context& io_service_;
+    boost::asio::io_context& io_context_;
     std::optional<boost::asio::executor_work_guard<
         boost::asio::io_context::executor_type>>
         work_;
@@ -145,7 +145,7 @@ public:
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 

@@ -20,6 +20,8 @@
 #ifndef RIPPLE_SERVER_SPAWN_H_INCLUDED
 #define RIPPLE_SERVER_SPAWN_H_INCLUDED
 
+#include <xrpl/basics/Log.h>
+
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/strand.hpp>
 
@@ -46,7 +48,22 @@ concept IsStrand = std::same_as<
  */
 inline constexpr auto kPROPAGATE_EXCEPTIONS = [](std::exception_ptr ePtr) {
     if (ePtr)
-        std::rethrow_exception(ePtr);
+    {
+        try
+        {
+            std::rethrow_exception(ePtr);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(debugLog().warn()) << "Spawn exception: " << e.what();
+            throw;
+        }
+        catch (...)
+        {
+            JLOG(debugLog().warn()) << "Spawn exception: Unknown";
+            throw;
+        }
+    }
 };
 
 }  // namespace impl

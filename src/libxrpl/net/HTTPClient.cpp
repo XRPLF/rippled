@@ -56,16 +56,16 @@ class HTTPClientImp : public std::enable_shared_from_this<HTTPClientImp>,
 {
 public:
     HTTPClientImp(
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         unsigned short const port,
         std::size_t maxResponseSize,
         beast::Journal& j)
-        : mSocket(io_service, httpClientSSLContext->context())
-        , mResolver(io_service)
+        : mSocket(io_context, httpClientSSLContext->context())
+        , mResolver(io_context)
         , mHeader(maxClientHeaderBytes)
         , mPort(port)
         , maxResponseSize_(maxResponseSize)
-        , mDeadline(io_service)
+        , mDeadline(io_context)
         , j_(j)
     {
     }
@@ -562,7 +562,7 @@ private:
 void
 HTTPClient::get(
     bool bSSL,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     std::deque<std::string> deqSites,
     unsigned short const port,
     std::string const& strPath,
@@ -575,14 +575,14 @@ HTTPClient::get(
     beast::Journal& j)
 {
     auto client =
-        std::make_shared<HTTPClientImp>(io_service, port, responseMax, j);
+        std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
 void
 HTTPClient::get(
     bool bSSL,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     std::string strSite,
     unsigned short const port,
     std::string const& strPath,
@@ -597,14 +597,14 @@ HTTPClient::get(
     std::deque<std::string> deqSites(1, strSite);
 
     auto client =
-        std::make_shared<HTTPClientImp>(io_service, port, responseMax, j);
+        std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
 }
 
 void
 HTTPClient::request(
     bool bSSL,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     std::string strSite,
     unsigned short const port,
     std::function<void(boost::asio::streambuf& sb, std::string const& strHost)>
@@ -620,7 +620,7 @@ HTTPClient::request(
     std::deque<std::string> deqSites(1, strSite);
 
     auto client =
-        std::make_shared<HTTPClientImp>(io_service, port, responseMax, j);
+        std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
     client->request(bSSL, deqSites, setRequest, timeout, complete);
 }
 

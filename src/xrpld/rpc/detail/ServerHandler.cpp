@@ -104,7 +104,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
 ServerHandler::ServerHandler(
     ServerHandlerCreator const&,
     Application& app,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
@@ -113,7 +113,7 @@ ServerHandler::ServerHandler(
     , m_resourceManager(resourceManager)
     , m_journal(app_.journal("Server"))
     , m_networkOPs(networkOPs)
-    , m_server(make_Server(*this, io_service, app_.journal("Server")))
+    , m_server(make_Server(*this, io_context, app_.journal("Server")))
     , m_jobQueue(jobQueue)
 {
     auto const& group(cm.group("rpc"));
@@ -1266,7 +1266,7 @@ setup_ServerHandler(Config const& config, std::ostream&& log)
 std::unique_ptr<ServerHandler>
 make_ServerHandler(
     Application& app,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     JobQueue& jobQueue,
     NetworkOPs& networkOPs,
     Resource::Manager& resourceManager,
@@ -1275,7 +1275,7 @@ make_ServerHandler(
     return std::make_unique<ServerHandler>(
         ServerHandler::ServerHandlerCreator(),
         app,
-        io_service,
+        io_context,
         jobQueue,
         networkOPs,
         resourceManager,

@@ -28,7 +28,7 @@ namespace ripple {
 
 ConnectAttempt::ConnectAttempt(
     Application& app,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     endpoint_type const& remote_endpoint,
     Resource::Consumer usage,
     shared_context const& context,
@@ -43,10 +43,10 @@ ConnectAttempt::ConnectAttempt(
     , journal_(sink_)
     , remote_endpoint_(remote_endpoint)
     , usage_(usage)
-    , strand_(boost::asio::make_strand(io_service))
-    , timer_(io_service)
+    , strand_(boost::asio::make_strand(io_context))
+    , timer_(io_context)
     , stream_ptr_(std::make_unique<stream_type>(
-          socket_type(std::forward<boost::asio::io_context&>(io_service)),
+          socket_type(std::forward<boost::asio::io_context&>(io_context)),
           *context))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)

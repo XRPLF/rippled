@@ -53,7 +53,7 @@ public:
     class TestThread
     {
     private:
-        boost::asio::io_context io_service_;
+        boost::asio::io_context io_context_;
         std::optional<boost::asio::executor_work_guard<
             boost::asio::io_context::executor_type>>
             work_;
@@ -61,8 +61,8 @@ public:
 
     public:
         TestThread()
-            : work_(std::in_place, boost::asio::make_work_guard(io_service_))
-            , thread_([&]() { this->io_service_.run(); })
+            : work_(std::in_place, boost::asio::make_work_guard(io_context_))
+            , thread_([&]() { this->io_context_.run(); })
         {
         }
 
@@ -73,9 +73,9 @@ public:
         }
 
         boost::asio::io_context&
-        get_io_service()
+        get_io_context()
         {
-            return io_service_;
+            return io_context_;
         }
     };
 
@@ -303,7 +303,7 @@ public:
         sink.threshold(beast::severities::Severity::kAll);
         beast::Journal journal{sink};
         TestHandler handler;
-        auto s = make_Server(handler, thread.get_io_service(), journal);
+        auto s = make_Server(handler, thread.get_io_context(), journal);
         std::vector<Port> serverPort(1);
         serverPort.back().ip =
             boost::asio::ip::make_address(getEnvLocalhostAddr()),
@@ -378,7 +378,7 @@ public:
         for (int i = 0; i < 1000; ++i)
         {
             TestThread thread;
-            auto s = make_Server(h, thread.get_io_service(), journal);
+            auto s = make_Server(h, thread.get_io_context(), journal);
             std::vector<Port> serverPort(1);
             serverPort.back().ip =
                 boost::asio::ip::make_address(getEnvLocalhostAddr()),

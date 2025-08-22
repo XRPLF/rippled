@@ -240,7 +240,7 @@ private:
     Journal m_journal;
     IP::Endpoint m_address;
     std::string m_prefix;
-    boost::asio::io_context m_io_service;
+    boost::asio::io_context m_io_context;
     std::optional<boost::asio::executor_work_guard<
         boost::asio::io_context::executor_type>>
         m_work;
@@ -268,10 +268,10 @@ public:
         : m_journal(journal)
         , m_address(address)
         , m_prefix(prefix)
-        , m_work(boost::asio::make_work_guard(m_io_service))
-        , m_strand(boost::asio::make_strand(m_io_service))
-        , m_timer(m_io_service)
-        , m_socket(m_io_service)
+        , m_work(boost::asio::make_work_guard(m_io_context))
+        , m_strand(boost::asio::make_strand(m_io_context))
+        , m_timer(m_io_context)
+        , m_socket(m_io_context)
         , m_thread(&StatsDCollectorImp::run, this)
     {
     }
@@ -345,9 +345,9 @@ public:
     //--------------------------------------------------------------------------
 
     boost::asio::io_context&
-    get_io_service()
+    get_io_context()
     {
-        return m_io_service;
+        return m_io_context;
     }
 
     std::string const&
@@ -366,7 +366,7 @@ public:
     post_buffer(std::string&& buffer)
     {
         boost::asio::dispatch(
-            m_io_service,
+            m_io_context,
             boost::asio::bind_executor(
                 m_strand,
                 std::bind(
@@ -513,13 +513,13 @@ public:
 
         set_timer();
 
-        m_io_service.run();
+        m_io_context.run();
 
         m_socket.shutdown(boost::asio::ip::udp::socket::shutdown_send, ec);
 
         m_socket.close();
 
-        m_io_service.poll();
+        m_io_context.poll();
     }
 };
 
@@ -563,7 +563,7 @@ void
 StatsDCounterImpl::increment(CounterImpl::value_type amount)
 {
     boost::asio::dispatch(
-        m_impl->get_io_service(),
+        m_impl->get_io_context(),
         std::bind(
             &StatsDCounterImpl::do_increment,
             std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
@@ -610,7 +610,7 @@ void
 StatsDEventImpl::notify(EventImpl::value_type const& value)
 {
     boost::asio::dispatch(
-        m_impl->get_io_service(),
+        m_impl->get_io_context(),
         std::bind(
             &StatsDEventImpl::do_notify,
             std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
@@ -645,7 +645,7 @@ void
 StatsDGaugeImpl::set(GaugeImpl::value_type value)
 {
     boost::asio::dispatch(
-        m_impl->get_io_service(),
+        m_impl->get_io_context(),
         std::bind(
             &StatsDGaugeImpl::do_set,
             std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
@@ -656,7 +656,7 @@ void
 StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
 {
     boost::asio::dispatch(
-        m_impl->get_io_service(),
+        m_impl->get_io_context(),
         std::bind(
             &StatsDGaugeImpl::do_increment,
             std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
@@ -737,7 +737,7 @@ void
 StatsDMeterImpl::increment(MeterImpl::value_type amount)
 {
     boost::asio::dispatch(
-        m_impl->get_io_service(),
+        m_impl->get_io_context(),
         std::bind(
             &StatsDMeterImpl::do_increment,
             std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),

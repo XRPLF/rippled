@@ -69,7 +69,7 @@ OverlayImpl::Child::~Child()
 //------------------------------------------------------------------------------
 
 OverlayImpl::Timer::Timer(OverlayImpl& overlay)
-    : Child(overlay), timer_(overlay_.io_service_)
+    : Child(overlay), timer_(overlay_.io_context_)
 {
 }
 
@@ -124,19 +124,19 @@ OverlayImpl::OverlayImpl(
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
     : app_(app)
-    , io_service_(io_service)
-    , work_(std::in_place, boost::asio::make_work_guard(io_service_))
-    , strand_(boost::asio::make_strand(io_service_))
+    , io_context_(io_context)
+    , work_(std::in_place, boost::asio::make_work_guard(io_context_))
+    , strand_(boost::asio::make_strand(io_context_))
     , setup_(setup)
     , journal_(app_.journal("Overlay"))
     , serverHandler_(serverHandler)
     , m_resourceManager(resourceManager)
     , m_peerFinder(PeerFinder::make_Manager(
-          io_service,
+          io_context,
           stopwatch(),
           app_.journal("PeerFinder"),
           config,
@@ -411,7 +411,7 @@ OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
 
     auto const p = std::make_shared<ConnectAttempt>(
         app_,
-        io_service_,
+        io_context_,
         beast::IPAddressConversion::to_asio_endpoint(remote_endpoint),
         usage,
         setup_.context,
@@ -1595,7 +1595,7 @@ make_Overlay(
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {
@@ -1605,7 +1605,7 @@ make_Overlay(
         serverHandler,
         resourceManager,
         resolver,
-        io_service,
+        io_context,
         config,
         collector);
 }

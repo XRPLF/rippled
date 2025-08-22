@@ -51,7 +51,7 @@ fromCommandLine(
 
 void
 fromNetwork(
-    boost::asio::io_context& io_service,
+    boost::asio::io_context& io_context,
     std::string const& strIp,
     std::uint16_t const iPort,
     std::string const& strUsername,

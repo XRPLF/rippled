@@ -51,7 +51,7 @@ public:
 
     static void
     get(bool bSSL,
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         std::deque<std::string> deqSites,
         unsigned short const port,
         std::string const& strPath,
@@ -65,7 +65,7 @@ public:
 
     static void
     get(bool bSSL,
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         std::string strSite,
         unsigned short const port,
         std::string const& strPath,
@@ -80,7 +80,7 @@ public:
     static void
     request(
         bool bSSL,
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         std::string strSite,
         unsigned short const port,
         std::function<

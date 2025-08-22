@@ -167,9 +167,9 @@ class io_latency_probe_test : public beast::unit_test::suite,
     {
         testcase << "sample one";
         boost::system::error_code ec;
-        test_sampler io_probe{100ms, get_io_service()};
+        test_sampler io_probe{100ms, get_io_context()};
         io_probe.start_one();
-        MyTimer timer{get_io_service(), 1s};
+        MyTimer timer{get_io_context(), 1s};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -201,9 +201,9 @@ class io_latency_probe_test : public beast::unit_test::suite,
                 duration_cast<milliseconds>(probe_duration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
-        test_sampler io_probe{interval, get_io_service()};
+        test_sampler io_probe{interval, get_io_context()};
         io_probe.start();
-        MyTimer timer{get_io_service(), probe_duration};
+        MyTimer timer{get_io_context(), probe_duration};
         timer.async_wait(yield[ec]);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -223,7 +223,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
     testCanceled(boost::asio::yield_context& yield)
     {
         testcase << "canceled";
-        test_sampler io_probe{100ms, get_io_service()};
+        test_sampler io_probe{100ms, get_io_context()};
         io_probe.probe_.cancel_async();
         except<std::logic_error>([&io_probe]() { io_probe.start_one(); });
         except<std::logic_error>([&io_probe]() { io_probe.start(); });

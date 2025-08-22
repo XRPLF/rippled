@@ -63,7 +63,7 @@ private:
 public:
     ConnectAttempt(
         Application& app,
-        boost::asio::io_context& io_service,
+        boost::asio::io_context& io_context,
         endpoint_type const& remote_endpoint,
         Resource::Consumer usage,
         shared_context const& context,
