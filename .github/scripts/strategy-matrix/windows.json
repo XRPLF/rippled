@@ -2,9 +2,7 @@
   "architecture": [
     {
       "platform": "windows/amd64",
-      "runner": [
-        "windows-latest"
-      ]
+      "runner": ["windows-latest"]
     }
   ],
   "os": [
@@ -15,12 +13,6 @@
       "compiler_version": ""
     }
   ],
-  "build_type": [
-    "Debug",
-    "Release"
-  ],
-  "cmake_args": [
-    "-Dunity=OFF",
-    "-Dunity=ON"
-  ]
+  "build_type": ["Debug", "Release"],
+  "cmake_args": ["-Dunity=OFF", "-Dunity=ON"]
 }
