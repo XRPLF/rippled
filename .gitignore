@@ -110,4 +110,4 @@ bld.rippled/
 .vscode
 
 # Suggested in-tree build directory
-/.build/
+/.build*/

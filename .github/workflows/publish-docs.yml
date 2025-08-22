@@ -5,13 +5,13 @@ name: Build and publish documentation
 on:
   push:
     paths:
-      - '.github/workflows/publish-docs.yml'
-      - '*.md'
-      - '**/*.md'
-      - 'docs/**'
-      - 'include/**'
-      - 'src/libxrpl/**'
-      - 'src/xrpld/**'
+      - ".github/workflows/publish-docs.yml"
+      - "*.md"
+      - "**/*.md"
+      - "docs/**"
+      - "include/**"
+      - "src/libxrpl/**"
+      - "src/xrpld/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -22,7 +22,7 @@ defaults:
     shell: bash
 
 env:
-    BUILD_DIR: .build
+  BUILD_DIR: .build
 
 jobs:
   publish:

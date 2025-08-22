@@ -499,7 +499,16 @@ Env::meta()
         close();
     }
     auto const item = closed()->txRead(txid_);
-    return item.second;
+    auto const result = item.second;
+    if (result == nullptr)
+    {
+        test.log << "Env::meta: no metadata for txid: " << txid_ << std::endl;
+        test.log << "This is probably because the transaction failed with a "
+                    "non-tec error."
+                 << std::endl;
+        Throw<std::runtime_error>("Env::meta: no metadata for txid");
+    }
+    return result;
 }
 
 std::shared_ptr<STTx const>

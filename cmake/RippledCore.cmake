@@ -101,7 +101,7 @@ target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
 # Level 06
 add_module(xrpl net)
-target_link_libraries(xrpl.libxrpl.net PUBLIC 
+target_link_libraries(xrpl.libxrpl.net PUBLIC
   xrpl.libxrpl.basics
   xrpl.libxrpl.json
   xrpl.libxrpl.protocol

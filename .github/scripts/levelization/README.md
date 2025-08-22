@@ -111,4 +111,4 @@ get those details locally.
 1. Run `levelization.sh`
 2. Grep the modules in `paths.txt`.
    - For example, if a cycle is found `A ~= B`, simply `grep -w
-   A .github/scripts/levelization/results/paths.txt | grep -w B`
+A .github/scripts/levelization/results/paths.txt | grep -w B`

@@ -8,22 +8,22 @@ on:
   workflow_call:
     inputs:
       conan_remote_name:
-        description: 'The name of the Conan remote to use.'
+        description: "The name of the Conan remote to use."
         required: true
         type: string
       conan_remote_url:
-        description: 'The URL of the Conan endpoint to use.'
+        description: "The URL of the Conan endpoint to use."
         required: true
         type: string
     secrets:
       clio_notify_token:
-        description: 'The GitHub token to notify Clio about new versions.'
+        description: "The GitHub token to notify Clio about new versions."
         required: true
       conan_remote_username:
-        description: 'The username for logging into the Conan remote.'
+        description: "The username for logging into the Conan remote."
         required: true
       conan_remote_password:
-        description: 'The password for logging into the Conan remote.'
+        description: "The password for logging into the Conan remote."
         required: true
 
 concurrency:
@@ -36,6 +36,7 @@ defaults:
 
 jobs:
   upload:
+    if: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: ubuntu-latest
     container: ghcr.io/xrplf/ci/ubuntu-noble:gcc-13
     steps:

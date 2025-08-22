@@ -13,31 +13,31 @@ on:
       - release
       - master
     paths:
-      - '.github/actions/build-deps/**'
-      - '.github/actions/build-test/**'
-      - '.github/scripts/strategy-matrix/**'
-      - '.github/workflows/build-test.yml'
-      - '.github/workflows/check-missing-commits.yml'
-      - '.github/workflows/on-trigger.yml'
-      - '.github/workflows/publish-docs.yml'
+      - ".github/actions/build-deps/**"
+      - ".github/actions/build-test/**"
+      - ".github/scripts/strategy-matrix/**"
+      - ".github/workflows/build-test.yml"
+      - ".github/workflows/check-missing-commits.yml"
+      - ".github/workflows/on-trigger.yml"
+      - ".github/workflows/publish-docs.yml"
       # Keep the list of paths below in sync with those in `on-pr.yml`.
-      - 'cmake/**'
-      - 'conan/**'
-      - 'external/**'
-      - 'include/**'
-      - 'src/**'
-      - 'tests/**'
-      - '.clang-format'
-      - '.codecov.yml'
-      - '.pre-commit-config.yaml'
-      - 'CMakeLists.txt'
-      - 'conanfile.py'
+      - "cmake/**"
+      - "conan/**"
+      - "external/**"
+      - "include/**"
+      - "src/**"
+      - "tests/**"
+      - ".clang-format"
+      - ".codecov.yml"
+      - ".pre-commit-config.yaml"
+      - "CMakeLists.txt"
+      - "conanfile.py"
   # Run at 06:32 UTC on every day of the week from Monday through Friday. This
   # will force all dependencies to be rebuilt, which is useful to verify that
   # all dependencies can be built successfully. Only the dependencies that
   # are actually missing from the remote will be uploaded.
   schedule:
-    - cron: '32 6 * * 1-5'
+    - cron: "32 6 * * 1-5"
   # Run when manually triggered via the GitHub UI or API. If `force_upload` is
   # true, then the dependencies that were missing (`force_rebuild` is false) or
   # rebuilt (`force_rebuild` is true) will be uploaded, overwriting existing
@@ -45,12 +45,12 @@ on:
   workflow_dispatch:
     inputs:
       dependencies_force_build:
-        description: 'Force building of all dependencies.'
+        description: "Force building of all dependencies."
         required: false
         type: boolean
         default: false
       dependencies_force_upload:
-        description: 'Force uploading of all dependencies.'
+        description: "Force uploading of all dependencies."
         required: false
         type: boolean
         default: false
@@ -109,7 +109,7 @@ jobs:
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build == 'true' }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload == 'true' }}
       os: ${{ matrix.os }}
-      strategy_matrix: 'all'
+      strategy_matrix: "all"
     secrets:
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
