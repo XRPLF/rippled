@@ -256,19 +256,19 @@ public:
     static LogSeverity
     fromString(std::string const& s);
 
-private:
-    enum {
-        // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with elipses.
-        maximumMessageCharacters = 12 * 1024
-    };
-
     static void
     format(
         std::string& output,
         std::string const& message,
         beast::severities::Severity severity,
         std::string const& partition);
+
+private:
+    enum {
+        // Maximum line length for log messages.
+        // If the message exceeds this length it will be truncated with elipses.
+        maximumMessageCharacters = 12 * 1024
+    };
 };
 
 // Wraps a Journal::Stream to skip evaluation of
