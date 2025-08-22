@@ -25,10 +25,9 @@
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/SyntheticFields.h>
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -268,10 +267,7 @@ populateJsonResponse(
             if (meta)
             {
                 response[jss::meta] = meta->getJson(JsonOptions::none);
-                insertDeliveredAmount(
-                    response[jss::meta], context, result.txn, *meta);
-                RPC::insertNFTSyntheticInJson(response, sttx, *meta);
-                RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
+                RPC::insertAllSyntheticInJson(response, context, sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;
