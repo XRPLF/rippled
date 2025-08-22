@@ -98,7 +98,6 @@ TEST_CASE("Text logs")
     CHECK(logStream.str().find("\n") == std::string::npos);
 }
 
-
 TEST_CASE("Test format output")
 {
     std::string output;
