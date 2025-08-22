@@ -498,16 +498,16 @@ using floatLog_proto =
 wasm_trap_t*
 floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using contractFuncParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+using instanceParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-contractFuncParam_wrap(
+instanceParam_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using otxnCallParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+using functionParam_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-otxnCallParam_wrap(
+functionParam_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
@@ -573,6 +573,14 @@ setNestedContractDataFromKey_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
+
+using buildTxn_proto = int32_t(int32_t);
+wasm_trap_t*
+buildTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using addTxnField_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+addTxnField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
 using emitTxn_proto = int32_t(uint8_t const*, int32_t);
 wasm_trap_t*

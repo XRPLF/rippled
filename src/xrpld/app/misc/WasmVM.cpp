@@ -100,14 +100,16 @@ createWasmImport(HostFunctions* hfs)
         WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                        1000);
         WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                        1000);
         WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                          1000);
-        WASM_IMPORT_FUNC2(i, contractFuncParam, "contract_func_param", hfs,                                         70);
-        WASM_IMPORT_FUNC2(i, otxnCallParam, "otxn_call_param", hfs,                                                 70);
+        WASM_IMPORT_FUNC2(i, instanceParam, "instance_param", hfs,                                                  70);
+        WASM_IMPORT_FUNC2(i, functionParam, "function_param", hfs,                                                  70);
         WASM_IMPORT_FUNC2(i, getContractData, "get_contract_data", hfs,                                             70);
         WASM_IMPORT_FUNC2(i, getContractDataFromKey, "get_contract_data_from_key", hfs,                             70);
         WASM_IMPORT_FUNC2(i, getNestedContractDataFromKey, "get_nested_contract_data_from_key", hfs,                70);
         WASM_IMPORT_FUNC2(i, setContractData, "set_contract_data", hfs,                                             70);
         WASM_IMPORT_FUNC2(i, setNestedContractDataFromKey, "set_nested_contract_data_from_key", hfs,                70);
         WASM_IMPORT_FUNC2(i, setContractDataFromKey, "set_contract_data_from_key", hfs,                             70);
+        WASM_IMPORT_FUNC2(i, buildTxn, "build_txn", hfs,                                                            70);
+        WASM_IMPORT_FUNC2(i, addTxnField, "add_txn_field", hfs,                                                     70);
         WASM_IMPORT_FUNC2(i, emitTxn, "emit_txn", hfs,                                                            2000);
         WASM_IMPORT_FUNC2(i, emitEvent, "emit_event", hfs,                                                          70);
 

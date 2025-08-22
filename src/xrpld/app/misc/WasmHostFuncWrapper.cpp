@@ -1661,7 +1661,7 @@ floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 }
 
 wasm_trap_t*
-contractFuncParam_wrap(
+instanceParam_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
@@ -1687,11 +1687,11 @@ contractFuncParam_wrap(
     }
 
     return returnResult(
-        rt, params, results, hf->contractFuncParam(*iindex, *stTypeId), index);
+        rt, params, results, hf->instanceParam(*iindex, *stTypeId), index);
 }
 
 wasm_trap_t*
-otxnCallParam_wrap(
+functionParam_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
@@ -1717,7 +1717,7 @@ otxnCallParam_wrap(
     }
 
     return returnResult(
-        rt, params, results, hf->otxnCallParam(*iindex, *stTypeId), index);
+        rt, params, results, hf->functionParam(*iindex, *stTypeId), index);
 }
 
 wasm_trap_t*
@@ -1936,6 +1936,58 @@ setNestedContractDataFromKey_wrap(
 }
 
 wasm_trap_t*
+buildTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const txnType = getDataInt32(rt, params, index);
+    if (!txnType)
+    {
+        return hfResult(results, txnType.error());
+    }
+
+    return returnResult(rt, params, results, hf->buildTxn(*txnType), index);
+}
+
+wasm_trap_t*
+addTxnField_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int index = 0;
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
+    }
+
+    auto const txnIndex = getDataInt32(rt, params, index);
+    if (!txnIndex)
+    {
+        return hfResult(results, txnIndex.error());
+    }
+
+    auto const fname = getDataSField(rt, params, index);
+    if (!fname)
+    {
+        return hfResult(results, fname.error());
+    }
+
+    auto const data = getDataSlice(rt, params, index);
+    if (!data)
+    {
+        return hfResult(results, data.error());
+    }
+
+    return returnResult(rt, params, results, hf->addTxnField(*txnIndex, *fname, *data), index);
+}
+
+wasm_trap_t*
 emitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
@@ -1959,6 +2011,7 @@ emitTxn_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     }
     catch (std::exception& e)
     {
+        std::cout << "Error creating STTx: " << e.what() << std::endl;
         return hfResult(results, HostFunctionError::INTERNAL);
     }
 

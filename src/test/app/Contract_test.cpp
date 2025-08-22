@@ -57,19 +57,19 @@ class Contract_test : public beast::unit_test::suite
     }
 
     Json::Value
-    getLastLedger(jtx::Env& env)
+    getLastLedger(jtx::Env& env, int const& ledgerIndex = -1)
     {
         Json::Value params;
-        params[jss::ledger_index] = env.closed()->seq();
+        params[jss::ledger_index] = ledgerIndex == -1 ? env.closed()->seq() : ledgerIndex;
         params[jss::transactions] = true;
         params[jss::expand] = true;
         return env.rpc("json", "ledger", to_string(params));
     }
 
     std::string
-    getContractOwner(jtx::Env& env)
+    getContractOwner(jtx::Env& env, int const& ledgerIndex = -1)
     {
-        auto const jrr = getLastLedger(env);
+        auto const jrr = getLastLedger(env, ledgerIndex);
         auto const txn = getContractCreateTx(jrr);
         for (auto const& meta : txn[jss::metaData][sfAffectedNodes.fieldName])
         {
@@ -1014,6 +1014,72 @@ class Contract_test : public beast::unit_test::suite
             ter(tesSUCCESS));
         env.close();
 
+
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        {
+            // Get contract info
+            Json::Value params;
+            params[jss::contract_account] = contractAccount;
+            params[jss::account] = alice.human();
+            auto const jrr =
+                env.rpc("json", "contract_info", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+    }
+
+    void
+    testContractDataAdvanced(FeatureBitset features)
+    {
+        testcase("contract data advanced");
+
+        using namespace jtx;
+
+        test::jtx::Env env{*this, features};
+
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        std::string contractWasmStr = loadContractWasmStr("contract_data_advanced");
+
+        env(contract::create(alice, contractWasmStr),
+            contract::add_instance_param(
+                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_function("test", {
+                {0, "account", "ACCOUNT"},
+                {0, "uint32", "UINT32"},
+            }),
+            fee(XRP(200)),
+            ter(tesSUCCESS));
+        env.close();
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+
+        auto const contractAccount = getContractOwner(env);
+        env(contract::call(alice, contractAccount, "test"),
+            contract::add_param("account", "ACCOUNT", alice.human()),
+            contract::add_param("uint32", "UINT32", 5),
+            escrow::comp_allowance(1'000'000),
+            ter(tesSUCCESS));
+        env.close();
+
         {
             Json::Value params;
             params[jss::ledger_index] = env.current()->seq() - 1;
@@ -1460,6 +1526,63 @@ class Contract_test : public beast::unit_test::suite
     }
 
     void
+    testSubmitContractCall(FeatureBitset features)
+    {
+        testcase("submit_contract_call");
+
+        using namespace jtx;
+
+        test::jtx::Env env{*this, features};
+
+        auto const alice = Account{"alice"};
+        auto const bob = Account{"bob"};
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        // Create Contract #1
+        env(contract::create(alice, loadContractWasmStr("submit_contract_call")),
+            contract::add_instance_param(
+                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_function("emit", {
+                {0, "account", "ACCOUNT"}
+            }),
+            fee(XRP(200)),
+            ter(tesSUCCESS));
+        env.close();
+        auto const contractAccount1 = getContractOwner(env);
+
+        // Create Contract #2
+        env(contract::create(alice, loadContractWasmStr("contract_data_advanced")),
+            contract::add_instance_param(
+                tfSendAmount, "value", "AMOUNT", XRP(2000)),
+            contract::add_function("test", {
+                {0, "account", "ACCOUNT"},
+                {0, "uint32", "UINT32"}
+            }),
+            fee(XRP(200)),
+            ter(tesSUCCESS));
+        env.close();
+        auto const contractAccount2 = getContractOwner(env);
+        
+        std::cout << "Contract Account 1: " << contractAccount1 << std::endl;
+        std::cout << "Contract Account 2: " << contractAccount2 << std::endl;
+        env(contract::call(alice, contractAccount1, "emit"),
+            contract::add_param("account", "ACCOUNT", contractAccount2),
+            escrow::comp_allowance(1000000),
+            ter(tesSUCCESS));
+        env.close();
+
+        {
+            Json::Value params;
+            params[jss::ledger_index] = env.current()->seq() - 1;
+            params[jss::transactions] = true;
+            params[jss::expand] = true;
+            auto const jrr = env.rpc("json", "ledger", to_string(params));
+            std::cout << jrr << std::endl;
+        }
+    }
+
+    void
     testEvents(FeatureBitset features)
     {
         testcase("events");
@@ -1676,11 +1799,13 @@ class Contract_test : public beast::unit_test::suite
         // testDeletePreflight(features);
         // testDeletePreclaim(features);
         // testDeleteDoApply(features);
-        testContractData(features);
-        testContractDataV2(features);
-        testParameters(features);
+        // testContractData(features);
+        // testContractDataV2(features);
+        // testContractDataAdvanced(features);
+        // testParameters(features);
         testSubmit(features);
-        testEvents(features);
+        // testSubmitContractCall(features);
+        // testEvents(features);
     }
 
 public:

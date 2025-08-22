@@ -22,6 +22,8 @@
 #include <xrpld/app/tx/apply.h>
 
 #include <xrpl/protocol/STData.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STParsedJSON.h>
 
 namespace ripple {
 
@@ -157,31 +159,31 @@ getFieldDataFromSTData(ripple::STData const& funcParam, std::uint32_t stTypeId)
 }
 
 Expected<Bytes, HostFunctionError>
-ContractHostFunctionsImpl::contractFuncParam(
+ContractHostFunctionsImpl::instanceParam(
     std::uint32_t index,
     std::uint32_t stTypeId)
 {
-    auto const& funcParams = contractCtx.funcParameters;
+    auto const& instanceParams = contractCtx.instanceParameters;
+
+    if (instanceParams.size() <= index)
+        return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
+
+    ripple::STData const& instParam = instanceParams[index].value;
+    return getFieldDataFromSTData(instParam, stTypeId);
+}
+
+Expected<Bytes, HostFunctionError>
+ContractHostFunctionsImpl::functionParam(
+    std::uint32_t index,
+    std::uint32_t stTypeId)
+{
+    auto const& funcParams = contractCtx.functionParameters;
 
     if (funcParams.size() <= index)
         return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
 
     ripple::STData const& funcParam = funcParams[index].value;
     return getFieldDataFromSTData(funcParam, stTypeId);
-}
-
-Expected<Bytes, HostFunctionError>
-ContractHostFunctionsImpl::otxnCallParam(
-    std::uint32_t index,
-    std::uint32_t stTypeId)
-{
-    auto const& callParams = contractCtx.callParameters;
-
-    if (callParams.size() <= index)
-        return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
-
-    ripple::STData const& callParam = callParams[index].value;
-    return getFieldDataFromSTData(callParam, stTypeId);
 }
 
 inline std::optional<std::reference_wrapper<std::pair<bool, STJson> const>>
@@ -455,11 +457,60 @@ ContractHostFunctionsImpl::setNestedContractDataFromKey(
     return Unexpected(HostFunctionError::INTERNAL);
 }
 
+
+Expected<int32_t, HostFunctionError>
+ContractHostFunctionsImpl::buildTxn(std::uint16_t const& txType)
+{
+    auto jv = Json::Value(Json::objectValue);
+    auto item = TxFormats::getInstance().findByType(safe_cast<TxType>(txType));
+    jv[sfTransactionType] = item->getName();
+    jv[sfFee] = "0";
+    jv[sfFlags] = 536870912;
+    jv[sfSequence] = contractCtx.result.nextSequence;
+    jv[sfAccount] = to_string(contractCtx.result.contractAccount);
+    jv[sfSigningPubKey] = "";
+
+    STParsedJSONObject parsed("txn", jv);
+    contractCtx.built_txns.push_back(*parsed.object);
+    return contractCtx.built_txns.size() - 1;
+}
+
+Expected<int32_t, HostFunctionError>
+ContractHostFunctionsImpl::addTxnField(std::uint32_t const& index, SField const& field, Slice const& data)
+{
+    // Get the transaction JSON
+    // auto& obj = contractCtx.built_txns[index];
+    // std::cout << "Building Txn: " << obj << std::endl;
+    std::cout << "Adding field: " << field.getName() << " with data size: " << data.size() << std::endl;
+
+    // Get the transaction type format
+    auto txFormat = TxFormats::getInstance().findByType(safe_cast<TxType>(std::uint16_t{0}));
+    if (!txFormat)
+        return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+
+    // Check if the field is allowed in the transaction format
+    bool found = false;
+    for (auto const& e : txFormat->getSOTemplate())
+    {
+        if (e.sField().getName() == field.getName())
+        {
+            found = true;
+            break;
+        }
+    }
+    if (!found)
+        return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+
+    // Add the field to the transaction
+    // obj.set(field, data);
+    return 0;
+}
+
 Expected<int32_t, HostFunctionError>
 ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
 {
     auto& app = contractCtx.applyCtx.app;
-    auto& tx = contractCtx.applyCtx.tx;
+    auto& parentTx = contractCtx.applyCtx.tx;
     auto j = getJournal();
 
     std::string reason;
@@ -470,11 +521,10 @@ ContractHostFunctionsImpl::emitTxn(std::shared_ptr<STTx const> const& stxPtr)
     // NOTE: SmartContract Txn Ordering
     // contractCtx.applyCtx.apply(tesSUCCESS);
     OpenView wholeBatchView(batch_view, contractCtx.applyCtx.openView());
-    auto const parentTxId = tx.getTransactionID();
+    auto const parentTxId = parentTx.getTransactionID();
     auto applyOneTransaction = [&app, &j, &parentTxId, &wholeBatchView](
                                    std::shared_ptr<STTx const> const& tx) {
         OpenView perTxBatchView(batch_view, wholeBatchView);
-
         auto const ret = ripple::apply(
             app, perTxBatchView, parentTxId, *tx, tapGENERATED, j);
         JLOG(j.error()) << "WASM [" << parentTxId

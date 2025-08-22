@@ -39,10 +39,10 @@ public:
     }
 
     Expected<Bytes, HostFunctionError>
-    contractFuncParam(std::uint32_t index, std::uint32_t stTypeId) override;
+    instanceParam(std::uint32_t index, std::uint32_t stTypeId) override;
 
     Expected<Bytes, HostFunctionError>
-    otxnCallParam(std::uint32_t index, std::uint32_t stTypeId) override;
+    functionParam(std::uint32_t index, std::uint32_t stTypeId) override;
 
     Expected<Bytes, HostFunctionError>
     getContractData(AccountID const& account) override;
@@ -73,6 +73,12 @@ public:
         std::string_view const& nestedKeyName,
         std::string_view const& keyName,
         STJson::Value const& value) override;
+
+    Expected<int32_t, HostFunctionError>
+    buildTxn(std::uint16_t const& txType) override;
+
+    Expected<int32_t, HostFunctionError>
+    addTxnField(std::uint32_t const& index, SField const& field, Slice const& data) override;
 
     Expected<int32_t, HostFunctionError>
     emitTxn(std::shared_ptr<STTx const> const& stxPtr) override;

@@ -115,7 +115,7 @@ ContractCall::preclaim(PreclaimContext const& ctx)
 
     if (it == functions.end())
     {
-        JLOG(ctx.j.error()) << "ContractCall: Function is not defined.";
+        JLOG(ctx.j.error()) << "ContractCall: FunctionName: " <<  functionNameHexStr << " does not exist in contract.";
         return temMALFORMED;
     }
 
@@ -176,25 +176,25 @@ ContractCall::doApply()
     }
     if (!function)
     {
-        JLOG(j_.error()) << "ContractCall: Function is not defined.";
+        JLOG(j_.error()) << "ContractCall: FunctionName does not exist in contract.";
         return tefINTERNAL;
     }
 
     // ContractCall Parameters
-    std::vector<ripple::ParameterValueVec> callParameters;
+    std::vector<ripple::ParameterValueVec> functionParameters;
     if (ctx_.tx.isFieldPresent(sfParameters))
     {
-        STArray const& callParams = ctx_.tx.getFieldArray(sfParameters);
-        callParameters = getParameterValueVec(callParams);
+        STArray const& funcParams = ctx_.tx.getFieldArray(sfParameters);
+        functionParameters = getParameterValueVec(funcParams);
     }
 
     // ContractSource/Contract Default Parameters
-    std::vector<ripple::ParameterValueVec> funcParameters;
+    std::vector<ripple::ParameterValueVec> instanceParameters;
     if (contractSle->isFieldPresent(sfInstanceParameters))
     {
-        STArray const& funcParams =
+        STArray const& instParams =
             contractSle->getFieldArray(sfInstanceParameters);
-        funcParameters = getParameterValueVec(funcParams);
+        instanceParameters = getParameterValueVec(instParams);
     }
 
     // NOTE: This does not handle optional parameters. Any parameters listed in
@@ -202,15 +202,15 @@ ContractCall::doApply()
     std::vector<ParameterTypeVec> typeVec;
     if (function->isFieldPresent(sfParameters))
     {
-        STArray const& callParamsDef = function->getFieldArray(sfParameters);
-        typeVec = ripple::getParameterTypeVec(callParamsDef);
-        if (callParameters.size() != typeVec.size())
+        STArray const& funcParamsDef = function->getFieldArray(sfParameters);
+        typeVec = ripple::getParameterTypeVec(funcParamsDef);
+        if (functionParameters.size() != typeVec.size())
             return tecINVALID_PARAMETERS;
     }
 
-    for (std::size_t i = 0; i < callParameters.size(); i++)
+    for (std::size_t i = 0; i < functionParameters.size(); i++)
     {
-        if (callParameters[i].value.getInnerSType() !=
+        if (functionParameters[i].value.getInnerSType() !=
             typeVec[i].type.getInnerSType())
             return tecINVALID_PARAMETERS;
     }
@@ -219,8 +219,8 @@ ContractCall::doApply()
     ripple::ContractEventMap eventMap;
     ContractContext contractCtx = {
         .applyCtx = ctx_,
-        .callParameters = callParameters,
-        .funcParameters = funcParameters,
+        .instanceParameters = instanceParameters,
+        .functionParameters = functionParameters,
         .expected_etxn_count = 1,
         .generation = 0,
         .burden = 0,

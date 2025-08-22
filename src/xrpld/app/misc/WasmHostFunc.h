@@ -474,13 +474,13 @@ struct HostFunctions
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    contractFuncParam(std::uint32_t index, std::uint32_t stTypeId)
+    instanceParam(std::uint32_t index, std::uint32_t stTypeId)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
 
     virtual Expected<Bytes, HostFunctionError>
-    otxnCallParam(std::uint32_t index, std::uint32_t stTypeId)
+    functionParam(std::uint32_t index, std::uint32_t stTypeId)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
@@ -529,6 +529,18 @@ struct HostFunctions
         std::string_view const& nestedKeyName,
         std::string_view const& keyName,
         STJson::Value const& value)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    buildTxn(std::uint16_t const& txType)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    addTxnField(std::uint32_t const& index, SField const& field, Slice const& data)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
