@@ -30,7 +30,7 @@ the ledger (so the entire network has the same view). This will help the network
 see which validators are **currently** unreliable, and adjust their quorum
 calculation accordingly.
 
-*Improving the liveness of the network is the main motivation for the negative UNL.*
+_Improving the liveness of the network is the main motivation for the negative UNL._
 
 ### Targeted Faults
 
@@ -53,16 +53,17 @@ even if the number of remaining validators gets to 60%. Say we have a network
 with 10 validators on the UNL and everything is operating correctly. The quorum
 required for this network would be 8 (80% of 10). When validators fail, the
 quorum required would be as low as 6 (60% of 10), which is the absolute
-***minimum quorum***. We need the absolute minimum quorum to be strictly greater
+**_minimum quorum_**. We need the absolute minimum quorum to be strictly greater
 than 50% of the original UNL so that there cannot be two partitions of
 well-behaved nodes headed in different directions. We arbitrarily choose 60% as
 the minimum quorum to give a margin of safety.
 
 Consider these events in the absence of negative UNL:
+
 1. 1:00pm - validator1 fails, votes vs. quorum: 9 >= 8, we have quorum
 1. 3:00pm - validator2 fails, votes vs. quorum: 8 >= 8, we have quorum
 1. 5:00pm - validator3 fails, votes vs. quorum: 7 < 8, we don’t have quorum
-    * **network cannot validate new ledgers with 3 failed validators**
+   - **network cannot validate new ledgers with 3 failed validators**
 
 We're below 80% agreement, so new ledgers cannot be validated. This is how the
 XRP Ledger operates today, but if the negative UNL was enabled, the events would
@@ -70,18 +71,20 @@ happen as follows. (Please note that the events below are from a simplified
 version of our protocol.)
 
 1. 1:00pm - validator1 fails, votes vs. quorum: 9 >= 8, we have quorum
-1. 1:40pm - network adds validator1 to negative UNL, quorum changes to ceil(9 * 0.8), or 8
+1. 1:40pm - network adds validator1 to negative UNL, quorum changes to ceil(9 \* 0.8), or 8
 1. 3:00pm - validator2 fails, votes vs. quorum: 8 >= 8, we have quorum
-1. 3:40pm - network adds validator2 to negative UNL, quorum changes to ceil(8 * 0.8), or 7
+1. 3:40pm - network adds validator2 to negative UNL, quorum changes to ceil(8 \* 0.8), or 7
 1. 5:00pm - validator3 fails, votes vs. quorum: 7 >= 7, we have quorum
-1. 5:40pm - network adds validator3 to negative UNL, quorum changes to ceil(7 * 0.8), or 6
+1. 5:40pm - network adds validator3 to negative UNL, quorum changes to ceil(7 \* 0.8), or 6
 1. 7:00pm - validator4 fails, votes vs. quorum: 6 >= 6, we have quorum
-    * **network can still validate new ledgers with 4 failed validators**
+   - **network can still validate new ledgers with 4 failed validators**
 
 ## External Interactions
 
 ### Message Format Changes
+
 This proposal will:
+
 1. add a new pseudo-transaction type
 1. add the negative UNL to the ledger data structure.
 
@@ -89,19 +92,20 @@ Any tools or systems that rely on the format of this data will have to be
 updated.
 
 ### Amendment
+
 This feature **will** need an amendment to activate.
 
 ## Design
 
 This section discusses the following topics about the Negative UNL design:
 
-* [Negative UNL protocol overview](#Negative-UNL-Protocol-Overview)
-* [Validator reliability measurement](#Validator-Reliability-Measurement)
-* [Format Changes](#Format-Changes)
-* [Negative UNL maintenance](#Negative-UNL-Maintenance)
-* [Quorum size calculation](#Quorum-Size-Calculation)
-* [Filter validation messages](#Filter-Validation-Messages)
-* [High level sequence diagram of code
+- [Negative UNL protocol overview](#Negative-UNL-Protocol-Overview)
+- [Validator reliability measurement](#Validator-Reliability-Measurement)
+- [Format Changes](#Format-Changes)
+- [Negative UNL maintenance](#Negative-UNL-Maintenance)
+- [Quorum size calculation](#Quorum-Size-Calculation)
+- [Filter validation messages](#Filter-Validation-Messages)
+- [High level sequence diagram of code
   changes](#High-Level-Sequence-Diagram-of-Code-Changes)
 
 ### Negative UNL Protocol Overview
@@ -114,9 +118,9 @@ with V in their UNL adjust the quorum and V’s validation message is not counte
 when verifying if a ledger is fully validated. V’s flow of messages and network
 interactions, however, will remain the same.
 
-We define the ***effective UNL** = original UNL - negative UNL*, and the
-***effective quorum*** as the quorum of the *effective UNL*. And we set
-*effective quorum = Ceiling(80% * effective UNL)*.
+We define the **\*effective UNL** = original UNL - negative UNL\*, and the
+**_effective quorum_** as the quorum of the _effective UNL_. And we set
+_effective quorum = Ceiling(80% _ effective UNL)\*.
 
 ### Validator Reliability Measurement
 
@@ -126,16 +130,16 @@ measure about its validators, but we have chosen ledger validation messages.
 This is because every validator shall send one and only one signed validation
 message per ledger. This keeps the measurement simple and removes
 timing/clock-sync issues. A node will measure the percentage of agreeing
-validation messages (*PAV*) received from each validator on the node's UNL. Note
+validation messages (_PAV_) received from each validator on the node's UNL. Note
 that the node will only count the validation messages that agree with its own
 validations.
 
 We define the **PAV** as the **P**ercentage of **A**greed **V**alidation
 messages received for the last N ledgers, where N = 256 by default.
 
-When the PAV drops below the ***low-water mark***, the validator is considered
+When the PAV drops below the **_low-water mark_**, the validator is considered
 unreliable, and is a candidate to be disabled by being added to the negative
-UNL. A validator must have a PAV higher than the ***high-water mark*** to be
+UNL. A validator must have a PAV higher than the **_high-water mark_** to be
 re-enabled. The validator is re-enabled by removing it from the negative UNL. In
 the implementation, we plan to set the low-water mark as 50% and the high-water
 mark as 80%.
@@ -143,22 +147,24 @@ mark as 80%.
 ### Format Changes
 
 The negative UNL component in a ledger contains three fields.
-* ***NegativeUNL***: The current negative UNL, a list of unreliable validators.
-* ***ToDisable***: The validator to be added to the negative UNL on the next
+
+- **_NegativeUNL_**: The current negative UNL, a list of unreliable validators.
+- **_ToDisable_**: The validator to be added to the negative UNL on the next
   flag ledger.
-* ***ToReEnable***: The validator to be removed from the negative UNL on the
+- **_ToReEnable_**: The validator to be removed from the negative UNL on the
   next flag ledger.
 
-All three fields are optional. When the *ToReEnable* field exists, the
-*NegativeUNL* field cannot be empty.
+All three fields are optional. When the _ToReEnable_ field exists, the
+_NegativeUNL_ field cannot be empty.
 
-A new pseudo-transaction, ***UNLModify***, is added. It has three fields
-* ***Disabling***: A flag indicating whether the modification is to disable or
+A new pseudo-transaction, **_UNLModify_**, is added. It has three fields
+
+- **_Disabling_**: A flag indicating whether the modification is to disable or
   to re-enable a validator.
-* ***Seq***: The ledger sequence number.
-* ***Validator***: The validator to be disabled or re-enabled.
+- **_Seq_**: The ledger sequence number.
+- **_Validator_**: The validator to be disabled or re-enabled.
 
-There would be at most one *disable* `UNLModify` and one *re-enable* `UNLModify`
+There would be at most one _disable_ `UNLModify` and one _re-enable_ `UNLModify`
 transaction per flag ledger. The full machinery is described further on.
 
 ### Negative UNL Maintenance
@@ -167,19 +173,19 @@ The negative UNL can only be modified on the flag ledgers. If a validator's
 reliability status changes, it takes two flag ledgers to modify the negative
 UNL. Let's see an example of the algorithm:
 
-* Ledger seq = 100: A validator V goes offline.
-* Ledger seq = 256: This is a flag ledger, and V's reliability measurement *PAV*
+- Ledger seq = 100: A validator V goes offline.
+- Ledger seq = 256: This is a flag ledger, and V's reliability measurement _PAV_
   is lower than the low-water mark. Other validators add `UNLModify`
   pseudo-transactions `{true, 256, V}` to the transaction set which goes through
   the consensus. Then the pseudo-transaction is applied to the negative UNL
   ledger component by setting `ToDisable = V`.
-* Ledger seq = 257 ~ 511: The negative UNL ledger component is copied from the
+- Ledger seq = 257 ~ 511: The negative UNL ledger component is copied from the
   parent ledger.
-* Ledger seq=512: This is a flag ledger, and the negative UNL is updated
+- Ledger seq=512: This is a flag ledger, and the negative UNL is updated
   `NegativeUNL = NegativeUNL + ToDisable`.
 
 The negative UNL may have up to `MaxNegativeListed = floor(original UNL * 25%)`
-validators. The 25% is because of 75% * 80% = 60%, where 75% = 100% - 25%, 80%
+validators. The 25% is because of 75% \* 80% = 60%, where 75% = 100% - 25%, 80%
 is the quorum of the effective UNL, and 60% is the absolute minimum quorum of
 the original UNL. Adding more than 25% validators to the negative UNL does not
 improve the liveness of the network, because adding more validators to the
@@ -187,52 +193,43 @@ negative UNL cannot lower the effective quorum.
 
 The following is the detailed algorithm:
 
-* **If** the ledger seq = x is a flag ledger
+- **If** the ledger seq = x is a flag ledger
+  1.  Compute `NegativeUNL = NegativeUNL + ToDisable - ToReEnable` if they
+      exist in the parent ledger
 
-    1. Compute `NegativeUNL = NegativeUNL + ToDisable - ToReEnable` if they
-    exist in the parent ledger
+  1.  Try to find a candidate to disable if `sizeof NegativeUNL < MaxNegativeListed`
 
-		1. Try to find a candidate to disable if `sizeof NegativeUNL < MaxNegativeListed`
+  1.  Find a validator V that has a _PAV_ lower than the low-water
+      mark, but is not in `NegativeUNL`.
 
-		1. Find a validator V that has a *PAV* lower than the low-water
-		mark, but is not in `NegativeUNL`.
+  1.  If two or more are found, their public keys are XORed with the hash
+      of the parent ledger and the one with the lowest XOR result is chosen.
+  1.  If V is found, create a `UNLModify` pseudo-transaction
+      `TxDisableValidator = {true, x, V}`
+  1.  Try to find a candidate to re-enable if `sizeof NegativeUNL > 0`:
+      1. Find a validator U that is in `NegativeUNL` and has a _PAV_ higher
+         than the high-water mark.
+      1. If U is not found, try to find one in `NegativeUNL` but not in the
+         local _UNL_.
+      1. If two or more are found, their public keys are XORed with the hash
+         of the parent ledger and the one with the lowest XOR result is chosen.
+      1. If U is found, create a `UNLModify` pseudo-transaction
+         `TxReEnableValidator = {false, x, U}`
 
-        1. If two or more are found, their public keys are XORed with the hash
-        of the parent ledger and the one with the lowest XOR result is chosen.
-				
-        1. If V is found, create a `UNLModify` pseudo-transaction
-        `TxDisableValidator = {true, x, V}`
-				
-    1. Try to find a candidate to re-enable if `sizeof NegativeUNL > 0`:
-		
-        1. Find a validator U that is in `NegativeUNL` and has a *PAV* higher
-        than the high-water mark.
-				
-        1. If U is not found, try to find one in `NegativeUNL` but not in the
-        local *UNL*.
-				
-        1. If two or more are found, their public keys are XORed with the hash
-        of the parent ledger and the one with the lowest XOR result is chosen.
-				
-        1. If U is found, create a `UNLModify` pseudo-transaction
-        `TxReEnableValidator = {false, x, U}`
-				
-    1. If any `UNLModify` pseudo-transactions are created, add them to the
-    transaction set. The transaction set goes through the consensus algorithm.
-		
-    1. If have enough support, the `UNLModify` pseudo-transactions remain in the
-    transaction set agreed by the validators. Then the pseudo-transactions are
-    applied to the ledger:
-		
-        1. If have `TxDisableValidator`, set `ToDisable=TxDisableValidator.V`.
-        Else clear `ToDisable`.
-				
-        1. If have `TxReEnableValidator`, set
-        `ToReEnable=TxReEnableValidator.U`. Else clear `ToReEnable`.
-				
-* **Else** (not a flag ledger)
+  1.  If any `UNLModify` pseudo-transactions are created, add them to the
+      transaction set. The transaction set goes through the consensus algorithm.
+  1.  If have enough support, the `UNLModify` pseudo-transactions remain in the
+      transaction set agreed by the validators. Then the pseudo-transactions are
+      applied to the ledger:
 
-    1. Copy the negative UNL ledger component from the parent ledger
+          1. If have `TxDisableValidator`, set `ToDisable=TxDisableValidator.V`.
+          Else clear `ToDisable`.
+
+          1. If have `TxReEnableValidator`, set
+          `ToReEnable=TxReEnableValidator.U`. Else clear `ToReEnable`.
+
+- **Else** (not a flag ledger)
+  1. Copy the negative UNL ledger component from the parent ledger
 
 The negative UNL is stored on each ledger because we don't know when a validator
 may reconnect to the network. If the negative UNL was stored only on every flag
@@ -273,30 +270,25 @@ not counted when checking if the ledger is fully validated.
 The diagram below is the sequence of one round of consensus. Classes and
 components with non-trivial changes are colored green.
 
-* The `ValidatorList` class is modified to compute the quorum of the effective
+- The `ValidatorList` class is modified to compute the quorum of the effective
   UNL.
 
-* The `Validations` class provides an interface for querying the validation
+- The `Validations` class provides an interface for querying the validation
   messages from trusted validators.
 
-* The `ConsensusAdaptor` component:
-
-    * The `RCLConsensus::Adaptor` class is modified for creating `UNLModify`
-      Pseudo-Transactions.
-		
-    * The `Change` class is modified for applying `UNLModify`
-      Pseudo-Transactions.
-		
-    * The `Ledger` class is modified for creating and adjusting the negative UNL
-      ledger component.
-		
-    * The `LedgerMaster` class is modified for filtering out validation messages
-      from negative UNL validators when verifying if a ledger is fully
-      validated.
+- The `ConsensusAdaptor` component:
+  - The `RCLConsensus::Adaptor` class is modified for creating `UNLModify`
+    Pseudo-Transactions.
+  - The `Change` class is modified for applying `UNLModify`
+    Pseudo-Transactions.
+  - The `Ledger` class is modified for creating and adjusting the negative UNL
+    ledger component.
+  - The `LedgerMaster` class is modified for filtering out validation messages
+    from negative UNL validators when verifying if a ledger is fully
+    validated.
 
 ![Sequence diagram](./negativeUNL_highLevel_sequence.png?raw=true "Negative UNL
  Changes")
-
 
 ## Roads Not Taken
 
@@ -311,7 +303,7 @@ and different quorums for the same ledger. As a result, the network's safety is
 impacted.
 
 This updated version does not impact safety though operates a bit more slowly.
-The negative UNL modifications in the *UNLModify* pseudo-transaction approved by
+The negative UNL modifications in the _UNLModify_ pseudo-transaction approved by
 the consensus will take effect at the next flag ledger. The extra time of the
 256 ledgers should be enough for nodes to be in sync of the negative UNL
 modifications.
@@ -334,12 +326,11 @@ expiration approach cannot be simply applied.
 ### Validator Reliability Measurement and Flag Ledger Frequency
 
 If the ledger time is about 4.5 seconds and the low-water mark is 50%, then in
-the worst case, it takes 48 minutes *((0.5 * 256 + 256 + 256) * 4.5 / 60 = 48)*
+the worst case, it takes 48 minutes _((0.5 _ 256 + 256 + 256) _ 4.5 / 60 = 48)_
 to put an offline validator on the negative UNL. We considered lowering the flag
 ledger frequency so that the negative UNL can be more responsive. We also
 considered decoupling the reliability measurement and flag ledger frequency to
 be more flexible. In practice, however, their benefits are not clear.
-
 
 ## New Attack Vectors
 
@@ -347,16 +338,16 @@ A group of malicious validators may try to frame a reliable validator and put it
 on the negative UNL. But they cannot succeed. Because:
 
 1. A reliable validator sends a signed validation message every ledger. A
-sufficient peer-to-peer network will propagate the validation messages to other
-validators. The validators will decide if another validator is reliable or not
-only by its local observation of the validation messages received. So an honest
-validator’s vote on another validator’s reliability is accurate.
+   sufficient peer-to-peer network will propagate the validation messages to other
+   validators. The validators will decide if another validator is reliable or not
+   only by its local observation of the validation messages received. So an honest
+   validator’s vote on another validator’s reliability is accurate.
 
 1. Given the votes are accurate, and one vote per validator, an honest validator
-will not create a UNLModify transaction of a reliable validator.
+   will not create a UNLModify transaction of a reliable validator.
 
 1. A validator can be added to a negative UNL only through a UNLModify
-transaction.
+   transaction.
 
 Assuming the group of malicious validators is less than the quorum, they cannot
 frame a reliable validator.
@@ -365,32 +356,32 @@ frame a reliable validator.
 
 The bullet points below briefly summarize the current proposal:
 
-* The motivation of the negative UNL is to improve the liveness of the network.
+- The motivation of the negative UNL is to improve the liveness of the network.
 
-* The targeted faults are the ones frequently observed in the production
+- The targeted faults are the ones frequently observed in the production
   network.
 
-* Validators propose negative UNL candidates based on their local measurements.
+- Validators propose negative UNL candidates based on their local measurements.
 
-* The absolute minimum quorum is 60% of the original UNL.
+- The absolute minimum quorum is 60% of the original UNL.
 
-* The format of the ledger is changed, and a new *UNLModify* pseudo-transaction
+- The format of the ledger is changed, and a new _UNLModify_ pseudo-transaction
   is added. Any tools or systems that rely on the format of these data will have
   to be updated.
 
-* The negative UNL can only be modified on the flag ledgers.
+- The negative UNL can only be modified on the flag ledgers.
 
-* At most one validator can be added to the negative UNL at a flag ledger.
+- At most one validator can be added to the negative UNL at a flag ledger.
 
-* At most one validator can be removed from the negative UNL at a flag ledger.
+- At most one validator can be removed from the negative UNL at a flag ledger.
 
-* If a validator's reliability status changes, it takes two flag ledgers to
+- If a validator's reliability status changes, it takes two flag ledgers to
   modify the negative UNL.
 
-* The quorum is the larger of 80% of the effective UNL and 60% of the original
+- The quorum is the larger of 80% of the effective UNL and 60% of the original
   UNL.
 
-* If a validator is on the negative UNL, its validation messages are ignored
+- If a validator is on the negative UNL, its validation messages are ignored
   when the local node verifies if a ledger is fully validated.
 
 ## FAQ
@@ -415,7 +406,7 @@ lower quorum size while keeping the network safe.
 validator removed from the negative UNL? </h3>
 
 A validator’s reliability is measured by other validators. If a validator
-becomes unreliable, at a flag ledger, other validators propose *UNLModify*
+becomes unreliable, at a flag ledger, other validators propose _UNLModify_
 pseudo-transactions which vote the validator to add to the negative UNL during
 the consensus session. If agreed, the validator is added to the negative UNL at
 the next flag ledger. The mechanism of removing a validator from the negative
@@ -423,32 +414,32 @@ UNL is the same.
 
 ### Question: Given a negative UNL, what happens if the UNL changes?
 
-Answer: Let’s consider the cases: 
+Answer: Let’s consider the cases:
 
-1. A validator is added to the UNL, and it is already in the negative UNL. This
-case could happen when not all the nodes have the same UNL. Note that the
-negative UNL on the ledger lists unreliable nodes that are not necessarily the
-validators for everyone.
+1.  A validator is added to the UNL, and it is already in the negative UNL. This
+    case could happen when not all the nodes have the same UNL. Note that the
+    negative UNL on the ledger lists unreliable nodes that are not necessarily the
+    validators for everyone.
 
-    In this case, the liveness is affected negatively. Because the minimum
-    quorum could be larger but the usable validators are not increased.
+        In this case, the liveness is affected negatively. Because the minimum
+        quorum could be larger but the usable validators are not increased.
 
-1. A validator is removed from the UNL, and it is in the negative UNL.
+1.  A validator is removed from the UNL, and it is in the negative UNL.
 
     In this case, the liveness is affected positively. Because the quorum could
     be smaller but the usable validators are not reduced.
 
-1. A validator is added to the UNL, and it is not in the negative UNL.
-1. A validator is removed from the UNL, and it is not in the negative UNL.
-	
+1.  A validator is added to the UNL, and it is not in the negative UNL.
+1.  A validator is removed from the UNL, and it is not in the negative UNL.
+
     Case 3 and 4 are not affected by the negative UNL protocol.
 
-### Question: Can we simply lower the quorum to 60% without the negative UNL? 
+### Question: Can we simply lower the quorum to 60% without the negative UNL?
 
 Answer: No, because the negative UNL approach is safer.
 
-First let’s compare the two approaches intuitively, (1) the *negative UNL*
-approach, and (2) *lower quorum*: simply lowering the quorum from 80% to 60%
+First let’s compare the two approaches intuitively, (1) the _negative UNL_
+approach, and (2) _lower quorum_: simply lowering the quorum from 80% to 60%
 without the negative UNL. The negative UNL approach uses consensus to come up
 with a list of unreliable validators, which are then removed from the effective
 UNL temporarily. With this approach, the list of unreliable validators is agreed
@@ -462,75 +453,75 @@ Next we compare the two approaches quantitatively with examples, and apply
 Theorem 8 of [Analysis of the XRP Ledger Consensus
 Protocol](https://arxiv.org/abs/1802.07242) paper:
 
-*XRP LCP guarantees fork safety if **O<sub>i,j</sub> > n<sub>j</sub> / 2 +
+_XRP LCP guarantees fork safety if **O<sub>i,j</sub> > n<sub>j</sub> / 2 +
 n<sub>i</sub> − q<sub>i</sub> + t<sub>i,j</sub>** for every pair of nodes
-P<sub>i</sub>, P<sub>j</sub>,*
+P<sub>i</sub>, P<sub>j</sub>,_
 
-where *O<sub>i,j</sub>* is the overlapping requirement, n<sub>j</sub> and
+where _O<sub>i,j</sub>_ is the overlapping requirement, n<sub>j</sub> and
 n<sub>i</sub> are UNL sizes, q<sub>i</sub> is the quorum size of P<sub>i</sub>,
-*t<sub>i,j</sub> = min(t<sub>i</sub>, t<sub>j</sub>, O<sub>i,j</sub>)*, and
+_t<sub>i,j</sub> = min(t<sub>i</sub>, t<sub>j</sub>, O<sub>i,j</sub>)_, and
 t<sub>i</sub> and t<sub>j</sub> are the number of faults can be tolerated by
 P<sub>i</sub> and P<sub>j</sub>.
 
-We denote *UNL<sub>i</sub>* as *P<sub>i</sub>'s UNL*, and *|UNL<sub>i</sub>|* as
-the size of *P<sub>i</sub>'s UNL*.
+We denote _UNL<sub>i</sub>_ as _P<sub>i</sub>'s UNL_, and _|UNL<sub>i</sub>|_ as
+the size of _P<sub>i</sub>'s UNL_.
 
-Assuming *|UNL<sub>i</sub>| = |UNL<sub>j</sub>|*, let's consider the following
+Assuming _|UNL<sub>i</sub>| = |UNL<sub>j</sub>|_, let's consider the following
 three cases:
 
-1. With 80% quorum and 20% faults, *O<sub>i,j</sub> > 100% / 2 + 100% - 80% +
-20% = 90%*. I.e. fork safety requires > 90% UNL overlaps. This is one of the
-results in the analysis paper.
+1.  With 80% quorum and 20% faults, _O<sub>i,j</sub> > 100% / 2 + 100% - 80% +
+    20% = 90%_. I.e. fork safety requires > 90% UNL overlaps. This is one of the
+    results in the analysis paper.
 
-1. If the quorum is 60%, the relationship between the overlapping requirement
-and the faults that can be tolerated is *O<sub>i,j</sub> > 90% +
-t<sub>i,j</sub>*. Under the same overlapping condition (i.e. 90%), to guarantee
-the fork safety, the network cannot tolerate any faults. So under the same
-overlapping condition, if the quorum is simply lowered, the network can tolerate
-fewer faults.
+1.  If the quorum is 60%, the relationship between the overlapping requirement
+    and the faults that can be tolerated is _O<sub>i,j</sub> > 90% +
+    t<sub>i,j</sub>_. Under the same overlapping condition (i.e. 90%), to guarantee
+    the fork safety, the network cannot tolerate any faults. So under the same
+    overlapping condition, if the quorum is simply lowered, the network can tolerate
+    fewer faults.
 
-1. With the negative UNL approach, we want to argue that the inequation
-*O<sub>i,j</sub> > n<sub>j</sub> / 2 + n<sub>i</sub> − q<sub>i</sub> +
-t<sub>i,j</sub>* is always true to guarantee fork safety, while the negative UNL
-protocol runs, i.e. the effective quorum is lowered without weakening the
-network's fault tolerance. To make the discussion easier, we rewrite the
-inequation as *O<sub>i,j</sub> > n<sub>j</sub> / 2 + (n<sub>i</sub> −
-q<sub>i</sub>) + min(t<sub>i</sub>, t<sub>j</sub>)*, where O<sub>i,j</sub> is
-dropped from the definition of t<sub>i,j</sub> because *O<sub>i,j</sub> >
-min(t<sub>i</sub>, t<sub>j</sub>)* always holds under the parameters we will
-use. Assuming a validator V is added to the negative UNL, now let's consider the
-4 cases:
+1.  With the negative UNL approach, we want to argue that the inequation
+    _O<sub>i,j</sub> > n<sub>j</sub> / 2 + n<sub>i</sub> − q<sub>i</sub> +
+    t<sub>i,j</sub>_ is always true to guarantee fork safety, while the negative UNL
+    protocol runs, i.e. the effective quorum is lowered without weakening the
+    network's fault tolerance. To make the discussion easier, we rewrite the
+    inequation as _O<sub>i,j</sub> > n<sub>j</sub> / 2 + (n<sub>i</sub> −
+    q<sub>i</sub>) + min(t<sub>i</sub>, t<sub>j</sub>)_, where O<sub>i,j</sub> is
+    dropped from the definition of t<sub>i,j</sub> because _O<sub>i,j</sub> >
+    min(t<sub>i</sub>, t<sub>j</sub>)_ always holds under the parameters we will
+    use. Assuming a validator V is added to the negative UNL, now let's consider the
+    4 cases:
 
-    1. V is not on UNL<sub>i</sub> nor UNL<sub>j</sub>
+        1. V is not on UNL<sub>i</sub> nor UNL<sub>j</sub>
 
-        The inequation holds because none of the variables change.
+            The inequation holds because none of the variables change.
 
-    1. V is on UNL<sub>i</sub> but not on UNL<sub>j</sub>
+        1. V is on UNL<sub>i</sub> but not on UNL<sub>j</sub>
 
-        The value of *(n<sub>i</sub> − q<sub>i</sub>)* is smaller. The value of
-        *min(t<sub>i</sub>, t<sub>j</sub>)* could be smaller too. Other
-        variables do not change. Overall, the left side of the inequation does
-        not change, but the right side is smaller. So the inequation holds.
-    
-    1. V is not on UNL<sub>i</sub> but on UNL<sub>j</sub>
+            The value of *(n<sub>i</sub> − q<sub>i</sub>)* is smaller. The value of
+            *min(t<sub>i</sub>, t<sub>j</sub>)* could be smaller too. Other
+            variables do not change. Overall, the left side of the inequation does
+            not change, but the right side is smaller. So the inequation holds.
 
-        The value of *n<sub>j</sub> / 2* is smaller. The value of
-        *min(t<sub>i</sub>, t<sub>j</sub>)* could be smaller too. Other
-        variables do not change. Overall, the left side of the inequation does
-        not change, but the right side is smaller. So the inequation holds.
-    
-    1. V is on both UNL<sub>i</sub> and UNL<sub>j</sub>
+        1. V is not on UNL<sub>i</sub> but on UNL<sub>j</sub>
 
-        The value of *O<sub>i,j</sub>* is reduced by 1. The values of
-        *n<sub>j</sub> / 2*, *(n<sub>i</sub> − q<sub>i</sub>)*, and
-        *min(t<sub>i</sub>, t<sub>j</sub>)* are reduced by 0.5, 0.2, and 1
-        respectively. The right side is reduced by 1.7. Overall, the left side
-        of the inequation is reduced by 1, and the right side is reduced by 1.7.
-        So the inequation holds.
+            The value of *n<sub>j</sub> / 2* is smaller. The value of
+            *min(t<sub>i</sub>, t<sub>j</sub>)* could be smaller too. Other
+            variables do not change. Overall, the left side of the inequation does
+            not change, but the right side is smaller. So the inequation holds.
 
-    The inequation holds for all the cases. So with the negative UNL approach,
-    the network's fork safety is preserved, while the quorum is lowered that
-    increases the network's liveness.
+        1. V is on both UNL<sub>i</sub> and UNL<sub>j</sub>
+
+            The value of *O<sub>i,j</sub>* is reduced by 1. The values of
+            *n<sub>j</sub> / 2*, *(n<sub>i</sub> − q<sub>i</sub>)*, and
+            *min(t<sub>i</sub>, t<sub>j</sub>)* are reduced by 0.5, 0.2, and 1
+            respectively. The right side is reduced by 1.7. Overall, the left side
+            of the inequation is reduced by 1, and the right side is reduced by 1.7.
+            So the inequation holds.
+
+        The inequation holds for all the cases. So with the negative UNL approach,
+        the network's fork safety is preserved, while the quorum is lowered that
+        increases the network's liveness.
 
 <h3> Question: We have observed that occasionally a validator wanders off on its
 own chain. How is this case handled by the negative UNL algorithm? </h3>
@@ -565,11 +556,11 @@ will be used after that. We want to see the test cases still pass with real
 network delay. A test case specifies:
 
 1. a UNL with different number of validators for different test cases,
-1. a network with zero or more non-validator nodes, 
+1. a network with zero or more non-validator nodes,
 1. a sequence of validator reliability change events (by killing/restarting
    nodes, or by running modified rippled that does not send all validation
    messages),
-1. the correct outcomes. 
+1. the correct outcomes.
 
 For all the test cases, the correct outcomes are verified by examining logs. We
 will grep the log to see if the correct negative UNLs are generated, and whether
@@ -579,6 +570,7 @@ timing parameters of rippled will be changed to have faster ledger time. Most if
 not all test cases do not need client transactions.
 
 For example, the test cases for the prototype:
+
 1. A 10-validator UNL.
 1. The network does not have other nodes.
 1. The validators will be started from the genesis. Once they start to produce
@@ -587,7 +579,7 @@ For example, the test cases for the prototype:
 1. A sequence of events (or the lack of events) such as a killed validator is
    added to the negative UNL.
 
-#### Roads Not Taken: Test with Extended CSF 
+#### Roads Not Taken: Test with Extended CSF
 
 We considered testing with the current unit test framework, specifically the
 [Consensus Simulation
