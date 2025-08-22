@@ -7,6 +7,8 @@ ignorePaths:
     - src/libxrpl/crypto
     - CMakeUserPresets.json
 language: en
+dictionaries:
+    - cpp
 ignoreRegExpList:
     - /r[1-9A-HJ-NP-Za-km-z]{25,34}/g
     - /RIPPLE_[A-Z_]+_H_INCLUDED+/g
