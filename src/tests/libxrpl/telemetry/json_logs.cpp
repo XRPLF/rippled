@@ -87,12 +87,8 @@ private:
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
 {
-    journal().debug() << std::boolalpha
-                    << true
-                    << std::noboolalpha
-                    << " Test "
-                    << std::boolalpha
-                    << false;
+    journal().debug() << std::boolalpha << true << std::noboolalpha << " Test "
+                      << std::boolalpha << false;
 
     Json::Value logValue;
     Json::Reader reader;
