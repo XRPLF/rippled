@@ -69,7 +69,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: No-op
-        run: true
+        run: echo ''
 
   check-format:
     needs: should-run
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: No-op
-        run: true
+        run: echo ''
     outputs:
       conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
       conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
