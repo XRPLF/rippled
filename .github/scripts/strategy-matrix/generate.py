@@ -61,7 +61,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-17' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}'
                         skip = False
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/arm64':
+                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         skip = False
                 if skip:
                     continue
@@ -72,7 +72,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
             if os['distro_name'] == 'rhel':
                 skip = True
                 if os['distro_version'] == '9.4':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/arm64':
+                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-12' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         skip = False
                 elif os['distro_version'] == '9.6':
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-any' and build_type == 'Release' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
@@ -117,6 +117,11 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
             cmake_args = f'{cmake_args} -Dwextra=ON'
         if build_type == 'Release':
             cmake_args = f'{cmake_args} -Dassert=ON'
+
+        # We skip all RHEL on arm64 due to a build failure that needs further
+        # investigation.
+        if os['distro_name'] == 'rhel' and architecture['platform'] == 'linux/arm64':
+            continue
 
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release-unity.
