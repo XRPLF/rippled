@@ -31,7 +31,7 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u8.value() == 42);
         BEAST_EXPECT(u8.getText() == "42");
         BEAST_EXPECT(u8.getSType() == STI_UINT8);
-        BEAST_EXPECT(u8.getJson(JsonOptions{}) == 42);
+        BEAST_EXPECT(u8.getJson(JsonOptions::none) == 42);
     }
 
     void
@@ -41,7 +41,7 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u16.value() == 65535);
         BEAST_EXPECT(u16.getText() == "65535");
         BEAST_EXPECT(u16.getSType() == STI_UINT16);
-        BEAST_EXPECT(u16.getJson(JsonOptions{}) == 65535);
+        BEAST_EXPECT(u16.getJson(JsonOptions::none) == 65535);
     }
 
     void
@@ -51,7 +51,7 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u32.value() == 1234567890);
         BEAST_EXPECT(u32.getText() == "1234567890");
         BEAST_EXPECT(u32.getSType() == STI_UINT32);
-        BEAST_EXPECT(u32.getJson(JsonOptions{}) == 1234567890);
+        BEAST_EXPECT(u32.getJson(JsonOptions::none) == 1234567890);
     }
 
     void
@@ -63,7 +63,7 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u64.getSType() == STI_UINT64);
 
         // By default, getJson returns hex string
-        auto jsonVal = u64.getJson(JsonOptions{});
+        auto jsonVal = u64.getJson(JsonOptions::none);
         BEAST_EXPECT(jsonVal.isString());
         BEAST_EXPECT(jsonVal.asString() == "123456789abcdef0");
     }
@@ -75,7 +75,7 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(i32.value() == -123456789);
         BEAST_EXPECT(i32.getText() == "-123456789");
         BEAST_EXPECT(i32.getSType() == STI_INT32);
-        BEAST_EXPECT(i32.getJson(JsonOptions{}) == -123456789);
+        BEAST_EXPECT(i32.getJson(JsonOptions::none) == -123456789);
     }
 
     void
@@ -87,7 +87,7 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(i64.getSType() == STI_INT64);
 
         // By default, getJson returns hex string
-        auto jsonVal = i64.getJson(JsonOptions{});
+        auto jsonVal = i64.getJson(JsonOptions::none);
         BEAST_EXPECT(jsonVal.isString());
         BEAST_EXPECT(jsonVal.asString() == "-123456789abcdef0");
     }
