@@ -246,7 +246,7 @@ constexpr std::uint32_t tfUntilFailure                 = 0x00040000;
 constexpr std::uint32_t tfIndependent                  = 0x00080000;
 /**
  * @note If nested Batch transactions are supported in the future, the tfInnerBatchTxn flag
- *  will need to be removed from this mask to allow Batch transaction to be inside 
+ *  will need to be removed from this mask to allow Batch transaction to be inside
  *  the sfRawTransactions array.
  */
 constexpr std::uint32_t const tfBatchMask =

@@ -566,4 +566,3 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE
-
