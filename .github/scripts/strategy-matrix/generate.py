@@ -118,11 +118,6 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         if build_type == 'Release':
             cmake_args = f'{cmake_args} -Dassert=ON'
 
-        # We skip all RHEL on arm64 due to a build failure that needs further
-        # investigation.
-        if os['distro_name'] == 'rhel' and architecture['platform'] == 'linux/arm64':
-            continue
-
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release-unity.
         config_name = os['distro_name']

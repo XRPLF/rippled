@@ -29,6 +29,9 @@ tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
 {% if compiler == "gcc" and compiler_version < 13 %}
 tools.build:cxxflags=['-Wno-restrict']
 {% endif %}
+{% if arch == "armv8" and os == "Linux" %}
+tools.build:cxxflags+=['-march=armv8.2-a']
+{% endif %}
 
 [tool_requires]
 !cmake/*: cmake/[>=3 <4]
