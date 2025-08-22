@@ -6948,44 +6948,39 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // Test 3: Check account_tx RPC response
             Json::Value accountTxParams;
             accountTxParams[jss::account] = alice.human();
-            accountTxParams[jss::limit] =
-                10;  // Get more transactions in case there are multiple
+            accountTxParams[jss::limit] = 1;
 
             auto const accountTxResult =
                 env.rpc("json", "account_tx", to_string(accountTxParams));
-            auto const& transactions =
-                accountTxResult[jss::result][jss::transactions];
+            auto const& accountTx =
+                accountTxResult[jss::result][jss::transactions][0u];
 
-            // Find our specific transaction in the account_tx response
-            bool foundOurTx = false;
-            for (auto const& accountTx : transactions)
+            // Check if the latest transaction is ours (it should be, but
+            // account_tx can be ordering-dependent)
+            bool isOurTransaction = (accountTx[jss::hash].asString() == txHash);
+
+            // Only check synthetic fields if this is our transaction
+            if (isOurTransaction)
             {
-                if (accountTx[jss::hash].asString() == txHash)
-                {
-                    foundOurTx = true;
-                    // Check synthetic fields in our transaction
-                    Json::Value const* accountMeta = nullptr;
-                    if (accountTx.isMember(jss::meta))
-                        accountMeta = &accountTx[jss::meta];
-                    else if (accountTx.isMember(jss::metaData))
-                        accountMeta = &accountTx[jss::metaData];
+                // Check synthetic fields in account_tx response
+                Json::Value const* accountMeta = nullptr;
+                if (accountTx.isMember(jss::meta))
+                    accountMeta = &accountTx[jss::meta];
+                else if (accountTx.isMember(jss::metaData))
+                    accountMeta = &accountTx[jss::metaData];
 
-                    if (BEAST_EXPECT(accountMeta != nullptr))
+                if (BEAST_EXPECT(accountMeta != nullptr))
+                {
+                    BEAST_EXPECT(accountMeta->isMember(jss::nftoken_id));
+                    if (accountMeta->isMember(jss::nftoken_id))
                     {
-                        BEAST_EXPECT(accountMeta->isMember(jss::nftoken_id));
-                        if (accountMeta->isMember(jss::nftoken_id))
-                        {
-                            uint256 accountNftId;
-                            BEAST_EXPECT(accountNftId.parseHex(
-                                (*accountMeta)[jss::nftoken_id].asString()));
-                            BEAST_EXPECT(accountNftId == actualNftID);
-                        }
+                        uint256 accountNftId;
+                        BEAST_EXPECT(accountNftId.parseHex(
+                            (*accountMeta)[jss::nftoken_id].asString()));
+                        BEAST_EXPECT(accountNftId == actualNftID);
                     }
-                    break;
                 }
             }
-            // Note: We don't require foundOurTx since account_tx can be timing
-            // dependent
         };
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
@@ -7081,59 +7076,52 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // Test 3: Check account_tx RPC response
             Json::Value accountTxParams;
             accountTxParams[jss::account] = alice.human();
-            accountTxParams[jss::limit] =
-                10;  // Get more transactions in case there are multiple
+            accountTxParams[jss::limit] = 1;
 
             auto const accountTxResult =
                 env.rpc("json", "account_tx", to_string(accountTxParams));
-            auto const& transactions =
-                accountTxResult[jss::result][jss::transactions];
+            auto const& accountTx =
+                accountTxResult[jss::result][jss::transactions][0u];
 
-            // Find our specific transaction in the account_tx response
-            bool foundOurTx = false;
-            for (auto const& accountTx : transactions)
+            // Check if the latest transaction is ours (it should be, but
+            // account_tx can be ordering-dependent)
+            bool isOurTransaction = (accountTx[jss::hash].asString() == txHash);
+
+            // Only check synthetic fields if this is our transaction
+            if (isOurTransaction)
             {
-                if (accountTx[jss::hash].asString() == txHash)
+                // Check synthetic fields in account_tx response
+                Json::Value const* accountMeta = nullptr;
+                if (accountTx.isMember(jss::meta))
+                    accountMeta = &accountTx[jss::meta];
+                else if (accountTx.isMember(jss::metaData))
+                    accountMeta = &accountTx[jss::metaData];
+
+                if (BEAST_EXPECT(accountMeta != nullptr))
                 {
-                    foundOurTx = true;
-                    // Check synthetic fields in our transaction
-                    Json::Value const* accountMeta = nullptr;
-                    if (accountTx.isMember(jss::meta))
-                        accountMeta = &accountTx[jss::meta];
-                    else if (accountTx.isMember(jss::metaData))
-                        accountMeta = &accountTx[jss::metaData];
-
-                    if (BEAST_EXPECT(accountMeta != nullptr))
+                    BEAST_EXPECT(accountMeta->isMember(jss::nftoken_ids));
+                    if (accountMeta->isMember(jss::nftoken_ids))
                     {
-                        BEAST_EXPECT(accountMeta->isMember(jss::nftoken_ids));
-                        if (accountMeta->isMember(jss::nftoken_ids))
-                        {
-                            // Convert and verify NFT IDs in account_tx response
-                            std::vector<uint256> accountMetaIDs;
-                            std::transform(
-                                (*accountMeta)[jss::nftoken_ids].begin(),
-                                (*accountMeta)[jss::nftoken_ids].end(),
-                                std::back_inserter(accountMetaIDs),
-                                [this](Json::Value id) {
-                                    uint256 nftID;
-                                    BEAST_EXPECT(nftID.parseHex(id.asString()));
-                                    return nftID;
-                                });
+                        // Convert and verify NFT IDs in account_tx response
+                        std::vector<uint256> accountMetaIDs;
+                        std::transform(
+                            (*accountMeta)[jss::nftoken_ids].begin(),
+                            (*accountMeta)[jss::nftoken_ids].end(),
+                            std::back_inserter(accountMetaIDs),
+                            [this](Json::Value id) {
+                                uint256 nftID;
+                                BEAST_EXPECT(nftID.parseHex(id.asString()));
+                                return nftID;
+                            });
 
-                            std::sort(
-                                accountMetaIDs.begin(), accountMetaIDs.end());
-                            BEAST_EXPECT(
-                                accountMetaIDs.size() == actualNftIDs.size());
-                            for (size_t i = 0; i < accountMetaIDs.size(); ++i)
-                                BEAST_EXPECT(
-                                    accountMetaIDs[i] == actualNftIDs[i]);
-                        }
+                        std::sort(accountMetaIDs.begin(), accountMetaIDs.end());
+                        BEAST_EXPECT(
+                            accountMetaIDs.size() == actualNftIDs.size());
+                        for (size_t i = 0; i < accountMetaIDs.size(); ++i)
+                            BEAST_EXPECT(accountMetaIDs[i] == actualNftIDs[i]);
                     }
-                    break;
                 }
             }
-            // Note: We don't require foundOurTx since account_tx can be timing
-            // dependent
         };
 
         // Verify `offer_id` value equals to the offerID that was
@@ -8220,41 +8208,41 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        // testEnabled(features);
-        // testMintReserve(features);
-        // testMintMaxTokens(features);
-        // testMintInvalid(features);
-        // testBurnInvalid(features);
-        // testCreateOfferInvalid(features);
-        // testCancelOfferInvalid(features);
-        // testAcceptOfferInvalid(features);
-        // testMintFlagBurnable(features);
-        // testMintFlagOnlyXRP(features);
-        // testMintFlagCreateTrustLine(features);
-        // testMintFlagTransferable(features);
-        // testMintTransferFee(features);
-        // testMintTaxon(features);
-        // testMintURI(features);
-        // testCreateOfferDestination(features);
-        // testCreateOfferDestinationDisallowIncoming(features);
-        // testCreateOfferExpiration(features);
-        // testCancelOffers(features);
-        // testCancelTooManyOffers(features);
-        // testBrokeredAccept(features);
-        // testNFTokenOfferOwner(features);
-        // testNFTokenWithTickets(features);
-        // testNFTokenDeleteAccount(features);
-        // testNftXxxOffers(features);
-        // testFixNFTokenNegOffer(features);
-        // testIOUWithTransferFee(features);
-        // testBrokeredSaleToSelf(features);
-        // testFixNFTokenRemint(features);
-        // testFeatMintWithOffer(features);
+        testEnabled(features);
+        testMintReserve(features);
+        testMintMaxTokens(features);
+        testMintInvalid(features);
+        testBurnInvalid(features);
+        testCreateOfferInvalid(features);
+        testCancelOfferInvalid(features);
+        testAcceptOfferInvalid(features);
+        testMintFlagBurnable(features);
+        testMintFlagOnlyXRP(features);
+        testMintFlagCreateTrustLine(features);
+        testMintFlagTransferable(features);
+        testMintTransferFee(features);
+        testMintTaxon(features);
+        testMintURI(features);
+        testCreateOfferDestination(features);
+        testCreateOfferDestinationDisallowIncoming(features);
+        testCreateOfferExpiration(features);
+        testCancelOffers(features);
+        testCancelTooManyOffers(features);
+        testBrokeredAccept(features);
+        testNFTokenOfferOwner(features);
+        testNFTokenWithTickets(features);
+        testNFTokenDeleteAccount(features);
+        testNftXxxOffers(features);
+        testFixNFTokenNegOffer(features);
+        testIOUWithTransferFee(features);
+        testBrokeredSaleToSelf(features);
+        testFixNFTokenRemint(features);
+        testFeatMintWithOffer(features);
         testTxJsonMetaFields(features);
-        // testFixNFTokenBuyerReserve(features);
-        // testUnaskedForAutoTrustline(features);
-        // testNFTIssuerIsIOUIssuer(features);
-        // testNFTokenModify(features);
+        testFixNFTokenBuyerReserve(features);
+        testUnaskedForAutoTrustline(features);
+        testNFTIssuerIsIOUIssuer(features);
+        testNFTokenModify(features);
     }
 
 public:
