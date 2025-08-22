@@ -7,28 +7,28 @@ name: PR
 on:
   pull_request:
     paths:
-      - '.github/actions/build-deps/**'
-      - '.github/actions/build-test/**'
-      - '.github/scripts/levelization/**'
-      - '.github/scripts/strategy-matrix/**'
-      - '.github/workflows/build-test.yml'
-      - '.github/workflows/check-format.yml'
-      - '.github/workflows/check-levelization.yml'
-      - '.github/workflows/notify-clio.yml'
-      - '.github/workflows/on-pr.yml'
+      - ".github/actions/build-deps/**"
+      - ".github/actions/build-test/**"
+      - ".github/scripts/levelization/**"
+      - ".github/scripts/strategy-matrix/**"
+      - ".github/workflows/build-test.yml"
+      - ".github/workflows/check-format.yml"
+      - ".github/workflows/check-levelization.yml"
+      - ".github/workflows/notify-clio.yml"
+      - ".github/workflows/on-pr.yml"
       # Keep the list of paths below in sync with those in the `on-trigger.yml`
       # file.
-      - 'cmake/**'
-      - 'conan/**'
-      - 'external/**'
-      - 'include/**'
-      - 'src/**'
-      - 'tests/**'
-      - '.clang-format'
-      - '.codecov.yml'
-      - '.pre-commit-config.yaml'
-      - 'CMakeLists.txt'
-      - 'conanfile.py'
+      - "cmake/**"
+      - "conan/**"
+      - "external/**"
+      - "include/**"
+      - "src/**"
+      - "tests/**"
+      - ".clang-format"
+      - ".codecov.yml"
+      - ".pre-commit-config.yaml"
+      - "CMakeLists.txt"
+      - "conanfile.py"
     types:
       - opened
       - synchronize
