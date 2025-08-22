@@ -152,7 +152,7 @@ fillJsonTx(
 
             // Insert all synthetic fields
             RPC::insertAllSyntheticInJson(
-                txJson,
+                txJson[jss::meta],
                 fill.ledger,
                 txn,
                 {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
@@ -182,7 +182,7 @@ fillJsonTx(
 
             // Insert all synthetic fields
             RPC::insertAllSyntheticInJson(
-                txJson,
+                txJson[jss::metaData],
                 fill.ledger,
                 txn,
                 {txn->getTransactionID(), fill.ledger.seq(), *stMeta});

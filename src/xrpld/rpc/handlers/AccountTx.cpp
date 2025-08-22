@@ -346,7 +346,7 @@ populateJsonResponse(
                         jvObj[jss::meta] =
                             txnMeta->getJson(JsonOptions::include_date);
                         RPC::insertAllSyntheticInJson(
-                            jvObj, context, sttx, *txnMeta);
+                            jvObj[jss::meta], context, sttx, *txnMeta);
                     }
                     else
                         UNREACHABLE(
