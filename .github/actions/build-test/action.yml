@@ -75,7 +75,7 @@ runs:
         echo 'Verifying presence of instrumentation.'
         ./rippled --version | grep libvoidstar
     - name: Test the binary
-      if: ${{ inputs.build_only == 'true' }}
+      if: ${{ inputs.build_only == 'false' }}
       shell: bash
       working-directory: ${{ inputs.build_dir }}/${{ inputs.os == 'windows' && inputs.build_type || '' }}
       run: |

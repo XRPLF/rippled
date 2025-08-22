@@ -48,18 +48,18 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
                 skip = True
                 if os['distro_version'] == 'bookworm':
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/arm64':
-                        cmake_args = f'{cmake_args} -DUNIT_TEST_REFERENCE_FEE=500'
+                        cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        cmake_args = f'{cmake_args} -Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0'
+                        cmake_args = f'-Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0 {cmake_args}'
                         cmake_target = 'coverage'
                         build_only = True
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-16' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
-                        cmake_args = f'{cmake_args} -Dvoidstar=ON'
+                        cmake_args = f'-Dvoidstar=ON {cmake_args}'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-17' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        cmake_args = f'{cmake_args} -DUNIT_TEST_REFERENCE_FEE=1000'
+                        cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=1000 {cmake_args}'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and build_type == 'Debug' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         skip = False
@@ -137,14 +137,17 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         if '-Dunity=ON' in cmake_args:
             config_name += '-unity'
 
+        # Add the configuration to the list, with the most unique fields first,
+        # so that they are easier to identify in the GitHub Actions UI, as long
+        # names get truncated.
         configurations.append({
-            'architecture': architecture,
-            'os': os,
-            'build_type': build_type,
-            'build_only': 'true' if build_only else 'false',
+            'config_name': config_name,
             'cmake_args': cmake_args,
             'cmake_target': cmake_target,
-            'config_name': config_name,
+            'build_only': 'true' if build_only else 'false',
+            'build_type': build_type,
+            'os': os,
+            'architecture': architecture,
         })
 
     return {'include': configurations}
