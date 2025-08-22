@@ -671,12 +671,12 @@ isMemoOkay(STObject const& st, std::string& reason)
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                     "abcdefghijklmnopqrstuvwxyz");
 
-                for (char c : symbols)
+                for (unsigned char c : symbols)
                     a[c] = 1;
                 return a;
             }();
 
-            for (auto c : *optData)
+            for (unsigned char c : *optData)
             {
                 if (!allowedSymbols[c])
                 {
@@ -760,6 +760,12 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
         {
             TxType const tt =
                 safe_cast<TxType>(raw.getFieldU16(sfTransactionType));
+            if (tt == ttBATCH)
+            {
+                reason = "Raw Transactions may not contain batch transactions.";
+                return false;
+            }
+
             raw.applyTemplate(getTxFormat(tt)->getSOTemplate());
         }
         catch (std::exception const& e)

@@ -3,29 +3,29 @@
 | These instructions assume you have a C++ development environment ready with Git, Python, Conan, CMake, and a C++ compiler. For help setting one up on Linux, macOS, or Windows, [see this guide](./docs/build/environment.md). |
 
 > These instructions also assume a basic familiarity with Conan and CMake.
-> If you are unfamiliar with Conan,
-> you can read our [crash course](./docs/build/conan.md)
-> or the official [Getting Started][3] walkthrough.
+> If you are unfamiliar with Conan, you can read our
+> [crash course](./docs/build/conan.md) or the official [Getting Started][3]
+> walkthrough.
 
 ## Branches
 
 For a stable release, choose the `master` branch or one of the [tagged
 releases](https://github.com/ripple/rippled/releases).
 
-```
+```bash
 git checkout master
 ```
 
 For the latest release candidate, choose the `release` branch.
 
-```
+```bash
 git checkout release
 ```
 
 For the latest set of untested features, or to contribute, choose the `develop`
 branch.
 
-```
+```bash
 git checkout develop
 ```
 
@@ -33,176 +33,323 @@ git checkout develop
 
 See [System Requirements](https://xrpl.org/system-requirements.html).
 
-Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
+Building rippled generally requires git, Python, Conan, CMake, and a C++
+compiler. Some guidance on setting up such a [C++ development environment can be
+found here](./docs/build/environment.md).
 
-- [Python 3.7](https://www.python.org/downloads/)
-- [Conan 1.60](https://conan.io/downloads.html)[^1]
-- [CMake 3.16](https://cmake.org/download/)
+- [Python 3.11](https://www.python.org/downloads/), or higher
+- [Conan 2.17](https://conan.io/downloads.html)[^1], or higher
+- [CMake 3.22](https://cmake.org/download/)[^2], or higher
 
-[^1]: It is possible to build with Conan 2.x,
-but the instructions are significantly different,
-which is why we are not recommending it yet.
-Notably, the `conan profile update` command is removed in 2.x.
-Profiles must be edited by hand.
+[^1]:
+    It is possible to build with Conan 1.60+, but the instructions are
+    significantly different, which is why we are not recommending it.
+
+[^2]:
+    CMake 4 is not yet supported by all dependencies required by this project.
+    If you are affected by this issue, follow [conan workaround for cmake
+    4](#workaround-for-cmake-4)
 
 `rippled` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
 
-| Compiler    | Version |
-|-------------|---------|
-| GCC         | 11      |
-| Clang       | 13      |
-| Apple Clang | 13.1.6  |
-| MSVC        | 19.23   |
+| Compiler    | Version   |
+| ----------- | --------- |
+| GCC         | 12        |
+| Clang       | 16        |
+| Apple Clang | 16        |
+| MSVC        | 19.44[^3] |
 
 ### Linux
 
-The Ubuntu operating system has received the highest level of
-quality assurance, testing, and support.
+The Ubuntu Linux distribution has received the highest level of quality
+assurance, testing, and support. We also support Red Hat and use Debian
+internally.
 
-Here are [sample instructions for setting up a C++ development environment on Linux](./docs/build/environment.md#linux).
+Here are [sample instructions for setting up a C++ development environment on
+Linux](./docs/build/environment.md#linux).
 
 ### Mac
 
 Many rippled engineers use macOS for development.
 
-Here are [sample instructions for setting up a C++ development environment on macOS](./docs/build/environment.md#macos).
+Here are [sample instructions for setting up a C++ development environment on
+macOS](./docs/build/environment.md#macos).
 
 ### Windows
 
-Windows is not recommended for production use at this time.
+Windows is used by some engineers for development only.
 
-- Additionally, 32-bit Windows development is not supported.
-
-[Boost]: https://www.boost.org/
+[^3]: Windows is not recommended for production use.
 
 ## Steps
 
 ### Set Up Conan
 
-After you have a [C++ development environment](./docs/build/environment.md) ready with Git, Python, Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.
+After you have a [C++ development environment](./docs/build/environment.md) ready with Git, Python,
+Conan, CMake, and a C++ compiler, you may need to set up your Conan profile.
 
-These instructions assume a basic familiarity with Conan and CMake.
+These instructions assume a basic familiarity with Conan and CMake. If you are
+unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official
+[Getting Started][3] walkthrough.
 
-If you are unfamiliar with Conan, then please read [this crash course](./docs/build/conan.md) or the official [Getting Started][3] walkthrough.
+#### Default profile
 
-You'll need at least one Conan profile:
+We recommend that you import the provided `conan/profiles/default` profile:
 
-   ```
-   conan profile new default --detect
-   ```
-
-Update the compiler settings:
-
-   ```
-   conan profile update settings.compiler.cppstd=20 default
-   ```
-
-Configure Conan (1.x only) to use recipe revisions:
-
-   ```
-   conan config set general.revisions_enabled=1
-   ```
-
-**Linux** developers will commonly have a default Conan [profile][] that compiles
-with GCC and links with libstdc++.
-If you are linking with libstdc++ (see profile setting `compiler.libcxx`),
-then you will need to choose the `libstdc++11` ABI:
-
-   ```
-   conan profile update settings.compiler.libcxx=libstdc++11 default
-   ```
-
-
-Ensure inter-operability between `boost::string_view` and `std::string_view` types:
-
-```
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_BEAST_USE_STD_STRING_VIEW"]' default
-conan profile update 'env.CXXFLAGS="-DBOOST_BEAST_USE_STD_STRING_VIEW"' default
+```bash
+conan config install conan/profiles/ -tf $(conan config home)/profiles/
 ```
 
-If you have other flags in the `conf.tools.build` or `env.CXXFLAGS` sections, make sure to retain the existing flags and append the new ones. You can check them with:
-```
-conan profile show default
-```
+You can check your Conan profile by running:
 
-
-**Windows** developers may need to use the x64 native build tools.
-An easy way to do that is to run the shortcut "x64 Native Tools Command
-Prompt" for the version of Visual Studio that you have installed.
-
-   Windows developers must also build `rippled` and its dependencies for the x64
-   architecture:
-
-   ```
-   conan profile update settings.arch=x86_64 default
-   ```
-
-### Multiple compilers
-
-When `/usr/bin/g++` exists on a platform, it is the default cpp compiler. This
-default works for some users.
-
-However, if this compiler cannot build rippled or its dependencies, then you can
-install another compiler and set Conan and CMake to use it.
-Update the `conf.tools.build:compiler_executables` setting in order to set the correct variables (`CMAKE_<LANG>_COMPILER`) in the
-generated CMake toolchain file.
-For example, on Ubuntu 20, you may have gcc at `/usr/bin/gcc` and g++ at `/usr/bin/g++`; if that is the case, you can select those compilers with:
-```
-conan profile update 'conf.tools.build:compiler_executables={"c": "/usr/bin/gcc", "cpp": "/usr/bin/g++"}' default
+```bash
+conan profile show
 ```
 
-Replace `/usr/bin/gcc` and `/usr/bin/g++` with paths to the desired compilers.
+#### Custom profile
 
-It should choose the compiler for dependencies as well,
-but not all of them have a Conan recipe that respects this setting (yet).
-For the rest, you can set these environment variables.
-Replace `<path>` with paths to the desired compilers:
+If the default profile does not work for you and you do not yet have a Conan
+profile, you can create one by running:
 
-- `conan profile update env.CC=<path> default`
-- `conan profile update env.CXX=<path> default`
+```bash
+conan profile detect
+```
 
-Export our [Conan recipe for Snappy](./external/snappy).
-It does not explicitly link the C++ standard library,
-which allows you to statically link it with GCC, if you want.
+You may need to make changes to the profile to suit your environment. You can
+refer to the provided `conan/profiles/default` profile for inspiration, and you
+may also need to apply the required [tweaks](#conan-profile-tweaks) to this
+default profile.
 
-   ```
-   # Conan 1.x
-   conan export external/snappy snappy/1.1.10@
-   # Conan 2.x
-   conan export --version 1.1.10 external/snappy
-   ```
+### Patched recipes
 
-Export our [Conan recipe for RocksDB](./external/rocksdb).
-It does not override paths to dependencies when building with Visual Studio.
+The recipes in Conan Center occasionally need to be patched for compatibility
+with the latest version of `rippled`. We maintain a fork of the Conan Center
+[here](https://github.com/XRPLF/conan-center-index/) containing the patches.
 
-   ```
-   # Conan 1.x
-   conan export external/rocksdb rocksdb/9.7.3@
-   # Conan 2.x
-   conan export --version 9.7.3 external/rocksdb
-   ```
+To ensure our patched recipes are used, you must add our Conan remote at a
+higher index than the default Conan Center remote, so it is consulted first. You
+can do this by running:
 
-Export our [Conan recipe for SOCI](./external/soci).
-It patches their CMake to correctly import its dependencies.
+```bash
+conan remote add --index 0 xrplf "https://conan.ripplex.io"
+```
 
-   ```
-   # Conan 1.x
-   conan export external/soci soci/4.0.3@
-   # Conan 2.x
-   conan export --version 4.0.3 external/soci
-   ```
+Alternatively, you can pull the patched recipes into the repository and use them
+locally:
 
-Export our [Conan recipe for NuDB](./external/nudb).
-It fixes some source files to add missing `#include`s.
+```bash
+cd external
+git init
+git remote add origin git@github.com:XRPLF/conan-center-index.git
+git sparse-checkout init
+git sparse-checkout set recipes/snappy
+git sparse-checkout add recipes/soci
+git fetch origin master
+git checkout master
+conan export --version 1.1.10 recipes/snappy/all
+conan export --version 4.0.3 recipes/soci/all
+rm -rf .git
+```
 
+In the case we switch to a newer version of a dependency that still requires a
+patch, it will be necessary for you to pull in the changes and re-export the
+updated dependencies with the newer version. However, if we switch to a newer
+version that no longer requires a patch, no action is required on your part, as
+the new recipe will be automatically pulled from the official Conan Center.
 
-   ```
-   # Conan 1.x
-   conan export external/nudb nudb/2.0.8@
-   # Conan 2.x
-   conan export --version 2.0.8 external/nudb
-   ```
+### Conan profile tweaks
+
+#### Missing compiler version
+
+If you see an error similar to the following after running `conan profile show`:
+
+```bash
+ERROR: Invalid setting '17' is not a valid 'settings.compiler.version' value.
+Possible values are ['5.0', '5.1', '6.0', '6.1', '7.0', '7.3', '8.0', '8.1',
+'9.0', '9.1', '10.0', '11.0', '12.0', '13', '13.0', '13.1', '14', '14.0', '15',
+'15.0', '16', '16.0']
+Read "http://docs.conan.io/2/knowledge/faq.html#error-invalid-setting"
+```
+
+you need to amend the list of compiler versions in
+`$(conan config home)/settings.yml`, by appending the required version number(s)
+to the `version` array specific for your compiler. For example:
+
+```yaml
+apple-clang:
+  version:
+    [
+      "5.0",
+      "5.1",
+      "6.0",
+      "6.1",
+      "7.0",
+      "7.3",
+      "8.0",
+      "8.1",
+      "9.0",
+      "9.1",
+      "10.0",
+      "11.0",
+      "12.0",
+      "13",
+      "13.0",
+      "13.1",
+      "14",
+      "14.0",
+      "15",
+      "15.0",
+      "16",
+      "16.0",
+      "17",
+      "17.0",
+    ]
+```
+
+#### Multiple compilers
+
+If you have multiple compilers installed, make sure to select the one to use in
+your default Conan configuration **before** running `conan profile detect`, by
+setting the `CC` and `CXX` environment variables.
+
+For example, if you are running MacOS and have [homebrew
+LLVM@18](https://formulae.brew.sh/formula/llvm@18), and want to use it as a
+compiler in the new Conan profile:
+
+```bash
+export CC=$(brew --prefix llvm@18)/bin/clang
+export CXX=$(brew --prefix llvm@18)/bin/clang++
+conan profile detect
+```
+
+You should also explicitly set the path to the compiler in the profile file,
+which helps to avoid errors when `CC` and/or `CXX` are set and disagree with the
+selected Conan profile. For example:
+
+```text
+[conf]
+tools.build:compiler_executables={'c':'/usr/bin/gcc','cpp':'/usr/bin/g++'}
+```
+
+#### Multiple profiles
+
+You can manage multiple Conan profiles in the directory
+`$(conan config home)/profiles`, for example renaming `default` to a different
+name and then creating a new `default` profile for a different compiler.
+
+#### Select language
+
+The default profile created by Conan will typically select different C++ dialect
+than C++20 used by this project. You should set `20` in the profile line
+starting with `compiler.cppstd=`. For example:
+
+```bash
+sed -i.bak -e 's|^compiler\.cppstd=.*$|compiler.cppstd=20|' $(conan config home)/profiles/default
+```
+
+#### Select standard library in Linux
+
+**Linux** developers will commonly have a default Conan [profile][] that
+compiles with GCC and links with libstdc++. If you are linking with libstdc++
+(see profile setting `compiler.libcxx`), then you will need to choose the
+`libstdc++11` ABI:
+
+```bash
+sed -i.bak -e 's|^compiler\.libcxx=.*$|compiler.libcxx=libstdc++11|' $(conan config home)/profiles/default
+```
+
+#### Select architecture and runtime in Windows
+
+**Windows** developers may need to use the x64 native build tools. An easy way
+to do that is to run the shortcut "x64 Native Tools Command Prompt" for the
+version of Visual Studio that you have installed.
+
+Windows developers must also build `rippled` and its dependencies for the x64
+architecture:
+
+```bash
+sed -i.bak -e 's|^arch=.*$|arch=x86_64|' $(conan config home)/profiles/default
+```
+
+**Windows** developers also must select static runtime:
+
+```bash
+sed -i.bak -e 's|^compiler\.runtime=.*$|compiler.runtime=static|' $(conan config home)/profiles/default
+```
+
+#### Workaround for CMake 4
+
+If your system CMake is version 4 rather than 3, you may have to configure Conan
+profile to use CMake version 3 for dependencies, by adding the following two
+lines to your profile:
+
+```text
+[tool_requires]
+!cmake/*: cmake/[>=3 <4]
+```
+
+This will force Conan to download and use a locally cached CMake 3 version, and
+is needed because some of the dependencies used by this project do not support
+CMake 4.
+
+#### Clang workaround for grpc
+
+If your compiler is clang, version 19 or later, or apple-clang, version 17 or
+later, you may encounter a compilation error while building the `grpc`
+dependency:
+
+```text
+In file included from .../lib/promise/try_seq.h:26:
+.../lib/promise/detail/basic_seq.h:499:38: error: a template argument list is expected after a name prefixed by the template keyword [-Wmissing-template-arg-list-after-template-kw]
+  499 |                     Traits::template CallSeqFactory(f_, *cur_, std::move(arg)));
+      |                                      ^
+```
+
+The workaround for this error is to add two lines to profile:
+
+```text
+[conf]
+tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
+```
+
+#### Workaround for gcc 12
+
+If your compiler is gcc, version 12, and you have enabled `werr` option, you may
+encounter a compilation error such as:
+
+```text
+/usr/include/c++/12/bits/char_traits.h:435:56: error: 'void* __builtin_memcpy(void*, const void*, long unsigned int)' accessing 9223372036854775810 or more bytes at offsets [2, 9223372036854775807] and 1 may overlap up to 9223372036854775813 bytes at offset -3 [-Werror=restrict]
+  435 |         return static_cast<char_type*>(__builtin_memcpy(__s1, __s2, __n));
+      |                                        ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+cc1plus: all warnings being treated as errors
+```
+
+The workaround for this error is to add two lines to your profile:
+
+```text
+[conf]
+tools.build:cxxflags=['-Wno-restrict']
+```
+
+#### Workaround for clang 16
+
+If your compiler is clang, version 16, you may encounter compilation error such
+as:
+
+```text
+In file included from .../boost/beast/websocket/stream.hpp:2857:
+.../boost/beast/websocket/impl/read.hpp:695:17: error: call to 'async_teardown' is ambiguous
+                async_teardown(impl.role, impl.stream(),
+                ^~~~~~~~~~~~~~
+```
+
+The workaround for this error is to add two lines to your profile:
+
+```text
+[conf]
+tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
+```
 
 ### Build and Test
 
@@ -224,71 +371,70 @@ It fixes some source files to add missing `#include`s.
 
 2. Use conan to generate CMake files for every configuration you want to build:
 
-    ```
-    conan install .. --output-folder . --build missing --settings build_type=Release
-    conan install .. --output-folder . --build missing --settings build_type=Debug
-    ```
+   ```
+   conan install .. --output-folder . --build missing --settings build_type=Release
+   conan install .. --output-folder . --build missing --settings build_type=Debug
+   ```
 
-    To build Debug, in the next step, be sure to set `-DCMAKE_BUILD_TYPE=Debug`
+   To build Debug, in the next step, be sure to set `-DCMAKE_BUILD_TYPE=Debug`
 
-    For a single-configuration generator, e.g. `Unix Makefiles` or `Ninja`,
-    you only need to run this command once.
-    For a multi-configuration generator, e.g. `Visual Studio`, you may want to
-    run it more than once.
+   For a single-configuration generator, e.g. `Unix Makefiles` or `Ninja`,
+   you only need to run this command once.
+   For a multi-configuration generator, e.g. `Visual Studio`, you may want to
+   run it more than once.
 
-    Each of these commands should also have a different `build_type` setting.
-    A second command with the same `build_type` setting will overwrite the files
-    generated by the first. You can pass the build type on the command line with
-    `--settings build_type=$BUILD_TYPE` or in the profile itself,
-    under the section `[settings]` with the key `build_type`.
+   Each of these commands should also have a different `build_type` setting.
+   A second command with the same `build_type` setting will overwrite the files
+   generated by the first. You can pass the build type on the command line with
+   `--settings build_type=$BUILD_TYPE` or in the profile itself,
+   under the section `[settings]` with the key `build_type`.
 
-    If you are using a Microsoft Visual C++ compiler,
-    then you will need to ensure consistency between the `build_type` setting
-    and the `compiler.runtime` setting.
+   If you are using a Microsoft Visual C++ compiler,
+   then you will need to ensure consistency between the `build_type` setting
+   and the `compiler.runtime` setting.
 
-    When `build_type` is `Release`, `compiler.runtime` should be `MT`.
+   When `build_type` is `Release`, `compiler.runtime` should be `MT`.
 
-    When `build_type` is `Debug`, `compiler.runtime` should be `MTd`.
+   When `build_type` is `Debug`, `compiler.runtime` should be `MTd`.
 
-    ```
-    conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
-    conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
-    ```
+   ```
+   conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
+   conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
+   ```
 
 3. Configure CMake and pass the toolchain file generated by Conan, located at
    `$OUTPUT_FOLDER/build/generators/conan_toolchain.cmake`.
 
-    Single-config generators:
+   Single-config generators:
 
-    Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
-    and make sure it matches the one of the `build_type` settings
-    you chose in the previous step.
+   Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
+   and make sure it matches the one of the `build_type` settings
+   you chose in the previous step.
 
-    For example, to build Debug, in the next command, replace "Release" with "Debug"
+   For example, to build Debug, in the next command, replace "Release" with "Debug"
 
-    ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..
-    ```
+   ```
+   cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..
+   ```
 
+   Multi-config generators:
 
-    Multi-config generators:
+   ```
+   cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=ON -Dtests=ON  ..
+   ```
 
-    ```
-    cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dxrpld=ON -Dtests=ON  ..
-    ```
+   **Note:** You can pass build options for `rippled` in this step.
 
-    **Note:** You can pass build options for `rippled` in this step.
-
-5. Build `rippled`.
+4. Build `rippled`.
 
    For a single-configuration generator, it will build whatever configuration
-   you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator,
-   you must pass the option `--config` to select the build configuration. 
+   you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator, you
+   must pass the option `--config` to select the build configuration.
 
    Single-config generators:
 
    ```
-   cmake --build . -j $(nproc)
+   cmake --build .
    ```
 
    Multi-config generators:
@@ -298,24 +444,27 @@ It fixes some source files to add missing `#include`s.
    cmake --build . --config Debug
    ```
 
-6. Test rippled.
+5. Test rippled.
 
    Single-config generators:
 
    ```
-   ./rippled --unittest
+   ./rippled --unittest --unittest-jobs N
    ```
 
    Multi-config generators:
 
    ```
-   ./Release/rippled --unittest
-   ./Debug/rippled --unittest
+   ./Release/rippled --unittest --unittest-jobs N
+   ./Debug/rippled --unittest --unittest-jobs N
    ```
 
-   The location of `rippled` in your build directory depends on your CMake
-   generator. Pass `--help` to see the rest of the command line options.
+   Replace the `--unittest-jobs` parameter N with the desired unit tests
+   concurrency. Recommended setting is half of the number of available CPU
+   cores.
 
+   The location of `rippled` binary in your build directory depends on your
+   CMake generator. Pass `--help` to see the rest of the command line options.
 
 ## Coverage report
 
@@ -356,7 +505,7 @@ variable in `cmake`. The specific command line used to run the `gcovr` tool will
 displayed if the `CODE_COVERAGE_VERBOSE` variable is set.
 
 By default, the code coverage tool runs parallel unit tests with `--unittest-jobs`
- set to the number of available CPU cores. This may cause spurious test
+set to the number of available CPU cores. This may cause spurious test
 errors on Apple. Developers can override the number of unit test jobs with
 the `coverage_test_parallelism` variable in `cmake`.
 
@@ -372,45 +521,56 @@ cmake --build . --target coverage
 After the `coverage` target is completed, the generated coverage report will be
 stored inside the build directory, as either of:
 
-- file named `coverage.`_extension_ , with a suitable extension for the report format, or
+- file named `coverage.`_extension_, with a suitable extension for the report format, or
 - directory named `coverage`, with the `index.html` and other files inside, for the `html-details` or `html-nested` report formats.
-
 
 ## Options
 
-| Option | Default Value | Description |
-| --- | ---| ---|
-| `assert` | OFF | Enable assertions.
-| `coverage` | OFF | Prepare the coverage report. |
-| `san` | N/A | Enable a sanitizer with Clang. Choices are `thread` and `address`. |
-| `tests` | OFF | Build tests. |
-| `unity` | ON | Configure a unity build. |
-| `xrpld` | OFF | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
+| Option     | Default Value | Description                                                                |
+| ---------- | ------------- | -------------------------------------------------------------------------- |
+| `assert`   | OFF           | Enable assertions.                                                         |
+| `coverage` | OFF           | Prepare the coverage report.                                               |
+| `san`      | N/A           | Enable a sanitizer with Clang. Choices are `thread` and `address`.         |
+| `tests`    | OFF           | Build tests.                                                               |
+| `unity`    | OFF           | Configure a unity build.                                                   |
+| `xrpld`    | OFF           | Build the xrpld (`rippled`) application, and not just the libxrpl library. |
+| `werr`     | OFF           | Treat compilation warnings as errors                                       |
+| `wextra`   | OFF           | Enable additional compilation warnings                                     |
 
 [Unity builds][5] may be faster for the first build
 (at the cost of much more memory) since they concatenate sources into fewer
 translation units. Non-unity builds may be faster for incremental builds,
 and can be helpful for detecting `#include` omissions.
 
-
 ## Troubleshooting
-
 
 ### Conan
 
 After any updates or changes to dependencies, you may need to do the following:
 
 1. Remove your build directory.
-2. Remove the Conan cache:
+2. Remove individual libraries from the Conan cache, e.g.
+
+   ```bash
+   conan remove 'grpc/*'
    ```
-   rm -rf ~/.conan/data
+
+   **or**
+
+   Remove all libraries from Conan cache:
+
+   ```bash
+   conan remove '*'
    ```
+
+3. Re-run [conan export](#patched-recipes) if needed.
 4. Re-run [conan install](#build-and-test).
 
+### `protobuf/port_def.inc` file not found
 
-### 'protobuf/port_def.inc' file not found
-
-If `cmake --build .` results in an error due to a missing a protobuf file, then you might have generated CMake files for a different `build_type` than the `CMAKE_BUILD_TYPE` you passed to conan.
+If `cmake --build .` results in an error due to a missing a protobuf file, then
+you might have generated CMake files for a different `build_type` than the
+`CMAKE_BUILD_TYPE` you passed to Conan.
 
 ```
 /rippled/.build/pb-xrpl.libpb/xrpl/proto/ripple.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
@@ -424,69 +584,20 @@ For example, if you want to build Debug:
 1. For conan install, pass `--settings build_type=Debug`
 2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
 
-
-### no std::result_of
-
-If your compiler version is recent enough to have removed `std::result_of` as
-part of C++20, e.g. Apple Clang 15.0, then you might need to add a preprocessor
-definition to your build.
-
-```
-conan profile update 'options.boost:extra_b2_flags="define=BOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"' default
-conan profile update 'conf.tools.build:cflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_HAS_STD_INVOKE_RESULT"]' default
-```
-
-
-### call to 'async_teardown' is ambiguous
-
-If you are compiling with an early version of Clang 16, then you might hit
-a [regression][6] when compiling C++20 that manifests as an [error in a Boost
-header][7]. You can workaround it by adding this preprocessor definition:
-
-```
-conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
-conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-```
-
-
-### recompile with -fPIC
-
-If you get a linker error suggesting that you recompile Boost with
-position-independent code, such as:
-
-```
-/usr/bin/ld.gold: error: /home/username/.conan/data/boost/1.77.0/_/_/package/.../lib/libboost_container.a(alloc_lib.o):
-  requires unsupported dynamic reloc 11; recompile with -fPIC
-```
-
-Conan most likely downloaded a bad binary distribution of the dependency.
-This seems to be a [bug][1] in Conan just for Boost 1.77.0 compiled with GCC
-for Linux. The solution is to build the dependency locally by passing
-`--build boost` when calling `conan install`.
-
-```
-conan install --build boost ...
-```
-
-
 ## Add a Dependency
 
 If you want to experiment with a new package, follow these steps:
 
 1. Search for the package on [Conan Center](https://conan.io/center/).
 2. Modify [`conanfile.py`](./conanfile.py):
-    - Add a version of the package to the `requires` property.
-    - Change any default options for the package by adding them to the
-    `default_options` property (with syntax `'$package:$option': $value`).
+   - Add a version of the package to the `requires` property.
+   - Change any default options for the package by adding them to the
+     `default_options` property (with syntax `'$package:$option': $value`).
 3. Modify [`CMakeLists.txt`](./CMakeLists.txt):
-    - Add a call to `find_package($package REQUIRED)`.
-    - Link a library from the package to the target `ripple_libs`
-    (search for the existing call to `target_link_libraries(ripple_libs INTERFACE ...)`).
+   - Add a call to `find_package($package REQUIRED)`.
+   - Link a library from the package to the target `ripple_libs`
+     (search for the existing call to `target_link_libraries(ripple_libs INTERFACE ...)`).
 4. Start coding! Don't forget to include whatever headers you need from the package.
-
 
 [1]: https://github.com/conan-io/conan-center-index/issues/13168
 [2]: https://en.cppreference.com/w/cpp/compiler_support/20

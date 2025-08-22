@@ -22,7 +22,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
-#include <xrpld/net/RPCCall.h>
+#include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -39,7 +39,7 @@
 #include <google/protobuf/stubs/common.h>
 
 #include <cstdlib>
-#include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <utility>
 

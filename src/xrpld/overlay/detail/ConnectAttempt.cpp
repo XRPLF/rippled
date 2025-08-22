@@ -446,7 +446,7 @@ ConnectAttempt::processResponse()
             ++app_.getPerfLog()
                   .getPeerCounters()
                   .connection.outboundConnectFailSlotsFull;
-            return fail("Outbound slots full");
+            return fail("Outbound " + std::string(to_string(result)));
         }
 
         auto const peer = std::make_shared<PeerImp>(

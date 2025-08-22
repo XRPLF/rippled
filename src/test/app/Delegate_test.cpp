@@ -31,7 +31,7 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test featurePermissionDelegation not enabled");
         using namespace jtx;
 
-        Env env{*this, supported_amendments() - featurePermissionDelegation};
+        Env env{*this, testable_amendments() - featurePermissionDelegation};
         Account gw{"gateway"};
         Account alice{"alice"};
         Account bob{"bob"};
@@ -913,37 +913,6 @@ class Delegate_test : public beast::unit_test::suite
                     gw, gw["USD"](0), alice, tfSetfAuth | tfFullyCanonicalSig),
                 delegate::as(bob));
         }
-
-        // tfInnerBatchTxn won't block delegated transaction
-        {
-            Env env(*this);
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
-            env.fund(XRP(10000), gw, alice, bob);
-            env(fset(gw, asfRequireAuth));
-            env.close();
-            env(trust(alice, gw["USD"](50)));
-            env.close();
-
-            env(delegate::set(
-                gw, bob, {"TrustlineAuthorize", "TrustlineFreeze"}));
-            env.close();
-
-            auto const seq = env.seq(gw);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto jv1 = trust(gw, gw["USD"](0), alice, tfSetfAuth);
-            jv1[sfDelegate] = bob.human();
-            auto jv2 = trust(gw, gw["USD"](0), alice, tfSetFreeze);
-            jv2[sfDelegate] = bob.human();
-
-            // batch::inner will set tfInnerBatchTxn, this should not
-            // block delegated transaction
-            env(batch::outer(gw, seq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, seq + 1),
-                batch::inner(jv2, seq + 2));
-            env.close();
-        }
     }
 
     void
@@ -1234,53 +1203,6 @@ class Delegate_test : public beast::unit_test::suite
             env(jt);
             BEAST_EXPECT((*env.le(alice))[sfDomain] == makeSlice(domain));
         }
-
-        // tfInnerBatchTxn won't block delegated transaction
-        {
-            Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            env.fund(XRP(10000), alice, bob);
-            env.close();
-
-            env(delegate::set(
-                alice, bob, {"AccountDomainSet", "AccountEmailHashSet"}));
-            env.close();
-
-            auto const seq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 0, 3);
-
-            auto jv1 = noop(alice);
-            std::string const domain1 = "example1.com";
-            jv1[sfDomain] = strHex(domain1);
-            jv1[sfDelegate] = bob.human();
-            jv1[sfSequence] = seq + 1;
-
-            auto jv2 = noop(alice);
-            std::string const domain2 = "example2.com";
-            jv2[sfDomain] = strHex(domain2);
-            jv2[sfDelegate] = bob.human();
-            jv2[sfSequence] = seq + 2;
-
-            // bob set domain back and add email hash for alice
-            auto jv3 = noop(alice);
-            std::string const mh("5F31A79367DC3137FADA860C05742EE6");
-            jv3[sfDomain] = strHex(domain1);
-            jv3[sfEmailHash] = mh;
-            jv3[sfDelegate] = bob.human();
-            jv3[sfSequence] = seq + 3;
-
-            // batch::inner will set tfInnerBatchTxn, this should not
-            // block delegated transaction
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, seq + 1),
-                batch::inner(jv2, seq + 2),
-                batch::inner(jv3, seq + 3));
-            env.close();
-
-            BEAST_EXPECT((*env.le(alice))[sfDomain] == makeSlice(domain1));
-            BEAST_EXPECT(to_string((*env.le(alice))[sfEmailHash]) == mh);
-        }
     }
 
     void
@@ -1410,52 +1332,6 @@ class Delegate_test : public beast::unit_test::suite
                 {.account = alice,
                  .flags = tfMPTLock | tfFullyCanonicalSig,
                  .delegate = bob});
-        }
-
-        // tfInnerBatchTxn won't block delegated transaction
-        {
-            Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            env.fund(XRP(100000), alice, bob);
-            env.close();
-
-            auto const mptID = makeMptID(env.seq(alice), alice);
-            MPTTester mpt(env, alice, {.fund = false});
-            env.close();
-            mpt.create({.flags = tfMPTCanLock});
-            env.close();
-
-            // alice gives granular permission to bob of MPTokenIssuanceLock
-            env(delegate::set(
-                alice, bob, {"MPTokenIssuanceLock", "MPTokenIssuanceUnlock"}));
-            env.close();
-
-            auto const seq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
-
-            Json::Value jv1;
-            jv1[sfTransactionType] = jss::MPTokenIssuanceSet;
-            jv1[sfAccount] = alice.human();
-            jv1[sfDelegate] = bob.human();
-            jv1[sfSequence] = seq + 1;
-            jv1[sfMPTokenIssuanceID] = to_string(mptID);
-            jv1[sfFlags] = tfMPTLock;
-
-            Json::Value jv2;
-            jv2[sfTransactionType] = jss::MPTokenIssuanceSet;
-            jv2[sfAccount] = alice.human();
-            jv2[sfDelegate] = bob.human();
-            jv2[sfSequence] = seq + 2;
-            jv2[sfMPTokenIssuanceID] = to_string(mptID);
-            jv2[sfFlags] = tfMPTUnlock;
-
-            // batch::inner will set tfInnerBatchTxn, this should not
-            // block delegated transaction
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(jv1, seq + 1),
-                batch::inner(jv2, seq + 2));
-            env.close();
         }
     }
 

@@ -24,7 +24,6 @@
 
 #include <boost/container/flat_map.hpp>
 
-#include <array>
 #include <bitset>
 #include <map>
 #include <optional>
@@ -54,6 +53,18 @@
  *    then change the macro parameter in features.macro to
  *    `VoteBehavior::DefaultYes`. The communication process is beyond
  *    the scope of these instructions.
+
+ * 5) If a supported feature (`Supported::yes`) was _ever_ in a released
+ *     version, it can never be changed back to `Supported::no`, because
+ *     it _may_ still become enabled at any time. This would cause newer
+ *     versions of `rippled` to become amendment blocked.
+ *     Instead, to prevent newer versions from voting on the feature, use
+ *     `VoteBehavior::Obsolete`. Obsolete features can not be voted for
+ *     by any versions of `rippled` built with that setting, but will still
+ *     work correctly if they get enabled. If a feature remains obsolete
+ *     for long enough that _all_ clients that could vote for it are
+ *     amendment blocked, the feature can be removed from the code
+ *     as if it was unsupported.
  *
  *
  * When a feature has been enabled for several years, the conditional code

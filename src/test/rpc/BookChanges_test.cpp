@@ -94,7 +94,7 @@ public:
         using namespace jtx;
 
         FeatureBitset const all{
-            jtx::supported_amendments() | featurePermissionedDomains |
+            jtx::testable_amendments() | featurePermissionedDomains |
             featureCredentials | featurePermissionedDEX};
 
         Env env(*this, all);
@@ -143,7 +143,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(BookChanges, app, ripple);
+BEAST_DEFINE_TESTSUITE(BookChanges, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

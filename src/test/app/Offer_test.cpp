@@ -1343,18 +1343,10 @@ public:
 
         // NOTE :
         // At this point, all offers are expected to be consumed.
-        // Alas, they are not - because of a bug in the Taker auto-bridging
-        // implementation which is addressed by fixTakerDryOfferRemoval.
-        // The pre-fixTakerDryOfferRemoval implementation (incorrect) leaves
-        // an empty offer in the second leg of the bridge. Validate both the
-        // old and the new behavior.
         {
             auto acctOffers = offersOnAccount(env, account_to_test);
-            bool const noStaleOffers{
-                features[featureFlowCross] ||
-                features[fixTakerDryOfferRemoval]};
 
-            BEAST_EXPECT(acctOffers.size() == (noStaleOffers ? 0 : 1));
+            BEAST_EXPECT(acctOffers.size() == 0);
             for (auto const& offerPtr : acctOffers)
             {
                 auto const& offer = *offerPtr;
@@ -1464,8 +1456,7 @@ public:
             std::uint32_t const bobOfferSeq = env.seq(bob);
             env(offer(bob, XRP(2000), USD(1)));
 
-            if (localFeatures[featureFlowCross] &&
-                localFeatures[fixReducedOffersV2])
+            if (localFeatures[fixReducedOffersV2])
             {
                 // With the rounding introduced by fixReducedOffersV2, bob's
                 // offer does not cross alice's offer and goes straight into
@@ -1489,8 +1480,7 @@ public:
             // crossing algorithms becomes apparent.  The old offer crossing
             // would consume small_amount and transfer no XRP.  The new offer
             // crossing transfers a single drop, rather than no drops.
-            auto const crossingDelta =
-                localFeatures[featureFlowCross] ? drops(1) : drops(0);
+            auto const crossingDelta = drops(1);
 
             jrr = ledgerEntryState(env, alice, gw, "USD");
             BEAST_EXPECT(
@@ -2044,15 +2034,9 @@ public:
 
         env.require(balance(carol, USD(0)));
         env.require(balance(carol, EUR(none)));
-        // If neither featureFlowCross nor fixTakerDryOfferRemoval are defined
-        // then carol's offer will be left on the books, but with zero value.
-        int const emptyOfferCount{
-            features[featureFlowCross] || features[fixTakerDryOfferRemoval]
-                ? 0
-                : 1};
 
-        env.require(offers(carol, 0 + emptyOfferCount));
-        env.require(owners(carol, 1 + emptyOfferCount));
+        env.require(offers(carol, 0));
+        env.require(owners(carol, 1));
     }
 
     void
@@ -3643,9 +3627,7 @@ public:
 
         using namespace jtx;
 
-        // The problem was identified when featureOwnerPaysFee was enabled,
-        // so make sure that gets included.
-        Env env{*this, features | featureOwnerPaysFee};
+        Env env{*this, features};
 
         // The fee that's charged for transactions.
         auto const fee = env.current()->fees().base;
@@ -4238,21 +4220,12 @@ public:
         };
 
         // clang-format off
-        TestData const takerTests[]{
-            //      btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-            {0, 0, 1, BTC(5), {{"deb", 0, drops(3900000'000000 - 4 * baseFee), BTC(5), USD(3000)}, {"dan", 0, drops(4100000'000000 - 3 * baseFee), BTC(0), USD(750)}}}, // no BTC xfer fee
-            {0, 0, 0, BTC(5), {{"flo", 0, drops(4000000'000000 - 5 * baseFee), BTC(5), USD(2000)}                                                    }}  // no xfer fee
-        };
-
-        TestData const flowTests[]{
+        TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
             {0, 0, 1, BTC(5), {{"gay", 1, drops(3950000'000000 - 4 * baseFee), BTC(5), USD(2500)}, {"gar", 1, drops(4050000'000000 - 3 * baseFee), BTC(0), USD(1375)}}}, // no BTC xfer fee
             {0, 0, 0, BTC(5), {{"hye", 2, drops(4000000'000000 - 5 * baseFee), BTC(5), USD(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
-
-        // Pick the right tests.
-        auto const& tests = features[featureFlowCross] ? flowTests : takerTests;
 
         for (auto const& t : tests)
         {
@@ -4380,9 +4353,8 @@ public:
         // 1. alice creates an offer to acquire USD/gw, an asset for which
         //    she does not have a trust line.  At some point in the future,
         //    gw adds lsfRequireAuth.  Then, later, alice's offer is crossed.
-        //     a. With Taker alice's unauthorized offer is consumed.
-        //     b. With FlowCross  alice's offer is deleted, not consumed,
-        //        since alice is not authorized to hold USD/gw.
+        //     Alice's offer is deleted, not consumed, since alice is not
+        //     authorized to hold USD/gw.
         //
         // 2. alice tries to create an offer for USD/gw, now that gw has
         //    lsfRequireAuth set.  This time the offer create fails because
@@ -4430,33 +4402,17 @@ public:
         // gw now requires authorization and bob has gwUSD(50).  Let's see if
         // bob can cross alice's offer.
         //
-        // o With Taker bob's offer should cross alice's.
-        // o With FlowCross bob's offer shouldn't cross and alice's
-        //   unauthorized offer should be deleted.
+        // Bob's offer shouldn't cross and alice's unauthorized offer should be
+        // deleted.
         env(offer(bob, XRP(4000), gwUSD(40)));
         env.close();
         std::uint32_t const bobOfferSeq = env.seq(bob) - 1;
 
-        bool const flowCross = features[featureFlowCross];
-
         env.require(offers(alice, 0));
-        if (flowCross)
-        {
-            // alice's unauthorized offer is deleted & bob's offer not crossed.
-            env.require(balance(alice, gwUSD(none)));
-            env.require(offers(bob, 1));
-            env.require(balance(bob, gwUSD(50)));
-        }
-        else
-        {
-            // alice's offer crosses bob's
-            env.require(balance(alice, gwUSD(40)));
-            env.require(offers(bob, 0));
-            env.require(balance(bob, gwUSD(10)));
-
-            // The rest of the test verifies FlowCross behavior.
-            return;
-        }
+        // alice's unauthorized offer is deleted & bob's offer not crossed.
+        env.require(balance(alice, gwUSD(none)));
+        env.require(offers(bob, 1));
+        env.require(balance(bob, gwUSD(50)));
 
         // See if alice can create an offer without authorization.  alice
         // should not be able to create the offer and bob's offer should be
@@ -5188,9 +5144,7 @@ public:
         // tfFillOrKill, TakerPays must be filled
         {
             TER const err =
-                features[fixFillOrKill] || !features[featureFlowCross]
-                ? TER(tesSUCCESS)
-                : tecKILLED;
+                features[fixFillOrKill] ? TER(tesSUCCESS) : tecKILLED;
 
             env(offer(maker, XRP(100), USD(100)));
             env.close();
@@ -5411,8 +5365,7 @@ public:
     run(std::uint32_t instance, bool last = false)
     {
         using namespace jtx;
-        static FeatureBitset const all{supported_amendments()};
-        static FeatureBitset const flowCross{featureFlowCross};
+        static FeatureBitset const all{testable_amendments()};
         static FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         static FeatureBitset const rmSmallIncreasedQOffers{
             fixRmSmallIncreasedQOffers};
@@ -5421,10 +5374,9 @@ public:
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
-        static std::array<FeatureBitset, 7> const feats{
+        static std::array<FeatureBitset, 6> const feats{
             all - takerDryOffer - immediateOfferKilled - permDEX,
-            all - flowCross - takerDryOffer - immediateOfferKilled - permDEX,
-            all - flowCross - immediateOfferKilled - permDEX,
+            all - immediateOfferKilled - permDEX,
             all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill -
                 permDEX,
             all - fillOrKill - permDEX,
@@ -5446,7 +5398,7 @@ public:
     }
 };
 
-class OfferWOFlowCross_test : public OfferBaseUtil_test
+class OfferWTakerDryOffer_test : public OfferBaseUtil_test
 {
     void
     run() override
@@ -5455,7 +5407,7 @@ class OfferWOFlowCross_test : public OfferBaseUtil_test
     }
 };
 
-class OfferWTakerDryOffer_test : public OfferBaseUtil_test
+class OfferWOSmallQOffers_test : public OfferBaseUtil_test
 {
     void
     run() override
@@ -5464,7 +5416,7 @@ class OfferWTakerDryOffer_test : public OfferBaseUtil_test
     }
 };
 
-class OfferWOSmallQOffers_test : public OfferBaseUtil_test
+class OfferWOFillOrKill_test : public OfferBaseUtil_test
 {
     void
     run() override
@@ -5473,7 +5425,7 @@ class OfferWOSmallQOffers_test : public OfferBaseUtil_test
     }
 };
 
-class OfferWOFillOrKill_test : public OfferBaseUtil_test
+class OfferWOPermDEX_test : public OfferBaseUtil_test
 {
     void
     run() override
@@ -5482,21 +5434,12 @@ class OfferWOFillOrKill_test : public OfferBaseUtil_test
     }
 };
 
-class OfferWOPermDEX_test : public OfferBaseUtil_test
-{
-    void
-    run() override
-    {
-        OfferBaseUtil_test::run(5);
-    }
-};
-
 class OfferAllFeatures_test : public OfferBaseUtil_test
 {
     void
     run() override
     {
-        OfferBaseUtil_test::run(6, true);
+        OfferBaseUtil_test::run(5, true);
     }
 };
 
@@ -5506,33 +5449,30 @@ class Offer_manual_test : public OfferBaseUtil_test
     run() override
     {
         using namespace jtx;
-        FeatureBitset const all{supported_amendments()};
-        FeatureBitset const flowCross{featureFlowCross};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const f1513{fix1513};
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
-        testAll(all - flowCross - f1513 - immediateOfferKilled - permDEX);
-        testAll(all - flowCross - immediateOfferKilled - permDEX);
+        testAll(all - f1513 - immediateOfferKilled - permDEX);
         testAll(all - immediateOfferKilled - fillOrKill - permDEX);
         testAll(all - fillOrKill - permDEX);
         testAll(all - permDEX);
         testAll(all);
 
-        testAll(all - flowCross - takerDryOffer - permDEX);
+        testAll(all - takerDryOffer - permDEX);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFlowCross, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferWOPermDEX, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, tx, ripple, 2);
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOPermDEX, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, app, ripple, 20);
 
 }  // namespace test
 }  // namespace ripple
