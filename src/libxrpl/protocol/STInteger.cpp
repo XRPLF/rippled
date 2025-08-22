@@ -62,8 +62,10 @@ STUInt8::getText() const
         if (transResultInfo(TER::fromInt(value_), token, human))
             return human;
 
+        // LCOV_EXCL_START
         JLOG(debugLog().error())
             << "Unknown result code in metadata: " << value_;
+        // LCOV_EXCL_STOP
     }
 
     return std::to_string(value_);
@@ -80,8 +82,10 @@ STUInt8::getJson(JsonOptions) const
         if (transResultInfo(TER::fromInt(value_), token, human))
             return token;
 
+        // LCOV_EXCL_START
         JLOG(debugLog().error())
             << "Unknown result code in metadata: " << value_;
+        // LCOV_EXCL_STOP
     }
 
     return value_;
@@ -171,6 +175,26 @@ template <>
 std::string
 STUInt32::getText() const
 {
+    if (getFName() == sfPermissionValue)
+    {
+        auto const permissionValue =
+            static_cast<GranularPermissionType>(value_);
+        auto const granular =
+            Permission::getInstance().getGranularName(permissionValue);
+
+        if (granular)
+        {
+            return *granular;
+        }
+        else
+        {
+            auto const txType =
+                Permission::getInstance().permissionToTxType(value_);
+            auto item = TxFormats::getInstance().findByType(txType);
+            if (item != nullptr)
+                return item->getName();
+        }
+    }
     return std::to_string(value_);
 }
 
