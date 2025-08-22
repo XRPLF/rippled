@@ -62,6 +62,11 @@ public:
         beast::Journal::enableStructuredJournal(&structuredJournal);
     }
 
+    ~JsonLogStreamFixture()
+    {
+        beast::Journal::disableStructuredJournal();
+    }
+
     std::stringstream&
     stream()
     {
@@ -82,7 +87,12 @@ private:
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
 {
-    journal().debug() << "Test";
+    journal().debug() << std::boolalpha
+                    << true
+                    << std::noboolalpha
+                    << " Test "
+                    << std::boolalpha
+                    << false;
 
     Json::Value logValue;
     Json::Reader reader;
@@ -103,7 +113,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
     CHECK(logValue["Line"].isNumeric());
     CHECK(logValue["Params"].isNull());
     CHECK(logValue["Message"].isString());
-    CHECK(logValue["Message"].asString() == "Test");
+    CHECK(logValue["Message"].asString() == "true Test false");
 }
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")

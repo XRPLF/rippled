@@ -81,7 +81,46 @@ public:
     }
 };
 
-TEST_CASE("Enable Json Logs")
+TEST_CASE("Text logs")
+{
+    std::stringstream logStream;
+
+    MockLogs logs{logStream, beast::severities::kAll};
+
+    logs.journal("Test").debug() << "Test";
+
+    CHECK(logStream.str().find("Test") != std::string::npos);
+
+    logStream.str("");
+
+    logs.journal("Test").debug() << "\n";
+
+    CHECK(logStream.str().find("\n") == std::string::npos);
+}
+
+
+TEST_CASE("Test format output")
+{
+    std::string output;
+    Logs::format(output, "Message", beast::severities::kDebug, "Test");
+    CHECK(output.find("Message") != std::string::npos);
+    CHECK(output != "Message");
+}
+
+TEST_CASE("Test format output when structured logs are enabled")
+{
+    static log::JsonStructuredJournal structuredJournal;
+    beast::Journal::enableStructuredJournal(&structuredJournal);
+
+    std::string output;
+    Logs::format(output, "Message", beast::severities::kDebug, "Test");
+
+    CHECK(output == "Message");
+
+    beast::Journal::disableStructuredJournal();
+}
+
+TEST_CASE("Enable json logs")
 {
     static log::JsonStructuredJournal structuredJournal;
 
@@ -97,7 +136,7 @@ TEST_CASE("Enable Json Logs")
 
     beast::Journal::enableStructuredJournal(&structuredJournal);
 
-    logs.journal("Test").debug() << "Test";
+    logs.journal("Test").debug() << "\n";
 
     Json::Reader reader;
     Json::Value jsonLog;
@@ -108,7 +147,8 @@ TEST_CASE("Enable Json Logs")
     CHECK(jsonLog.isObject());
     CHECK(jsonLog.isMember("Message"));
     CHECK(jsonLog["Message"].isString());
-    CHECK(jsonLog["Message"].asString() == "Test");
+    CHECK(jsonLog["Message"].asString() == "");
+    beast::Journal::disableStructuredJournal();
 }
 
 TEST_CASE("Global attributes")
@@ -134,6 +174,7 @@ TEST_CASE("Global attributes")
     CHECK(jsonLog.isMember("Field1"));
     CHECK(jsonLog["Field1"].isString());
     CHECK(jsonLog["Field1"].asString() == "Value1");
+    beast::Journal::disableStructuredJournal();
 }
 
 TEST_CASE("Global attributes inheritable")
@@ -166,4 +207,5 @@ TEST_CASE("Global attributes inheritable")
     CHECK(jsonLog["Field1"].asString() == "Value3");
     CHECK(jsonLog["Field2"].isString());
     CHECK(jsonLog["Field2"].asString() == "Value2");
+    beast::Journal::disableStructuredJournal();
 }
