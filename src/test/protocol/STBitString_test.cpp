@@ -28,57 +28,61 @@ struct STBitString_test : public beast::unit_test::suite
     testConstructionAndBasics()
     {
         testcase("Construction and Basics");
+        auto isZero = [](auto const& bs) {
+            return std::all_of(
+                bs.begin(), bs.end(), [](auto b) { return b == 0; });
+        };
 
         // Test STBitString<128>
         {
             STBitString<128> bits128;
-            BEAST_EXPECT(bits128.isZero());
+            BEAST_EXPECT(isZero(bits128.getBitString()));
             BEAST_EXPECT(bits128.size() == 16);
 
             // Set a bit and check
             auto data = bits128.getBitString();
             data[0] = 0x80;  // set highest bit
             STBitString<128> bits128b(data);
-            BEAST_EXPECT(!bits128b.isZero());
+            BEAST_EXPECT(!isZero(bits128b));
             BEAST_EXPECT(bits128b.getBitString()[0] == 0x80);
         }
 
         // Test STBitString<160>
         {
             STBitString<160> bits160;
-            BEAST_EXPECT(bits160.isZero());
+            BEAST_EXPECT(isZero(bits160));
             BEAST_EXPECT(bits160.size() == 20);
 
             auto data = bits160.getBitString();
             data[19] = 0x01;  // set lowest bit
             STBitString<160> bits160b(data);
-            BEAST_EXPECT(!bits160b.isZero());
+            BEAST_EXPECT(!isZero(bits160b));
             BEAST_EXPECT(bits160b.getBitString()[19] == 0x01);
         }
 
         // Test STBitString<192>
         {
             STBitString<192> bits192;
-            BEAST_EXPECT(bits192.isZero());
+            BEAST_EXPECT(isZero(bits192));
             BEAST_EXPECT(bits192.size() == 24);
 
             auto data = bits192.getBitString();
             data[12] = 0xAB;
             STBitString<192> bits192b(data);
-            BEAST_EXPECT(!bits192b.isZero());
+            BEAST_EXPECT(!isZero(bits192b));
             BEAST_EXPECT(bits192b.getBitString()[12] == 0xAB);
         }
 
         // Test STBitString<256>
         {
             STBitString<256> bits256;
-            BEAST_EXPECT(bits256.isZero());
+            BEAST_EXPECT(isZero(bits256));
             BEAST_EXPECT(bits256.size() == 32);
 
             auto data = bits256.getBitString();
             std::fill(data.begin(), data.end(), 0xFF);
             STBitString<256> bits256b(data);
-            BEAST_EXPECT(!bits256b.isZero());
+            BEAST_EXPECT(!isZero(bits256b));
             for (auto b : bits256b.getBitString())
                 BEAST_EXPECT(b == 0xFF);
         }
