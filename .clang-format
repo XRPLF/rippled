@@ -97,9 +97,6 @@ TabWidth: 8
 UseTab: Never
 QualifierAlignment: Right
 ---
-Language: Json
-IndentWidth: 2
----
 Language: Proto
 BasedOnStyle: Google
 ColumnLimit: 0
