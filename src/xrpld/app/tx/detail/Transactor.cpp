@@ -1337,6 +1337,8 @@ Transactor::operator()()
         applied = false;
     }
 
+    ctx_.finalize();
+
     JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);
 

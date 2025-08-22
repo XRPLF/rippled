@@ -47,13 +47,21 @@ ApplyContext::ApplyContext(
     XRPL_ASSERT(
         parentTxId_.has_value() == ((flags_ & tapGENERATED) == tapGENERATED),
         "Parent Transaction ID should be set if generated apply flag is set");
-    view_.emplace(&base_, flags_);
+    view_.emplace(&base_.view(), flags_);
 }
 
 void
 ApplyContext::discard()
 {
-    view_.emplace(&base_, flags_);
+    base_.discard();
+    view_.emplace(&base_.view(), flags_);
+}
+
+void
+ApplyContext::finalize()
+{
+    base_.commit();
+    view_.emplace(&base_.view(), flags_);
 }
 
 std::optional<TxMeta>
@@ -65,7 +73,7 @@ ApplyContext::apply(TER ter)
     }
     view_->setGasUsed(gasUsed_);
     return view_->apply(
-        base_, tx, ter, parentTxId_, flags_ & tapDRY_RUN, journal);
+        base_.view(), tx, ter, parentTxId_, flags_ & tapDRY_RUN, journal);
 }
 
 std::size_t
@@ -81,7 +89,7 @@ ApplyContext::visit(std::function<void(
                         std::shared_ptr<SLE const> const&,
                         std::shared_ptr<SLE const> const&)> const& func)
 {
-    view_->visit(base_, func);
+    view_->visit(base_.view(), func);
 }
 
 TER

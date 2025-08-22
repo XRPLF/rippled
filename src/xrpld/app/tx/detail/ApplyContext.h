@@ -23,6 +23,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
+#include <xrpld/ledger/OpenViewSandbox.h>
 
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STTx.h>
@@ -78,7 +79,7 @@ public:
     OpenView&
     openView()
     {
-        return base_;
+        return base_.view();
     }
 
     ApplyView&
@@ -131,6 +132,10 @@ public:
     void
     discard();
 
+    /** Finalize changes. */
+    void
+    finalize();
+
     /** Apply the transaction result to the base. */
     std::optional<TxMeta> apply(TER);
 
@@ -172,7 +177,7 @@ private:
         XRPAmount const fee,
         std::index_sequence<Is...>);
 
-    OpenView& base_;
+    OpenViewSandbox base_;
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
 
