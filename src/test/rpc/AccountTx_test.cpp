@@ -559,7 +559,7 @@ class AccountTx_test : public beast::unit_test::suite
             env.close();
         }
         {
-            // Deposit preauthorization with a Ticket.
+            // Deposit pre-authorization with a Ticket.
             std::uint32_t const tktSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 1), sig(alie));
             env.close();

@@ -254,7 +254,7 @@ LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, ({
     {sfAdditionalBooks,      soeOPTIONAL},
 }))
 
-/** A ledger object which describes a deposit preauthorization.
+/** A ledger object which describes a deposit pre-authorization.
 
     \sa keylet::depositPreauth
  */

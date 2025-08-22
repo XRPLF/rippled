@@ -34,7 +34,7 @@ namespace deposit {
 Json::Value
 auth(Account const& account, Account const& auth);
 
-/** Remove preauthorization for deposit.  Invoke as deposit::unauth. */
+/** Remove pre-authorization for deposit.  Invoke as deposit::unauth. */
 Json::Value
 unauth(Account const& account, Account const& unauth);
 

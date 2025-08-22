@@ -1822,7 +1822,7 @@ class MPToken_test : public beast::unit_test::suite
             // alice authorizes bob to hold funds
             mptAlice.authorize({.account = alice, .holder = bob});
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
@@ -1901,7 +1901,7 @@ class MPToken_test : public beast::unit_test::suite
             // alice authorizes bob to hold funds
             mptAlice.authorize({.account = alice, .holder = bob});
 
-            // Bob require preauthorization
+            // Bob require pre-authorization
             env(fset(bob, asfDepositAuth));
             env.close();
 
