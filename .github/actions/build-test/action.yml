@@ -6,26 +6,26 @@ name: Build and Test
 # https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
 inputs:
   build_dir:
-    description: 'The directory where to build.'
+    description: "The directory where to build."
     required: true
   build_only:
     description: 'Whether to only build or to build and test the code ("true", "false").'
     required: false
-    default: 'false'
+    default: "false"
   build_type:
     description: 'The build type to use ("Debug", "Release").'
     required: true
   cmake_args:
-    description: 'Additional arguments to pass to CMake.'
+    description: "Additional arguments to pass to CMake."
     required: false
-    default: ''
+    default: ""
   cmake_target:
-    description: 'The CMake target to build.'
+    description: "The CMake target to build."
     required: true
   codecov_token:
-    description: 'The Codecov token to use for uploading coverage reports.'
+    description: "The Codecov token to use for uploading coverage reports."
     required: false
-    default: ''
+    default: ""
   os:
     description: 'The operating system to use for the build ("linux", "macos", "windows").'
     required: true
