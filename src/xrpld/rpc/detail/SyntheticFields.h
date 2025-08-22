@@ -35,7 +35,7 @@ namespace RPC {
 struct JsonContext;
 
 /**
-   Adds all synthetic fields to transaction-related JSON responses.
+   Adds all synthetic fields to transaction metadata JSON.
    This includes delivered amount, NFT synthetic fields, and MPToken issuance
    ID.
 
@@ -43,14 +43,14 @@ struct JsonContext;
  */
 void
 insertAllSyntheticInJson(
-    Json::Value&,
+    Json::Value& metadata,
     ReadView const&,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);
 
 void
 insertAllSyntheticInJson(
-    Json::Value&,
+    Json::Value& metadata,
     JsonContext const&,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);

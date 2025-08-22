@@ -32,12 +32,12 @@ namespace RPC {
 
 void
 insertNFTSyntheticInJson(
-    Json::Value& response,
+    Json::Value& metadata,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
-    insertNFTokenID(response[jss::meta], transaction, transactionMeta);
-    insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
+    insertNFTokenID(metadata, transaction, transactionMeta);
+    insertNFTokenOfferID(metadata, transaction, transactionMeta);
 }
 
 }  // namespace RPC

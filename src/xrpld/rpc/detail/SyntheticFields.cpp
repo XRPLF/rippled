@@ -30,28 +30,26 @@ namespace RPC {
 
 void
 insertAllSyntheticInJson(
-    Json::Value& response,
+    Json::Value& metadata,
     ReadView const& ledger,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
-    insertDeliveredAmount(
-        response[jss::meta], ledger, transaction, transactionMeta);
-    insertNFTSyntheticInJson(response, transaction, transactionMeta);
-    insertMPTokenIssuanceID(response[jss::meta], transaction, transactionMeta);
+    insertDeliveredAmount(metadata, ledger, transaction, transactionMeta);
+    insertNFTSyntheticInJson(metadata, transaction, transactionMeta);
+    insertMPTokenIssuanceID(metadata, transaction, transactionMeta);
 }
 
 void
 insertAllSyntheticInJson(
-    Json::Value& response,
+    Json::Value& metadata,
     JsonContext const& context,
     std::shared_ptr<STTx const> const& transaction,
     TxMeta const& transactionMeta)
 {
-    insertDeliveredAmount(
-        response[jss::meta], context, transaction, transactionMeta);
-    insertNFTSyntheticInJson(response, transaction, transactionMeta);
-    insertMPTokenIssuanceID(response[jss::meta], transaction, transactionMeta);
+    insertDeliveredAmount(metadata, context, transaction, transactionMeta);
+    insertNFTSyntheticInJson(metadata, transaction, transactionMeta);
+    insertMPTokenIssuanceID(metadata, transaction, transactionMeta);
 }
 
 }  // namespace RPC

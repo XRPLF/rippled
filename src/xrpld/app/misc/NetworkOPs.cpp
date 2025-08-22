@@ -3268,7 +3268,8 @@ NetworkOPsImp::transJson(
     if (meta)
     {
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
-        RPC::insertAllSyntheticInJson(jvObj, *ledger, transaction, meta->get());
+        RPC::insertAllSyntheticInJson(
+            jvObj[jss::meta], *ledger, transaction, meta->get());
     }
 
     // add CTID where the needed data for it exists

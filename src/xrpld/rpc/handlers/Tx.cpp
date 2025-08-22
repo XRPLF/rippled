@@ -267,7 +267,8 @@ populateJsonResponse(
             if (meta)
             {
                 response[jss::meta] = meta->getJson(JsonOptions::none);
-                RPC::insertAllSyntheticInJson(response, context, sttx, *meta);
+                RPC::insertAllSyntheticInJson(
+                    response[jss::meta], context, sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;
