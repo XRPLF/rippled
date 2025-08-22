@@ -27,8 +27,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/NFTokenID.h>
-#include <xrpl/protocol/NFTokenOfferID.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -167,12 +166,8 @@ fillJsonTx(
                 {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
 
             // If applicable, insert nftoken synthetic fields
-            insertNFTokenID(
-                txJson[jss::meta],
-                txn,
-                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            insertNFTokenOfferID(
-                txJson[jss::meta],
+            RPC::insertNFTSyntheticInJson(
+                txJson,
                 txn,
                 {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
@@ -214,12 +209,8 @@ fillJsonTx(
                 {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
 
             // If applicable, insert nftoken synthetic fields
-            insertNFTokenID(
-                txJson[jss::metaData],
-                txn,
-                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
-            insertNFTokenOfferID(
-                txJson[jss::metaData],
+            RPC::insertNFTSyntheticInJson(
+                txJson,
                 txn,
                 {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
