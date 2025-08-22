@@ -90,6 +90,12 @@ public:
         m_structuredJournalImpl = impl;
     }
 
+    static void
+    disableStructuredJournal()
+    {
+        m_structuredJournalImpl = nullptr;
+    }
+
     static bool
     isStructuredJournalEnabled()
     {
