@@ -25,6 +25,7 @@
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/overlay/detail/PeerSink.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
@@ -60,9 +61,6 @@ public:
 private:
     using clock_type = std::chrono::steady_clock;
     using error_code = boost::system::error_code;
-    using socket_type = boost::asio::ip::tcp::socket;
-    using middle_type = boost::beast::tcp_stream;
-    using stream_type = boost::beast::ssl_stream<middle_type>;
     using address_type = boost::asio::ip::address;
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using waitable_timer =
@@ -75,9 +73,7 @@ private:
     beast::WrappedSink p_sink_;
     beast::Journal const journal_;
     beast::Journal const p_journal_;
-    std::unique_ptr<stream_type> stream_ptr_;
-    socket_type& socket_;
-    stream_type& stream_;
+    PeerSink peerSink_;
     boost::asio::strand<boost::asio::executor> strand_;
     waitable_timer timer_;
 
@@ -95,7 +91,6 @@ private:
 
     std::atomic<Tracking> tracking_;
     clock_type::time_point trackingTime_;
-    bool detaching_ = false;
     // Node public key of peer.
     PublicKey const publicKey_;
     std::string name_;
@@ -243,7 +238,7 @@ public:
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         Resource::Consumer consumer,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        PeerSink&& peerSink,
         OverlayImpl& overlay);
 
     /** Create outgoing, handshaked peer. */
@@ -251,7 +246,7 @@ public:
     template <class Buffers>
     PeerImp(
         Application& app,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        PeerSink&& peerSink,
         Buffers const& buffers,
         std::shared_ptr<PeerFinder::Slot>&& slot,
         http_response_type&& response,
@@ -425,9 +420,6 @@ public:
     bool
     isHighLatency() const override;
 
-    void
-    fail(std::string const& reason);
-
     bool
     compressionEnabled() const override
     {
@@ -441,20 +433,62 @@ public:
     }
 
 private:
-    void
-    close();
-
+    /** @brief Closes the connection and logs the reason for failure.
+     *
+     * @param name A string identifying the operation or context of the failure.
+     * @param ec The `error_code` associated with the failure.
+     * @note This operation is idempotent; calling it on an already closed
+     * socket has no effect.
+     * @note Must be called on the peer's strand.
+     */
     void
     fail(std::string const& name, error_code ec);
 
+    /** @brief Closes the connection and logs a descriptive reason.
+     *
+     * @param reason A human-readable string explaining why the peer connection
+     * is being terminated.
+     * @note This operation is idempotent; calling it on an already closed
+     * socket has no effect.
+     * @note Must be called on the peer's strand.
+     */
+    void
+    fail(std::string const& reason);
+
+    /** @brief Forcibly terminates the peer connection and performs cleanup.
+     *
+     * This function terminates the peer connection. It performs graceful SSL
+     * shutdown, closes the underlying network socket and cancels pending
+     * timers.
+     *
+     * @note This operation is idempotent; it's safe to call on a connection
+     * that is already closed.
+     * @note Must be called on the peer's strand.
+     */
+    void
+    close();
+
+    /** @brief Initiates a graceful shutdown of the peer connection.
+     *
+     * This function marks the connection for closure. A "graceful" close
+     * ensures that any messages already queued for sending are transmitted
+     * before the underlying socket is closed. The connection may still be
+     * terminated forcefully if the remote server stopped reading the messages.
+     *
+     *
+     * If the send queue is empty, the connection is closed immediately. If
+     * messages are still pending, the actual socket closure is deferred until
+     * the send queue is drained by the I/O processing logic.
+     *
+     * @note This operation is idempotent; calling it on a connection that is
+     * already closed or in the process of closing has no effect.
+     * @note Must be called on the peer's strand.
+     */
     void
     gracefulClose();
 
     void
     setTimer();
-
-    void
-    cancelTimer();
 
     static std::string
     makePrefix(id_t id);
@@ -462,10 +496,6 @@ private:
     // Called when the timer wait completes
     void
     onTimer(boost::system::error_code const& ec);
-
-    // Called when SSL shutdown completes
-    void
-    onShutdown(error_code ec);
 
     void
     doAccept();
@@ -650,7 +680,7 @@ private:
 template <class Buffers>
 PeerImp::PeerImp(
     Application& app,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    PeerSink&& peerSink,
     Buffers const& buffers,
     std::shared_ptr<PeerFinder::Slot>&& slot,
     http_response_type&& response,
@@ -666,11 +696,9 @@ PeerImp::PeerImp(
     , p_sink_(app_.journal("Protocol"), makePrefix(id))
     , journal_(sink_)
     , p_journal_(p_sink_)
-    , stream_ptr_(std::move(stream_ptr))
-    , socket_(stream_ptr_->next_layer().socket())
-    , stream_(*stream_ptr_)
-    , strand_(socket_.get_executor())
-    , timer_(waitable_timer{socket_.get_executor()})
+    , peerSink_(std::move(peerSink))
+    , strand_(peerSink_.get_executor())
+    , timer_(waitable_timer{strand_})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(false)
@@ -703,6 +731,7 @@ PeerImp::PeerImp(
           FEATURE_LEDGER_REPLAY,
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
+
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));

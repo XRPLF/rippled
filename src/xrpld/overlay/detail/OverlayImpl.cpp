@@ -26,6 +26,7 @@
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/PeerSink.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/overlay/predicates.h>
@@ -278,6 +279,8 @@ OverlayImpl::onHandoff(
             }
         }
 
+        // TODO: pass the right journal
+        PeerSink sink{std::move(stream_ptr), journal_};
         auto const peer = std::make_shared<PeerImp>(
             app_,
             id,
@@ -286,7 +289,7 @@ OverlayImpl::onHandoff(
             publicKey,
             *negotiatedVersion,
             consumer,
-            std::move(stream_ptr),
+            std::move(sink),
             *this);
         {
             // As we are not on the strand, run() must be called

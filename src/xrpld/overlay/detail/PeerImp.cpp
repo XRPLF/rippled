@@ -43,6 +43,8 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
 
+#include "xrpld/overlay/detail/PeerSink.h"
+
 #include <algorithm>
 #include <memory>
 #include <mutex>
@@ -72,7 +74,7 @@ PeerImp::PeerImp(
     PublicKey const& publicKey,
     ProtocolVersion protocol,
     Resource::Consumer consumer,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    PeerSink&& peerSink,
     OverlayImpl& overlay)
     : Child(overlay)
     , app_(app)
@@ -81,11 +83,9 @@ PeerImp::PeerImp(
     , p_sink_(app_.journal("Protocol"), makePrefix(id))
     , journal_(sink_)
     , p_journal_(p_sink_)
-    , stream_ptr_(std::move(stream_ptr))
-    , socket_(stream_ptr_->next_layer().socket())
-    , stream_(*stream_ptr_)
-    , strand_(socket_.get_executor())
-    , timer_(waitable_timer{socket_.get_executor()})
+    , peerSink_(std::move(peerSink))
+    , strand_(peerSink_.get_executor())
+    , timer_(waitable_timer{strand_})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(true)
@@ -215,13 +215,12 @@ PeerImp::stop()
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::stop, shared_from_this()));
-    if (socket_.is_open())
+    if (peerSink_.is_open())
     {
         // The rationale for using different severity levels is that
         // outbound connections are under our control and may be logged
         // at a higher level, but inbound connections are more numerous and
         // uncontrolled so to prevent log flooding the severity is reduced.
-        //
         if (inbound_)
         {
             JLOG(journal_.debug()) << "Stop";
@@ -241,9 +240,11 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
+
     if (gracefulClose_)
         return;
-    if (detaching_)
+
+    if (!peerSink_.is_open())
         return;
 
     auto validator = m->getValidatorKey();
@@ -287,8 +288,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (sendq_size != 0)
         return;
 
-    boost::asio::async_write(
-        stream_,
+    peerSink_.async_write(
         boost::asio::buffer(
             send_queue_.front()->getBuffer(compressionEnabled_)),
         bind_executor(
@@ -578,21 +578,25 @@ PeerImp::close()
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
         "ripple::PeerImp::close : strand in this thread");
-    if (socket_.is_open())
+
+    // the socket is closed, this may due to concurrent calls to close()
+    if (!peerSink_.is_open())
+        return;
+    peerSink_.close();
+
+    overlay_.incPeerDisconnect();
+
+    // The rationale for using different severity levels is that
+    // outbound connections are under our control and may be logged
+    // at a higher level, but inbound connections are more numerous and
+    // uncontrolled so to prevent log flooding the severity is reduced.
+    if (inbound_)
     {
-        detaching_ = true;  // DEPRECATED
-        error_code ec;
-        timer_.cancel(ec);
-        socket_.close(ec);
-        overlay_.incPeerDisconnect();
-        if (inbound_)
-        {
-            JLOG(journal_.debug()) << "Closed";
-        }
-        else
-        {
-            JLOG(journal_.info()) << "Closed";
-        }
+        JLOG(journal_.debug()) << "Closed";
+    }
+    else
+    {
+        JLOG(journal_.info()) << "Closed";
     }
 }
 
@@ -606,12 +610,14 @@ PeerImp::fail(std::string const& reason)
                 (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
-    if (journal_.active(beast::severities::kWarning) && socket_.is_open())
-    {
-        std::string const n = name();
-        JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
-                              << " failed: " << reason;
-    }
+
+    if (!peerSink_.is_open())
+        return;
+
+    std::string const n = name();
+    JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
+                          << " failed: " << reason;
+
     close();
 }
 
@@ -621,12 +627,15 @@ PeerImp::fail(std::string const& name, error_code ec)
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
         "ripple::PeerImp::fail : strand in this thread");
-    if (socket_.is_open())
-    {
-        JLOG(journal_.warn())
-            << name << " from " << toBase58(TokenType::NodePublic, publicKey_)
-            << " at " << remote_address_.to_string() << ": " << ec.message();
-    }
+
+    if (!peerSink_.is_open())
+        return;
+
+    JLOG(journal_.warn()) << name << " from "
+                          << toBase58(TokenType::NodePublic, publicKey_)
+                          << " at " << remote_address_.to_string() << ": "
+                          << ec.message();
+
     close();
 }
 
@@ -637,43 +646,37 @@ PeerImp::gracefulClose()
         strand_.running_in_this_thread(),
         "ripple::PeerImp::gracefulClose : strand in this thread");
     XRPL_ASSERT(
-        socket_.is_open(), "ripple::PeerImp::gracefulClose : socket is open");
+        peerSink_.is_open(), "ripple::PeerImp::gracefulClose : socket is open");
     XRPL_ASSERT(
         !gracefulClose_,
         "ripple::PeerImp::gracefulClose : socket is not closing");
+
     gracefulClose_ = true;
+
     if (send_queue_.size() > 0)
         return;
-    setTimer();
-    stream_.async_shutdown(bind_executor(
-        strand_,
-        std::bind(
-            &PeerImp::onShutdown, shared_from_this(), std::placeholders::_1)));
+
+    close();
 }
 
 void
 PeerImp::setTimer()
 {
-    error_code ec;
-    timer_.expires_from_now(peerTimerInterval, ec);
-
-    if (ec)
+    try
     {
-        JLOG(journal_.error()) << "setTimer: " << ec.message();
-        return;
+        timer_.expires_after(peerTimerInterval);
     }
+    catch (std::exception const& ex)
+    {
+        JLOG(journal_.error())
+            << "setTimer: error expiring the timer: " << ex.what();
+        return close();
+    };
+
     timer_.async_wait(bind_executor(
         strand_,
         std::bind(
             &PeerImp::onTimer, shared_from_this(), std::placeholders::_1)));
-}
-
-// convenience for ignoring the error code
-void
-PeerImp::cancelTimer()
-{
-    error_code ec;
-    timer_.cancel(ec);
 }
 
 //------------------------------------------------------------------------------
@@ -689,7 +692,7 @@ PeerImp::makePrefix(id_t id)
 void
 PeerImp::onTimer(error_code const& ec)
 {
-    if (!socket_.is_open())
+    if (!peerSink_.is_open())
         return;
 
     if (ec == boost::asio::error::operation_aborted)
@@ -703,10 +706,7 @@ PeerImp::onTimer(error_code const& ec)
     }
 
     if (large_sendq_++ >= Tuning::sendqIntervals)
-    {
-        fail("Large send queue");
-        return;
-    }
+        return fail("Large send queue");
 
     if (auto const t = tracking_.load(); !inbound_ && t != Tracking::converged)
     {
@@ -723,17 +723,13 @@ PeerImp::onTimer(error_code const& ec)
              (duration > app_.config().MAX_UNKNOWN_TIME)))
         {
             overlay_.peerFinder().on_failure(slot_);
-            fail("Not useful");
-            return;
+            return fail("Not useful");
         }
     }
 
     // Already waiting for PONG
     if (lastPingSeq_)
-    {
-        fail("Ping Timeout");
-        return;
-    }
+        return fail("Ping Timeout");
 
     lastPingTime_ = clock_type::now();
     lastPingSeq_ = rand_int<std::uint32_t>();
@@ -747,21 +743,6 @@ PeerImp::onTimer(error_code const& ec)
     setTimer();
 }
 
-void
-PeerImp::onShutdown(error_code ec)
-{
-    cancelTimer();
-    // If we don't get eof then something went wrong
-    if (!ec)
-    {
-        JLOG(journal_.error()) << "onShutdown: expected error condition";
-        return close();
-    }
-    if (ec != boost::asio::error::eof)
-        return fail("onShutdown", ec);
-    close();
-}
-
 //------------------------------------------------------------------------------
 void
 PeerImp::doAccept()
@@ -772,7 +753,7 @@ PeerImp::doAccept()
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+    auto const sharedValue = peerSink_.getSharedValue();
 
     // This shouldn't fail since we already computed
     // the shared value successfully in OverlayImpl
@@ -811,15 +792,14 @@ PeerImp::doAccept()
         app_);
 
     // Write the whole buffer and only start protocol when that's done.
-    boost::asio::async_write(
-        stream_,
+    peerSink_.async_write(
         write_buffer->data(),
         boost::asio::transfer_all(),
         bind_executor(
             strand_,
             [this, write_buffer, self = shared_from_this()](
                 error_code ec, std::size_t bytes_transferred) {
-                if (!socket_.is_open())
+                if (!peerSink_.is_open())
                     return;
                 if (ec == boost::asio::error::operation_aborted)
                     return;
@@ -889,7 +869,7 @@ PeerImp::doProtocolStart()
 void
 PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 {
-    if (!socket_.is_open())
+    if (!peerSink_.is_open())
         return;
     if (ec == boost::asio::error::operation_aborted)
         return;
@@ -898,8 +878,10 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         JLOG(journal_.info()) << "EOF";
         return gracefulClose();
     }
+
     if (ec)
         return fail("onReadMessage", ec);
+
     if (auto stream = journal_.trace())
     {
         if (bytes_transferred > 0)
@@ -927,19 +909,19 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
             350ms,
             journal_);
 
-        if (ec)
-            return fail("onReadMessage", ec);
-        if (!socket_.is_open())
+        if (!peerSink_.is_open())
             return;
         if (gracefulClose_)
             return;
+        if (ec)
+            return fail("onReadMessage", ec);
         if (bytes_consumed == 0)
             break;
         read_buffer_.consume(bytes_consumed);
     }
 
     // Timeout on writes only
-    stream_.async_read_some(
+    peerSink_.async_read_some(
         read_buffer_.prepare(std::max(Tuning::readBufferBytes, hint)),
         bind_executor(
             strand_,
@@ -953,12 +935,13 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 void
 PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
-    if (!socket_.is_open())
+    if (!peerSink_.is_open())
         return;
     if (ec == boost::asio::error::operation_aborted)
         return;
     if (ec)
         return fail("onWriteMessage", ec);
+
     if (auto stream = journal_.trace())
     {
         if (bytes_transferred > 0)
@@ -976,8 +959,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     if (!send_queue_.empty())
     {
         // Timeout on writes only
-        return boost::asio::async_write(
-            stream_,
+        peerSink_.async_write(
             boost::asio::buffer(
                 send_queue_.front()->getBuffer(compressionEnabled_)),
             bind_executor(
@@ -989,15 +971,11 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
                     std::placeholders::_2)));
     }
 
+    // Graceful close was initiated, but it was postponed to allow the server to
+    // finish sending messages to the peer. If we hit this code, that means all
+    // messages were sent, finish closing the connection
     if (gracefulClose_)
-    {
-        return stream_.async_shutdown(bind_executor(
-            strand_,
-            std::bind(
-                &PeerImp::onShutdown,
-                shared_from_this(),
-                std::placeholders::_1)));
-    }
+        close();
 }
 
 //------------------------------------------------------------------------------
