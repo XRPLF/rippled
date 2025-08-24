@@ -114,6 +114,9 @@ public:
     std::shared_ptr<OpenView const>
     current() const;
 
+    std::shared_ptr<OpenView const>
+    read() const;
+
     /** Modify the open ledger
 
         Thread safety:
@@ -217,6 +220,9 @@ OpenLedger::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    if (view.isMock())
+        return;
+
     for (auto iter = txs.begin(); iter != txs.end(); ++iter)
     {
         try
