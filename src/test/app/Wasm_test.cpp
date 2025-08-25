@@ -326,7 +326,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 41'132, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 40'107, std::to_string(re->cost));
             }
         }
 
@@ -348,7 +348,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 5'831, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 4'806, std::to_string(re->cost));
             }
         }
 
@@ -370,7 +370,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 5'831, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 4'806, std::to_string(re->cost));
             }
         }
 
@@ -463,7 +463,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 872, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 847, std::to_string(re->cost));
             }
 
             env.close();
@@ -648,18 +648,13 @@ struct Wasm_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{
-            *this,
-            envconfig(),
-            testable_amendments(),
-            nullptr,
-            beast::severities::kTrace};
+        Env env{*this};
 
         auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 119'883;
+        auto const allowance = 121'895;
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &hfs, allowance, env.journal);
 
