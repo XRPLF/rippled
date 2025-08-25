@@ -67,7 +67,8 @@ jobs:
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         with:
           # Keep the list of paths below in sync with those in the
-          # `on-trigger.yml` file.
+          # `on-trigger.yml` file, except for applicable differences in the
+          # .github directory.
           files: |
             .github/actions/build-deps/**
             .github/actions/build-test/**
