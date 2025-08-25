@@ -123,6 +123,10 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         if os['distro_name'] == 'rhel' and architecture['platform'] == 'linux/arm64':
             continue
 
+        # We skip all clang-20 on arm64 due to boost 1.86 build error
+        if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and architecture['platform'] == 'linux/arm64':
+            continue
+
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release-unity.
         config_name = os['distro_name']

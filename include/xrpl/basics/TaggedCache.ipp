@@ -22,7 +22,6 @@
 
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/TaggedCache.h>
-#include <xrpl/beast/core/CurrentThreadName.h>
 
 namespace ripple {
 
@@ -61,7 +60,6 @@ inline TaggedCache<
     , m_hits(0)
     , m_misses(0)
 {
-    partitionLocks_ = std::vector<mutex_type>(m_cache.partitions());
 }
 
 template <
@@ -110,14 +108,8 @@ TaggedCache<
     static unsigned long call_count{0};
     JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
                             << ", size, call_count = " << call_count++;
-
-    std::size_t totalSize = 0;
-    for (size_t i = 0; i < partitionLocks_.size(); ++i)
-    {
-        std::lock_guard<Mutex> lock(partitionLocks_[i]);
-        totalSize += m_cache.map()[i].size();
-    }
-    return totalSize;
+    std::lock_guard lock(m_mutex);
+    return m_cache.size();
 }
 
 template <
@@ -140,7 +132,32 @@ TaggedCache<
     KeyEqual,
     Mutex>::getCacheSize() const
 {
-    return m_cache_count.load(std::memory_order_relaxed);
+    std::lock_guard lock(m_mutex);
+    return m_cache_count;
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline int
+TaggedCache<
+    Key,
+    T,
+    IsKeyCache,
+    SharedWeakUnionPointer,
+    SharedPointerType,
+    Hash,
+    KeyEqual,
+    Mutex>::getTrackSize() const
+{
+    std::lock_guard lock(m_mutex);
+    return m_cache.size();
 }
 
 template <
@@ -163,10 +180,9 @@ TaggedCache<
     KeyEqual,
     Mutex>::getHitRate()
 {
-    auto const hits = m_hits.load(std::memory_order_relaxed);
-    auto const misses = m_misses.load(std::memory_order_relaxed);
-    float const total = float(hits + misses);
-    return hits * (100.0f / std::max(1.0f, total));
+    std::lock_guard lock(m_mutex);
+    auto const total = static_cast<float>(m_hits + m_misses);
+    return m_hits * (100.0f / std::max(1.0f, total));
 }
 
 template <
@@ -189,12 +205,9 @@ TaggedCache<
     KeyEqual,
     Mutex>::clear()
 {
-    for (auto& mutex : partitionLocks_)
-        mutex.lock();
+    std::lock_guard lock(m_mutex);
     m_cache.clear();
-    for (auto& mutex : partitionLocks_)
-        mutex.unlock();
-    m_cache_count.store(0, std::memory_order_relaxed);
+    m_cache_count = 0;
 }
 
 template <
@@ -217,9 +230,11 @@ TaggedCache<
     KeyEqual,
     Mutex>::reset()
 {
-    clear();
-    m_hits.store(0, std::memory_order_relaxed);
-    m_misses.store(0, std::memory_order_relaxed);
+    std::lock_guard lock(m_mutex);
+    m_cache.clear();
+    m_cache_count = 0;
+    m_hits = 0;
+    m_misses = 0;
 }
 
 template <
@@ -248,7 +263,7 @@ TaggedCache<
         << "TaggedCache (" << m_name << ") lock stats,"
         << ", touch_if_exists, call_count = " << call_count++;
 
-    std::lock_guard<Mutex> lock(lockPartition(key));
+    std::lock_guard lock(m_mutex);
     auto const iter(m_cache.find(key));
     if (iter == m_cache.end())
     {
@@ -290,6 +305,8 @@ TaggedCache<
 
     auto const start = std::chrono::steady_clock::now();
     {
+        std::lock_guard lock(m_mutex);
+
         if (m_target_size == 0 ||
             (static_cast<int>(m_cache.size()) <= m_target_size))
         {
@@ -321,13 +338,12 @@ TaggedCache<
                 m_cache.map()[p],
                 allStuffToSweep[p],
                 allRemovals,
-                partitionLocks_[p]));
+                lock));
         }
         for (std::thread& worker : workers)
             worker.join();
 
-        int removals = allRemovals.load(std::memory_order_relaxed);
-        m_cache_count.fetch_sub(removals, std::memory_order_relaxed);
+        m_cache_count -= allRemovals;
     }
     // At this point allStuffToSweep will go out of scope outside the lock
     // and decrement the reference count on each strong pointer.
@@ -365,8 +381,7 @@ TaggedCache<
     static unsigned long call_count{0};
     JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
                             << ", del, call_count = " << call_count++;
-
-    std::lock_guard<Mutex> lock(lockPartition(key));
+    std::lock_guard lock(m_mutex);
 
     auto cit = m_cache.find(key);
 
@@ -379,7 +394,7 @@ TaggedCache<
 
     if (entry.isCached())
     {
-        m_cache_count.fetch_sub(1, std::memory_order_relaxed);
+        --m_cache_count;
         entry.ptr.convertToWeak();
         ret = true;
     }
@@ -417,20 +432,20 @@ TaggedCache<
 {
     // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
+    std::lock_guard lock(m_mutex);
 
     static unsigned long call_count{0};
     JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
                             << ", canonicalize, call_count = " << call_count++;
-
-    std::lock_guard<Mutex> lock(lockPartition(key));
     auto cit = m_cache.find(key);
+
     if (cit == m_cache.end())
     {
         m_cache.emplace(
             std::piecewise_construct,
             std::forward_as_tuple(key),
             std::forward_as_tuple(m_clock.now(), data));
-        m_cache_count.fetch_add(1, std::memory_order_relaxed);
+        ++m_cache_count;
         return false;
     }
 
@@ -479,12 +494,12 @@ TaggedCache<
             data = cachedData;
         }
 
-        m_cache_count.fetch_add(1, std::memory_order_relaxed);
+        ++m_cache_count;
         return true;
     }
 
     entry.ptr = data;
-    m_cache_count.fetch_add(1, std::memory_order_relaxed);
+    ++m_cache_count;
 
     return false;
 }
@@ -564,11 +579,10 @@ TaggedCache<
     JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
                             << ", fetch, call_count = " << call_count++;
 
-    std::lock_guard<Mutex> lock(lockPartition(key));
-
-    auto ret = initialFetch(key);
+    std::lock_guard<mutex_type> l(m_mutex);
+    auto ret = initialFetch(key, l);
     if (!ret)
-        m_misses.fetch_add(1, std::memory_order_relaxed);
+        ++m_misses;
     return ret;
 }
 
@@ -636,8 +650,8 @@ TaggedCache<
     JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
                             << ", insert, call_count = " << call_count++;
 
+    std::lock_guard lock(m_mutex);
     clock_type::time_point const now(m_clock.now());
-    std::lock_guard<Mutex> lock(lockPartition(key));
     auto [it, inserted] = m_cache.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(key),
@@ -695,6 +709,29 @@ TaggedCache<
     SharedPointerType,
     Hash,
     KeyEqual,
+    Mutex>::peekMutex() -> mutex_type&
+{
+    return m_mutex;
+}
+
+template <
+    class Key,
+    class T,
+    bool IsKeyCache,
+    class SharedWeakUnionPointer,
+    class SharedPointerType,
+    class Hash,
+    class KeyEqual,
+    class Mutex>
+inline auto
+TaggedCache<
+    Key,
+    T,
+    IsKeyCache,
+    SharedWeakUnionPointer,
+    SharedPointerType,
+    Hash,
+    KeyEqual,
     Mutex>::getKeys() const -> std::vector<key_type>
 {
     static unsigned long call_count{0};
@@ -704,13 +741,10 @@ TaggedCache<
     std::vector<key_type> v;
 
     {
+        std::lock_guard lock(m_mutex);
         v.reserve(m_cache.size());
-        for (std::size_t i = 0; i < partitionLocks_.size(); ++i)
-        {
-            std::lock_guard<Mutex> lock(partitionLocks_[i]);
-            for (auto const& entry : m_cache.map()[i])
-                v.push_back(entry.first);
-        }
+        for (auto const& _ : m_cache)
+            v.push_back(_.first);
     }
 
     return v;
@@ -736,12 +770,11 @@ TaggedCache<
     KeyEqual,
     Mutex>::rate() const
 {
-    auto const hits = m_hits.load(std::memory_order_relaxed);
-    auto const misses = m_misses.load(std::memory_order_relaxed);
-    auto const tot = hits + misses;
+    std::lock_guard lock(m_mutex);
+    auto const tot = m_hits + m_misses;
     if (tot == 0)
-        return 0.0;
-    return double(hits) / tot;
+        return 0;
+    return double(m_hits) / tot;
 }
 
 template <
@@ -769,16 +802,18 @@ TaggedCache<
     JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
                             << ", fetch, call_count = " << call_count++;
 
-    std::lock_guard<Mutex> lock(lockPartition(digest));
-
-    if (auto ret = initialFetch(digest))
-        return ret;
+    {
+        std::lock_guard l(m_mutex);
+        if (auto ret = initialFetch(digest, l))
+            return ret;
+    }
 
     auto sle = h();
     if (!sle)
         return {};
 
-    m_misses.fetch_add(1, std::memory_order_relaxed);
+    std::lock_guard l(m_mutex);
+    ++m_misses;
     auto const [it, inserted] =
         m_cache.emplace(digest, Entry(m_clock.now(), std::move(sle)));
     if (!inserted)
@@ -805,10 +840,9 @@ TaggedCache<
     SharedPointerType,
     Hash,
     KeyEqual,
-    Mutex>::initialFetch(key_type const& key)
+    Mutex>::
+    initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l)
 {
-    std::lock_guard<Mutex> lock(lockPartition(key));
-
     auto cit = m_cache.find(key);
     if (cit == m_cache.end())
         return {};
@@ -816,7 +850,7 @@ TaggedCache<
     Entry& entry = cit->second;
     if (entry.isCached())
     {
-        m_hits.fetch_add(1, std::memory_order_relaxed);
+        ++m_hits;
         entry.touch(m_clock.now());
         return entry.ptr.getStrong();
     }
@@ -824,13 +858,12 @@ TaggedCache<
     if (entry.isCached())
     {
         // independent of cache size, so not counted as a hit
-        m_cache_count.fetch_add(1, std::memory_order_relaxed);
+        ++m_cache_count;
         entry.touch(m_clock.now());
         return entry.ptr.getStrong();
     }
 
     m_cache.erase(cit);
-
     return {};
 }
 
@@ -859,11 +892,10 @@ TaggedCache<
     {
         beast::insight::Gauge::value_type hit_rate(0);
         {
-            auto const hits = m_hits.load(std::memory_order_relaxed);
-            auto const misses = m_misses.load(std::memory_order_relaxed);
-            auto const total = hits + misses;
+            std::lock_guard lock(m_mutex);
+            auto const total(m_hits + m_misses);
             if (total != 0)
-                hit_rate = (hits * 100) / total;
+                hit_rate = (m_hits * 100) / total;
         }
         m_stats.hit_rate.set(hit_rate);
     }
@@ -894,11 +926,9 @@ TaggedCache<
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
-        Mutex& partitionLock)
+        std::lock_guard<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {
-        beast::setCurrentThreadName("sweep-KVCache");
-
         int cacheRemovals = 0;
         int mapRemovals = 0;
 
@@ -906,8 +936,6 @@ TaggedCache<
         JLOG(m_journal.debug())
             << "TaggedCache (" << m_name << ") lock stats,"
             << ", sweep-KVCache, call_count = " << call_count++;
-
-        std::lock_guard<Mutex> lock(partitionLock);
 
         // Keep references to all the stuff we sweep
         // so that we can destroy them outside the lock.
@@ -992,11 +1020,9 @@ TaggedCache<
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
-        Mutex& partitionLock)
+        std::lock_guard<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {
-        beast::setCurrentThreadName("sweep-KCache");
-
         int cacheRemovals = 0;
         int mapRemovals = 0;
 
@@ -1004,8 +1030,6 @@ TaggedCache<
         JLOG(m_journal.debug())
             << "TaggedCache (" << m_name << ") lock stats,"
             << ", sweep-KCache, call_count = " << call_count++;
-
-        std::lock_guard<Mutex> lock(partitionLock);
 
         // Keep references to all the stuff we sweep
         // so that we can destroy them outside the lock.
@@ -1039,29 +1063,6 @@ TaggedCache<
 
         allRemovals += cacheRemovals;
     });
-}
-
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class SharedWeakUnionPointer,
-    class SharedPointerType,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
-inline Mutex&
-TaggedCache<
-    Key,
-    T,
-    IsKeyCache,
-    SharedWeakUnionPointer,
-    SharedPointerType,
-    Hash,
-    KeyEqual,
-    Mutex>::lockPartition(key_type const& key) const
-{
-    return partitionLocks_[m_cache.partition_index(key)];
 }
 
 }  // namespace ripple
