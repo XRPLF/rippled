@@ -19,7 +19,7 @@ pub const FLOAT_ROUNDING_MODES_UPWARD: i32 = 3;
 #[allow(unused)]
 #[link(wasm_import_module = "host_lib")]
 unsafe extern "C" {
-    pub fn get_ledger_sqn(out_buff_ptr: i32, out_buff_len: i32) -> i32;
+    pub fn get_parent_ledger_hash(out_buff_ptr: i32, out_buff_len: i32) -> i32;
 
     pub fn cache_ledger_obj(keylet_ptr: i32, keylet_len: i32, cache_num: i32) -> i32;
 

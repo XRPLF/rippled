@@ -55,7 +55,7 @@ public:
     Expected<std::int32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        return static_cast<std::uint32_t>(env_->current()->seq());
+        return env_->current()->seq();
     }
 };
 
@@ -97,7 +97,7 @@ public:
     Expected<std::int32_t, HostFunctionError>
     getLedgerSqn() override
     {
-        return static_cast<std::uint32_t>(env_.current()->seq());
+        return env_.current()->seq();
     }
 
     Expected<std::int32_t, HostFunctionError>

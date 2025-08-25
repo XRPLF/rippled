@@ -179,7 +179,7 @@ struct Wasm_test : public beast::unit_test::suite
         if (BEAST_EXPECT(re.has_value()))
         {
             BEAST_EXPECTS(!re->result, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 44, std::to_string(re->cost));
+            BEAST_EXPECTS(re->cost == 39, std::to_string(re->cost));
         }
 
         env.close();
@@ -195,7 +195,7 @@ struct Wasm_test : public beast::unit_test::suite
         if (BEAST_EXPECT(re.has_value()))
         {
             BEAST_EXPECTS(re->result, std::to_string(re->result));
-            BEAST_EXPECTS(re->cost == 88, std::to_string(re->cost));
+            BEAST_EXPECTS(re->cost == 78, std::to_string(re->cost));
         }
     }
 
@@ -315,6 +315,9 @@ struct Wasm_test : public beast::unit_test::suite
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
         using namespace test::jtx;
+        // Env env{*this, envconfig(), testable_amendments(), nullptr,
+        //     beast::severities::kTrace
+        // };
         Env env{*this};
         {
             TestHostFunctions nfs(env, 0);
@@ -322,7 +325,7 @@ struct Wasm_test : public beast::unit_test::suite
                 runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECTS(re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
                 BEAST_EXPECTS(re->cost == 41'132, std::to_string(re->cost));
             }
         }
@@ -459,7 +462,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECTS(re->result, std::to_string(re->result));
+                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
                 BEAST_EXPECTS(re->cost == 872, std::to_string(re->cost));
             }
 
@@ -494,7 +497,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 41'132, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 40'107, std::to_string(re->cost));
             }
 
             env.close();
@@ -645,7 +648,12 @@ struct Wasm_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env{*this};
+        Env env{
+            *this,
+            envconfig(),
+            testable_amendments(),
+            nullptr,
+            beast::severities::kTrace};
 
         auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
