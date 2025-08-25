@@ -115,7 +115,11 @@ if __name__ == "__main__":
         print("Usage: python copyFixtures.py [<project_name>]")
         sys.exit(1)
     if len(sys.argv) == 2:
-        process_rust(sys.argv[1])
+        if os.path.isdir(os.path.join(os.path.dirname(__file__), sys.argv[1])):
+            process_rust(sys.argv[1])
+        else:
+            process_c(sys.argv[1])
+        print("Fixture has been processed.")
     else:
         dirs = [
             d
