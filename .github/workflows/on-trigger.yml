@@ -28,9 +28,6 @@ on:
       - "include/**"
       - "src/**"
       - "tests/**"
-      - ".clang-format"
-      - ".codecov.yml"
-      - ".pre-commit-config.yaml"
       - "CMakeLists.txt"
       - "conanfile.py"
   # Run at 06:32 UTC on every day of the week from Monday through Friday. This

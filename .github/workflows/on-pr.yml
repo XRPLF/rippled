@@ -73,6 +73,9 @@ jobs:
             .github/workflows/check-levelization.yml
             .github/workflows/notify-clio.yml
             .github/workflows/on-pr.yml
+            .clang-format
+            .codecov.yml
+            .pre-commit-config.yaml
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
             .github/actions/build-test/**
@@ -84,9 +87,6 @@ jobs:
             include/**
             src/**
             tests/**
-            .clang-format
-            .codecov.yml
-            .pre-commit-config.yaml
             CMakeLists.txt
             conanfile.py
     outputs:
