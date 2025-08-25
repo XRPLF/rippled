@@ -79,43 +79,6 @@ struct STInteger_test : public beast::unit_test::suite
     }
 
     void
-    testInt64()
-    {
-        STInt64 i64(-0x123456789ABCDEF0ll);
-        BEAST_EXPECT(i64.value() == -0x123456789ABCDEF0ll);
-        BEAST_EXPECT(i64.getText() == "-1311768467463790320");
-        BEAST_EXPECT(i64.getSType() == STI_INT64);
-
-        // By default, getJson returns hex string
-        auto jsonVal = i64.getJson(JsonOptions::none);
-        BEAST_EXPECT(jsonVal.isString());
-        BEAST_EXPECT(jsonVal.asString() == "-123456789abcdef0");
-
-        // Test STInt64 with positive value, check base 16 output
-        {
-            STInt64 i64pos(0x7FFFFFFFFFFFFFFFll);  // max int64_t
-            BEAST_EXPECT(i64pos.value() == 0x7FFFFFFFFFFFFFFFll);
-            BEAST_EXPECT(i64pos.getText() == "9223372036854775807");
-            BEAST_EXPECT(i64pos.getSType() == STI_INT64);
-
-            // By default, getJson returns hex string
-            auto jsonVal = i64pos.getJson(JsonOptions::none);
-            BEAST_EXPECT(jsonVal.isString());
-            BEAST_EXPECT(jsonVal.asString() == "7fffffffffffffff");
-        }
-
-        // Test STInt64 with base 10 output using sfMaximumAmount
-        {
-            STInt64 i64ten(sfMaximumAmount, 1234567890123456789ll);
-            BEAST_EXPECT(i64ten.value() == 1234567890123456789ll);
-
-            auto jsonVal = i64ten.getJson(JsonOptions::none);
-            BEAST_EXPECT(jsonVal.isString());
-            BEAST_EXPECT(jsonVal.asString() == "1234567890123456789");
-        }
-    }
-
-    void
     run() override
     {
         testUInt8();
@@ -123,7 +86,6 @@ struct STInteger_test : public beast::unit_test::suite
         testUInt32();
         testUInt64();
         testInt32();
-        testInt64();
     }
 };
 

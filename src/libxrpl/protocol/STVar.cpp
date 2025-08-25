@@ -211,9 +211,6 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         case STI_INT32:
             construct<STInt32>(std::forward<Args>(args)...);
             return;
-        case STI_INT64:
-            construct<STInt64>(std::forward<Args>(args)...);
-            return;
         case STI_VECTOR256:
             construct<STVector256>(std::forward<Args>(args)...);
             return;
