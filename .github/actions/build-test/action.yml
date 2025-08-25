@@ -83,7 +83,7 @@ runs:
         ./rippled --unittest --unittest-jobs $(nproc)
         ctest -j $(nproc) --output-on-failure
     - name: Upload coverage report
-      if: ${{ inputs.cmake_target == 'coverage' && inputs.codecov_token }}
+      if: ${{ inputs.cmake_target == 'coverage' }}
       uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
       with:
         disable_search: true
