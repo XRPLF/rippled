@@ -15,4 +15,4 @@ opt-level = 's'
 panic = "abort"
 
 [dependencies]
-xrpl-std = { git = "https://github.com/ripple/craft.git", branch = "main", package = "xrpl-std" }
+xrpl-std = { git = "https://github.com/ripple/craft.git", branch = "lastdevnet", package = "xrpl-std" }

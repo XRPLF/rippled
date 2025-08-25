@@ -4,7 +4,7 @@
 extern crate std;
 
 use core::panic;
-use xrpl_std::core::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
+use xrpl_std::core::current_tx::escrow_finish::{get_current_escrow_finish, EscrowFinish};
 use xrpl_std::core::current_tx::traits::TransactionCommonFields;
 use xrpl_std::core::error_codes;
 use xrpl_std::core::locator::Locator;
@@ -52,7 +52,8 @@ pub extern "C" fn finish() -> i32 {
     // ########################################
     // Step #1: Test all host function happy paths
     // Note: not testing all the keylet functions,
-    // that's in a separate test file.
+    // that's in a separate test file (all_keylets).
+    // The float tests are also in a separate file (float_tests).
     // ########################################
     with_buffer::<4, _, _>(|ptr, len| {
         check_result(
@@ -320,6 +321,38 @@ pub extern "C" fn finish() -> i32 {
     // Step #3: Test getData[Type] edge cases
     // ########################################
 
+    // uint64
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_from_uint(
+                    locator.as_ptr().wrapping_add(1_000_000_000),
+                    8,
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_from_uint_len_oob",
+        )
+    });
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_from_uint(
+                    locator.as_ptr(),
+                    locator.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "float_from_uint_wrong_len",
+        )
+    });
+
     // SField
     check_result(
         unsafe { host::get_tx_array_len(2) }, // not a valid SField value
@@ -450,11 +483,11 @@ pub extern "C" fn finish() -> i32 {
     with_buffer::<32, _, _>(|ptr, len| {
         check_result(
             unsafe {
-                host_bindings_loose::amm_keylet(
+                host::amm_keylet(
                     asset1_bytes.as_ptr(),
                     asset1_bytes.len(),
-                    locator.as_ptr() as i32 + 1_000_000_000,
-                    locator.len() as i32,
+                    locator.as_ptr().wrapping_add(1_000_000_000),
+                    locator.len(),
                     ptr,
                     len,
                 )
@@ -466,11 +499,11 @@ pub extern "C" fn finish() -> i32 {
     with_buffer::<32, _, _>(|ptr, len| {
         check_result(
             unsafe {
-                host_bindings_loose::amm_keylet(
+                host::amm_keylet(
                     asset1_bytes.as_ptr(),
                     asset1_bytes.len(),
-                    locator.as_ptr() as i32,
-                    locator.len() as i32,
+                    locator.as_ptr(),
+                    locator.len(),
                     ptr,
                     len,
                 )
@@ -483,17 +516,34 @@ pub extern "C" fn finish() -> i32 {
     with_buffer::<32, _, _>(|ptr, len| {
         check_result(
             unsafe {
-                host_bindings_loose::amm_keylet(
+                host::amm_keylet(
                     asset1_bytes.as_ptr(),
                     asset1_bytes.len(),
-                    currency.as_ptr() as i32,
-                    currency.len() as i32,
+                    currency.as_ptr(),
+                    currency.len(),
                     ptr,
                     len,
                 )
             },
             error_codes::INVALID_PARAMS,
             "amm_keylet_len_wrong_non_xrp_currency_len",
+        )
+    });
+    let xrpissue: &[u8] = &[0; 40]; // 40 bytes
+    with_buffer::<32, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::amm_keylet(
+                    xrpissue.as_ptr(),
+                    xrpissue.len(),
+                    asset1_bytes.as_ptr(),
+                    asset1_bytes.len(),
+                    ptr,
+                    len,
+                )
+            },
+            error_codes::INVALID_PARAMS,
+            "amm_keylet_len_wrong_xrp_currency_len",
         )
     });
     let mptid = MptId::new(1, account);
@@ -737,6 +787,19 @@ pub extern "C" fn finish() -> i32 {
         error_codes::POINTER_OUT_OF_BOUNDS,
         "trace_oob_slice",
     );
+    let float: [u8; 8] = [0xD4, 0x83, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00];
+    check_result(
+        unsafe {
+            host::trace_opaque_float(
+                message.as_ptr(),
+                message.len(),
+                float.as_ptr().wrapping_add(1_000_000_000),
+                float.len(),
+            )
+        },
+        error_codes::POINTER_OUT_OF_BOUNDS,
+        "trace_opaque_float_oob_slice",
+    );
     check_result(
         unsafe {
             host::trace_amount(
@@ -749,6 +812,213 @@ pub extern "C" fn finish() -> i32 {
         error_codes::POINTER_OUT_OF_BOUNDS,
         "trace_amount_oob_slice",
     );
+    check_result(
+        unsafe {
+            host::float_compare(
+                float.as_ptr().wrapping_add(1_000_000_000),
+                float.len(),
+                float.as_ptr(),
+                float.len(),
+            )
+        },
+        error_codes::POINTER_OUT_OF_BOUNDS,
+        "float_compare_oob_slice1",
+    );
+    check_result(
+        unsafe {
+            host::float_compare(
+                float.as_ptr(),
+                float.len(),
+                float.as_ptr().wrapping_add(1_000_000_000),
+                float.len(),
+            )
+        },
+        error_codes::POINTER_OUT_OF_BOUNDS,
+        "float_compare_oob_slice2",
+    );
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_add(
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    float.as_ptr(),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_add_oob_slice1",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_add(
+                    float.as_ptr(),
+                    float.len(),
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_add_oob_slice2",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_subtract(
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    float.as_ptr(),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_subtract_oob_slice1",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_subtract(
+                    float.as_ptr(),
+                    float.len(),
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_subtract_oob_slice2",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_multiply(
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    float.as_ptr(),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_multiply_oob_slice1",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_multiply(
+                    float.as_ptr(),
+                    float.len(),
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_multiply_oob_slice2",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_divide(
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    float.as_ptr(),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_divide_oob_slice1",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_divide(
+                    float.as_ptr(),
+                    float.len(),
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_divide_oob_slice2",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_root(
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    3,
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_root_oob_slice",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_pow(
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    3,
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_pow_oob_slice",
+        )
+    });
+    with_buffer::<2, _, _>(|ptr, len| {
+        check_result(
+            unsafe {
+                host::float_log(
+                    float.as_ptr().wrapping_add(1_000_000_000),
+                    float.len(),
+                    ptr,
+                    len,
+                    FLOAT_ROUNDING_MODES_TO_NEAREST,
+                )
+            },
+            error_codes::POINTER_OUT_OF_BOUNDS,
+            "float_log_oob_slice",
+        )
+    });
 
     // invalid UInt256
 
@@ -1127,6 +1397,18 @@ pub extern "C" fn finish() -> i32 {
     );
     check_result(
         unsafe {
+            host::trace_opaque_float(
+                message.as_ptr().wrapping_add(1_000_000_000),
+                message.len(),
+                float.as_ptr(),
+                float.len(),
+            )
+        },
+        error_codes::POINTER_OUT_OF_BOUNDS,
+        "trace_opaque_float_oob_string",
+    );
+    check_result(
+        unsafe {
             host::trace_account(
                 message.as_ptr().wrapping_add(1_000_000_000),
                 message.len(),
@@ -1172,6 +1454,13 @@ pub extern "C" fn finish() -> i32 {
     );
     check_result(
         unsafe {
+            host::trace_opaque_float(message.as_ptr(), long_len, float.as_ptr(), float.len())
+        },
+        error_codes::DATA_FIELD_TOO_LARGE,
+        "trace_opaque_float_too_long",
+    );
+    check_result(
+        unsafe {
             host::trace_account(
                 message.as_ptr(),
                 long_len,
@@ -1185,7 +1474,7 @@ pub extern "C" fn finish() -> i32 {
     check_result(
         unsafe { host::trace_amount(message.as_ptr(), long_len, amount.as_ptr(), amount.len()) },
         error_codes::DATA_FIELD_TOO_LARGE,
-        "trace_account_too_long",
+        "trace_amount_too_long",
     );
 
     // trace amount errors
