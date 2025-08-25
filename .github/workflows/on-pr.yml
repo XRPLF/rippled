@@ -64,31 +64,31 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Determine changed files
         id: changes
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         with:
-          uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
+          # Keep the list of paths below in sync with those in the
+          # `on-trigger.yml` file.
           files: |
-            ".github/actions/build-deps/**"
-            ".github/actions/build-test/**"
-            ".github/scripts/levelization/**"
-            ".github/scripts/strategy-matrix/**"
-            ".github/workflows/build-test.yml"
-            ".github/workflows/check-format.yml"
-            ".github/workflows/check-levelization.yml"
-            ".github/workflows/notify-clio.yml"
-            ".github/workflows/on-pr.yml"
-            # Keep the list of paths below in sync with those in the
-            # `on-trigger.yml` file.
-            "cmake/**"
-            "conan/**"
-            "external/**"
-            "include/**"
-            "src/**"
-            "tests/**"
-            ".clang-format"
-            ".codecov.yml"
-            ".pre-commit-config.yaml"
-            "CMakeLists.txt"
-            "conanfile.py"
+            .github/actions/build-deps/**
+            .github/actions/build-test/**
+            .github/scripts/levelization/**
+            .github/scripts/strategy-matrix/**
+            .github/workflows/build-test.yml
+            .github/workflows/check-format.yml
+            .github/workflows/check-levelization.yml
+            .github/workflows/notify-clio.yml
+            .github/workflows/on-pr.yml
+            cmake/**
+            conan/**
+            external/**
+            include/**
+            src/**
+            tests/**
+            .clang-format
+            .codecov.yml
+            .pre-commit-config.yaml
+            CMakeLists.txt
+            conanfile.py
     outputs:
       changed: ${{ steps.changes.outputs.any_changed }}
 
