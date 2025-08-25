@@ -32,6 +32,13 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u8.getText() == "42");
         BEAST_EXPECT(u8.getSType() == STI_UINT8);
         BEAST_EXPECT(u8.getJson(JsonOptions::none) == 42);
+
+        // there is some special handling for sfTransactionResult
+        STUInt8 tr(sfTransactionResult, 0);
+        BEAST_EXPECT(tr.value() == 0);
+        BEAST_EXPECT(tr.getText() == "0");
+        BEAST_EXPECT(tr.getSType() == STI_UINT8);
+        BEAST_EXPECT(tr.getJson(JsonOptions::none) == "tesSUCCESS");
     }
 
     void
