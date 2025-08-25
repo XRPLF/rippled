@@ -13,14 +13,15 @@ on:
       - release
       - master
     paths:
+      # These paths are unique to `on-trigger.yml`.
+      - ".github/workflows/check-missing-commits.yml"
+      - ".github/workflows/on-trigger.yml"
+      - ".github/workflows/publish-docs.yml"
+      # Keep the paths below in sync with those in `on-pr.yml`.
       - ".github/actions/build-deps/**"
       - ".github/actions/build-test/**"
       - ".github/scripts/strategy-matrix/**"
       - ".github/workflows/build-test.yml"
-      - ".github/workflows/check-missing-commits.yml"
-      - ".github/workflows/on-trigger.yml"
-      - ".github/workflows/publish-docs.yml"
-      # Keep the list of paths below in sync with those in `on-pr.yml`.
       - "cmake/**"
       - "conan/**"
       - "external/**"

@@ -66,19 +66,18 @@ jobs:
         id: changes
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         with:
-          # Keep the list of paths below in sync with those in the
-          # `on-trigger.yml` file, except for applicable differences in the
-          # .github directory.
           files: |
-            .github/actions/build-deps/**
-            .github/actions/build-test/**
+            # These paths are unique to `on-pr.yml`.
             .github/scripts/levelization/**
-            .github/scripts/strategy-matrix/**
-            .github/workflows/build-test.yml
             .github/workflows/check-format.yml
             .github/workflows/check-levelization.yml
             .github/workflows/notify-clio.yml
             .github/workflows/on-pr.yml
+            # Keep the paths below in sync with those in `on-trigger.yml`.
+            .github/actions/build-deps/**
+            .github/actions/build-test/**
+            .github/scripts/strategy-matrix/**
+            .github/workflows/build-test.yml
             cmake/**
             conan/**
             external/**
