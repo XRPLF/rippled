@@ -140,12 +140,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testInvalidRequest()
+    testInvalidRequest(FeatureBitset features)
     {
         testcase("test invalid DelegateSet");
         using namespace jtx;
 
-        Env env(*this);
+        Env env(*this, features);
         Account gw{"gateway"};
         Account alice{"alice"};
         Account bob{"bob"};
@@ -217,22 +217,17 @@ class Delegate_test : public beast::unit_test::suite
         }
 
         // non-delegatable transaction
+        auto const res = features[fixDelegateV1_1] ? ter(temMALFORMED)
+                                                   : ter(tecNO_PERMISSION);
         {
-            env(delegate::set(gw, alice, {"SetRegularKey"}),
-                ter(tecNO_PERMISSION));
-            env(delegate::set(gw, alice, {"AccountSet"}),
-                ter(tecNO_PERMISSION));
-            env(delegate::set(gw, alice, {"SignerListSet"}),
-                ter(tecNO_PERMISSION));
-            env(delegate::set(gw, alice, {"DelegateSet"}),
-                ter(tecNO_PERMISSION));
-            env(delegate::set(gw, alice, {"SetRegularKey"}),
-                ter(tecNO_PERMISSION));
-            env(delegate::set(gw, alice, {"EnableAmendment"}),
-                ter(tecNO_PERMISSION));
-            env(delegate::set(gw, alice, {"UNLModify"}), ter(tecNO_PERMISSION));
-            env(delegate::set(gw, alice, {"SetFee"}), ter(tecNO_PERMISSION));
-            env(delegate::set(gw, alice, {"Batch"}), ter(tecNO_PERMISSION));
+            env(delegate::set(gw, alice, {"SetRegularKey"}), res);
+            env(delegate::set(gw, alice, {"AccountSet"}), res);
+            env(delegate::set(gw, alice, {"SignerListSet"}), res);
+            env(delegate::set(gw, alice, {"DelegateSet"}), res);
+            env(delegate::set(gw, alice, {"EnableAmendment"}), res);
+            env(delegate::set(gw, alice, {"UNLModify"}), res);
+            env(delegate::set(gw, alice, {"SetFee"}), res);
+            env(delegate::set(gw, alice, {"Batch"}), res);
         }
     }
 
@@ -1714,8 +1709,7 @@ class Delegate_test : public beast::unit_test::suite
                     if (!features[fixDelegateV1_1])
                         env(delegate::set(alice, bob, {tx}));
                     else
-                        env(delegate::set(alice, bob, {tx}),
-                            ter(tecNO_PERMISSION));
+                        env(delegate::set(alice, bob, {tx}), ter(temMALFORMED));
                 }
             };
 
@@ -1748,7 +1742,8 @@ class Delegate_test : public beast::unit_test::suite
 
         testFeatureDisabled();
         testDelegateSet();
-        testInvalidRequest();
+        testInvalidRequest(all);
+        testInvalidRequest(all - fixDelegateV1_1);
         testReserve();
         testFee();
         testSequence();

@@ -83,7 +83,7 @@ public:
     std::optional<TxType>
     getGranularTxType(GranularPermissionType const& gpType) const;
 
-    TER
+    bool
     isDelegatable(std::uint32_t const& permissionValue, Rules const& rules)
         const;
 
