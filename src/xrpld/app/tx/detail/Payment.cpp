@@ -285,6 +285,13 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
         return tecNO_DELEGATE_PERMISSION;
     }
 
+    // Pre-fixDelegateV1_1: MPT is not supported here.
+    // Return tefEXCEPTION explicitly rather than relying on dstAmount.issue()
+    // to throw. (This code is only reachable when fixDelegateV1_1 is not
+    // enabled.)
+    if (dstAmount.holds<MPTIssue>())
+        return tefEXCEPTION;
+
     auto const& amountIssue = dstAmount.issue();
     if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
         amountIssue.account == tx[sfAccount])
