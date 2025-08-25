@@ -381,6 +381,9 @@ template <class T>
 NotTEC
 Transactor::invokePreflight(PreflightContext const& ctx)
 {
+    // TODO: If #5650 is merged, use its transaction -> amendment lookup here to
+    // do a first-pass check. Rewrite or remove any `isEnabled` overloads that
+    // check those default amendments.
     if (!T::isEnabled(ctx))
         return temDISABLED;
 
