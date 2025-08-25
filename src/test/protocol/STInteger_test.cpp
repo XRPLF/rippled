@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/TxFormats.h>
 
 namespace ripple {
 
@@ -36,7 +38,9 @@ struct STInteger_test : public beast::unit_test::suite
         // there is some special handling for sfTransactionResult
         STUInt8 tr(sfTransactionResult, 0);
         BEAST_EXPECT(tr.value() == 0);
-        BEAST_EXPECT(tr.getText() == "0");
+        BEAST_EXPECT(
+            tr.getText() ==
+            "The transaction was applied. Only final in a validated ledger.");
         BEAST_EXPECT(tr.getSType() == STI_UINT8);
         BEAST_EXPECT(tr.getJson(JsonOptions::none) == "tesSUCCESS");
     }
@@ -51,15 +55,15 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u16.getJson(JsonOptions::none) == 65535);
 
         // there is some special handling for sfLedgerEntryType
-        STUInt32 let(sfLedgerEntryType, 0x0061);
-        BEAST_EXPECT(let.value() == 0x0061);
+        STUInt16 let(sfLedgerEntryType, ltACCOUNT_ROOT);
+        BEAST_EXPECT(let.value() == ltACCOUNT_ROOT);
         BEAST_EXPECT(let.getText() == "AccountRoot");
-        BEAST_EXPECT(let.getSType() == STI_UINT32);
+        BEAST_EXPECT(let.getSType() == STI_UINT16);
         BEAST_EXPECT(let.getJson(JsonOptions::none) == "AccountRoot");
 
         // there is some special handling for sfTransactionType
-        STUInt16 tlt(sfTransactionType, 0);
-        BEAST_EXPECT(tlt.value() == 0);
+        STUInt16 tlt(sfTransactionType, ttPAYMENT);
+        BEAST_EXPECT(tlt.value() == ttPAYMENT);
         BEAST_EXPECT(tlt.getText() == "Payment");
         BEAST_EXPECT(tlt.getSType() == STI_UINT16);
         BEAST_EXPECT(tlt.getJson(JsonOptions::none) == "Payment");
@@ -75,8 +79,8 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u32.getJson(JsonOptions::none) == 1234567890);
 
         // there is some special handling for sfPermissionValue
-        STUInt32 pv(sfPermissionValue, 0x00000001);
-        BEAST_EXPECT(pv.value() == 0x00000001);
+        STUInt32 pv(sfPermissionValue, ttPAYMENT + 1);
+        BEAST_EXPECT(pv.value() == ttPAYMENT + 1);
         BEAST_EXPECT(pv.getText() == "Payment");
         BEAST_EXPECT(pv.getSType() == STI_UINT32);
         BEAST_EXPECT(pv.getJson(JsonOptions::none) == "Payment");
