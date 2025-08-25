@@ -49,6 +49,20 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u16.getText() == "65535");
         BEAST_EXPECT(u16.getSType() == STI_UINT16);
         BEAST_EXPECT(u16.getJson(JsonOptions::none) == 65535);
+
+        // there is some special handling for sfLedgerEntryType
+        STUInt32 let(sfLedgerEntryType, 0x0061);
+        BEAST_EXPECT(let.value() == 0x0061);
+        BEAST_EXPECT(let.getText() == "AccountRoot");
+        BEAST_EXPECT(let.getSType() == STI_UINT32);
+        BEAST_EXPECT(let.getJson(JsonOptions::none) == "AccountRoot");
+
+        // there is some special handling for sfTransactionType
+        STUInt16 tlt(sfTransactionType, 0);
+        BEAST_EXPECT(tlt.value() == 0);
+        BEAST_EXPECT(tlt.getText() == "Payment");
+        BEAST_EXPECT(tlt.getSType() == STI_UINT16);
+        BEAST_EXPECT(tlt.getJson(JsonOptions::none) == "Payment");
     }
 
     void
@@ -59,6 +73,13 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(u32.getText() == "1234567890");
         BEAST_EXPECT(u32.getSType() == STI_UINT32);
         BEAST_EXPECT(u32.getJson(JsonOptions::none) == 1234567890);
+
+        // there is some special handling for sfPermissionValue
+        STUInt32 pv(sfPermissionValue, 0x00000001);
+        BEAST_EXPECT(pv.value() == 0x00000001);
+        BEAST_EXPECT(pv.getText() == "Payment");
+        BEAST_EXPECT(pv.getSType() == STI_UINT32);
+        BEAST_EXPECT(pv.getJson(JsonOptions::none) == "Payment");
     }
 
     void
