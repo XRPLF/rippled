@@ -31,16 +31,22 @@
 
 namespace ripple {
 
-Expected<std::uint32_t, HostFunctionError>
+Expected<std::int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getLedgerSqn()
 {
-    return ctx.view().seq();
+    auto seq = ctx.view().seq();
+    if (seq > std::numeric_limits<int32_t>::max())
+        return Unexpected(HostFunctionError::INTERNAL);
+    return static_cast<int32_t>(seq);
 }
 
-Expected<std::uint32_t, HostFunctionError>
+Expected<std::int32_t, HostFunctionError>
 WasmHostFunctionsImpl::getParentLedgerTime()
 {
-    return ctx.view().parentCloseTime().time_since_epoch().count();
+    auto time = ctx.view().parentCloseTime().time_since_epoch().count();
+    if (time > std::numeric_limits<int32_t>::max())
+        return Unexpected(HostFunctionError::INTERNAL);
+    return static_cast<int32_t>(time);
 }
 
 Expected<Hash, HostFunctionError>
