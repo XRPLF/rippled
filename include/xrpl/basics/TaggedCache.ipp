@@ -23,6 +23,8 @@
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/TaggedCache.h>
 
+#include <iostream>
+
 namespace ripple {
 
 template <
@@ -105,10 +107,10 @@ TaggedCache<
     KeyEqual,
     Mutex>::size() const
 {
-    static unsigned long call_count{0};
-    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
-                            << ", size, call_count = " << call_count++;
     std::lock_guard lock(m_mutex);
+    static unsigned long call_count{0};
+    std::cout << "TaggedCache (" << m_name << ") lock stats,"
+              << ", size, call_count = " << ++call_count << std::endl;
     return m_cache.size();
 }
 
@@ -258,12 +260,12 @@ TaggedCache<
     KeyEqual,
     Mutex>::touch_if_exists(KeyComparable const& key)
 {
-    static unsigned long call_count{0};
-    JLOG(m_journal.debug())
-        << "TaggedCache (" << m_name << ") lock stats,"
-        << ", touch_if_exists, call_count = " << call_count++;
-
     std::lock_guard lock(m_mutex);
+
+    static unsigned long call_count{0};
+    std::cout << "TaggedCache (" << m_name << ") lock stats,"
+              << "touch_if_exists, call_count = " << ++call_count << std::endl;
+
     auto const iter(m_cache.find(key));
     if (iter == m_cache.end())
     {
@@ -378,10 +380,11 @@ TaggedCache<
     // Remove from cache, if !valid, remove from map too. Returns true if
     // removed from cache
 
-    static unsigned long call_count{0};
-    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
-                            << ", del, call_count = " << call_count++;
     std::lock_guard lock(m_mutex);
+
+    static unsigned long call_count{0};
+    std::cout << "TaggedCache (" << m_name << ") lock stats, "
+              << "del, call_count = " << ++call_count << std::endl;
 
     auto cit = m_cache.find(key);
 
@@ -435,8 +438,8 @@ TaggedCache<
     std::lock_guard lock(m_mutex);
 
     static unsigned long call_count{0};
-    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
-                            << ", canonicalize, call_count = " << call_count++;
+    std::cout << "TaggedCache (" << m_name << ") lock stats, "
+              << "canonicalize, call_count = " << ++call_count << std::endl;
     auto cit = m_cache.find(key);
 
     if (cit == m_cache.end())
@@ -575,11 +578,12 @@ TaggedCache<
     KeyEqual,
     Mutex>::fetch(key_type const& key)
 {
-    static unsigned long call_count{0};
-    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
-                            << ", fetch, call_count = " << call_count++;
-
     std::lock_guard<mutex_type> l(m_mutex);
+
+    static unsigned long call_count{0};
+    std::cout << "TaggedCache (" << m_name << ") lock stats, "
+              << "fetch, call_count = " << ++call_count << std::endl;
+
     auto ret = initialFetch(key, l);
     if (!ret)
         ++m_misses;
@@ -646,11 +650,12 @@ TaggedCache<
     Mutex>::insert(key_type const& key)
     -> std::enable_if_t<IsKeyCache, ReturnType>
 {
-    static unsigned long call_count{0};
-    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
-                            << ", insert, call_count = " << call_count++;
-
     std::lock_guard lock(m_mutex);
+
+    static unsigned long call_count{0};
+    std::cout << "TaggedCache (" << m_name << ") lock stats, "
+              << "insert, call_count = " << ++call_count << std::endl;
+
     clock_type::time_point const now(m_clock.now());
     auto [it, inserted] = m_cache.emplace(
         std::piecewise_construct,
@@ -734,14 +739,15 @@ TaggedCache<
     KeyEqual,
     Mutex>::getKeys() const -> std::vector<key_type>
 {
-    static unsigned long call_count{0};
-    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
-                            << ", getKeys, call_count = " << call_count++;
-
     std::vector<key_type> v;
 
     {
         std::lock_guard lock(m_mutex);
+
+        static unsigned long call_count{0};
+        std::cout << "TaggedCache (" << m_name << ") lock stats, "
+                  << "getKeys, call_count = " << ++call_count << std::endl;
+
         v.reserve(m_cache.size());
         for (auto const& _ : m_cache)
             v.push_back(_.first);
@@ -798,12 +804,13 @@ TaggedCache<
     KeyEqual,
     Mutex>::fetch(key_type const& digest, Handler const& h)
 {
-    static unsigned long call_count{0};
-    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
-                            << ", fetch, call_count = " << call_count++;
-
     {
         std::lock_guard l(m_mutex);
+
+        static unsigned long call_count{0};
+        std::cout << "TaggedCache (" << m_name << ") lock stats, "
+                  << "fetch, call_count = " << ++call_count << std::endl;
+
         if (auto ret = initialFetch(digest, l))
             return ret;
     }
@@ -933,9 +940,9 @@ TaggedCache<
         int mapRemovals = 0;
 
         static unsigned long call_count{0};
-        JLOG(m_journal.debug())
-            << "TaggedCache (" << m_name << ") lock stats,"
-            << ", sweep-KVCache, call_count = " << call_count++;
+        std::cout << "TaggedCache (" << m_name << ") lock stats, "
+                  << "sweep-KVCache, call_count = " << ++call_count
+                  << std::endl;
 
         // Keep references to all the stuff we sweep
         // so that we can destroy them outside the lock.
@@ -1027,9 +1034,8 @@ TaggedCache<
         int mapRemovals = 0;
 
         static unsigned long call_count{0};
-        JLOG(m_journal.debug())
-            << "TaggedCache (" << m_name << ") lock stats,"
-            << ", sweep-KCache, call_count = " << call_count++;
+        std::cout << "TaggedCache (" << m_name << ") lock stats, "
+                  << "sweep-KCache, call_count = " << ++call_count << std::endl;
 
         // Keep references to all the stuff we sweep
         // so that we can destroy them outside the lock.

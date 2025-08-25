@@ -25,6 +25,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/to_string.h>
 
+#include <iostream>
+
 namespace ripple {
 
 // FIXME: Need to clean up ledgers by index at some point
@@ -56,10 +58,6 @@ LedgerHistory::insert(
     std::shared_ptr<Ledger const> const& ledger,
     bool validated)
 {
-    static unsigned long call_count{0};
-    JLOG(j_.debug()) << "LedgerHistory lock stats,"
-                     << ", insert, call_count = " << call_count++;
-
     if (!ledger->isImmutable())
         LogicError("mutable Ledger in insert");
 
@@ -68,6 +66,10 @@ LedgerHistory::insert(
         "ripple::LedgerHistory::insert : nonzero hash");
 
     std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+
+    static unsigned long call_count{0};
+    std::cout << "LedgerHistory lock stats, "
+              << "insert, call_count = " << ++call_count << std::endl;
 
     bool const alreadyHad = m_ledgers_by_hash.canonicalize_replace_cache(
         ledger->info().hash, ledger);
@@ -80,11 +82,12 @@ LedgerHistory::insert(
 LedgerHash
 LedgerHistory::getLedgerHash(LedgerIndex index)
 {
-    static unsigned long call_count{0};
-    JLOG(j_.debug()) << "LedgerHistory lock stats,"
-                     << ", getLedgerHash, call_count = " << call_count++;
-
     std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+
+    static unsigned long call_count{0};
+    std::cout << "LedgerHistory lock stats, "
+              << "getLedgerHash, call_count = " << ++call_count << std::endl;
+
     if (auto it = mLedgersByIndex.find(index); it != mLedgersByIndex.end())
         return it->second;
     return {};
@@ -93,12 +96,14 @@ LedgerHistory::getLedgerHash(LedgerIndex index)
 std::shared_ptr<Ledger const>
 LedgerHistory::getLedgerBySeq(LedgerIndex index)
 {
-    static unsigned long call_count{0};
-    JLOG(j_.debug()) << "LedgerHistory lock stats,"
-                     << ", getLedgerBySeq, call_count = " << call_count++;
-
     {
         std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+
+        static unsigned long call_count{0};
+        std::cout << "LedgerHistory lock stats, "
+                  << "getLedgerBySeq, call_count = " << ++call_count
+                  << std::endl;
+
         auto it = mLedgersByIndex.find(index);
 
         if (it != mLedgersByIndex.end())
@@ -547,11 +552,12 @@ LedgerHistory::validatedLedger(
 bool
 LedgerHistory::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 {
-    static unsigned long call_count{0};
-    JLOG(j_.debug()) << "LedgerHistory lock stats,"
-                     << ", fixIndex, call_count = " << call_count++;
-
     std::unique_lock sl(m_ledgers_by_hash.peekMutex());
+
+    static unsigned long call_count{0};
+    std::cout << "LedgerHistory lock stats, "
+              << "fixIndex, call_count = " << ++call_count << std::endl;
+
     auto it = mLedgersByIndex.find(ledgerIndex);
 
     if ((it != mLedgersByIndex.end()) && (it->second != ledgerHash))
