@@ -107,6 +107,10 @@ TaggedCache<
     KeyEqual,
     Mutex>::size() const
 {
+    static unsigned long call_count{0};
+    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
+                            << ", size, call_count = " << call_count++;
+
     std::size_t totalSize = 0;
     for (size_t i = 0; i < partitionLocks_.size(); ++i)
     {
@@ -239,6 +243,11 @@ TaggedCache<
     KeyEqual,
     Mutex>::touch_if_exists(KeyComparable const& key)
 {
+    static unsigned long call_count{0};
+    JLOG(m_journal.debug())
+        << "TaggedCache (" << m_name << ") lock stats,"
+        << ", touch_if_exists, call_count = " << call_count++;
+
     std::lock_guard<Mutex> lock(lockPartition(key));
     auto const iter(m_cache.find(key));
     if (iter == m_cache.end())
@@ -353,6 +362,10 @@ TaggedCache<
     // Remove from cache, if !valid, remove from map too. Returns true if
     // removed from cache
 
+    static unsigned long call_count{0};
+    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
+                            << ", del, call_count = " << call_count++;
+
     std::lock_guard<Mutex> lock(lockPartition(key));
 
     auto cit = m_cache.find(key);
@@ -404,6 +417,10 @@ TaggedCache<
 {
     // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
+
+    static unsigned long call_count{0};
+    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
+                            << ", canonicalize, call_count = " << call_count++;
 
     std::lock_guard<Mutex> lock(lockPartition(key));
     auto cit = m_cache.find(key);
@@ -543,6 +560,10 @@ TaggedCache<
     KeyEqual,
     Mutex>::fetch(key_type const& key)
 {
+    static unsigned long call_count{0};
+    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
+                            << ", fetch, call_count = " << call_count++;
+
     std::lock_guard<Mutex> lock(lockPartition(key));
 
     auto ret = initialFetch(key);
@@ -611,6 +632,10 @@ TaggedCache<
     Mutex>::insert(key_type const& key)
     -> std::enable_if_t<IsKeyCache, ReturnType>
 {
+    static unsigned long call_count{0};
+    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
+                            << ", insert, call_count = " << call_count++;
+
     clock_type::time_point const now(m_clock.now());
     std::lock_guard<Mutex> lock(lockPartition(key));
     auto [it, inserted] = m_cache.emplace(
@@ -672,6 +697,10 @@ TaggedCache<
     KeyEqual,
     Mutex>::getKeys() const -> std::vector<key_type>
 {
+    static unsigned long call_count{0};
+    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
+                            << ", getKeys, call_count = " << call_count++;
+
     std::vector<key_type> v;
 
     {
@@ -736,6 +765,10 @@ TaggedCache<
     KeyEqual,
     Mutex>::fetch(key_type const& digest, Handler const& h)
 {
+    static unsigned long call_count{0};
+    JLOG(m_journal.debug()) << "TaggedCache (" << m_name << ") lock stats,"
+                            << ", fetch, call_count = " << call_count++;
+
     std::lock_guard<Mutex> lock(lockPartition(digest));
 
     if (auto ret = initialFetch(digest))
@@ -869,6 +902,11 @@ TaggedCache<
         int cacheRemovals = 0;
         int mapRemovals = 0;
 
+        static unsigned long call_count{0};
+        JLOG(m_journal.debug())
+            << "TaggedCache (" << m_name << ") lock stats,"
+            << ", sweep-KVCache, call_count = " << call_count++;
+
         std::lock_guard<Mutex> lock(partitionLock);
 
         // Keep references to all the stuff we sweep
@@ -961,6 +999,11 @@ TaggedCache<
 
         int cacheRemovals = 0;
         int mapRemovals = 0;
+
+        static unsigned long call_count{0};
+        JLOG(m_journal.debug())
+            << "TaggedCache (" << m_name << ") lock stats,"
+            << ", sweep-KCache, call_count = " << call_count++;
 
         std::lock_guard<Mutex> lock(partitionLock);
 
