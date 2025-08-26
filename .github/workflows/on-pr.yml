@@ -34,8 +34,14 @@ jobs:
     if: ${{ !github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-latest
     steps:
-      - name: No-op
-        run: true
+      - name: Check Ready to merge
+        id: ready
+        run: |
+          echo "ready=${{ contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}" >> "${GITHUB_OUTPUT}"
+          echo "force=${{ !github.event.pull_request.draft && contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}" >> "${GITHUB_OUTPUT}"
+          cat "${GITHUB_OUTPUT}"
+    outputs:
+      force: ${{ steps.ready.outputs.force }}
 
   # This job checks whether any files have changed that should cause the next
   # jobs to run. We do it this way rather than using `paths` in the `on:`
@@ -82,21 +88,33 @@ jobs:
     outputs:
       changed: ${{ steps.changes.outputs.any_changed }}
 
+  do-run:
+    needs:
+      - should-run
+      - any-changed
+    if: ${{ needs.should-run.outputs.force == 'true' || needs.any-changed.outputs.changed == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op
+        run: true
+    outputs:
+      go: true
+
   check-format:
-    needs: any-changed
-    if: needs.any-changed.outputs.changed == 'true'
+    needs: do-run
+    if: needs.do-run.outputs.go == 'true'
     uses: ./.github/workflows/check-format.yml
 
   check-levelization:
-    needs: any-changed
-    if: needs.any-changed.outputs.changed == 'true'
+    needs: do-run
+    if: needs.do-run.outputs.go == 'true'
     uses: ./.github/workflows/check-levelization.yml
 
   # This job works around the limitation that GitHub Actions does not support
   # using environment variables as inputs for reusable workflows.
   generate-outputs:
-    needs: any-changed
-    if: needs.any-changed.outputs.changed == 'true'
+    needs: do-run
+    if: needs.do-run.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: No-op
@@ -130,3 +148,13 @@ jobs:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  passed:
+    needs:
+      - build-test
+      - check-format
+      - check-levelization
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op
+        run: true
