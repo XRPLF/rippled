@@ -62,6 +62,7 @@ jobs:
             .clang-format
             .codecov.yml
             .pre-commit-config.yaml
+
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
             .github/actions/build-test/**
