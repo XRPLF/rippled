@@ -60,7 +60,6 @@ jobs:
             .github/workflows/notify-clio.yml
             .github/workflows/on-pr.yml
             .clang-format
-            .codecov.yml
             .pre-commit-config.yaml
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
@@ -68,6 +67,7 @@ jobs:
             .github/actions/build-test/**
             .github/scripts/strategy-matrix/**
             .github/workflows/build-test.yml
+            .codecov.yml
             cmake/**
             conan/**
             external/**

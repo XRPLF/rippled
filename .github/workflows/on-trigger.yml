@@ -23,6 +23,7 @@ on:
       - ".github/actions/build-test/**"
       - ".github/scripts/strategy-matrix/**"
       - ".github/workflows/build-test.yml"
+      - ".codecov.yml"
       - "cmake/**"
       - "conan/**"
       - "external/**"
