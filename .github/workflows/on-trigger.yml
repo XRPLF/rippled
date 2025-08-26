@@ -113,5 +113,6 @@ jobs:
       os: ${{ matrix.os }}
       strategy_matrix: "all"
     secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
