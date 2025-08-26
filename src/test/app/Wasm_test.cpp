@@ -1381,12 +1381,12 @@ struct Wasm_test : public beast::unit_test::suite
             struct CacheTestHostFunctions : public TestHostFunctions
             {
                 mutable int cacheAccessCount = 0;
-                mutable std::vector<bool> cacheState;
+                mutable std::vector<uint8_t> cacheState;
 
                 explicit CacheTestHostFunctions(Env& env)
                     : TestHostFunctions(env)
                 {
-                    cacheState.resize(10, false);  // Simulate cache slots
+                    cacheState.resize(10, 0);  // Simulate cache slots
                 }
 
                 Expected<int32_t, HostFunctionError>
@@ -1399,7 +1399,7 @@ struct Wasm_test : public beast::unit_test::suite
                         cacheIdx >= static_cast<int>(cacheState.size()))
                         return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
 
-                    cacheState[cacheIdx] = true;
+                    cacheState[cacheIdx] = 1;
                     return 1;  // Success
                 }
 
