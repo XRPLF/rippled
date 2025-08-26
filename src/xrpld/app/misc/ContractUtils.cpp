@@ -544,25 +544,5 @@ finalizeContractData(
     return tesSUCCESS;
 }
 
-TER
-consumeGasAsFee(
-    ApplyView& view,
-    AccountID const& account,
-    uint32_t const& gasUsed)
-{
-    XRPAmount const feeToPay =
-        XRPAmount{gasUsed * view.fees().gasPrice / MICRO_DROPS_PER_DROP};
-    auto const sle = view.peek(keylet::account(account));
-    if (!sle)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
-    STAmount priorBalance = (*sle)[sfBalance];
-    if (priorBalance.xrp() < feeToPay)
-        return tecINSUFFICIENT_FUNDS;
-
-    sle->setFieldAmount(sfBalance, priorBalance.xrp() - feeToPay);
-    return tesSUCCESS;
-}
-
 }  // namespace contract
 }  // namespace ripple
