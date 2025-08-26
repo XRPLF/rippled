@@ -1672,24 +1672,56 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test delegate disabled tx");
         using namespace jtx;
 
-        // map of tx and required features
+        // map of tx and required features.
+        // non-delegatable tx are not included.
+        // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
+        // NFTokenAcceptOffer are not included, they are tested separately.
         std::unordered_map<std::string, std::vector<uint256>>
             txRequiredFeatures{
-                {"NFTokenModify",
-                 {featureNonFungibleTokensV1_1, featureDynamicNFT}},
-                {"VaultCreate", {featureSingleAssetVault, featureMPTokensV1}},
-                {"PermissionedDomainSet",
-                 {featurePermissionedDomains, featureCredentials}},
                 {"TicketCreate", {featureTicketBatch}},
                 {"CheckCreate", {featureChecks}},
                 {"CheckCash", {featureChecks}},
                 {"CheckCancel", {featureChecks}},
+                {"DepositPreauth", {featureDepositPreauth}},
+                {"Clawback", {featureClawback}},
+                {"AMMClawback", {featureAMMClawback}},
                 {"AMMCreate", {featureAMM}},
                 {"AMMDeposit", {featureAMM}},
                 {"AMMWithdraw", {featureAMM}},
-                {"AMMClawback", {featureAMMClawback}},
-                {"Clawback", {featureClawback}},
-            };
+                {"AMMVote", {featureAMM}},
+                {"AMMBid", {featureAMM}},
+                {"AMMDelete", {featureAMM}},
+                {"XChainCreateClaimID", {featureXChainBridge}},
+                {"XChainCommit", {featureXChainBridge}},
+                {"XChainClaim", {featureXChainBridge}},
+                {"XChainAccountCreateCommit", {featureXChainBridge}},
+                {"XChainAddClaimAttestation", {featureXChainBridge}},
+                {"XChainAddAccountCreateAttestation", {featureXChainBridge}},
+                {"XChainModifyBridge", {featureXChainBridge}},
+                {"XChainCreateBridge", {featureXChainBridge}},
+                {"DIDSet", {featureDID}},
+                {"DIDDelete", {featureDID}},
+                {"OracleSet", {featurePriceOracle}},
+                {"OracleDelete", {featurePriceOracle}},
+                {"LedgerStateFix", {fixNFTokenPageLinks}},
+                {"MPTokenIssuanceCreate", {featureMPTokensV1}},
+                {"MPTokenIssuanceDestroy", {featureMPTokensV1}},
+                {"MPTokenIssuanceSet", {featureMPTokensV1}},
+                {"MPTokenAuthorize", {featureMPTokensV1}},
+                {"CredentialCreate", {featureCredentials}},
+                {"CredentialAccept", {featureCredentials}},
+                {"CredentialDelete", {featureCredentials}},
+                {"NFTokenModify",
+                 {featureNonFungibleTokensV1_1, featureDynamicNFT}},
+                {"PermissionedDomainSet",
+                 {featurePermissionedDomains, featureCredentials}},
+                {"PermissionedDomainDelete", {featurePermissionedDomains}},
+                {"VaultCreate", {featureSingleAssetVault, featureMPTokensV1}},
+                {"VaultSet", {featureSingleAssetVault}},
+                {"VaultDelete", {featureSingleAssetVault}},
+                {"VaultDeposit", {featureSingleAssetVault}},
+                {"VaultWithdraw", {featureSingleAssetVault}},
+                {"VaultClawback", {featureSingleAssetVault}}};
 
         // fixDelegateV1_1 post-amendment: can not delegate tx if any
         // required feature disabled.
@@ -1701,8 +1733,8 @@ class Delegate_test : public beast::unit_test::suite
                 {
                     Env env(*this, features - feature);
 
-                    Account alice{"alice"};
-                    Account bob{"bob"};
+                    Account const alice{"alice"};
+                    Account const bob{"bob"};
                     env.fund(XRP(100000), alice, bob);
                     env.close();
 
@@ -1717,13 +1749,14 @@ class Delegate_test : public beast::unit_test::suite
                 txAmendmentDisabled(features, tx.first);
         }
 
-        // if all the required features enabled, will succeed
+        // if all the required features in txRequiredFeatures are enabled, will
+        // succeed
         {
             auto txAmendmentEnabled = [&](std::string const& tx) {
                 Env env(*this, features);
 
-                Account alice{"alice"};
-                Account bob{"bob"};
+                Account const alice{"alice"};
+                Account const bob{"bob"};
                 env.fund(XRP(100000), alice, bob);
                 env.close();
 
@@ -1732,6 +1765,61 @@ class Delegate_test : public beast::unit_test::suite
 
             for (auto const& tx : txRequiredFeatures)
                 txAmendmentEnabled(tx.first);
+        }
+
+        // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer, and
+        // NFTokenAcceptOffer are tested separately. Since
+        // featureNonFungibleTokensV1_1 includes the functionality of
+        // featureNonFungibleTokensV1, fixNFTokenNegOffer, and fixNFTokenDirV1,
+        // both featureNonFungibleTokensV1_1 and featureNonFungibleTokensV1 need
+        // to be disabled to block these transactions from being delegated.
+        {
+            Env env(
+                *this,
+                features - featureNonFungibleTokensV1 -
+                    featureNonFungibleTokensV1_1);
+
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            env.fund(XRP(100000), alice, bob);
+            env.close();
+
+            for (auto const tx :
+                 {"NFTokenMint",
+                  "NFTokenBurn",
+                  "NFTokenCreateOffer",
+                  "NFTokenCancelOffer",
+                  "NFTokenAcceptOffer"})
+            {
+                if (!features[fixDelegateV1_1])
+                    env(delegate::set(alice, bob, {tx}));
+                else
+                    env(delegate::set(alice, bob, {tx}), ter(temMALFORMED));
+            }
+        }
+
+        // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer, and
+        // NFTokenAcceptOffer are allowed to be delegated if either
+        // featureNonFungibleTokensV1 or featureNonFungibleTokensV1_1 is
+        // enabled.
+        {
+            for (auto const feature :
+                 {featureNonFungibleTokensV1, featureNonFungibleTokensV1_1})
+            {
+                Env env(*this, features - feature);
+                Account const alice{"alice"};
+                Account const bob{"bob"};
+                env.fund(XRP(100000), alice, bob);
+                env.close();
+
+                for (auto const tx :
+                     {"NFTokenMint",
+                      "NFTokenBurn",
+                      "NFTokenCreateOffer",
+                      "NFTokenCancelOffer",
+                      "NFTokenAcceptOffer"})
+                    env(delegate::set(alice, bob, {tx}));
+            }
         }
     }
 

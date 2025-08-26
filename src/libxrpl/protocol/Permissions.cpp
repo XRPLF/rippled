@@ -162,6 +162,17 @@ Permission::isDelegatable(
                 txFeaturesIt->second.begin(),
                 txFeaturesIt->second.end(),
                 [&rules](auto const& feature) {
+                    if (feature == featureNonFungibleTokensV1 ||
+                        feature == fixNFTokenNegOffer ||
+                        feature == fixNFTokenDirV1)
+                    {
+                        // The functionality of the featureNonFungibleTokensV1_1
+                        // amendment is precisely the functionality of the three
+                        // amendments above.
+                        return !rules.enabled(featureNonFungibleTokensV1_1) &&
+                            !rules.enabled(feature);
+                    }
+
                     return !rules.enabled(feature);
                 }))
             return false;
