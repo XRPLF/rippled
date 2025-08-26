@@ -41,6 +41,7 @@
 #include <boost/thread/shared_mutex.hpp>
 
 #include <atomic>
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -177,8 +178,8 @@ private:
     std::queue<std::shared_ptr<Message>> send_queue_;
     bool shutdown_ = false;
     bool shutdownStarted_ = false;
-    bool readInProgress_ = false;
-    bool writeInProgress_ = false;
+    bool readPending_ = false;
+    bool writePending_ = false;
     int large_sendq_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
@@ -537,7 +538,7 @@ private:
      * @note This function will terminate the connection in case of any errors.
      */
     void
-    setTimer();
+    setTimer(std::chrono::seconds interval);
 
     /**
      * @brief Handles the expiration of the peer activity timer.

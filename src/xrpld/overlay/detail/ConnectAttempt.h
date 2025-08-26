@@ -60,7 +60,7 @@ private:
     std::shared_ptr<PeerFinder::Slot> slot_;
     request_type req_;
     bool shutdown_ = false;
-    bool isIOInProgress_ = false;
+    bool ioPending_ = false;
     bool shutdownStarted_ = false;
 
 public:

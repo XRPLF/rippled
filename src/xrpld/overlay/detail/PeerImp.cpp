@@ -44,6 +44,7 @@
 #include <boost/beast/core/ostream.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <memory>
 #include <mutex>
 #include <numeric>
@@ -59,6 +60,10 @@ std::chrono::milliseconds constexpr peerHighLatency{300};
 
 /** How often we PING the peer to check for latency and sendq probe */
 std::chrono::seconds constexpr peerTimerInterval{60};
+
+/** The timeout for a shutdown timer */
+std::chrono::seconds constexpr shutdownTimerInterval{5};
+
 }  // namespace
 
 // TODO: Remove this exclusion once unit tests are added after the hotfix
@@ -223,7 +228,7 @@ PeerImp::stop()
     // outbound connections are under our control and may be logged
     // at a higher level, but inbound connections are more numerous and
     // uncontrolled so to prevent log flooding the severity is reduced.
-    JLOG((inbound_ ? journal_.debug() : journal_.info())) << "stop: Stop";
+    JLOG(journal_.debug()) << "stop: Stop";
 
     shutdown();
 }
@@ -622,16 +627,12 @@ PeerImp::tryAsyncShutdown()
     if (!shutdown_ || shutdownStarted_)
         return;
 
-    if (readInProgress_ || writeInProgress_)
+    if (readPending_ || writePending_)
         return;
 
     shutdownStarted_ = true;
 
-    XRPL_ASSERT(
-        !readInProgress_ && !writeInProgress_,
-        "ripple::PeerImp::tryAsyncShutdown : read and write not in progress");
-
-    setTimer();
+    setTimer(shutdownTimerInterval);
 
     // gracefully shutdown the SSL socket, performing a shutdown handshake
     stream_.async_shutdown(bind_executor(
@@ -705,11 +706,11 @@ PeerImp::close()
 //------------------------------------------------------------------------------
 
 void
-PeerImp::setTimer()
+PeerImp::setTimer(std::chrono::seconds interval)
 {
     try
     {
-        timer_.expires_after(peerTimerInterval);
+        timer_.expires_after(interval);
     }
     catch (std::exception const& ex)
     {
@@ -731,6 +732,7 @@ PeerImp::onTimer(error_code const& ec)
 
     if (ec)
     {
+        // do not initiate shutdown, timers are frequently cancelled
         if (ec == boost::asio::error::operation_aborted)
             return;
 
@@ -743,7 +745,7 @@ PeerImp::onTimer(error_code const& ec)
     // force close the connection
     if (shutdown_)
     {
-        JLOG(journal_.warn()) << "onTimer: shutdown timer expired";
+        JLOG(journal_.debug()) << "onTimer: shutdown timer expired";
         return close();
     }
 
@@ -782,7 +784,7 @@ PeerImp::onTimer(error_code const& ec)
 
     send(std::make_shared<Message>(message, protocol::mtPING));
 
-    setTimer();
+    setTimer(peerTimerInterval);
 }
 
 void
@@ -815,7 +817,8 @@ PeerImp::doAccept()
         "ripple::PeerImp::doAccept : empty read buffer");
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
-    // a shutdown was initiated before the handshare, there is nothing to do
+
+    // a shutdown was initiated before the handshake, there is nothing to do
     if (shutdown_)
         return tryAsyncShutdown();
 
@@ -826,7 +829,7 @@ PeerImp::doAccept()
     if (!sharedValue)
         return fail("makeSharedValue: Unexpected failure");
 
-    JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
+    JLOG(journal_.debug()) << "Protocol: " << to_string(protocol_);
     JLOG(journal_.info()) << "Public Key: "
                           << toBase58(TokenType::NodePublic, publicKey_);
 
@@ -930,7 +933,7 @@ PeerImp::doProtocolStart()
     if (auto m = overlay_.getManifestsMessage())
         send(m);
 
-    setTimer();
+    setTimer(peerTimerInterval);
 }
 
 // Called repeatedly with protocol message data
@@ -941,7 +944,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         strand_.running_in_this_thread(),
         "ripple::PeerImp::onReadMessage : strand in this thread");
 
-    readInProgress_ = false;
+    readPending_ = false;
 
     if (!socket_.is_open())
         return;
@@ -950,7 +953,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     {
         if (ec == boost::asio::error::eof)
         {
-            JLOG(journal_.info()) << "EOF";
+            JLOG(journal_.debug()) << "EOF";
             return shutdown();
         }
 
@@ -1004,7 +1007,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
     if (shutdown_)
         return tryAsyncShutdown();
 
-    readInProgress_ = true;
+    readPending_ = true;
 
     XRPL_ASSERT(
         !shutdownStarted_, "ripple::PeerImp::onReadMessage : shutdown started");
@@ -1028,7 +1031,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
         strand_.running_in_this_thread(),
         "ripple::PeerImp::onWriteMessage : strand in this thread");
 
-    writeInProgress_ = false;
+    writePending_ = false;
 
     if (!socket_.is_open())
         return;
@@ -1061,7 +1064,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 
     if (!send_queue_.empty())
     {
-        writeInProgress_ = true;
+        writePending_ = true;
         XRPL_ASSERT(
             !shutdownStarted_,
             "ripple::PeerImp::onWriteMessage : shutdown started");

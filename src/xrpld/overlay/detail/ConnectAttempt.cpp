@@ -62,7 +62,6 @@ ConnectAttempt::~ConnectAttempt()
 {
     if (slot_ != nullptr)
         overlay_.peerFinder().on_closed(slot_);
-    JLOG(journal_.trace()) << "~ConnectAttempt";
 }
 
 void
@@ -75,7 +74,7 @@ ConnectAttempt::stop()
     if (!socket_.is_open())
         return;
 
-    JLOG(journal_.debug()) << "Stop";
+    JLOG(journal_.debug()) << "stop: Stop";
 
     shutdown();
 }
@@ -83,7 +82,7 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
-    isIOInProgress_ = true;
+    ioPending_ = true;
 
     stream_.next_layer().async_connect(
         remote_endpoint_,
@@ -122,14 +121,10 @@ ConnectAttempt::tryAsyncShutdown()
     if (!shutdown_ || shutdownStarted_)
         return;
 
-    if (isIOInProgress_)
+    if (ioPending_)
         return;
 
     shutdownStarted_ = true;
-
-    XRPL_ASSERT(
-        !isIOInProgress_,
-        "ripple::ConnectAttempt::tryAsyncShutdown: io not in progress");
 
     setTimer();
 
@@ -178,7 +173,7 @@ ConnectAttempt::close()
     error_code ec;
     socket_.close(ec);
 
-    JLOG(journal_.debug()) << "close: Closed";
+    JLOG(journal_.info()) << "close: Closed";
 }
 
 void
@@ -205,7 +200,7 @@ ConnectAttempt::setTimer()
     catch (std::exception const& ex)
     {
         JLOG(journal_.error()) << "setTimer: " << ex.what();
-        return;
+        return close();
     };
 
     timer_.async_wait(strand_.wrap(std::bind(
@@ -227,8 +222,9 @@ ConnectAttempt::onTimer(error_code ec)
 
     if (ec)
     {
+        // do not initiate shutdown, timers are frequently cancelled
         if (ec == boost::asio::error::operation_aborted)
-            return tryAsyncShutdown();
+            return;
 
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
@@ -243,7 +239,7 @@ ConnectAttempt::onConnect(error_code ec)
 {
     cancelTimer();
 
-    isIOInProgress_ = false;
+    ioPending_ = false;
 
     if (ec)
     {
@@ -261,14 +257,12 @@ ConnectAttempt::onConnect(error_code ec)
     if (ec)
         return fail("onConnect", ec);
 
-    JLOG(journal_.trace()) << "onConnect";
-
     if (shutdown_)
         return tryAsyncShutdown();
 
     setTimer();
 
-    isIOInProgress_ = true;
+    ioPending_ = true;
 
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     stream_.async_handshake(
@@ -284,7 +278,7 @@ ConnectAttempt::onHandshake(error_code ec)
 {
     cancelTimer();
 
-    isIOInProgress_ = false;
+    ioPending_ = false;
 
     if (ec)
     {
@@ -327,7 +321,7 @@ ConnectAttempt::onHandshake(error_code ec)
 
     setTimer();
 
-    isIOInProgress_ = true;
+    ioPending_ = true;
 
     boost::beast::http::async_write(
         stream_,
@@ -343,7 +337,7 @@ ConnectAttempt::onWrite(error_code ec)
 {
     cancelTimer();
 
-    isIOInProgress_ = false;
+    ioPending_ = false;
 
     if (ec)
     {
@@ -357,7 +351,7 @@ ConnectAttempt::onWrite(error_code ec)
         return tryAsyncShutdown();
 
     setTimer();
-    isIOInProgress_ = true;
+    ioPending_ = true;
 
     boost::beast::http::async_read(
         stream_,
@@ -374,7 +368,7 @@ ConnectAttempt::onRead(error_code ec)
 {
     cancelTimer();
 
-    isIOInProgress_ = false;
+    ioPending_ = false;
 
     if (ec)
     {
@@ -474,11 +468,10 @@ ConnectAttempt::processResponse()
             remote_endpoint_.address(),
             app_);
 
-        JLOG(journal_.info())
-            << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
-
         JLOG(journal_.debug())
             << "Protocol: " << to_string(*negotiatedProtocol);
+        JLOG(journal_.info())
+            << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
 
         auto const member = app_.cluster().member(publicKey);
         if (member)
@@ -486,8 +479,8 @@ ConnectAttempt::processResponse()
             JLOG(journal_.info()) << "Cluster name: " << *member;
         }
 
-        auto const result = overlay_.peerFinder().activate(
-            slot_, publicKey, static_cast<bool>(member));
+        auto const result =
+            overlay_.peerFinder().activate(slot_, publicKey, !member->empty());
         if (result != PeerFinder::Result::success)
         {
             std::stringstream ss;
