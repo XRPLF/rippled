@@ -6,34 +6,11 @@ name: PR
 
 on:
   pull_request:
-    paths:
-      - ".github/actions/build-deps/**"
-      - ".github/actions/build-test/**"
-      - ".github/scripts/levelization/**"
-      - ".github/scripts/strategy-matrix/**"
-      - ".github/workflows/build-test.yml"
-      - ".github/workflows/check-format.yml"
-      - ".github/workflows/check-levelization.yml"
-      - ".github/workflows/notify-clio.yml"
-      - ".github/workflows/on-pr.yml"
-      # Keep the list of paths below in sync with those in the `on-trigger.yml`
-      # file.
-      - "cmake/**"
-      - "conan/**"
-      - "external/**"
-      - "include/**"
-      - "src/**"
-      - "tests/**"
-      - ".clang-format"
-      - ".codecov.yml"
-      - ".pre-commit-config.yaml"
-      - "CMakeLists.txt"
-      - "conanfile.py"
     types:
       - opened
+      - reopened
       - synchronize
-      - labeled
-      - unlabeled
+      - ready_for_review
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -48,41 +25,75 @@ env:
   CONAN_REMOTE_URL: https://conan.ripplex.io
 
 jobs:
-  # This job determines whether the workflow should run. It runs when:
-  # * Opened as a non-draft PR.
-  # * A commit is added to a non-draft PR or the PR has the 'DraftRunCI' label.
-  # * A draft PR has the 'DraftRunCI' label added.
-  # * A non-draft PR has the 'DraftRunCI' label removed.
-  # These checks are in part to ensure the workflow won't run needlessly while
-  # also allowing it to be triggered without having to add a no-op commit. A new
-  # workflow execution can be triggered by adding and then removing the label on
-  # a non-draft PR, or conversely by removing it and then adding it back on a
-  # draft PR; this can be useful in certain cases.
+  # This job determines whether the workflow should run. It runs when the PR is
+  # not a draft or has the 'DraftRunCI' label.
   should-run:
-    if: >-
-      ${{
-        (github.event.action == 'opened' && !github.event.pull_request.draft) ||
-        (github.event.action == 'synchronize' && (!github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI'))) ||
-        (github.event.action == 'labeled' && github.event.pull_request.draft && github.event.label.name == 'DraftRunCI') ||
-        (github.event.action == 'unlabeled' && !github.event.pull_request.draft && github.event.label.name == 'DraftRunCI')
-      }}
+    if: ${{ !github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-latest
     steps:
       - name: No-op
         run: true
 
-  check-format:
+  # This job checks whether any files have changed that should cause the next
+  # jobs to run. We do it this way rather than using `paths` in the `on:`
+  # section, because all required checks must pass, even for changes that do not
+  # modify anything that affects those checks. We would therefore like to make
+  # the checks required only if the job runs, but GitHub does not support that
+  # directly. By always executing the workflow on new commits and by using the
+  # changed-files action below, we ensure that Github considers any skipped jobs
+  # to have passed, and in turn the required checks as well.
+  any-changed:
     needs: should-run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Determine changed files
+        id: changes
+        uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
+        with:
+          files: |
+            # These paths are unique to `on-pr.yml`.
+            .github/scripts/levelization/**
+            .github/workflows/check-format.yml
+            .github/workflows/check-levelization.yml
+            .github/workflows/notify-clio.yml
+            .github/workflows/on-pr.yml
+            .clang-format
+            .pre-commit-config.yaml
+
+            # Keep the paths below in sync with those in `on-trigger.yml`.
+            .github/actions/build-deps/**
+            .github/actions/build-test/**
+            .github/scripts/strategy-matrix/**
+            .github/workflows/build-test.yml
+            .codecov.yml
+            cmake/**
+            conan/**
+            external/**
+            include/**
+            src/**
+            tests/**
+            CMakeLists.txt
+            conanfile.py
+    outputs:
+      changed: ${{ steps.changes.outputs.any_changed }}
+
+  check-format:
+    needs: any-changed
+    if: needs.any-changed.outputs.changed == 'true'
     uses: ./.github/workflows/check-format.yml
 
   check-levelization:
-    needs: should-run
+    needs: any-changed
+    if: needs.any-changed.outputs.changed == 'true'
     uses: ./.github/workflows/check-levelization.yml
 
   # This job works around the limitation that GitHub Actions does not support
   # using environment variables as inputs for reusable workflows.
   generate-outputs:
-    needs: should-run
+    needs: any-changed
+    if: needs.any-changed.outputs.changed == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: No-op
