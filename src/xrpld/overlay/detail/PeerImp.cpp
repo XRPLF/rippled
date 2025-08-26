@@ -2866,7 +2866,7 @@ PeerImp::checkTransaction(
             (stx->getFieldU32(sfLastLedgerSequence) <
              app_.getLedgerMaster().getValidLedgerIndex()))
         {
-            JLOG(p_journal_.warn())
+            JLOG(p_journal_.info())
                 << "Marking transaction " << stx->getTransactionID()
                 << "as BAD because it's expired";
             app_.getHashRouter().setFlags(
