@@ -38,6 +38,7 @@
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 
+#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
@@ -214,7 +215,8 @@ public:
         std::size_t& disabled,
         std::size_t& enabledInSkip) const;
 
-    void checkTracking(std::uint32_t) override;
+    void
+    checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const override;
@@ -326,10 +328,7 @@ public:
         if (req.method() != boost::beast::http::verb::get)
             return false;
         if (!boost::beast::http::token_list{req["Connection"]}.exists(
-                "upgrade") &&
-            !boost::beast::http::token_list{req["Connection"]}.exists(
-                "Upgrade"))  // TODO: Capital Upgrade may not be needed here,
-                             // need to verify
+                "upgrade"))
             return false;
         return true;
     }
@@ -341,10 +340,7 @@ public:
         if (req.version() < 11)
             return false;
         if (!boost::beast::http::token_list{req["Connection"]}.exists(
-                "upgrade") &&
-            !boost::beast::http::token_list{req["Connection"]}.exists(
-                "Upgrade"))  // TODO: Capital Upgrade may not be needed here,
-                             // need to verify
+                "upgrade"))
             return false;
         return true;
     }
