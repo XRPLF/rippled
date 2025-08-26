@@ -94,6 +94,12 @@ finalizeContractData(
     ContractEventMap const& eventMap,
     uint256 const& txnID);
 
+TER
+consumeGasAsFee(
+    ApplyView& view,
+    AccountID const& account,
+    uint32_t const& gasUsed);
+
 }  // namespace contract
 }  // namespace ripple
 

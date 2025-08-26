@@ -115,7 +115,9 @@ ContractCall::preclaim(PreclaimContext const& ctx)
 
     if (it == functions.end())
     {
-        JLOG(ctx.j.error()) << "ContractCall: FunctionName: " <<  functionNameHexStr << " does not exist in contract.";
+        JLOG(ctx.j.error())
+            << "ContractCall: FunctionName: " << functionNameHexStr
+            << " does not exist in contract.";
         return temMALFORMED;
     }
 
@@ -176,7 +178,8 @@ ContractCall::doApply()
     }
     if (!function)
     {
-        JLOG(j_.error()) << "ContractCall: FunctionName does not exist in contract.";
+        JLOG(j_.error())
+            << "ContractCall: FunctionName does not exist in contract.";
         return tefINTERNAL;
     }
 
@@ -261,7 +264,9 @@ ContractCall::doApply()
     // Wasm Result
     if (re.has_value())
     {
-        meta.setFieldU32(sfGasUsed, static_cast<uint32_t>(re.value().cost));
+        std::uint32_t const gasUsed = static_cast<uint32_t>(re.value().cost);
+        meta.setFieldU32(sfGasUsed, gasUsed);
+        contract::consumeGasAsFee(ctx_.view(), account_, gasUsed);
         auto ret = re.value().result;
         if (ret < 0)
         {
