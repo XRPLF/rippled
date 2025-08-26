@@ -99,6 +99,7 @@ floatLogImpl(Slice const& x, int32_t mode);
 
 struct HostFunctions
 {
+    // LCOV_EXCL_START
     virtual void
     setRT(void const*)
     {
@@ -519,6 +520,7 @@ struct HostFunctions
     }
 
     virtual ~HostFunctions() = default;
+    // LCOV_EXCL_STOP
 };
 
 }  // namespace ripple
