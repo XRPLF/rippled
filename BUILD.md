@@ -147,8 +147,9 @@ git sparse-checkout set recipes/snappy
 git sparse-checkout add recipes/soci
 git fetch origin master
 git checkout master
-conan export --version 1.1.10 external/recipes/snappy
-conan export --version 4.0.3 external/recipes/soci
+conan export --version 1.1.10 recipes/snappy/all
+conan export --version 4.0.3 recipes/soci/all
+rm -rf .git
 ```
 
 In the case we switch to a newer version of a dependency that still requires a
