@@ -106,7 +106,10 @@ jobs:
       conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
 
   build-test:
-    needs: generate-outputs
+    needs:
+      - any-changed
+      - generate-outputs
+    if: needs.any-changed.outputs.changed == 'true'
     uses: ./.github/workflows/build-test.yml
     strategy:
       matrix:
@@ -120,8 +123,10 @@ jobs:
 
   notify-clio:
     needs:
+      - any-changed
       - generate-outputs
       - build-test
+    if: needs.any-changed.outputs.changed == 'true'
     uses: ./.github/workflows/notify-clio.yml
     with:
       conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
