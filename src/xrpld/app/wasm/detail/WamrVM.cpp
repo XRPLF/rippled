@@ -35,6 +35,7 @@ namespace ripple {
 
 namespace {
 
+// LCOV_EXCL_START
 static log_level_t
 getLogLevel(beast::severities::Severity severity)
 {
@@ -155,6 +156,7 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
     j << std::endl;
 #endif
 }
+// LCOV_EXCL_STOP
 
 }  // namespace
 
@@ -525,14 +527,20 @@ ModuleWrapper::buildImports(
                 imp.udata,
                 nullptr);
             if (!func)
+            {
+                // LCOV_EXCL_START
                 throw std::runtime_error(
-                    "can't create import function " +
-                    imp.name);  // LCOV_EXCL_LINE
+                    "can't create import function " + imp.name);
+                // LCOV_EXCL_STOP
+            }
 
             if (imp.gas && !wasm_func_set_gas(func, imp.gas))
+            {
+                // LCOV_EXCL_START
                 throw std::runtime_error(
-                    "can't set gas for import function " +
-                    imp.name);  // LCOV_EXCL_LINE
+                    "can't set gas for import function " + imp.name);
+                // LCOV_EXCL_STOP
+            }
 
             wimports.data[i] = wasm_func_as_extern(func);
             ++impCnt;
