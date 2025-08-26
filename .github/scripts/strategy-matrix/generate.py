@@ -38,7 +38,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
             # - Bookworm using GCC 13: Release and Unity on linux/arm64, set
             #   the reference fee to 500.
             # - Bookworm using GCC 15: Debug and no Unity on linux/amd64, enable
-            #   code coverage.
+            #   code coverage (which will be done below).
             # - Bookworm using Clang 16: Debug and no Unity on linux/arm64,
             #   enable voidstar.
             # - Bookworm using Clang 17: Release and no Unity on linux/amd64,
@@ -51,9 +51,6 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
                         cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
-                        cmake_args = f'-Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0 {cmake_args}'
-                        cmake_target = 'coverage'
-                        build_only = True
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-16' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/arm64':
                         cmake_args = f'-Dvoidstar=ON {cmake_args}'
@@ -122,6 +119,17 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         # investigation.
         if os['distro_name'] == 'rhel' and architecture['platform'] == 'linux/arm64':
             continue
+
+        # We skip all clang-20 on arm64 due to boost 1.86 build error
+        if f'{os['compiler_name']}-{os['compiler_version']}' == 'clang-20' and architecture['platform'] == 'linux/arm64':
+            continue
+
+        # Enable code coverage for Debian Bookworm using GCC 15 in Debug and no
+        # Unity on linux/amd64
+        if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
+            cmake_args = f'-Dcoverage=ON -Dcoverage_format=xml -DCODE_COVERAGE_VERBOSE=ON -DCMAKE_C_FLAGS=-O0 -DCMAKE_CXX_FLAGS=-O0 {cmake_args}'
+            cmake_target = 'coverage'
+            build_only = True
 
         # Generate a unique name for the configuration, e.g. macos-arm64-debug
         # or debian-bookworm-gcc-12-amd64-release-unity.
