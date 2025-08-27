@@ -58,8 +58,8 @@ public:
     JsonLogStreamFixture()
         : sink_(beast::severities::kAll, logStream_), j_(sink_)
     {
-        static log::JsonStructuredJournal structuredJournal;
-        beast::Journal::enableStructuredJournal(&structuredJournal);
+        auto structuredJournal = std::make_unique<log::JsonStructuredJournal>();
+        beast::Journal::enableStructuredJournal(std::move(structuredJournal));
     }
 
     ~JsonLogStreamFixture()

@@ -25,7 +25,7 @@
 
 namespace beast {
 
-Journal::StructuredJournalImpl* Journal::m_structuredJournalImpl = nullptr;
+std::unique_ptr<Journal::StructuredJournalImpl> Journal::m_structuredJournalImpl;
 
 //------------------------------------------------------------------------------
 
@@ -179,26 +179,18 @@ Journal::ScopedStream::~ScopedStream()
         if (s == "\n")
         {
             if (m_structuredJournalImpl)
-            {
                 m_structuredJournalImpl->flush(
                     &m_sink, m_level, "", m_attributes.get());
-            }
             else
-            {
                 m_sink.write(m_level, "");
-            }
         }
         else
         {
             if (m_structuredJournalImpl)
-            {
                 m_structuredJournalImpl->flush(
                     &m_sink, m_level, s, m_attributes.get());
-            }
             else
-            {
                 m_sink.write(m_level, s);
-            }
         }
     }
 }
