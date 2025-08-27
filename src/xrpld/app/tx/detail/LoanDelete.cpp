@@ -86,10 +86,11 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
         // should be impossible
         return tecINTERNAL;  // LCOV_EXCL_LINE
     }
-    if (loanBrokerSle->at(sfOwner) != account)
+    if (loanBrokerSle->at(sfOwner) != account &&
+        loanSle->at(sfBorrower) != account)
     {
         JLOG(ctx.j.warn())
-            << "LoanBroker for Loan does not belong to the account.";
+            << "Account is not Loan Broker Owner or Loan Borrower.";
         return tecNO_PERMISSION;
     }
 
