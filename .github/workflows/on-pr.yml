@@ -84,19 +84,35 @@ jobs:
     needs: any-changed
     runs-on: ubuntu-latest
     steps:
-      - name: Check Ready to merge
-        id: ready
+      - name: Check whether to run
+        id: go
         env:
+          FILES: ${{ needs.any-changed.outputs.changed == 'true' }}
+          DRAFT: ${{ github.event.pull_request.draft }}
           READY: ${{ contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}
+          MERGE: ${{ github.event_name == 'merge_group' }}
         run: |
+          # These messages are included for auditability
+          if [[ "${FILES}" == "true" ]]
+          then
+            echo "INFO: Relevant files were changed"
+          fi
+          if [[ "${DRAFT}" == "true" ]]
+          then
+            echo "INFO: PR is marked as a draft"
+          fi
           if [[ "${READY}" == "true" ]]
           then
-            echo "PR is labeled as 'Ready to merge'."
+            echo "INFO: PR is labeled as 'Ready to merge'."
           fi
-          echo "ready=${{ !github.event.pull_request.draft && env.READY == 'true' }}" >> "${GITHUB_OUTPUT}"
+          if [[ "${MERGE}" == "true" ]]
+          then
+            echo "INFO: In merge queue"
+          fi
+          echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FILES == 'true' || env.MERGE == 'true' }}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
     outputs:
-      go: ${{ needs.any-changed.outputs.changed == 'true' || steps.ready.outputs.ready == 'true' || github.event_name == 'merge_group' }}
+      go: ${{ steps.go.outputs.go == 'true' }}
 
   check-format:
     needs: should-run
