@@ -76,7 +76,7 @@ private:
 
     std::unique_ptr<StructuredLogAttributes> m_attributes;
 
-    static StructuredJournalImpl* m_structuredJournalImpl;
+    static std::unique_ptr<StructuredJournalImpl> m_structuredJournalImpl;
 
     // Invariant: m_sink always points to a valid Sink
     Sink* m_sink = nullptr;
@@ -85,9 +85,9 @@ public:
     //--------------------------------------------------------------------------
 
     static void
-    enableStructuredJournal(StructuredJournalImpl* impl)
+    enableStructuredJournal(std::unique_ptr<StructuredJournalImpl> impl)
     {
-        m_structuredJournalImpl = impl;
+        m_structuredJournalImpl = std::move(impl);
     }
 
     static void
@@ -99,7 +99,7 @@ public:
     static bool
     isStructuredJournalEnabled()
     {
-        return m_structuredJournalImpl;
+        return m_structuredJournalImpl != nullptr;
     }
 
     class StructuredJournalImpl
@@ -382,19 +382,13 @@ public:
         : m_sink(other.m_sink)
     {
         if (attributes)
-        {
             m_attributes = std::move(attributes);
-        }
         if (other.m_attributes)
         {
             if (m_attributes)
-            {
                 m_attributes->combine(other.m_attributes);
-            }
             else
-            {
                 m_attributes = other.m_attributes->clone();
-            }
         }
     }
 
@@ -404,19 +398,13 @@ public:
         : m_sink(other.m_sink)
     {
         if (attributes)
-        {
             m_attributes = std::move(attributes);
-        }
         if (other.m_attributes)
         {
             if (m_attributes)
-            {
                 m_attributes->combine(std::move(other.m_attributes));
-            }
             else
-            {
                 m_attributes = std::move(other.m_attributes);
-            }
         }
     }
 
@@ -439,9 +427,7 @@ public:
     {
         m_sink = other.m_sink;
         if (other.m_attributes)
-        {
             m_attributes = other.m_attributes->clone();
-        }
         return *this;
     }
 
@@ -450,9 +436,7 @@ public:
     {
         m_sink = other.m_sink;
         if (other.m_attributes)
-        {
             m_attributes = std::move(other.m_attributes);
-        }
         return *this;
     }
 
@@ -487,9 +471,7 @@ public:
     trace(std::source_location location = std::source_location::current()) const
     {
         if (m_structuredJournalImpl)
-        {
             m_structuredJournalImpl->initMessageContext(location);
-        }
         return {
             m_attributes ? m_attributes->clone() : nullptr,
             *m_sink,
@@ -500,9 +482,7 @@ public:
     debug(std::source_location location = std::source_location::current()) const
     {
         if (m_structuredJournalImpl)
-        {
             m_structuredJournalImpl->initMessageContext(location);
-        }
         return {
             m_attributes ? m_attributes->clone() : nullptr,
             *m_sink,
@@ -513,9 +493,7 @@ public:
     info(std::source_location location = std::source_location::current()) const
     {
         if (m_structuredJournalImpl)
-        {
             m_structuredJournalImpl->initMessageContext(location);
-        }
         return {
             m_attributes ? m_attributes->clone() : nullptr,
             *m_sink,
@@ -526,9 +504,7 @@ public:
     warn(std::source_location location = std::source_location::current()) const
     {
         if (m_structuredJournalImpl)
-        {
             m_structuredJournalImpl->initMessageContext(location);
-        }
         return {
             m_attributes ? m_attributes->clone() : nullptr,
             *m_sink,
@@ -539,9 +515,7 @@ public:
     error(std::source_location location = std::source_location::current()) const
     {
         if (m_structuredJournalImpl)
-        {
             m_structuredJournalImpl->initMessageContext(location);
-        }
         return {
             m_attributes ? m_attributes->clone() : nullptr,
             *m_sink,
@@ -552,9 +526,7 @@ public:
     fatal(std::source_location location = std::source_location::current()) const
     {
         if (m_structuredJournalImpl)
-        {
             m_structuredJournalImpl->initMessageContext(location);
-        }
         return {
             m_attributes ? m_attributes->clone() : nullptr,
             *m_sink,

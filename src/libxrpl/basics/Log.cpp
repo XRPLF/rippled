@@ -167,13 +167,9 @@ Logs::journal(
     if (globalLogAttributes_)
     {
         if (attributes)
-        {
             attributes->combine(globalLogAttributes_);
-        }
         else
-        {
             attributes = globalLogAttributes_->clone();
-        }
     }
     return beast::Journal(get(name), name, std::move(attributes));
 }

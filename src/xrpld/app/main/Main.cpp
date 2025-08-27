@@ -791,8 +791,8 @@ run(int argc, char** argv)
 
     if (config->LOG_STYLE == LogStyle::Json)
     {
-        static log::JsonStructuredJournal structuredJournal;
-        beast::Journal::enableStructuredJournal(&structuredJournal);
+        auto structuredJournal = std::make_unique<log::JsonStructuredJournal>();
+        beast::Journal::enableStructuredJournal(std::move(structuredJournal));
         Logs::setGlobalAttributes(log::attributes(
             {{"Application", "rippled"}, {"NetworkID", config->NETWORK_ID}}));
     }

@@ -1085,9 +1085,7 @@ LogStyle::LogStyle
 LogStyle::fromString(std::string const& str)
 {
     if (str == "json")
-    {
         return Json;
-    }
     return LogFmt;
 }
 
