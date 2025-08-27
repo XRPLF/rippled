@@ -61,7 +61,6 @@ private:
     request_type req_;
     bool shutdown_ = false;
     bool ioPending_ = false;
-    bool shutdownStarted_ = false;
 
 public:
     ConnectAttempt(

@@ -118,13 +118,11 @@ ConnectAttempt::tryAsyncShutdown()
         strand_.running_in_this_thread(),
         "ripple::ConnectAttempt::tryAsyncShutdown : strand in this thread");
 
-    if (!shutdown_ || shutdownStarted_)
+    if (!shutdown_)
         return;
 
     if (ioPending_)
         return;
-
-    shutdownStarted_ = true;
 
     setTimer();
 
@@ -288,7 +286,7 @@ ConnectAttempt::onHandshake(error_code ec)
         return fail("onHandshake", ec);
     }
 
-    endpoint_type local_endpoint = socket_.local_endpoint(ec);
+    auto const local_endpoint = socket_.local_endpoint(ec);
     if (ec)
         return fail("onHandshake", ec);
 
@@ -320,7 +318,6 @@ ConnectAttempt::onHandshake(error_code ec)
         return tryAsyncShutdown();
 
     setTimer();
-
     ioPending_ = true;
 
     boost::beast::http::async_write(
@@ -460,7 +457,7 @@ ConnectAttempt::processResponse()
 
     try
     {
-        auto publicKey = verifyHandshake(
+        auto const publicKey = verifyHandshake(
             response_,
             *sharedValue,
             overlay_.setup().networkID,
