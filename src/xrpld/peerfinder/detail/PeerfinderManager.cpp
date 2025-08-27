@@ -23,7 +23,8 @@
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 #include <xrpld/peerfinder/detail/StoreSqdb.h>
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include <memory>
 #include <optional>
@@ -34,8 +35,10 @@ namespace PeerFinder {
 class ManagerImp : public Manager
 {
 public:
-    boost::asio::io_service& io_service_;
-    std::optional<boost::asio::io_service::work> work_;
+    boost::asio::io_context& io_context_;
+    std::optional<boost::asio::executor_work_guard<
+        boost::asio::io_context::executor_type>>
+        work_;
     clock_type& m_clock;
     beast::Journal m_journal;
     StoreSqdb m_store;
@@ -46,18 +49,18 @@ public:
     //--------------------------------------------------------------------------
 
     ManagerImp(
-        boost::asio::io_service& io_service,
+        boost::asio::io_context& io_context,
         clock_type& clock,
         beast::Journal journal,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector)
         : Manager()
-        , io_service_(io_service)
-        , work_(std::in_place, std::ref(io_service_))
+        , io_context_(io_context)
+        , work_(std::in_place, boost::asio::make_work_guard(io_context_))
         , m_clock(clock)
         , m_journal(journal)
         , m_store(journal)
-        , checker_(io_service_)
+        , checker_(io_context_)
         , m_logic(clock, m_store, checker_, journal)
         , m_config(config)
         , m_stats(std::bind(&ManagerImp::collect_metrics, this), collector)
@@ -271,14 +274,14 @@ Manager::Manager() noexcept : beast::PropertyStream::Source("peerfinder")
 
 std::unique_ptr<Manager>
 make_Manager(
-    boost::asio::io_service& io_service,
+    boost::asio::io_context& io_context,
     clock_type& clock,
     beast::Journal journal,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector)
 {
     return std::make_unique<ManagerImp>(
-        io_service, clock, journal, config, collector);
+        io_context, clock, journal, config, collector);
 }
 
 }  // namespace PeerFinder

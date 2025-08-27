@@ -91,8 +91,8 @@ BasePeer<Handler, Impl>::BasePeer(
                    static std::atomic<unsigned> id{0};
                    return "##" + std::to_string(++id) + " ";
                }()}}))
-    , work_(executor)
-    , strand_(executor)
+    , work_(boost::asio::make_work_guard(executor))
+    , strand_(boost::asio::make_strand(executor))
 {
 }
 

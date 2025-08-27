@@ -233,7 +233,7 @@ public:
         JobQueue& job_queue,
         LedgerMaster& ledgerMaster,
         ValidatorKeys const& validatorKeys,
-        boost::asio::io_service& io_svc,
+        boost::asio::io_context& io_svc,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
         : app_(app)
@@ -588,31 +588,37 @@ public:
     stop() override
     {
         {
-            boost::system::error_code ec;
-            heartbeatTimer_.cancel(ec);
-            if (ec)
+            try
+            {
+                heartbeatTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
                     << "NetworkOPs: heartbeatTimer cancel error: "
-                    << log::param("Reason", ec.message());
+                    << log::param("Reason", e.what());
             }
 
-            ec.clear();
-            clusterTimer_.cancel(ec);
-            if (ec)
+            try
+            {
+                clusterTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
                     << "NetworkOPs: clusterTimer cancel error: "
-                    << log::param("Reason", ec.message());
+                    << log::param("Reason", e.what());
             }
 
-            ec.clear();
-            accountHistoryTxTimer_.cancel(ec);
-            if (ec)
+            try
+            {
+                accountHistoryTxTimer_.cancel();
+            }
+            catch (boost::system::system_error const& e)
             {
                 JLOG(m_journal.error())
                     << "NetworkOPs: accountHistoryTxTimer cancel error: "
-                    << log::param("Reason", ec.message());
+                    << log::param("Reason", e.what());
             }
         }
         // Make sure that any waitHandlers pending in our timers are done.
@@ -984,7 +990,7 @@ NetworkOPsImp::setTimer(
                 }
             }))
     {
-        timer.expires_from_now(expiry_time);
+        timer.expires_after(expiry_time);
         timer.async_wait(std::move(*optionalCountedHandler));
     }
 }
@@ -4888,7 +4894,7 @@ make_NetworkOPs(
     JobQueue& job_queue,
     LedgerMaster& ledgerMaster,
     ValidatorKeys const& validatorKeys,
-    boost::asio::io_service& io_svc,
+    boost::asio::io_context& io_svc,
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector)
 {

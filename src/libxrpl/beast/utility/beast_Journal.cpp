@@ -25,7 +25,8 @@
 
 namespace beast {
 
-std::unique_ptr<Journal::StructuredJournalImpl> Journal::m_structuredJournalImpl;
+std::unique_ptr<Journal::StructuredJournalImpl>
+    Journal::m_structuredJournalImpl;
 
 //------------------------------------------------------------------------------
 

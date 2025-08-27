@@ -29,12 +29,17 @@
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/telemetry/JsonLogs.h>
 
+#include <boost/asio/io_context.hpp>
+#include <boost/process/v1/args.hpp>
+#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/exe.hpp>
+
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
-#include <boost/process.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/program_options.hpp>
 
 #include <google/protobuf/stubs/common.h>
@@ -284,7 +289,7 @@ runUnitTests(
     if (!child)
     {
         multi_runner_parent parent_runner;
-        std::vector<boost::process::child> children;
+        std::vector<boost::process::v1::child> children;
 
         std::string const exe_name = argv[0];
         std::vector<std::string> args;
@@ -297,7 +302,8 @@ runUnitTests(
 
         for (std::size_t i = 0; i < num_jobs; ++i)
             children.emplace_back(
-                boost::process::exe = exe_name, boost::process::args = args);
+                boost::process::v1::exe = exe_name,
+                boost::process::v1::args = args);
 
         int bad_child_exits = 0;
         int terminated_child_exits = 0;
