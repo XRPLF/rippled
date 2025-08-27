@@ -61,13 +61,9 @@ JsonLogAttributes::combine(std::unique_ptr<StructuredLogAttributes>&& context)
     auto structuredContext = static_cast<JsonLogAttributes*>(context.get());
 
     if (contextValues_.empty())
-    {
         contextValues_ = std::move(structuredContext->contextValues_);
-    }
     else
-    {
         contextValues_.merge(structuredContext->contextValues_);
-    }
 }
 
 JsonStructuredJournal::Logger::Logger(
@@ -89,9 +85,7 @@ JsonStructuredJournal::Logger::write(
     {
         auto jsonContext = static_cast<JsonLogAttributes*>(context);
         for (auto const& [key, value] : jsonContext->contextValues())
-        {
             globalContext[key] = value;
-        }
     }
     globalContext["Function"] = location.function_name();
     globalContext["File"] = location.file_name();
