@@ -121,7 +121,7 @@ protected:
         return complete_ || failed_;
     }
 
-    // Used in this class for access to boost::asio::io_service and
+    // Used in this class for access to boost::asio::io_context and
     // ripple::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
     beast::WrappedSink sink_;
