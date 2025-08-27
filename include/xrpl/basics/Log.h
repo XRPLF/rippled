@@ -239,7 +239,7 @@ public:
         }
         else
         {
-            globalLogAttributes_->combine(std::move(globalLogAttributes_));
+            globalLogAttributes_->combine(std::move(globalLogAttributes));
         }
     }
 
