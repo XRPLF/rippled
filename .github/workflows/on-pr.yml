@@ -37,6 +37,7 @@ jobs:
   # changed-files action below, we ensure that Github considers any skipped jobs
   # to have passed, and in turn the required checks as well.
   any-changed:
+    if: ${{ !github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -80,7 +81,6 @@ jobs:
   # * The PR is NOT a draft and is labeled "Ready to merge"
   # * The workflow is running from the merge queue
   should-run:
-    if: ${{ !github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     needs: any-changed
     runs-on: ubuntu-latest
     steps:
