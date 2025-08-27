@@ -36,7 +36,7 @@ WasmHostFunctionsImpl::getLedgerSqn()
 {
     auto seq = ctx.view().seq();
     if (seq > std::numeric_limits<int32_t>::max())
-        return Unexpected(HostFunctionError::INTERNAL);
+        return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
     return static_cast<int32_t>(seq);
 }
 
@@ -45,7 +45,7 @@ WasmHostFunctionsImpl::getParentLedgerTime()
 {
     auto time = ctx.view().parentCloseTime().time_since_epoch().count();
     if (time > std::numeric_limits<int32_t>::max())
-        return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+        return Unexpected(HostFunctionError::INTERNAL);
     return static_cast<int32_t>(time);
 }
 
