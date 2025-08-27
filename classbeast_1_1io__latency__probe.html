@@ -84,7 +84,7 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
-<p>Measures handler latency on an io_service queue.  
+<p>Measures handler latency on an io_context queue.  
  <a href="classbeast_1_1io__latency__probe.html#details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>&gt;</code></p>
@@ -93,7 +93,7 @@ Collaboration diagram for beast::io_latency_probe&lt; Clock &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classbeast_1_1io__latency__probe__coll__graph.png" border="0" usemap="#abeast_1_1io__latency__probe_3_01Clock_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="abeast_1_1io__latency__probe_3_01Clock_01_4_coll__map" id="abeast_1_1io__latency__probe_3_01Clock_01_4_coll__map">
-<area shape="rect" title="Measures handler latency on an io_service queue." alt="" coords="200,93,377,133"/>
+<area shape="rect" title="Measures handler latency on an io_context queue." alt="" coords="200,93,377,133"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title=" " alt="" coords="5,5,164,31"/>
 <area shape="poly" title=" " alt="" coords="123,34,249,91,246,96,121,39"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/thread/condition_variable_any.html" title=" " alt="" coords="188,5,389,31"/>
@@ -110,8 +110,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:afdfc98452171bf713bc0e9dc177a9922" id="r_afdfc98452171bf713bc0e9dc177a9922"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#afdfc98452171bf713bc0e9dc177a9922">io_latency_probe</a> (<a class="el" href="classbeast_1_1io__latency__probe.html#a686c16ebff88519c5a04a9be08b86b04">duration</a> const &amp;period, boost::asio::io_service &amp;ios)</td></tr>
-<tr class="separator:afdfc98452171bf713bc0e9dc177a9922"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0e358f4a3a4671f79406fc47c2e4fb3" id="r_ac0e358f4a3a4671f79406fc47c2e4fb3"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#ac0e358f4a3a4671f79406fc47c2e4fb3">io_latency_probe</a> (<a class="el" href="classbeast_1_1io__latency__probe.html#a686c16ebff88519c5a04a9be08b86b04">duration</a> const &amp;period, boost::asio::io_context &amp;ios)</td></tr>
+<tr class="separator:ac0e358f4a3a4671f79406fc47c2e4fb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa96df10dfc2d320b6a87e168cb55f729" id="r_aa96df10dfc2d320b6a87e168cb55f729"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#aa96df10dfc2d320b6a87e168cb55f729">~io_latency_probe</a> ()</td></tr>
 <tr class="separator:aa96df10dfc2d320b6a87e168cb55f729"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a583609000bb804d60aa7404f8d01762b" id="r_a583609000bb804d60aa7404f8d01762b"><td class="memTemplParams" colspan="2">template&lt;class Handler &gt; </td></tr>
@@ -123,11 +123,11 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a0d31e25fc6af4e3ed0ff85c82e0a5599"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initiate continuous i/o latency sampling.  <br /></td></tr>
 <tr class="separator:a0d31e25fc6af4e3ed0ff85c82e0a5599"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
-<tr class="memitem:acd2a9087b832d8633121870c11e63969" id="r_acd2a9087b832d8633121870c11e63969"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#acd2a9087b832d8633121870c11e63969">get_io_service</a> ()</td></tr>
-<tr class="memdesc:acd2a9087b832d8633121870c11e63969"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the io_service associated with the latency probe.  <br /></td></tr>
-<tr class="separator:acd2a9087b832d8633121870c11e63969"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abddfbafcd9be30bcb1f3eb13c6efaa14" id="r_abddfbafcd9be30bcb1f3eb13c6efaa14"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#abddfbafcd9be30bcb1f3eb13c6efaa14">get_io_service</a> () const</td></tr>
-<tr class="separator:abddfbafcd9be30bcb1f3eb13c6efaa14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa588798e305a23b3ce4b7e4d8afa9c0f" id="r_aa588798e305a23b3ce4b7e4d8afa9c0f"><td class="memItemLeft" align="right" valign="top">boost::asio::io_context &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#aa588798e305a23b3ce4b7e4d8afa9c0f">get_io_context</a> ()</td></tr>
+<tr class="memdesc:aa588798e305a23b3ce4b7e4d8afa9c0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the io_context associated with the latency probe.  <br /></td></tr>
+<tr class="separator:aa588798e305a23b3ce4b7e4d8afa9c0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d616ba99914b172233dd64dc68ada34" id="r_a3d616ba99914b172233dd64dc68ada34"><td class="memItemLeft" align="right" valign="top">boost::asio::io_context const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#a3d616ba99914b172233dd64dc68ada34">get_io_context</a> () const</td></tr>
+<tr class="separator:a3d616ba99914b172233dd64dc68ada34"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:a3aacab2155a327714b711dc3dbc8c69c" id="r_a3aacab2155a327714b711dc3dbc8c69c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#a3aacab2155a327714b711dc3dbc8c69c">cancel</a> ()</td></tr>
 <tr class="memdesc:a3aacab2155a327714b711dc3dbc8c69c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel all pending i/o.  <br /></td></tr>
@@ -161,8 +161,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a783c2279e0f950923ffdbdd8997ce8c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0e42d183a6ff580915cb318ce995870b" id="r_a0e42d183a6ff580915cb318ce995870b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1io__latency__probe.html#a686c16ebff88519c5a04a9be08b86b04">duration</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#a0e42d183a6ff580915cb318ce995870b">m_period</a></td></tr>
 <tr class="separator:a0e42d183a6ff580915cb318ce995870b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aba1ffe854135963273599b10d1a808f1" id="r_aba1ffe854135963273599b10d1a808f1"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#aba1ffe854135963273599b10d1a808f1">m_ios</a></td></tr>
-<tr class="separator:aba1ffe854135963273599b10d1a808f1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae383624a03cc91e1c9f71d67a931958" id="r_aae383624a03cc91e1c9f71d67a931958"><td class="memItemLeft" align="right" valign="top">boost::asio::io_context &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#aae383624a03cc91e1c9f71d67a931958">m_ios</a></td></tr>
+<tr class="separator:aae383624a03cc91e1c9f71d67a931958"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a36fc1e9d3fa836e6f8913643eed50707" id="r_a36fc1e9d3fa836e6f8913643eed50707"><td class="memItemLeft" align="right" valign="top">boost::asio::basic_waitable_timer&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#a36fc1e9d3fa836e6f8913643eed50707">m_timer</a></td></tr>
 <tr class="separator:a36fc1e9d3fa836e6f8913643eed50707"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc81df0e2b1263891edacabf50bc9477" id="r_afc81df0e2b1263891edacabf50bc9477"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1io__latency__probe.html#afc81df0e2b1263891edacabf50bc9477">m_cancel</a></td></tr>
@@ -170,9 +170,9 @@ Private Attributes</h2></td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><div class="compoundTemplParams">template&lt;class Clock&gt;<br />
-class beast::io_latency_probe&lt; Clock &gt;</div><p>Measures handler latency on an io_service queue. </p>
+class beast::io_latency_probe&lt; Clock &gt;</div><p>Measures handler latency on an io_context queue. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00037">37</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00038">38</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a686c16ebff88519c5a04a9be08b86b04" name="a686c16ebff88519c5a04a9be08b86b04"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a686c16ebff88519c5a04a9be08b86b04">&#9670;&#160;</a></span>duration</h2>
@@ -196,7 +196,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00040">40</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00041">41</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -222,13 +222,13 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00041">41</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00042">42</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="afdfc98452171bf713bc0e9dc177a9922" name="afdfc98452171bf713bc0e9dc177a9922"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afdfc98452171bf713bc0e9dc177a9922">&#9670;&#160;</a></span>io_latency_probe()</h2>
+<a id="ac0e358f4a3a4671f79406fc47c2e4fb3" name="ac0e358f4a3a4671f79406fc47c2e4fb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0e358f4a3a4671f79406fc47c2e4fb3">&#9670;&#160;</a></span>io_latency_probe()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -244,7 +244,7 @@ template&lt;class Clock &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::asio::io_service &amp;&#160;</td>
+          <td class="paramtype">boost::asio::io_context &amp;&#160;</td>
           <td class="paramname"><em>ios</em>&#160;</td>
         </tr>
         <tr>
@@ -255,7 +255,7 @@ template&lt;class Clock &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00052">52</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00053">53</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -276,13 +276,13 @@ template&lt;class Clock &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00061">61</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00062">62</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="acd2a9087b832d8633121870c11e63969" name="acd2a9087b832d8633121870c11e63969"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acd2a9087b832d8633121870c11e63969">&#9670;&#160;</a></span>get_io_service() <span class="overload">[1/2]</span></h2>
+<a id="aa588798e305a23b3ce4b7e4d8afa9c0f" name="aa588798e305a23b3ce4b7e4d8afa9c0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa588798e305a23b3ce4b7e4d8afa9c0f">&#9670;&#160;</a></span>get_io_context() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -290,7 +290,7 @@ template&lt;class Clock &gt; </div>
 template&lt;class Clock &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::io_service &amp; <a class="el" href="classbeast_1_1io__latency__probe.html">beast::io_latency_probe</a>&lt; Clock &gt;::get_io_service </td>
+          <td class="memname">boost::asio::io_context &amp; <a class="el" href="classbeast_1_1io__latency__probe.html">beast::io_latency_probe</a>&lt; Clock &gt;::get_io_context </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -298,14 +298,14 @@ template&lt;class Clock &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p>Return the io_service associated with the latency probe. </p>
+<p>Return the io_context associated with the latency probe. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00070">70</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00071">71</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
-<a id="abddfbafcd9be30bcb1f3eb13c6efaa14" name="abddfbafcd9be30bcb1f3eb13c6efaa14"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abddfbafcd9be30bcb1f3eb13c6efaa14">&#9670;&#160;</a></span>get_io_service() <span class="overload">[2/2]</span></h2>
+<a id="a3d616ba99914b172233dd64dc68ada34" name="a3d616ba99914b172233dd64dc68ada34"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d616ba99914b172233dd64dc68ada34">&#9670;&#160;</a></span>get_io_context() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -313,7 +313,7 @@ template&lt;class Clock &gt; </div>
 template&lt;class Clock &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::io_service const  &amp; <a class="el" href="classbeast_1_1io__latency__probe.html">beast::io_latency_probe</a>&lt; Clock &gt;::get_io_service </td>
+          <td class="memname">boost::asio::io_context const  &amp; <a class="el" href="classbeast_1_1io__latency__probe.html">beast::io_latency_probe</a>&lt; Clock &gt;::get_io_context </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -321,7 +321,7 @@ template&lt;class Clock &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00076">76</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00077">77</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -345,7 +345,7 @@ template&lt;class Clock &gt; </div>
 <p>Cancel all pending i/o. </p>
 <p>Any handlers which have already been queued will still be called. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00087">87</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00088">88</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -366,7 +366,7 @@ template&lt;class Clock &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00094">94</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00095">95</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -393,7 +393,7 @@ template&lt;class Handler &gt; </div>
 <p>Measure one sample of i/o latency. </p>
 <p>Handler will be called with this signature: void Handler (Duration d); </p>
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00107">107</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00108">108</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -420,7 +420,7 @@ template&lt;class Handler &gt; </div>
 <p>Initiate continuous i/o latency sampling. </p>
 <p>Handler will be called with this signature: void Handler (<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>); </p>
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00122">122</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00125">125</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -460,7 +460,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00133">133</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00138">138</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -489,7 +489,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00146">146</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00151">151</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -518,7 +518,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00153">153</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00158">158</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -545,7 +545,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00043">43</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00044">44</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -571,7 +571,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00044">44</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00045">45</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -597,7 +597,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00045">45</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00046">46</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -623,12 +623,12 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00046">46</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00047">47</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
-<a id="aba1ffe854135963273599b10d1a808f1" name="aba1ffe854135963273599b10d1a808f1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aba1ffe854135963273599b10d1a808f1">&#9670;&#160;</a></span>m_ios</h2>
+<a id="aae383624a03cc91e1c9f71d67a931958" name="aae383624a03cc91e1c9f71d67a931958"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae383624a03cc91e1c9f71d67a931958">&#9670;&#160;</a></span>m_ios</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -639,7 +639,7 @@ template&lt;class Clock &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::io_service&amp; <a class="el" href="classbeast_1_1io__latency__probe.html">beast::io_latency_probe</a>&lt; Clock &gt;::m_ios</td>
+          <td class="memname">boost::asio::io_context&amp; <a class="el" href="classbeast_1_1io__latency__probe.html">beast::io_latency_probe</a>&lt; Clock &gt;::m_ios</td>
         </tr>
       </table>
   </td>
@@ -649,7 +649,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00047">47</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00048">48</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -675,7 +675,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00048">48</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00049">49</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>
@@ -701,7 +701,7 @@ template&lt;class Clock &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00049">49</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__latency__probe_8h_source.html#l00050">50</a> of file <a class="el" href="io__latency__probe_8h_source.html">io_latency_probe.h</a>.</p>
 
 </div>
 </div>

@@ -1,13 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,91,209,175"/>
-<area shape="rect" id="Node000001" href="$structbeast_1_1is__uniquely__represented.html" title=" " alt="" coords="257,113,403,153"/>
-<area shape="poly" id="edge792_Node000000_Node000001" title=" " alt="" coords="223,131,257,131,257,136,223,136"/>
-<area shape="rect" id="Node000002" href="$structbeast_1_1is__uniquely__represented_3_01T_01const_01_4.html" title=" " alt="" coords="458,5,642,45"/>
-<area shape="poly" id="edge793_Node000001_Node000002" title=" " alt="" coords="368,103,407,78,450,55,479,43,481,48,452,60,409,83,371,108"/>
-<area shape="rect" id="Node000003" href="$structbeast_1_1is__uniquely__represented_3_01T_01const_01volatile_01_4.html" title=" " alt="" coords="465,70,635,125"/>
-<area shape="poly" id="edge794_Node000001_Node000003" title=" " alt="" coords="416,117,465,109,466,114,417,122"/>
-<area shape="rect" id="Node000004" href="$structbeast_1_1is__uniquely__represented_3_01T_01volatile_01_4.html" title=" " alt="" coords="451,149,649,189"/>
-<area shape="poly" id="edge795_Node000001_Node000004" title=" " alt="" coords="417,145,451,150,450,156,416,150"/>
-<area shape="rect" id="Node000005" href="$structbeast_1_1is__uniquely__represented_3_01T_0fN_0e_4.html" title=" " alt="" coords="469,213,631,253"/>
-<area shape="poly" id="edge796_Node000001_Node000005" title=" " alt="" coords="376,158,452,199,482,211,480,216,450,204,373,163"/>
+<area shape="rect" id="Node000000" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,183,75"/>
+<area shape="rect" id="Node000001" href="$structbeast_1_1detail_1_1is__empty__base__optimization__derived.html" title=" " alt="" coords="231,20,473,60"/>
+<area shape="poly" id="edge791_Node000000_Node000001" title=" " alt="" coords="196,37,230,37,230,43,196,43"/>
 </map>

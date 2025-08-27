@@ -412,7 +412,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>    {</div>
 <div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>        boost::system::error_code ec;</div>
 <div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>        <span class="keyword">auto</span> <span class="keyword">const</span> local_ip =</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>            boost::asio::ip::address::from_string(iter-&gt;value(), ec);</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>            boost::asio::ip::make_address(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a>(iter-&gt;value()), ec);</div>
 <div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span> </div>
 <div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>        <span class="keywordflow">if</span> (ec)</div>
 <div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>            <span class="keywordflow">throw</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Invalid Local-IP&quot;</span>);</div>
@@ -427,7 +427,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>    {</div>
 <div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>        boost::system::error_code ec;</div>
 <div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>        <span class="keyword">auto</span> <span class="keyword">const</span> remote_ip =</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>            boost::asio::ip::address::from_string(iter-&gt;value(), ec);</div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>            boost::asio::ip::make_address(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a>(iter-&gt;value()), ec);</div>
 <div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span> </div>
 <div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>        <span class="keywordflow">if</span> (ec)</div>
 <div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>            <span class="keywordflow">throw</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a>(<span class="stringliteral">&quot;Invalid Remote-IP&quot;</span>);</div>
@@ -515,6 +515,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
+<div class="ttc" id="abasic_string_view_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a></div></div>
 <div class="ttc" id="abasic_stringstream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition</b> <a href="Journal_8h_source.html#l00059">Journal.h:60</a></div></div>
 <div class="ttc" id="aclassbeast_1_1Journal_html_a49b0713e65bb8e2c51b76fbf16252afe"><div class="ttname"><a href="classbeast_1_1Journal.html#a49b0713e65bb8e2c51b76fbf16252afe">beast::Journal::error</a></div><div class="ttdeci">Stream error() const</div><div class="ttdef"><b>Definition</b> <a href="Journal_8h_source.html#l00346">Journal.h:346</a></div></div>

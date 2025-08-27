@@ -367,7 +367,7 @@ var searchData=
   ['test_5frhs_5fzero_364',['test_rhs_zero',['../classbeast_1_1Zero__test.html#af81487e792b8913f6e49e276f5d1b364',1,'beast::Zero_test::test_rhs_zero(IntegerWrapper x)'],['../classbeast_1_1Zero__test.html#abaf07d331d4eb1d61aabbb5f21a7b2b9',1,'beast::Zero_test::test_rhs_zero()']]],
   ['test_5froot_365',['test_root',['../classripple_1_1Number__test.html#a947cb42e68be911ee91d03ab509eb1c4',1,'ripple::Number_test']]],
   ['test_5fround_366',['test_round',['../classripple_1_1Quality__test.html#a00d1292b69099147a27c3b54fb890152',1,'ripple::Quality_test']]],
-  ['test_5fsampler_367',['test_sampler',['../structio__latency__probe__test_1_1test__sampler.html',1,'io_latency_probe_test::test_sampler'],['../structio__latency__probe__test_1_1test__sampler.html#a18c959012e533188f520b188aa68978a',1,'io_latency_probe_test::test_sampler::test_sampler()']]],
+  ['test_5fsampler_367',['test_sampler',['../structio__latency__probe__test_1_1test__sampler.html',1,'io_latency_probe_test::test_sampler'],['../structio__latency__probe__test_1_1test__sampler.html#aa8bc997fb94cba100e9b7c76f853d1bb',1,'io_latency_probe_test::test_sampler::test_sampler()']]],
   ['test_5fsignerlistset_368',['test_signerListSet',['../classripple_1_1test_1_1MultiSign__test.html#a4d2b13e22a640d6cae99ef0c47fbe96d',1,'ripple::test::MultiSign_test']]],
   ['test_5fsignerlistsetflags_369',['test_signerListSetFlags',['../classripple_1_1test_1_1MultiSign__test.html#a8e875354a70eb5eae2e69f6d14c3e15a',1,'ripple::test::MultiSign_test']]],
   ['test_5fsignerswithtags_370',['test_signersWithTags',['../classripple_1_1test_1_1MultiSign__test.html#ad6b89a1ec6ffebd60e85e1c78c80a7d4',1,'ripple::test::MultiSign_test']]],

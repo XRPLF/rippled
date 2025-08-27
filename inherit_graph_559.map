@@ -1,3 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$classripple_1_1RPC_1_1detail_1_1SigningForParams.html" title=" " alt="" coords="5,5,152,45"/>
+<area shape="rect" id="Node000000" href="$structripple_1_1RPC_1_1Context.html" title="The context of information needed to call an RPC." alt="" coords="5,42,157,67"/>
+<area shape="rect" id="Node000001" href="$structripple_1_1RPC_1_1GRPCContext.html" title=" " alt="" coords="205,5,393,45"/>
+<area shape="poly" id="edge580_Node000000_Node000001" title=" " alt="" coords="170,40,205,35,206,41,171,45"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1RPC_1_1JsonContext.html" title=" " alt="" coords="210,70,389,95"/>
+<area shape="poly" id="edge581_Node000000_Node000002" title=" " alt="" coords="171,63,210,69,209,74,170,69"/>
 </map>

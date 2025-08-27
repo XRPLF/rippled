@@ -153,8 +153,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:afda32dc6f31496f69f123af4176118bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a06f306b5ee65c1b2a46ebb72a588afed" id="r_a06f306b5ee65c1b2a46ebb72a588afed"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1ServerHandler.html">ServerHandler</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a06f306b5ee65c1b2a46ebb72a588afed">getServerHandler</a> () override</td></tr>
 <tr class="separator:a06f306b5ee65c1b2a46ebb72a588afed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade974cdf565fa4dc3412c26213cbdfc9" id="r_ade974cdf565fa4dc3412c26213cbdfc9"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#ade974cdf565fa4dc3412c26213cbdfc9">getIOService</a> () override</td></tr>
-<tr class="separator:ade974cdf565fa4dc3412c26213cbdfc9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a46536a5a2a1f149eeb14975a5afb503f" id="r_a46536a5a2a1f149eeb14975a5afb503f"><td class="memItemLeft" align="right" valign="top">boost::asio::io_context &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a46536a5a2a1f149eeb14975a5afb503f">getIOContext</a> () override</td></tr>
+<tr class="separator:a46536a5a2a1f149eeb14975a5afb503f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adf79e70f8546df6db68c8488627802f7" id="r_adf79e70f8546df6db68c8488627802f7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#adf79e70f8546df6db68c8488627802f7">getIOLatency</a> () override</td></tr>
 <tr class="separator:adf79e70f8546df6db68c8488627802f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a958205328932585ed2cb83003ff04457" id="r_a958205328932585ed2cb83003ff04457"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1LedgerMaster.html">LedgerMaster</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a958205328932585ed2cb83003ff04457">getLedgerMaster</a> () override</td></tr>
@@ -284,8 +284,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7982669e8117c921ff644b7e2a552b19"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1761f2a6920ca1c5d9543afda4930c45" id="r_a1761f2a6920ca1c5d9543afda4930c45"><td class="memItemLeft" align="right" valign="top">PropertyStream::Source *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#a1761f2a6920ca1c5d9543afda4930c45">find_one</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;<a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#a5672372869d3a59c7cd2f7ce3056ae33">name</a>)</td></tr>
 <tr class="separator:a1761f2a6920ca1c5d9543afda4930c45"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0581ae24e613a57d9283e60f0a3bca0a" id="r_a0581ae24e613a57d9283e60f0a3bca0a"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classBasicApp.html#a0581ae24e613a57d9283e60f0a3bca0a">get_io_service</a> ()</td></tr>
-<tr class="separator:a0581ae24e613a57d9283e60f0a3bca0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa69bd0d77ffef925f10bd6876dee00b" id="r_aaa69bd0d77ffef925f10bd6876dee00b"><td class="memItemLeft" align="right" valign="top">boost::asio::io_context &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classBasicApp.html#aaa69bd0d77ffef925f10bd6876dee00b">get_io_context</a> ()</td></tr>
+<tr class="separator:aaa69bd0d77ffef925f10bd6876dee00b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -444,16 +444,16 @@ Private Attributes</h2></td></tr>
 <tr class="separator:aab0ae58ec30d4c2bce92ff9a8cf2a042"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22fe15ec1881c9546cfb785e9ac4aed3" id="r_a22fe15ec1881c9546cfb785e9ac4aed3"><td class="memItemLeft" align="right" valign="top">List&lt; Item &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#a22fe15ec1881c9546cfb785e9ac4aed3">children_</a></td></tr>
 <tr class="separator:a22fe15ec1881c9546cfb785e9ac4aed3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acbe2bef2634f792a29c2b462cd4a9ff8" id="r_acbe2bef2634f792a29c2b462cd4a9ff8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; boost::asio::io_service::work &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classBasicApp.html#acbe2bef2634f792a29c2b462cd4a9ff8">work_</a></td></tr>
-<tr class="separator:acbe2bef2634f792a29c2b462cd4a9ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae038d99c89beea5ca84e92db15d74fa9" id="r_ae038d99c89beea5ca84e92db15d74fa9"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; boost::asio::executor_work_guard&lt; boost::asio::io_context::executor_type &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classBasicApp.html#ae038d99c89beea5ca84e92db15d74fa9">work_</a></td></tr>
+<tr class="separator:ae038d99c89beea5ca84e92db15d74fa9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a53ed855cfab7fb18f9a20854051f5592" id="r_a53ed855cfab7fb18f9a20854051f5592"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classBasicApp.html#a53ed855cfab7fb18f9a20854051f5592">threads_</a></td></tr>
 <tr class="separator:a53ed855cfab7fb18f9a20854051f5592"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac7653bf5f56f12d87d7fd81b6261ad5c" id="r_ac7653bf5f56f12d87d7fd81b6261ad5c"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classBasicApp.html#ac7653bf5f56f12d87d7fd81b6261ad5c">io_service_</a></td></tr>
-<tr class="separator:ac7653bf5f56f12d87d7fd81b6261ad5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b2b86b1db70fb2369c472d2477e0061" id="r_a2b2b86b1db70fb2369c472d2477e0061"><td class="memItemLeft" align="right" valign="top">boost::asio::io_context&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classBasicApp.html#a2b2b86b1db70fb2369c472d2477e0061">io_context_</a></td></tr>
+<tr class="separator:a2b2b86b1db70fb2369c472d2477e0061"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00095">95</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00094">94</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="af49bed1dd2fb49345992a96347c50f76" name="af49bed1dd2fb49345992a96347c50f76"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af49bed1dd2fb49345992a96347c50f76">&#9670;&#160;</a></span>MutexType</h2>
@@ -512,7 +512,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00266">266</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00265">265</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -541,7 +541,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00243">243</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00242">242</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -571,7 +571,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a2b799a86c8f2f04710fcd11bd688aa94">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01175">1175</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01173">1173</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -601,7 +601,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a0df7c75a72ab51048c7ec50c2bb1f0d3">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01526">1526</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01524">1524</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -630,7 +630,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a7981acc17eda76d35718596eb0f073e0">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01553">1553</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01551">1551</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -660,7 +660,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#aeab5a6adaf9f261af30f64743ab60496">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01648">1648</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01650">1650</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -689,7 +689,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a3f00a293d48fe74b97e406066362816d">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01662">1662</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01664">1664</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -719,7 +719,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ac7847e6c1c097b025b2e8e9ed6f96b51">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01668">1668</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01670">1670</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -748,7 +748,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a2e6e1d3e6568b3cce07e0d09803cb231">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01674">1674</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01676">1676</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -777,7 +777,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#abad067d6090b6bcb94cce897cbd96df2">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01680">1680</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01682">1682</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -808,7 +808,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#aadb9ab904b1e2a1dae4c77a9275be921">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00521">521</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00520">520</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -837,7 +837,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ad096c64f86e5573a450cf0338c79c086">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00527">527</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00526">526</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -866,7 +866,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a0c48dd5bcaef14e30e9ef5b96b0daa39">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00533">533</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00532">532</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -895,7 +895,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a012991cb6d3b79b1515ddd8478cd6c8a">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00539">539</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00538">538</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -924,7 +924,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a9e3f03e303b8524cdac477e7f6f4288f">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00545">545</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00544">544</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -953,7 +953,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a6053f47d2aefc7800dc2bb1eda0cf91d">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00551">551</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00550">550</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -982,7 +982,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a79e319577676b37dbff4ce5fc86aa23f">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00557">557</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00556">556</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1011,7 +1011,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#af10bfbc2339eb855f1d5ef0c8f8a957d">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00563">563</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00562">562</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1040,7 +1040,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#aa1e13241445bc4b53c9a2aedc0617131">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00573">573</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00572">572</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1069,7 +1069,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a8f55e8599c1fdd368f131ff26c2039f1">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00582">582</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00581">581</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1098,12 +1098,12 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a366d86321daf6c848d5268ff6e271ccc">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00588">588</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00587">587</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ade974cdf565fa4dc3412c26213cbdfc9" name="ade974cdf565fa4dc3412c26213cbdfc9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade974cdf565fa4dc3412c26213cbdfc9">&#9670;&#160;</a></span>getIOService()</h2>
+<a id="a46536a5a2a1f149eeb14975a5afb503f" name="a46536a5a2a1f149eeb14975a5afb503f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a46536a5a2a1f149eeb14975a5afb503f">&#9670;&#160;</a></span>getIOContext()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1112,7 +1112,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::io_service &amp; ripple::ApplicationImp::getIOService </td>
+          <td class="memname">boost::asio::io_context &amp; ripple::ApplicationImp::getIOContext </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1125,9 +1125,9 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1Application.html#a9ba1bfb9e7fd7305f076c8aa87331295">ripple::Application</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1Application.html#adb5f8b1328611a468585b5e071fa851d">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00598">598</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00597">597</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1156,7 +1156,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a3edfe212c0488890f076bf712780fe7a">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00604">604</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00603">603</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1185,7 +1185,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#aa303fb1c72786fc008ef52079dee4fe3">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00610">610</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00609">609</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1214,7 +1214,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a3013c2520469141cb1bb0a7935a22851">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00616">616</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00615">615</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1243,7 +1243,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a5e467b14f9dc2f18b458dfa52cc53ed8">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00622">622</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00621">621</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1272,7 +1272,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a915619bcedd33aaed53cf784a5863dab">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00628">628</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00627">627</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1301,7 +1301,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a5cd78b04a507ef505863ae0e1230a6ce">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00634">634</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00633">633</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1330,7 +1330,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a65035bcbe2355a932c19b27c0017b3bc">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00640">640</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00639">639</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1360,7 +1360,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00646">646</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00645">645</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1389,7 +1389,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#acb51e350f1f7ade948a4e8d995634cc9">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00653">653</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00652">652</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1418,7 +1418,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ac1ccbeabc25047c4d752ac38a6964d87">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00659">659</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00658">658</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1447,7 +1447,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a7668748e5672f5e28bc1f155e856bb54">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00665">665</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00664">664</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1476,7 +1476,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a337ff00f72b3421fd50b54656456acdb">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00671">671</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00670">670</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1505,7 +1505,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a6c1ad8cafc95cebce94ec09f5c4cafa7">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00677">677</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00676">676</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1534,7 +1534,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#aca3adb21a6d1b1478b09874d5384c868">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00683">683</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00682">682</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1563,7 +1563,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a88c64cb75a772755c6967e3e667547a4">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00689">689</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00688">688</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1592,7 +1592,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a477219b05fb65f86a6dee712bf778280">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00695">695</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00694">694</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1621,7 +1621,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#abc1a96b6192bde68612e44c67cd74e7b">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00701">701</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00700">700</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1650,7 +1650,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a049ff9918f5093ff235bc7e3baa20457">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00707">707</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00706">706</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1679,7 +1679,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#acd25b3785b5938e005419b973d34d757">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00713">713</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00712">712</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1708,7 +1708,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a143d2b9c53a24814fc28309244aa3631">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00719">719</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00718">718</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1737,7 +1737,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ad60542d0ed6bf805110c4c85ddf63c3c">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00725">725</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00724">724</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1766,7 +1766,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a362cf2d2e3ab0e9b508a1da8ef60b8a2">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00731">731</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00730">730</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1795,7 +1795,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a950b15c3fbf7f8395eddfcea9850647b">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00737">737</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00736">736</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1824,7 +1824,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a7f412dd5a8bf4e98e491a89f733473e4">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00743">743</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00742">742</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1853,7 +1853,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ab2c828cd4eea02429a8251fc24d2d0b6">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00749">749</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00748">748</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1882,7 +1882,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ad25b746fbdd660b9e95e32860aa95fd6">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00755">755</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00754">754</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1911,7 +1911,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ac21347e29987cc9b6cefb846bb8a3ae1">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00761">761</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00760">760</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1940,7 +1940,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#abe7dea7651a425eeeba986c941a0fbf6">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00767">767</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00766">766</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1969,7 +1969,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a29de5ca5665cf72d2843d8a20a402bae">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00773">773</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00772">772</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -1998,7 +1998,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#af759427312a7c4a0f704f275a9c87318">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00779">779</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00778">778</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2027,7 +2027,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a151d1401a346131fc6fb3efb197133e6">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00785">785</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00784">784</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2056,7 +2056,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#afab8c7f9b30edd84f3a6ada8b19b4b8b">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00791">791</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00790">790</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2085,7 +2085,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a101819f49b53b1387198d2827d31cd52">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00797">797</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00796">796</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2114,7 +2114,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#abcadc50f7bafb5f027e40e18191a7de0">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00805">805</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00804">804</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2143,7 +2143,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ab0e839b597cf03221a393cb754ec4e25">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00814">814</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00813">813</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2174,7 +2174,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a87067819596ce9f1ff84b61b3f1adf87">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00824">824</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00823">823</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2204,7 +2204,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a0005228a2b40d12b6985ac48bd768940">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02116">2116</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02118">2118</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2234,7 +2234,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a2897c28a5b5040e80e66f676d201d03f">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02164">2164</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02166">2166</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2253,7 +2253,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00841">841</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00840">840</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2272,7 +2272,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00870">870</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00869">869</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2305,7 +2305,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented from <a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#accd7269755b1a27d4c66715edc1f5915">beast::PropertyStream::Source</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00908">908</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00907">907</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2324,7 +2324,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00915">915</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00914">914</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2343,7 +2343,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00946">946</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00944">944</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2362,7 +2362,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00975">975</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00973">973</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2393,7 +2393,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#ac57d9b2dd4e172f0934c7a1e34485842">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01135">1135</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01133">1133</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2422,7 +2422,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Application.html#a006577b8e45097a163d2a0eac4dbc19e">ripple::Application</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01141">1141</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01139">1139</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2449,7 +2449,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01705">1705</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01707">1707</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2476,7 +2476,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01729">1729</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01731">1731</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2504,7 +2504,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01773">1773</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01775">1775</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2554,7 +2554,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01912">1912</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01914">1914</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -2581,7 +2581,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02170">2170</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02172">2172</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3037,8 +3037,8 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="a0581ae24e613a57d9283e60f0a3bca0a" name="a0581ae24e613a57d9283e60f0a3bca0a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0581ae24e613a57d9283e60f0a3bca0a">&#9670;&#160;</a></span>get_io_service()</h2>
+<a id="aaa69bd0d77ffef925f10bd6876dee00b" name="aaa69bd0d77ffef925f10bd6876dee00b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaa69bd0d77ffef925f10bd6876dee00b">&#9670;&#160;</a></span>get_io_context()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3047,7 +3047,7 @@ template&lt;class Derived &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::io_service &amp; BasicApp::get_io_service </td>
+          <td class="memname">boost::asio::io_context &amp; BasicApp::get_io_context </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -3060,7 +3060,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicApp_8h_source.html#l00042">42</a> of file <a class="el" href="BasicApp_8h_source.html">BasicApp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicApp_8h_source.html#l00044">44</a> of file <a class="el" href="BasicApp_8h_source.html">BasicApp.h</a>.</p>
 
 </div>
 </div>
@@ -3077,7 +3077,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00163">163</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00162">162</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3093,7 +3093,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00164">164</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00163">163</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3109,7 +3109,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00165">165</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00164">164</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3125,7 +3125,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00167">167</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00166">166</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3141,7 +3141,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00169">169</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00168">168</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3157,7 +3157,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00170">170</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00169">169</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3173,7 +3173,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00171">171</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00170">170</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3189,7 +3189,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00174">174</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00173">173</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3205,7 +3205,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00176">176</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00175">175</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3221,7 +3221,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00177">177</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00176">176</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3237,7 +3237,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00178">178</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00177">177</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3253,7 +3253,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00179">179</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00178">178</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3269,7 +3269,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00180">180</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00179">179</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3285,7 +3285,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00181">181</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00180">180</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3301,7 +3301,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00183">183</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00182">182</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3317,7 +3317,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00184">184</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00183">183</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3333,7 +3333,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00185">185</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00184">184</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3349,7 +3349,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00186">186</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00185">185</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3365,7 +3365,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00188">188</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00187">187</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3381,7 +3381,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00190">190</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00189">189</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3397,7 +3397,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00191">191</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00190">190</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3413,7 +3413,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00193">193</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00192">192</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3429,7 +3429,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00194">194</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00193">193</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3445,7 +3445,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00195">195</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00194">194</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3461,7 +3461,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00196">196</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00195">195</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3477,7 +3477,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00197">197</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00196">196</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3493,7 +3493,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00198">198</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00197">197</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3509,7 +3509,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00199">199</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00198">198</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3525,7 +3525,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00200">200</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00199">199</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3541,7 +3541,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00201">201</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00200">200</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3557,7 +3557,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00202">202</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00201">201</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3573,7 +3573,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00203">203</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00202">202</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3589,7 +3589,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00204">204</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00203">203</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3605,7 +3605,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00205">205</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00204">204</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3621,7 +3621,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00206">206</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00205">205</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3637,7 +3637,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00207">207</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00206">206</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3653,7 +3653,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00208">208</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00207">207</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3669,7 +3669,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00209">209</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00208">208</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3685,7 +3685,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00210">210</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00209">209</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3701,7 +3701,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00211">211</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00210">210</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3717,7 +3717,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00212">212</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00211">211</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3733,7 +3733,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00213">213</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00212">212</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3749,7 +3749,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00214">214</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00213">213</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3765,7 +3765,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00215">215</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00214">214</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3781,7 +3781,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00216">216</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00215">215</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3797,7 +3797,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00217">217</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00216">216</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3813,7 +3813,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00219">219</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00218">218</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3829,7 +3829,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00220">220</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00219">219</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3845,7 +3845,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00221">221</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00220">220</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3861,7 +3861,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00222">222</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00221">221</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3877,7 +3877,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00224">224</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00223">223</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3893,7 +3893,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00228">228</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00227">227</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3917,7 +3917,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00229">229</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00228">228</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3933,7 +3933,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00230">230</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00229">229</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3949,7 +3949,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00232">232</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00231">231</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3965,7 +3965,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00234">234</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00233">233</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3981,7 +3981,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00236">236</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00235">235</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -3997,7 +3997,7 @@ template&lt;class Derived &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00238">238</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l00237">237</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -4021,7 +4021,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01149">1149</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01147">1147</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -4145,8 +4145,8 @@ template&lt;class Derived &gt; </div>
 
 </div>
 </div>
-<a id="acbe2bef2634f792a29c2b462cd4a9ff8" name="acbe2bef2634f792a29c2b462cd4a9ff8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acbe2bef2634f792a29c2b462cd4a9ff8">&#9670;&#160;</a></span>work_</h2>
+<a id="ae038d99c89beea5ca84e92db15d74fa9" name="ae038d99c89beea5ca84e92db15d74fa9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae038d99c89beea5ca84e92db15d74fa9">&#9670;&#160;</a></span>work_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4155,7 +4155,7 @@ template&lt;class Derived &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;boost::asio::io_service::work&gt; BasicApp::work_</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;boost::asio::executor_work_guard&lt; boost::asio::io_context::executor_type&gt; &gt; BasicApp::work_</td>
         </tr>
       </table>
   </td>
@@ -4165,7 +4165,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicApp_8h_source.html#l00033">33</a> of file <a class="el" href="BasicApp_8h_source.html">BasicApp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicApp_8h_source.html#l00035">35</a> of file <a class="el" href="BasicApp_8h_source.html">BasicApp.h</a>.</p>
 
 </div>
 </div>
@@ -4189,12 +4189,12 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicApp_8h_source.html#l00034">34</a> of file <a class="el" href="BasicApp_8h_source.html">BasicApp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicApp_8h_source.html#l00036">36</a> of file <a class="el" href="BasicApp_8h_source.html">BasicApp.h</a>.</p>
 
 </div>
 </div>
-<a id="ac7653bf5f56f12d87d7fd81b6261ad5c" name="ac7653bf5f56f12d87d7fd81b6261ad5c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac7653bf5f56f12d87d7fd81b6261ad5c">&#9670;&#160;</a></span>io_service_</h2>
+<a id="a2b2b86b1db70fb2369c472d2477e0061" name="a2b2b86b1db70fb2369c472d2477e0061"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b2b86b1db70fb2369c472d2477e0061">&#9670;&#160;</a></span>io_context_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -4203,7 +4203,7 @@ template&lt;class Derived &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::io_service BasicApp::io_service_</td>
+          <td class="memname">boost::asio::io_context BasicApp::io_context_</td>
         </tr>
       </table>
   </td>
@@ -4213,7 +4213,7 @@ template&lt;class Derived &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="BasicApp_8h_source.html#l00035">35</a> of file <a class="el" href="BasicApp_8h_source.html">BasicApp.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="BasicApp_8h_source.html#l00037">37</a> of file <a class="el" href="BasicApp_8h_source.html">BasicApp.h</a>.</p>
 
 </div>
 </div>

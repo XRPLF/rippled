@@ -106,7 +106,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpld/core/JobQueue.h&gt;</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpld/rpc/InfoSub.h&gt;</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;boost/asio/io_service.hpp&gt;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;boost/asio/io_context.hpp&gt;</span></div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
@@ -124,11 +124,11 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>};</div>
 </div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span> </div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="comment">// VFALCO Why is the io_service needed?</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="comment">// VFALCO Why is the io_context needed?</span></div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;RPCSub&gt;</a></div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><a class="code hl_function" href="namespaceripple.html#a60f56d685f142efe7844074b7785ea6d">make_RPCSub</a>(</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><a class="code hl_function" href="namespaceripple.html#aa6f093c24b5a75a6f2b554707645bfb3">make_RPCSub</a>(</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <a class="code hl_class" href="classripple_1_1InfoSub_1_1Source.html">InfoSub::Source</a>&amp; source,</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    boost::asio::io_service&amp; io_service,</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    boost::asio::io_context&amp; io_context,</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <a class="code hl_class" href="classripple_1_1JobQueue.html">JobQueue</a>&amp; jobQueue,</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; strUrl,</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; strUsername,</div>
@@ -147,7 +147,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="aclassripple_1_1RPCSub_html_a5027451ac0b89be349441446a1b98bb4"><div class="ttname"><a href="classripple_1_1RPCSub.html#a5027451ac0b89be349441446a1b98bb4">ripple::RPCSub::setPassword</a></div><div class="ttdeci">virtual void setPassword(std::string const &amp;strPassword)=0</div></div>
 <div class="ttc" id="aclassripple_1_1RPCSub_html_a862a9e6800fb9b0b3a39660ab4878ffe"><div class="ttname"><a href="classripple_1_1RPCSub.html#a862a9e6800fb9b0b3a39660ab4878ffe">ripple::RPCSub::setUsername</a></div><div class="ttdeci">virtual void setUsername(std::string const &amp;strUsername)=0</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition</b> <a href="algorithm_8h_source.html#l00025">algorithm.h:25</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a60f56d685f142efe7844074b7785ea6d"><div class="ttname"><a href="namespaceripple.html#a60f56d685f142efe7844074b7785ea6d">ripple::make_RPCSub</a></div><div class="ttdeci">std::shared_ptr&lt; RPCSub &gt; make_RPCSub(InfoSub::Source &amp;source, boost::asio::io_service &amp;io_service, JobQueue &amp;jobQueue, std::string const &amp;strUrl, std::string const &amp;strUsername, std::string const &amp;strPassword, Logs &amp;logs)</div><div class="ttdef"><b>Definition</b> <a href="RPCSub_8cpp_source.html#l00208">RPCSub.cpp:208</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aa6f093c24b5a75a6f2b554707645bfb3"><div class="ttname"><a href="namespaceripple.html#aa6f093c24b5a75a6f2b554707645bfb3">ripple::make_RPCSub</a></div><div class="ttdeci">std::shared_ptr&lt; RPCSub &gt; make_RPCSub(InfoSub::Source &amp;source, boost::asio::io_context &amp;io_context, JobQueue &amp;jobQueue, std::string const &amp;strUrl, std::string const &amp;strUsername, std::string const &amp;strPassword, Logs &amp;logs)</div><div class="ttdef"><b>Definition</b> <a href="RPCSub_8cpp_source.html#l00208">RPCSub.cpp:208</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

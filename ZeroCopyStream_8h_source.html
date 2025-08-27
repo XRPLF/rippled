@@ -163,7 +163,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="foldopen" id="foldopen00079" data-start="{" data-end="}">
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno"><a class="line" href="classripple_1_1ZeroCopyInputStream.html#a77ac21837f29dd4611826d85c7a2ec12">   79</a></span><a class="code hl_function" href="classripple_1_1ZeroCopyInputStream.html#a77ac21837f29dd4611826d85c7a2ec12">ZeroCopyInputStream&lt;Buffers&gt;::Next</a>(<span class="keywordtype">void</span> <span class="keyword">const</span>** data, <span class="keywordtype">int</span>* size)</div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>{</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    *data = boost::asio::buffer_cast&lt;void const*&gt;(pos_);</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    *data = pos_.data();</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    *size = boost::asio::buffer_size(pos_);</div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <span class="keywordflow">if</span> (first_ == last_)</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
@@ -290,7 +290,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        pos_ = buffers_.begin();</div>
 <div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>    }</div>
 <div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span> </div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    *data = boost::asio::buffer_cast&lt;void*&gt;(*pos_);</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>    *data = *pos_.data();</div>
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>    *size = boost::asio::buffer_size(*pos_);</div>
 <div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>    commit_ = *size;</div>
 <div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>    ++pos_;</div>

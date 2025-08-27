@@ -276,14 +276,14 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; val : validators)</div>
 <div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>            expectedKeys.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/set/insert.html">insert</a>(toStr(val.masterPublic));</div>
 <div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span> </div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>        <span class="comment">// Manage single-thread io_service for server.</span></div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>        <span class="comment">// Manage single-thread io_context for server.</span></div>
 <div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        <a class="code hl_class" href="classBasicApp.html">BasicApp</a> worker{1};</div>
 <div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>        <span class="keyword">using namespace </span>std::chrono_literals;</div>
 <div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> <span class="keyword">const</span> validUntil{3600s};</div>
 <div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> <span class="keyword">const</span> validFrom2{validUntil - 60s};</div>
 <div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/time_point.html">NetClock::time_point</a> <span class="keyword">const</span> validUntil2{validFrom2 + 3600s};</div>
 <div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        <span class="keyword">auto</span> server = <a class="code hl_function" href="namespaceripple_1_1test.html#ad1a9de7938cdc5dbc21ec476be4f64f5">make_TrustedPublisherServer</a>(</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>            worker.get_io_service(),</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>            worker.get_io_context(),</div>
 <div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>            validators,</div>
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>            validUntil,</div>
 <div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>            {{validFrom2, validUntil2}},</div>

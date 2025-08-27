@@ -525,7 +525,7 @@ template&lt;typename BufferSequence &gt; </div>
 </div><div class="memdoc">
 
 <p>Detach the session. </p>
-<p>This holds the session open so that the response can be sent asynchronously. Calls to io_service::run made by the server will not return until all detached sessions are closed. </p>
+<p>This holds the session open so that the response can be sent asynchronously. Calls to io_context::run made by the server will not return until all detached sessions are closed. </p>
 
 <p>Implemented in <a class="el" href="classripple_1_1BaseHTTPPeer.html#abebfe90f713e5db580fd1b8a35b9aa93">ripple::BaseHTTPPeer&lt; Handler, Impl &gt;</a>, <a class="el" href="classripple_1_1BaseHTTPPeer.html#abebfe90f713e5db580fd1b8a35b9aa93">ripple::BaseHTTPPeer&lt; Handler, PlainHTTPPeer&lt; Handler &gt; &gt;</a>, and <a class="el" href="classripple_1_1BaseHTTPPeer.html#abebfe90f713e5db580fd1b8a35b9aa93">ripple::BaseHTTPPeer&lt; Handler, SSLHTTPPeer&lt; Handler &gt; &gt;</a>.</p>
 

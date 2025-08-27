@@ -1,3 +1,27 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$structripple_1_1OverlayImpl_1_1Stats.html" title=" " alt="" coords="5,5,152,45"/>
+<area shape="rect" id="Node000000" href="$classripple_1_1OverlayImpl_1_1Child.html" title=" " alt="" coords="45,133,192,173"/>
+<area shape="rect" id="Node000001" href="$classripple_1_1ConnectAttempt.html" title="Manages an outbound connection attempt." alt="" coords="281,15,454,41"/>
+<area shape="poly" id="edge553_Node000000_Node000001" title=" " alt="" coords="204,131,231,119,245,109,255,99,278,75,339,39,342,43,282,79,259,102,249,113,233,124,206,136"/>
+<area shape="rect" id="Node000003" href="$structripple_1_1OverlayImpl_1_1Timer.html" title=" " alt="" coords="294,89,441,129"/>
+<area shape="poly" id="edge554_Node000000_Node000003" title=" " alt="" coords="205,135,293,120,294,125,206,141"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1PeerImp.html" title=" " alt="" coords="307,175,428,201"/>
+<area shape="poly" id="edge555_Node000000_Node000005" title=" " alt="" coords="206,163,307,177,306,182,206,168"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1test_1_1tx__reduce__relay__test_1_1PeerTest.html" title=" " alt="" coords="503,168,667,208"/>
+<area shape="poly" id="edge556_Node000005_Node000006" title=" " alt="" coords="442,185,503,185,503,191,442,191"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,232,45"/>
+<area shape="poly" id="edge557_Node000002_Node000001" title=" " alt="" coords="246,24,281,24,280,30,246,29"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="31,197,206,237"/>
+<area shape="poly" id="edge558_Node000007_Node000005" title=" " alt="" coords="219,203,306,192,307,198,220,208"/>
+<area shape="rect" id="Node000011" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="280,225,455,265"/>
+<area shape="rect" id="Node000010" href="$classripple_1_1test_1_1PeerSim.html" title=" " alt="" coords="507,261,662,286"/>
+<area shape="poly" id="edge559_Node000011_Node000010" title=" " alt="" coords="469,256,508,261,507,266,468,261"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="39,69,198,109"/>
+<area shape="poly" id="edge560_Node000004_Node000003" title=" " alt="" coords="212,94,294,101,294,106,211,99"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="71,290,167,315"/>
+<area shape="poly" id="edge561_Node000008_Node000005" title=" " alt="" coords="162,282,231,247,254,229,279,211,311,198,313,203,281,216,257,233,233,252,165,287"/>
+<area shape="rect" id="Node000009" href="$classripple_1_1test_1_1PeerPartial.html" title="Simulate two entities &#45; peer directly connected to the server (via squelch in PeerSim) and PeerImp (v..." alt="" coords="282,290,453,315"/>
+<area shape="poly" id="edge562_Node000008_Node000009" title=" " alt="" coords="180,300,282,300,282,305,180,305"/>
+<area shape="rect" id="Node000012" href="$classripple_1_1test_1_1TestPeer.html" title="Simulate a network peer." alt="" coords="290,339,445,365"/>
+<area shape="poly" id="edge564_Node000008_Node000012" title=" " alt="" coords="181,312,303,337,302,342,180,317"/>
+<area shape="poly" id="edge563_Node000009_Node000010" title=" " alt="" coords="466,287,507,281,507,286,467,292"/>
 </map>

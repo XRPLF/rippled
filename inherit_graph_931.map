@@ -1,3 +1,131 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$classripple_1_1TransfersNotFrozen.html" title="Invariant: frozen trust line balance change is not allowed." alt="" coords="5,5,197,31"/>
+<area shape="rect" id="Node000000" href="$classripple_1_1Transactor.html" title=" " alt="" coords="5,1560,140,1585"/>
+<area shape="rect" id="Node000001" href="$classripple_1_1AMMBid.html" title="AMMBid implements AMM bid Transactor." alt="" coords="251,5,372,31"/>
+<area shape="poly" id="edge621_Node000000_Node000001" title=" " alt="" coords="71,1546,75,1246,90,765,104,518,124,299,136,207,151,132,167,75,186,40,200,29,216,20,250,13,251,18,217,25,203,33,190,44,172,77,156,133,142,208,129,300,109,519,95,765,80,1246,77,1546"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1AMMClawback.html" title=" " alt="" coords="230,55,393,80"/>
+<area shape="poly" id="edge622_Node000000_Node000002" title=" " alt="" coords="71,1546,76,1254,91,789,105,551,125,339,138,251,152,178,168,123,186,90,206,74,228,66,230,71,208,79,190,93,173,125,157,179,143,252,131,340,111,551,97,789,81,1254,77,1546"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1AMMCreate.html" title="AMMCreate implements Automatic Market Maker(AMM) creation Transactor." alt="" coords="240,104,383,129"/>
+<area shape="poly" id="edge623_Node000000_Node000003" title=" " alt="" coords="72,1546,76,1263,93,814,107,584,127,380,139,294,153,224,168,171,186,139,210,121,239,113,240,118,213,126,190,142,173,173,158,225,144,295,132,380,112,584,98,815,82,1263,77,1546"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1AMMDelete.html" title="AMMDelete implements AMM delete transactor." alt="" coords="240,153,383,179"/>
+<area shape="poly" id="edge624_Node000000_Node000004" title=" " alt="" coords="72,1546,77,1271,94,838,109,617,128,420,140,338,154,270,169,219,186,188,210,171,239,162,240,167,213,176,190,192,174,222,159,272,145,339,134,421,114,617,99,839,83,1272,77,1546"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1AMMDeposit.html" title="AMMDeposit implements AMM deposit Transactor." alt="" coords="236,203,387,228"/>
+<area shape="poly" id="edge625_Node000000_Node000005" title=" " alt="" coords="72,1546,78,1281,96,864,110,650,130,461,155,317,169,268,186,238,209,221,235,212,237,217,211,226,190,241,174,270,160,318,135,461,116,650,101,864,83,1281,77,1546"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1AMMVote.html" title="AMMVote implements AMM vote Transactor." alt="" coords="247,252,376,277"/>
+<area shape="poly" id="edge626_Node000000_Node000006" title=" " alt="" coords="72,1546,79,1290,97,888,112,683,131,501,156,363,170,316,186,287,214,268,246,260,247,265,216,273,190,290,175,318,161,364,137,502,117,683,102,888,84,1290,77,1546"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1AMMWithdraw.html" title=" " alt="" coords="230,301,393,327"/>
+<area shape="poly" id="edge627_Node000000_Node000007" title=" " alt="" coords="72,1546,79,1298,99,913,114,716,133,542,157,409,170,364,186,336,206,321,229,313,230,318,208,326,190,340,175,366,162,410,138,542,119,716,104,913,85,1299,77,1546"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1Batch.html" title=" " alt="" coords="259,351,363,376"/>
+<area shape="poly" id="edge628_Node000000_Node000008" title=" " alt="" coords="72,1546,80,1307,100,937,115,749,134,582,158,455,171,412,186,386,202,373,220,364,259,358,260,363,222,369,204,377,190,389,176,414,163,456,140,583,121,749,105,938,86,1307,77,1546"/>
+<area shape="rect" id="Node000009" href="$classripple_1_1BridgeModify.html" title=" " alt="" coords="235,400,388,425"/>
+<area shape="poly" id="edge629_Node000000_Node000009" title=" " alt="" coords="72,1546,81,1316,102,962,117,782,136,623,159,501,172,460,186,435,208,419,233,410,235,415,210,424,190,438,176,462,164,503,141,623,122,783,107,963,86,1317,77,1546"/>
+<area shape="rect" id="Node000010" href="$classripple_1_1CancelCheck.html" title=" " alt="" coords="236,449,387,475"/>
+<area shape="poly" id="edge630_Node000000_Node000010" title=" " alt="" coords="72,1546,82,1325,103,986,119,815,137,663,160,548,172,508,186,484,209,468,235,459,237,464,211,472,190,488,177,511,165,549,143,664,124,815,109,987,87,1325,78,1546"/>
+<area shape="rect" id="Node000011" href="$classripple_1_1CancelOffer.html" title=" " alt="" coords="240,499,383,524"/>
+<area shape="poly" id="edge631_Node000000_Node000011" title=" " alt="" coords="72,1546,83,1334,105,1012,120,848,139,704,161,594,173,557,186,534,211,516,239,508,241,513,213,521,190,537,178,559,166,595,144,704,126,849,110,1012,88,1334,78,1546"/>
+<area shape="rect" id="Node000012" href="$classripple_1_1CashCheck.html" title=" " alt="" coords="242,548,381,573"/>
+<area shape="poly" id="edge632_Node000000_Node000012" title=" " alt="" coords="73,1546,84,1343,106,1036,122,881,140,744,162,640,173,605,186,583,211,565,241,557,243,562,214,570,190,586,178,607,167,641,146,745,127,882,112,1037,89,1343,78,1546"/>
+<area shape="rect" id="Node000013" href="$classripple_1_1Change.html" title=" " alt="" coords="253,597,369,623"/>
+<area shape="poly" id="edge633_Node000000_Node000013" title=" " alt="" coords="73,1546,85,1352,108,1061,124,914,142,785,163,686,174,653,186,632,200,620,217,612,253,605,254,610,219,617,203,625,190,636,179,655,168,688,147,786,129,915,113,1062,90,1352,78,1546"/>
+<area shape="rect" id="Node000014" href="$classripple_1_1Clawback.html" title=" " alt="" coords="246,647,377,672"/>
+<area shape="poly" id="edge634_Node000000_Node000014" title=" " alt="" coords="71,1546,71,1373,74,1248,82,1113,95,977,116,853,130,799,146,751,164,711,186,681,213,663,245,655,246,660,216,668,190,685,169,714,151,753,135,800,121,854,101,978,87,1113,79,1248,76,1373,76,1546"/>
+<area shape="rect" id="Node000015" href="$classripple_1_1CreateCheck.html" title=" " alt="" coords="236,696,387,721"/>
+<area shape="poly" id="edge635_Node000000_Node000015" title=" " alt="" coords="71,1546,72,1382,77,1264,85,1136,99,1009,119,892,132,841,148,796,166,759,186,731,209,715,235,706,236,711,211,719,190,735,170,762,153,798,137,842,124,893,104,1010,90,1137,82,1264,78,1382,76,1546"/>
+<area shape="rect" id="Node000016" href="$classripple_1_1CreateOffer.html" title="Transactor specialized for creating offers in the ledger." alt="" coords="240,745,383,771"/>
+<area shape="poly" id="edge636_Node000000_Node000016" title=" " alt="" coords="71,1546,74,1390,88,1160,102,1040,122,931,150,841,167,807,186,780,210,763,239,755,240,760,213,768,190,784,171,809,155,843,127,932,107,1041,93,1160,79,1390,77,1546"/>
+<area shape="rect" id="Node000017" href="$classripple_1_1CreateTicket.html" title=" " alt="" coords="237,795,386,820"/>
+<area shape="poly" id="edge637_Node000000_Node000017" title=" " alt="" coords="71,1546,76,1398,91,1183,105,1072,125,970,152,886,168,854,186,829,209,813,236,805,237,810,211,818,190,833,172,857,157,888,130,971,111,1073,96,1183,81,1399,77,1546"/>
+<area shape="rect" id="Node000018" href="$classripple_1_1CredentialAccept.html" title=" " alt="" coords="222,844,401,869"/>
+<area shape="poly" id="edge638_Node000000_Node000018" title=" " alt="" coords="72,1546,77,1408,94,1207,109,1104,128,1009,154,932,169,902,186,879,202,866,220,858,223,863,205,871,190,883,173,904,159,934,133,1010,114,1104,99,1207,83,1408,77,1546"/>
+<area shape="rect" id="Node000019" href="$classripple_1_1CredentialCreate.html" title=" " alt="" coords="223,893,400,919"/>
+<area shape="poly" id="edge639_Node000000_Node000019" title=" " alt="" coords="72,1546,79,1416,97,1230,112,1135,131,1048,156,977,170,949,186,928,202,916,221,908,223,912,205,920,190,932,175,952,161,979,136,1049,117,1136,103,1231,85,1416,78,1546"/>
+<area shape="rect" id="Node000020" href="$classripple_1_1CredentialDelete.html" title=" " alt="" coords="223,943,400,968"/>
+<area shape="poly" id="edge640_Node000000_Node000020" title=" " alt="" coords="73,1546,81,1424,101,1254,115,1166,134,1087,158,1022,171,997,186,977,203,965,221,957,223,962,205,970,190,981,176,999,162,1024,139,1088,121,1167,106,1254,86,1425,78,1546"/>
+<area shape="rect" id="Node000021" href="$classripple_1_1DIDDelete.html" title=" " alt="" coords="244,992,379,1017"/>
+<area shape="poly" id="edge641_Node000000_Node000021" title=" " alt="" coords="73,1546,83,1434,104,1278,119,1198,137,1126,159,1067,172,1044,186,1027,213,1010,243,1001,245,1007,215,1014,190,1031,177,1047,164,1069,142,1128,124,1200,109,1279,88,1434,78,1546"/>
+<area shape="rect" id="Node000022" href="$classripple_1_1DIDSet.html" title=" " alt="" coords="255,1041,367,1067"/>
+<area shape="poly" id="edge642_Node000000_Node000022" title=" " alt="" coords="74,1546,85,1443,107,1302,122,1230,140,1165,161,1112,186,1076,201,1065,218,1057,254,1050,255,1055,220,1062,204,1069,190,1080,166,1115,145,1167,127,1232,112,1303,91,1444,79,1547"/>
+<area shape="rect" id="Node000023" href="$classripple_1_1DelegateSet.html" title=" " alt="" coords="238,1091,385,1116"/>
+<area shape="poly" id="edge643_Node000000_Node000023" title=" " alt="" coords="74,1546,88,1452,111,1326,126,1262,143,1204,163,1157,186,1125,210,1110,237,1102,239,1107,212,1115,190,1129,168,1160,148,1206,131,1264,116,1327,93,1453,80,1546"/>
+<area shape="rect" id="Node000024" href="$classripple_1_1DeleteAccount.html" title=" " alt="" coords="230,1140,393,1165"/>
+<area shape="poly" id="edge644_Node000000_Node000024" title=" " alt="" coords="70,1546,72,1473,86,1372,101,1318,121,1266,149,1217,186,1175,206,1161,229,1153,231,1158,209,1166,190,1179,154,1220,126,1268,106,1320,92,1373,78,1473,76,1547"/>
+<area shape="rect" id="Node000025" href="$classripple_1_1DeleteOracle.html" title="Price Oracle is a system that acts as a bridge between a blockchain network and the external world,..." alt="" coords="235,1189,387,1215"/>
+<area shape="poly" id="edge645_Node000000_Node000025" title=" " alt="" coords="72,1546,77,1480,93,1393,107,1347,127,1302,153,1260,186,1224,209,1210,234,1202,236,1207,211,1215,190,1228,157,1263,132,1304,112,1349,98,1394,82,1481,77,1546"/>
+<area shape="rect" id="Node000026" href="$classripple_1_1DepositPreauth.html" title=" " alt="" coords="228,1239,395,1264"/>
+<area shape="poly" id="edge646_Node000000_Node000026" title=" " alt="" coords="73,1546,81,1489,100,1415,114,1376,133,1338,157,1303,186,1273,205,1261,227,1253,228,1258,208,1266,190,1277,161,1307,138,1341,119,1378,105,1416,86,1490,79,1546"/>
+<area shape="rect" id="Node000027" href="$classripple_1_1EscrowCancel.html" title=" " alt="" coords="233,1288,390,1313"/>
+<area shape="poly" id="edge647_Node000000_Node000027" title=" " alt="" coords="75,1546,86,1498,107,1437,139,1375,161,1347,186,1323,208,1310,232,1302,233,1307,210,1315,190,1327,165,1350,144,1378,112,1439,91,1499,81,1547"/>
+<area shape="rect" id="Node000028" href="$classripple_1_1EscrowCreate.html" title=" " alt="" coords="233,1337,389,1363"/>
+<area shape="poly" id="edge648_Node000000_Node000028" title=" " alt="" coords="79,1546,92,1507,114,1459,145,1412,165,1390,186,1372,208,1360,232,1352,234,1357,211,1365,190,1376,168,1394,150,1415,119,1462,97,1509,84,1548"/>
+<area shape="rect" id="Node000029" href="$classripple_1_1EscrowFinish.html" title=" " alt="" coords="236,1387,387,1412"/>
+<area shape="poly" id="edge649_Node000000_Node000029" title=" " alt="" coords="83,1546,123,1483,152,1449,187,1421,210,1410,235,1403,237,1408,212,1415,189,1426,156,1453,127,1486,88,1549"/>
+<area shape="rect" id="Node000030" href="$classripple_1_1LedgerStateFix.html" title=" " alt="" coords="229,1436,393,1461"/>
+<area shape="poly" id="edge650_Node000000_Node000030" title=" " alt="" coords="92,1548,133,1507,159,1487,187,1470,228,1456,230,1461,189,1475,162,1492,136,1511,95,1551"/>
+<area shape="rect" id="Node000031" href="$classripple_1_1MPTokenAuthorize.html" title=" " alt="" coords="218,1485,405,1511"/>
+<area shape="poly" id="edge651_Node000000_Node000031" title=" " alt="" coords="109,1552,187,1519,231,1508,232,1513,189,1525,111,1556"/>
+<area shape="rect" id="Node000032" href="$classripple_1_1MPTokenIssuanceCreate.html" title=" " alt="" coords="199,1535,423,1560"/>
+<area shape="poly" id="edge652_Node000000_Node000032" title=" " alt="" coords="154,1561,199,1557,199,1562,154,1567"/>
+<area shape="rect" id="Node000033" href="$classripple_1_1MPTokenIssuanceDestroy.html" title=" " alt="" coords="195,1584,427,1609"/>
+<area shape="poly" id="edge653_Node000000_Node000033" title=" " alt="" coords="154,1578,195,1582,195,1588,154,1583"/>
+<area shape="rect" id="Node000034" href="$classripple_1_1MPTokenIssuanceSet.html" title=" " alt="" coords="210,1633,413,1659"/>
+<area shape="poly" id="edge654_Node000000_Node000034" title=" " alt="" coords="114,1589,189,1618,238,1631,236,1636,187,1623,112,1594"/>
+<area shape="rect" id="Node000035" href="$classripple_1_1NFTokenAcceptOffer.html" title=" " alt="" coords="213,1683,410,1708"/>
+<area shape="poly" id="edge655_Node000000_Node000035" title=" " alt="" coords="96,1594,137,1632,162,1652,189,1668,223,1680,221,1685,187,1672,159,1656,133,1636,92,1597"/>
+<area shape="rect" id="Node000036" href="$classripple_1_1NFTokenBurn.html" title=" " alt="" coords="236,1732,387,1757"/>
+<area shape="poly" id="edge656_Node000000_Node000036" title=" " alt="" coords="89,1597,128,1658,156,1690,189,1717,212,1728,237,1735,235,1740,210,1733,187,1722,152,1694,124,1662,84,1599"/>
+<area shape="rect" id="Node000037" href="$classripple_1_1NFTokenCancelOffer.html" title=" " alt="" coords="213,1781,410,1807"/>
+<area shape="poly" id="edge657_Node000000_Node000037" title=" " alt="" coords="84,1598,98,1636,120,1682,150,1728,190,1767,213,1779,211,1784,186,1771,146,1732,115,1685,93,1639,79,1600"/>
+<area shape="rect" id="Node000038" href="$classripple_1_1NFTokenCreateOffer.html" title=" " alt="" coords="213,1831,409,1856"/>
+<area shape="poly" id="edge658_Node000000_Node000038" title=" " alt="" coords="81,1598,92,1646,112,1705,144,1766,165,1793,190,1816,214,1830,212,1834,186,1820,161,1796,140,1769,108,1707,87,1647,76,1600"/>
+<area shape="rect" id="Node000039" href="$classripple_1_1NFTokenMint.html" title=" " alt="" coords="236,1880,387,1905"/>
+<area shape="poly" id="edge659_Node000000_Node000039" title=" " alt="" coords="79,1599,87,1655,106,1728,120,1766,138,1802,162,1836,190,1865,212,1879,236,1887,235,1892,209,1884,186,1869,157,1840,134,1805,115,1768,100,1729,82,1656,73,1600"/>
+<area shape="rect" id="Node000040" href="$classripple_1_1NFTokenModify.html" title=" " alt="" coords="229,1929,394,1955"/>
+<area shape="poly" id="edge660_Node000000_Node000040" title=" " alt="" coords="77,1599,82,1663,99,1749,113,1795,132,1839,158,1880,190,1915,208,1927,229,1935,227,1940,206,1932,186,1919,154,1883,128,1841,108,1796,93,1751,77,1664,72,1599"/>
+<area shape="rect" id="Node000041" href="$classripple_1_1PayChanClaim.html" title=" " alt="" coords="231,1979,392,2004"/>
+<area shape="poly" id="edge661_Node000000_Node000041" title=" " alt="" coords="76,1599,78,1672,92,1771,106,1824,127,1875,154,1923,190,1964,209,1977,231,1985,230,1990,207,1982,186,1968,150,1926,122,1878,101,1825,87,1772,73,1672,70,1599"/>
+<area shape="rect" id="Node000042" href="$classripple_1_1PayChanCreate.html" title=" " alt="" coords="228,2028,395,2053"/>
+<area shape="poly" id="edge662_Node000000_Node000042" title=" " alt="" coords="80,1599,93,1692,116,1817,131,1880,149,1937,168,1983,190,2013,208,2026,229,2034,227,2039,205,2031,186,2017,164,1985,144,1939,126,1881,111,1818,88,1693,75,1599"/>
+<area shape="rect" id="Node000043" href="$classripple_1_1PayChanFund.html" title=" " alt="" coords="234,2077,389,2103"/>
+<area shape="poly" id="edge663_Node000000_Node000043" title=" " alt="" coords="79,1599,91,1701,113,1841,128,1912,146,1976,166,2028,190,2063,210,2077,235,2085,233,2090,208,2082,186,2067,162,2031,141,1978,123,1913,107,1842,85,1702,74,1599"/>
+<area shape="rect" id="Node000044" href="$classripple_1_1Payment.html" title=" " alt="" coords="249,2127,373,2152"/>
+<area shape="poly" id="edge664_Node000000_Node000044" title=" " alt="" coords="78,1599,89,1710,109,1865,124,1944,143,2015,165,2073,177,2096,190,2112,217,2129,250,2137,248,2143,215,2134,186,2116,172,2099,160,2076,138,2017,119,1945,104,1866,83,1711,73,1599"/>
+<area shape="rect" id="Node000045" href="$classripple_1_1PermissionedDomainDelete.html" title=" " alt="" coords="208,2177,415,2217"/>
+<area shape="poly" id="edge665_Node000000_Node000045" title=" " alt="" coords="78,1599,87,1719,107,1888,122,1975,141,2053,163,2118,176,2143,190,2161,209,2177,206,2181,186,2165,172,2146,159,2120,136,2055,117,1976,102,1889,82,1719,73,1599"/>
+<area shape="rect" id="Node000046" href="$classripple_1_1PermissionedDomainSet.html" title=" " alt="" coords="198,2241,425,2267"/>
+<area shape="poly" id="edge666_Node000000_Node000046" title=" " alt="" coords="77,1599,84,1731,102,1921,117,2018,136,2106,160,2179,174,2206,190,2227,206,2239,203,2243,186,2231,170,2209,155,2181,131,2108,111,2019,97,1921,79,1732,72,1599"/>
+<area shape="rect" id="Node000047" href="$classripple_1_1SetAccount.html" title=" " alt="" coords="241,2291,381,2316"/>
+<area shape="poly" id="edge667_Node000000_Node000047" title=" " alt="" coords="77,1599,82,1740,99,1944,113,2049,133,2145,158,2224,173,2254,190,2276,213,2292,242,2301,240,2306,211,2297,186,2280,169,2257,153,2226,128,2147,108,2050,94,1945,77,1740,72,1599"/>
+<area shape="rect" id="Node000048" href="$classripple_1_1SetOracle.html" title="Price Oracle is a system that acts as a bridge between a blockchain network and the external world,..." alt="" coords="246,2340,377,2365"/>
+<area shape="poly" id="edge668_Node000000_Node000048" title=" " alt="" coords="77,1599,81,1748,96,1968,110,2081,130,2184,156,2269,172,2301,190,2325,216,2343,247,2351,245,2356,213,2348,186,2329,168,2304,151,2271,125,2186,105,2082,90,1968,75,1749,71,1599"/>
+<area shape="rect" id="Node000049" href="$classripple_1_1SetRegularKey.html" title=" " alt="" coords="230,2389,393,2415"/>
+<area shape="poly" id="edge669_Node000000_Node000049" title=" " alt="" coords="77,1599,79,1757,93,1991,107,2112,127,2223,154,2314,171,2349,190,2375,209,2389,231,2397,229,2402,206,2393,186,2379,166,2352,149,2316,122,2225,101,2113,87,1992,74,1757,71,1599"/>
+<area shape="rect" id="Node000050" href="$classripple_1_1SetSignerList.html" title="See the README.md for an overview of the SetSignerList transaction that this class implements." alt="" coords="235,2439,387,2464"/>
+<area shape="poly" id="edge670_Node000000_Node000050" title=" " alt="" coords="76,1599,77,1766,81,1886,90,2015,103,2144,124,2262,137,2314,152,2359,170,2396,190,2424,211,2439,236,2448,234,2453,208,2444,186,2428,165,2399,147,2361,132,2316,119,2264,98,2145,84,2016,76,1886,72,1767,71,1599"/>
+<area shape="rect" id="Node000051" href="$classripple_1_1SetTrust.html" title=" " alt="" coords="252,2488,371,2513"/>
+<area shape="poly" id="edge671_Node000000_Node000051" title=" " alt="" coords="78,1599,91,1786,115,2065,130,2206,148,2330,168,2424,179,2455,190,2474,203,2484,218,2492,253,2500,251,2505,217,2497,200,2489,186,2477,174,2457,163,2425,143,2331,125,2207,109,2066,85,1787,73,1599"/>
+<area shape="rect" id="Node000052" href="$classripple_1_1VaultClawback.html" title=" " alt="" coords="230,2537,393,2563"/>
+<area shape="poly" id="edge672_Node000000_Node000052" title=" " alt="" coords="78,1599,90,1795,113,2090,129,2239,147,2371,168,2470,179,2503,190,2523,208,2537,231,2545,229,2550,206,2542,186,2526,174,2505,162,2471,142,2371,123,2240,108,2091,84,1796,73,1599"/>
+<area shape="rect" id="Node000053" href="$classripple_1_1VaultCreate.html" title=" " alt="" coords="240,2587,383,2612"/>
+<area shape="poly" id="edge673_Node000000_Node000053" title=" " alt="" coords="78,1599,89,1804,111,2115,127,2272,145,2411,167,2516,178,2551,190,2572,213,2588,241,2597,239,2602,210,2593,186,2576,173,2554,161,2518,140,2412,122,2273,106,2115,84,1805,73,1599"/>
+<area shape="rect" id="Node000054" href="$classripple_1_1VaultDelete.html" title=" " alt="" coords="240,2636,383,2661"/>
+<area shape="poly" id="edge674_Node000000_Node000054" title=" " alt="" coords="78,1599,88,1814,110,2140,125,2306,144,2452,166,2563,178,2600,190,2622,213,2638,241,2646,239,2651,210,2643,186,2625,173,2602,160,2564,139,2453,120,2306,105,2141,83,1814,72,1599"/>
+<area shape="rect" id="Node000055" href="$classripple_1_1VaultDeposit.html" title=" " alt="" coords="236,2685,387,2711"/>
+<area shape="poly" id="edge675_Node000000_Node000055" title=" " alt="" coords="78,1599,87,1823,108,2165,124,2339,142,2492,165,2609,177,2648,190,2671,211,2686,237,2695,235,2700,209,2691,186,2674,172,2650,159,2610,137,2493,118,2339,103,2165,82,1823,72,1599"/>
+<area shape="rect" id="Node000056" href="$classripple_1_1VaultSet.html" title=" " alt="" coords="251,2735,372,2760"/>
+<area shape="poly" id="edge676_Node000000_Node000056" title=" " alt="" coords="77,1599,86,1832,107,2190,122,2372,141,2533,164,2655,176,2696,190,2720,203,2731,218,2739,251,2747,250,2752,216,2744,200,2735,186,2724,172,2698,158,2656,136,2534,117,2372,101,2190,81,1832,72,1599"/>
+<area shape="rect" id="Node000057" href="$classripple_1_1VaultWithdraw.html" title=" " alt="" coords="230,2784,393,2809"/>
+<area shape="poly" id="edge677_Node000000_Node000057" title=" " alt="" coords="77,1599,86,1840,105,2214,120,2404,139,2573,163,2701,176,2744,190,2770,208,2784,230,2792,229,2797,206,2788,186,2773,171,2746,157,2702,134,2574,115,2405,100,2214,80,1840,72,1599"/>
+<area shape="rect" id="Node000058" href="$classripple_1_1XChainAddAccountCreateAttestation.html" title=" " alt="" coords="217,2834,406,2874"/>
+<area shape="poly" id="edge678_Node000000_Node000058" title=" " alt="" coords="77,1599,85,1849,105,2238,120,2437,139,2613,163,2747,176,2792,190,2819,203,2830,218,2839,215,2844,199,2835,186,2822,171,2794,157,2748,134,2613,115,2437,100,2238,80,1849,72,1599"/>
+<area shape="rect" id="Node000059" href="$classripple_1_1XChainAddClaimAttestation.html" title=" " alt="" coords="188,2899,435,2924"/>
+<area shape="poly" id="edge679_Node000000_Node000059" title=" " alt="" coords="77,1599,84,1861,102,2271,117,2481,136,2667,160,2809,175,2856,190,2884,205,2897,202,2901,186,2888,170,2858,155,2810,131,2668,111,2482,96,2272,78,1861,72,1599"/>
+<area shape="rect" id="Node000060" href="$classripple_1_1XChainClaim.html" title=" " alt="" coords="236,2948,387,2973"/>
+<area shape="poly" id="edge680_Node000000_Node000060" title=" " alt="" coords="77,1599,83,1869,100,2296,115,2514,134,2708,159,2855,174,2904,190,2934,211,2949,237,2958,235,2963,208,2954,186,2937,169,2906,154,2856,129,2708,110,2515,95,2296,78,1869,72,1599"/>
+<area shape="rect" id="Node000061" href="$classripple_1_1XChainCommit.html" title=" " alt="" coords="229,2997,393,3023"/>
+<area shape="poly" id="edge681_Node000000_Node000061" title=" " alt="" coords="77,1599,82,1879,99,2321,113,2548,133,2748,145,2832,158,2901,174,2952,190,2983,208,2997,230,3006,228,3010,205,3002,186,2986,169,2954,153,2902,140,2833,128,2749,108,2548,94,2321,77,1879,72,1599"/>
+<area shape="rect" id="Node000062" href="$classripple_1_1XChainCreateAccountCommit.html" title=" " alt="" coords="208,3047,415,3087"/>
+<area shape="poly" id="edge682_Node000000_Node000062" title=" " alt="" coords="77,1599,82,1886,99,2344,113,2579,133,2787,145,2875,158,2946,174,3000,190,3032,210,3049,206,3053,186,3036,169,3002,153,2948,140,2875,128,2788,108,2579,94,2344,77,1886,72,1599"/>
+<area shape="rect" id="Node000063" href="$classripple_1_1XChainCreateBridge.html" title=" " alt="" coords="213,3112,410,3137"/>
+<area shape="poly" id="edge683_Node000000_Node000063" title=" " alt="" coords="77,1599,80,1898,95,2378,110,2624,130,2842,142,2933,156,3008,172,3064,190,3098,214,3115,211,3119,186,3101,167,3066,151,3010,137,2934,124,2843,104,2624,90,2378,75,1899,71,1599"/>
+<area shape="rect" id="Node000064" href="$classripple_1_1XChainCreateClaimID.html" title=" " alt="" coords="208,3161,415,3187"/>
+<area shape="poly" id="edge684_Node000000_Node000064" title=" " alt="" coords="77,1599,80,1908,94,2402,108,2657,128,2883,141,2977,155,3055,172,3112,190,3147,209,3162,206,3166,186,3150,167,3114,150,3056,135,2978,123,2883,103,2657,89,2403,74,1908,71,1599"/>
 </map>

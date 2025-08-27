@@ -162,8 +162,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad096c64f86e5573a450cf0338c79c086"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0c48dd5bcaef14e30e9ef5b96b0daa39" id="r_a0c48dd5bcaef14e30e9ef5b96b0daa39"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Config.html">Config</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a0c48dd5bcaef14e30e9ef5b96b0daa39">config</a> ()=0</td></tr>
 <tr class="separator:a0c48dd5bcaef14e30e9ef5b96b0daa39"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ba1bfb9e7fd7305f076c8aa87331295" id="r_a9ba1bfb9e7fd7305f076c8aa87331295"><td class="memItemLeft" align="right" valign="top">virtual boost::asio::io_service &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a9ba1bfb9e7fd7305f076c8aa87331295">getIOService</a> ()=0</td></tr>
-<tr class="separator:a9ba1bfb9e7fd7305f076c8aa87331295"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb5f8b1328611a468585b5e071fa851d" id="r_adb5f8b1328611a468585b5e071fa851d"><td class="memItemLeft" align="right" valign="top">virtual boost::asio::io_context &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#adb5f8b1328611a468585b5e071fa851d">getIOContext</a> ()=0</td></tr>
+<tr class="separator:adb5f8b1328611a468585b5e071fa851d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a012991cb6d3b79b1515ddd8478cd6c8a" id="r_a012991cb6d3b79b1515ddd8478cd6c8a"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1CollectorManager.html">CollectorManager</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a012991cb6d3b79b1515ddd8478cd6c8a">getCollectorManager</a> ()=0</td></tr>
 <tr class="separator:a012991cb6d3b79b1515ddd8478cd6c8a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e3f03e303b8524cdac477e7f6f4288f" id="r_a9e3f03e303b8524cdac477e7f6f4288f"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Family.html">Family</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Application.html#a9e3f03e303b8524cdac477e7f6f4288f">getNodeFamily</a> ()=0</td></tr>
@@ -356,7 +356,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02182">2182</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l02184">2184</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 
 </div>
 </div>
@@ -689,8 +689,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a9ba1bfb9e7fd7305f076c8aa87331295" name="a9ba1bfb9e7fd7305f076c8aa87331295"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9ba1bfb9e7fd7305f076c8aa87331295">&#9670;&#160;</a></span>getIOService()</h2>
+<a id="adb5f8b1328611a468585b5e071fa851d" name="adb5f8b1328611a468585b5e071fa851d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb5f8b1328611a468585b5e071fa851d">&#9670;&#160;</a></span>getIOContext()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -699,7 +699,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual boost::asio::io_service &amp; ripple::Application::getIOService </td>
+          <td class="memname">virtual boost::asio::io_context &amp; ripple::Application::getIOContext </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -712,7 +712,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#ade974cdf565fa4dc3412c26213cbdfc9">ripple::ApplicationImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1ApplicationImp.html#a46536a5a2a1f149eeb14975a5afb503f">ripple::ApplicationImp</a>.</p>
 
 </div>
 </div>

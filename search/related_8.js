@@ -1,7 +1,7 @@
 var searchData=
 [
   ['make_5floadmanager_0',['make_LoadManager',['../classripple_1_1LoadManager.html#aef999179bfe75b6510fa01e675fcc658',1,'ripple::LoadManager']]],
-  ['make_5fserverhandler_1',['make_ServerHandler',['../classripple_1_1ServerHandler.html#aae56538a7bf513ed5086240b224d5b78',1,'ripple::ServerHandler']]],
+  ['make_5fserverhandler_1',['make_ServerHandler',['../classripple_1_1ServerHandler.html#a470783e725da6e101b2fa55aa3af7d9e',1,'ripple::ServerHandler']]],
   ['make_5fshamapitem_2',['make_shamapitem',['../classripple_1_1SHAMapItem.html#abe63ea1d9ccfa61d535223f96bcf7374',1,'ripple::SHAMapItem']]],
   ['make_5fsharedintrusive_3',['make_SharedIntrusive',['../classripple_1_1SharedIntrusive.html#a79e0545330420dac1f03699aec226488',1,'ripple::SharedIntrusive']]],
   ['make_5fstvar_4',['make_stvar',['../classripple_1_1detail_1_1STVar.html#adfc5c4888dc6003707acd62f14c20112',1,'ripple::detail::STVar']]],

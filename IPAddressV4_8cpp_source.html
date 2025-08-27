@@ -109,11 +109,11 @@ $(document).ready(function() { init_codefold(0); });
 <div class="foldopen" id="foldopen00026" data-start="{" data-end="}">
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="namespacebeast_1_1IP.html#a25de154b027e488d8e4be8362e6b6927">   26</a></span><a class="code hl_function" href="namespacebeast_1_1IP.html#add9a8c02dc97dce0e0676c662b697f45">is_private</a>(<a class="code hl_typedef" href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">AddressV4</a> <span class="keyword">const</span>&amp; addr)</div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>{</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordflow">return</span> ((addr.to_ulong() &amp; 0xff000000) ==</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordflow">return</span> ((addr.to_uint() &amp; 0xff000000) ==</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>            0x0a000000) ||  <span class="comment">// Prefix /8,    10.  #.#.#</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>        ((addr.to_ulong() &amp; 0xfff00000) ==</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>        ((addr.to_uint() &amp; 0xfff00000) ==</div>
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>         0xac100000) ||  <span class="comment">// Prefix /12   172. 16.#.# - 172.31.#.#</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>        ((addr.to_ulong() &amp; 0xffff0000) ==</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>        ((addr.to_uint() &amp; 0xffff0000) ==</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>         0xc0a80000) ||  <span class="comment">// Prefix /16   192.168.#.#</span></div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        addr.is_loopback();</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>}</div>
@@ -132,7 +132,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno"><a class="line" href="namespacebeast_1_1IP.html#a54d5d1d55a9fb07941c3c89ea33463df">   44</a></span><a class="code hl_function" href="namespacebeast_1_1IP.html#a54d5d1d55a9fb07941c3c89ea33463df">get_class</a>(<a class="code hl_typedef" href="namespacebeast_1_1IP.html#ad2074ed8068d52be937bf6895918bcb5">AddressV4</a> <span class="keyword">const</span>&amp; addr)</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>{</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keyword">static</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* table = <span class="stringliteral">&quot;AAAABBCD&quot;</span>;</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="keywordflow">return</span> table[(addr.to_ulong() &amp; 0xE0000000) &gt;&gt; 29];</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="keywordflow">return</span> table[(addr.to_uint() &amp; 0xE0000000) &gt;&gt; 29];</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>}</div>
 </div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>

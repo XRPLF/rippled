@@ -356,7 +356,7 @@ template&lt;class &gt; </div>
 <p>Block until the <a class="el" href="classripple_1_1io__list.html" title="Manages a set of objects performing asynchronous I/O.">io_list</a> stops. </p>
 <p>Effects: The caller is blocked until the <a class="el" href="classripple_1_1io__list.html" title="Manages a set of objects performing asynchronous I/O.">io_list</a> is closed and all associated work is destroyed.</p>
 <p>Thread safety: May be called concurrently.</p>
-<p>Preconditions: No call to io_service::run on any io_service used by work objects associated with this <a class="el" href="classripple_1_1io__list.html" title="Manages a set of objects performing asynchronous I/O.">io_list</a> exists in the caller's call stack. </p>
+<p>Preconditions: No call to io_context::run on any io_context used by work objects associated with this <a class="el" href="classripple_1_1io__list.html" title="Manages a set of objects performing asynchronous I/O.">io_list</a> exists in the caller's call stack. </p>
 
 <p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00259">259</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 

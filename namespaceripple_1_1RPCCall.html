@@ -86,8 +86,8 @@ $(function() {
 Functions</h2></td></tr>
 <tr class="memitem:aa2e464e033e3dc9820a5f389a2a0724a" id="r_aa2e464e033e3dc9820a5f389a2a0724a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPCCall.html#aa2e464e033e3dc9820a5f389a2a0724a">fromCommandLine</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;vCmd, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs)</td></tr>
 <tr class="separator:aa2e464e033e3dc9820a5f389a2a0724a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9e61d00d585b337624647db3b44b10d" id="r_aa9e61d00d585b337624647db3b44b10d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPCCall.html#aa9e61d00d585b337624647db3b44b10d">fromNetwork</a> (boost::asio::io_service &amp;io_service, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strIp, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> const iPort, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strUsername, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPassword, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strMethod, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvParams, bool const bSSL, bool const quiet, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvInput)&gt; callbackFuncP, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; headers)</td></tr>
-<tr class="separator:aa9e61d00d585b337624647db3b44b10d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4cda12544f111d8ebd93b9d8e6e9720d" id="r_a4cda12544f111d8ebd93b9d8e6e9720d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPCCall.html#a4cda12544f111d8ebd93b9d8e6e9720d">fromNetwork</a> (boost::asio::io_context &amp;io_context, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strIp, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> const iPort, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strUsername, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPassword, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strPath, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;strMethod, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvParams, bool const bSSL, bool const quiet, <a class="el" href="classripple_1_1Logs.html">Logs</a> &amp;logs, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvInput)&gt; callbackFuncP, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; headers)</td></tr>
+<tr class="separator:a4cda12544f111d8ebd93b9d8e6e9720d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Processes Ripple <a class="el" href="namespaceripple_1_1RPC.html" title="API version numbers used in later API versions.">RPC</a> calls. </p>
@@ -128,8 +128,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aa9e61d00d585b337624647db3b44b10d" name="aa9e61d00d585b337624647db3b44b10d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa9e61d00d585b337624647db3b44b10d">&#9670;&#160;</a></span>fromNetwork()</h2>
+<a id="a4cda12544f111d8ebd93b9d8e6e9720d" name="a4cda12544f111d8ebd93b9d8e6e9720d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4cda12544f111d8ebd93b9d8e6e9720d">&#9670;&#160;</a></span>fromNetwork()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -137,8 +137,8 @@ Functions</h2></td></tr>
         <tr>
           <td class="memname">void ripple::RPCCall::fromNetwork </td>
           <td>(</td>
-          <td class="paramtype">boost::asio::io_service &amp;&#160;</td>
-          <td class="paramname"><em>io_service</em>, </td>
+          <td class="paramtype">boost::asio::io_context &amp;&#160;</td>
+          <td class="paramname"><em>io_context</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

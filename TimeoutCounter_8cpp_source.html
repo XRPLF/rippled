@@ -123,7 +123,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    , progress_(false)</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    , timerInterval_(interval)</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    , queueJobParameter_(<a class="code hl_namespace" href="namespacestd.html">std</a>::move(jobParameter))</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    , timer_(app_.getIOService())</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    , timer_(app_.getIOContext())</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>{</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    XRPL_ASSERT(</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        (<a class="code hl_variable" href="classripple_1_1TimeoutCounter.html#a4cd3ab8d59bc971262ec26d715f8538a">timerInterval_</a> &gt; 10ms) &amp;&amp; (<a class="code hl_variable" href="classripple_1_1TimeoutCounter.html#a4cd3ab8d59bc971262ec26d715f8538a">timerInterval_</a> &lt; 30s),</div>

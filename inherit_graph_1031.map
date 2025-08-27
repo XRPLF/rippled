@@ -1,5 +1,33 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" title=" " alt="" coords="5,20,44,45"/>
-<area shape="rect" id="Node000001" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="92,5,268,60"/>
-<area shape="poly" id="edge839_Node000000_Node000001" title=" " alt="" coords="58,30,92,30,92,35,58,35"/>
+<area shape="rect" id="Node000000" title=" " alt="" coords="5,299,81,324"/>
+<area shape="rect" id="Node000001" href="$classripple_1_1BookStep.html" title=" " alt="" coords="148,5,363,60"/>
+<area shape="poly" id="edge824_Node000000_Node000001" title=" " alt="" coords="44,285,50,239,64,181,89,121,106,94,128,69,146,55,149,60,131,73,111,97,94,124,69,183,55,240,49,285"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1BookStep.html" title=" " alt="" coords="163,84,347,139"/>
+<area shape="poly" id="edge826_Node000000_Node000003" title=" " alt="" coords="49,285,76,217,99,181,128,149,162,129,164,133,131,153,103,184,81,220,54,287"/>
+<area shape="rect" id="Node000005" href="$classripple_1_1DirectStepI.html" title=" " alt="" coords="149,163,361,203"/>
+<area shape="poly" id="edge828_Node000000_Node000005" title=" " alt="" coords="58,285,87,248,106,229,128,213,152,201,154,206,131,218,110,233,91,251,62,289"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1DirectStepI.html" title=" " alt="" coords="165,227,346,267"/>
+<area shape="poly" id="edge830_Node000000_Node000007" title=" " alt="" coords="87,291,129,277,170,265,171,270,130,282,89,296"/>
+<area shape="rect" id="Node000009" href="$classripple_1_1XRPEndpointStep.html" title=" " alt="" coords="129,291,381,331"/>
+<area shape="poly" id="edge832_Node000000_Node000009" title=" " alt="" coords="95,309,129,309,129,314,95,314"/>
+<area shape="rect" id="Node000011" href="$classripple_1_1XRPEndpointStep.html" title=" " alt="" coords="145,355,366,395"/>
+<area shape="poly" id="edge834_Node000000_Node000011" title=" " alt="" coords="89,326,130,341,171,353,170,358,129,346,87,331"/>
+<area shape="rect" id="Node000013" href="$classripple_1_1BookStep.html" title=" " alt="" coords="171,419,339,459"/>
+<area shape="poly" id="edge836_Node000000_Node000013" title=" " alt="" coords="62,334,91,371,110,390,131,405,172,423,170,428,128,410,106,394,87,375,58,337"/>
+<area shape="rect" id="Node000014" href="$classripple_1_1DirectStepI.html" title=" " alt="" coords="186,483,325,523"/>
+<area shape="poly" id="edge837_Node000000_Node000014" title=" " alt="" coords="54,337,64,368,80,404,102,439,131,469,157,484,187,494,185,499,155,489,128,473,98,443,75,406,59,370,49,338"/>
+<area shape="rect" id="Node000015" href="$classripple_1_1XRPEndpointStep.html" title=" " alt="" coords="166,547,345,587"/>
+<area shape="poly" id="edge838_Node000000_Node000015" title=" " alt="" coords="50,337,56,380,71,433,95,487,111,512,131,533,148,545,167,554,164,558,145,550,128,537,107,515,90,490,66,435,51,381,44,338"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1BookOfferCrossingStep.html" title=" " alt="" coords="453,13,641,53"/>
+<area shape="poly" id="edge825_Node000001_Node000002" title=" " alt="" coords="376,30,453,30,453,35,376,35"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1BookPaymentStep.html" title=" " alt="" coords="454,91,641,131"/>
+<area shape="poly" id="edge827_Node000003_Node000004" title=" " alt="" coords="361,109,454,109,454,114,361,114"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1DirectIOfferCrossingStep.html" title=" " alt="" coords="434,171,661,196"/>
+<area shape="poly" id="edge829_Node000005_Node000006" title=" " alt="" coords="375,181,434,181,434,186,375,186"/>
+<area shape="rect" id="Node000008" href="$classripple_1_1DirectIPaymentStep.html" title=" " alt="" coords="449,235,645,260"/>
+<area shape="poly" id="edge831_Node000007_Node000008" title=" " alt="" coords="360,245,449,245,449,250,360,250"/>
+<area shape="rect" id="Node000010" href="$classripple_1_1XRPEndpointOfferCrossingStep.html" title=" " alt="" coords="456,291,639,331"/>
+<area shape="poly" id="edge833_Node000009_Node000010" title=" " alt="" coords="395,309,456,309,456,314,395,314"/>
+<area shape="rect" id="Node000012" href="$classripple_1_1XRPEndpointPaymentStep.html" title=" " alt="" coords="429,363,665,388"/>
+<area shape="poly" id="edge835_Node000011_Node000012" title=" " alt="" coords="380,373,429,373,429,378,380,378"/>
 </map>

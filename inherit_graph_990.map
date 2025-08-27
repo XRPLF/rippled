@@ -1,5 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$classripple_1_1XChainAttestationsBase.html" title=" " alt="" coords="5,5,301,45"/>
-<area shape="rect" id="Node000001" href="$classripple_1_1XChainCreateAccountAttestations.html" title=" " alt="" coords="349,5,556,45"/>
-<area shape="poly" id="edge691_Node000000_Node000001" title=" " alt="" coords="315,23,349,23,349,28,315,28"/>
+<area shape="rect" id="Node000000" href="$classripple_1_1XChainAttestationsBase.html" title=" " alt="" coords="5,5,244,45"/>
+<area shape="rect" id="Node000001" href="$classripple_1_1XChainClaimAttestations.html" title=" " alt="" coords="292,13,521,38"/>
+<area shape="poly" id="edge690_Node000000_Node000001" title=" " alt="" coords="257,23,292,23,292,28,257,28"/>
 </map>

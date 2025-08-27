@@ -275,7 +275,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> s;</div>
 <div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>    s.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/reserve.html">reserve</a>(buffer_size(bs));</div>
 <div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; b : bs)</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>        s.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/append.html">append</a>(buffer_cast&lt;char const*&gt;(b), buffer_size(b));</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>        s.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/append.html">append</a>(<span class="keyword">static_cast&lt;</span><span class="keywordtype">char</span> const*<span class="keyword">&gt;</span>(b.data()), buffer_size(b));</div>
 <div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="classJson_1_1Reader.html#a8ee4d40504e4f8b069745d762ab4d78c">parse</a>(s, root);</div>
 <div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>}</div>
 </div>

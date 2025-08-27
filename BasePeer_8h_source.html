@@ -180,8 +180,8 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>              <span class="keywordflow">return</span> <span class="stringliteral">&quot;##&quot;</span> + <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(++<span class="keywordtype">id</span>) + <span class="stringliteral">&quot; &quot;</span>;</div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>          }())</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    , j_(sink_)</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    , work_(executor)</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    , strand_(executor)</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    , work_(boost::asio::make_work_guard(executor))</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    , strand_(boost::asio::make_strand(executor))</div>
 <div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>{</div>
 <div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>}</div>
 </div>

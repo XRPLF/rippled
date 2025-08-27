@@ -122,8 +122,8 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a8892b9f9dcf0359e1834a87a451f323f" id="r_a8892b9f9dcf0359e1834a87a451f323f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#a8892b9f9dcf0359e1834a87a451f323f">WorkFile</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;path, boost::asio::io_service &amp;ios, <a class="el" href="classripple_1_1detail_1_1WorkFile.html#a9c221c366a4de8519b2672fd03974e04">callback_type</a> cb)</td></tr>
-<tr class="separator:a8892b9f9dcf0359e1834a87a451f323f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8d52e53f69bfa18bc1fca648a61e59a9" id="r_a8d52e53f69bfa18bc1fca648a61e59a9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#a8d52e53f69bfa18bc1fca648a61e59a9">WorkFile</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;path, boost::asio::io_context &amp;ios, <a class="el" href="classripple_1_1detail_1_1WorkFile.html#a9c221c366a4de8519b2672fd03974e04">callback_type</a> cb)</td></tr>
+<tr class="separator:a8d52e53f69bfa18bc1fca648a61e59a9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e0836b1368e33f8cd2b250b94405796" id="r_a7e0836b1368e33f8cd2b250b94405796"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#a7e0836b1368e33f8cd2b250b94405796">~WorkFile</a> ()</td></tr>
 <tr class="separator:a7e0836b1368e33f8cd2b250b94405796"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3fc3659bbdaedbbc437701549d04fd5e" id="r_a3fc3659bbdaedbbc437701549d04fd5e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#a3fc3659bbdaedbbc437701549d04fd5e">run</a> () override</td></tr>
@@ -148,14 +148,14 @@ Private Attributes</h2></td></tr>
 <tr class="separator:ab9fa1865291c51510c6db947818fffe9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a408980864c84e4565788f90928f6e038" id="r_a408980864c84e4565788f90928f6e038"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#a9c221c366a4de8519b2672fd03974e04">callback_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#a408980864c84e4565788f90928f6e038">cb_</a></td></tr>
 <tr class="separator:a408980864c84e4565788f90928f6e038"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0c2dd65db01efa8c3aff849f0211d61d" id="r_a0c2dd65db01efa8c3aff849f0211d61d"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#a0c2dd65db01efa8c3aff849f0211d61d">ios_</a></td></tr>
-<tr class="separator:a0c2dd65db01efa8c3aff849f0211d61d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6be8882cccb40fd7643db2373447bfa" id="r_af6be8882cccb40fd7643db2373447bfa"><td class="memItemLeft" align="right" valign="top">boost::asio::io_service::strand&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#af6be8882cccb40fd7643db2373447bfa">strand_</a></td></tr>
-<tr class="separator:af6be8882cccb40fd7643db2373447bfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adc848bb57ec1a06e8bd9fefa52a6ba21" id="r_adc848bb57ec1a06e8bd9fefa52a6ba21"><td class="memItemLeft" align="right" valign="top">boost::asio::io_context &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#adc848bb57ec1a06e8bd9fefa52a6ba21">ios_</a></td></tr>
+<tr class="separator:adc848bb57ec1a06e8bd9fefa52a6ba21"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa993074403361b14900ba48d9e5b28f3" id="r_aa993074403361b14900ba48d9e5b28f3"><td class="memItemLeft" align="right" valign="top">boost::asio::strand&lt; boost::asio::io_context::executor_type &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1detail_1_1WorkFile.html#aa993074403361b14900ba48d9e5b28f3">strand_</a></td></tr>
+<tr class="separator:aa993074403361b14900ba48d9e5b28f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00034">34</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00038">38</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a2ee018c71a7a41a620050f14cd6033b1" name="a2ee018c71a7a41a620050f14cd6033b1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2ee018c71a7a41a620050f14cd6033b1">&#9670;&#160;</a></span>error_code</h2>
@@ -177,7 +177,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00037">37</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00041">41</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
@@ -201,7 +201,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00039">39</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00043">43</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
@@ -217,13 +217,13 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00042">42</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00046">46</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a8892b9f9dcf0359e1834a87a451f323f" name="a8892b9f9dcf0359e1834a87a451f323f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8892b9f9dcf0359e1834a87a451f323f">&#9670;&#160;</a></span>WorkFile()</h2>
+<a id="a8d52e53f69bfa18bc1fca648a61e59a9" name="a8d52e53f69bfa18bc1fca648a61e59a9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8d52e53f69bfa18bc1fca648a61e59a9">&#9670;&#160;</a></span>WorkFile()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -237,7 +237,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">boost::asio::io_service &amp;&#160;</td>
+          <td class="paramtype">boost::asio::io_context &amp;&#160;</td>
           <td class="paramname"><em>ios</em>, </td>
         </tr>
         <tr>
@@ -254,7 +254,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00067">67</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00071">71</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
@@ -273,7 +273,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00075">75</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00082">82</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
@@ -303,7 +303,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1detail_1_1Work.html#a9fe9c929a9e21f162a78efe8f6bc2842">ripple::detail::Work</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00082">82</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00089">89</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
@@ -332,7 +332,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1detail_1_1Work.html#a157da65c7565e5016a6f9481bc045770">ripple::detail::Work</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00097">97</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00106">106</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
@@ -357,7 +357,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00059">59</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00063">63</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
@@ -381,12 +381,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00060">60</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00064">64</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
-<a id="a0c2dd65db01efa8c3aff849f0211d61d" name="a0c2dd65db01efa8c3aff849f0211d61d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0c2dd65db01efa8c3aff849f0211d61d">&#9670;&#160;</a></span>ios_</h2>
+<a id="adc848bb57ec1a06e8bd9fefa52a6ba21" name="adc848bb57ec1a06e8bd9fefa52a6ba21"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc848bb57ec1a06e8bd9fefa52a6ba21">&#9670;&#160;</a></span>ios_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -395,7 +395,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::io_service&amp; ripple::detail::WorkFile::ios_</td>
+          <td class="memname">boost::asio::io_context&amp; ripple::detail::WorkFile::ios_</td>
         </tr>
       </table>
   </td>
@@ -405,12 +405,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00061">61</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00065">65</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>
-<a id="af6be8882cccb40fd7643db2373447bfa" name="af6be8882cccb40fd7643db2373447bfa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6be8882cccb40fd7643db2373447bfa">&#9670;&#160;</a></span>strand_</h2>
+<a id="aa993074403361b14900ba48d9e5b28f3" name="aa993074403361b14900ba48d9e5b28f3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa993074403361b14900ba48d9e5b28f3">&#9670;&#160;</a></span>strand_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -419,7 +419,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">boost::asio::io_service::strand ripple::detail::WorkFile::strand_</td>
+          <td class="memname">boost::asio::strand&lt;boost::asio::io_context::executor_type&gt; ripple::detail::WorkFile::strand_</td>
         </tr>
       </table>
   </td>
@@ -429,7 +429,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00062">62</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WorkFile_8h_source.html#l00066">66</a> of file <a class="el" href="WorkFile_8h_source.html">WorkFile.h</a>.</p>
 
 </div>
 </div>

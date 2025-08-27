@@ -65,5 +65,7 @@ var searchData=
   ['ripple_3a_3atest_3a_3avalidator_5fdata_62',['validator_data',['../namespaceripple_1_1test_1_1validator__data.html',1,'ripple::test']]],
   ['ripple_3a_3atests_63',['tests',['../namespaceripple_1_1tests.html',1,'ripple']]],
   ['ripple_3a_3atuning_64',['Tuning',['../namespaceripple_1_1Tuning.html',1,'ripple']]],
-  ['ripple_3a_3aunl_65',['unl',['../namespaceripple_1_1unl.html',1,'ripple']]]
+  ['ripple_3a_3aunl_65',['unl',['../namespaceripple_1_1unl.html',1,'ripple']]],
+  ['ripple_3a_3autil_66',['util',['../namespaceripple_1_1util.html',1,'ripple']]],
+  ['ripple_3a_3autil_3a_3aimpl_67',['impl',['../namespaceripple_1_1util_1_1impl.html',1,'ripple::util']]]
 ];
