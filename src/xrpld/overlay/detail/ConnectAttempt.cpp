@@ -120,12 +120,13 @@ ConnectAttempt::tryAsyncShutdown()
         strand_.running_in_this_thread(),
         "ripple::ConnectAttempt::tryAsyncShutdown : strand in this thread");
 
-    if (!shutdown_)
+    if (!shutdown_ || shutdownStarted_)
         return;
 
     if (ioPending_)
         return;
 
+    shutdownStarted_ = true;
     setTimer();
 
     // gracefully shutdown the SSL socket, performing a shutdown handshake
