@@ -108,8 +108,8 @@ TEST_CASE("Test format output")
 
 TEST_CASE("Test format output when structured logs are enabled")
 {
-    static log::JsonStructuredJournal structuredJournal;
-    beast::Journal::enableStructuredJournal(&structuredJournal);
+    auto structuredJournal = std::make_unique<log::JsonStructuredJournal>();
+    beast::Journal::enableStructuredJournal(std::move(structuredJournal));
 
     std::string output;
     Logs::format(output, "Message", beast::severities::kDebug, "Test");
@@ -121,7 +121,7 @@ TEST_CASE("Test format output when structured logs are enabled")
 
 TEST_CASE("Enable json logs")
 {
-    static log::JsonStructuredJournal structuredJournal;
+    auto structuredJournal = std::make_unique<log::JsonStructuredJournal>();
 
     std::stringstream logStream;
 
@@ -133,7 +133,7 @@ TEST_CASE("Enable json logs")
 
     logStream.str("");
 
-    beast::Journal::enableStructuredJournal(&structuredJournal);
+    beast::Journal::enableStructuredJournal(std::move(structuredJournal));
 
     logs.journal("Test").debug() << "\n";
 
@@ -152,13 +152,13 @@ TEST_CASE("Enable json logs")
 
 TEST_CASE("Global attributes")
 {
-    static log::JsonStructuredJournal structuredJournal;
+    auto structuredJournal = std::make_unique<log::JsonStructuredJournal>();
 
     std::stringstream logStream;
 
     MockLogs logs{logStream, beast::severities::kAll};
 
-    beast::Journal::enableStructuredJournal(&structuredJournal);
+    beast::Journal::enableStructuredJournal(std::move(structuredJournal));
     MockLogs::setGlobalAttributes(log::attributes({{"Field1", "Value1"}}));
 
     logs.journal("Test").debug() << "Test";
@@ -178,13 +178,13 @@ TEST_CASE("Global attributes")
 
 TEST_CASE("Global attributes inheritable")
 {
-    static log::JsonStructuredJournal structuredJournal;
+    auto structuredJournal = std::make_unique<log::JsonStructuredJournal>();
 
     std::stringstream logStream;
 
     MockLogs logs{logStream, beast::severities::kAll};
 
-    beast::Journal::enableStructuredJournal(&structuredJournal);
+    beast::Journal::enableStructuredJournal(std::move(structuredJournal));
     MockLogs::setGlobalAttributes(log::attributes({{"Field1", "Value1"}}));
 
     logs.journal(
