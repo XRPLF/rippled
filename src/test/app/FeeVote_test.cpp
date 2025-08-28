@@ -740,7 +740,8 @@ class FeeVote_test : public beast::unit_test::suite
                         sfReserveIncrementDrops,
                         XRPAmount{setup.owner_reserve});
                 });
-            val->setTrusted();
+            if (i % 2)
+                val->setTrusted();
             validations.push_back(val);
         }
 
