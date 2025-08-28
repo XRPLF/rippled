@@ -89,6 +89,7 @@ jobs:
           READY: ${{ contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}
           MERGE: ${{ github.event_name == 'merge_group' }}
         run: |
+          echo "${{ toJson(steps.changes.outputs) }}"
           echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FILES == 'true' || env.MERGE == 'true' }}" >> "${GITHUB_OUTPUT}"
           cat "${GITHUB_OUTPUT}"
     outputs:
