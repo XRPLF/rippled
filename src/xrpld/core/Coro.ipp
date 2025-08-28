@@ -101,7 +101,8 @@ JobQueue::Coro::resume()
 
         XRPL_ASSERT(
             jq_.nSuspend_ > 0,
-            "ripple::JobQueue::Coro::resume jq_.nSuspend_ should be greater than 0");
+            "ripple::JobQueue::Coro::resume jq_.nSuspend_ should be greater "
+            "than 0");
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
@@ -141,7 +142,8 @@ JobQueue::Coro::expectEarlyExit()
 
         XRPL_ASSERT(
             jq_.nSuspend_ > 0,
-            "ripple::JobQueue::Coro::expectEarlyExit() jq_.nSuspend_ should be greater than 0");
+            "ripple::JobQueue::Coro::expectEarlyExit() jq_.nSuspend_ should be "
+            "greater than 0");
         --jq_.nSuspend_;
 #ifndef NDEBUG
         finished_ = true;

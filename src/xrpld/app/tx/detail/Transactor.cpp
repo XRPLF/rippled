@@ -211,8 +211,7 @@ Transactor::Transactor(ApplyContext& ctx)
     , j_(ctx.journal,
          log::attributes(
              log::attr("TransactionID", to_string(ctx_.tx.getTransactionID())),
-             log::attr("AccountID", to_string(account_))
-         ))
+             log::attr("AccountID", to_string(account_))))
 {
 }
 

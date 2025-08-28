@@ -84,12 +84,12 @@ BasePeer<Handler, Impl>::BasePeer(
     , handler_(handler)
     , remote_address_(remote_address)
     , j_(journal,
-         log::attributes(
-             log::attr("PeerID",
-               [] {
-                   static std::atomic<unsigned> id{0};
-                   return "##" + std::to_string(++id) + " ";
-               }())))
+         log::attributes(log::attr(
+             "PeerID",
+             [] {
+                 static std::atomic<unsigned> id{0};
+                 return "##" + std::to_string(++id) + " ";
+             }())))
     , work_(executor)
     , strand_(executor)
 {

@@ -1260,7 +1260,8 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 {
     beast::Journal journal{
         m_journal,
-        log::attributes(log::attr("TransactionID", to_string(transaction->getID())))};
+        log::attributes(
+            log::attr("TransactionID", to_string(transaction->getID())))};
     auto const newFlags = app_.getHashRouter().getFlags(transaction->getID());
 
     if ((newFlags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
