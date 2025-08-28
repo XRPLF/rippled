@@ -167,8 +167,6 @@ private:
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
-    static std::unique_ptr<beast::Journal::StructuredLogAttributes>
-        globalLogAttributes_;
 
 public:
     Logs(beast::severities::Severity level);
@@ -191,8 +189,8 @@ public:
     beast::Journal
     journal(
         std::string const& name,
-        std::unique_ptr<beast::Journal::StructuredLogAttributes> attributes =
-            {});
+        std::optional<beast::Journal::JsonLogAttributes> attributes =
+            std::nullopt);
 
     beast::severities::Severity
     threshold() const;
@@ -228,20 +226,6 @@ public:
     makeSink(
         std::string const& partition,
         beast::severities::Severity startingLevel);
-
-    static void
-    setGlobalAttributes(std::unique_ptr<beast::Journal::StructuredLogAttributes>
-                            globalLogAttributes)
-    {
-        if (!globalLogAttributes_)
-        {
-            globalLogAttributes_ = std::move(globalLogAttributes);
-        }
-        else
-        {
-            globalLogAttributes_->combine(std::move(globalLogAttributes));
-        }
-    }
 
 public:
     static LogSeverity

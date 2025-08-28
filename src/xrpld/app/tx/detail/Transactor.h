@@ -53,7 +53,11 @@ public:
         , rules(rules_)
         , flags(flags_)
         , parentBatchId(parentBatchId_)
-        , j(j_)
+        , j(j_,
+            log::attributes(
+                log::attr("TransactionID", to_string(tx.getTransactionID())),
+                log::attr("AccountID", to_string(tx.getAccountID(sfAccount)))
+            ))
     {
         XRPL_ASSERT(
             (flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
@@ -101,7 +105,11 @@ public:
         , flags(flags_)
         , tx(tx_)
         , parentBatchId(parentBatchId_)
-        , j(j_)
+        , j(j_,
+            log::attributes(
+                log::attr("TransactionID", to_string(tx.getTransactionID())),
+                log::attr("AccountID", to_string(tx.getAccountID(sfAccount)))
+            ))
     {
         XRPL_ASSERT(
             parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),

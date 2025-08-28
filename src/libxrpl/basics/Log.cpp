@@ -38,9 +38,6 @@
 
 namespace ripple {
 
-std::unique_ptr<beast::Journal::StructuredLogAttributes>
-    Logs::globalLogAttributes_;
-
 Logs::Sink::Sink(
     std::string const& partition,
     beast::severities::Severity thresh,
@@ -162,16 +159,9 @@ Logs::operator[](std::string const& name)
 beast::Journal
 Logs::journal(
     std::string const& name,
-    std::unique_ptr<beast::Journal::StructuredLogAttributes> attributes)
+    std::optional<beast::Journal::JsonLogAttributes> attributes)
 {
-    if (globalLogAttributes_)
-    {
-        if (attributes)
-            attributes->combine(globalLogAttributes_);
-        else
-            attributes = globalLogAttributes_->clone();
-    }
-    return beast::Journal(get(name), name, std::move(attributes));
+    return beast::Journal{get(name), name, std::move(attributes)};
 }
 
 beast::severities::Severity

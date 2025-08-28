@@ -85,15 +85,15 @@ PeerImp::PeerImp(
     , journal_(
           app_.journal("Peer"),
           log::attributes(
-              {{"NodeID", id},
-               {"RemoteAddress", to_string(slot->remote_endpoint())},
-               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
+              log::attr("NodeID", id),
+               log::attr("RemoteAddress", to_string(slot->remote_endpoint())),
+               log::attr("PublicKey", toBase58(TokenType::NodePublic, publicKey))))
     , p_journal_(
           app_.journal("Protocol"),
           log::attributes(
-              {{"NodeID", id},
-               {"RemoteAddress", to_string(slot->remote_endpoint())},
-               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
+              log::attr("NodeID", id),
+               log::attr("RemoteAddress", to_string(slot->remote_endpoint())),
+               log::attr("PublicKey", toBase58(TokenType::NodePublic, publicKey))))
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
@@ -1392,6 +1392,12 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
+        beast::Journal protocolJournal{
+            p_journal_,
+            log::attributes(
+                log::attr("TransactionID", to_string(txID)),
+                log::attr("RawTransaction", strHex(m->rawtransaction()))
+            )};
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START

@@ -30,6 +30,7 @@ class Xrpl(ConanFile):
         'openssl/1.1.1w',
         'soci/4.0.3',
         'zlib/1.3.1',
+        "rapidjson/1.1.0"
     ]
 
     test_requires = [

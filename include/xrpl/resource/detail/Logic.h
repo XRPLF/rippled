@@ -32,7 +32,6 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
-#include <xrpl/telemetry/JsonLogs.h>
 
 #include <mutex>
 

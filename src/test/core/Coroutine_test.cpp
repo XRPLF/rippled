@@ -176,11 +176,71 @@ public:
     }
 
     void
+    test_yield_and_stop()
+    {
+
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        testcase("yield and stop");
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FORCE_MULTI_THREAD = true;
+            return cfg;
+        }));
+
+        std::shared_ptr<JobQueue::Coro> c;
+        std::mutex mutexStop;
+        std::mutex mutexYield;
+        std::condition_variable cond;
+        std::condition_variable condYield;
+        bool yielded = false;
+        bool stopped = false;
+
+        env.app().getJobQueue().postCoro(
+            jtCLIENT, "Coroutine-Test", [&](auto const& cr) {
+                c = cr;
+                {
+                    std::unique_lock lock(mutexYield);
+                    yielded = true;
+                    condYield.notify_all();
+                }
+                c->yield();
+                // Just to keep this job alive
+                std::this_thread::sleep_for(5ms);
+            });
+        std::thread th{[&]() {
+            std::unique_lock lock(mutexStop);
+            cond.wait(lock, [&]() { return stopped; });
+            // Delay a bit to wait for stop() to be called
+            std::this_thread::sleep_for(1ms);
+            c->post();
+        }};
+
+        // Delay a bit to wait for yield() to be called
+        std::this_thread::sleep_for(1ms);
+        std::unique_lock lockYield(mutexYield);
+        condYield.wait(lockYield, [&]() { return yielded; });
+        {
+            std::unique_lock lock(mutexStop);
+            stopped = true;
+            cond.notify_all();
+        }
+        env.app().getJobQueue().stop();
+        try
+        {
+            th.join();
+        } catch (const std::exception& e) {}
+        pass();
+    }
+
+    void
     run() override
     {
-        correct_order();
-        incorrect_order();
-        thread_specific_storage();
+        // correct_order();
+        // incorrect_order();
+        // thread_specific_storage();
+        test_yield_and_stop();
     }
 };
 

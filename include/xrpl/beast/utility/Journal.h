@@ -21,10 +21,61 @@
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <rapidjson/document.h>
 
-#include <memory>
+#include <deque>
+#include <utility>
 #include <source_location>
 #include <sstream>
+
+
+namespace ripple::log {
+template <typename T>
+class LogParameter
+{
+public:
+    template <typename TArg>
+    LogParameter(char const* name, TArg&& value)
+        : name_(name), value_(std::forward<TArg>(value))
+    {
+    }
+
+private:
+    char const* name_;
+    T value_;
+
+    template <typename U>
+    friend std::ostream&
+    operator<<(std::ostream& os, LogParameter<U> const&);
+};
+
+template <typename T>
+class LogField
+{
+public:
+    template <typename TArg>
+    LogField(char const* name, TArg&& value)
+        : name_(name), value_(std::forward<TArg>(value))
+    {
+    }
+
+private:
+    char const* name_;
+    T value_;
+
+    template <typename U>
+    friend std::ostream&
+    operator<<(std::ostream& os, LogField<U> const&);
+};
+
+template <typename T>
+std::ostream&
+operator<<(std::ostream& os, LogField<T> const& param);
+
+template <typename T>
+std::ostream&
+operator<<(std::ostream& os, LogParameter<T> const& param);
+}
 
 namespace beast {
 
@@ -64,75 +115,111 @@ to_string(Severity severity);
 class Journal
 {
 public:
+    template <typename T>
+    friend std::ostream&
+    ripple::log::operator<<(std::ostream& os, ripple::log::LogField<T> const& param);
+
+    template <typename T>
+    friend std::ostream&
+    ripple::log::operator<<(
+        std::ostream& os,
+        ripple::log::LogParameter<T> const& param);
+
     class Sink;
 
-    class StructuredJournalImpl;
+    class JsonLogAttributes
+    {
+    public:
+        using AttributeFields = rapidjson::Value;
 
-    class StructuredLogAttributes;
+        JsonLogAttributes();
+        JsonLogAttributes(JsonLogAttributes const& other);
+
+        JsonLogAttributes&
+        operator=(JsonLogAttributes const& other);
+
+        void
+        setModuleName(std::string const& name);
+
+        [[nodiscard]] static JsonLogAttributes
+        combine(AttributeFields const& a, AttributeFields const& b);
+
+        AttributeFields&
+        contextValues()
+        {
+            return contextValues_;
+        }
+
+        [[nodiscard]] AttributeFields const&
+        contextValues() const
+        {
+            return contextValues_;
+        }
+
+        rapidjson::MemoryPoolAllocator<>&
+        allocator()
+        {
+            return allocator_;
+        }
+
+    private:
+        AttributeFields contextValues_;
+        rapidjson::MemoryPoolAllocator<> allocator_;
+
+        friend class Journal;
+    };
+
+    struct JsonLogContext
+    {
+        std::source_location location = {};
+        rapidjson::Value messageParams;
+        rapidjson::MemoryPoolAllocator<> allocator;
+
+        JsonLogContext() = default;
+
+        void
+        reset(std::source_location location_) noexcept
+        {
+            location = location_;
+            messageParams = rapidjson::Value{};
+            messageParams.SetObject();
+            allocator.Clear();
+        }
+    };
 
 private:
     // Severity level / threshold of a Journal message.
     using Severity = severities::Severity;
 
-    std::unique_ptr<StructuredLogAttributes> m_attributes;
+    std::optional<JsonLogAttributes> m_attributes;
+    static std::optional<JsonLogAttributes> globalLogAttributes_;
+    static std::mutex globalLogAttributesMutex_;
+    static bool m_jsonLogsEnabled;
 
-    static std::unique_ptr<StructuredJournalImpl> m_structuredJournalImpl;
+    static thread_local JsonLogContext currentJsonLogContext_;
+
 
     // Invariant: m_sink always points to a valid Sink
     Sink* m_sink = nullptr;
 
+    static void
+    initMessageContext(std::source_location location);
+
+    static std::string
+    formatLog(std::string const& message,
+        severities::Severity severity,
+        std::optional<JsonLogAttributes> const& attributes = std::nullopt);
 public:
     //--------------------------------------------------------------------------
 
     static void
-    enableStructuredJournal(std::unique_ptr<StructuredJournalImpl> impl)
-    {
-        m_structuredJournalImpl = std::move(impl);
-    }
+    enableStructuredJournal();
 
     static void
-    disableStructuredJournal()
-    {
-        m_structuredJournalImpl = nullptr;
-    }
+    disableStructuredJournal();
 
     static bool
-    isStructuredJournalEnabled()
-    {
-        return m_structuredJournalImpl != nullptr;
-    }
-
-    class StructuredJournalImpl
-    {
-    public:
-        StructuredJournalImpl() = default;
-        StructuredJournalImpl(StructuredJournalImpl const&) = default;
-        virtual void
-        initMessageContext(std::source_location location) = 0;
-        virtual void
-        flush(
-            Sink* sink,
-            severities::Severity level,
-            std::string const& text,
-            StructuredLogAttributes* attributes) = 0;
-        virtual ~StructuredJournalImpl() = default;
-    };
-
-    class StructuredLogAttributes
-    {
-    public:
-        StructuredLogAttributes() = default;
-        StructuredLogAttributes(StructuredLogAttributes const&) = default;
-        virtual void
-        setModuleName(std::string const& name) = 0;
-        virtual std::unique_ptr<StructuredLogAttributes>
-        clone() const = 0;
-        virtual void
-        combine(std::unique_ptr<StructuredLogAttributes> const& attributes) = 0;
-        virtual void
-        combine(std::unique_ptr<StructuredLogAttributes>&& attributes) = 0;
-        virtual ~StructuredLogAttributes() = default;
-    };
+    isStructuredJournalEnabled();
 
     /** Abstraction for the underlying message destination. */
     class Sink
@@ -214,25 +301,25 @@ public:
     public:
         ScopedStream(ScopedStream const& other)
             : ScopedStream(
-                  other.m_attributes ? other.m_attributes->clone() : nullptr,
+                  other.m_attributes,
                   other.m_sink,
                   other.m_level)
         {
         }
 
         ScopedStream(
-            std::unique_ptr<StructuredLogAttributes> attributes,
+            std::optional<JsonLogAttributes> attributes,
             Sink& sink,
             Severity level);
 
         template <typename T>
         ScopedStream(
-            std::unique_ptr<StructuredLogAttributes> attributes,
+            std::optional<JsonLogAttributes> attributes,
             Stream const& stream,
             T const& t);
 
         ScopedStream(
-            std::unique_ptr<StructuredLogAttributes> attributes,
+            std::optional<JsonLogAttributes> attributes,
             Stream const& stream,
             std::ostream& manip(std::ostream&));
 
@@ -255,7 +342,7 @@ public:
         operator<<(T const& t) const;
 
     private:
-        std::unique_ptr<StructuredLogAttributes> m_attributes;
+        std::optional<JsonLogAttributes> m_attributes;
         Sink& m_sink;
         Severity const m_level;
         std::ostringstream mutable m_ostream;
@@ -291,7 +378,7 @@ public:
             Constructor is inlined so checking active() very inexpensive.
         */
         Stream(
-            std::unique_ptr<StructuredLogAttributes> attributes,
+            std::optional<JsonLogAttributes> attributes,
             Sink& sink,
             Severity level)
             : m_attributes(std::move(attributes)), m_sink(sink), m_level(level)
@@ -304,7 +391,7 @@ public:
         /** Construct or copy another Stream. */
         Stream(Stream const& other)
             : Stream(
-                  other.m_attributes ? other.m_attributes->clone() : nullptr,
+                  other.m_attributes,
                   other.m_sink,
                   other.m_level)
         {
@@ -353,7 +440,7 @@ public:
         /** @} */
 
     private:
-        std::unique_ptr<StructuredLogAttributes> m_attributes;
+        std::optional<JsonLogAttributes> m_attributes;
         Sink& m_sink;
         Severity m_level;
     };
@@ -372,47 +459,29 @@ public:
     /** Journal has no default constructor. */
     Journal() = delete;
 
-    Journal(Journal const& other) : Journal(other, nullptr)
-    {
-    }
-
     Journal(
         Journal const& other,
-        std::unique_ptr<StructuredLogAttributes> attributes)
+        std::optional<JsonLogAttributes> attributes = std::nullopt)
         : m_sink(other.m_sink)
     {
-        if (attributes)
-            m_attributes = std::move(attributes);
-        if (other.m_attributes)
+        if (attributes.has_value())
+            m_attributes = std::move(attributes.value());
+        if (other.m_attributes.has_value())
         {
-            if (m_attributes)
-                m_attributes->combine(other.m_attributes);
+            if (m_attributes.has_value())
+                m_attributes = JsonLogAttributes::combine(
+                    other.m_attributes->contextValues_,
+                    m_attributes->contextValues_
+                );
             else
-                m_attributes = other.m_attributes->clone();
+                m_attributes = other.m_attributes;
         }
     }
-
-    Journal(
-        Journal&& other,
-        std::unique_ptr<StructuredLogAttributes> attributes = {}) noexcept
-        : m_sink(other.m_sink)
-    {
-        if (attributes)
-            m_attributes = std::move(attributes);
-        if (other.m_attributes)
-        {
-            if (m_attributes)
-                m_attributes->combine(std::move(other.m_attributes));
-            else
-                m_attributes = std::move(other.m_attributes);
-        }
-    }
-
     /** Create a journal that writes to the specified sink. */
-    Journal(
+    explicit Journal(
         Sink& sink,
         std::string const& name = {},
-        std::unique_ptr<StructuredLogAttributes> attributes = {})
+        std::optional<JsonLogAttributes> attributes = std::nullopt)
         : m_sink(&sink)
     {
         if (attributes)
@@ -425,9 +494,11 @@ public:
     Journal&
     operator=(Journal const& other)
     {
+        if (&other == this)
+            return *this;
+
         m_sink = other.m_sink;
-        if (other.m_attributes)
-            m_attributes = other.m_attributes->clone();
+        m_attributes = other.m_attributes;
         return *this;
     }
 
@@ -435,8 +506,7 @@ public:
     operator=(Journal&& other) noexcept
     {
         m_sink = other.m_sink;
-        if (other.m_attributes)
-            m_attributes = std::move(other.m_attributes);
+        m_attributes = std::move(other.m_attributes);
         return *this;
     }
 
@@ -452,7 +522,7 @@ public:
     stream(Severity level) const
     {
         return Stream(
-            m_attributes ? m_attributes->clone() : nullptr, *m_sink, level);
+            m_attributes, *m_sink, level);
     }
 
     /** Returns `true` if any message would be logged at this severity level.
@@ -470,10 +540,10 @@ public:
     Stream
     trace(std::source_location location = std::source_location::current()) const
     {
-        if (m_structuredJournalImpl)
-            m_structuredJournalImpl->initMessageContext(location);
+        if (m_jsonLogsEnabled)
+            initMessageContext(location);
         return {
-            m_attributes ? m_attributes->clone() : nullptr,
+            m_attributes,
             *m_sink,
             severities::kTrace};
     }
@@ -481,10 +551,10 @@ public:
     Stream
     debug(std::source_location location = std::source_location::current()) const
     {
-        if (m_structuredJournalImpl)
-            m_structuredJournalImpl->initMessageContext(location);
+        if (m_jsonLogsEnabled)
+            initMessageContext(location);
         return {
-            m_attributes ? m_attributes->clone() : nullptr,
+            m_attributes,
             *m_sink,
             severities::kDebug};
     }
@@ -492,10 +562,10 @@ public:
     Stream
     info(std::source_location location = std::source_location::current()) const
     {
-        if (m_structuredJournalImpl)
-            m_structuredJournalImpl->initMessageContext(location);
+        if (m_jsonLogsEnabled)
+            initMessageContext(location);
         return {
-            m_attributes ? m_attributes->clone() : nullptr,
+            m_attributes,
             *m_sink,
             severities::kInfo};
     }
@@ -503,10 +573,12 @@ public:
     Stream
     warn(std::source_location location = std::source_location::current()) const
     {
-        if (m_structuredJournalImpl)
-            m_structuredJournalImpl->initMessageContext(location);
+        const char* a = "a";
+        rapidjson::Value v{a, 1};
+        if (m_jsonLogsEnabled)
+            initMessageContext(location);
         return {
-            m_attributes ? m_attributes->clone() : nullptr,
+            m_attributes,
             *m_sink,
             severities::kWarning};
     }
@@ -514,10 +586,10 @@ public:
     Stream
     error(std::source_location location = std::source_location::current()) const
     {
-        if (m_structuredJournalImpl)
-            m_structuredJournalImpl->initMessageContext(location);
+        if (m_jsonLogsEnabled)
+            initMessageContext(location);
         return {
-            m_attributes ? m_attributes->clone() : nullptr,
+            m_attributes,
             *m_sink,
             severities::kError};
     }
@@ -525,14 +597,25 @@ public:
     Stream
     fatal(std::source_location location = std::source_location::current()) const
     {
-        if (m_structuredJournalImpl)
-            m_structuredJournalImpl->initMessageContext(location);
+        if (m_jsonLogsEnabled)
+            initMessageContext(location);
         return {
-            m_attributes ? m_attributes->clone() : nullptr,
+            m_attributes,
             *m_sink,
             severities::kFatal};
     }
     /** @} */
+
+    static void
+    addGlobalAttributes(JsonLogAttributes globalLogAttributes)
+    {
+        std::lock_guard lock(globalLogAttributesMutex_);
+        if (!globalLogAttributes_)
+        {
+            globalLogAttributes_ = JsonLogAttributes{};
+        }
+        globalLogAttributes_ = JsonLogAttributes::combine(globalLogAttributes_->contextValues(), globalLogAttributes.contextValues());
+    }
 };
 
 #ifndef __INTELLISENSE__
@@ -548,7 +631,7 @@ static_assert(std::is_nothrow_destructible<Journal>::value == true, "");
 
 template <typename T>
 Journal::ScopedStream::ScopedStream(
-    std::unique_ptr<StructuredLogAttributes> attributes,
+    std::optional<JsonLogAttributes> attributes,
     Stream const& stream,
     T const& t)
     : ScopedStream(std::move(attributes), stream.sink(), stream.level())
@@ -570,7 +653,7 @@ template <typename T>
 Journal::ScopedStream
 Journal::Stream::operator<<(T const& t) const
 {
-    return {m_attributes ? m_attributes->clone() : nullptr, *this, t};
+    return {m_attributes, *this, t};
 }
 
 namespace detail {
@@ -641,5 +724,128 @@ using logstream = basic_logstream<char>;
 using logwstream = basic_logstream<wchar_t>;
 
 }  // namespace beast
+
+
+namespace ripple::log {
+
+namespace detail {
+template <typename T>
+void setJsonValue(
+    rapidjson::Value& object,
+    rapidjson::MemoryPoolAllocator<>& allocator,
+    char const* name,
+    T&& value,
+    std::ostream* outStream)
+{
+    using ValueType = std::decay_t<T>;
+    rapidjson::Value jsonValue;
+    if constexpr (std::constructible_from<rapidjson::Value, ValueType, rapidjson::MemoryPoolAllocator<>&>)
+    {
+        jsonValue = rapidjson::Value{value, allocator};
+        if (outStream)
+        {
+            (*outStream) << value;
+        }
+    }
+    else if constexpr (std::constructible_from<rapidjson::Value, ValueType>)
+    {
+        jsonValue = rapidjson::Value{value};
+        if (outStream)
+        {
+            (*outStream) << value;
+        }
+    }
+    else if constexpr (std::same_as<ValueType, std::string>)
+    {
+        jsonValue = rapidjson::Value{value.c_str(), allocator};
+        if (outStream)
+        {
+            (*outStream) << value;
+        }
+    }
+    else
+    {
+        std::ostringstream oss;
+        oss << value;
+
+        jsonValue = rapidjson::Value{oss.str().c_str(), allocator};
+
+        if (outStream)
+        {
+            (*outStream) << oss.str();
+        }
+    }
+
+    object.AddMember(
+        rapidjson::StringRef(name),
+        std::move(jsonValue),
+        allocator
+    );
+}
+}
+
+template <typename T>
+std::ostream&
+operator<<(std::ostream& os, LogParameter<T> const& param)
+{
+    if (!beast::Journal::m_jsonLogsEnabled)
+        return os;
+    detail::setJsonValue(
+        beast::Journal::currentJsonLogContext_.messageParams,
+        beast::Journal::currentJsonLogContext_.allocator,
+        param.name_, param.value_, &os);
+    return os;
+}
+
+template <typename T>
+std::ostream&
+operator<<(std::ostream& os, LogField<T> const& param)
+{
+    if (!beast::Journal::m_jsonLogsEnabled)
+        return os;
+    detail::setJsonValue(
+        beast::Journal::currentJsonLogContext_.messageParams,
+        beast::Journal::currentJsonLogContext_.allocator,
+        param.name_, param.value_, nullptr);
+    return os;
+}
+
+template <typename T>
+LogParameter<T>
+param(char const* name, T&& value)
+{
+    return LogParameter<T>{name, std::forward<T>(value)};
+}
+
+template <typename T>
+LogField<T>
+field(char const* name, T&& value)
+{
+    return LogField<T>{name, std::forward<T>(value)};
+}
+
+template<typename... Pair>
+[[nodiscard]] beast::Journal::JsonLogAttributes
+attributes(Pair&&... pairs)
+{
+    beast::Journal::JsonLogAttributes result;
+
+    (detail::setJsonValue(
+        result.contextValues(),
+        result.allocator(),
+        pairs.first,
+        pairs.second, nullptr), ...);
+
+    return result;
+}
+
+template <typename T>
+[[nodiscard]] std::pair<char const*, std::decay_t<T>>
+attr(char const* name, T&& value)
+{
+    return std::make_pair(name, std::forward<T>(value));
+}
+
+}
 
 #endif

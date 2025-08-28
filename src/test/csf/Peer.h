@@ -33,7 +33,6 @@
 
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/telemetry/JsonLogs.h>
 
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
@@ -284,7 +283,7 @@ struct Peer
         TrustGraph<Peer*>& tg,
         CollectorRefs& c,
         beast::Journal jIn)
-        : j(jIn, log::attributes({{"Peer", "Peer " + to_string(i)}}))
+        : j(jIn, log::attributes(log::attr("Peer", "Peer " + to_string(i))))
         , consensus(s.clock(), *this, j)
         , id{i}
         , key{id, 0}

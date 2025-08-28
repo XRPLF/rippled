@@ -41,7 +41,7 @@ ConnectAttempt::ConnectAttempt(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , journal_(journal, log::attributes({{"NodeID", id}}))
+    , journal_(journal, log::attributes(log::attr("NodeID", id)))
     , remote_endpoint_(remote_endpoint)
     , usage_(usage)
     , strand_(boost::asio::make_strand(io_context))

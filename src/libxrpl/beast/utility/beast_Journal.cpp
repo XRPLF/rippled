@@ -19,13 +19,22 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <rapidjson/document.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/stringbuffer.h>
+
+#include <thread>
+#include <ranges>
 #include <ios>
 #include <ostream>
 #include <string>
 
 namespace beast {
 
-std::unique_ptr<Journal::StructuredJournalImpl> Journal::m_structuredJournalImpl;
+std::optional<Journal::JsonLogAttributes> Journal::globalLogAttributes_;
+std::mutex Journal::globalLogAttributesMutex_;
+bool Journal::m_jsonLogsEnabled = false;
+thread_local Journal::JsonLogContext Journal::currentJsonLogContext_{};
 
 //------------------------------------------------------------------------------
 
@@ -113,6 +122,184 @@ severities::to_string(Severity severity)
     }
     return "";
 }
+
+Journal::JsonLogAttributes::JsonLogAttributes()
+{
+    contextValues_.SetObject();
+}
+
+Journal::JsonLogAttributes::JsonLogAttributes(JsonLogAttributes const& other)
+{
+    contextValues_.SetObject();
+    contextValues_.CopyFrom(other.contextValues_, allocator_);
+}
+
+Journal::JsonLogAttributes&
+Journal::JsonLogAttributes::operator=(JsonLogAttributes const& other)
+{
+    if (&other == this)
+    {
+        return *this;
+    }
+    contextValues_.CopyFrom(other.contextValues_, allocator_);
+    return *this;
+}
+
+void
+Journal::JsonLogAttributes::setModuleName(std::string const& name)
+{
+    contextValues_.AddMember(
+        rapidjson::StringRef("Module"),
+        rapidjson::Value{name.c_str(), allocator_},
+        allocator_
+    );
+}
+
+Journal::JsonLogAttributes
+Journal::JsonLogAttributes::combine(
+    AttributeFields const& a,
+    AttributeFields const& b)
+{
+    JsonLogAttributes result;
+
+    result.contextValues_.CopyFrom(a, result.allocator_);
+
+    for (auto& member : b.GetObject())
+    {
+        auto val = rapidjson::Value{ member.value, result.allocator_ };
+        if (result.contextValues_.HasMember(member.name))
+        {
+            result.contextValues_[member.name] = std::move(val);
+        }
+        else
+        {
+            result.contextValues_.AddMember(
+                rapidjson::Value{member.name, result.allocator_},
+                std::move(val),
+                result.allocator_);
+        }
+    }
+
+    return result;
+}
+
+void
+Journal::initMessageContext(std::source_location location)
+{
+    currentJsonLogContext_.reset(location);
+}
+
+std::string
+Journal::formatLog(
+    std::string const& message,
+    severities::Severity severity,
+    std::optional<JsonLogAttributes> const& attributes)
+{
+    if (!m_jsonLogsEnabled)
+    {
+        return message;
+    }
+
+    rapidjson::Document doc{&currentJsonLogContext_.allocator};
+    rapidjson::Value logContext;
+    logContext.SetObject();
+
+    if (globalLogAttributes_)
+    {
+        for (auto const& [key, value] : globalLogAttributes_->contextValues().GetObject())
+        {
+            rapidjson::Value jsonValue;
+            jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
+
+            logContext.AddMember(
+                rapidjson::Value{key, currentJsonLogContext_.allocator},
+                std::move(jsonValue),
+                currentJsonLogContext_.allocator);
+        }
+    }
+
+    if (attributes.has_value())
+    {
+        for (auto const& [key, value] : attributes->contextValues().GetObject())
+        {
+            rapidjson::Value jsonValue;
+            jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
+
+            logContext.AddMember(
+                rapidjson::Value{key, currentJsonLogContext_.allocator},
+                std::move(jsonValue),
+                currentJsonLogContext_.allocator);
+        }
+    }
+    logContext.AddMember(
+        rapidjson::StringRef("Function"),
+        rapidjson::StringRef(currentJsonLogContext_.location.function_name()),
+        currentJsonLogContext_.allocator);
+
+    logContext.AddMember(
+        rapidjson::StringRef("File"),
+        rapidjson::StringRef(currentJsonLogContext_.location.file_name()),
+        currentJsonLogContext_.allocator);
+
+    logContext.AddMember(
+        rapidjson::StringRef("Line"),
+        currentJsonLogContext_.location.line(),
+        currentJsonLogContext_.allocator);
+    std::stringstream threadIdStream;
+    threadIdStream << std::this_thread::get_id();
+    auto threadIdStr = threadIdStream.str();
+    logContext.AddMember(
+        rapidjson::StringRef("ThreadId"),
+        rapidjson::StringRef(threadIdStr.c_str()),
+        currentJsonLogContext_.allocator);
+    logContext.AddMember(
+        rapidjson::StringRef("Params"),
+        std::move(currentJsonLogContext_.messageParams),
+        currentJsonLogContext_.allocator);
+    currentJsonLogContext_.messageParams = rapidjson::Value{};
+    currentJsonLogContext_.messageParams.SetObject();
+    auto severityStr = to_string(severity);
+    logContext.AddMember(
+        rapidjson::StringRef("Level"),
+        rapidjson::StringRef(severityStr.c_str()),
+        currentJsonLogContext_.allocator);
+    logContext.AddMember(
+        rapidjson::StringRef("Message"),
+        rapidjson::StringRef(message.c_str()),
+        currentJsonLogContext_.allocator);
+    logContext.AddMember(
+        rapidjson::StringRef("Time"),
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count(),
+        currentJsonLogContext_.allocator);
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer writer(buffer);
+
+    logContext.Accept(writer);
+
+    return {buffer.GetString()};
+}
+
+void
+Journal::enableStructuredJournal()
+{
+    m_jsonLogsEnabled = true;
+}
+
+void
+Journal::disableStructuredJournal()
+{
+    m_jsonLogsEnabled = false;
+}
+
+bool
+Journal::isStructuredJournalEnabled()
+{
+    return m_jsonLogsEnabled;
+}
+
 Journal::Sink::Sink(Severity thresh, bool console)
     : thresh_(thresh), m_console(console)
 {
@@ -153,7 +340,7 @@ Journal::Sink::threshold(Severity thresh)
 //------------------------------------------------------------------------------
 
 Journal::ScopedStream::ScopedStream(
-    std::unique_ptr<StructuredLogAttributes> attributes,
+    std::optional<JsonLogAttributes> attributes,
     Sink& sink,
     Severity level)
     : m_attributes(std::move(attributes)), m_sink(sink), m_level(level)
@@ -163,7 +350,7 @@ Journal::ScopedStream::ScopedStream(
 }
 
 Journal::ScopedStream::ScopedStream(
-    std::unique_ptr<StructuredLogAttributes> attributes,
+    std::optional<JsonLogAttributes> attributes,
     Stream const& stream,
     std::ostream& manip(std::ostream&))
     : ScopedStream(std::move(attributes), stream.sink(), stream.level())
@@ -177,21 +364,9 @@ Journal::ScopedStream::~ScopedStream()
     if (!s.empty())
     {
         if (s == "\n")
-        {
-            if (m_structuredJournalImpl)
-                m_structuredJournalImpl->flush(
-                    &m_sink, m_level, "", m_attributes.get());
-            else
-                m_sink.write(m_level, "");
-        }
+            m_sink.write(m_level, formatLog("", m_level, m_attributes));
         else
-        {
-            if (m_structuredJournalImpl)
-                m_structuredJournalImpl->flush(
-                    &m_sink, m_level, s, m_attributes.get());
-            else
-                m_sink.write(m_level, s);
-        }
+            m_sink.write(m_level, formatLog(s, m_level, m_attributes));
     }
 }
 
@@ -206,7 +381,7 @@ Journal::ScopedStream::operator<<(std::ostream& manip(std::ostream&)) const
 Journal::ScopedStream
 Journal::Stream::operator<<(std::ostream& manip(std::ostream&)) const
 {
-    return {m_attributes ? m_attributes->clone() : nullptr, *this, manip};
+    return {m_attributes, *this, manip};
 }
 
 }  // namespace beast

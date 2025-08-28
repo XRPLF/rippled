@@ -304,9 +304,9 @@ JobQueue::stop()
         // but there may still be some threads between the return of
         // `Job::doJob` and the return of `JobQueue::processTask`. That is why
         // we must wait on the condition variable to make these assertions.
-        std::unique_lock<std::mutex> lock(m_mutex);
+        std::unique_lock lock(m_mutex);
         cv_.wait(
-            lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
+            lock, [this] { return m_processCount == 0 && nSuspend_ == 0 && m_jobSet.empty(); });
         XRPL_ASSERT(
             m_processCount == 0,
             "ripple::JobQueue::stop : all processes completed");
