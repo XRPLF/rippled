@@ -40,9 +40,6 @@ struct FeeSettingsFields
     std::optional<XRPAmount> baseFeeDrops = std::nullopt;
     std::optional<XRPAmount> reserveBaseDrops = std::nullopt;
     std::optional<XRPAmount> reserveIncrementDrops = std::nullopt;
-    std::optional<std::uint32_t> extensionComputeLimit = std::nullopt;
-    std::optional<std::uint32_t> extensionSizeLimit = std::nullopt;
-    std::optional<std::uint32_t> gasPrice = std::nullopt;
 };
 
 STTx
@@ -83,19 +80,6 @@ createFeeTx(
                 sfReferenceFeeUnits,
                 fields.referenceFeeUnits ? *fields.referenceFeeUnits : 0);
         }
-
-        if (rules.enabled(featureSmartEscrow))
-        {
-            // SmartEscrow fields - all three fields are REQUIRED
-            obj.setFieldU32(
-                sfExtensionComputeLimit,
-                fields.extensionComputeLimit ? *fields.extensionComputeLimit
-                                             : 0);
-            obj.setFieldU32(
-                sfExtensionSizeLimit,
-                fields.extensionSizeLimit ? *fields.extensionSizeLimit : 0);
-            obj.setFieldU32(sfGasPrice, fields.gasPrice ? *fields.gasPrice : 0);
-        }
     };
     return STTx(ttFEE, fill);
 }
@@ -127,13 +111,6 @@ createInvalidFeeTx(
                 obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
                 obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
             }
-
-            if (!rules.enabled(featureSmartEscrow))
-            {
-                obj.setFieldU32(sfExtensionComputeLimit, 1000 + uniqueValue);
-                obj.setFieldU32(sfExtensionSizeLimit, 2000);
-                obj.setFieldU32(sfGasPrice, 100);
-            }
         }
         else if (!missingRequiredFields)
         {
@@ -150,13 +127,6 @@ createInvalidFeeTx(
                 obj.setFieldU32(sfReserveBase, 200000);
                 obj.setFieldU32(sfReserveIncrement, 50000);
                 obj.setFieldU32(sfReferenceFeeUnits, 10);
-            }
-
-            if (rules.enabled(featureSmartEscrow))
-            {
-                obj.setFieldU32(sfExtensionComputeLimit, 1000 + uniqueValue);
-                obj.setFieldU32(sfExtensionSizeLimit, 2000);
-                obj.setFieldU32(sfGasPrice, 100);
             }
         }
         // If missingRequiredFields is true, we don't add the required fields
@@ -197,12 +167,16 @@ verifyFeeObject(
             feeObject->isFieldPresent(sfReferenceFeeUnits))
             return false;
 
-        if (!checkEquality(sfBaseFeeDrops, expected.baseFeeDrops))
-            return false;
-        if (!checkEquality(sfReserveBaseDrops, expected.reserveBaseDrops))
+        if (!checkEquality(
+                sfBaseFeeDrops, expected.baseFeeDrops.value_or(XRPAmount{0})))
             return false;
         if (!checkEquality(
-                sfReserveIncrementDrops, expected.reserveIncrementDrops))
+                sfReserveBaseDrops,
+                expected.reserveBaseDrops.value_or(XRPAmount{0})))
+            return false;
+        if (!checkEquality(
+                sfReserveIncrementDrops,
+                expected.reserveIncrementDrops.value_or(XRPAmount{0})))
             return false;
     }
     else
@@ -220,26 +194,6 @@ verifyFeeObject(
         if (!checkEquality(sfReserveIncrement, expected.reserveIncrement))
             return false;
         if (!checkEquality(sfReferenceFeeUnits, expected.referenceFeeUnits))
-            return false;
-    }
-
-    if (rules.enabled(featureSmartEscrow))
-    {
-        if (!checkEquality(
-                sfExtensionComputeLimit,
-                expected.extensionComputeLimit.value_or(0)))
-            return false;
-        if (!checkEquality(
-                sfExtensionSizeLimit, expected.extensionSizeLimit.value_or(0)))
-            return false;
-        if (!checkEquality(sfGasPrice, expected.gasPrice.value_or(0)))
-            return false;
-    }
-    else
-    {
-        if (feeObject->isFieldPresent(sfExtensionComputeLimit) ||
-            feeObject->isFieldPresent(sfExtensionSizeLimit) ||
-            feeObject->isFieldPresent(sfGasPrice))
             return false;
     }
 
@@ -377,40 +331,6 @@ class FeeVote_test : public beast::unit_test::suite
             // Verify fee object was created/updated correctly
             BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
         }
-
-        // Test with SmartEscrow enabled
-        {
-            jtx::Env env(
-                *this,
-                jtx::testable_amendments() | featureXRPFees |
-                    featureSmartEscrow);
-            auto ledger = std::make_shared<Ledger>(
-                create_genesis,
-                env.app().config(),
-                std::vector<uint256>{},
-                env.app().getNodeFamily());
-
-            // Create the next ledger to apply transaction to
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            // Test successful fee transaction with SmartEscrow fields
-            FeeSettingsFields fields{
-                .baseFeeDrops = XRPAmount{10},
-                .reserveBaseDrops = XRPAmount{200000},
-                .reserveIncrementDrops = XRPAmount{50000},
-                .extensionComputeLimit = 1000,
-                .extensionSizeLimit = 2000,
-                .gasPrice = 100};
-            auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
-
-            OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
-            accum.apply(*ledger);
-
-            // Verify fee object was created/updated correctly
-            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
-        }
     }
 
     void
@@ -465,29 +385,6 @@ class FeeVote_test : public beast::unit_test::suite
                 ledger->rules(), ledger->seq(), false, true, 4);
             BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
         }
-
-        {
-            jtx::Env env(
-                *this,
-                (jtx::testable_amendments() | featureXRPFees) -
-                    featureSmartEscrow);
-            auto ledger = std::make_shared<Ledger>(
-                create_genesis,
-                env.app().config(),
-                std::vector<uint256>{},
-                env.app().getNodeFamily());
-
-            // Create the next ledger to apply transaction to
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            // Test transaction with SmartEscrow fields when SmartEscrow is
-            // disabled
-            auto disallowedTx = createInvalidFeeTx(
-                ledger->rules(), ledger->seq(), false, true, 5);
-            OpenView accum(ledger.get());
-            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
-        }
     }
 
     void
@@ -534,9 +431,7 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Multiple Fee Updates");
 
-        jtx::Env env(
-            *this,
-            jtx::testable_amendments() | featureXRPFees | featureSmartEscrow);
+        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
@@ -551,10 +446,7 @@ class FeeVote_test : public beast::unit_test::suite
         FeeSettingsFields fields1{
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
-            .reserveIncrementDrops = XRPAmount{50000},
-            .extensionComputeLimit = 1000,
-            .extensionSizeLimit = 2000,
-            .gasPrice = 100};
+            .reserveIncrementDrops = XRPAmount{50000}};
         auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
 
         {
@@ -574,10 +466,7 @@ class FeeVote_test : public beast::unit_test::suite
         FeeSettingsFields fields2{
             .baseFeeDrops = XRPAmount{20},
             .reserveBaseDrops = XRPAmount{300000},
-            .reserveIncrementDrops = XRPAmount{75000},
-            .extensionComputeLimit = 1500,
-            .extensionSizeLimit = 3000,
-            .gasPrice = 150};
+            .reserveIncrementDrops = XRPAmount{75000}};
         auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
 
         {
@@ -626,9 +515,7 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Partial Field Updates");
 
-        jtx::Env env(
-            *this,
-            jtx::testable_amendments() | featureXRPFees | featureSmartEscrow);
+        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
@@ -643,10 +530,7 @@ class FeeVote_test : public beast::unit_test::suite
         FeeSettingsFields fields1{
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
-            .reserveIncrementDrops = XRPAmount{50000},
-            .extensionComputeLimit = 1000,
-            .extensionSizeLimit = 2000,
-            .gasPrice = 100};
+            .reserveIncrementDrops = XRPAmount{50000}};
         auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
 
         {
@@ -664,9 +548,7 @@ class FeeVote_test : public beast::unit_test::suite
         // Apply partial update (only some fields)
         FeeSettingsFields fields2{
             .baseFeeDrops = XRPAmount{20},
-            .reserveBaseDrops = XRPAmount{200000},
-            .reserveIncrementDrops = XRPAmount{50000},
-            .extensionComputeLimit = 1500};
+            .reserveBaseDrops = XRPAmount{200000}};
         auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
 
         {
@@ -684,9 +566,7 @@ class FeeVote_test : public beast::unit_test::suite
     {
         testcase("Single Invalid Transaction");
 
-        jtx::Env env(
-            *this,
-            jtx::testable_amendments() | featureXRPFees | featureSmartEscrow);
+        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
         auto ledger = std::make_shared<Ledger>(
             create_genesis,
             env.app().config(),
@@ -707,9 +587,6 @@ class FeeVote_test : public beast::unit_test::suite
             obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10});
             obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
             obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
-            obj.setFieldU32(sfExtensionComputeLimit, 1000);
-            obj.setFieldU32(sfExtensionSizeLimit, 2000);
-            obj.setFieldU32(sfGasPrice, 100);
         });
 
         OpenView accum(ledger.get());
