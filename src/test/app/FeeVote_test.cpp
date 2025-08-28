@@ -31,7 +31,7 @@
 namespace ripple {
 namespace test {
 
-struct FeeTxFields
+struct FeeSettingsFields
 {
     std::optional<std::uint64_t> baseFee = std::nullopt;
     std::optional<std::uint32_t> reserveBase = std::nullopt;
@@ -49,7 +49,7 @@ STTx
 createFeeTx(
     Rules const& rules,
     std::uint32_t seq,
-    FeeTxFields const& fields = {})
+    FeeSettingsFields const& fields = {})
 {
     auto fill = [&](auto& obj) {
         obj.setAccountID(sfAccount, AccountID());
@@ -168,30 +168,18 @@ createInvalidFeeTx(
 }
 
 bool
-applyFeeAndTestResult(
-    jtx::Env& env,
-    OpenView& view,
-    STTx const& tx,
-    bool expectSuccess)
+applyFeeAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx)
 {
     auto const res =
         apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
-    // Debug output
-    JLOG(env.journal.debug())
-        << "Transaction result: " << transToken(res.ter) << " (expected "
-        << (expectSuccess ? "success" : "failure") << ")";
-    if (expectSuccess)
-        return res.ter == tesSUCCESS;
-    else
-        return isTecClaim(res.ter) || isTefFailure(res.ter) ||
-            isTemMalformed(res.ter);
+    return res.ter == tesSUCCESS;
 }
 
 bool
 verifyFeeObject(
     std::shared_ptr<Ledger const> const& ledger,
     Rules const& rules,
-    FeeTxFields const& expected = {})
+    FeeSettingsFields const& expected = {})
 {
     auto const feeObject = ledger->read(keylet::fees());
     if (!feeObject)
@@ -199,6 +187,11 @@ verifyFeeObject(
 
     if (rules.enabled(featureXRPFees))
     {
+        if (feeObject->isFieldPresent(sfBaseFee) ||
+            feeObject->isFieldPresent(sfReserveBase) ||
+            feeObject->isFieldPresent(sfReserveIncrement) ||
+            feeObject->isFieldPresent(sfReferenceFeeUnits))
+            return false;
         if (expected.baseFeeDrops &&
             (!feeObject->isFieldPresent(sfBaseFeeDrops) ||
              feeObject->getFieldAmount(sfBaseFeeDrops) !=
@@ -217,6 +210,10 @@ verifyFeeObject(
     }
     else
     {
+        if (feeObject->isFieldPresent(sfBaseFeeDrops) ||
+            feeObject->isFieldPresent(sfReserveBaseDrops) ||
+            feeObject->isFieldPresent(sfReserveIncrementDrops))
+            return false;
         if (expected.baseFee &&
             (!feeObject->isFieldPresent(sfBaseFee) ||
              feeObject->getFieldU64(sfBaseFee) != *expected.baseFee))
@@ -252,6 +249,13 @@ verifyFeeObject(
         if (expected.gasPrice &&
             (!feeObject->isFieldPresent(sfGasPrice) ||
              feeObject->getFieldU32(sfGasPrice) != *expected.gasPrice))
+            return false;
+    }
+    else
+    {
+        if (feeObject->isFieldPresent(sfExtensionComputeLimit) ||
+            feeObject->isFieldPresent(sfExtensionSizeLimit) ||
+            feeObject->isFieldPresent(sfGasPrice))
             return false;
     }
 
@@ -328,9 +332,9 @@ class FeeVote_test : public beast::unit_test::suite
     }
 
     void
-    testBasicFeeTransactionCreationAndApplication()
+    testBasic()
     {
-        testcase("Basic Fee Transaction Creation and Application");
+        testcase("Basic SetFee transaction");
 
         // Test with XRPFees disabled (legacy format)
         {
@@ -346,26 +350,20 @@ class FeeVote_test : public beast::unit_test::suite
                 *ledger, env.app().timeKeeper().closeTime());
 
             // Test successful fee transaction with legacy fields
-            auto feeTx = createFeeTx(
-                ledger->rules(),
-                ledger->seq(),
-                {.baseFee = 10,
-                 .reserveBase = 200000,
-                 .reserveIncrement = 50000,
-                 .referenceFeeUnits = 10});
+
+            FeeSettingsFields fields{
+                .baseFee = 10,
+                .reserveBase = 200000,
+                .reserveIncrement = 50000,
+                .referenceFeeUnits = 10};
+            auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
 
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx, true));
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
             accum.apply(*ledger);
 
             // Verify fee object was created/updated correctly
-            BEAST_EXPECT(verifyFeeObject(
-                ledger,
-                ledger->rules(),
-                {.baseFee = 10,
-                 .reserveBase = 200000,
-                 .reserveIncrement = 50000,
-                 .referenceFeeUnits = 10}));
+            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
         }
 
         // Test with XRPFees enabled (new format)
@@ -381,27 +379,19 @@ class FeeVote_test : public beast::unit_test::suite
             ledger = std::make_shared<Ledger>(
                 *ledger, env.app().timeKeeper().closeTime());
 
+            FeeSettingsFields fields{
+                .baseFeeDrops = XRPAmount{10},
+                .reserveBaseDrops = XRPAmount{200000},
+                .reserveIncrementDrops = XRPAmount{50000}};
             // Test successful fee transaction with new fields
-            auto feeTx = createFeeTx(
-                ledger->rules(),
-                ledger->seq(),
-                {                                        // legacy fields
-                 .baseFeeDrops = XRPAmount{10},          // baseFeeDrops
-                 .reserveBaseDrops = XRPAmount{200000},  // reserveBaseDrops
-                 .reserveIncrementDrops =
-                     XRPAmount{50000}});  // reserveIncrementDrops
+            auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
 
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx, true));
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
             accum.apply(*ledger);
 
             // Verify fee object was created/updated correctly
-            BEAST_EXPECT(verifyFeeObject(
-                ledger,
-                ledger->rules(),
-                {.baseFeeDrops = XRPAmount{10},
-                 .reserveBaseDrops = XRPAmount{200000},
-                 .reserveIncrementDrops = XRPAmount{50000}}));
+            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
         }
 
         // Test with SmartEscrow enabled
@@ -421,33 +411,21 @@ class FeeVote_test : public beast::unit_test::suite
                 *ledger, env.app().timeKeeper().closeTime());
 
             // Test successful fee transaction with SmartEscrow fields
-            auto feeTx = createFeeTx(
-                ledger->rules(),
-                ledger->seq(),
-                {.baseFeeDrops = XRPAmount{10},
-                 .reserveBaseDrops = XRPAmount{200000},
-                 .reserveIncrementDrops = XRPAmount{50000},
-                 .extensionComputeLimit = 1000,
-                 .extensionSizeLimit = 2000,
-                 .gasPrice = 100});
+            FeeSettingsFields fields{
+                .baseFeeDrops = XRPAmount{10},
+                .reserveBaseDrops = XRPAmount{200000},
+                .reserveIncrementDrops = XRPAmount{50000},
+                .extensionComputeLimit = 1000,
+                .extensionSizeLimit = 2000,
+                .gasPrice = 100};
+            auto feeTx = createFeeTx(ledger->rules(), ledger->seq(), fields);
 
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx, true));
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
             accum.apply(*ledger);
 
             // Verify fee object was created/updated correctly
-            BEAST_EXPECT(verifyFeeObject(
-                ledger,
-                ledger->rules(),
-                {.baseFeeDrops = XRPAmount{10},  // expectedBaseFeeDrops
-                 .reserveBaseDrops =
-                     XRPAmount{200000},  // expectedReserveBaseDrops
-                 .reserveIncrementDrops =
-                     XRPAmount{50000},  // expectedReserveIncrementDrops
-                 .extensionComputeLimit =
-                     1000,                    // expectedExtensionComputeLimit
-                 .extensionSizeLimit = 2000,  // expectedExtensionSizeLimit
-                 .gasPrice = 100}));          // expectedGasPrice
+            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields));
         }
     }
 
@@ -472,13 +450,12 @@ class FeeVote_test : public beast::unit_test::suite
             auto invalidTx = createInvalidFeeTx(
                 ledger->rules(), ledger->seq(), true, false, 1);
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, invalidTx, false));
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
 
             // Test transaction with new format fields when XRPFees is disabled
             auto disallowedTx = createInvalidFeeTx(
                 ledger->rules(), ledger->seq(), false, true, 2);
-            BEAST_EXPECT(
-                applyFeeAndTestResult(env, accum, disallowedTx, false));
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
         }
 
         {
@@ -497,13 +474,12 @@ class FeeVote_test : public beast::unit_test::suite
             auto invalidTx = createInvalidFeeTx(
                 ledger->rules(), ledger->seq(), true, false, 3);
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, invalidTx, false));
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
 
             // Test transaction with legacy fields when XRPFees is enabled
             auto disallowedTx = createInvalidFeeTx(
                 ledger->rules(), ledger->seq(), false, true, 4);
-            BEAST_EXPECT(
-                applyFeeAndTestResult(env, accum, disallowedTx, false));
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
         }
 
         {
@@ -526,8 +502,7 @@ class FeeVote_test : public beast::unit_test::suite
             auto disallowedTx = createInvalidFeeTx(
                 ledger->rules(), ledger->seq(), false, true, 5);
             OpenView accum(ledger.get());
-            BEAST_EXPECT(
-                applyFeeAndTestResult(env, accum, disallowedTx, false));
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
         }
     }
 
@@ -566,7 +541,7 @@ class FeeVote_test : public beast::unit_test::suite
         // But can be applied to a closed ledger
         {
             OpenView closedAccum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, closedAccum, feeTx, true));
+            BEAST_EXPECT(applyFeeAndTestResult(env, closedAccum, feeTx));
         }
     }
 
@@ -589,64 +564,46 @@ class FeeVote_test : public beast::unit_test::suite
             *ledger, env.app().timeKeeper().closeTime());
 
         // Apply first fee transaction
-        auto feeTx1 = createFeeTx(
-            ledger->rules(),
-            ledger->seq(),
-            {.baseFeeDrops = XRPAmount{10},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000},
-             .extensionComputeLimit = 1000,
-             .extensionSizeLimit = 2000,
-             .gasPrice = 100});
+        FeeSettingsFields fields1{
+            .baseFeeDrops = XRPAmount{10},
+            .reserveBaseDrops = XRPAmount{200000},
+            .reserveIncrementDrops = XRPAmount{50000},
+            .extensionComputeLimit = 1000,
+            .extensionSizeLimit = 2000,
+            .gasPrice = 100};
+        auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
 
         {
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1, true));
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1));
             accum.apply(*ledger);
         }
 
         // Verify first update
-        BEAST_EXPECT(verifyFeeObject(
-            ledger,
-            ledger->rules(),
-            {.baseFeeDrops = XRPAmount{10},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000},
-             .extensionComputeLimit = 1000,
-             .extensionSizeLimit = 2000,
-             .gasPrice = 100}));
+        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
 
         // Create next ledger and apply second fee transaction with different
         // values
         ledger = std::make_shared<Ledger>(
             *ledger, env.app().timeKeeper().closeTime());
 
-        auto feeTx2 = createFeeTx(
-            ledger->rules(),
-            ledger->seq(),
-            {.baseFeeDrops = XRPAmount{20},
-             .reserveBaseDrops = XRPAmount{300000},
-             .reserveIncrementDrops = XRPAmount{75000},
-             .extensionComputeLimit = 1500,
-             .extensionSizeLimit = 3000,
-             .gasPrice = 150});
+        FeeSettingsFields fields2{
+            .baseFeeDrops = XRPAmount{20},
+            .reserveBaseDrops = XRPAmount{300000},
+            .reserveIncrementDrops = XRPAmount{75000},
+            .extensionComputeLimit = 1500,
+            .extensionSizeLimit = 3000,
+            .gasPrice = 150};
+        auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
 
         {
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx2, true));
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx2));
             accum.apply(*ledger);
         }
 
         // Verify second update overwrote the first
-        BEAST_EXPECT(verifyFeeObject(
-            ledger,
-            ledger->rules(),
-            {.baseFeeDrops = XRPAmount{20},
-             .reserveBaseDrops = XRPAmount{300000},
-             .reserveIncrementDrops = XRPAmount{75000},
-             .extensionComputeLimit = 1500,
-             .extensionSizeLimit = 3000,
-             .gasPrice = 150}));
+        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields2));
     }
 
     void
@@ -669,67 +626,15 @@ class FeeVote_test : public beast::unit_test::suite
         auto feeTx = createFeeTx(
             ledger->rules(),
             ledger->seq() + 5,  // Wrong sequence (should be ledger->seq())
-            {.baseFeeDrops = XRPAmount{10},          // baseFeeDrops
-             .reserveBaseDrops = XRPAmount{200000},  // reserveBaseDrops
-             .reserveIncrementDrops =
-                 XRPAmount{50000}});  // reserveIncrementDrops
+            {.baseFeeDrops = XRPAmount{10},
+             .reserveBaseDrops = XRPAmount{200000},
+             .reserveIncrementDrops = XRPAmount{50000}});
 
         OpenView accum(ledger.get());
 
         // The transaction should still succeed as long as other fields are
         // valid The ledger sequence field is used for informational purposes
-        BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx, true));
-    }
-
-    void
-    testMixedFeatureFlags()
-    {
-        testcase("Mixed Feature Flags");
-
-        // Test with only SmartEscrow enabled (but not XRPFees)
-        {
-            jtx::Env env(
-                *this,
-                (jtx::testable_amendments() | featureSmartEscrow) -
-                    featureXRPFees);
-            auto ledger = std::make_shared<Ledger>(
-                create_genesis,
-                env.app().config(),
-                std::vector<uint256>{},
-                env.app().getNodeFamily());
-
-            // Create the next ledger to apply transaction to
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            // Should require legacy fee fields + SmartEscrow fields
-            auto feeTx = createFeeTx(
-                ledger->rules(),
-                ledger->seq(),
-                {.baseFee = 10,
-                 .reserveBase = 200000,
-                 .reserveIncrement = 50000,
-                 .referenceFeeUnits = 10,
-                 .extensionComputeLimit = 1000,
-                 .extensionSizeLimit = 2000,
-                 .gasPrice = 100});
-
-            OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx, true));
-            accum.apply(*ledger);
-
-            // Verify fee object was created correctly
-            BEAST_EXPECT(verifyFeeObject(
-                ledger,
-                ledger->rules(),
-                {.baseFee = 10,
-                 .reserveBase = 200000,
-                 .reserveIncrement = 50000,
-                 .referenceFeeUnits = 10,
-                 .extensionComputeLimit = 1000,
-                 .extensionSizeLimit = 2000,
-                 .gasPrice = 100}));
-        }
+        BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
     }
 
     void
@@ -751,112 +656,43 @@ class FeeVote_test : public beast::unit_test::suite
             *ledger, env.app().timeKeeper().closeTime());
 
         // Apply initial fee transaction with all fields
-        auto feeTx1 = createFeeTx(
-            ledger->rules(),
-            ledger->seq(),
-            {.baseFeeDrops = XRPAmount{10},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000},
-             .extensionComputeLimit = 1000,
-             .extensionSizeLimit = 2000,
-             .gasPrice = 100});
+        FeeSettingsFields fields1{
+            .baseFeeDrops = XRPAmount{10},
+            .reserveBaseDrops = XRPAmount{200000},
+            .reserveIncrementDrops = XRPAmount{50000},
+            .extensionComputeLimit = 1000,
+            .extensionSizeLimit = 2000,
+            .gasPrice = 100};
+        auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
 
         {
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1, true));
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1));
             accum.apply(*ledger);
         }
+
+        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
 
         // Create next ledger
         ledger = std::make_shared<Ledger>(
             *ledger, env.app().timeKeeper().closeTime());
 
         // Apply partial update (only some fields)
-        auto feeTx2 = createFeeTx(
-            ledger->rules(),
-            ledger->seq(),
-            {.baseFeeDrops = XRPAmount{20},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000},
-             .extensionComputeLimit = 1500});
+        FeeSettingsFields fields2{
+            .baseFeeDrops = XRPAmount{20},
+            .reserveBaseDrops = XRPAmount{200000},
+            .reserveIncrementDrops = XRPAmount{50000},
+            .extensionComputeLimit = 1500};
+        auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
 
         {
             OpenView accum(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx2, true));
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx2));
             accum.apply(*ledger);
         }
 
         // Verify the partial update worked
-        BEAST_EXPECT(verifyFeeObject(
-            ledger,
-            ledger->rules(),
-            {.baseFeeDrops = XRPAmount{20},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000},
-             .extensionComputeLimit = 1500}));
-    }
-
-    void
-    testTransactionOrderAndIdempotence()
-    {
-        testcase("Transaction Order and Idempotence");
-
-        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
-        auto ledger = std::make_shared<Ledger>(
-            create_genesis,
-            env.app().config(),
-            std::vector<uint256>{},
-            env.app().getNodeFamily());
-
-        // Create the next ledger to apply transaction to
-        ledger = std::make_shared<Ledger>(
-            *ledger, env.app().timeKeeper().closeTime());
-
-        // Create two identical fee transactions
-        auto feeTx1 = createFeeTx(
-            ledger->rules(),
-            ledger->seq(),
-            {.baseFeeDrops = XRPAmount{10},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000}});
-
-        // Apply both transactions to the same ledger view
-        OpenView accum(ledger.get());
-        BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1, true));
-        accum.apply(*ledger);
-
-        // Verify final state is as expected
-        BEAST_EXPECT(verifyFeeObject(
-            ledger,
-            ledger->rules(),
-            {.baseFeeDrops = XRPAmount{10},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000}}));
-
-        // Apply different transaction in next ledger
-        ledger = std::make_shared<Ledger>(
-            *ledger, env.app().timeKeeper().closeTime());
-
-        auto feeTx3 = createFeeTx(
-            ledger->rules(),
-            ledger->seq(),
-            {.baseFeeDrops = XRPAmount{20},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000}});
-
-        {
-            OpenView accum2(ledger.get());
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum2, feeTx3, true));
-            accum2.apply(*ledger);
-        }
-
-        // Verify the different transaction updated the values
-        BEAST_EXPECT(verifyFeeObject(
-            ledger,
-            ledger->rules(),
-            {.baseFeeDrops = XRPAmount{20},
-             .reserveBaseDrops = XRPAmount{200000},
-             .reserveIncrementDrops = XRPAmount{50000}}));
+        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields2));
     }
 
     void
@@ -893,21 +729,19 @@ class FeeVote_test : public beast::unit_test::suite
         });
 
         OpenView accum(ledger.get());
-        BEAST_EXPECT(applyFeeAndTestResult(env, accum, invalidTx, false));
+        BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
     }
 
     void
     run() override
     {
         testSetup();
-        testBasicFeeTransactionCreationAndApplication();
+        testBasic();
         testTransactionValidation();
         testPseudoTransactionProperties();
         testMultipleFeeUpdates();
         testWrongLedgerSequence();
-        testMixedFeatureFlags();
         testPartialFieldUpdates();
-        testTransactionOrderAndIdempotence();
         testSingleInvalidTransaction();
     }
 };
