@@ -3074,7 +3074,6 @@ rippleUnlockEscrowMPT(
         auto const delta = amount.mpt().value();
 
         // Underflow check for subtraction
-        // LCOV_EXCL_START
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
         {  // LCOV_EXCL_START
             JLOG(j.error())
