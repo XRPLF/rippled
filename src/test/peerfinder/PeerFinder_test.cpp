@@ -279,6 +279,8 @@ public:
             logic.config(c);
         }
 
+        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+
         PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
 
         auto const [slot, rSlot] = logic.new_outbound_slot(
@@ -290,6 +292,9 @@ public:
             beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
+
+        BEAST_EXPECT(logic.onConnected(slot, local));
+        BEAST_EXPECT(logic.onConnected(slot2, local));
 
         BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::success);
 
@@ -328,6 +333,7 @@ public:
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(rSlot == Result::success);
 
+        BEAST_EXPECT(logic.onConnected(slot, local));
         BEAST_EXPECT(
             logic.activate(slot, pk1, false) == Result::inboundDisabled);
 
@@ -348,6 +354,7 @@ public:
             local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
+        BEAST_EXPECT(logic.onConnected(slot2, local));
 
         PublicKey const pk2(randomKeyPair(KeyType::secp256k1).first);
         // an inbound slot exceeding inPeers limit must fail
