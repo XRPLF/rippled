@@ -292,7 +292,8 @@ VaultDeposit::doApply()
             vaultAccount,
             assetsDeposited,
             j_,
-            WaiveTransferFee::Yes))
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     // Sanity check
@@ -317,7 +318,8 @@ VaultDeposit::doApply()
             account_,
             sharesCreated,
             j_,
-            WaiveTransferFee::Yes))
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;

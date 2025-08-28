@@ -270,7 +270,8 @@ VaultWithdraw::doApply()
             vaultAccount,
             sharesRedeemed,
             j_,
-            WaiveTransferFee::Yes))
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     // Try to remove MPToken for shares, if the account balance is zero. Vault
@@ -301,7 +302,8 @@ VaultWithdraw::doApply()
             dstAcct,
             assetsWithdrawn,
             j_,
-            WaiveTransferFee::Yes))
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     // Sanity check

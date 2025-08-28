@@ -255,7 +255,8 @@ VaultClawback::doApply()
             vaultAccount,
             sharesDestroyed,
             j_,
-            WaiveTransferFee::Yes))
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     // Try to remove MPToken for shares, if the holder balance is zero. Vault
@@ -280,7 +281,8 @@ VaultClawback::doApply()
             account_,
             assetsRecovered,
             j_,
-            WaiveTransferFee::Yes))
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     // Sanity check
