@@ -448,7 +448,7 @@ class Vault_test : public beast::unit_test::suite
                 }
 
                 testcase(prefix + " withdraw to authorized 3rd party");
-                // Depositor withdraws shares, destined to Erin
+                // Depositor withdraws assets, destined to Erin
                 tx = vault.withdraw(
                     {.depositor = depositor,
                      .id = keylet.key,
