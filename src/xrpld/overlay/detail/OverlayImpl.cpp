@@ -165,7 +165,8 @@ OverlayImpl::onHandoff(
     endpoint_type remote_endpoint)
 {
     auto const id = next_id_++;
-    auto journal = app_.journal("Peer", log::attributes(log::attr("NodeID", id)));
+    auto journal =
+        app_.journal("Peer", log::attributes(log::attr("NodeID", id)));
 
     Handoff handoff;
     if (processRequest(request, handoff))

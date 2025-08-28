@@ -19,8 +19,8 @@
 
 #include <xrpl/basics/Log.h>
 
-#include <rapidjson/document.h>
 #include <doctest/doctest.h>
+#include <rapidjson/document.h>
 
 using namespace ripple;
 
@@ -152,14 +152,16 @@ TEST_CASE("Global attributes")
     MockLogs logs{logStream, beast::severities::kAll};
 
     beast::Journal::enableStructuredJournal();
-    beast::Journal::addGlobalAttributes(log::attributes(log::attr("Field1", "Value1")));
+    beast::Journal::addGlobalAttributes(
+        log::attributes(log::attr("Field1", "Value1")));
 
     logs.journal("Test").debug() << "Test";
 
     rapidjson::Document jsonLog;
     jsonLog.Parse(logStream.str().c_str());
 
-    CHECK(jsonLog.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        jsonLog.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(jsonLog.IsObject());
     CHECK(jsonLog.HasMember("Field1"));
@@ -175,18 +177,21 @@ TEST_CASE("Global attributes inheritable")
     MockLogs logs{logStream, beast::severities::kAll};
 
     beast::Journal::enableStructuredJournal();
-    beast::Journal::addGlobalAttributes(log::attributes(log::attr("Field1", "Value1")));
+    beast::Journal::addGlobalAttributes(
+        log::attributes(log::attr("Field1", "Value1")));
 
     logs.journal(
             "Test",
-            log::attributes(log::attr("Field1", "Value3"), log::attr("Field2", "Value2")))
+            log::attributes(
+                log::attr("Field1", "Value3"), log::attr("Field2", "Value2")))
             .debug()
         << "Test";
 
     rapidjson::Document jsonLog;
     jsonLog.Parse(logStream.str().c_str());
 
-    CHECK(jsonLog.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        jsonLog.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(jsonLog.IsObject());
     CHECK(jsonLog.HasMember("Field1"));
@@ -265,7 +270,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue.IsObject());
     CHECK(logValue.HasMember("Function"));
@@ -294,7 +300,9 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         rapidjson::Document logValue;
         logValue.Parse(stream().str().c_str());
 
-        CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+        CHECK(
+            logValue.GetParseError() ==
+            rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
             logValue["Level"].GetString() ==
@@ -308,8 +316,9 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         rapidjson::Document logValue;
         logValue.Parse(stream().str().c_str());
 
-        CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
+        CHECK(
+            logValue.GetParseError() ==
+            rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
             logValue["Level"].GetString() ==
@@ -323,8 +332,9 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         rapidjson::Document logValue;
         logValue.Parse(stream().str().c_str());
 
-        CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
+        CHECK(
+            logValue.GetParseError() ==
+            rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
             logValue["Level"].GetString() ==
@@ -338,8 +348,9 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         rapidjson::Document logValue;
         logValue.Parse(stream().str().c_str());
 
-        CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
+        CHECK(
+            logValue.GetParseError() ==
+            rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
             logValue["Level"].GetString() ==
@@ -353,8 +364,9 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         rapidjson::Document logValue;
         logValue.Parse(stream().str().c_str());
 
-        CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
+        CHECK(
+            logValue.GetParseError() ==
+            rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
             logValue["Level"].GetString() ==
@@ -368,7 +380,9 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         rapidjson::Document logValue;
         logValue.Parse(stream().str().c_str());
 
-        CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+        CHECK(
+            logValue.GetParseError() ==
+            rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
             logValue["Level"].GetString() ==
@@ -383,7 +397,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogStream")
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(
         logValue["Level"].GetString() ==
@@ -400,7 +415,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogParams")
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["Params"].IsObject());
     CHECK(logValue["Params"]["Field1"].IsNumber());
@@ -409,9 +425,13 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogParams")
     // NOTE: We should expect it to be an int64 after we make the json library
     // support in64 and uint64
     CHECK(logValue["Params"]["Field2"].IsNumber());
-    CHECK(logValue["Params"]["Field2"].GetUint64() == std::numeric_limits<std::uint64_t>::max());
+    CHECK(
+        logValue["Params"]["Field2"].GetUint64() ==
+        std::numeric_limits<std::uint64_t>::max());
     CHECK(logValue["Message"].IsString());
-    CHECK(logValue["Message"].GetString() == std::string{"Test: 1, 18446744073709551615"});
+    CHECK(
+        logValue["Message"].GetString() ==
+        std::string{"Test: 1, 18446744073709551615"});
 }
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
@@ -424,8 +444,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["Params"].IsObject());
     CHECK(logValue["Params"]["Field1"].IsNumber());
@@ -434,7 +454,9 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
     // NOTE: We should expect it to be an int64 after we make the json library
     // support in64 and uint64
     CHECK(logValue["Params"]["Field2"].IsNumber());
-    CHECK(logValue["Params"]["Field2"].GetUint64() == std::numeric_limits<std::uint64_t>::max());
+    CHECK(
+        logValue["Params"]["Field2"].GetUint64() ==
+        std::numeric_limits<std::uint64_t>::max());
     CHECK(logValue["Message"].IsString());
     CHECK(logValue["Message"].GetString() == std::string{"Test"});
 }
@@ -442,14 +464,16 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributes")
 {
     beast::Journal j{
-        journal(), log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
+        journal(),
+        log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
 
     j.debug() << "Test";
 
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["Field1"].IsString());
     CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
@@ -460,16 +484,19 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributes")
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
 {
     beast::Journal j{
-        journal(), log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
+        journal(),
+        log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
     beast::Journal j2{
-        j, log::attributes(log::attr("Field3", "Value3"), log::attr("Field2", 0))};
+        j,
+        log::attributes(log::attr("Field3", "Value3"), log::attr("Field2", 0))};
 
     j2.debug() << "Test";
 
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["Field1"].IsString());
     CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
@@ -488,14 +515,16 @@ TEST_CASE_FIXTURE(
         journal(),
         log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
     beast::Journal j2{
-        j, log::attributes(log::attr("Field3", "Value3"), log::attr("Field2", 0))};
+        j,
+        log::attributes(log::attr("Field3", "Value3"), log::attr("Field2", 0))};
 
     j2.debug() << "Test";
 
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["Field1"].IsString());
     CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
@@ -523,7 +552,8 @@ TEST_CASE_FIXTURE(
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["Field1"].IsString());
     CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
@@ -548,7 +578,8 @@ TEST_CASE_FIXTURE(
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
 
-    CHECK(logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(
+        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["Field1"].IsString());
     CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
