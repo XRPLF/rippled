@@ -119,18 +119,35 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        OpenView ov{*env.current()};
-        ApplyContext ac = createApplyContext(env, ov);
         auto const dummyEscrow =
             keylet::escrow(env.master, env.seq(env.master));
 
-        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+        {
+            OpenView ov{*env.current()};
+            ApplyContext ac = createApplyContext(env, ov);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            auto const result = hfs.getParentLedgerTime();
+            if (BEAST_EXPECT(result.has_value()))
+                BEAST_EXPECT(
+                    result.value() ==
+                    env.current()
+                        ->parentCloseTime()
+                        .time_since_epoch()
+                        .count());
+        }
 
-        auto const result = hfs.getParentLedgerTime();
-        if (BEAST_EXPECT(result.has_value()))
-            BEAST_EXPECT(
-                result.value() ==
-                env.current()->parentCloseTime().time_since_epoch().count());
+        env.close(
+            env.now() +
+            std::chrono::seconds(std::numeric_limits<int32_t>::max() - 1));
+        {
+            OpenView ov{*env.current()};
+            ApplyContext ac = createApplyContext(env, ov);
+            WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+            auto const result = hfs.getParentLedgerTime();
+            if (BEAST_EXPECTS(
+                    !result.has_value(), std::to_string(result.value())))
+                BEAST_EXPECT(result.error() == HostFunctionError::INTERNAL);
+        }
     }
 
     void

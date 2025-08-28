@@ -12,4 +12,4 @@ dependencies = [
 [[package]]
 name = "xrpl-std"
 version = "0.5.1-devnet5"
-source = "git+https://github.com/ripple/craft.git?branch=main#94fb247e0c21b9e7fecb91ce71ef7f74ef4a7931"
+source = "git+https://github.com/ripple/craft.git?branch=lastdevnet#c3a92273195a211ac9b41d641b0d20f60f982bb2"
