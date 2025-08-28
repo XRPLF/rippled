@@ -454,11 +454,9 @@ class FeeVote_test : public beast::unit_test::suite
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
-        // Create the next ledger to apply transaction to
         ledger = std::make_shared<Ledger>(
             *ledger, env.app().timeKeeper().closeTime());
 
-        // Apply first fee transaction
         FeeSettingsFields fields1{
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
@@ -471,11 +469,9 @@ class FeeVote_test : public beast::unit_test::suite
             accum.apply(*ledger);
         }
 
-        // Verify first update
         BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
 
-        // Create next ledger and apply second fee transaction with different
-        // values
+        // Apply second fee transaction with different values
         ledger = std::make_shared<Ledger>(
             *ledger, env.app().timeKeeper().closeTime());
 
@@ -507,7 +503,6 @@ class FeeVote_test : public beast::unit_test::suite
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
-        // Create the next ledger to apply transaction to
         ledger = std::make_shared<Ledger>(
             *ledger, env.app().timeKeeper().closeTime());
 
@@ -522,7 +517,8 @@ class FeeVote_test : public beast::unit_test::suite
         OpenView accum(ledger.get());
 
         // The transaction should still succeed as long as other fields are
-        // valid The ledger sequence field is used for informational purposes
+        // valid
+        // The ledger sequence field is only used for informational purposes
         BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
     }
 
@@ -538,11 +534,9 @@ class FeeVote_test : public beast::unit_test::suite
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
-        // Create the next ledger to apply transaction to
         ledger = std::make_shared<Ledger>(
             *ledger, env.app().timeKeeper().closeTime());
 
-        // Apply initial fee transaction with all fields
         FeeSettingsFields fields1{
             .baseFeeDrops = XRPAmount{10},
             .reserveBaseDrops = XRPAmount{200000},
@@ -557,7 +551,6 @@ class FeeVote_test : public beast::unit_test::suite
 
         BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
 
-        // Create next ledger
         ledger = std::make_shared<Ledger>(
             *ledger, env.app().timeKeeper().closeTime());
 
@@ -589,7 +582,6 @@ class FeeVote_test : public beast::unit_test::suite
             std::vector<uint256>{},
             env.app().getNodeFamily());
 
-        // Create the next ledger to apply transaction to
         ledger = std::make_shared<Ledger>(
             *ledger, env.app().timeKeeper().closeTime());
 
@@ -632,12 +624,9 @@ class FeeVote_test : public beast::unit_test::suite
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
-            // Create key pair for validation (must use secp256k1 for
-            // validations)
             auto sec = randomSecretKey();
             auto pub = derivePublicKey(KeyType::secp256k1, sec);
 
-            // Create a validation object
             auto val = std::make_shared<STValidation>(
                 env.app().timeKeeper().now(),
                 pub,
@@ -653,7 +642,6 @@ class FeeVote_test : public beast::unit_test::suite
 
             feeVote->doValidation(currentFees, ledger->rules(), *val);
 
-            // Check that validation contains our vote for base fee
             BEAST_EXPECT(val->isFieldPresent(sfBaseFeeDrops));
             BEAST_EXPECT(
                 val->getFieldAmount(sfBaseFeeDrops) ==
@@ -671,8 +659,6 @@ class FeeVote_test : public beast::unit_test::suite
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
-            // Create key pair for validation (must use secp256k1 for
-            // validations)
             auto sec = randomSecretKey();
             auto pub = derivePublicKey(KeyType::secp256k1, sec);
 
