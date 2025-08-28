@@ -1153,7 +1153,7 @@ struct Wasm_test : public beast::unit_test::suite
                 {
                 }
 
-                Expected<std::uint32_t, HostFunctionError>
+                Expected<std::int32_t, HostFunctionError>
                 getLedgerSqn() override
                 {
                     errorSequence++;
@@ -1416,7 +1416,7 @@ struct Wasm_test : public beast::unit_test::suite
                 {
                 }
 
-                Expected<std::uint32_t, HostFunctionError>
+                Expected<std::int32_t, HostFunctionError>
                 getLedgerSqn() override
                 {
                     callCount++;
@@ -1473,11 +1473,11 @@ struct Wasm_test : public beast::unit_test::suite
                 {
                 }
 
-                Expected<std::uint32_t, HostFunctionError>
+                Expected<std::int32_t, HostFunctionError>
                 getLedgerSqn() override
                 {
                     accessCount++;
-                    return static_cast<std::uint32_t>(env_.current()->seq());
+                    return env_.current()->seq();
                 }
             };
 
@@ -1762,10 +1762,10 @@ struct Wasm_test : public beast::unit_test::suite
                     return Bytes(4096, 0xBB);  // 4KB - page boundary size
                 }
 
-                Expected<std::uint32_t, HostFunctionError>
+                Expected<std::int32_t, HostFunctionError>
                 getLedgerSqn() override
                 {
-                    return UINT32_MAX;  // Maximum uint32 value
+                    return INT32_MAX;  // Maximum int32 value
                 }
             };
 
