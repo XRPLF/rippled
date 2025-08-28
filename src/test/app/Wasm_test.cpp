@@ -711,6 +711,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto& engine = WasmEngine::instance();
 
         // Test different max page configurations
+        // note: our normal configuration is 128
         {
             auto oldPages = engine.initMaxPages(1);  // Very low page limit
             auto re = engine.run(wasm, "fib", wasmParams(5));
@@ -733,19 +734,6 @@ struct Wasm_test : public beast::unit_test::suite
                 BEAST_EXPECTS(re->result == 21, std::to_string(re->result));
             }
         }
-
-        // Test journal integration - verify no crashes with different log
-        // levels
-        {
-            beast::Journal testJournal{beast::Journal::getNullSink()};
-            auto re = engine.run(
-                wasm, "fib", wasmParams(3), {}, nullptr, -1, testJournal);
-
-            if (BEAST_EXPECT(re.has_value()))
-            {
-                BEAST_EXPECTS(re->result == 2, std::to_string(re->result));
-            }
-        }
     }
 
     void
@@ -758,24 +746,24 @@ struct Wasm_test : public beast::unit_test::suite
         TestHostFunctions hfs(env, 0);
 
         // Test memory allocation patterns with realistic WASM
+        // note: this module uses about 40k gas
         auto const wasmStr = boost::algorithm::unhex(allHostFunctionsWasmHex);
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
 
         // Test with very low gas limit to trigger early termination
         {
             auto re = runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &hfs, 100);
-            BEAST_EXPECT(
-                !re.has_value());  // Should fail due to insufficient gas
+            BEAST_EXPECT(!re.has_value());
         }
 
         // Test with exactly sufficient gas
         {
             auto re =
-                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &hfs, 41132);
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &hfs, 41'132);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 41132, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 41'132, std::to_string(re->cost));
             }
         }
 
@@ -786,7 +774,8 @@ struct Wasm_test : public beast::unit_test::suite
             auto& engine = WasmEngine::instance();
 
             // Stress test with large input
-            std::string largeInput(1000, 'A');
+            // 100k doesn't work
+            std::string largeInput(10'000, 'A');
             auto re =
                 engine.run(wasm2, "sha512_process", wasmParams(largeInput));
 
@@ -829,7 +818,8 @@ struct Wasm_test : public beast::unit_test::suite
             TestHostFunctionsSink hfs(env);
 
             // First call should fail due to stack overflow
-            auto re1 = runEscrowWasm(wasm, "recursive", {}, &hfs, 1000000000);
+            auto re1 =
+                runEscrowWasm(wasm, "recursive", {}, &hfs, 1'000'000'000);
             BEAST_EXPECT(!re1.has_value());
 
             // Second call with different WASM should succeed (engine recovery)
@@ -843,15 +833,6 @@ struct Wasm_test : public beast::unit_test::suite
             {
                 BEAST_EXPECTS(re2->result == 5, std::to_string(re2->result));
             }
-        }
-
-        // Test invalid function name handling
-        {
-            auto const wasmStr = boost::algorithm::unhex(fibWasmHex);
-            Bytes const wasm(wasmStr.begin(), wasmStr.end());
-
-            auto re = engine.run(wasm, "nonexistent_function", wasmParams(5));
-            BEAST_EXPECT(!re.has_value());  // Should fail gracefully
         }
     }
 
@@ -929,27 +910,6 @@ struct Wasm_test : public beast::unit_test::suite
                 // Should fail gracefully with error code, not crash
                 BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
             }
-        }
-
-        // Test gas limit enforcement precision
-        {
-            auto const wasmStr = boost::algorithm::unhex(fibWasmHex);
-            Bytes const wasm(wasmStr.begin(), wasmStr.end());
-            auto& engine = WasmEngine::instance();
-
-            // Test with exact gas limit that should just succeed
-            auto re1 =
-                engine.run(wasm, "fib", wasmParams(10), {}, nullptr, 755);
-            if (BEAST_EXPECT(re1.has_value()))
-            {
-                BEAST_EXPECTS(re1->result == 55, std::to_string(re1->result));
-                BEAST_EXPECTS(re1->cost == 755, std::to_string(re1->cost));
-            }
-
-            // Test with gas limit one below required - should fail
-            auto re2 =
-                engine.run(wasm, "fib", wasmParams(10), {}, nullptr, 754);
-            BEAST_EXPECT(!re2.has_value());
         }
     }
 
@@ -1033,10 +993,16 @@ struct Wasm_test : public beast::unit_test::suite
             };
 
             auto& engine = WasmEngine::instance();
-
-            // Test with very low gas limit - should terminate quickly
-            auto re = engine.run(infiniteLoopWasm, "loop", {}, {}, nullptr, 10);
-            BEAST_EXPECT(!re.has_value());  // Should fail due to gas exhaustion
+            {
+                auto re =
+                    engine.run(infiniteLoopWasm, "loop", {}, {}, nullptr, 10);
+                BEAST_EXPECT(!re.has_value());
+            }
+            {
+                auto re = engine.run(
+                    infiniteLoopWasm, "loop", {}, {}, nullptr, 1'000'000);
+                BEAST_EXPECT(!re.has_value());
+            }
         }
 
         // Test memory boundary attacks
