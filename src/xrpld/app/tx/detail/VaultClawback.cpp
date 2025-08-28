@@ -195,16 +195,29 @@ VaultClawback::doApply()
                 FreezeHandling::fhIGNORE_FREEZE,
                 AuthHandling::ahIGNORE_AUTH,
                 j_);
-            assetsRecovered =
+
+            auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsRecovered = *maybeAssets;
         }
         else
         {
             assetsRecovered = amount;
-            sharesDestroyed =
-                assetsToSharesWithdraw(vault, sleIssuance, assetsRecovered);
-            assetsRecovered =
+            {
+                auto const maybeShares =
+                    assetsToSharesWithdraw(vault, sleIssuance, assetsRecovered);
+                if (!maybeShares)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                sharesDestroyed = *maybeShares;
+            }
+
+            auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsRecovered = *maybeAssets;
         }
 
         // Clamp to maximum.
@@ -213,10 +226,19 @@ VaultClawback::doApply()
             assetsRecovered = *assetsAvailable;
             // Note, it is important to truncate the number of shares, otherwise
             // the corresponding assets might breach the AssetsAvailable
-            sharesDestroyed = assetsToSharesWithdraw(
-                vault, sleIssuance, assetsRecovered, TruncateShares::yes);
-            assetsRecovered =
+            {
+                auto const maybeShares = assetsToSharesWithdraw(
+                    vault, sleIssuance, assetsRecovered, TruncateShares::yes);
+                if (!maybeShares)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                sharesDestroyed = *maybeShares;
+            }
+
+            auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsRecovered = *maybeAssets;
             if (assetsRecovered > *assetsAvailable)
             {
                 // LCOV_EXCL_START

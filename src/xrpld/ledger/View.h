@@ -915,7 +915,7 @@ deleteAMMTrustLine(
 // From the perspective of a vault, return the number of shares to give the
 // depositor when they deposit a fixed amount of assets. Since shares are MPT
 // this number is integral and always truncated in this calculation.
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
@@ -924,7 +924,7 @@ assetsToSharesDeposit(
 // From the perspective of a vault, return the number of assets to take from
 // depositor when they receive a fixed amount of shares. Note, since shares are
 // MPT, they are always an integral number.
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 sharesToAssetsDeposit(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
@@ -936,7 +936,7 @@ enum class TruncateShares : bool { no = false, yes = true };
 // the depositor when they ask to withdraw a fixed amount of assets. Since
 // shares are MPT this number is integral, and it will be rounded to nearest
 // unless explicitly requested to be truncated instead.
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
@@ -946,7 +946,7 @@ assetsToSharesWithdraw(
 // From the perspective of a vault, return the number of assets to give the
 // depositor when they redeem a fixed amount of shares. Note, since shares are
 // MPT, they are always an integral number.
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,

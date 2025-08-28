@@ -246,20 +246,28 @@ VaultDeposit::doApply()
     try
     {
         // Compute exchange before transferring any amounts.
-        sharesCreated = assetsToSharesDeposit(vault, sleIssuance, amount);
+        {
+            auto const maybeShares =
+                assetsToSharesDeposit(vault, sleIssuance, amount);
+            if (!maybeShares)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            sharesCreated = *maybeShares;
+        }
         if (sharesCreated == beast::zero)
             return tecPRECISION_LOSS;
 
-        auto const assetsToTake =
+        auto const maybeAssets =
             sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
-        if (assetsToTake > amount)
+        if (!maybeAssets)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        else if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        assetsDeposited = assetsToTake;
+        assetsDeposited = *maybeAssets;
     }
     catch (std::overflow_error const&)
     {

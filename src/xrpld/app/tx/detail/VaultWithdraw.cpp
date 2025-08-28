@@ -201,18 +201,31 @@ VaultWithdraw::doApply()
         if (amount.asset() == vaultAsset)
         {
             // Fixed assets, variable shares.
-            sharesRedeemed = assetsToSharesWithdraw(vault, sleIssuance, amount);
+            {
+                auto const maybeShares =
+                    assetsToSharesWithdraw(vault, sleIssuance, amount);
+                if (!maybeShares)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                sharesRedeemed = *maybeShares;
+            }
+
             if (sharesRedeemed == beast::zero)
                 return tecPRECISION_LOSS;
-            assetsWithdrawn =
+            auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsWithdrawn = *maybeAssets;
         }
         else if (amount.asset() == share)
         {
             // Fixed shares, variable assets.
             sharesRedeemed = amount;
-            assetsWithdrawn =
+            auto const maybeAssets =
                 sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsWithdrawn = *maybeAssets;
         }
         else
             return tefINTERNAL;  // LCOV_EXCL_LINE
