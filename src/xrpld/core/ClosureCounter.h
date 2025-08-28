@@ -180,6 +180,13 @@ public:
         }
     }
 
+    template <class Closure>
+    Substitute<Closure>
+    forceWrap(Closure&& closure)
+    {
+        return {*this, std::forward<Closure>(closure)};
+    }
+
     /** Wrap the passed closure with a reference counter.
 
         @param closure Closure that accepts Args_t parameters and returns Ret_t.

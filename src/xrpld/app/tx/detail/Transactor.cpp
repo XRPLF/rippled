@@ -209,10 +209,10 @@ Transactor::Transactor(ApplyContext& ctx)
     : ctx_(ctx)
     , account_(ctx.tx.getAccountID(sfAccount))
     , j_(ctx.journal,
-         log::attributes({
-             {"TransactionID", to_string(ctx_.tx.getTransactionID())},
-             {"AccountID", to_string(account_)},
-         }))
+         log::attributes(
+             log::attr("TransactionID", to_string(ctx_.tx.getTransactionID())),
+             log::attr("AccountID", to_string(account_))
+         ))
 {
 }
 

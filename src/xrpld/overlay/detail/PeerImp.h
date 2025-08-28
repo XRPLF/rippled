@@ -660,15 +660,15 @@ PeerImp::PeerImp(
     , journal_(
           app_.journal("Peer"),
           log::attributes(
-              {{"NodeID", id},
-               {"RemoteAddress", to_string(slot->remote_endpoint())},
-               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
+              log::attr("NodeID", id),
+               log::attr("RemoteAddress", to_string(slot->remote_endpoint())),
+               log::attr("PublicKey", toBase58(TokenType::NodePublic, publicKey))))
     , p_journal_(
           app_.journal("Protocol"),
           log::attributes(
-              {{"NodeID", id},
-               {"RemoteAddress", to_string(slot->remote_endpoint())},
-               {"PublicKey", toBase58(TokenType::NodePublic, publicKey)}}))
+              log::attr("NodeID", id),
+               log::attr("RemoteAddress", to_string(slot->remote_endpoint())),
+               log::attr("PublicKey", toBase58(TokenType::NodePublic, publicKey))))
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)

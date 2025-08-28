@@ -25,7 +25,6 @@
 #include <xrpl/server/Port.h>
 #include <xrpl/server/detail/LowestLayer.h>
 #include <xrpl/server/detail/io_list.h>
-#include <xrpl/telemetry/JsonLogs.h>
 
 #include <boost/asio.hpp>
 
@@ -86,11 +85,11 @@ BasePeer<Handler, Impl>::BasePeer(
     , remote_address_(remote_address)
     , j_(journal,
          log::attributes(
-             {{"PeerID",
+             log::attr("PeerID",
                [] {
                    static std::atomic<unsigned> id{0};
                    return "##" + std::to_string(++id) + " ";
-               }()}}))
+               }())))
     , work_(executor)
     , strand_(executor)
 {

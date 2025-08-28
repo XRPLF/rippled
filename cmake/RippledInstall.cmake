@@ -16,7 +16,6 @@ install (
     xrpl.libxrpl.beast
     xrpl.libxrpl.crypto
     xrpl.libxrpl.json
-    xrpl.libxrpl.telemetry
     xrpl.libxrpl.protocol
     xrpl.libxrpl.resource
     xrpl.libxrpl.server

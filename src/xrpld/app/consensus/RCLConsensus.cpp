@@ -1109,7 +1109,7 @@ RclConsensusLogger::RclConsensusLogger(
     bool const validating,
     beast::Journal j,
     std::source_location location)
-    : j_(j, log::attributes({{"Role", "ConsensusLogger"}, {"Label", label}}))
+    : j_(j, log::attributes(log::attr("Role", "ConsensusLogger"), log::attr("Label", label)))
     , location_(location)
 {
     if (!validating && !j.info())
