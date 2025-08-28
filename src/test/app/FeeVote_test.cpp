@@ -20,13 +20,16 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
 
 namespace ripple {
 namespace test {
@@ -199,6 +202,19 @@ verifyFeeObject(
 
     return true;
 }
+
+std::vector<STTx>
+getTxs(std::shared_ptr<SHAMap> const& txSet)
+{
+    std::vector<STTx> txs;
+    for (auto i = txSet->begin(); i != txSet->end(); ++i)
+    {
+        auto const data = i->slice();
+        auto serialIter = SerialIter(data);
+        txs.push_back(STTx(serialIter));
+    }
+    return txs;
+};
 
 class FeeVote_test : public beast::unit_test::suite
 {
@@ -594,6 +610,192 @@ class FeeVote_test : public beast::unit_test::suite
     }
 
     void
+    testDoValidation()
+    {
+        testcase("doValidation");
+
+        using namespace jtx;
+
+        FeeSetup setup;
+        setup.reference_fee = 42;
+        setup.account_reserve = 1234567;
+        setup.owner_reserve = 7654321;
+
+        // Test with XRPFees enabled
+        {
+            Env env(*this, testable_amendments() | featureXRPFees);
+            auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+
+            auto ledger = std::make_shared<Ledger>(
+                create_genesis,
+                env.app().config(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+
+            // Create key pair for validation (must use secp256k1 for
+            // validations)
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+
+            // Create a validation object
+            auto val = std::make_shared<STValidation>(
+                env.app().timeKeeper().now(),
+                pub,
+                sec,
+                calcNodeID(pub),
+                [](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, 12345);
+                });
+
+            // Use the current ledger's fees as the "current" fees for
+            // doValidation
+            auto const& currentFees = ledger->fees();
+
+            feeVote->doValidation(currentFees, ledger->rules(), *val);
+
+            // Check that validation contains our vote for base fee
+            BEAST_EXPECT(val->isFieldPresent(sfBaseFeeDrops));
+            BEAST_EXPECT(
+                val->getFieldAmount(sfBaseFeeDrops) ==
+                XRPAmount(setup.reference_fee));
+        }
+
+        // Test with XRPFees disabled (legacy format)
+        {
+            Env env(*this, testable_amendments() - featureXRPFees);
+            auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+
+            auto ledger = std::make_shared<Ledger>(
+                create_genesis,
+                env.app().config(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+
+            // Create key pair for validation (must use secp256k1 for
+            // validations)
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+
+            auto val = std::make_shared<STValidation>(
+                env.app().timeKeeper().now(),
+                pub,
+                sec,
+                calcNodeID(pub),
+                [](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, 12345);
+                });
+
+            auto const& currentFees = ledger->fees();
+
+            feeVote->doValidation(currentFees, ledger->rules(), *val);
+
+            // In legacy mode, should vote using legacy fields
+            BEAST_EXPECT(val->isFieldPresent(sfBaseFee));
+            BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.reference_fee);
+        }
+    }
+
+    void
+    testDoVoting()
+    {
+        testcase("doVoting");
+
+        using namespace jtx;
+
+        FeeSetup setup;
+        setup.reference_fee = 42;
+        setup.account_reserve = 1234567;
+        setup.owner_reserve = 7654321;
+
+        Env env(*this, testable_amendments() | featureXRPFees);
+
+        // establish what the current fees are
+        BEAST_EXPECT(env.current()->fees().base == XRPAmount{10});
+        BEAST_EXPECT(env.current()->fees().reserve == XRPAmount{200'000'000});
+        BEAST_EXPECT(env.current()->fees().increment == XRPAmount{50'000'000});
+
+        auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+        auto ledger = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        // doVoting requires a flag ledger (every 256th ledger)
+        // We need to create a ledger at sequence 256 to make it a flag ledger
+        for (int i = 0; i < 256 - 1; ++i)
+        {
+            ledger = std::make_shared<Ledger>(
+                *ledger, env.app().timeKeeper().closeTime());
+        }
+        BEAST_EXPECT(ledger->isFlagLedger());
+
+        // Create some mock validations with fee votes
+        std::vector<std::shared_ptr<STValidation>> validations;
+
+        for (int i = 0; i < 5; i++)
+        {
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+
+            auto val = std::make_shared<STValidation>(
+                env.app().timeKeeper().now(),
+                pub,
+                sec,
+                calcNodeID(pub),
+                [&](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, ledger->seq());
+                    // Vote for different fees than current
+                    v.setFieldAmount(
+                        sfBaseFeeDrops, XRPAmount{setup.reference_fee});
+                    v.setFieldAmount(
+                        sfReserveBaseDrops, XRPAmount{setup.account_reserve});
+                    v.setFieldAmount(
+                        sfReserveIncrementDrops,
+                        XRPAmount{setup.owner_reserve});
+                });
+            val->setTrusted();
+            validations.push_back(val);
+        }
+
+        auto txSet = std::make_shared<SHAMap>(
+            SHAMapType::TRANSACTION, env.app().getNodeFamily());
+
+        // This should not throw since we have a flag ledger
+        feeVote->doVoting(ledger, validations, txSet);
+
+        auto const txs = getTxs(txSet);
+        BEAST_EXPECT(txs.size() == 1);
+        auto const& feeTx = txs[0];
+
+        BEAST_EXPECT(feeTx.getTxnType() == ttFEE);
+
+        BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
+        BEAST_EXPECT(feeTx.getFieldU32(sfLedgerSequence) == ledger->seq() + 1);
+
+        BEAST_EXPECT(feeTx.isFieldPresent(sfBaseFeeDrops));
+        BEAST_EXPECT(feeTx.isFieldPresent(sfReserveBaseDrops));
+        BEAST_EXPECT(feeTx.isFieldPresent(sfReserveIncrementDrops));
+
+        // The legacy fields should NOT be present
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfBaseFee));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveBase));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveIncrement));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
+
+        // Check the values
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfBaseFeeDrops) ==
+            XRPAmount{setup.reference_fee});
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfReserveBaseDrops) ==
+            XRPAmount{setup.account_reserve});
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfReserveIncrementDrops) ==
+            XRPAmount{setup.owner_reserve});
+    }
+
+    void
     run() override
     {
         testSetup();
@@ -604,6 +806,8 @@ class FeeVote_test : public beast::unit_test::suite
         testWrongLedgerSequence();
         testPartialFieldUpdates();
         testSingleInvalidTransaction();
+        testDoValidation();
+        testDoVoting();
     }
 };
 
