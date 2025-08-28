@@ -109,6 +109,9 @@ struct Config
         std::uint16_t port,
         bool validationPublicKey,
         int ipLimit);
+
+    friend bool
+    operator==(Config const& lhs, Config const& rhs);
 };
 
 //------------------------------------------------------------------------------

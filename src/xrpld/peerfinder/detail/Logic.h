@@ -172,9 +172,7 @@ public:
     void
     addFixedPeer(std::string const& name, beast::IP::Endpoint const& ep)
     {
-        std::vector<beast::IP::Endpoint> v;
-        v.push_back(ep);
-        addFixedPeer(name, v);
+        addFixedPeer(name, std::vector<beast::IP::Endpoint>{ep});
     }
 
     void
@@ -277,7 +275,7 @@ public:
         {
             auto const count =
                 connectedAddresses_.count(remote_endpoint.address());
-            if (count > config_.ipLimit)
+            if (count + 1 > config_.ipLimit)
             {
                 JLOG(m_journal.debug())
                     << beast::leftw(18) << "Logic dropping inbound "
