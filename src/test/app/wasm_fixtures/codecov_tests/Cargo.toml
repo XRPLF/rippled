@@ -16,3 +16,6 @@ panic = "abort"
 
 [dependencies]
 xrpl-std = { git = "https://github.com/ripple/craft.git", branch = "lastdevnet", package = "xrpl-std" }
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=-bulk-memory"]

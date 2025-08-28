@@ -1,11 +1,11 @@
 #include <stdint.h>
 
 int32_t
-get_ledger_sqn(uint8_t*, int32_t);
+get_ledger_sqn();
 // int32_t trace(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
 // int32_t trace_num(uint8_t const*, int32_t, int64_t);
 
-uint8_t buf[1024];
+// uint8_t buf[1024];
 
 // char const test_res[] = "sqn: ";
 // char const test_name[] = "TEST get_ledger_sqn";
@@ -18,10 +18,10 @@ finish()
     // memset(buf, 0, sizeof(buf));
     // for(int i = 0; i < sizeof(buf); ++i) buf[i] = 0;
 
-    int x = get_ledger_sqn(buf, sizeof(int32_t));
-    if (x >= 0)
-        x = *((int32_t*)buf);
-    // trace_num((uint8_t const *)test_res, sizeof(test_res) - 1, x);
+    int x = get_ledger_sqn();
+    // if (x >= 0)
+    //     x = *((int32_t*)buf);
+    // trace_num((uint8_t const *)test`_res, sizeof(test_res) - 1, x);
 
-    return x < 0 ? x : (x >= 5 ? 1 : 0);
+    return x < 0 ? x : (x >= 5 ? x : 0);
 }
