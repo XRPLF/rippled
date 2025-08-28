@@ -49,7 +49,7 @@ STTx
 createFeeTx(
     Rules const& rules,
     std::uint32_t seq,
-    FeeSettingsFields const& fields = {})
+    FeeSettingsFields const& fields)
 {
     auto fill = [&](auto& obj) {
         obj.setAccountID(sfAccount, AccountID());
@@ -60,29 +60,28 @@ createFeeTx(
             // New XRPFees format - all three fields are REQUIRED
             obj.setFieldAmount(
                 sfBaseFeeDrops,
-                fields.baseFeeDrops ? *fields.baseFeeDrops : XRPAmount{10});
+                fields.baseFeeDrops ? *fields.baseFeeDrops : XRPAmount{0});
             obj.setFieldAmount(
                 sfReserveBaseDrops,
                 fields.reserveBaseDrops ? *fields.reserveBaseDrops
-                                        : XRPAmount{200000});
+                                        : XRPAmount{0});
             obj.setFieldAmount(
                 sfReserveIncrementDrops,
                 fields.reserveIncrementDrops ? *fields.reserveIncrementDrops
-                                             : XRPAmount{50000});
+                                             : XRPAmount{0});
         }
         else
         {
             // Legacy format - all four fields are REQUIRED
-            obj.setFieldU64(sfBaseFee, fields.baseFee ? *fields.baseFee : 10);
+            obj.setFieldU64(sfBaseFee, fields.baseFee ? *fields.baseFee : 0);
             obj.setFieldU32(
-                sfReserveBase,
-                fields.reserveBase ? *fields.reserveBase : 200000);
+                sfReserveBase, fields.reserveBase ? *fields.reserveBase : 0);
             obj.setFieldU32(
                 sfReserveIncrement,
-                fields.reserveIncrement ? *fields.reserveIncrement : 50000);
+                fields.reserveIncrement ? *fields.reserveIncrement : 0);
             obj.setFieldU32(
                 sfReferenceFeeUnits,
-                fields.referenceFeeUnits ? *fields.referenceFeeUnits : 10);
+                fields.referenceFeeUnits ? *fields.referenceFeeUnits : 0);
         }
 
         if (rules.enabled(featureSmartEscrow))
@@ -91,12 +90,11 @@ createFeeTx(
             obj.setFieldU32(
                 sfExtensionComputeLimit,
                 fields.extensionComputeLimit ? *fields.extensionComputeLimit
-                                             : 1000);
+                                             : 0);
             obj.setFieldU32(
                 sfExtensionSizeLimit,
-                fields.extensionSizeLimit ? *fields.extensionSizeLimit : 2000);
-            obj.setFieldU32(
-                sfGasPrice, fields.gasPrice ? *fields.gasPrice : 100);
+                fields.extensionSizeLimit ? *fields.extensionSizeLimit : 0);
+            obj.setFieldU32(sfGasPrice, fields.gasPrice ? *fields.gasPrice : 0);
         }
     };
     return STTx(ttFEE, fill);
@@ -179,7 +177,7 @@ bool
 verifyFeeObject(
     std::shared_ptr<Ledger const> const& ledger,
     Rules const& rules,
-    FeeSettingsFields const& expected = {})
+    FeeSettingsFields const& expected)
 {
     auto const feeObject = ledger->read(keylet::fees());
     if (!feeObject)
@@ -192,20 +190,15 @@ verifyFeeObject(
             feeObject->isFieldPresent(sfReserveIncrement) ||
             feeObject->isFieldPresent(sfReferenceFeeUnits))
             return false;
-        if (expected.baseFeeDrops &&
-            (!feeObject->isFieldPresent(sfBaseFeeDrops) ||
-             feeObject->getFieldAmount(sfBaseFeeDrops) !=
-                 *expected.baseFeeDrops))
+
+        if (feeObject->at(sfBaseFeeDrops) !=
+            expected.baseFeeDrops.value_or(XRPAmount{0}))
             return false;
-        if (expected.reserveBaseDrops &&
-            (!feeObject->isFieldPresent(sfReserveBaseDrops) ||
-             feeObject->getFieldAmount(sfReserveBaseDrops) !=
-                 *expected.reserveBaseDrops))
+        if (feeObject->at(sfReserveBaseDrops) !=
+            expected.reserveBaseDrops.value_or(XRPAmount{0}))
             return false;
-        if (expected.reserveIncrementDrops &&
-            (!feeObject->isFieldPresent(sfReserveIncrementDrops) ||
-             feeObject->getFieldAmount(sfReserveIncrementDrops) !=
-                 *expected.reserveIncrementDrops))
+        if (feeObject->at(sfReserveIncrementDrops) !=
+            expected.reserveIncrementDrops.value_or(XRPAmount{0}))
             return false;
     }
     else
@@ -214,41 +207,27 @@ verifyFeeObject(
             feeObject->isFieldPresent(sfReserveBaseDrops) ||
             feeObject->isFieldPresent(sfReserveIncrementDrops))
             return false;
-        if (expected.baseFee &&
-            (!feeObject->isFieldPresent(sfBaseFee) ||
-             feeObject->getFieldU64(sfBaseFee) != *expected.baseFee))
+
+        // Read sfBaseFee as a hex string and compare to expected.baseFee
+        if (feeObject->at(sfBaseFee) != expected.baseFee)
             return false;
-        if (expected.reserveBase &&
-            (!feeObject->isFieldPresent(sfReserveBase) ||
-             feeObject->getFieldU32(sfReserveBase) != *expected.reserveBase))
+        if (feeObject->at(sfReserveBase) != expected.reserveBase)
             return false;
-        if (expected.reserveIncrement &&
-            (!feeObject->isFieldPresent(sfReserveIncrement) ||
-             feeObject->getFieldU32(sfReserveIncrement) !=
-                 *expected.reserveIncrement))
+        if (feeObject->at(sfReserveIncrement) != expected.reserveIncrement)
             return false;
-        if (expected.referenceFeeUnits &&
-            (!feeObject->isFieldPresent(sfReferenceFeeUnits) ||
-             feeObject->getFieldU32(sfReferenceFeeUnits) !=
-                 *expected.referenceFeeUnits))
+        if (feeObject->at(sfReferenceFeeUnits) != expected.referenceFeeUnits)
             return false;
     }
 
     if (rules.enabled(featureSmartEscrow))
     {
-        if (expected.extensionComputeLimit &&
-            (!feeObject->isFieldPresent(sfExtensionComputeLimit) ||
-             feeObject->getFieldU32(sfExtensionComputeLimit) !=
-                 *expected.extensionComputeLimit))
+        if (feeObject->at(sfExtensionComputeLimit) !=
+            expected.extensionComputeLimit.value_or(0))
             return false;
-        if (expected.extensionSizeLimit &&
-            (!feeObject->isFieldPresent(sfExtensionSizeLimit) ||
-             feeObject->getFieldU32(sfExtensionSizeLimit) !=
-                 *expected.extensionSizeLimit))
+        if (feeObject->at(sfExtensionSizeLimit) !=
+            expected.extensionSizeLimit.value_or(0))
             return false;
-        if (expected.gasPrice &&
-            (!feeObject->isFieldPresent(sfGasPrice) ||
-             feeObject->getFieldU32(sfGasPrice) != *expected.gasPrice))
+        if (feeObject->at(sfGasPrice) != expected.gasPrice.value_or(0))
             return false;
     }
     else
