@@ -51,6 +51,8 @@ target_link_libraries(xrpl.libpb
 # TODO: Clean up the number of library targets later.
 add_library(xrpl.imports.main INTERFACE)
 
+find_package(RapidJSON)
+
 target_link_libraries(xrpl.imports.main
   INTERFACE
     LibArchive::LibArchive
@@ -75,6 +77,7 @@ add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC
   xrpl.imports.main
   xrpl.libpb
+  rapidjson
 )
 
 # Level 02
@@ -85,14 +88,9 @@ target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
 add_module(xrpl json)
 target_link_libraries(xrpl.libxrpl.json PUBLIC xrpl.libxrpl.basics)
 
-add_module(xrpl telemetry)
-target_link_libraries(xrpl.libxrpl.telemetry PUBLIC xrpl.libxrpl.json)
 
 add_module(xrpl crypto)
-target_link_libraries(xrpl.libxrpl.crypto PUBLIC
-  xrpl.libxrpl.basics
-  xrpl.libxrpl.telemetry
-)
+target_link_libraries(xrpl.libxrpl.crypto PUBLIC xrpl.libxrpl.basics)
 
 # Level 04
 add_module(xrpl protocol)
@@ -133,7 +131,6 @@ target_link_modules(xrpl PUBLIC
   beast
   crypto
   json
-  telemetry
   protocol
   resource
   server

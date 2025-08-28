@@ -27,7 +27,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/BuildInfo.h>
-#include <xrpl/telemetry/JsonLogs.h>
 
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
@@ -791,10 +790,10 @@ run(int argc, char** argv)
 
     if (config->LOG_STYLE == LogStyle::Json)
     {
-        auto structuredJournal = std::make_unique<log::JsonStructuredJournal>();
-        beast::Journal::enableStructuredJournal(std::move(structuredJournal));
-        Logs::setGlobalAttributes(log::attributes(
-            {{"Application", "rippled"}, {"NetworkID", config->NETWORK_ID}}));
+        beast::Journal::enableStructuredJournal();
+        beast::Journal::addGlobalAttributes(log::attributes(
+            log::attr("Application", "rippled"),
+            log::attr("NetworkID", config->NETWORK_ID)));
     }
 
     auto logs = std::make_unique<Logs>(thresh);

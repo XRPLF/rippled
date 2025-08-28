@@ -26,7 +26,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/telemetry/JsonLogs.h>
 
 namespace ripple {
 
@@ -54,10 +53,10 @@ public:
         , flags(flags_)
         , parentBatchId(parentBatchId_)
         , j(j_,
-            log::attributes({
-                {"TransactionID", to_string(tx.getTransactionID())},
-                {"AccountID", to_string(tx.getAccountID(sfAccount))},
-            }))
+            log::attributes(
+                log::attr("TransactionID", to_string(tx.getTransactionID())),
+                log::attr("AccountID", to_string(tx.getAccountID(sfAccount)))
+            ))
     {
         XRPL_ASSERT(
             (flags_ & tapBATCH) == tapBATCH, "Batch apply flag should be set");
@@ -106,10 +105,10 @@ public:
         , tx(tx_)
         , parentBatchId(parentBatchId_)
         , j(j_,
-            log::attributes({
-                {"TransactionID", {to_string(tx.getTransactionID())}},
-                {"AccountID", to_string(tx.getAccountID(sfAccount))},
-            }))
+            log::attributes(
+                log::attr("TransactionID", to_string(tx.getTransactionID())),
+                log::attr("AccountID", to_string(tx.getAccountID(sfAccount)))
+            ))
     {
         XRPL_ASSERT(
             parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),

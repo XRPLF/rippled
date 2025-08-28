@@ -98,6 +98,10 @@ JobQueue::Coro::resume()
     }
     {
         std::lock_guard lock(jq_.m_mutex);
+
+        XRPL_ASSERT(
+            jq_.nSuspend_ > 0,
+            "ripple::JobQueue::Coro::resume jq_.nSuspend_ should be greater than 0");
         --jq_.nSuspend_;
     }
     auto saved = detail::getLocalValues().release();
@@ -134,6 +138,10 @@ JobQueue::Coro::expectEarlyExit()
         // That said, since we're outside the Coro's stack, we need to
         // decrement the nSuspend that the Coro's call to yield caused.
         std::lock_guard lock(jq_.m_mutex);
+
+        XRPL_ASSERT(
+            jq_.nSuspend_ > 0,
+            "ripple::JobQueue::Coro::expectEarlyExit() jq_.nSuspend_ should be greater than 0");
         --jq_.nSuspend_;
 #ifndef NDEBUG
         finished_ = true;

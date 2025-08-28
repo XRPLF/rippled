@@ -69,7 +69,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/telemetry/JsonLogs.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -836,8 +835,8 @@ public:
     beast::Journal
     journal(
         std::string const& name,
-        std::unique_ptr<beast::Journal::StructuredLogAttributes> attributes =
-            {}) override;
+        std::optional<beast::Journal::JsonLogAttributes> attributes =
+            std::nullopt) override;
 
     //--------------------------------------------------------------------------
 
@@ -1222,9 +1221,9 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                            << ", Instance Cookie: "
                            << log::param("InstanceCookie", instanceCookie_);
 
-    Logs::setGlobalAttributes(log::attributes(
-        {{"RippledVersion", BuildInfo::getFullVersionString()},
-         {"InstanceCookie", to_string(instanceCookie_)}}));
+    beast::Journal::addGlobalAttributes(log::attributes(
+        log::attr("RippledVersion", BuildInfo::getFullVersionString()),
+        log::attr("InstanceCookie", to_string(instanceCookie_))));
 
     if (numberOfThreads(*config_) < 2)
     {
@@ -2174,7 +2173,7 @@ ApplicationImp::serverOkay(std::string& reason)
 beast::Journal
 ApplicationImp::journal(
     std::string const& name,
-    std::unique_ptr<beast::Journal::StructuredLogAttributes> attributes)
+    std::optional<beast::Journal::JsonLogAttributes> attributes)
 {
     return logs_->journal(name, std::move(attributes));
 }

@@ -260,8 +260,8 @@ public:
     virtual beast::Journal
     journal(
         std::string const& name,
-        std::unique_ptr<beast::Journal::StructuredLogAttributes> attributes =
-            {}) = 0;
+        std::optional<beast::Journal::JsonLogAttributes> attributes =
+            std::nullopt) = 0;
 
     /* Returns the number of file descriptors the application needs */
     virtual int
