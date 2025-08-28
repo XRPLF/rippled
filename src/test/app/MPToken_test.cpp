@@ -2841,25 +2841,25 @@ class MPToken_test : public beast::unit_test::suite
             // Holder is not allowed when MutableFlags is present
             mptAlice.set(
                 {.account = alice,
+                 .holder = bob,
                  .id = mptID,
                  .mutableFlags = 2,
-                 .holder = bob,
                  .err = temMALFORMED});
 
             // Holder is not allowed when MPTokenMetadata is present
             mptAlice.set(
                 {.account = alice,
+                 .holder = bob,
                  .id = mptID,
                  .metadata = "test",
-                 .holder = bob,
                  .err = temMALFORMED});
 
             // Holder is not allowed when TransferFee is present
             mptAlice.set(
                 {.account = alice,
+                 .holder = bob,
                  .id = mptID,
                  .transferFee = 100,
-                 .holder = bob,
                  .err = temMALFORMED});
         }
 
@@ -2901,8 +2901,8 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create(
-                {.ownerCount = 1,
-                 .transferFee = 10,
+                {.transferFee = 10,
+                 .ownerCount = 1,
                  .flags = tfMPTCanTransfer,
                  .mutableFlags =
                      tfMPTCanMutateTransferFee | tfMPTCanMutateMetadata});
@@ -3035,8 +3035,8 @@ class MPToken_test : public beast::unit_test::suite
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create(
-                {.ownerCount = 1,
-                 .transferFee = 10,
+                {.transferFee = 10,
+                 .ownerCount = 1,
                  .flags = tfMPTCanTransfer});
 
             mptAlice.set(
@@ -3113,8 +3113,8 @@ class MPToken_test : public beast::unit_test::suite
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
             mptAlice.create(
-                {.ownerCount = 1,
-                 .metadata = "test",
+                {.metadata = "test",
+                 .ownerCount = 1,
                  .mutableFlags = tfMPTCanMutateMetadata});
 
             std::vector<std::string> metadatas = {
@@ -3140,12 +3140,13 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
-            mptAlice.create(
-                {.ownerCount = 1,
-                 .metadata = "test",
-                 .transferFee = 100,
-                 .flags = tfMPTCanTransfer,
-                 .mutableFlags = tfMPTCanMutateTransferFee});
+            mptAlice.create({
+
+                .transferFee = 100,
+                .metadata = "test",
+                .ownerCount = 1,
+                .flags = tfMPTCanTransfer,
+                .mutableFlags = tfMPTCanMutateTransferFee});
 
             for (auto const fee : {1, 10, 100, 200, 500, 1000})
             {
@@ -3164,8 +3165,8 @@ class MPToken_test : public beast::unit_test::suite
 
                 // Create the MPT object with the specified initial flags
                 mptAlice.create(
-                    {.ownerCount = 1,
-                     .metadata = "test",
+                    {.metadata = "test",
+                     .ownerCount = 1,
                      .mutableFlags = createFlags});
 
                 // Set and clear the flag multiple times
