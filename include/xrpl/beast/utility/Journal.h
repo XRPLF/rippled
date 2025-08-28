@@ -585,6 +585,13 @@ public:
     /** @} */
 
     static void
+    resetGlobalAttributes()
+    {
+        std::lock_guard lock(globalLogAttributesMutex_);
+        globalLogAttributes_ = std::nullopt;
+    }
+
+    static void
     addGlobalAttributes(JsonLogAttributes globalLogAttributes)
     {
         std::lock_guard lock(globalLogAttributesMutex_);

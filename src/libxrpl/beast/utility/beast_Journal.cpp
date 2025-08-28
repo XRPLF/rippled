@@ -203,34 +203,6 @@ Journal::formatLog(
     rapidjson::Value logContext;
     logContext.SetObject();
 
-    if (globalLogAttributes_)
-    {
-        for (auto const& [key, value] :
-             globalLogAttributes_->contextValues().GetObject())
-        {
-            rapidjson::Value jsonValue;
-            jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
-
-            logContext.AddMember(
-                rapidjson::Value{key, currentJsonLogContext_.allocator},
-                std::move(jsonValue),
-                currentJsonLogContext_.allocator);
-        }
-    }
-
-    if (attributes.has_value())
-    {
-        for (auto const& [key, value] : attributes->contextValues().GetObject())
-        {
-            rapidjson::Value jsonValue;
-            jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
-
-            logContext.AddMember(
-                rapidjson::Value{key, currentJsonLogContext_.allocator},
-                std::move(jsonValue),
-                currentJsonLogContext_.allocator);
-        }
-    }
     logContext.AddMember(
         rapidjson::StringRef("Function"),
         rapidjson::StringRef(currentJsonLogContext_.location.function_name()),
@@ -274,6 +246,39 @@ Journal::formatLog(
             .count(),
         currentJsonLogContext_.allocator);
 
+    if (attributes.has_value())
+    {
+        for (auto const& [key, value] : attributes->contextValues().GetObject())
+        {
+            if (logContext.HasMember(key))
+                continue;
+            rapidjson::Value jsonValue;
+            jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
+
+            logContext.AddMember(
+                rapidjson::Value{key, currentJsonLogContext_.allocator},
+                std::move(jsonValue),
+                currentJsonLogContext_.allocator);
+        }
+    }
+
+    if (globalLogAttributes_)
+    {
+        for (auto const& [key, value] :
+             globalLogAttributes_->contextValues().GetObject())
+        {
+            if (logContext.HasMember(key))
+                continue;
+            rapidjson::Value jsonValue;
+            jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
+
+            logContext.AddMember(
+                rapidjson::Value{key, currentJsonLogContext_.allocator},
+                std::move(jsonValue),
+                currentJsonLogContext_.allocator);
+        }
+    }
+
     rapidjson::StringBuffer buffer;
     rapidjson::Writer writer(buffer);
 
@@ -292,6 +297,7 @@ void
 Journal::disableStructuredJournal()
 {
     m_jsonLogsEnabled = false;
+    resetGlobalAttributes();
 }
 
 bool
