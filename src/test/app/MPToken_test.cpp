@@ -2893,8 +2893,20 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = tfMPTCanLock,
                  .transferFee = 100,
                  .err = temMALFORMED});
+        }
 
-            // flags being 0 is fine
+        // Flags being 0 is fine
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .transferFee = 10,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags =
+                     tfMPTCanMutateTransferFee | tfMPTCanMutateMetadata});
+
             mptAlice.set(
                 {.account = alice,
                  .flags = 0,
@@ -2959,6 +2971,19 @@ class MPToken_test : public beast::unit_test::suite
             }
         }
 
+        // Metadata exceeding max length
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1, .mutableFlags = tfMPTCanMutateMetadata});
+
+            std::string metadata(maxMPTokenMetadataLength + 1, 'a');
+            mptAlice.set(
+                {.account = alice, .metadata = metadata, .err = temMALFORMED});
+        }
+
         // Can not mutate metadata when it is not mutable
         {
             Env env{*this, features};
@@ -2971,16 +2996,56 @@ class MPToken_test : public beast::unit_test::suite
                  .err = tecNO_PERMISSION});
         }
 
+        // Transfer fee exceeding the max value
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            auto const mptID = makeMptID(env.seq(alice), alice);
+
+            mptAlice.create(
+                {.ownerCount = 1, .mutableFlags = tfMPTCanMutateTransferFee});
+
+            mptAlice.set(
+                {.account = alice,
+                 .id = mptID,
+                 .transferFee = maxTransferFee + 1,
+                 .err = temBAD_TRANSFER_FEE});
+        }
+
+        // Can not set non-zero transfer fee when MPTCanTransfer is not set
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1, .mutableFlags = tfMPTCanMutateTransferFee});
+
+            mptAlice.set(
+                {.account = alice,
+                 .transferFee = 100,
+                 .err = tecNO_PERMISSION});
+
+            // Setting to zero is allowed when MPTCanMutateTransferFee is set
+            mptAlice.set({.account = alice, .transferFee = 0});
+        }
+
         // Can not mutate transfer fee when it is not mutable
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
-            mptAlice.create({.ownerCount = 1});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .transferFee = 10,
+                 .flags = tfMPTCanTransfer});
+
             mptAlice.set(
                 {.account = alice,
                  .transferFee = 100,
                  .err = tecNO_PERMISSION});
+
+            mptAlice.set(
+                {.account = alice, .transferFee = 0, .err = tecNO_PERMISSION});
         }
 
         // Set some flags mutable. Can not mutate the others
@@ -3056,7 +3121,7 @@ class MPToken_test : public beast::unit_test::suite
                 "mutate metadata",
                 "mutate metadata 2",
                 "mutate metadata 3",
-                "",
+                "mutate metadata 3",
                 "test",
                 "mutate metadata"};
 
@@ -3065,6 +3130,10 @@ class MPToken_test : public beast::unit_test::suite
                 mptAlice.set({.account = alice, .metadata = metadata});
                 BEAST_EXPECT(mptAlice.checkMetadata(metadata));
             }
+
+            // Metadata being empty will remove the field
+            mptAlice.set({.account = alice, .metadata = ""});
+            BEAST_EXPECT(!mptAlice.isMetadataPresent());
         }
 
         // Mutate transfer fee
@@ -3149,7 +3218,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.create(
                 {.ownerCount = 1,
                  .holderCount = 0,
-                 .flags = tfMPTCanLock,
+                 .flags = tfMPTCanLock | tfMPTCanTransfer,
                  .mutableFlags = tfMPTCanMutateCanLock |
                      tfMPTCanMutateCanTrade | tfMPTCanMutateTransferFee});
             mptAlice.authorize({.account = bob, .holderCount = 1});

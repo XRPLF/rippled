@@ -219,6 +219,21 @@ MPTTester::authorize(MPTAuthorize const& arg)
     }
 }
 
+struct MPTMutabilityFlags
+{
+    std::uint32_t setFlag;
+    std::uint32_t clearFlag;
+    std::uint32_t canMutateFlag;
+};
+
+static constexpr std::array<MPTMutabilityFlags, 6> testMPTMutabilityFlags = {
+    {{tfMPTSetCanLock, tfMPTClearCanLock, lsfMPTCanMutateCanLock},
+     {tfMPTSetRequireAuth, tfMPTClearRequireAuth, lsfMPTCanMutateRequireAuth},
+     {tfMPTSetCanEscrow, tfMPTClearCanEscrow, lsfMPTCanMutateCanEscrow},
+     {tfMPTSetCanTrade, tfMPTClearCanTrade, lsfMPTCanMutateCanTrade},
+     {tfMPTSetCanTransfer, tfMPTClearCanTransfer, lsfMPTCanMutateCanTransfer},
+     {tfMPTSetCanClawback, tfMPTClearCanClawback, lsfMPTCanMutateCanClawback}}};
+
 void
 MPTTester::set(MPTSet const& arg)
 {
@@ -262,35 +277,13 @@ MPTTester::set(MPTSet const& arg)
                     flags &= ~lsfMPTLocked;
                 else if (arg.mutableFlags)
                 {
-                    if (*arg.mutableFlags & tfMPTSetCanLock)
-                        flags |= lsfMPTCanLock;
-                    else if (*arg.mutableFlags & tfMPTClearCanLock)
-                        flags &= ~lsfMPTCanLock;
-
-                    if (*arg.mutableFlags & tfMPTSetRequireAuth)
-                        flags |= lsfMPTRequireAuth;
-                    else if (*arg.mutableFlags & tfMPTClearRequireAuth)
-                        flags &= ~lsfMPTRequireAuth;
-
-                    if (*arg.mutableFlags & tfMPTSetCanEscrow)
-                        flags |= lsfMPTCanEscrow;
-                    else if (*arg.mutableFlags & tfMPTClearCanEscrow)
-                        flags &= ~lsfMPTCanEscrow;
-
-                    if (*arg.mutableFlags & tfMPTSetCanClawback)
-                        flags |= lsfMPTCanClawback;
-                    else if (*arg.mutableFlags & tfMPTClearCanClawback)
-                        flags &= ~lsfMPTCanClawback;
-
-                    if (*arg.mutableFlags & tfMPTSetCanTrade)
-                        flags |= lsfMPTCanTrade;
-                    else if (*arg.mutableFlags & tfMPTClearCanTrade)
-                        flags &= ~lsfMPTCanTrade;
-
-                    if (*arg.mutableFlags & tfMPTSetCanTransfer)
-                        flags |= lsfMPTCanTransfer;
-                    else if (*arg.mutableFlags & tfMPTClearCanTransfer)
-                        flags &= ~lsfMPTCanTransfer;
+                    for (auto const& f : testMPTMutabilityFlags)
+                    {
+                        if (*arg.mutableFlags & f.setFlag)
+                            flags |= f.canMutateFlag;
+                        else if (*arg.mutableFlags & f.clearFlag)
+                            flags &= ~f.canMutateFlag;
+                    }
                 }
                 else
                     Throw<std::runtime_error>("Invalid flags");
@@ -362,6 +355,14 @@ MPTTester::checkMetadata(std::string const& metadata) const
             return strHex(sle->getFieldVL(sfMPTokenMetadata)) ==
                 strHex(metadata);
         return false;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::isMetadataPresent() const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return sle->isFieldPresent(sfMPTokenMetadata);
     });
 }
 

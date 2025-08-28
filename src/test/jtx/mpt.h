@@ -190,6 +190,9 @@ public:
     checkMetadata(std::string const& metadata) const;
 
     [[nodiscard]] bool
+    isMetadataPresent() const;
+
+    [[nodiscard]] bool
     checkTransferFee(std::uint16_t transferFee) const;
 
     Account const&
