@@ -174,13 +174,13 @@ private:
                   makeFeaturesRequestHeader(false, false, true, false))
             : (void)nDisabled--;
         auto stream_ptr = std::make_unique<stream_type>(
-            socket_type(std::forward<boost::asio::io_service&>(
-                env.app().getIOService())),
+            socket_type(std::forward<boost::asio::io_context&>(
+                env.app().getIOContext())),
             *context_);
         beast::IP::Endpoint local(
-            beast::IP::Address::from_string("172.1.1." + std::to_string(lid_)));
+            boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
         beast::IP::Endpoint remote(
-            beast::IP::Address::from_string("172.1.1." + std::to_string(rid_)));
+            boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
         PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
         auto slot = overlay.peerFinder().new_inbound_slot(local, remote);

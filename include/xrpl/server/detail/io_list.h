@@ -166,7 +166,7 @@ public:
             May be called concurrently.
 
         Preconditions:
-            No call to io_service::run on any io_service
+            No call to io_context::run on any io_context
             used by work objects associated with this io_list
             exists in the caller's call stack.
     */

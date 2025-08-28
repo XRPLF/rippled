@@ -4,7 +4,7 @@
 extern crate std;
 
 use core::panic;
-use xrpl_std::core::current_tx::escrow_finish::{EscrowFinish, get_current_escrow_finish};
+use xrpl_std::core::current_tx::escrow_finish::{get_current_escrow_finish, EscrowFinish};
 use xrpl_std::core::current_tx::traits::TransactionCommonFields;
 use xrpl_std::core::error_codes;
 use xrpl_std::core::locator::Locator;
@@ -54,20 +54,12 @@ pub extern "C" fn finish() -> i32 {
     // Note: not testing all the keylet functions,
     // that's in a separate test file.
     // ########################################
-    with_buffer::<4, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_ledger_sqn(ptr, len) },
-            4,
-            "get_ledger_sqn",
-        )
-    });
-    with_buffer::<4, _, _>(|ptr, len| {
-        check_result(
-            unsafe { host::get_parent_ledger_time(ptr, len) },
-            4,
-            "get_parent_ledger_time",
-        );
-    });
+    check_result(unsafe { host::get_ledger_sqn() }, 12345, "get_ledger_sqn");
+    check_result(
+        unsafe { host::get_parent_ledger_time() },
+        67890,
+        "get_parent_ledger_time",
+    );
     with_buffer::<32, _, _>(|ptr, len| {
         check_result(
             unsafe { host::get_parent_ledger_hash(ptr, len) },
@@ -259,34 +251,60 @@ pub extern "C" fn finish() -> i32 {
             "get_nft_serial",
         )
     });
+    let message = "testing trace";
+    check_result(
+        unsafe {
+            host::trace_account(
+                message.as_ptr(),
+                message.len(),
+                account.0.as_ptr(),
+                account.0.len(),
+            )
+        },
+        47,
+        "trace_account",
+    );
+    let amount = &[0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x5F]; // 95 drops of XRP
+    check_result(
+        unsafe {
+            host::trace_amount(
+                message.as_ptr(),
+                message.len(),
+                amount.as_ptr(),
+                amount.len(),
+            )
+        },
+        19,
+        "trace_amount",
+    );
 
     // ########################################
     // Step #2: Test set_data edge cases
     // ########################################
     check_result(
-        unsafe { host_bindings_loose::get_ledger_sqn(-1, 4) },
+        unsafe { host_bindings_loose::get_parent_ledger_hash(-1, 4) },
         error_codes::INVALID_PARAMS,
-        "get_ledger_sqn_neg_ptr",
+        "get_parent_ledger_hash_neg_ptr",
     );
     with_buffer::<4, _, _>(|ptr, _len| {
         check_result(
-            unsafe { host_bindings_loose::get_ledger_sqn(ptr as i32, -1) },
+            unsafe { host_bindings_loose::get_parent_ledger_hash(ptr as i32, -1) },
             error_codes::INVALID_PARAMS,
-            "get_ledger_sqn_neg_len",
+            "get_parent_ledger_hash_neg_len",
         )
     });
     with_buffer::<3, _, _>(|ptr, len| {
         check_result(
-            unsafe { host_bindings_loose::get_ledger_sqn(ptr as i32, len as i32) },
+            unsafe { host_bindings_loose::get_parent_ledger_hash(ptr as i32, len as i32) },
             error_codes::BUFFER_TOO_SMALL,
-            "get_ledger_sqn_buf_too_small",
+            "get_parent_ledger_hash_buf_too_small",
         )
     });
     with_buffer::<4, _, _>(|ptr, _len| {
         check_result(
-            unsafe { host_bindings_loose::get_ledger_sqn(ptr as i32, 1_000_000_000) },
+            unsafe { host_bindings_loose::get_parent_ledger_hash(ptr as i32, 1_000_000_000) },
             error_codes::POINTER_OUT_OF_BOUNDS,
-            "get_ledger_sqn_len_too_long",
+            "get_parent_ledger_hash_len_too_long",
         )
     });
     let message = "testing trace";
