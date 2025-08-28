@@ -352,6 +352,8 @@ public:
         PublicKey const pk2(randomKeyPair(KeyType::secp256k1).first);
         // an inbound slot exceeding inPeers limit must fail
         BEAST_EXPECT(logic.activate(slot2, pk2, false) == Result::full);
+
+        logic.on_closed(slot2);
     }
 
     void
