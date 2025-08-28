@@ -195,6 +195,9 @@ public:
     [[nodiscard]] bool
     checkTransferFee(std::uint16_t transferFee) const;
 
+    [[nodiscard]] bool
+    isTransferFeePresent() const;
+
     Account const&
     issuer() const
     {

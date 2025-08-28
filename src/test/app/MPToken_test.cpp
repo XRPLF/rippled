@@ -3029,16 +3029,46 @@ class MPToken_test : public beast::unit_test::suite
                  .err = temBAD_TRANSFER_FEE});
         }
 
-        // Can not set non-zero transfer fee when MPTCanTransfer is not set
+        // Can not set non-zero transfer fee and clear MPTCanTransfer at the
+        // same time
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create(
-                {.ownerCount = 1, .mutableFlags = tfMPTCanMutateTransferFee});
+                {.ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags =
+                     tfMPTCanMutateTransferFee | tfMPTCanMutateCanTransfer});
 
             mptAlice.set(
                 {.account = alice,
+                 .transferFee = 1,
+                 .mutableFlags = tfMPTClearCanTransfer,
+                 .err = temMALFORMED});
+        }
+
+        // Can not set non-zero transfer fee when MPTCanTransfer was not set
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .mutableFlags =
+                     tfMPTCanMutateTransferFee | tfMPTCanMutateCanTransfer});
+
+            mptAlice.set(
+                {.account = alice,
+                 .transferFee = 100,
+                 .err = tecNO_PERMISSION});
+
+            // Can not set transfer fee even when trying to set MPTCanTransfer
+            // at the same time. MPTCanTransfer must be set first, then transfer
+            // fee can be set in a separate transaction.
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tfMPTSetCanTransfer,
                  .transferFee = 100,
                  .err = tecNO_PERMISSION});
 
@@ -3446,7 +3476,9 @@ class MPToken_test : public beast::unit_test::suite
 
         MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
         mptAlice.create(
-            {.ownerCount = 1, .mutableFlags = tfMPTCanMutateCanTransfer});
+            {.ownerCount = 1,
+             .mutableFlags =
+                 tfMPTCanMutateCanTransfer | tfMPTCanMutateTransferFee});
 
         mptAlice.authorize({.account = bob});
         mptAlice.authorize({.account = carol});
@@ -3460,11 +3492,19 @@ class MPToken_test : public beast::unit_test::suite
         // Alice sets MPTCanTransfer
         mptAlice.set({.account = alice, .mutableFlags = tfMPTSetCanTransfer});
 
+        // Can set transfer fee now
+        BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+        mptAlice.set({.account = alice, .transferFee = 100});
+        BEAST_EXPECT(mptAlice.isTransferFeePresent());
+
         // Bob can pay carol
         mptAlice.pay(bob, carol, 50);
 
         // Alice clears MPTCanTransfer
         mptAlice.set({.account = alice, .mutableFlags = tfMPTClearCanTransfer});
+
+        // TransferFee field is removed when MPTCanTransfer is cleared
+        BEAST_EXPECT(!mptAlice.isTransferFeePresent());
 
         // Bob can not pay
         mptAlice.pay(bob, carol, 50, tecNO_AUTH);

@@ -376,6 +376,14 @@ MPTTester::checkTransferFee(std::uint16_t transferFee) const
     });
 }
 
+[[nodiscard]] bool
+MPTTester::isTransferFeePresent() const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return sle->isFieldPresent(sfTransferFee);
+    });
+}
+
 void
 MPTTester::pay(
     Account const& src,

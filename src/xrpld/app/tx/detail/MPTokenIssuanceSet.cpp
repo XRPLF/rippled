@@ -126,6 +126,12 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                             (*mutableFlags & f.clearFlag);
                     }))
                 return temINVALID_FLAG;
+
+            // Trying to set a non-zero TransferFee and clear MPTCanTransfer
+            // in the same transaction is not allowed.
+            if (auto const fee = ctx.tx[~sfTransferFee];
+                fee && *fee > 0 && (*mutableFlags & tfMPTClearCanTransfer))
+                return temMALFORMED;
         }
     }
 
@@ -290,6 +296,13 @@ MPTokenIssuanceSet::doApply()
                 flagsOut |= f.canMutateFlag;
             else if (*mutableFlags & f.clearFlag)
                 flagsOut &= ~f.canMutateFlag;
+        }
+
+        if (*mutableFlags & tfMPTClearCanTransfer)
+        {
+            // If the lsfMPTCanTransfer flag is being cleared, then also clear
+            // the TransferFee field.
+            sle->makeFieldAbsent(sfTransferFee);
         }
     }
 
