@@ -3043,8 +3043,8 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.set(
                 {.account = alice,
-                 .transferFee = 1,
                  .mutableFlags = tfMPTClearCanTransfer,
+                 .transferFee = 1,
                  .err = temMALFORMED});
         }
 
