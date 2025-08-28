@@ -757,11 +757,11 @@ struct Wasm_test : public beast::unit_test::suite
         // Test with exactly sufficient gas
         {
             auto re =
-                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &hfs, 41'132);
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &hfs, 40'107);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 41'132, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 40'107, std::to_string(re->cost));
             }
         }
 
