@@ -6,6 +6,8 @@
 # the code is merged into the 'develop' branch.
 name: Trigger
 
+# Do not merge
+#
 on:
   push:
     branches:
