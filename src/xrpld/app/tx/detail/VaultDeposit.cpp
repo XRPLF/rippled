@@ -139,7 +139,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (isFrozen(ctx.view, account, vaultShare))
         return tecLOCKED;
 
-    if (vault->isFlag(tfVaultPrivate) && account != vault->at(sfOwner))
+    if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
         auto const maybeDomainID = sleIssuance->at(~sfDomainID);
         // Since this is a private vault and the account is not its owner, we
@@ -198,14 +198,14 @@ VaultDeposit::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
-    if ((vault->getFlags() & tfVaultPrivate) && account_ != vault->at(sfOwner))
+    if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
                 ctx_.view(), mptIssuanceID, account_, mPriorBalance, j_);
             !isTesSuccess(err))
             return err;
     }
-    else
+    else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
         auto sleMpt = view().read(keylet::mptoken(mptIssuanceID, account_));
@@ -222,10 +222,12 @@ VaultDeposit::doApply()
         }
 
         // If the vault is private, set the authorized flag for the vault owner
-        // Note, account_ check is technically redudant thanks to `preclaim` but
-        // it makes sense for both readability and defensive coding.
-        if (vault->isFlag(tfVaultPrivate) && account_ == vault->at(sfOwner))
+        if (vault->isFlag(lsfVaultPrivate))
         {
+            // This follows from the reverse of the outer enclosing if condition
+            XRPL_ASSERT(
+                account_ == vault->at(sfOwner),
+                "ripple::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     mPriorBalance,              // priorBalance
