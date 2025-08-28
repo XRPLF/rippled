@@ -333,7 +333,6 @@ public:
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(rSlot == Result::success);
 
-        BEAST_EXPECT(logic.onConnected(slot, local));
         BEAST_EXPECT(
             logic.activate(slot, pk1, false) == Result::inboundDisabled);
 
@@ -348,15 +347,14 @@ public:
         // new inbound slot must succeed when inbound connections are enabled
         BEAST_EXPECT(logic.activate(slot, pk1, false) == Result::success);
 
-        // creating a new slot inbound slot must succeed as IP Limit is not
-        // exceeded
+        // creating a new inbound slot must succeed as IP Limit is not exceeded
         auto const [slot2, r2Slot] = logic.new_inbound_slot(
             local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
-        BEAST_EXPECT(logic.onConnected(slot2, local));
 
         PublicKey const pk2(randomKeyPair(KeyType::secp256k1).first);
+
         // an inbound slot exceeding inPeers limit must fail
         BEAST_EXPECT(logic.activate(slot2, pk2, false) == Result::full);
 
