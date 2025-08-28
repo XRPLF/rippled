@@ -354,6 +354,7 @@ public:
         BEAST_EXPECT(logic.activate(slot2, pk2, false) == Result::full);
 
         logic.on_closed(slot2);
+        logic.on_closed(slot);
     }
 
     void
@@ -392,6 +393,7 @@ public:
 
         // Must fail when a slot is to our own IP address
         BEAST_EXPECT(!logic.onConnected(slot, local));
+        logic.on_closed(slot);
     }
 
     void
