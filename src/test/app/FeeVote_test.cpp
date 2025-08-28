@@ -183,6 +183,12 @@ verifyFeeObject(
     if (!feeObject)
         return false;
 
+    auto checkEquality = [&](auto const& field, auto const& expected) {
+        if (!feeObject->isFieldPresent(field))
+            return false;
+        return feeObject->at(field) == expected;
+    };
+
     if (rules.enabled(featureXRPFees))
     {
         if (feeObject->isFieldPresent(sfBaseFee) ||
@@ -191,14 +197,12 @@ verifyFeeObject(
             feeObject->isFieldPresent(sfReferenceFeeUnits))
             return false;
 
-        if (feeObject->at(sfBaseFeeDrops) !=
-            expected.baseFeeDrops.value_or(XRPAmount{0}))
+        if (!checkEquality(sfBaseFeeDrops, expected.baseFeeDrops))
             return false;
-        if (feeObject->at(sfReserveBaseDrops) !=
-            expected.reserveBaseDrops.value_or(XRPAmount{0}))
+        if (!checkEquality(sfReserveBaseDrops, expected.reserveBaseDrops))
             return false;
-        if (feeObject->at(sfReserveIncrementDrops) !=
-            expected.reserveIncrementDrops.value_or(XRPAmount{0}))
+        if (!checkEquality(
+                sfReserveIncrementDrops, expected.reserveIncrementDrops))
             return false;
     }
     else
@@ -209,25 +213,26 @@ verifyFeeObject(
             return false;
 
         // Read sfBaseFee as a hex string and compare to expected.baseFee
-        if (feeObject->at(sfBaseFee) != expected.baseFee)
+        if (!checkEquality(sfBaseFee, expected.baseFee))
             return false;
-        if (feeObject->at(sfReserveBase) != expected.reserveBase)
+        if (!checkEquality(sfReserveBase, expected.reserveBase))
             return false;
-        if (feeObject->at(sfReserveIncrement) != expected.reserveIncrement)
+        if (!checkEquality(sfReserveIncrement, expected.reserveIncrement))
             return false;
-        if (feeObject->at(sfReferenceFeeUnits) != expected.referenceFeeUnits)
+        if (!checkEquality(sfReferenceFeeUnits, expected.referenceFeeUnits))
             return false;
     }
 
     if (rules.enabled(featureSmartEscrow))
     {
-        if (feeObject->at(sfExtensionComputeLimit) !=
-            expected.extensionComputeLimit.value_or(0))
+        if (!checkEquality(
+                sfExtensionComputeLimit,
+                expected.extensionComputeLimit.value_or(0)))
             return false;
-        if (feeObject->at(sfExtensionSizeLimit) !=
-            expected.extensionSizeLimit.value_or(0))
+        if (!checkEquality(
+                sfExtensionSizeLimit, expected.extensionSizeLimit.value_or(0)))
             return false;
-        if (feeObject->at(sfGasPrice) != expected.gasPrice.value_or(0))
+        if (!checkEquality(sfGasPrice, expected.gasPrice.value_or(0)))
             return false;
     }
     else
