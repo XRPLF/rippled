@@ -2021,7 +2021,7 @@ struct Escrow_test : public beast::unit_test::suite
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
         auto const& wasmHex = ledgerSqnWasmHex;
-        std::uint32_t const allowance = 71;
+        std::uint32_t const allowance = 66;
         auto escrowCreate = escrow::create(alice, carol, XRP(1000));
         auto [createFee, finishFee] = [&]() {
             Env env(*this, features);
@@ -2077,8 +2077,9 @@ struct Escrow_test : public beast::unit_test::suite
                 {
                     auto const txMeta = env.meta();
                     if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                        BEAST_EXPECT(
-                            txMeta->getFieldU32(sfGasUsed) == allowance);
+                        BEAST_EXPECTS(
+                            env.meta()->getFieldU32(sfGasUsed) == allowance,
+                            std::to_string(env.meta()->getFieldU32(sfGasUsed)));
                 }
 
                 env(escrow::finish(alice, alice, seq),
@@ -2088,9 +2089,13 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldU32(sfGasUsed) == allowance,
+                        std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
-                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldI32(sfWasmReturnCode) == 5,
+                        std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             }
@@ -2130,8 +2135,9 @@ struct Escrow_test : public beast::unit_test::suite
                     fee(conditionFinishFee),
                     ter(tecWASM_REJECTED));
                 if (BEAST_EXPECT(env.meta()->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(
-                        env.meta()->getFieldU32(sfGasUsed) == allowance);
+                    BEAST_EXPECTS(
+                        env.meta()->getFieldU32(sfGasUsed) == allowance,
+                        std::to_string(env.meta()->getFieldU32(sfGasUsed)));
                 env.close();
                 // no fulfillment provided, function succeeds
                 env(escrow::finish(alice, alice, seq),
@@ -2157,7 +2163,9 @@ struct Escrow_test : public beast::unit_test::suite
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
-                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldI32(sfWasmReturnCode) == 6,
+                        std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2206,7 +2214,9 @@ struct Escrow_test : public beast::unit_test::suite
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
-                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldI32(sfWasmReturnCode) == 13,
+                        std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             }
@@ -2244,8 +2254,9 @@ struct Escrow_test : public beast::unit_test::suite
                     fee(finishFee),
                     ter(tecWASM_REJECTED));
                 if (BEAST_EXPECT(env.meta()->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(
-                        env.meta()->getFieldU32(sfGasUsed) == allowance);
+                    BEAST_EXPECTS(
+                        env.meta()->getFieldU32(sfGasUsed) == allowance,
+                        std::to_string(env.meta()->getFieldU32(sfGasUsed)));
                 env.close();
                 // finish time has passed, function succeeds, tx succeeds
                 env(escrow::finish(carol, alice, seq),
@@ -2257,7 +2268,9 @@ struct Escrow_test : public beast::unit_test::suite
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
                     BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == allowance);
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
-                    BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldI32(sfWasmReturnCode) == 6,
+                        std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2330,7 +2343,9 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta && txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 39'596);
+                    BEAST_EXPECTS(
+                        txMeta->getFieldU32(sfGasUsed) == 38'571,
+                        std::to_string(txMeta->getFieldU32(sfGasUsed)));
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfWasmReturnCode)))
                     BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
 
