@@ -709,7 +709,7 @@ struct Wasm_test : public beast::unit_test::suite
         testWasmSha();
         testWasmB58();
 
-        // runing too long
+        // running too long
         // testWasmSP1Verifier();
         testWasmBG16Verifier();
 
