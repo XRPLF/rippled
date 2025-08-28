@@ -129,7 +129,8 @@ VaultDelete::doApply()
 
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
-    auto const mpt = view().peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const shareMPTID = *vault->at(sfShareMPTID);
+    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
     if (!mpt)
     {
         // LCOV_EXCL_START
@@ -138,15 +139,21 @@ VaultDelete::doApply()
         // LCOV_EXCL_STOP
     }
 
-    // First, try to remove MPToken for vault shares for the vault owner.
-    // It will fail it removed already, which is fine.
-    if (auto const ter = removeEmptyHolding(
-            view(), account_, MPTIssue(vault->at(sfShareMPTID)), j_);
-        !isTesSuccess(ter))
+    // Try to remove MPToken for vault shares for the vault owner if it exists.
+    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, account_)))
     {
-        JLOG(j_.debug())  //
-            << "VaultDelete: failed to remove MPToken for vault shares for "
-            << toBase58(account_);
+        if (auto const ter =
+                removeEmptyHolding(view(), account_, MPTIssue(shareMPTID), j_);
+            !isTesSuccess(ter))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())  //
+                << "VaultDelete: failed to remove MPToken for vault shares "
+                << " MPTID=" << to_string(shareMPTID)
+                << " account=" << toBase58(account_);
+            return ter;
+            // LCOV_EXCL_STOP
+        }
     }
 
     if (!view().dirRemove(
