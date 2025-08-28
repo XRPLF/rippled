@@ -239,10 +239,10 @@ public:
     void
     run() override
     {
-        // correct_order();
-        // incorrect_order();
-        // thread_specific_storage();
-        test_yield_and_stop();
+        correct_order();
+        incorrect_order();
+        thread_specific_storage();
+        // test_yield_and_stop();
     }
 };
 
