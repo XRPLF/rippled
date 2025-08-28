@@ -373,7 +373,7 @@ ledgerFromRequest(T& ledger, JsonContext& context)
             indexValue = legacyLedger;
     }
 
-    if (not hashValue.isNull())
+    if (!hashValue.isNull())
     {
         if (!hashValue.isString())
             return {rpcINVALID_PARAMS, "ledgerHashNotString"};
