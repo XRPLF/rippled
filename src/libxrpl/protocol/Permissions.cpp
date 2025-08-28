@@ -156,24 +156,13 @@ Permission::isDelegatable(
             "ripple::Permissions::isDelegatable : tx does not exist in "
             "txFeaturesMap_");
 
-        // fixDelegateV1_1: Delegation is not allowed if any required amendment
-        // for the transaction is not enabled.
-        if (std::any_of(
+        // fixDelegateV1_1: Delegation is only allowed if all required
+        // amendment(s) for the transaction are enabled.
+        if (!std::all_of(
                 txFeaturesIt->second.begin(),
                 txFeaturesIt->second.end(),
                 [&rules](auto const& feature) {
-                    if (feature == featureNonFungibleTokensV1 ||
-                        feature == fixNFTokenNegOffer ||
-                        feature == fixNFTokenDirV1)
-                    {
-                        // The functionality of the featureNonFungibleTokensV1_1
-                        // amendment is precisely the functionality of the three
-                        // amendments above.
-                        return !rules.enabled(featureNonFungibleTokensV1_1) &&
-                            !rules.enabled(feature);
-                    }
-
-                    return !rules.enabled(feature);
+                    return rules.enabled(feature);
                 }))
             return false;
     }
