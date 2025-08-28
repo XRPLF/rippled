@@ -43,8 +43,8 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags];
-        mutableFlags && *mutableFlags & tfMPTokenIssuanceCreateMutableMask)
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
+        (!*mutableFlags || *mutableFlags & tfMPTokenIssuanceCreateMutableMask))
         return temINVALID_FLAG;
 
     if (ctx.tx.getFlags() & tfMPTokenIssuanceCreateMask)

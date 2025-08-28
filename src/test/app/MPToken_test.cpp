@@ -2773,8 +2773,9 @@ class MPToken_test : public beast::unit_test::suite
                  .mutableFlags = 65535,
                  .err = temINVALID_FLAG});
 
-            // MutableFlags can be 0
-            mptAlice.create({.ownerCount = 1, .mutableFlags = 0});
+            // MutableFlags can not be 0
+            mptAlice.create(
+                {.ownerCount = 0, .mutableFlags = 0, .err = temINVALID_FLAG});
         }
     }
 
@@ -2912,6 +2913,22 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = 0,
                  .transferFee = 100,
                  .metadata = "test"});
+        }
+
+        // Invalid MutableFlags
+        {
+            Env env{*this, features};
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            auto const mptID = makeMptID(env.seq(alice), alice);
+
+            for (auto const flags : {10000, 0, 5000})
+            {
+                mptAlice.set(
+                    {.account = alice,
+                     .id = mptID,
+                     .mutableFlags = flags,
+                     .err = temINVALID_FLAG});
+            }
         }
 
         // Can not set and clear the same mutable flag
@@ -3140,15 +3157,15 @@ class MPToken_test : public beast::unit_test::suite
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice);
-            mptAlice.create({
+            mptAlice.create(
+                {.transferFee = 100,
+                 .metadata = "test",
+                 .ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags = tfMPTCanMutateTransferFee});
 
-                .transferFee = 100,
-                .metadata = "test",
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer,
-                .mutableFlags = tfMPTCanMutateTransferFee});
-
-            for (auto const fee : {1, 10, 100, 200, 500, 1000})
+            for (std::uint16_t const fee : std::initializer_list<std::uint16_t>{
+                     1, 10, 100, 200, 500, 1000, maxTransferFee})
             {
                 mptAlice.set({.account = alice, .transferFee = fee});
                 BEAST_EXPECT(mptAlice.checkTransferFee(fee));

@@ -113,7 +113,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
         if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
         {
-            if (*mutableFlags & tfMPTokenIssuanceSetMutableMask)
+            if (!*mutableFlags ||
+                (*mutableFlags & tfMPTokenIssuanceSetMutableMask))
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
