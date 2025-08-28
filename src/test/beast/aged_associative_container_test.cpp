@@ -703,10 +703,6 @@ aged_associative_container_test_base::checkContentsRefRef(
     Values const& v)
 {
     using Cont = typename std::remove_reference<C>::type;
-    using Traits = TestTraits<
-        Cont::is_unordered::value,
-        Cont::is_multi::value,
-        Cont::is_map::value>;
     using size_type = typename Cont::size_type;
 
     BEAST_EXPECT(c.size() == v.size());
@@ -761,10 +757,6 @@ typename std::enable_if<!IsUnordered>::type
 aged_associative_container_test_base::testConstructEmpty()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
-    using Key = typename Traits::Key;
-    using T = typename Traits::T;
-    using Clock = typename Traits::Clock;
     using Comp = typename Traits::Comp;
     using Alloc = typename Traits::Alloc;
     using MyComp = typename Traits::MyComp;
@@ -802,10 +794,6 @@ typename std::enable_if<IsUnordered>::type
 aged_associative_container_test_base::testConstructEmpty()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
-    using Key = typename Traits::Key;
-    using T = typename Traits::T;
-    using Clock = typename Traits::Clock;
     using Hash = typename Traits::Hash;
     using Equal = typename Traits::Equal;
     using Alloc = typename Traits::Alloc;
@@ -870,10 +858,6 @@ typename std::enable_if<!IsUnordered>::type
 aged_associative_container_test_base::testConstructRange()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
-    using Key = typename Traits::Key;
-    using T = typename Traits::T;
-    using Clock = typename Traits::Clock;
     using Comp = typename Traits::Comp;
     using Alloc = typename Traits::Alloc;
     using MyComp = typename Traits::MyComp;
@@ -925,10 +909,6 @@ typename std::enable_if<IsUnordered>::type
 aged_associative_container_test_base::testConstructRange()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
-    using Key = typename Traits::Key;
-    using T = typename Traits::T;
-    using Clock = typename Traits::Clock;
     using Hash = typename Traits::Hash;
     using Equal = typename Traits::Equal;
     using Alloc = typename Traits::Alloc;
@@ -996,14 +976,6 @@ typename std::enable_if<!IsUnordered>::type
 aged_associative_container_test_base::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
-    using Key = typename Traits::Key;
-    using T = typename Traits::T;
-    using Clock = typename Traits::Clock;
-    using Comp = typename Traits::Comp;
-    using Alloc = typename Traits::Alloc;
-    using MyComp = typename Traits::MyComp;
-    using MyAlloc = typename Traits::MyAlloc;
     typename Traits::ManualClock clock;
 
     // testcase (Traits::name() + " init-list");
@@ -1020,16 +992,6 @@ typename std::enable_if<IsUnordered>::type
 aged_associative_container_test_base::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
-    using Key = typename Traits::Key;
-    using T = typename Traits::T;
-    using Clock = typename Traits::Clock;
-    using Hash = typename Traits::Hash;
-    using Equal = typename Traits::Equal;
-    using Alloc = typename Traits::Alloc;
-    using MyHash = typename Traits::MyHash;
-    using MyEqual = typename Traits::MyEqual;
-    using MyAlloc = typename Traits::MyAlloc;
     typename Traits::ManualClock clock;
 
     // testcase (Traits::name() + " init-list");
@@ -1050,7 +1012,6 @@ void
 aged_associative_container_test_base::testCopyMove()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
     using Alloc = typename Traits::Alloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
@@ -1121,8 +1082,6 @@ void
 aged_associative_container_test_base::testIterator()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
-    using Alloc = typename Traits::Alloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -1179,8 +1138,6 @@ typename std::enable_if<!IsUnordered>::type
 aged_associative_container_test_base::testReverseIterator()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
-    using Alloc = typename Traits::Alloc;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -1190,7 +1147,6 @@ aged_associative_container_test_base::testReverseIterator()
     typename Traits::template Cont<> c{clock};
 
     using iterator = decltype(c.begin());
-    using const_iterator = decltype(c.cbegin());
     using reverse_iterator = decltype(c.rbegin());
     using const_reverse_iterator = decltype(c.crbegin());
 
@@ -1394,7 +1350,6 @@ void
 aged_associative_container_test_base::testChronological()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -1760,7 +1715,6 @@ typename std::enable_if<!IsUnordered>::type
 aged_associative_container_test_base::testCompare()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    using Value = typename Traits::Value;
     typename Traits::ManualClock clock;
     auto const v(Traits::values());
 
@@ -1832,8 +1786,6 @@ template <bool IsUnordered, bool IsMulti, bool IsMap>
 void
 aged_associative_container_test_base::testMaybeUnorderedMultiMap()
 {
-    using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-
     testConstructEmpty<IsUnordered, IsMulti, IsMap>();
     testConstructRange<IsUnordered, IsMulti, IsMap>();
     testConstructInitList<IsUnordered, IsMulti, IsMap>();
@@ -1984,13 +1936,13 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(aged_set, container, beast);
-BEAST_DEFINE_TESTSUITE(aged_map, container, beast);
-BEAST_DEFINE_TESTSUITE(aged_multiset, container, beast);
-BEAST_DEFINE_TESTSUITE(aged_multimap, container, beast);
-BEAST_DEFINE_TESTSUITE(aged_unordered_set, container, beast);
-BEAST_DEFINE_TESTSUITE(aged_unordered_map, container, beast);
-BEAST_DEFINE_TESTSUITE(aged_unordered_multiset, container, beast);
-BEAST_DEFINE_TESTSUITE(aged_unordered_multimap, container, beast);
+BEAST_DEFINE_TESTSUITE(aged_set, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_map, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_multiset, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_multimap, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_unordered_set, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_unordered_map, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_unordered_multiset, beast, beast);
+BEAST_DEFINE_TESTSUITE(aged_unordered_multimap, beast, beast);
 
 }  // namespace beast

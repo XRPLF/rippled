@@ -265,7 +265,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, supported_amendments() | fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
         Account const alice("alice", KeyType::ed25519);
         Account const bob("bob", KeyType::secp256k1);
         Account const carol("carol");
@@ -776,7 +776,7 @@ public:
     {
         testcase("Env features");
         using namespace jtx;
-        auto const supported = supported_amendments();
+        auto const supported = testable_amendments();
 
         // this finds a feature that is not in
         // the supported amendments list and tests that it can be
@@ -827,7 +827,7 @@ public:
         }
 
         auto const missingSomeFeatures =
-            supported_amendments() - featureMultiSignReserve - featureFlow;
+            testable_amendments() - featureMultiSignReserve - featureFlow;
         BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
@@ -887,7 +887,7 @@ public:
             // add a feature that is NOT in the supported amendments list
             // along with all supported amendments
             // the unsupported features should be enabled
-            Env env{*this, supported_amendments().set(*neverSupportedFeat)};
+            Env env{*this, testable_amendments().set(*neverSupportedFeat)};
 
             // this app will have all supported amendments and then the
             // one additional never supported feature flag
@@ -944,7 +944,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Env, app, ripple);
+BEAST_DEFINE_TESTSUITE(Env, jtx, ripple);
 
 }  // namespace test
 }  // namespace ripple

@@ -251,11 +251,8 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const sa = supported_amendments();
-        for (auto feature :
-             {sa - featureFlowCross - featurePermissionedDEX,
-              sa - featurePermissionedDEX,
-              sa})
+        auto const sa = testable_amendments();
+        for (auto feature : {sa - featurePermissionedDEX, sa})
         {
             testGWB(feature);
             testGWBApiVersions(feature);
@@ -265,7 +262,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(GatewayBalances, app, ripple);
+BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

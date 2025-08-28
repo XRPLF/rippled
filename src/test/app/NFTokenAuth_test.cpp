@@ -599,7 +599,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        static FeatureBitset const all{supported_amendments()};
+        static FeatureBitset const all{testable_amendments()};
 
         static std::array const features = {
             all - fixEnforceNFTokenTrustlineV2, all};
@@ -619,6 +619,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, app, ripple, 2);
 
 }  // namespace ripple

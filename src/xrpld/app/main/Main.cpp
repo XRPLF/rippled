@@ -39,7 +39,7 @@
 #include <google/protobuf/stubs/common.h>
 
 #include <cstdlib>
-#include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <utility>
 

@@ -20,7 +20,6 @@
 #ifndef RIPPLE_ALGORITHM_H_INCLUDED
 #define RIPPLE_ALGORITHM_H_INCLUDED
 
-#include <iterator>
 #include <utility>
 
 namespace ripple {

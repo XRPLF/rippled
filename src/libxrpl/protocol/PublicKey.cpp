@@ -107,8 +107,9 @@ sliceToHex(Slice const& slice)
     }
     for (int i = 0; i < slice.size(); ++i)
     {
-        s += "0123456789ABCDEF"[((slice[i] & 0xf0) >> 4)];
-        s += "0123456789ABCDEF"[((slice[i] & 0x0f) >> 0)];
+        constexpr char hex[] = "0123456789ABCDEF";
+        s += hex[((slice[i] & 0xf0) >> 4)];
+        s += hex[((slice[i] & 0x0f) >> 0)];
     }
     return s;
 }

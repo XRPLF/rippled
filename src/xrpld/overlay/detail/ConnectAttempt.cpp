@@ -379,7 +379,7 @@ ConnectAttempt::processResponse()
         auto const result = overlay_.peerFinder().activate(
             slot_, publicKey, static_cast<bool>(member));
         if (result != PeerFinder::Result::success)
-            return fail("Outbound slots full");
+            return fail("Outbound " + std::string(to_string(result)));
 
         auto const peer = std::make_shared<PeerImp>(
             app_,

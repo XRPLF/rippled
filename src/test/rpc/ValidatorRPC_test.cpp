@@ -594,7 +594,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ValidatorRPC, app, ripple);
+BEAST_DEFINE_TESTSUITE(ValidatorRPC, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

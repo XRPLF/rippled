@@ -139,7 +139,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         {
             // Verify that the LedgerStateFix transaction is disabled
             // without the fixNFTokenPageLinks amendment.
-            Env env{*this, supported_amendments() - fixNFTokenPageLinks};
+            Env env{*this, testable_amendments() - fixNFTokenPageLinks};
             env.fund(XRP(1000), alice);
 
             auto const linkFixFee = drops(env.current()->fees().increment);
@@ -148,7 +148,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
                 ter(temDISABLED));
         }
 
-        Env env{*this, supported_amendments()};
+        Env env{*this, testable_amendments()};
         env.fund(XRP(1000), alice);
         std::uint32_t const ticketSeq = env.seq(alice);
         env(ticket::create(alice, 1));
@@ -206,7 +206,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         Account const alice("alice");
 
-        Env env{*this, supported_amendments()};
+        Env env{*this, testable_amendments()};
         env.fund(XRP(1000), alice);
 
         // These cases all return the same TER code, but they exercise
@@ -259,7 +259,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         Account const carol("carol");
         Account const daria("daria");
 
-        Env env{*this, supported_amendments() - fixNFTokenPageLinks};
+        Env env{*this, testable_amendments() - fixNFTokenPageLinks};
         env.fund(XRP(1000), alice, bob, carol, daria);
 
         //**********************************************************************
@@ -663,6 +663,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, tx, ripple);
+BEAST_DEFINE_TESTSUITE(FixNFTokenPageLinks, app, ripple);
 
 }  // namespace ripple

@@ -678,6 +678,61 @@ private:
             oracle.set(
                 UpdateArg{.series = {{"XRP", "USD", 742, 2}}, .fee = baseFee});
         }
+
+        for (bool const withFixOrder : {false, true})
+        {
+            // Should be same order as creation
+            Env env(
+                *this,
+                withFixOrder ? testable_amendments()
+                             : testable_amendments() - fixPriceOracleOrder);
+            auto const baseFee =
+                static_cast<int>(env.current()->fees().base.drops());
+
+            auto test = [&](Env& env, DataSeries const& series) {
+                env.fund(XRP(1'000), owner);
+                Oracle oracle(
+                    env, {.owner = owner, .series = series, .fee = baseFee});
+                BEAST_EXPECT(oracle.exists());
+                auto sle = env.le(keylet::oracle(owner, oracle.documentID()));
+                BEAST_EXPECT(
+                    sle->getFieldArray(sfPriceDataSeries).size() ==
+                    series.size());
+
+                auto const beforeQuoteAssetName1 =
+                    sle->getFieldArray(sfPriceDataSeries)[0]
+                        .getFieldCurrency(sfQuoteAsset)
+                        .getText();
+                auto const beforeQuoteAssetName2 =
+                    sle->getFieldArray(sfPriceDataSeries)[1]
+                        .getFieldCurrency(sfQuoteAsset)
+                        .getText();
+
+                oracle.set(UpdateArg{.series = series, .fee = baseFee});
+                sle = env.le(keylet::oracle(owner, oracle.documentID()));
+
+                auto const afterQuoteAssetName1 =
+                    sle->getFieldArray(sfPriceDataSeries)[0]
+                        .getFieldCurrency(sfQuoteAsset)
+                        .getText();
+                auto const afterQuoteAssetName2 =
+                    sle->getFieldArray(sfPriceDataSeries)[1]
+                        .getFieldCurrency(sfQuoteAsset)
+                        .getText();
+
+                if (env.current()->rules().enabled(fixPriceOracleOrder))
+                {
+                    BEAST_EXPECT(afterQuoteAssetName1 == beforeQuoteAssetName1);
+                    BEAST_EXPECT(afterQuoteAssetName2 == beforeQuoteAssetName2);
+                }
+                else
+                {
+                    BEAST_EXPECT(afterQuoteAssetName1 != beforeQuoteAssetName1);
+                    BEAST_EXPECT(afterQuoteAssetName2 != beforeQuoteAssetName2);
+                }
+            };
+            test(env, {{"XRP", "USD", 742, 2}, {"XRP", "EUR", 711, 2}});
+        }
     }
 
     void
@@ -783,7 +838,7 @@ private:
         testcase("Amendment");
         using namespace jtx;
 
-        auto const features = supported_amendments() - featurePriceOracle;
+        auto const features = testable_amendments() - featurePriceOracle;
         Account const owner("owner");
         Env env(*this, features);
         auto const baseFee =
@@ -806,7 +861,7 @@ public:
     run() override
     {
         using namespace jtx;
-        auto const all = supported_amendments();
+        auto const all = testable_amendments();
         testInvalidSet();
         testInvalidDelete();
         testCreate();

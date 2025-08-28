@@ -74,14 +74,13 @@ struct SetAuth_test : public beast::unit_test::suite
     run() override
     {
         using namespace jtx;
-        auto const sa = supported_amendments();
-        testAuth(sa - featureFlowCross - featurePermissionedDEX);
+        auto const sa = testable_amendments();
         testAuth(sa - featurePermissionedDEX);
         testAuth(sa);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SetAuth, test, ripple);
+BEAST_DEFINE_TESTSUITE(SetAuth, app, ripple);
 
 }  // namespace test
 }  // namespace ripple

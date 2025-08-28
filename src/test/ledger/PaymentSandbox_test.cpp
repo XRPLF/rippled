@@ -420,8 +420,7 @@ public:
             testBalanceHook(features);
         };
         using namespace jtx;
-        auto const sa = supported_amendments();
-        testAll(sa - featureFlowCross - featurePermissionedDEX);
+        auto const sa = testable_amendments();
         testAll(sa - featurePermissionedDEX);
         testAll(sa);
     }

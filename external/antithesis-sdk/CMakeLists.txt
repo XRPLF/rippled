@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.18)
 
 # Note, version set explicitly by rippled project
 project(antithesis-sdk-cpp VERSION 0.4.4 LANGUAGES CXX)

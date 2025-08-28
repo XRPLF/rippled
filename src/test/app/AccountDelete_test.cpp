@@ -292,7 +292,7 @@ public:
         //  o New-styled PayChannels with the backlink.
         // So we start the test using old-style PayChannels.  Then we pass
         // the amendment to get new-style PayChannels.
-        Env env{*this, supported_amendments() - fixPayChanRecipientOwnerDir};
+        Env env{*this, testable_amendments() - fixPayChanRecipientOwnerDir};
         Account const alice("alice");
         Account const becky("becky");
         Account const gw("gw");
@@ -461,7 +461,7 @@ public:
 
         // We need an old-style PayChannel that doesn't provide a backlink
         // from the destination.  So don't enable the amendment with that fix.
-        Env env{*this, supported_amendments() - fixPayChanRecipientOwnerDir};
+        Env env{*this, testable_amendments() - fixPayChanRecipientOwnerDir};
         Account const alice("alice");
         Account const becky("becky");
 
@@ -536,7 +536,7 @@ public:
 
         testcase("Amendment enable");
 
-        Env env{*this, supported_amendments() - featureDeletableAccounts};
+        Env env{*this, testable_amendments() - featureDeletableAccounts};
         Account const alice("alice");
         Account const becky("becky");
 
@@ -1128,7 +1128,7 @@ public:
             Account const becky{"becky"};
             Account const carol{"carol"};
 
-            Env env{*this, supported_amendments() - featureCredentials};
+            Env env{*this, testable_amendments() - featureCredentials};
             env.fund(XRP(100000), alice, becky, carol);
             env.close();
 

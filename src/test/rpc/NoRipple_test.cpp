@@ -293,14 +293,13 @@ public:
             testPairwise(features);
         };
         using namespace jtx;
-        auto const sa = supported_amendments();
-        withFeatsTests(sa - featureFlowCross - featurePermissionedDEX);
+        auto const sa = testable_amendments();
         withFeatsTests(sa - featurePermissionedDEX);
         withFeatsTests(sa);
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRipple, app, ripple);
+BEAST_DEFINE_TESTSUITE(NoRipple, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

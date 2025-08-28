@@ -2221,7 +2221,7 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        Env env(*this, supported_amendments() | featurePermissionedDomains);
+        Env env(*this, testable_amendments() | featurePermissionedDomains);
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -2711,8 +2711,8 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerEntry, app, ripple);
-BEAST_DEFINE_TESTSUITE(LedgerEntry_XChain, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerEntry, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerEntry_XChain, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple

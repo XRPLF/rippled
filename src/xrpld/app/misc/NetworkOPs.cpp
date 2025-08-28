@@ -63,6 +63,7 @@
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
@@ -1206,7 +1207,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     auto const txid = trans->getTransactionID();
     auto const flags = app_.getHashRouter().getFlags(txid);
 
-    if ((flags & SF_BAD) != 0)
+    if ((flags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
         JLOG(m_journal.warn()) << "Submitted transaction cached bad";
         return;
@@ -1250,7 +1251,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 {
     auto const newFlags = app_.getHashRouter().getFlags(transaction->getID());
 
-    if ((newFlags & SF_BAD) != 0)
+    if ((newFlags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
         // cached bad
         JLOG(m_journal.warn()) << transaction->getID() << ": cached bad!\n";
@@ -1269,7 +1270,8 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     {
         transaction->setStatus(INVALID);
         transaction->setResult(temINVALID_FLAG);
-        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        app_.getHashRouter().setFlags(
+            transaction->getID(), HashRouterFlags::BAD);
         return false;
     }
 
@@ -1288,7 +1290,8 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         JLOG(m_journal.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        app_.getHashRouter().setFlags(
+            transaction->getID(), HashRouterFlags::BAD);
         return false;
     }
 
@@ -1411,7 +1414,8 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
                 JLOG(m_journal.trace())
                     << "Exception checking transaction: " << reason;
             }
-            app_.getHashRouter().setFlags(tx->getTransactionID(), SF_BAD);
+            app_.getHashRouter().setFlags(
+                tx->getTransactionID(), HashRouterFlags::BAD);
             continue;
         }
 
@@ -1537,7 +1541,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             e.transaction->setResult(e.result);
 
             if (isTemMalformed(e.result))
-                app_.getHashRouter().setFlags(e.transaction->getID(), SF_BAD);
+                app_.getHashRouter().setFlags(
+                    e.transaction->getID(), HashRouterFlags::BAD);
 
 #ifdef DEBUG
             if (e.result != tesSUCCESS)
@@ -1625,7 +1630,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     //    (5) ledgers into the future. (Remember that an
                     //    unseated optional compares as less than all seated
                     //    values, so it has to be checked explicitly first.)
-                    // 3. The SF_HELD flag is not set on the txID. (setFlags
+                    // 3. The HashRouterFlags::BAD flag is not set on the txID.
+                    // (setFlags
                     //    checks before setting. If the flag is set, it returns
                     //    false, which means it's been held once without one of
                     //    the other conditions, so don't hold it again. Time's
@@ -1634,7 +1640,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.local ||
                         (ledgersLeft && ledgersLeft <= LocalTxs::holdLedgers) ||
                         app_.getHashRouter().setFlags(
-                            e.transaction->getID(), SF_HELD))
+                            e.transaction->getID(), HashRouterFlags::HELD))
                     {
                         // transaction should be held
                         JLOG(m_journal.debug())
@@ -2409,6 +2415,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         jvObj[jss::flags] = val->getFlags();
         jvObj[jss::signing_time] = *(*val)[~sfSigningTime];
         jvObj[jss::data] = strHex(val->getSerializer().slice());
+        jvObj[jss::network_id] = app_.config().NETWORK_ID;
 
         if (auto version = (*val)[~sfServerVersion])
             jvObj[jss::server_version] = std::to_string(*version);
@@ -3113,6 +3120,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::ledger_time] = Json::Value::UInt(
                 lpAccepted->info().closeTime.time_since_epoch().count());
 
+            jvObj[jss::network_id] = app_.config().NETWORK_ID;
+
             if (!lpAccepted->rules().enabled(featureXRPFees))
                 jvObj[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
             jvObj[jss::fee_base] = lpAccepted->fees().base.jsonClipped();
@@ -3258,6 +3267,7 @@ NetworkOPsImp::transJson(
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
         RPC::insertDeliveredAmount(
             jvObj[jss::meta], *ledger, transaction, meta->get());
+        RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
         RPC::insertMPTokenIssuanceID(
             jvObj[jss::meta], transaction, meta->get());
     }
@@ -4170,6 +4180,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::reserve_base] =
             lpClosed->fees().accountReserve(0).jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+        jvResult[jss::network_id] = app_.config().NETWORK_ID;
     }
 
     if ((mMode >= OperatingMode::SYNCING) && !isNeedNetworkLedger())

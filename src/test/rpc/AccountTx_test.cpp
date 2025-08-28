@@ -18,9 +18,12 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
@@ -753,6 +756,85 @@ class AccountTx_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testMPT()
+    {
+        testcase("MPT");
+
+        using namespace test::jtx;
+        using namespace std::chrono_literals;
+
+        auto cfg = makeConfig();
+        cfg->FEES.reference_fee = 10;
+        Env env(*this, std::move(cfg));
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        // check the latest mpt-related txn is in alice's account history
+        auto const checkAliceAcctTx = [&](size_t size,
+                                          Json::StaticString txType) {
+            Json::Value params;
+            params[jss::account] = alice.human();
+            params[jss::limit] = 100;
+            auto const jv =
+                env.rpc("json", "account_tx", to_string(params))[jss::result];
+
+            BEAST_EXPECT(jv[jss::transactions].size() == size);
+            auto const& tx0(jv[jss::transactions][0u][jss::tx]);
+            BEAST_EXPECT(tx0[jss::TransactionType] == txType);
+
+            std::string const txHash{
+                env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+            BEAST_EXPECT(tx0[jss::hash] == txHash);
+        };
+
+        // alice creates issuance
+        mptAlice.create(
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanClawback | tfMPTRequireAuth | tfMPTCanTransfer});
+
+        checkAliceAcctTx(3, jss::MPTokenIssuanceCreate);
+
+        // bob creates a MPToken;
+        mptAlice.authorize({.account = bob});
+        checkAliceAcctTx(4, jss::MPTokenAuthorize);
+        env.close();
+
+        // TODO: windows pipeline fails validation for the hardcoded ledger hash
+        // due to having different test config, it can be uncommented after
+        // figuring out what happened
+        //
+        // ledger hash should be fixed regardless any change to account history
+        // BEAST_EXPECT(
+        //     to_string(env.closed()->info().hash) ==
+        //     "0BD507BB87D3C0E73B462485E6E381798A8C82FC49BF17FE39C60E08A1AF035D");
+
+        // alice authorizes bob
+        mptAlice.authorize({.account = alice, .holder = bob});
+        checkAliceAcctTx(5, jss::MPTokenAuthorize);
+
+        // carol creates a MPToken;
+        mptAlice.authorize({.account = carol});
+        checkAliceAcctTx(6, jss::MPTokenAuthorize);
+
+        // alice authorizes carol
+        mptAlice.authorize({.account = alice, .holder = carol});
+        checkAliceAcctTx(7, jss::MPTokenAuthorize);
+
+        // alice pays bob 100 tokens
+        mptAlice.pay(alice, bob, 100);
+        checkAliceAcctTx(8, jss::Payment);
+
+        // bob pays carol 10 tokens
+        mptAlice.pay(bob, carol, 10);
+        checkAliceAcctTx(9, jss::Payment);
+    }
+
 public:
     void
     run() override
@@ -761,6 +843,7 @@ public:
             std::bind_front(&AccountTx_test::testParameters, this));
         testContents();
         testAccountDelete();
+        testMPT();
     }
 };
 BEAST_DEFINE_TESTSUITE(AccountTx, rpc, ripple);

@@ -238,7 +238,8 @@ Payment::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j);
+        !isTesSuccess(err))
         return err;
 
     return preflight2(ctx);
@@ -358,7 +359,8 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+    if (auto const err =
+            credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
         !isTesSuccess(err))
         return err;
 
@@ -450,8 +452,13 @@ Payment::doApply()
             //  1. If Account == Destination, or
             //  2. If Account is deposit preauthorized by destination.
 
-            if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+            if (auto err = verifyDepositPreauth(
+                    ctx_.tx,
+                    ctx_.view(),
+                    account_,
+                    dstAccountID,
+                    sleDst,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -521,8 +528,13 @@ Payment::doApply()
             ter != tesSUCCESS)
             return ter;
 
-        if (auto err =
-                verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -568,7 +580,16 @@ Payment::doApply()
         auto res = accountSend(
             pv, account_, dstAccountID, amountDeliver, ctx_.journal);
         if (res == tesSUCCESS)
+        {
             pv.apply(ctx_.rawView());
+
+            // If the actual amount delivered is different from the original
+            // amount due to partial payment or transfer fee, we need to update
+            // DelieveredAmount using the actual delivered amount
+            if (view().rules().enabled(fixMPTDeliveredAmount) &&
+                amountDeliver != dstAmount)
+                ctx_.deliver(amountDeliver);
+        }
         else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
             res = tecPATH_PARTIAL;
 
@@ -644,8 +665,13 @@ Payment::doApply()
         if (dstAmount > dstReserve ||
             sleDst->getFieldAmount(sfBalance) > dstReserve)
         {
-            if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+            if (auto err = verifyDepositPreauth(
+                    ctx_.tx,
+                    ctx_.view(),
+                    account_,
+                    dstAccountID,
+                    sleDst,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }

@@ -675,6 +675,30 @@ public:
             BEAST_EXPECT(
                 !getAccountFlag(allowTrustLineClawbackFlag.first, bob));
         }
+
+        static constexpr std::pair<std::string_view, std::uint32_t>
+            allowTrustLineLockingFlag{
+                "allowTrustLineLocking", asfAllowTrustLineLocking};
+
+        if (features[featureTokenEscrow])
+        {
+            auto const f1 =
+                getAccountFlag(allowTrustLineLockingFlag.first, bob);
+            BEAST_EXPECT(f1.has_value());
+            BEAST_EXPECT(!f1.value());
+
+            // Set allowTrustLineLocking
+            env(fset(bob, allowTrustLineLockingFlag.second));
+            env.close();
+            auto const f2 =
+                getAccountFlag(allowTrustLineLockingFlag.first, bob);
+            BEAST_EXPECT(f2.has_value());
+            BEAST_EXPECT(f2.value());
+        }
+        else
+        {
+            BEAST_EXPECT(!getAccountFlag(allowTrustLineLockingFlag.first, bob));
+        }
     }
 
     void
@@ -686,11 +710,14 @@ public:
         testSignerListsV2();
 
         FeatureBitset const allFeatures{
-            ripple::test::jtx::supported_amendments()};
+            ripple::test::jtx::testable_amendments()};
         testAccountFlags(allFeatures);
         testAccountFlags(allFeatures - featureDisallowIncoming);
         testAccountFlags(
             allFeatures - featureDisallowIncoming - featureClawback);
+        testAccountFlags(
+            allFeatures - featureDisallowIncoming - featureClawback -
+            featureTokenEscrow);
     }
 };
 
