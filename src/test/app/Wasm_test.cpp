@@ -700,23 +700,23 @@ struct Wasm_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        // testGetDataHelperFunctions();
-        // testWasmLib();
-        // testBadWasm();
-        // testWasmLedgerSqn();
+        testGetDataHelperFunctions();
+        testWasmLib();
+        testBadWasm();
+        testWasmLedgerSqn();
 
-        // testWasmFib();
-        // testWasmSha();
-        // testWasmB58();
+        testWasmFib();
+        testWasmSha();
+        testWasmB58();
 
-        // // runing too long
-        // // testWasmSP1Verifier();
-        // testWasmBG16Verifier();
+        // running too long
+        // testWasmSP1Verifier();
+        testWasmBG16Verifier();
 
-        // testHFCost();
+        testHFCost();
 
-        // testEscrowWasmDN();
-        // testFloat();
+        testEscrowWasmDN();
+        testFloat();
 
         testCodecovWasm();
         testDisabledFloat();
