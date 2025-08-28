@@ -643,19 +643,13 @@ struct Wasm_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        // Env env{*this};
-        Env env{
-            *this,
-            envconfig(),
-            testable_amendments(),
-            nullptr,
-            beast::severities::kTrace};
+        Env env{*this};
 
         auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 148'619;
+        auto const allowance = 148'406;
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &hfs, allowance, env.journal);
 
