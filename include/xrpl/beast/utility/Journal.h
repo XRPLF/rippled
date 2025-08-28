@@ -21,13 +21,14 @@
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <rapidjson/document.h>
 
 #include <deque>
-#include <utility>
+#include <optional>
 #include <source_location>
 #include <sstream>
-
+#include <utility>
 
 namespace ripple::log {
 template <typename T>
@@ -75,7 +76,7 @@ operator<<(std::ostream& os, LogField<T> const& param);
 template <typename T>
 std::ostream&
 operator<<(std::ostream& os, LogParameter<T> const& param);
-}
+}  // namespace ripple::log
 
 namespace beast {
 
@@ -117,7 +118,9 @@ class Journal
 public:
     template <typename T>
     friend std::ostream&
-    ripple::log::operator<<(std::ostream& os, ripple::log::LogField<T> const& param);
+    ripple::log::operator<<(
+        std::ostream& os,
+        ripple::log::LogField<T> const& param);
 
     template <typename T>
     friend std::ostream&
@@ -198,7 +201,6 @@ private:
 
     static thread_local JsonLogContext currentJsonLogContext_;
 
-
     // Invariant: m_sink always points to a valid Sink
     Sink* m_sink = nullptr;
 
@@ -206,9 +208,11 @@ private:
     initMessageContext(std::source_location location);
 
     static std::string
-    formatLog(std::string const& message,
+    formatLog(
+        std::string const& message,
         severities::Severity severity,
         std::optional<JsonLogAttributes> const& attributes = std::nullopt);
+
 public:
     //--------------------------------------------------------------------------
 
@@ -300,10 +304,7 @@ public:
     {
     public:
         ScopedStream(ScopedStream const& other)
-            : ScopedStream(
-                  other.m_attributes,
-                  other.m_sink,
-                  other.m_level)
+            : ScopedStream(other.m_attributes, other.m_sink, other.m_level)
         {
         }
 
@@ -390,10 +391,7 @@ public:
 
         /** Construct or copy another Stream. */
         Stream(Stream const& other)
-            : Stream(
-                  other.m_attributes,
-                  other.m_sink,
-                  other.m_level)
+            : Stream(other.m_attributes, other.m_sink, other.m_level)
         {
         }
 
@@ -471,8 +469,7 @@ public:
             if (m_attributes.has_value())
                 m_attributes = JsonLogAttributes::combine(
                     other.m_attributes->contextValues_,
-                    m_attributes->contextValues_
-                );
+                    m_attributes->contextValues_);
             else
                 m_attributes = other.m_attributes;
         }
@@ -521,8 +518,7 @@ public:
     Stream
     stream(Severity level) const
     {
-        return Stream(
-            m_attributes, *m_sink, level);
+        return Stream(m_attributes, *m_sink, level);
     }
 
     /** Returns `true` if any message would be logged at this severity level.
@@ -542,10 +538,7 @@ public:
     {
         if (m_jsonLogsEnabled)
             initMessageContext(location);
-        return {
-            m_attributes,
-            *m_sink,
-            severities::kTrace};
+        return {m_attributes, *m_sink, severities::kTrace};
     }
 
     Stream
@@ -553,10 +546,7 @@ public:
     {
         if (m_jsonLogsEnabled)
             initMessageContext(location);
-        return {
-            m_attributes,
-            *m_sink,
-            severities::kDebug};
+        return {m_attributes, *m_sink, severities::kDebug};
     }
 
     Stream
@@ -564,23 +554,17 @@ public:
     {
         if (m_jsonLogsEnabled)
             initMessageContext(location);
-        return {
-            m_attributes,
-            *m_sink,
-            severities::kInfo};
+        return {m_attributes, *m_sink, severities::kInfo};
     }
 
     Stream
     warn(std::source_location location = std::source_location::current()) const
     {
-        const char* a = "a";
+        char const* a = "a";
         rapidjson::Value v{a, 1};
         if (m_jsonLogsEnabled)
             initMessageContext(location);
-        return {
-            m_attributes,
-            *m_sink,
-            severities::kWarning};
+        return {m_attributes, *m_sink, severities::kWarning};
     }
 
     Stream
@@ -588,10 +572,7 @@ public:
     {
         if (m_jsonLogsEnabled)
             initMessageContext(location);
-        return {
-            m_attributes,
-            *m_sink,
-            severities::kError};
+        return {m_attributes, *m_sink, severities::kError};
     }
 
     Stream
@@ -599,10 +580,7 @@ public:
     {
         if (m_jsonLogsEnabled)
             initMessageContext(location);
-        return {
-            m_attributes,
-            *m_sink,
-            severities::kFatal};
+        return {m_attributes, *m_sink, severities::kFatal};
     }
     /** @} */
 
@@ -614,7 +592,9 @@ public:
         {
             globalLogAttributes_ = JsonLogAttributes{};
         }
-        globalLogAttributes_ = JsonLogAttributes::combine(globalLogAttributes_->contextValues(), globalLogAttributes.contextValues());
+        globalLogAttributes_ = JsonLogAttributes::combine(
+            globalLogAttributes_->contextValues(),
+            globalLogAttributes.contextValues());
     }
 };
 
@@ -725,12 +705,12 @@ using logwstream = basic_logstream<wchar_t>;
 
 }  // namespace beast
 
-
 namespace ripple::log {
 
 namespace detail {
 template <typename T>
-void setJsonValue(
+void
+setJsonValue(
     rapidjson::Value& object,
     rapidjson::MemoryPoolAllocator<>& allocator,
     char const* name,
@@ -739,7 +719,10 @@ void setJsonValue(
 {
     using ValueType = std::decay_t<T>;
     rapidjson::Value jsonValue;
-    if constexpr (std::constructible_from<rapidjson::Value, ValueType, rapidjson::MemoryPoolAllocator<>&>)
+    if constexpr (std::constructible_from<
+                      rapidjson::Value,
+                      ValueType,
+                      rapidjson::MemoryPoolAllocator<>&>)
     {
         jsonValue = rapidjson::Value{value, allocator};
         if (outStream)
@@ -777,12 +760,9 @@ void setJsonValue(
     }
 
     object.AddMember(
-        rapidjson::StringRef(name),
-        std::move(jsonValue),
-        allocator
-    );
+        rapidjson::StringRef(name), std::move(jsonValue), allocator);
 }
-}
+}  // namespace detail
 
 template <typename T>
 std::ostream&
@@ -793,7 +773,9 @@ operator<<(std::ostream& os, LogParameter<T> const& param)
     detail::setJsonValue(
         beast::Journal::currentJsonLogContext_.messageParams,
         beast::Journal::currentJsonLogContext_.allocator,
-        param.name_, param.value_, &os);
+        param.name_,
+        param.value_,
+        &os);
     return os;
 }
 
@@ -806,7 +788,9 @@ operator<<(std::ostream& os, LogField<T> const& param)
     detail::setJsonValue(
         beast::Journal::currentJsonLogContext_.messageParams,
         beast::Journal::currentJsonLogContext_.allocator,
-        param.name_, param.value_, nullptr);
+        param.name_,
+        param.value_,
+        nullptr);
     return os;
 }
 
@@ -824,17 +808,19 @@ field(char const* name, T&& value)
     return LogField<T>{name, std::forward<T>(value)};
 }
 
-template<typename... Pair>
+template <typename... Pair>
 [[nodiscard]] beast::Journal::JsonLogAttributes
 attributes(Pair&&... pairs)
 {
     beast::Journal::JsonLogAttributes result;
 
     (detail::setJsonValue(
-        result.contextValues(),
-        result.allocator(),
-        pairs.first,
-        pairs.second, nullptr), ...);
+         result.contextValues(),
+         result.allocator(),
+         pairs.first,
+         pairs.second,
+         nullptr),
+     ...);
 
     return result;
 }
@@ -846,6 +832,6 @@ attr(char const* name, T&& value)
     return std::make_pair(name, std::forward<T>(value));
 }
 
-}
+}  // namespace ripple::log
 
 #endif

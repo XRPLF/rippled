@@ -178,7 +178,6 @@ public:
     void
     test_yield_and_stop()
     {
-
         using namespace std::chrono_literals;
         using namespace jtx;
 
@@ -230,7 +229,10 @@ public:
         try
         {
             th.join();
-        } catch (const std::exception& e) {}
+        }
+        catch (std::exception const& e)
+        {
+        }
         pass();
     }
 

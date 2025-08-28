@@ -20,14 +20,14 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <rapidjson/document.h>
-#include <rapidjson/writer.h>
 #include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
-#include <thread>
-#include <ranges>
 #include <ios>
 #include <ostream>
+#include <ranges>
 #include <string>
+#include <thread>
 
 namespace beast {
 
@@ -151,8 +151,7 @@ Journal::JsonLogAttributes::setModuleName(std::string const& name)
     contextValues_.AddMember(
         rapidjson::StringRef("Module"),
         rapidjson::Value{name.c_str(), allocator_},
-        allocator_
-    );
+        allocator_);
 }
 
 Journal::JsonLogAttributes
@@ -166,7 +165,7 @@ Journal::JsonLogAttributes::combine(
 
     for (auto& member : b.GetObject())
     {
-        auto val = rapidjson::Value{ member.value, result.allocator_ };
+        auto val = rapidjson::Value{member.value, result.allocator_};
         if (result.contextValues_.HasMember(member.name))
         {
             result.contextValues_[member.name] = std::move(val);
@@ -206,7 +205,8 @@ Journal::formatLog(
 
     if (globalLogAttributes_)
     {
-        for (auto const& [key, value] : globalLogAttributes_->contextValues().GetObject())
+        for (auto const& [key, value] :
+             globalLogAttributes_->contextValues().GetObject())
         {
             rapidjson::Value jsonValue;
             jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
