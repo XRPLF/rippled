@@ -164,21 +164,13 @@ Journal::JsonLogAttributes::setModuleName(std::string const& name)
     contextValues_.as_object()["Module"] = name;
 }
 
-Journal::JsonLogAttributes
-Journal::JsonLogAttributes::combine(
-    AttributeFields const& a,
-    AttributeFields const& b)
+void
+Journal::JsonLogAttributes::combine(AttributeFields const& from)
 {
-    JsonLogAttributes result;
-
-    result.contextValues_ = a;
-
-    for (auto& [key, value] : b.as_object())
+    for (auto& [key, value] : from.as_object())
     {
-        result.contextValues_.as_object()[key] = value;
+        contextValues_.as_object()[key] = value;
     }
-
-    return result;
 }
 
 void

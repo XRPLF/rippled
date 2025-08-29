@@ -147,8 +147,8 @@ public:
         void
         setModuleName(std::string const& name);
 
-        [[nodiscard]] static JsonLogAttributes
-        combine(AttributeFields const& a, AttributeFields const& b);
+        void
+        combine(AttributeFields const& from);
 
         AttributeFields&
         contextValues()
@@ -461,9 +461,7 @@ public:
         if (other.m_attributes.has_value())
         {
             if (m_attributes.has_value())
-                m_attributes = JsonLogAttributes::combine(
-                    other.m_attributes->contextValues_,
-                    m_attributes->contextValues_);
+                m_attributes->combine(other.m_attributes->contextValues_);
             else
                 m_attributes = other.m_attributes;
         }
@@ -591,9 +589,7 @@ public:
         {
             globalLogAttributes_ = JsonLogAttributes{};
         }
-        globalLogAttributes_ = JsonLogAttributes::combine(
-            globalLogAttributes_->contextValues(),
-            globalLogAttributes.contextValues());
+        globalLogAttributes_->combine(globalLogAttributes.contextValues());
     }
 };
 
