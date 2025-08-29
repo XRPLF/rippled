@@ -121,15 +121,13 @@ severities::to_string(Severity severity)
 
 Journal::JsonLogAttributes::JsonLogAttributes()
 {
-    contextValues_.reset(yyjson_mut_doc_new(nullptr));
-    yyjson_mut_doc_set_root(
-        contextValues_.get(), yyjson_mut_obj(contextValues_.get()));
+    contextValues_ = {};
+    contextValues_.emplace_object();
 }
 
 Journal::JsonLogAttributes::JsonLogAttributes(JsonLogAttributes const& other)
 {
-    contextValues_.reset(
-        yyjson_mut_doc_mut_copy(other.contextValues_.get(), nullptr));
+    contextValues_ = other.contextValues_;
 }
 
 Journal::JsonLogAttributes::JsonLogAttributes(JsonLogAttributes&& other)
@@ -144,8 +142,7 @@ Journal::JsonLogAttributes::operator=(JsonLogAttributes const& other)
     {
         return *this;
     }
-    contextValues_.reset(
-        yyjson_mut_doc_mut_copy(other.contextValues_.get(), nullptr));
+    contextValues_ = other.contextValues_;
     return *this;
 }
 
@@ -164,9 +161,7 @@ Journal::JsonLogAttributes::operator=(JsonLogAttributes&& other)
 void
 Journal::JsonLogAttributes::setModuleName(std::string const& name)
 {
-    auto root = yyjson_mut_doc_get_root(contextValues_.get());
-    ripple::log::detail::setJsonField(
-        "Module", name, contextValues_.get(), root);
+    contextValues_.as_object()["Module"] = name;
 }
 
 Journal::JsonLogAttributes
@@ -176,23 +171,11 @@ Journal::JsonLogAttributes::combine(
 {
     JsonLogAttributes result;
 
-    result.contextValues_.reset(yyjson_mut_doc_mut_copy(a.get(), nullptr));
+    result.contextValues_ = a;
 
-    auto bRoot = yyjson_mut_doc_get_root(b.get());
-    auto root = yyjson_mut_doc_get_root(result.contextValues_.get());
-    for (auto iter = yyjson_mut_obj_iter_with(bRoot);
-         yyjson_mut_obj_iter_has_next(&iter);
-         yyjson_mut_obj_iter_next(&iter))
+    for (auto& [key, value] : b.as_object())
     {
-        auto key = iter.cur;
-        auto val = yyjson_mut_obj_iter_get_val(key);
-
-        auto keyCopied =
-            yyjson_mut_val_mut_copy(result.contextValues_.get(), key);
-        auto valueCopied =
-            yyjson_mut_val_mut_copy(result.contextValues_.get(), val);
-
-        yyjson_mut_obj_put(root, keyCopied, valueCopied);
+        result.contextValues_.as_object()[key] = value;
     }
 
     return result;
@@ -215,89 +198,46 @@ Journal::formatLog(
         return message;
     }
 
-    yyjson::YYJsonDocPtr doc{yyjson_mut_doc_new(nullptr)};
-    auto logContext = yyjson_mut_obj(doc.get());
-    yyjson_mut_doc_set_root(doc.get(), logContext);
+    boost::json::value doc;
 
     if (globalLogAttributes_)
     {
-        auto root = yyjson_mut_doc_get_root(
-            globalLogAttributes_->contextValues().get());
-        for (auto iter = yyjson_mut_obj_iter_with(root);
-             yyjson_mut_obj_iter_has_next(&iter);
-             yyjson_mut_obj_iter_next(&iter))
-        {
-            auto key = iter.cur;
-            auto val = yyjson_mut_obj_iter_get_val(key);
-
-            auto keyCopied = yyjson_mut_val_mut_copy(doc.get(), key);
-            auto valueCopied = yyjson_mut_val_mut_copy(doc.get(), val);
-
-            yyjson_mut_obj_put(logContext, keyCopied, valueCopied);
-        }
+        doc = globalLogAttributes_->contextValues_;
+    }
+    else
+    {
+        doc.emplace_object();
     }
 
     if (attributes.has_value())
     {
-        auto root = yyjson_mut_doc_get_root(attributes->contextValues().get());
-        for (auto iter = yyjson_mut_obj_iter_with(root);
-             yyjson_mut_obj_iter_has_next(&iter);
-             yyjson_mut_obj_iter_next(&iter))
+        for (auto& [key, value] : attributes->contextValues_.as_object())
         {
-            auto key = iter.cur;
-            auto val = yyjson_mut_obj_iter_get_val(key);
-
-            auto keyCopied = yyjson_mut_val_mut_copy(doc.get(), key);
-            auto valueCopied = yyjson_mut_val_mut_copy(doc.get(), val);
-
-            yyjson_mut_obj_put(logContext, keyCopied, valueCopied);
+            doc.as_object()[key] = value;
         }
     }
 
-    ripple::log::detail::setJsonField(
-        "Function",
-        currentJsonLogContext_.location.function_name(),
-        doc.get(),
-        logContext);
-    ripple::log::detail::setJsonField(
-        "File",
-        currentJsonLogContext_.location.file_name(),
-        doc.get(),
-        logContext);
-    ripple::log::detail::setJsonField(
-        "Line",
-        static_cast<std::uint64_t>(currentJsonLogContext_.location.line()),
-        doc.get(),
-        logContext);
+    auto& logContext = doc.as_object();
+
+    logContext["Function"] = currentJsonLogContext_.location.function_name();
+    logContext["File"] = currentJsonLogContext_.location.file_name();
+    logContext["Line"] = currentJsonLogContext_.location.line();
 
     std::stringstream threadIdStream;
     threadIdStream << std::this_thread::get_id();
     auto threadIdStr = threadIdStream.str();
 
-    auto messageParamsRoot =
-        yyjson_mut_doc_get_root(currentJsonLogContext_.messageParams.get());
-    ripple::log::detail::setJsonField(
-        "ThreadId", threadIdStr, doc.get(), logContext);
-    ripple::log::detail::setJsonField(
-        "Params", messageParamsRoot, doc.get(), logContext);
-
-    yyjson_mut_doc_set_root(
-        currentJsonLogContext_.messageParams.get(), nullptr);
+    logContext["ThreadId"] = threadIdStr;
+    logContext["Params"] = currentJsonLogContext_.messageParams;
     auto severityStr = to_string(severity);
-    ripple::log::detail::setJsonField(
-        "Level", severityStr, doc.get(), logContext);
-    ripple::log::detail::setJsonField(
-        "Message", message, doc.get(), logContext);
-    ripple::log::detail::setJsonField(
-        "Time",
+    logContext["Level"] = severityStr;
+    logContext["Message"] = message;
+    logContext["Time"] =
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch())
-            .count(),
-        doc.get(),
-        logContext);
+            .count();
 
-    std::string result = yyjson_mut_write(doc.get(), 0, nullptr);
-    return result;
+    return boost::json::serialize(doc);
 }
 
 void
