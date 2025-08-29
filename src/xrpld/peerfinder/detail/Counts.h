@@ -163,7 +163,7 @@ public:
 
     /** Returns the total number of inbound slots. */
     int
-    inboundSlots() const
+    in_max() const
     {
         return m_in_max;
     }
