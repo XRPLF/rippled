@@ -550,9 +550,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         testcase("AccountRoot");
         using namespace test::jtx;
 
-        auto cfg = envconfig();
-        cfg->FEES.reference_fee = 10;
-        Env env{*this, std::move(cfg)};
+        Env env{*this, XRPAmount(10)};
 
         Account const alice{"alice"};
         env.fund(XRP(10000), alice);
