@@ -200,11 +200,11 @@ void
 Logs::write(
     beast::severities::Severity level,
     std::string const& partition,
-    std::string text,
+    std::string const& text,
     bool console)
 {
     std::string s;
-    format(s, std::move(text), level, partition);
+    format(s, text, level, partition);
     file_.writeln(s);
     if (!silent_)
         std::cerr << s << '\n';
@@ -332,14 +332,14 @@ Logs::fromString(std::string const& s)
 void
 Logs::format(
     std::string& output,
-    std::string message,
+    std::string const& message,
     beast::severities::Severity severity,
     std::string const& partition)
 {
-    output = std::move(message);
+    output = message;
     if (!beast::Journal::isStructuredJournalEnabled())
     {
-        output.reserve(message.size() + partition.size() + 100);
+        output.reserve(output.size() + partition.size() + 100);
         output += to_string(std::chrono::system_clock::now());
 
         output += " ";

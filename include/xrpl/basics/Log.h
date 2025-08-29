@@ -206,7 +206,7 @@ public:
     write(
         beast::severities::Severity level,
         std::string const& partition,
-        std::string text,
+        std::string const& text,
         bool console);
 
     std::string
@@ -244,7 +244,7 @@ public:
     static void
     format(
         std::string& output,
-        std::string message,
+        std::string const& message,
         beast::severities::Severity severity,
         std::string const& partition);
 

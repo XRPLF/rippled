@@ -98,7 +98,7 @@ Journal::getNullSink()
 
 //------------------------------------------------------------------------------
 
-std::string
+std::string_view
 severities::to_string(Severity severity)
 {
     switch (severity)
@@ -185,7 +185,7 @@ Journal::JsonLogContext::reset(
             value = threadIdStream.str();
         }
     };
-    thread_local ThreadIdStringInitializer threadId;
+    thread_local ThreadIdStringInitializer const threadId;
 
     attributes_.SetObject();
     if (globalLogAttributes_.has_value())
