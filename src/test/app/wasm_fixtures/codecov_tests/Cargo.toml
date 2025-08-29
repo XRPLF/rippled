@@ -15,4 +15,7 @@ opt-level = 's'
 panic = "abort"
 
 [dependencies]
-xrpl-std = { git = "https://github.com/ripple/craft.git", branch = "last-hfs2", package = "xrpl-std" }
+xrpl-std = { git = "https://github.com/ripple/craft.git", branch = "lastdevnet", package = "xrpl-std" }
+
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=-bulk-memory"]

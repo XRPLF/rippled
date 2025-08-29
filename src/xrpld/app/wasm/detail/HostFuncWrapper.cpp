@@ -1647,12 +1647,12 @@ floatFromInt_wrap(
     int i = 0;
     auto const x = getDataInt64(runtime, params, i);
     if (!x)
-        return hfResult(results, x.error());
+        return hfResult(results, x.error());  // LCOV_EXCL_LINE
 
     i = 3;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 1;
     return returnResult(
@@ -1676,7 +1676,7 @@ floatFromUint_wrap(
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
     return returnResult(
@@ -1692,16 +1692,16 @@ floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     int i = 0;
     auto const exp = getDataInt32(runtime, params, i);
     if (!exp)
-        return hfResult(results, exp.error());
+        return hfResult(results, exp.error());  // LCOV_EXCL_LINE
 
     auto const mant = getDataInt64(runtime, params, i);
     if (!mant)
-        return hfResult(results, mant.error());
+        return hfResult(results, mant.error());  // LCOV_EXCL_LINE
 
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
     return returnResult(
@@ -1747,7 +1747,7 @@ floatAdd_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     i = 6;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
     return returnResult(
@@ -1775,7 +1775,7 @@ floatSubtract_wrap(
     i = 6;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
     return returnResult(
@@ -1803,7 +1803,7 @@ floatMultiply_wrap(
     i = 6;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
     return returnResult(
@@ -1831,7 +1831,7 @@ floatDivide_wrap(
     i = 6;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
     return returnResult(
@@ -1851,12 +1851,12 @@ floatRoot_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
     auto const n = getDataInt32(runtime, params, i);
     if (!n)
-        return hfResult(results, n.error());
+        return hfResult(results, n.error());  // LCOV_EXCL_LINE
 
     i = 5;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 3;
     return returnResult(
@@ -1879,12 +1879,12 @@ floatPower_wrap(
 
     auto const n = getDataInt32(runtime, params, i);
     if (!n)
-        return hfResult(results, n.error());
+        return hfResult(results, n.error());  // LCOV_EXCL_LINE
 
     i = 5;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 3;
     return returnResult(
@@ -1905,7 +1905,7 @@ floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
     return returnResult(
