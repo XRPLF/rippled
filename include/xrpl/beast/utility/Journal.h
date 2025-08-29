@@ -26,7 +26,7 @@
 
 #include <yyjson.h>
 
-#include <deque>
+#include <memory>
 #include <optional>
 #include <source_location>
 #include <sstream>
