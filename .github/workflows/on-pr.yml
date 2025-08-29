@@ -5,6 +5,9 @@
 name: PR
 
 on:
+  merge_group:
+    types:
+      - checks_requested
   pull_request:
     types:
       - opened
@@ -25,30 +28,26 @@ env:
   CONAN_REMOTE_URL: https://conan.ripplex.io
 
 jobs:
-  # This job determines whether the workflow should run. It runs when the PR is
-  # not a draft or has the 'DraftRunCI' label.
+  # This job determines whether the rest of the workflow should run. It runs
+  # when the PR is not a draft (which should also cover merge-group) or
+  # has the 'DraftRunCI' label.
   should-run:
     if: ${{ !github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: No-op
-        run: true
-
-  # This job checks whether any files have changed that should cause the next
-  # jobs to run. We do it this way rather than using `paths` in the `on:`
-  # section, because all required checks must pass, even for changes that do not
-  # modify anything that affects those checks. We would therefore like to make
-  # the checks required only if the job runs, but GitHub does not support that
-  # directly. By always executing the workflow on new commits and by using the
-  # changed-files action below, we ensure that Github considers any skipped jobs
-  # to have passed, and in turn the required checks as well.
-  any-changed:
-    needs: should-run
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Determine changed files
+        # This step checks whether any files have changed that should
+        # cause the next jobs to run. We do it this way rather than
+        # using `paths` in the `on:` section, because all required
+        # checks must pass, even for changes that do not modify anything
+        # that affects those checks. We would therefore like to make the
+        # checks required only if the job runs, but GitHub does not
+        # support that directly. By always executing the workflow on new
+        # commits and by using the changed-files action below, we ensure
+        # that Github considers any skipped jobs to have passed, and in
+        # turn the required checks as well.
         id: changes
         uses: tj-actions/changed-files@ed68ef82c095e0d48ec87eccea555d944a631a4c # v46.0.5
         with:
@@ -76,24 +75,40 @@ jobs:
             tests/**
             CMakeLists.txt
             conanfile.py
+      - name: Check whether to run
+        # This step determines whether the rest of the workflow should
+        # run. The rest of the workflow will run if this job runs AND at
+        # least one of:
+        # * Any of the files checked in the `changes` step were modified
+        # * The PR is NOT a draft and is labeled "Ready to merge"
+        # * The workflow is running from the merge queue
+        id: go
+        env:
+          FILES: ${{ steps.changes.outputs.any_changed }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          READY: ${{ contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}
+          MERGE: ${{ github.event_name == 'merge_group' }}
+        run: |
+          echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FILES == 'true' || env.MERGE == 'true' }}" >> "${GITHUB_OUTPUT}"
+          cat "${GITHUB_OUTPUT}"
     outputs:
-      changed: ${{ steps.changes.outputs.any_changed }}
+      go: ${{ steps.go.outputs.go == 'true' }}
 
   check-format:
-    needs: any-changed
-    if: needs.any-changed.outputs.changed == 'true'
+    needs: should-run
+    if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/check-format.yml
 
   check-levelization:
-    needs: any-changed
-    if: needs.any-changed.outputs.changed == 'true'
+    needs: should-run
+    if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/check-levelization.yml
 
   # This job works around the limitation that GitHub Actions does not support
   # using environment variables as inputs for reusable workflows.
   generate-outputs:
-    needs: any-changed
-    if: needs.any-changed.outputs.changed == 'true'
+    needs: should-run
+    if: needs.should-run.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: No-op
@@ -127,3 +142,13 @@ jobs:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  passed:
+    needs:
+      - build-test
+      - check-format
+      - check-levelization
+    runs-on: ubuntu-latest
+    steps:
+      - name: No-op
+        run: true
