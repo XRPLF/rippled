@@ -225,7 +225,7 @@ private:
         severities::Severity severity) const;
 
     static std::string
-    formatLog(std::string const& message);
+    formatLog(std::string&& message);
 
 public:
     //--------------------------------------------------------------------------
@@ -279,7 +279,7 @@ public:
             level is below the current threshold().
         */
         virtual void
-        write(Severity level, std::string const& text) = 0;
+        write(Severity level, std::string&& text) = 0;
 
         /** Bypass filter and write text to the sink at the specified severity.
          * Always write the message, but maintain the same formatting as if
@@ -289,7 +289,7 @@ public:
          * @param text Text to write to sink.
          */
         virtual void
-        writeAlways(Severity level, std::string const& text) = 0;
+        writeAlways(Severity level, std::string&& text) = 0;
 
     private:
         Severity thresh_;

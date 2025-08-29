@@ -49,7 +49,7 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::severities::Severity level, std::string&& text) override
     {
         if (level < threshold())
             return;
@@ -59,7 +59,7 @@ public:
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
+    writeAlways(beast::severities::Severity level, std::string&& text)
         override
     {
         std::cout << clock_.now().time_since_epoch().count() << " " << text
