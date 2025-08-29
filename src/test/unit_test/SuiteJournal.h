@@ -49,27 +49,27 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override;
+    write(beast::severities::Severity level, std::string&& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
+    writeAlways(beast::severities::Severity level, std::string&& text)
         override;
 };
 
 inline void
 SuiteJournalSink::write(
     beast::severities::Severity level,
-    std::string const& text)
+    std::string&& text)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
-        writeAlways(level, text);
+        writeAlways(level, std::move(text));
 }
 
 inline void
 SuiteJournalSink::writeAlways(
     beast::severities::Severity level,
-    std::string const& text)
+    std::string&& text)
 {
     using namespace beast::severities;
 
@@ -137,15 +137,15 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::severities::Severity level, std::string&& text) override
     {
         if (level < threshold())
             return;
-        writeAlways(level, text);
+        writeAlways(level, std::move(text));
     }
 
     inline void
-    writeAlways(beast::severities::Severity level, std::string const& text)
+    writeAlways(beast::severities::Severity level, std::string&& text)
         override
     {
         strm_ << text << std::endl;

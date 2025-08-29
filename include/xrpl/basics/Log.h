@@ -68,11 +68,11 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string const& text)
+        write(beast::severities::Severity level, std::string&& text)
             override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
+        writeAlways(beast::severities::Severity level, std::string&& text)
             override;
     };
 
