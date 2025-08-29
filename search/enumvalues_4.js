@@ -30,6 +30,7 @@ var searchData=
   ['dumpqueue_27',['dumpQueue',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826adea306223be25992ba166d6e5e09158b',1,'ripple::LedgerFill']]],
   ['dumpstate_28',['dumpState',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a22467bc2d1c3fd3a960ffa1c3742aba8',1,'ripple::LedgerFill']]],
   ['dumptxrp_29',['dumpTxrp',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826af755a18c1418b2e0078d8f967ecaac34',1,'ripple::LedgerFill']]],
-  ['duplicate_30',['duplicate',['../namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a24f1b0a79473250c195c7fb84e393392',1,'ripple::PeerFinder::duplicate'],['../classJson_1_1Value_1_1CZString.html#a2805c46fb4a72bbaed55de6d75941b6dabb2134294dd8fc37dd82d18bb794fe20',1,'Json::Value::CZString::duplicate']]],
-  ['duplicateoncopy_31',['duplicateOnCopy',['../classJson_1_1Value_1_1CZString.html#a2805c46fb4a72bbaed55de6d75941b6da5c18c35205a3be63ad14ce659e70fe7d',1,'Json::Value::CZString']]]
+  ['duplicate_30',['duplicate',['../classJson_1_1Value_1_1CZString.html#a2805c46fb4a72bbaed55de6d75941b6dabb2134294dd8fc37dd82d18bb794fe20',1,'Json::Value::CZString']]],
+  ['duplicateoncopy_31',['duplicateOnCopy',['../classJson_1_1Value_1_1CZString.html#a2805c46fb4a72bbaed55de6d75941b6da5c18c35205a3be63ad14ce659e70fe7d',1,'Json::Value::CZString']]],
+  ['duplicatepeer_32',['duplicatePeer',['../namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a4ffcab235ad8c978226c5c000f0c92f5',1,'ripple::PeerFinder']]]
 ];

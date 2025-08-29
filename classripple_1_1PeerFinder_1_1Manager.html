@@ -154,12 +154,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aeb5e8a50579a9235a9524348714b2641" id="r_aeb5e8a50579a9235a9524348714b2641"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Manager.html#aeb5e8a50579a9235a9524348714b2641">addFallbackStrings</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;<a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#a5672372869d3a59c7cd2f7ce3056ae33">name</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt; const &amp;strings)=0</td></tr>
 <tr class="memdesc:aeb5e8a50579a9235a9524348714b2641"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a set of strings as fallback IP::Endpoint sources.  <br /></td></tr>
 <tr class="separator:aeb5e8a50579a9235a9524348714b2641"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af11bbe66704abe1c1d14a28169213d36" id="r_af11bbe66704abe1c1d14a28169213d36"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Manager.html#af11bbe66704abe1c1d14a28169213d36">new_inbound_slot</a> (<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;local_endpoint, <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;remote_endpoint)=0</td></tr>
-<tr class="memdesc:af11bbe66704abe1c1d14a28169213d36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a URL as a fallback location to obtain IP::Endpoint sources.  <br /></td></tr>
-<tr class="separator:af11bbe66704abe1c1d14a28169213d36"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ace7534a5e47547adcf981d37d60d50ed" id="r_ace7534a5e47547adcf981d37d60d50ed"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Manager.html#ace7534a5e47547adcf981d37d60d50ed">new_outbound_slot</a> (<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;remote_endpoint)=0</td></tr>
-<tr class="memdesc:ace7534a5e47547adcf981d37d60d50ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new outbound slot with the specified remote endpoint.  <br /></td></tr>
-<tr class="separator:ace7534a5e47547adcf981d37d60d50ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af81d5e1fdb5c2575756052cd3991dc09" id="r_af81d5e1fdb5c2575756052cd3991dc09"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt;, <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15">Result</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Manager.html#af81d5e1fdb5c2575756052cd3991dc09">new_inbound_slot</a> (<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;local_endpoint, <a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;remote_endpoint)=0</td></tr>
+<tr class="memdesc:af81d5e1fdb5c2575756052cd3991dc09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Add a URL as a fallback location to obtain IP::Endpoint sources.  <br /></td></tr>
+<tr class="separator:af81d5e1fdb5c2575756052cd3991dc09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0b963fb66bf565dbbce628683be995ed" id="r_a0b963fb66bf565dbbce628683be995ed"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt;, <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15">Result</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Manager.html#a0b963fb66bf565dbbce628683be995ed">new_outbound_slot</a> (<a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;remote_endpoint)=0</td></tr>
+<tr class="memdesc:a0b963fb66bf565dbbce628683be995ed"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new outbound slot with the specified remote endpoint.  <br /></td></tr>
+<tr class="separator:a0b963fb66bf565dbbce628683be995ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0534c3b8a8b06093ca9aacc03d3e4def" id="r_a0534c3b8a8b06093ca9aacc03d3e4def"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerFinder_1_1Manager.html#a0534c3b8a8b06093ca9aacc03d3e4def">on_endpoints</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt; const &amp;slot, <a class="el" href="namespaceripple_1_1PeerFinder.html#a6a3d62f5f7c7102cb3267333bd60f4b1">Endpoints</a> const &amp;endpoints)=0</td></tr>
 <tr class="memdesc:a0534c3b8a8b06093ca9aacc03d3e4def"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called when mtENDPOINTS is received.  <br /></td></tr>
 <tr class="separator:a0534c3b8a8b06093ca9aacc03d3e4def"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -257,7 +257,7 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Maintains a set of IP addresses used for getting into the network. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00172">172</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00185">185</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2b8a107886f5579757d64c6548d4d25c" name="a2b8a107886f5579757d64c6548d4d25c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2b8a107886f5579757d64c6548d4d25c">&#9670;&#160;</a></span>Manager()</h2>
@@ -520,8 +520,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="af11bbe66704abe1c1d14a28169213d36" name="af11bbe66704abe1c1d14a28169213d36"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af11bbe66704abe1c1d14a28169213d36">&#9670;&#160;</a></span>new_inbound_slot()</h2>
+<a id="af81d5e1fdb5c2575756052cd3991dc09" name="af81d5e1fdb5c2575756052cd3991dc09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af81d5e1fdb5c2575756052cd3991dc09">&#9670;&#160;</a></span>new_inbound_slot()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -530,7 +530,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt; ripple::PeerFinder::Manager::new_inbound_slot </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt;, <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15">Result</a> &gt; ripple::PeerFinder::Manager::new_inbound_slot </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;&#160;</td>
           <td class="paramname"><em>local_endpoint</em>, </td>
@@ -562,12 +562,12 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a4a1560e06df4d80e4b9f262ef92880c7">ripple::PeerFinder::ManagerImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a12b9d06a0d1f0dff722fe6235031c1fe">ripple::PeerFinder::ManagerImp</a>.</p>
 
 </div>
 </div>
-<a id="ace7534a5e47547adcf981d37d60d50ed" name="ace7534a5e47547adcf981d37d60d50ed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ace7534a5e47547adcf981d37d60d50ed">&#9670;&#160;</a></span>new_outbound_slot()</h2>
+<a id="a0b963fb66bf565dbbce628683be995ed" name="a0b963fb66bf565dbbce628683be995ed"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b963fb66bf565dbbce628683be995ed">&#9670;&#160;</a></span>new_outbound_slot()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -576,7 +576,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt; ripple::PeerFinder::Manager::new_outbound_slot </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Slot.html">Slot</a> &gt;, <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15">Result</a> &gt; ripple::PeerFinder::Manager::new_outbound_slot </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a> const &amp;&#160;</td>
           <td class="paramname"><em>remote_endpoint</em></td><td>)</td>
@@ -593,7 +593,7 @@ Private Attributes</h2></td></tr>
 <p>Create a new outbound slot with the specified remote endpoint. </p>
 <p>If nullptr is returned, then the slot could not be assigned. Usually this is because of a duplicate connection. </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#acf849658e8f0c5e9ef21c2424b4d72ee">ripple::PeerFinder::ManagerImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1PeerFinder_1_1ManagerImp.html#a2ce8b6e29e0d7d0660fa9bd371750d24">ripple::PeerFinder::ManagerImp</a>.</p>
 
 </div>
 </div>

@@ -168,9 +168,14 @@ Typedefs</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr class="memitem:ae15e107cb3b0b67dbf43bd4a0a229c15" id="r_ae15e107cb3b0b67dbf43bd4a0a229c15"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15">Result</a> { <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a24f1b0a79473250c195c7fb84e393392">duplicate</a>
+<tr class="memitem:ae15e107cb3b0b67dbf43bd4a0a229c15" id="r_ae15e107cb3b0b67dbf43bd4a0a229c15"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15">Result</a> { <br />
+&#160;&#160;<a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a8a4577bfc24a58f407772a1ac4c71d64">inboundDisabled</a>
+, <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a4ffcab235ad8c978226c5c000f0c92f5">duplicatePeer</a>
+, <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a290e854afb37272f6ff33bda722dacb7">ipLimitExceeded</a>
 , <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15ae9dc924f238fa6cc29465942875fe8f0">full</a>
-, <a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a260ca9dd8a4577fc00b7bd5810298076">success</a>
+, <br />
+&#160;&#160;<a class="el" href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15a260ca9dd8a4577fc00b7bd5810298076">success</a>
+<br />
  }</td></tr>
 <tr class="memdesc:ae15e107cb3b0b67dbf43bd4a0a229c15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Possible results from activating a slot.  <a href="namespaceripple_1_1PeerFinder.html#ae15e107cb3b0b67dbf43bd4a0a229c15">More...</a><br /></td></tr>
 <tr class="separator:ae15e107cb3b0b67dbf43bd4a0a229c15"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -187,6 +192,8 @@ Functions</h2></td></tr>
 <tr class="memitem:af480ba527cfd40c1e623716653cfad4f"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1PeerFinder.html#af480ba527cfd40c1e623716653cfad4f">handout</a> (TargetFwdIter first, TargetFwdIter last, SeqFwdIter seq_first, SeqFwdIter seq_last)</td></tr>
 <tr class="memdesc:af480ba527cfd40c1e623716653cfad4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Distributes objects to targets according to business rules.  <br /></td></tr>
 <tr class="separator:af480ba527cfd40c1e623716653cfad4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f5426bc0771cd1b91b1bcaa38ab0edb" id="r_a4f5426bc0771cd1b91b1bcaa38ab0edb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1PeerFinder.html#a4f5426bc0771cd1b91b1bcaa38ab0edb">operator==</a> (<a class="el" href="structripple_1_1PeerFinder_1_1Config.html">Config</a> const &amp;lhs, <a class="el" href="structripple_1_1PeerFinder_1_1Config.html">Config</a> const &amp;rhs)</td></tr>
+<tr class="separator:a4f5426bc0771cd1b91b1bcaa38ab0edb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30aefa92bae95c80ebae6a669682d3eb" id="r_a30aefa92bae95c80ebae6a669682d3eb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerFinder_1_1Manager.html">Manager</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1PeerFinder.html#a30aefa92bae95c80ebae6a669682d3eb">make_Manager</a> (boost::asio::io_context &amp;io_context, <a class="el" href="namespaceripple_1_1PeerFinder.html#af4627ce974986eba7f69f7c89666d3fa">clock_type</a> &amp;clock, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal, <a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const  &amp;config, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const  &amp;collector)</td></tr>
 <tr class="memdesc:a30aefa92bae95c80ebae6a669682d3eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Create a new <a class="el" href="classripple_1_1PeerFinder_1_1Manager.html" title="Maintains a set of IP addresses used for getting into the network.">Manager</a>.  <br /></td></tr>
 <tr class="separator:a30aefa92bae95c80ebae6a669682d3eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -245,7 +252,7 @@ Functions</h2></td></tr>
 
 <p>A set of <a class="el" href="structripple_1_1PeerFinder_1_1Endpoint.html" title="Describes a connectible peer address along with some metadata.">Endpoint</a> used for connecting. </p>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00134">134</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00137">137</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
@@ -272,18 +279,20 @@ Functions</h2></td></tr>
 
 <p>Possible results from activating a slot. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ae15e107cb3b0b67dbf43bd4a0a229c15a24f1b0a79473250c195c7fb84e393392" name="ae15e107cb3b0b67dbf43bd4a0a229c15a24f1b0a79473250c195c7fb84e393392"></a>duplicate&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ae15e107cb3b0b67dbf43bd4a0a229c15a8a4577bfc24a58f407772a1ac4c71d64" name="ae15e107cb3b0b67dbf43bd4a0a229c15a8a4577bfc24a58f407772a1ac4c71d64"></a>inboundDisabled&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ae15e107cb3b0b67dbf43bd4a0a229c15a4ffcab235ad8c978226c5c000f0c92f5" name="ae15e107cb3b0b67dbf43bd4a0a229c15a4ffcab235ad8c978226c5c000f0c92f5"></a>duplicatePeer&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ae15e107cb3b0b67dbf43bd4a0a229c15a290e854afb37272f6ff33bda722dacb7" name="ae15e107cb3b0b67dbf43bd4a0a229c15a290e854afb37272f6ff33bda722dacb7"></a>ipLimitExceeded&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae15e107cb3b0b67dbf43bd4a0a229c15ae9dc924f238fa6cc29465942875fe8f0" name="ae15e107cb3b0b67dbf43bd4a0a229c15ae9dc924f238fa6cc29465942875fe8f0"></a>full&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="ae15e107cb3b0b67dbf43bd4a0a229c15a260ca9dd8a4577fc00b7bd5810298076" name="ae15e107cb3b0b67dbf43bd4a0a229c15a260ca9dd8a4577fc00b7bd5810298076"></a>success&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00139">139</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00142">142</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="a22c88667b16496babeb8c9726e6d1eec" name="a22c88667b16496babeb8c9726e6d1eec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a22c88667b16496babeb8c9726e6d1eec">&#9670;&#160;</a></span>operator==()</h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a22c88667b16496babeb8c9726e6d1eec">&#9670;&#160;</a></span>operator==() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -427,6 +436,36 @@ template&lt;class TargetFwdIter , class SeqFwdIter &gt; </div>
 
 </div>
 </div>
+<a id="a4f5426bc0771cd1b91b1bcaa38ab0edb" name="a4f5426bc0771cd1b91b1bcaa38ab0edb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f5426bc0771cd1b91b1bcaa38ab0edb">&#9670;&#160;</a></span>operator==() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::PeerFinder::operator== </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html">Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>lhs</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1PeerFinder_1_1Config.html">Config</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rhs</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="PeerfinderConfig_8cpp_source.html#l00038">38</a> of file <a class="el" href="PeerfinderConfig_8cpp_source.html">PeerfinderConfig.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a30aefa92bae95c80ebae6a669682d3eb" name="a30aefa92bae95c80ebae6a669682d3eb"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a30aefa92bae95c80ebae6a669682d3eb">&#9670;&#160;</a></span>make_Manager()</h2>
 
@@ -503,7 +542,7 @@ template&lt;class TargetFwdIter , class SeqFwdIter &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00127">127</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00130">130</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
@@ -542,7 +581,7 @@ template&lt;class TargetFwdIter , class SeqFwdIter &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>A <code><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a></code> representing the enum value. Returns "unknown" if the enum value is not explicitly handled.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>This function returns a <code><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a></code> for performance. A <code><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></code> would need to allocate memory on the heap and copy the string literal into it every time the function is called. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00156">156</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerfinderManager_8h_source.html#l00165">165</a> of file <a class="el" href="PeerfinderManager_8h_source.html">PeerfinderManager.h</a>.</p>
 
 </div>
 </div>
