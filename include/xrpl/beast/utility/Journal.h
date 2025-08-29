@@ -508,8 +508,10 @@ public:
 
     /** Returns a stream for this sink, with the specified severity level. */
     Stream
-    stream(Severity level) const
+    stream(Severity level, std::source_location location = std::source_location::current()) const
     {
+        if (m_jsonLogsEnabled)
+            initMessageContext(location, level);
         return Stream(*m_sink, level);
     }
 
