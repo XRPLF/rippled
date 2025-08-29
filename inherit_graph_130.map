@@ -1,9 +1,9 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
 <area shape="rect" id="Node000000" href="$classJson_1_1Collection.html" title=" " alt="" coords="5,31,128,56"/>
 <area shape="rect" id="Node000001" href="$classJson_1_1Array.html" title="Represents a JSON array being written to a Writer." alt="" coords="179,5,271,31"/>
-<area shape="poly" id="edge396_Node000000_Node000001" title=" " alt="" coords="141,29,179,23,180,28,142,34"/>
+<area shape="poly" id="edge397_Node000000_Node000001" title=" " alt="" coords="141,29,179,23,180,28,142,34"/>
 <area shape="rect" id="Node000002" href="$classJson_1_1Object.html" title="Represents a JSON object being written to a Writer." alt="" coords="176,55,275,80"/>
-<area shape="poly" id="edge397_Node000000_Node000002" title=" " alt="" coords="142,52,176,57,176,63,141,57"/>
+<area shape="poly" id="edge398_Node000000_Node000002" title=" " alt="" coords="142,52,176,57,176,63,141,57"/>
 <area shape="rect" id="Node000003" href="$classJson_1_1Object_1_1Root.html" title=" " alt="" coords="323,55,460,80"/>
-<area shape="poly" id="edge398_Node000002_Node000003" title=" " alt="" coords="288,65,322,65,322,70,288,70"/>
+<area shape="poly" id="edge399_Node000002_Node000003" title=" " alt="" coords="288,65,322,65,322,70,288,70"/>
 </map>

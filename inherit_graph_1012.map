@@ -1,7 +1,21 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/error/error_category.html" title=" " alt="" coords="5,56,151,81"/>
-<area shape="rect" id="Node000001" href="$classripple_1_1cryptoconditions_1_1detail_1_1cryptoconditions__error__category.html" title=" " alt="" coords="202,5,385,60"/>
-<area shape="poly" id="edge763_Node000000_Node000001" title=" " alt="" coords="164,52,201,45,202,51,164,57"/>
-<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1TokenCodecErrcCategory.html" title=" " alt="" coords="199,85,388,125"/>
-<area shape="poly" id="edge764_Node000000_Node000002" title=" " alt="" coords="164,80,199,86,198,91,163,86"/>
+<area shape="rect" id="Node000000" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,183,45"/>
+<area shape="rect" id="Node000001" href="$classripple_1_1detail_1_1WorkFile.html" title=" " alt="" coords="240,13,408,38"/>
+<area shape="poly" id="edge755_Node000000_Node000001" title=" " alt="" coords="197,23,240,23,240,28,197,28"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="231,127,417,167"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1detail_1_1WorkPlain.html" title=" " alt="" coords="465,102,643,127"/>
+<area shape="poly" id="edge756_Node000005_Node000004" title=" " alt="" coords="431,129,465,124,465,130,431,134"/>
+<area shape="rect" id="Node000008" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="235,255,413,295"/>
+<area shape="rect" id="Node000007" href="$classripple_1_1detail_1_1WorkSSL.html" title=" " alt="" coords="470,294,638,319"/>
+<area shape="poly" id="edge757_Node000008_Node000007" title=" " alt="" coords="427,286,470,292,469,298,426,292"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="21,134,167,159"/>
+<area shape="poly" id="edge763_Node000002_Node000001" title=" " alt="" coords="118,123,168,85,230,48,264,36,266,41,232,53,171,89,122,127"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="235,63,413,103"/>
+<area shape="poly" id="edge758_Node000002_Node000003" title=" " alt="" coords="153,128,251,100,252,105,155,133"/>
+<area shape="rect" id="Node000006" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="235,319,413,359"/>
+<area shape="poly" id="edge760_Node000002_Node000006" title=" " alt="" coords="112,169,160,236,194,273,232,304,253,316,251,321,229,309,190,277,156,240,108,172"/>
+<area shape="rect" id="Node000009" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="235,191,413,231"/>
+<area shape="poly" id="edge762_Node000002_Node000009" title=" " alt="" coords="155,161,252,188,251,193,153,166"/>
+<area shape="poly" id="edge759_Node000003_Node000004" title=" " alt="" coords="427,94,465,100,465,105,426,100"/>
+<area shape="poly" id="edge761_Node000006_Node000007" title=" " alt="" coords="426,322,469,316,470,321,427,327"/>
 </map>

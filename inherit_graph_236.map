@@ -1,23 +1,23 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
 <area shape="rect" id="Node000000" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="475,5,729,45"/>
 <area shape="rect" id="Node000001" href="$classripple_1_1SHAMapAccountStateLeafNode.html" title="A leaf node for a state object." alt="" coords="777,21,985,61"/>
-<area shape="poly" id="edge470_Node000000_Node000001" title=" " alt="" coords="743,31,777,33,777,38,743,36"/>
+<area shape="poly" id="edge471_Node000000_Node000001" title=" " alt="" coords="743,31,777,33,777,38,743,36"/>
 <area shape="rect" id="Node000009" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="248,241,423,281"/>
 <area shape="rect" id="Node000008" href="$classripple_1_1SHAMapInnerNode.html" title=" " alt="" coords="507,249,697,274"/>
-<area shape="poly" id="edge471_Node000009_Node000008" title=" " alt="" coords="436,259,507,259,507,264,436,264"/>
+<area shape="poly" id="edge472_Node000009_Node000008" title=" " alt="" coords="436,259,507,259,507,264,436,264"/>
 <area shape="rect" id="Node000004" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="509,69,695,109"/>
 <area shape="rect" id="Node000003" href="$classripple_1_1SHAMapTxLeafNode.html" title="A leaf node for a transaction." alt="" coords="781,118,981,143"/>
-<area shape="poly" id="edge472_Node000004_Node000003" title=" " alt="" coords="709,102,795,115,794,121,708,108"/>
+<area shape="poly" id="edge473_Node000004_Node000003" title=" " alt="" coords="709,102,795,115,794,121,708,108"/>
 <area shape="rect" id="Node000006" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="479,184,725,224"/>
 <area shape="rect" id="Node000005" href="$classripple_1_1SHAMapTxPlusMetaLeafNode.html" title="A leaf node for a transaction and its associated metadata." alt="" coords="782,168,981,208"/>
-<area shape="poly" id="edge473_Node000006_Node000005" title=" " alt="" coords="738,194,781,191,782,196,738,199"/>
+<area shape="poly" id="edge474_Node000006_Node000005" title=" " alt="" coords="738,194,781,191,782,196,738,199"/>
 <area shape="rect" id="Node000010" href="$structripple_1_1IntrusiveRefCounts.html" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,163,196,189"/>
 <area shape="rect" id="Node000007" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="244,163,427,189"/>
-<area shape="poly" id="edge474_Node000010_Node000007" title=" " alt="" coords="209,173,244,173,244,179,209,179"/>
-<area shape="poly" id="edge475_Node000007_Node000008" title=" " alt="" coords="375,192,422,214,475,233,525,246,523,251,474,239,420,219,372,197"/>
+<area shape="poly" id="edge475_Node000010_Node000007" title=" " alt="" coords="209,173,244,173,244,179,209,179"/>
+<area shape="poly" id="edge476_Node000007_Node000008" title=" " alt="" coords="375,192,422,214,475,233,525,246,523,251,474,239,420,219,372,197"/>
 <area shape="rect" id="Node000002" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="510,134,694,159"/>
-<area shape="poly" id="edge476_Node000007_Node000002" title=" " alt="" coords="440,162,509,154,510,159,440,167"/>
-<area shape="poly" id="edge477_Node000002_Node000001" title=" " alt="" coords="697,128,728,119,793,90,847,59,850,64,795,95,730,124,699,133"/>
-<area shape="poly" id="edge478_Node000002_Node000003" title=" " alt="" coords="708,138,781,134,781,139,708,143"/>
-<area shape="poly" id="edge479_Node000002_Node000005" title=" " alt="" coords="702,159,782,171,781,176,701,164"/>
+<area shape="poly" id="edge477_Node000007_Node000002" title=" " alt="" coords="440,162,509,154,510,159,440,167"/>
+<area shape="poly" id="edge478_Node000002_Node000001" title=" " alt="" coords="697,128,728,119,793,90,847,59,850,64,795,95,730,124,699,133"/>
+<area shape="poly" id="edge479_Node000002_Node000003" title=" " alt="" coords="708,138,781,134,781,139,708,143"/>
+<area shape="poly" id="edge480_Node000002_Node000005" title=" " alt="" coords="702,159,782,171,781,176,701,164"/>
 </map>

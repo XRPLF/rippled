@@ -1,13 +1,29 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,127,124,153"/>
-<area shape="rect" id="Node000001" href="$structbeast_1_1detail_1_1is__boost__reverse__iterator.html" title=" " alt="" coords="197,5,369,45"/>
-<area shape="poly" id="edge778_Node000000_Node000001" title=" " alt="" coords="88,115,125,84,171,55,199,43,201,48,173,60,128,89,91,120"/>
-<area shape="rect" id="Node000002" href="$structbeast_1_1is__aged__container.html" title=" " alt="" coords="172,70,395,95"/>
-<area shape="poly" id="edge779_Node000000_Node000002" title=" " alt="" coords="118,121,171,105,223,93,224,98,173,111,120,126"/>
-<area shape="rect" id="Node000003" href="$classripple_1_1CanCvtToNotTEC.html" title=" " alt="" coords="195,120,371,160"/>
-<area shape="poly" id="edge780_Node000000_Node000003" title=" " alt="" coords="138,137,195,137,195,143,138,143"/>
-<area shape="rect" id="Node000004" href="$classripple_1_1CanCvtToTER.html" title=" " alt="" coords="207,184,360,224"/>
-<area shape="poly" id="edge781_Node000000_Node000004" title=" " alt="" coords="121,154,173,169,213,181,212,187,171,175,120,159"/>
-<area shape="rect" id="Node000005" href="$structripple_1_1detail_1_1is__contiguous__container.html" title=" " alt="" coords="199,249,367,303"/>
-<area shape="poly" id="edge782_Node000000_Node000005" title=" " alt="" coords="88,161,126,198,173,234,200,248,198,252,171,238,122,202,85,165"/>
+<area shape="rect" id="Node000000" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title=" " alt="" coords="5,169,120,195"/>
+<area shape="rect" id="Node000001" href="$structJson_1_1JsonMissingKeyError.html" title=" " alt="" coords="178,5,367,31"/>
+<area shape="poly" id="edge766_Node000000_Node000001" title=" " alt="" coords="73,156,109,97,135,66,167,40,189,28,192,33,169,44,139,70,113,100,78,158"/>
+<area shape="rect" id="Node000002" href="$structJson_1_1JsonTypeMismatchError.html" title=" " alt="" coords="168,55,377,80"/>
+<area shape="poly" id="edge767_Node000000_Node000002" title=" " alt="" coords="83,157,120,122,167,90,199,78,201,83,169,95,123,127,86,161"/>
+<area shape="rect" id="Node000003" href="$structbeast_1_1unit__test_1_1suite_1_1abort__exception.html" title=" " alt="" coords="191,105,354,145"/>
+<area shape="poly" id="edge768_Node000000_Node000003" title=" " alt="" coords="123,163,198,142,200,147,124,168"/>
+<area shape="rect" id="Node000004" href="$structripple_1_1RPC_1_1Status.html" title="Status represents the results of an operation that might fail." alt="" coords="201,169,344,195"/>
+<area shape="poly" id="edge769_Node000000_Node000004" title=" " alt="" coords="134,179,201,179,201,185,134,185"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/bad_cast.html" title=" " alt="" coords="219,219,327,244"/>
+<area shape="poly" id="edge770_Node000000_Node000005" title=" " alt="" coords="131,195,219,216,218,221,130,200"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/error/logic_error.html" title=" " alt="" coords="213,268,332,293"/>
+<area shape="poly" id="edge772_Node000000_Node000007" title=" " alt="" coords="91,202,127,228,169,253,214,268,212,273,167,258,124,233,87,206"/>
+<area shape="rect" id="Node000009" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/error/runtime_error.html" title=" " alt="" coords="203,375,342,400"/>
+<area shape="poly" id="edge774_Node000000_Node000009" title=" " alt="" coords="84,204,122,251,170,303,215,342,255,372,252,377,211,346,166,307,118,255,80,207"/>
+<area shape="rect" id="Node000006" href="$structbeast_1_1BadLexicalCast.html" title="Thrown when a conversion is not possible with LexicalCast." alt="" coords="445,211,612,236"/>
+<area shape="poly" id="edge771_Node000005_Node000006" title=" " alt="" coords="341,227,445,223,445,229,341,232"/>
+<area shape="rect" id="Node000008" href="$structripple_1_1test_1_1jtx_1_1parse__error.html" title="Thrown when parse fails." alt="" coords="466,261,591,301"/>
+<area shape="poly" id="edge773_Node000007_Node000008" title=" " alt="" coords="346,278,466,278,466,283,346,283"/>
+<area shape="rect" id="Node000010" href="$structJson_1_1error.html" title=" " alt="" coords="485,325,573,351"/>
+<area shape="poly" id="edge775_Node000009_Node000010" title=" " alt="" coords="352,369,484,344,485,349,353,375"/>
+<area shape="rect" id="Node000011" href="$classripple_1_1SHAMapMissingNode.html" title=" " alt="" coords="425,375,632,400"/>
+<area shape="poly" id="edge776_Node000009_Node000011" title=" " alt="" coords="356,385,425,385,425,390,356,390"/>
+<area shape="rect" id="Node000012" href="$classripple_1_1STObject_1_1FieldErr.html" title=" " alt="" coords="437,424,620,449"/>
+<area shape="poly" id="edge777_Node000009_Node000012" title=" " alt="" coords="353,400,462,421,461,427,352,405"/>
+<area shape="rect" id="Node000013" href="$structripple_1_1bad__expected__access.html" title="Expected is an approximation of std::expected (hoped for in C++23)" alt="" coords="449,474,608,514"/>
+<area shape="poly" id="edge778_Node000009_Node000013" title=" " alt="" coords="310,404,364,432,426,460,459,471,457,476,424,464,362,437,308,409"/>
 </map>

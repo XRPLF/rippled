@@ -1,7 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
 <area shape="rect" id="Node000000" href="$classJson_1_1WriterBase.html" title="Abstract class for writers." alt="" coords="5,31,135,56"/>
 <area shape="rect" id="Node000001" href="$classJson_1_1FastWriter.html" title="Outputs a Value in JSON format without formatting (not human friendly)." alt="" coords="191,5,313,31"/>
-<area shape="poly" id="edge402_Node000000_Node000001" title=" " alt="" coords="148,30,190,24,191,29,149,35"/>
+<area shape="poly" id="edge403_Node000000_Node000001" title=" " alt="" coords="148,30,190,24,191,29,149,35"/>
 <area shape="rect" id="Node000002" href="$classJson_1_1StyledWriter.html" title="Writes a Value in JSON format in a human friendly way." alt="" coords="183,55,321,80"/>
-<area shape="poly" id="edge403_Node000000_Node000002" title=" " alt="" coords="149,51,183,56,182,61,148,56"/>
+<area shape="poly" id="edge404_Node000000_Node000002" title=" " alt="" coords="149,51,183,56,182,61,148,56"/>
 </map>
