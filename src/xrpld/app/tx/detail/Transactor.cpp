@@ -20,6 +20,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/DelegateUtils.h>
+#include <xrpld/app/misc/FirewallUtils.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -910,6 +911,36 @@ Transactor::checkMultiSign(
     return tesSUCCESS;
 }
 
+NotTEC
+Transactor::checkFirewallSign(PreclaimContext const& ctx)
+{
+    auto const account = ctx.tx.getAccountID(sfAccount);
+
+    // Check if the firewall is enabled.
+    auto const sleFirewall = ctx.view.read(keylet::firewall(account));
+    if (!sleFirewall)
+        return tesSUCCESS;
+
+    // Check if the firewall has signers.
+    auto const counterParty = sleFirewall->getAccountID(sfCounterParty);
+    STArray const& signers(ctx.tx.getFieldArray(sfFirewallSigners));
+    auto const sleAccountSigners = ctx.view.read(keylet::signers(counterParty));
+    // if (sleAccountSigners)
+    //     return checkMultiSign(ctx, account, signers);
+
+    // Check if the firewall has a single signer.
+    Blob const pkSigner = signers[0].getFieldVL(sfSigningPubKey);
+    AccountID const idAccount = signers[0].getAccountID(sfAccount);
+    if (idAccount != counterParty)
+        return tefBAD_AUTH;
+    auto const sleAccount = ctx.view.read(keylet::account(idAccount));
+    if (!sleAccount)
+        return terNO_ACCOUNT;
+    auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
+    return checkSingleSign(
+        idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
+}
+
 //------------------------------------------------------------------------------
 
 static void
@@ -1213,6 +1244,24 @@ Transactor::operator()()
                 view(), expiredCredentials, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
+    }
+
+    if (applied && view().rules().enabled(featureFirewall))
+    {
+        result = ctx_.checkFirewalls(result, fee);
+        if (result == tecFIREWALL_BLOCK)
+        {
+            // if firewall checking failed again, reset the context and
+            // attempt to only claim a fee.
+            auto const resetResult = reset(fee);
+            if (!isTesSuccess(resetResult.first))
+                result = resetResult.first;
+        }
+
+        // We ran through the firewall checker, which can, in some cases,
+        // return a tef error code. Don't apply the transaction in that case.
+        if (!isTecClaim(result) && !isTesSuccess(result))
+            applied = false;
     }
 
     if (applied)

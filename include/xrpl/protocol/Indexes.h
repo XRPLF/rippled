@@ -349,6 +349,27 @@ permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+Keylet
+firewall(AccountID const& account) noexcept;
+
+inline Keylet
+firewall(uint256 const& firewallID)
+{
+    return {ltFIREWALL, firewallID};
+}
+
+Keylet
+withdrawPreauth(
+    AccountID const& owner,
+    AccountID const& preauthorized) noexcept;
+
+inline Keylet
+withdrawPreauth(uint256 const& key) noexcept
+{
+    return {ltWITHDRAW_PREAUTH, key};
+}
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

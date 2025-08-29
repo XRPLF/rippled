@@ -192,6 +192,9 @@ public:
     static NotTEC
     checkBatchSign(PreclaimContext const& ctx);
 
+    static NotTEC
+    checkFirewallSign(PreclaimContext const& ctx);
+
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
@@ -243,6 +246,9 @@ protected:
         XRPAmount baseFee,
         Fees const& fees,
         ApplyFlags flags);
+
+    TER
+    checkFirewall();
 
 private:
     std::pair<TER, XRPAmount>

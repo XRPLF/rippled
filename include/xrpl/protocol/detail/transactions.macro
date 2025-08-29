@@ -525,6 +525,23 @@ TRANSACTION(ttBATCH, 71, Batch, Delegation::notDelegatable, ({
     {sfBatchSigners, soeOPTIONAL},
 }))
 
+/** This transaction type creates an WithdrawPreauth instance */
+TRANSACTION(ttWITHDRAW_PREAUTH, 72, WithdrawPreauth, Delegation::delegatable, ({
+    {sfAuthorize, soeOPTIONAL},
+    {sfUnauthorize, soeOPTIONAL},
+    {sfFirewallSigners, soeOPTIONAL},
+    {sfFirewallID, soeREQUIRED},
+}))
+
+/** This transaction type creates an Firewall instance */
+TRANSACTION(ttFIREWALL_SET, 73, FirewallSet, Delegation::notDelegatable, ({
+    {sfCounterParty, soeOPTIONAL},
+    {sfBackup, soeOPTIONAL},
+    {sfFirewallRules, soeOPTIONAL},
+    {sfFirewallSigners, soeOPTIONAL},
+    {sfFirewallID, soeOPTIONAL},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
