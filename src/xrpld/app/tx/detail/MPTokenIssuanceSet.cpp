@@ -129,8 +129,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
             // in the same transaction is not allowed.
-            if (auto const fee = ctx.tx[~sfTransferFee];
-                fee && *fee > 0 && (*mutableFlags & tfMPTClearCanTransfer))
+            if (auto const fee = ctx.tx[~sfTransferFee].value_or(0);
+                fee && (*mutableFlags & tfMPTClearCanTransfer))
                 return temMALFORMED;
         }
     }
@@ -288,17 +288,17 @@ MPTokenIssuanceSet::doApply()
     else if (txFlags & tfMPTUnlock)
         flagsOut &= ~lsfMPTLocked;
 
-    if (auto const mutableFlags = ctx_.tx[~sfMutableFlags])
+    if (auto const mutableFlags = ctx_.tx[~sfMutableFlags].value_or(0))
     {
         for (auto const& f : mptMutabilityFlags)
         {
-            if (*mutableFlags & f.setFlag)
+            if (mutableFlags & f.setFlag)
                 flagsOut |= f.canMutateFlag;
-            else if (*mutableFlags & f.clearFlag)
+            else if (mutableFlags & f.clearFlag)
                 flagsOut &= ~f.canMutateFlag;
         }
 
-        if (*mutableFlags & tfMPTClearCanTransfer)
+        if (mutableFlags & tfMPTClearCanTransfer)
         {
             // If the lsfMPTCanTransfer flag is being cleared, then also clear
             // the TransferFee field.
