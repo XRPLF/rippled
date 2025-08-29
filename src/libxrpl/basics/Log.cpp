@@ -47,20 +47,20 @@ Logs::Sink::Sink(
 }
 
 void
-Logs::Sink::write(beast::severities::Severity level, std::string const& text)
+Logs::Sink::write(beast::severities::Severity level, std::string&& text)
 {
     if (level < threshold())
         return;
 
-    logs_.write(level, partition_, text, console());
+    logs_.write(level, partition_, std::move(text), console());
 }
 
 void
 Logs::Sink::writeAlways(
     beast::severities::Severity level,
-    std::string const& text)
+    std::string&& text)
 {
-    logs_.write(level, partition_, text, console());
+    logs_.write(level, partition_, std::move(text), console());
 }
 
 //------------------------------------------------------------------------------

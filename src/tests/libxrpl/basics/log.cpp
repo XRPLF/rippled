@@ -49,14 +49,14 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string const& text)
+        write(beast::severities::Severity level, std::string&& text)
             override
         {
             logs_.logStream_ << text;
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string const& text)
+        writeAlways(beast::severities::Severity level, std::string&& text)
             override
         {
             logs_.logStream_ << text;
@@ -218,13 +218,13 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::severities::Severity level, std::string&& text) override
     {
         strm_ << text;
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
+    writeAlways(beast::severities::Severity level, std::string&& text)
         override
     {
         strm_ << text;
