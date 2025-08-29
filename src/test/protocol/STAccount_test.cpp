@@ -123,9 +123,26 @@ struct STAccount_test : public beast::unit_test::suite
     }
 
     void
+    testAccountID()
+    {
+        auto const s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+        if (auto const parsed = parseBase58<AccountID>(s); BEAST_EXPECT(parsed))
+        {
+            BEAST_EXPECT(toBase58(*parsed) == s);
+        }
+
+        {
+            auto const s =
+                "âabcd1rNxp4h8apvRis6mJf9Sh8C6iRxfrDWNâabcdAVâ\xc2\x80\xc2\x8f";
+            BEAST_EXPECT(!parseBase58<AccountID>(s));
+        }
+    }
+
+    void
     run() override
     {
         testSTAccount();
+        testAccountID();
     }
 };
 
