@@ -22,7 +22,9 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <rapidjson/document.h>
+#include <boost/asio/execution/allocator.hpp>
+
+#include <yyjson.h>
 
 #include <deque>
 #include <optional>
@@ -78,6 +80,19 @@ std::ostream&
 operator<<(std::ostream& os, LogParameter<T> const& param);
 }  // namespace ripple::log
 
+namespace yyjson {
+
+struct YYJsonDeleter
+{
+    void
+    operator()(yyjson_mut_doc* doc)
+    {
+        yyjson_mut_doc_free(doc);
+    }
+};
+using YYJsonDocPtr = std::unique_ptr<yyjson_mut_doc, YYJsonDeleter>;
+}  // namespace yyjson
+
 namespace beast {
 
 /** A namespace for easy access to logging severity values. */
@@ -129,17 +144,20 @@ public:
         ripple::log::LogParameter<T> const& param);
 
     class Sink;
-
     class JsonLogAttributes
     {
     public:
-        using AttributeFields = rapidjson::Value;
+        using AttributeFields = yyjson::YYJsonDocPtr;
 
         JsonLogAttributes();
         JsonLogAttributes(JsonLogAttributes const& other);
+        JsonLogAttributes(JsonLogAttributes&& other);
 
         JsonLogAttributes&
         operator=(JsonLogAttributes const& other);
+
+        JsonLogAttributes&
+        operator=(JsonLogAttributes&& other);
 
         void
         setModuleName(std::string const& name);
@@ -159,15 +177,8 @@ public:
             return contextValues_;
         }
 
-        rapidjson::MemoryPoolAllocator<>&
-        allocator()
-        {
-            return allocator_;
-        }
-
     private:
         AttributeFields contextValues_;
-        rapidjson::MemoryPoolAllocator<> allocator_;
 
         friend class Journal;
     };
@@ -175,8 +186,7 @@ public:
     struct JsonLogContext
     {
         std::source_location location = {};
-        rapidjson::Value messageParams;
-        rapidjson::MemoryPoolAllocator<> allocator;
+        yyjson::YYJsonDocPtr messageParams;
 
         JsonLogContext() = default;
 
@@ -184,9 +194,9 @@ public:
         reset(std::source_location location_) noexcept
         {
             location = location_;
-            messageParams = rapidjson::Value{};
-            messageParams.SetObject();
-            allocator.Clear();
+            messageParams.reset(yyjson_mut_doc_new(nullptr));
+            yyjson_mut_doc_set_root(
+                messageParams.get(), yyjson_mut_obj(messageParams.get()));
         }
     };
 
@@ -560,8 +570,6 @@ public:
     Stream
     warn(std::source_location location = std::source_location::current()) const
     {
-        char const* a = "a";
-        rapidjson::Value v{a, 1};
         if (m_jsonLogsEnabled)
             initMessageContext(location);
         return {m_attributes, *m_sink, severities::kWarning};
@@ -715,39 +723,225 @@ using logwstream = basic_logstream<wchar_t>;
 namespace ripple::log {
 
 namespace detail {
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::int8_t value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_sint(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::uint8_t value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_uint(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::int16_t value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_sint(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::uint16_t value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_uint(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::int32_t value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_sint(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::uint32_t value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_uint(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::int64_t value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_sint(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::uint64_t value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_uint(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::string const& value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_strncpy(doc, value.c_str(), value.length()));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    char const* value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_strcpy(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    bool value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_bool(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    float value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_real(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    double value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_real(doc, value));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    std::nullptr_t,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_null(doc));
+}
+
+inline void
+setJsonField(
+    std::string const& name,
+    yyjson_mut_val* value,
+    yyjson_mut_doc* doc,
+    yyjson_mut_val* obj)
+{
+    yyjson_mut_obj_put(
+        obj,
+        yyjson_mut_strncpy(doc, name.c_str(), name.length()),
+        yyjson_mut_val_mut_copy(doc, value));
+}
+
+template <typename T>
+concept CanSetJsonValue = requires(T val) {
+    setJsonField(
+        std::declval<std::string const&>(),
+        val,
+        std::declval<yyjson_mut_doc*>(),
+        std::declval<yyjson_mut_val*>());
+};
+
 template <typename T>
 void
 setJsonValue(
-    rapidjson::Value& object,
-    rapidjson::MemoryPoolAllocator<>& allocator,
+    yyjson::YYJsonDocPtr& object,
     char const* name,
     T&& value,
     std::ostream* outStream)
 {
     using ValueType = std::decay_t<T>;
-    rapidjson::Value jsonValue;
-    if constexpr (std::constructible_from<
-                      rapidjson::Value,
-                      ValueType,
-                      rapidjson::MemoryPoolAllocator<>&>)
+    auto root = yyjson_mut_doc_get_root(object.get());
+
+    if constexpr (CanSetJsonValue<ValueType>)
     {
-        jsonValue = rapidjson::Value{value, allocator};
-        if (outStream)
-        {
-            (*outStream) << value;
-        }
-    }
-    else if constexpr (std::constructible_from<rapidjson::Value, ValueType>)
-    {
-        jsonValue = rapidjson::Value{value};
-        if (outStream)
-        {
-            (*outStream) << value;
-        }
-    }
-    else if constexpr (std::same_as<ValueType, std::string>)
-    {
-        jsonValue = rapidjson::Value{value.c_str(), allocator};
+        setJsonField(name, std::forward<T>(value), object.get(), root);
         if (outStream)
         {
             (*outStream) << value;
@@ -758,16 +952,13 @@ setJsonValue(
         std::ostringstream oss;
         oss << value;
 
-        jsonValue = rapidjson::Value{oss.str().c_str(), allocator};
+        setJsonField(name, oss.str(), object.get(), root);
 
         if (outStream)
         {
             (*outStream) << oss.str();
         }
     }
-
-    object.AddMember(
-        rapidjson::StringRef(name), std::move(jsonValue), allocator);
 }
 }  // namespace detail
 
@@ -779,7 +970,6 @@ operator<<(std::ostream& os, LogParameter<T> const& param)
         return os;
     detail::setJsonValue(
         beast::Journal::currentJsonLogContext_.messageParams,
-        beast::Journal::currentJsonLogContext_.allocator,
         param.name_,
         param.value_,
         &os);
@@ -794,7 +984,6 @@ operator<<(std::ostream& os, LogField<T> const& param)
         return os;
     detail::setJsonValue(
         beast::Journal::currentJsonLogContext_.messageParams,
-        beast::Journal::currentJsonLogContext_.allocator,
         param.name_,
         param.value_,
         nullptr);
@@ -822,11 +1011,7 @@ attributes(Pair&&... pairs)
     beast::Journal::JsonLogAttributes result;
 
     (detail::setJsonValue(
-         result.contextValues(),
-         result.allocator(),
-         pairs.first,
-         pairs.second,
-         nullptr),
+         result.contextValues(), pairs.first, pairs.second, nullptr),
      ...);
 
     return result;

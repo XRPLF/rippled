@@ -19,10 +19,6 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
-#include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
-
 #include <ios>
 #include <ostream>
 #include <ranges>
@@ -125,13 +121,20 @@ severities::to_string(Severity severity)
 
 Journal::JsonLogAttributes::JsonLogAttributes()
 {
-    contextValues_.SetObject();
+    contextValues_.reset(yyjson_mut_doc_new(nullptr));
+    yyjson_mut_doc_set_root(
+        contextValues_.get(), yyjson_mut_obj(contextValues_.get()));
 }
 
 Journal::JsonLogAttributes::JsonLogAttributes(JsonLogAttributes const& other)
 {
-    contextValues_.SetObject();
-    contextValues_.CopyFrom(other.contextValues_, allocator_);
+    contextValues_.reset(
+        yyjson_mut_doc_mut_copy(other.contextValues_.get(), nullptr));
+}
+
+Journal::JsonLogAttributes::JsonLogAttributes(JsonLogAttributes&& other)
+{
+    contextValues_ = std::move(other.contextValues_);
 }
 
 Journal::JsonLogAttributes&
@@ -141,17 +144,29 @@ Journal::JsonLogAttributes::operator=(JsonLogAttributes const& other)
     {
         return *this;
     }
-    contextValues_.CopyFrom(other.contextValues_, allocator_);
+    contextValues_.reset(
+        yyjson_mut_doc_mut_copy(other.contextValues_.get(), nullptr));
+    return *this;
+}
+
+Journal::JsonLogAttributes&
+Journal::JsonLogAttributes::operator=(JsonLogAttributes&& other)
+{
+    if (&other == this)
+    {
+        return *this;
+    }
+
+    contextValues_ = std::move(other.contextValues_);
     return *this;
 }
 
 void
 Journal::JsonLogAttributes::setModuleName(std::string const& name)
 {
-    contextValues_.AddMember(
-        rapidjson::StringRef("Module"),
-        rapidjson::Value{name.c_str(), allocator_},
-        allocator_);
+    auto root = yyjson_mut_doc_get_root(contextValues_.get());
+    ripple::log::detail::setJsonField(
+        "Module", name, contextValues_.get(), root);
 }
 
 Journal::JsonLogAttributes
@@ -161,22 +176,23 @@ Journal::JsonLogAttributes::combine(
 {
     JsonLogAttributes result;
 
-    result.contextValues_.CopyFrom(a, result.allocator_);
+    result.contextValues_.reset(yyjson_mut_doc_mut_copy(a.get(), nullptr));
 
-    for (auto& member : b.GetObject())
+    auto bRoot = yyjson_mut_doc_get_root(b.get());
+    auto root = yyjson_mut_doc_get_root(result.contextValues_.get());
+    for (auto iter = yyjson_mut_obj_iter_with(bRoot);
+         yyjson_mut_obj_iter_has_next(&iter);
+         yyjson_mut_obj_iter_next(&iter))
     {
-        auto val = rapidjson::Value{member.value, result.allocator_};
-        if (result.contextValues_.HasMember(member.name))
-        {
-            result.contextValues_[member.name] = std::move(val);
-        }
-        else
-        {
-            result.contextValues_.AddMember(
-                rapidjson::Value{member.name, result.allocator_},
-                std::move(val),
-                result.allocator_);
-        }
+        auto key = iter.cur;
+        auto val = yyjson_mut_obj_iter_get_val(key);
+
+        auto keyCopied =
+            yyjson_mut_val_mut_copy(result.contextValues_.get(), key);
+        auto valueCopied =
+            yyjson_mut_val_mut_copy(result.contextValues_.get(), val);
+
+        yyjson_mut_obj_put(root, keyCopied, valueCopied);
     }
 
     return result;
@@ -199,92 +215,89 @@ Journal::formatLog(
         return message;
     }
 
-    rapidjson::Document doc{&currentJsonLogContext_.allocator};
-    rapidjson::Value logContext;
-    logContext.SetObject();
-
-    logContext.AddMember(
-        rapidjson::StringRef("Function"),
-        rapidjson::StringRef(currentJsonLogContext_.location.function_name()),
-        currentJsonLogContext_.allocator);
-
-    logContext.AddMember(
-        rapidjson::StringRef("File"),
-        rapidjson::StringRef(currentJsonLogContext_.location.file_name()),
-        currentJsonLogContext_.allocator);
-
-    logContext.AddMember(
-        rapidjson::StringRef("Line"),
-        currentJsonLogContext_.location.line(),
-        currentJsonLogContext_.allocator);
-    std::stringstream threadIdStream;
-    threadIdStream << std::this_thread::get_id();
-    auto threadIdStr = threadIdStream.str();
-    logContext.AddMember(
-        rapidjson::StringRef("ThreadId"),
-        rapidjson::StringRef(threadIdStr.c_str()),
-        currentJsonLogContext_.allocator);
-    logContext.AddMember(
-        rapidjson::StringRef("Params"),
-        std::move(currentJsonLogContext_.messageParams),
-        currentJsonLogContext_.allocator);
-    currentJsonLogContext_.messageParams = rapidjson::Value{};
-    currentJsonLogContext_.messageParams.SetObject();
-    auto severityStr = to_string(severity);
-    logContext.AddMember(
-        rapidjson::StringRef("Level"),
-        rapidjson::StringRef(severityStr.c_str()),
-        currentJsonLogContext_.allocator);
-    logContext.AddMember(
-        rapidjson::StringRef("Message"),
-        rapidjson::StringRef(message.c_str()),
-        currentJsonLogContext_.allocator);
-    logContext.AddMember(
-        rapidjson::StringRef("Time"),
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count(),
-        currentJsonLogContext_.allocator);
-
-    if (attributes.has_value())
-    {
-        for (auto const& [key, value] : attributes->contextValues().GetObject())
-        {
-            if (logContext.HasMember(key))
-                continue;
-            rapidjson::Value jsonValue;
-            jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
-
-            logContext.AddMember(
-                rapidjson::Value{key, currentJsonLogContext_.allocator},
-                std::move(jsonValue),
-                currentJsonLogContext_.allocator);
-        }
-    }
+    yyjson::YYJsonDocPtr doc{yyjson_mut_doc_new(nullptr)};
+    auto logContext = yyjson_mut_obj(doc.get());
+    yyjson_mut_doc_set_root(doc.get(), logContext);
 
     if (globalLogAttributes_)
     {
-        for (auto const& [key, value] :
-             globalLogAttributes_->contextValues().GetObject())
+        auto root = yyjson_mut_doc_get_root(
+            globalLogAttributes_->contextValues().get());
+        for (auto iter = yyjson_mut_obj_iter_with(root);
+             yyjson_mut_obj_iter_has_next(&iter);
+             yyjson_mut_obj_iter_next(&iter))
         {
-            if (logContext.HasMember(key))
-                continue;
-            rapidjson::Value jsonValue;
-            jsonValue.CopyFrom(value, currentJsonLogContext_.allocator);
+            auto key = iter.cur;
+            auto val = yyjson_mut_obj_iter_get_val(key);
 
-            logContext.AddMember(
-                rapidjson::Value{key, currentJsonLogContext_.allocator},
-                std::move(jsonValue),
-                currentJsonLogContext_.allocator);
+            auto keyCopied = yyjson_mut_val_mut_copy(doc.get(), key);
+            auto valueCopied = yyjson_mut_val_mut_copy(doc.get(), val);
+
+            yyjson_mut_obj_put(logContext, keyCopied, valueCopied);
         }
     }
 
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer writer(buffer);
+    if (attributes.has_value())
+    {
+        auto root = yyjson_mut_doc_get_root(attributes->contextValues().get());
+        for (auto iter = yyjson_mut_obj_iter_with(root);
+             yyjson_mut_obj_iter_has_next(&iter);
+             yyjson_mut_obj_iter_next(&iter))
+        {
+            auto key = iter.cur;
+            auto val = yyjson_mut_obj_iter_get_val(key);
 
-    logContext.Accept(writer);
+            auto keyCopied = yyjson_mut_val_mut_copy(doc.get(), key);
+            auto valueCopied = yyjson_mut_val_mut_copy(doc.get(), val);
 
-    return {buffer.GetString()};
+            yyjson_mut_obj_put(logContext, keyCopied, valueCopied);
+        }
+    }
+
+    ripple::log::detail::setJsonField(
+        "Function",
+        currentJsonLogContext_.location.function_name(),
+        doc.get(),
+        logContext);
+    ripple::log::detail::setJsonField(
+        "File",
+        currentJsonLogContext_.location.file_name(),
+        doc.get(),
+        logContext);
+    ripple::log::detail::setJsonField(
+        "Line",
+        static_cast<std::uint64_t>(currentJsonLogContext_.location.line()),
+        doc.get(),
+        logContext);
+
+    std::stringstream threadIdStream;
+    threadIdStream << std::this_thread::get_id();
+    auto threadIdStr = threadIdStream.str();
+
+    auto messageParamsRoot =
+        yyjson_mut_doc_get_root(currentJsonLogContext_.messageParams.get());
+    ripple::log::detail::setJsonField(
+        "ThreadId", threadIdStr, doc.get(), logContext);
+    ripple::log::detail::setJsonField(
+        "Params", messageParamsRoot, doc.get(), logContext);
+
+    yyjson_mut_doc_set_root(
+        currentJsonLogContext_.messageParams.get(), nullptr);
+    auto severityStr = to_string(severity);
+    ripple::log::detail::setJsonField(
+        "Level", severityStr, doc.get(), logContext);
+    ripple::log::detail::setJsonField(
+        "Message", message, doc.get(), logContext);
+    ripple::log::detail::setJsonField(
+        "Time",
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count(),
+        doc.get(),
+        logContext);
+
+    std::string result = yyjson_mut_write(doc.get(), 0, nullptr);
+    return result;
 }
 
 void

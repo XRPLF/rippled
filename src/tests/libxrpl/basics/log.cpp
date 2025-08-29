@@ -195,6 +195,7 @@ TEST_CASE("Global attributes inheritable")
 
     CHECK(jsonLog.IsObject());
     CHECK(jsonLog.HasMember("Field1"));
+    CHECK(jsonLog.HasMember("Field2"));
     CHECK(jsonLog["Field1"].IsString());
     // Field1 should be overwritten to Value3
     CHECK(jsonLog["Field1"].GetString() == std::string{"Value3"});
@@ -411,6 +412,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogParams")
                       << log::param(
                              "Field2",
                              std::numeric_limits<std::uint64_t>::max());
+
+    auto test = stream().str();
 
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());

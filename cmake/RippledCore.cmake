@@ -52,6 +52,7 @@ target_link_libraries(xrpl.libpb
 add_library(xrpl.imports.main INTERFACE)
 
 find_package(RapidJSON)
+find_package(yyjson)
 
 target_link_libraries(xrpl.imports.main
   INTERFACE
@@ -77,7 +78,7 @@ add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC
   xrpl.imports.main
   xrpl.libpb
-  rapidjson
+  yyjson::yyjson
 )
 
 # Level 02
