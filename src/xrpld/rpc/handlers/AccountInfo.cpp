@@ -223,7 +223,7 @@ doAccountInfo(RPC::JsonContext& context)
                     {
                         XRPL_ASSERT(
                             prevSeqProxy < tx.seqProxy,
-                            "rpple::doAccountInfo : first sorted proxy");
+                            "doAccountInfo : first sorted proxy");
                         prevSeqProxy = tx.seqProxy;
                         jvTx[jss::seq] = tx.seqProxy.value();
                         ++seqCount;
@@ -235,7 +235,7 @@ doAccountInfo(RPC::JsonContext& context)
                     {
                         XRPL_ASSERT(
                             prevSeqProxy < tx.seqProxy,
-                            "rpple::doAccountInfo : second sorted proxy");
+                            "doAccountInfo : second sorted proxy");
                         prevSeqProxy = tx.seqProxy;
                         jvTx[jss::ticket] = tx.seqProxy.value();
                         ++ticketCount;

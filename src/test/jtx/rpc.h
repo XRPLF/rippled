@@ -68,7 +68,7 @@ public:
             // always obtained from the lookup into the ErrorInfo lookup table.
             //
             // Take advantage of that fact to populate jt.rpcException. The
-            // check will be aware of whether the rpcExcpetion can be safely
+            // check will be aware of whether the rpcException can be safely
             // ignored.
             jt.rpcCode = {
                 *code_,

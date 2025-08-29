@@ -29,13 +29,13 @@ namespace test {
 namespace jtx {
 
 /** Sets the DeliverMin on a JTx. */
-class delivermin
+class deliver_min
 {
 private:
     STAmount amount_;
 
 public:
-    delivermin(STAmount const& amount) : amount_(amount)
+    deliver_min(STAmount const& amount) : amount_(amount)
     {
     }
 

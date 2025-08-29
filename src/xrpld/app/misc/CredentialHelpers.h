@@ -35,7 +35,7 @@ namespace ripple {
 namespace credentials {
 
 // These function will be used by the code that use DepositPreauth / Credentials
-// (and any future preauthorization modes) as part of authorization (all the
+// (and any future pre-authorization modes) as part of authorization (all the
 // transfer funds transactions)
 
 // Check if credential sfExpiration field has passed ledger's parentCloseTime
@@ -61,7 +61,7 @@ checkFields(STTx const& tx, beast::Journal j);
 
 // Accessing the ledger to check if provided credentials are valid. Do not use
 // in doApply (only in preclaim) since it does not remove expired credentials.
-// If you call it in prelaim, you also must call verifyDepositPreauth in doApply
+// If you call it in preclaim, you also must call verifyDepositPreauth in doApply
 TER
 valid(
     STTx const& tx,

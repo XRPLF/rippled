@@ -43,7 +43,7 @@ alt phase == OPEN
             alt sqn%256==0
             CA -[#green]> RM: <font color=green>getValidations
             CA -[#green]> CA: <font color=green>create UNLModify Tx
-            hnote over CA#lightgreen: use validatations of the last 256 ledgers\nto figure out UNLModify Tx candidates.\nIf any, create UNLModify Tx, and add to TxSet.
+            hnote over CA#lightgreen: use validations of the last 256 ledgers\nto figure out UNLModify Tx candidates.\nIf any, create UNLModify Tx, and add to TxSet.
             end
         CA -> GC
         GC -> CA: propose

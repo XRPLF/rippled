@@ -25,11 +25,11 @@ namespace ripple {
 
 Permission::Permission()
 {
-    delegatableTx_ = {
+    delegableTx_ = {
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) {value, delegatable},
+#define TRANSACTION(tag, value, name, delegable, fields) {value, delegable},
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -126,8 +126,8 @@ Permission::isDelegatable(std::uint32_t const& permissionValue) const
         // granular permissions are always allowed to be delegated
         return true;
 
-    auto const it = delegatableTx_.find(permissionValue - 1);
-    if (it != delegatableTx_.end() && it->second == Delegation::notDelegatable)
+    auto const it = delegableTx_.find(permissionValue - 1);
+    if (it != delegableTx_.end() && it->second == Delegation::notDelegatable)
         return false;
 
     return true;

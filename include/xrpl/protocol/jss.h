@@ -710,7 +710,7 @@ JSS(write_load);              // out: GetCounts
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) JSS(name);
+#define TRANSACTION(tag, value, name, delegable, fields) JSS(name);
 
 #include <xrpl/protocol/detail/transactions.macro>
 

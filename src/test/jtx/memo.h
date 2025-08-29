@@ -51,13 +51,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memodata
+class memo_data
 {
 private:
     std::string s_;
 
 public:
-    memodata(std::string const& s) : s_(s)
+    memo_data(std::string const& s) : s_(s)
     {
     }
 
@@ -65,13 +65,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memoformat
+class memo_format
 {
 private:
     std::string s_;
 
 public:
-    memoformat(std::string const& s) : s_(s)
+    memo_format(std::string const& s) : s_(s)
     {
     }
 
@@ -79,61 +79,13 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-class memotype
+class memo_type
 {
 private:
     std::string s_;
 
 public:
-    memotype(std::string const& s) : s_(s)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
-class memondata
-{
-private:
-    std::string format_;
-    std::string type_;
-
-public:
-    memondata(std::string const& format, std::string const& type)
-        : format_(format), type_(type)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
-class memonformat
-{
-private:
-    std::string data_;
-    std::string type_;
-
-public:
-    memonformat(std::string const& data, std::string const& type)
-        : data_(data), type_(type)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const;
-};
-
-class memontype
-{
-private:
-    std::string data_;
-    std::string format_;
-
-public:
-    memontype(std::string const& data, std::string const& format)
-        : data_(data), format_(format)
+    memo_type(std::string const& s) : s_(s)
     {
     }
 

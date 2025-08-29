@@ -56,7 +56,7 @@ fillTransaction(
 //   ledger_index : <ledger_index>
 //   limit: integer                 // optional, number of problems
 //   role: gateway|user             // account role to assume
-//   transactions: true             // optional, reccommend transactions
+//   transactions: true             // optional, recommend transactions
 // }
 Json::Value
 doNoRippleCheck(RPC::JsonContext& context)

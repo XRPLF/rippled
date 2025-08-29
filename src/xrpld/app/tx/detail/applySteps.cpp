@@ -97,8 +97,8 @@ with_txn_type(TxType txnType, F&& f)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) \
-    case tag:                                              \
+#define TRANSACTION(tag, value, name, delegable, fields) \
+    case tag:                                            \
         return f.template operator()<name>();
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -329,15 +329,15 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, rules, flags, j);
+    PreflightContext const pf_ctx(app, tx, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pf_ctx, invoke_preflight(pf_ctx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pf_ctx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 
@@ -350,15 +350,15 @@ preflight(
     ApplyFlags flags,
     beast::Journal j)
 {
-    PreflightContext const pfctx(app, tx, parentBatchId, rules, flags, j);
+    PreflightContext const pf_ctx(app, tx, parentBatchId, rules, flags, j);
     try
     {
-        return {pfctx, invoke_preflight(pfctx)};
+        return {pf_ctx, invoke_preflight(pf_ctx)};
     }
     catch (std::exception const& e)
     {
         JLOG(j.fatal()) << "apply (preflight): " << e.what();
-        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+        return {pf_ctx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
 

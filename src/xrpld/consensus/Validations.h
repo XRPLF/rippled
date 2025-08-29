@@ -476,7 +476,7 @@ private:
         @param lock Existing lock of mutex_
         @param f Invokable with signature (LedgerTrie<Ledger> &)
 
-        @warning The invokable `f` is expected to be a simple transformation of
+        @warning The invocable `f` is expected to be a simple transformation of
                  its arguments and will be called with mutex_ under lock.
 
     */
@@ -500,9 +500,9 @@ private:
         @param f Invokable with signature (NodeID const &, Validations const &)
                  for each current validation.
 
-        @note The invokable `pre` is called _prior_ to checking for staleness
+        @note The invocable `pre` is called _prior_ to checking for staleness
               and reflects an upper-bound on the number of calls to `f.
-        @warning The invokable `f` is expected to be a simple transformation of
+        @warning The invocable `f` is expected to be a simple transformation of
                  its arguments and will be called with mutex_ under lock.
     */
 
@@ -539,9 +539,9 @@ private:
         @param pre Invokable with signature(std::size_t)
         @param f Invokable with signature (NodeID const &, Validation const &)
 
-        @note The invokable `pre` is called prior to iterating validations. The
+        @note The invocable `pre` is called prior to iterating validations. The
               argument is the number of times `f` will be called.
-        @warning The invokable f is expected to be a simple transformation of
+        @warning The invocable f is expected to be a simple transformation of
        its arguments and will be called with mutex_ under lock.
     */
     template <class Pre, class F>

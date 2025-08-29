@@ -215,7 +215,7 @@ class Delegate_test : public beast::unit_test::suite
                 ter(tecNO_TARGET));
         }
 
-        // non-delegatable transaction
+        // non-delegable transaction
         {
             env(delegate::set(gw, alice, {"SetRegularKey"}),
                 ter(tecNO_PERMISSION));

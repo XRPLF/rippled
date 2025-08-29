@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <test/jtx/delivermin.h>
+#include <test/jtx/deliver_min.h>
 
 #include <xrpl/protocol/jss.h>
 
@@ -26,7 +26,7 @@ namespace test {
 namespace jtx {
 
 void
-delivermin::operator()(Env& env, JTx& jt) const
+deliver_min::operator()(Env& env, JTx& jt) const
 {
     jt.jv[jss::DeliverMin] = amount_.getJson(JsonOptions::none);
 }

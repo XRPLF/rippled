@@ -206,7 +206,7 @@ SHAMap::finishFetch(
     catch (...)
     {
         JLOG(journal_.warn())
-            << "finishFetch exception: unknonw exception: " << hash;
+            << "finishFetch exception: unknown exception: " << hash;
     }
 
     return {};

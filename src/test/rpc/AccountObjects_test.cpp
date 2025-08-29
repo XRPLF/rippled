@@ -686,7 +686,7 @@ public:
         env(deposit::auth(gw, alice));
         env.close();
         {
-            // Find the preauthorization.
+            // Find the pre-authorization.
             Json::Value const resp = acctObjs(gw, jss::deposit_preauth);
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
 

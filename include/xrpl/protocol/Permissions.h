@@ -46,14 +46,14 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("PERMISSION")
 };
 
-enum Delegation { delegatable, notDelegatable };
+enum Delegation { delegable, notDelegatable };
 
 class Permission
 {
 private:
     Permission();
 
-    std::unordered_map<std::uint16_t, Delegation> delegatableTx_;
+    std::unordered_map<std::uint16_t, Delegation> delegableTx_;
 
     std::unordered_map<std::string, GranularPermissionType>
         granularPermissionMap_;
