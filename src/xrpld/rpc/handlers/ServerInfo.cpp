@@ -62,6 +62,158 @@ public:
     {
         return defs_;
     }
+
+    static Json::Value
+    parseLedgerSpecificFlags()
+    {
+        Json::Value solution;
+        // TODO: For purposes of improving software maintainability, please
+        // migrate the LedgerSpecificFlags enum into a std::unordered_map (or)
+        // use X-Macro to perform the enum -> map translation
+        std::unordered_map<std::string, unsigned int> const LSFlags = {
+            // ltACCOUNT_ROOT
+            {"lsfPasswordSpent", 0x00010000},
+            {"lsfRequireDestTag", 0x00020000},
+            {"lsfRequireAuth", 0x00040000},
+            {"lsfDisallowXRP", 0x00080000},
+            {"lsfDisableMaster", 0x00100000},
+            {"lsfNoFreeze", 0x00200000},
+            {"lsfGlobalFreeze", 0x00400000},
+            {"lsfDefaultRipple", 0x00800000},
+            {"lsfDepositAuth", 0x01000000},
+
+            {"lsfDisallowIncomingNFTokenOffer", 0x04000000},
+            {"lsfDisallowIncomingCheck", 0x08000000},
+            {"lsfDisallowIncomingPayChan", 0x10000000},
+            {"lsfDisallowIncomingTrustline", 0x20000000},
+            {"lsfAllowTrustLineLocking", 0x40000000},
+            {"lsfAllowTrustLineClawback", 0x80000000},
+
+            // ltOFFER
+            {"lsfPassive", 0x00010000},
+            {"lsfSell", 0x00020000},
+            {"lsfHybrid", 0x00040000},
+
+            // ltRIPPLE_STATE
+            {"lsfLowReserve", 0x00010000},
+            {"lsfHighReserve", 0x00020000},
+            {"lsfLowAuth", 0x00040000},
+            {"lsfHighAuth", 0x00080000},
+            {"lsfLowNoRipple", 0x00100000},
+            {"lsfHighNoRipple", 0x00200000},
+            {"lsfLowFreeze", 0x00400000},
+            {"lsfHighFreeze", 0x00800000},
+            {"lsfLowDeepFreeze", 0x02000000},
+            {"lsfHighDeepFreeze", 0x04000000},
+            {"lsfAMMNode", 0x01000000},
+
+            // ltSIGNER_LIST
+            {"lsfOneOwnerCount", 0x00010000},
+
+            // ltDIR_NODE
+            {"lsfNFTokenBuyOffers", 0x00000001},
+            {"lsfNFTokenSellOffers", 0x00000002},
+
+            // ltNFTOKEN_OFFER
+            {"lsfSellNFToken", 0x00000001},
+
+            // ltMPTOKEN_ISSUANCE
+            {"lsfMPTLocked", 0x00000001},
+            {"lsfMPTCanLock", 0x00000002},
+            {"lsfMPTRequireAuth", 0x00000004},
+            {"lsfMPTCanEscrow", 0x00000008},
+            {"lsfMPTCanTrade", 0x00000010},
+            {"lsfMPTCanTransfer", 0x00000020},
+            {"lsfMPTCanClawback", 0x00000040},
+
+            // ltMPTOKEN
+            {"lsfMPTAuthorized", 0x00000002},
+
+            // ltCREDENTIAL
+            {"lsfAccepted", 0x00010000},
+
+            // ltVAULT
+            {"lsfVaultPrivate", 0x00010000},
+        };
+
+        for (auto const& f : LSFlags)
+            solution[std::string{f.first}] = f.second;
+
+        return solution;
+    }
+
+    static Json::Value
+    parseTxnFormats()
+    {
+        Json::Value solution = Json::objectValue;
+
+        for (auto const& f : TxFormats::getInstance())
+        {
+            solution[f.getName()] = Json::objectValue;
+            solution[f.getName()][jss::hexCode] = f.getType();
+            solution[f.getName()][jss::sfields] = Json::arrayValue;
+
+            for (auto const& element : f.getSOTemplate())
+            {
+                Json::Value elementObj = Json::objectValue;
+                elementObj[jss::sfield_Name] = element.sField().getName();
+
+                // the below cascade of if-else conditions pertain to SOEStyle
+                // and SOETxMPTIssue enums. It is prudent to find a more
+                // maintainable mapping of these values.
+                if (element.style() == -1)
+                    elementObj[jss::optionality] = "INVALID";
+                else if (element.style() == 0)
+                    elementObj[jss::optionality] = "REQUIRED";
+                else if (element.style() == 1)
+                    elementObj[jss::optionality] = "OPTIONAL";
+                else if (element.style() == 2)
+                    elementObj[jss::optionality] = "DEFAULT";
+
+                if (element.supportMPT() == 1)
+                    elementObj[jss::isMPTSupported] = "MPTSupported";
+                else if (element.supportMPT() == 2)
+                    elementObj[jss::isMPTSupported] = "MPTNotSupported";
+                else if (element.supportMPT() == 0)
+                    elementObj[jss::isMPTSupported] = "MPTNone";
+                solution[f.getName()][jss::sfields].append(elementObj);
+            }
+        }
+
+        return solution;
+    }
+
+    static Json::Value
+    parseLedgerFormats()
+    {
+        Json::Value solution;
+
+        for (auto const& v : LedgerFormats::getInstance())
+        {
+            solution[v.getName()] = Json::objectValue;
+            solution[v.getName()][jss::hexCode] = v.getType();
+            solution[v.getName()][jss::sfields] = Json::arrayValue;
+
+            for (auto const& sf : v.getSOTemplate())
+            {
+                Json::Value sfieldElement = Json::objectValue;
+                sfieldElement[jss::sfield_Name] = sf.sField().getName();
+
+                if (sf.style() == -1)
+                    sfieldElement[jss::optionality] = "INVALID";
+                else if (sf.style() == 0)
+                    sfieldElement[jss::optionality] = "REQUIRED";
+                else if (sf.style() == 1)
+                    sfieldElement[jss::optionality] = "OPTIONAL";
+                else if (sf.style() == 2)
+                    sfieldElement[jss::optionality] = "DEFAULT";
+
+                solution[v.getName()][jss::sfields].append(sfieldElement);
+            }
+        }
+
+        return solution;
+    }
 };
 
 std::string
@@ -142,6 +294,14 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::TYPES][typeName] = typeValue;
         typeMap[typeValue] = typeName;
     }
+
+    // populate ledger_entry formats
+    defs_[jss::LEDGER_ENTRIES] = parseLedgerFormats();
+
+    // populate all the flags which are associated with ledger entries.
+    defs_[jss::LEDGER_ENTRY_FLAGS] = parseLedgerSpecificFlags();
+
+    defs_[jss::TRANSACTION_FORMATS] = parseTxnFormats();
 
     // populate LedgerEntryType names and values
     defs_[jss::LEDGER_ENTRY_TYPES] = Json::objectValue;
