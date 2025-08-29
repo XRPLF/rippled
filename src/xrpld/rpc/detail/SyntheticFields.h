@@ -17,28 +17,46 @@
 */
 //==============================================================================
 
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/NFTSyntheticSerializer.h>
-#include <xrpl/protocol/NFTokenID.h>
-#include <xrpl/protocol/NFTokenOfferID.h>
+#ifndef RIPPLE_RPC_DETAIL_SYNTHETICFIELDS_H_INCLUDED
+#define RIPPLE_RPC_DETAIL_SYNTHETICFIELDS_H_INCLUDED
+
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxMeta.h>
-#include <xrpl/protocol/jss.h>
 
 #include <memory>
 
 namespace ripple {
+
+class ReadView;
+
 namespace RPC {
 
+struct JsonContext;
+
+/**
+   Adds all synthetic fields to transaction metadata JSON.
+   This includes delivered amount, NFT synthetic fields, and MPToken issuance
+   ID.
+
+   @{
+ */
 void
-insertNFTSyntheticInJson(
+insertAllSyntheticInJson(
     Json::Value& metadata,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta)
-{
-    insertNFTokenID(metadata, transaction, transactionMeta);
-    insertNFTokenOfferID(metadata, transaction, transactionMeta);
-}
+    ReadView const&,
+    std::shared_ptr<STTx const> const&,
+    TxMeta const&);
+
+void
+insertAllSyntheticInJson(
+    Json::Value& metadata,
+    JsonContext const&,
+    std::shared_ptr<STTx const> const&,
+    TxMeta const&);
+/** @} */
 
 }  // namespace RPC
 }  // namespace ripple
+
+#endif

@@ -31,13 +31,13 @@ namespace ripple {
 namespace RPC {
 
 /**
-   Adds common synthetic fields to transaction-related JSON responses
+   Adds common synthetic fields to transaction metadata JSON
 
    @{
  */
 void
 insertNFTSyntheticInJson(
-    Json::Value&,
+    Json::Value& metadata,
     std::shared_ptr<STTx const> const&,
     TxMeta const&);
 /** @} */
