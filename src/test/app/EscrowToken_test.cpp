@@ -3501,6 +3501,10 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
 
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 125);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 125);
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(20'000));
+
             // bob can finish escrow
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
@@ -3510,6 +3514,15 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.balance(alice, MPT) == preAlice - delta);
             BEAST_EXPECT(env.balance(bob, MPT) == MPT(10'100));
+
+            auto const escrowedWithFix =
+                env.current()->rules().enabled(fixTokenEscrowV1) ? 0 : 25;
+            auto const outstandingWithFix =
+                env.current()->rules().enabled(fixTokenEscrowV1) ? MPT(19'975)
+                                                                 : MPT(20'000);
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == escrowedWithFix);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == escrowedWithFix);
+            BEAST_EXPECT(env.balance(gw, MPT) == outstandingWithFix);
         }
 
         // test locked rate: cancel
@@ -3554,6 +3567,60 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.balance(alice, MPT) == preAlice);
             BEAST_EXPECT(env.balance(bob, MPT) == preBob);
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(20'000));
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+        }
+
+        // test locked rate: issuer is destination
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.transferFee = 25000,
+                 .ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const MPT = mptGw["MPT"];
+            env(pay(gw, alice, MPT(10'000)));
+            env(pay(gw, bob, MPT(10'000)));
+            env.close();
+
+            // alice can create escrow w/ xfer rate
+            auto const preAlice = env.balance(alice, MPT);
+            auto const seq1 = env.seq(alice);
+            auto const delta = MPT(125);
+            env(escrow::create(alice, gw, MPT(125)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150));
+            env.close();
+            auto const transferRate = escrow::rate(env, alice, seq1);
+            BEAST_EXPECT(
+                transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
+
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 125);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 125);
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(20'000));
+
+            // bob can finish escrow
+            env(escrow::finish(gw, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, MPT) == preAlice - delta);
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(19'875));
         }
     }
 
@@ -3878,6 +3945,7 @@ public:
         FeatureBitset const all{testable_amendments()};
         testIOUWithFeats(all);
         testMPTWithFeats(all);
+        testMPTWithFeats(all - fixTokenEscrowV1);
     }
 };
 
