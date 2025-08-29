@@ -363,7 +363,7 @@ Journal::ScopedStream::ScopedStream(
 
 Journal::ScopedStream::~ScopedStream()
 {
-    std::string s(m_ostream.str());
+    std::string s = m_ostream.str();
     if (!s.empty())
     {
         if (s == "\n")
