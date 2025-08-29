@@ -410,6 +410,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate, Delegation::de
     {sfMaximumAmount, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL},
+    {sfMutableFlags, soeOPTIONAL},
 }))
 
 /** This transaction type destroys a MPTokensIssuance instance */
@@ -422,6 +423,9 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet, Delegation::delegata
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL},
+    {sfMPTokenMetadata, soeOPTIONAL},
+    {sfTransferFee, soeOPTIONAL},
+    {sfMutableFlags, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */
