@@ -88,9 +88,13 @@ Logs::File::open(boost::filesystem::path const& path)
 
     if (stream->good())
     {
+        std::lock_guard lock(fileMutex_);
         m_path = path;
 
         m_stream = std::move(stream);
+        size_t const bufsize = 256 * 1024;
+        static char buf[bufsize];
+        m_stream->rdbuf()->pubsetbuf(buf, bufsize);
 
         wasOpened = true;
     }
@@ -109,12 +113,14 @@ Logs::File::closeAndReopen()
 void
 Logs::File::close()
 {
+    std::lock_guard lock(fileMutex_);
     m_stream = nullptr;
 }
 
 void
 Logs::File::write(char const* text)
 {
+    std::lock_guard lock(fileMutex_);
     if (m_stream != nullptr)
         (*m_stream) << text;
 }
@@ -122,10 +128,10 @@ Logs::File::write(char const* text)
 void
 Logs::File::writeln(char const* text)
 {
+    std::lock_guard lock(fileMutex_);
     if (m_stream != nullptr)
     {
-        (*m_stream) << text;
-        (*m_stream) << std::endl;
+        (*m_stream) << text << '\n';
     }
 }
 
@@ -145,7 +151,7 @@ Logs::open(boost::filesystem::path const& pathToLogFile)
 beast::Journal::Sink&
 Logs::get(std::string const& name)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(sinkSetMutex_);
     auto const result = sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
 }
@@ -173,7 +179,7 @@ Logs::threshold() const
 void
 Logs::threshold(beast::severities::Severity thresh)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(sinkSetMutex_);
     thresh_ = thresh;
     for (auto& sink : sinks_)
         sink.second->threshold(thresh);
@@ -183,7 +189,7 @@ std::vector<std::pair<std::string, std::string>>
 Logs::partition_severities() const
 {
     std::vector<std::pair<std::string, std::string>> list;
-    std::lock_guard lock(mutex_);
+    std::lock_guard lock(sinkSetMutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
         list.emplace_back(name, toString(fromSeverity(sink->threshold())));
@@ -194,12 +200,11 @@ void
 Logs::write(
     beast::severities::Severity level,
     std::string const& partition,
-    std::string const& text,
+    std::string text,
     bool console)
 {
     std::string s;
-    format(s, text, level, partition);
-    std::lock_guard lock(mutex_);
+    format(s, std::move(text), level, partition);
     file_.writeln(s);
     if (!silent_)
         std::cerr << s << '\n';
@@ -211,7 +216,6 @@ Logs::write(
 std::string
 Logs::rotate()
 {
-    std::lock_guard lock(mutex_);
     bool const wasOpened = file_.closeAndReopen();
     if (wasOpened)
         return "The log file was closed and reopened.";
@@ -328,15 +332,15 @@ Logs::fromString(std::string const& s)
 void
 Logs::format(
     std::string& output,
-    std::string const& message,
+    std::string message,
     beast::severities::Severity severity,
     std::string const& partition)
 {
-    output.reserve(message.size() + partition.size() + 100);
-
+    output = std::move(message);
     if (!beast::Journal::isStructuredJournalEnabled())
     {
-        output = to_string(std::chrono::system_clock::now());
+        output.reserve(message.size() + partition.size() + 100);
+        output += to_string(std::chrono::system_clock::now());
 
         output += " ";
         if (!partition.empty())
@@ -368,8 +372,6 @@ Logs::format(
                 break;
         }
     }
-
-    output += message;
 
     // Limit the maximum length of the output
     if (output.size() > maximumMessageCharacters)

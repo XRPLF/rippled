@@ -156,9 +156,10 @@ private:
     private:
         std::unique_ptr<std::ofstream> m_stream;
         boost::filesystem::path m_path;
+        std::mutex mutable fileMutex_;
     };
 
-    std::mutex mutable mutex_;
+    std::mutex mutable sinkSetMutex_;
     std::map<
         std::string,
         std::unique_ptr<beast::Journal::Sink>,
@@ -205,7 +206,7 @@ public:
     write(
         beast::severities::Severity level,
         std::string const& partition,
-        std::string const& text,
+        std::string text,
         bool console);
 
     std::string
@@ -243,7 +244,7 @@ public:
     static void
     format(
         std::string& output,
-        std::string const& message,
+        std::string message,
         beast::severities::Severity severity,
         std::string const& partition);
 
