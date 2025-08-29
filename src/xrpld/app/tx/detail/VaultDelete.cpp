@@ -148,9 +148,10 @@ VaultDelete::doApply()
         {
             // LCOV_EXCL_START
             JLOG(j_.error())  //
-                << "VaultDelete: failed to remove MPToken for vault shares "
-                << " MPTID=" << to_string(shareMPTID)
-                << " account=" << toBase58(account_);
+                << "VaultDelete: failed to remove vault owner's MPToken"
+                << " MPTID=" << to_string(shareMPTID)  //
+                << " account=" << toBase58(account_)   //
+                << " with result: " << transToken(ter);
             return ter;
             // LCOV_EXCL_STOP
         }
