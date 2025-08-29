@@ -866,7 +866,9 @@ class FeeVote_test : public beast::unit_test::suite
             Env env(*this, testable_amendments() | featureXRPFees);
 
             // establish what the current fees are
-            BEAST_EXPECT(env.current()->fees().base == XRPAmount{10});
+            BEAST_EXPECT(
+                env.current()->fees().base ==
+                XRPAmount{UNIT_TEST_REFERENCE_FEE});
             BEAST_EXPECT(
                 env.current()->fees().reserve == XRPAmount{200'000'000});
             BEAST_EXPECT(
@@ -976,7 +978,9 @@ class FeeVote_test : public beast::unit_test::suite
                 testable_amendments() | featureXRPFees | featureSmartEscrow);
 
             // establish what the current fees are
-            BEAST_EXPECT(env.current()->fees().base == XRPAmount{10});
+            BEAST_EXPECT(
+                env.current()->fees().base ==
+                XRPAmount{UNIT_TEST_REFERENCE_FEE});
             BEAST_EXPECT(
                 env.current()->fees().reserve == XRPAmount{200'000'000});
             BEAST_EXPECT(
