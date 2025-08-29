@@ -38,7 +38,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         return ret;
 
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfWithdrawMask)
+    if (flags & tfAMMWithdrawMask)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
         return temINVALID_FLAG;

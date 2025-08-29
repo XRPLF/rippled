@@ -71,8 +71,8 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
         // if featureDynamicNFT enabled then new flag allowing mutable URI
         // available
-        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMaskWithMutable
-                                               : tfNFTokenMintMask
+        ? ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintMask
+                                               : tfNFTokenMintMaskWithoutMutable
         : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
                                                : tfNFTokenMintOldMask;
 

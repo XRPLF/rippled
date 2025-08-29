@@ -39,7 +39,7 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return ret;
 
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfDepositMask)
+    if (flags & tfAMMDepositMask)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
         return temINVALID_FLAG;

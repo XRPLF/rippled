@@ -1566,7 +1566,7 @@ BridgeModify::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx.getFlags() & tfBridgeModifyMask)
+    if (ctx.tx.getFlags() & tfXChainModifyBridgeMask)
         return temINVALID_FLAG;
 
     auto const account = ctx.tx[sfAccount];
