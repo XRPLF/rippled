@@ -56,6 +56,20 @@ parseObjectID(
 static Expected<uint256, Json::Value>
 parseIndex(Json::Value const& params, Json::StaticString const fieldName)
 {
+    if (params.isString())
+    {
+        std::string const index = params.asString();
+        if (index == jss::amendments.c_str())
+            return keylet::amendments().key;
+        if (index == jss::fee.c_str())
+            return keylet::fees().key;
+        if (index == jss::nunl)
+            return keylet::negativeUNL().key;
+        if (index == jss::hashes)
+            // Note this only finds the "short" skip list. Use "hashes":index to
+            // get the long list.
+            return keylet::skip().key;
+    }
     return parseObjectID(params, fieldName, "hex string");
 }
 
@@ -71,11 +85,7 @@ parseAccountRoot(Json::Value const& params, Json::StaticString const fieldName)
         "malformedAddress", fieldName, "AccountID");
 }
 
-static Expected<uint256, Json::Value>
-parseAmendments(Json::Value const& params, Json::StaticString const fieldName)
-{
-    return parseObjectID(params, fieldName, "hex string");
-}
+// parseAmendments is a lambda, defined below
 
 static Expected<uint256, Json::Value>
 parseAMM(Json::Value const& params, Json::StaticString const fieldName)
@@ -388,16 +398,42 @@ parseEscrow(Json::Value const& params, Json::StaticString const fieldName)
     return keylet::escrow(*id, *seq).key;
 }
 
+// parseFeeSettings is a lambda, defined below
+
 static Expected<uint256, Json::Value>
-parseFeeSettings(Json::Value const& params, Json::StaticString const fieldName)
+parseFixed(
+    Keylet const& keylet,
+    Json::Value const& params,
+    Json::StaticString const& fieldName)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (!params.isBool())
+    {
+        return parseObjectID(params, fieldName, "hex string");
+    }
+    if (!params.asBool())
+    {
+        return LedgerEntryHelpers::invalidFieldError(
+            "invalidParams", fieldName, "true");
+    }
+
+    return keylet.key;
 }
 
 static Expected<uint256, Json::Value>
 parseLedgerHashes(Json::Value const& params, Json::StaticString const fieldName)
 {
-    return parseObjectID(params, fieldName, "hex string");
+    if (params.isUInt() || params.isInt())
+    {
+        // If the index doesn't parse as a UInt, throw
+        auto const index = params.asUInt();
+
+        // Return the "long" skip list for the given ledger index.
+        auto const keylet = keylet::skip(index);
+        return keylet.key;
+    }
+    // Return the key in `params` or the "short" skip list, which contains
+    // hashes since the last flag ledger.
+    return parseFixed(keylet::skip(), params, fieldName);
 }
 
 static Expected<uint256, Json::Value>
@@ -446,11 +482,7 @@ parseNFTokenPage(Json::Value const& params, Json::StaticString const fieldName)
     return parseObjectID(params, fieldName, "hex string");
 }
 
-static Expected<uint256, Json::Value>
-parseNegativeUNL(Json::Value const& params, Json::StaticString const fieldName)
-{
-    return parseObjectID(params, fieldName, "hex string");
-}
+// parseNegativeUNL is a lambda, defined below
 
 static Expected<uint256, Json::Value>
 parseOffer(Json::Value const& params, Json::StaticString const fieldName)
@@ -681,9 +713,9 @@ parseXChainOwnedCreateAccountClaimID(
     return keylet.key;
 }
 
-using FunctionType = Expected<uint256, Json::Value> (*)(
+using FunctionType = std::function<Expected<uint256, Json::Value>(
     Json::Value const&,
-    Json::StaticString const);
+    Json::StaticString const)>;
 
 struct LedgerEntry
 {
@@ -691,6 +723,22 @@ struct LedgerEntry
     FunctionType parseFunction;
     LedgerEntryType expectedType;
 };
+
+// Helper function to return FunctionType for objects that have a fixed
+// location. That is, they don't take parameters to compute the index.
+// e.g. amendments, fees, negative UNL, etc.
+static FunctionType
+fixed(Keylet const& keylet)
+{
+    return
+        [&keylet](Json::Value const& params, Json::StaticString const fieldName)
+            -> Expected<uint256, Json::Value> {
+            return parseFixed(keylet, params, fieldName);
+        };
+}
+auto const parseAmendments = fixed(keylet::amendments());
+auto const parseFeeSettings = fixed(keylet::fees());
+auto const parseNegativeUNL = fixed(keylet::negativeUNL());
 
 // {
 //   ledger_hash : <ledger>
@@ -793,9 +841,13 @@ doLedgerEntry(RPC::JsonContext& context)
             throw;
     }
 
+    // Return the computed index regardless of whether the node exists.
+    jvResult[jss::index] = to_string(uNodeIndex);
+
     if (uNodeIndex.isZero())
     {
-        return RPC::make_error(rpcENTRY_NOT_FOUND);
+        RPC::inject_error(rpcENTRY_NOT_FOUND, jvResult);
+        return jvResult;
     }
 
     auto const sleNode = lpLedger->read(keylet::unchecked(uNodeIndex));
@@ -807,12 +859,14 @@ doLedgerEntry(RPC::JsonContext& context)
     if (!sleNode)
     {
         // Not found.
-        return RPC::make_error(rpcENTRY_NOT_FOUND);
+        RPC::inject_error(rpcENTRY_NOT_FOUND, jvResult);
+        return jvResult;
     }
 
     if ((expectedType != ltANY) && (expectedType != sleNode->getType()))
     {
-        return RPC::make_error(rpcUNEXPECTED_LEDGER_TYPE);
+        RPC::inject_error(rpcUNEXPECTED_LEDGER_TYPE, jvResult);
+        return jvResult;
     }
 
     if (bNodeBinary)
@@ -822,12 +876,10 @@ doLedgerEntry(RPC::JsonContext& context)
         sleNode->add(s);
 
         jvResult[jss::node_binary] = strHex(s.peekData());
-        jvResult[jss::index] = to_string(uNodeIndex);
     }
     else
     {
         jvResult[jss::node] = sleNode->getJson(JsonOptions::none);
-        jvResult[jss::index] = to_string(uNodeIndex);
     }
 
     return jvResult;
