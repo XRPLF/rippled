@@ -46,7 +46,6 @@ private:
 
     Application& app_;
     std::uint32_t const id_;
-    beast::WrappedSink sink_;
     beast::Journal const journal_;
     endpoint_type remote_endpoint_;
     Resource::Consumer usage_;

@@ -27,6 +27,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/telemetry/JsonLogs.h>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/process/v1/args.hpp>
@@ -793,6 +794,14 @@ run(int argc, char** argv)
         thresh = kFatal;
     else if (vm.count("verbose"))
         thresh = kTrace;
+
+    if (config->LOG_STYLE == LogStyle::Json)
+    {
+        auto structuredJournal = std::make_unique<log::JsonStructuredJournal>();
+        beast::Journal::enableStructuredJournal(std::move(structuredJournal));
+        Logs::setGlobalAttributes(log::attributes(
+            {{"Application", "rippled"}, {"NetworkID", config->NETWORK_ID}}));
+    }
 
     auto logs = std::make_unique<Logs>(thresh);
 

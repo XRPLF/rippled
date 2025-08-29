@@ -25,6 +25,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
+#include <xrpl/telemetry/JsonLogs.h>
 
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 
@@ -76,6 +77,16 @@ struct FeeSetup
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
 };
+
+/**
+ * We support producing plain text logs and structured json logs.
+ */
+namespace LogStyle {
+enum LogStyle { LogFmt, Json };
+
+LogStyle
+fromString(std::string const&);
+};  // namespace LogStyle
 
 //  This entire derived class is deprecated.
 //  For new config information use the style implied
@@ -298,6 +309,9 @@ public:
         FORCED_LEDGER_RANGE_PRESENT;
 
     std::optional<std::size_t> VALIDATOR_LIST_THRESHOLD;
+
+    // Set it to LogStyle::Json to get structured json logs.
+    LogStyle::LogStyle LOG_STYLE = LogStyle::LogFmt;
 
 public:
     Config();

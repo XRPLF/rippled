@@ -167,6 +167,8 @@ private:
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
+    static std::unique_ptr<beast::Journal::StructuredLogAttributes>
+        globalLogAttributes_;
 
 public:
     Logs(beast::severities::Severity level);
@@ -187,7 +189,10 @@ public:
     operator[](std::string const& name);
 
     beast::Journal
-    journal(std::string const& name);
+    journal(
+        std::string const& name,
+        std::unique_ptr<beast::Journal::StructuredLogAttributes> attributes =
+            {});
 
     beast::severities::Severity
     threshold() const;
@@ -224,6 +229,20 @@ public:
         std::string const& partition,
         beast::severities::Severity startingLevel);
 
+    static void
+    setGlobalAttributes(std::unique_ptr<beast::Journal::StructuredLogAttributes>
+                            globalLogAttributes)
+    {
+        if (!globalLogAttributes_)
+        {
+            globalLogAttributes_ = std::move(globalLogAttributes);
+        }
+        else
+        {
+            globalLogAttributes_->combine(std::move(globalLogAttributes));
+        }
+    }
+
 public:
     static LogSeverity
     fromSeverity(beast::severities::Severity level);
@@ -237,19 +256,19 @@ public:
     static LogSeverity
     fromString(std::string const& s);
 
-private:
-    enum {
-        // Maximum line length for log messages.
-        // If the message exceeds this length it will be truncated with elipses.
-        maximumMessageCharacters = 12 * 1024
-    };
-
     static void
     format(
         std::string& output,
         std::string const& message,
         beast::severities::Severity severity,
         std::string const& partition);
+
+private:
+    enum {
+        // Maximum line length for log messages.
+        // If the message exceeds this length it will be truncated with elipses.
+        maximumMessageCharacters = 12 * 1024
+    };
 };
 
 // Wraps a Journal::Stream to skip evaluation of
