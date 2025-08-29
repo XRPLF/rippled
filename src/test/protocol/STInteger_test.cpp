@@ -84,11 +84,11 @@ struct STInteger_test : public beast::unit_test::suite
         BEAST_EXPECT(pv.getText() == "Payment");
         BEAST_EXPECT(pv.getSType() == STI_UINT32);
         BEAST_EXPECT(pv.getJson(JsonOptions::none) == "Payment");
-        STUInt32 pv(sfPermissionValue, PaymentMint);
-        BEAST_EXPECT(pv.value() == PaymentMint);
-        BEAST_EXPECT(pv.getText() == "PaymentMint");
-        BEAST_EXPECT(pv.getSType() == STI_UINT32);
-        BEAST_EXPECT(pv.getJson(JsonOptions::none) == "PaymentMint");
+        STUInt32 pv2(sfPermissionValue, PaymentMint);
+        BEAST_EXPECT(pv2.value() == PaymentMint);
+        BEAST_EXPECT(pv2.getText() == "PaymentMint");
+        BEAST_EXPECT(pv2.getSType() == STI_UINT32);
+        BEAST_EXPECT(pv2.getJson(JsonOptions::none) == "PaymentMint");
     }
 
     void
