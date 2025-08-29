@@ -48,14 +48,14 @@ public:
         }
 
         void
-        write(severities::Severity level, std::string const&) override
+        write(severities::Severity level, std::string&&) override
         {
             if (level >= threshold())
                 ++m_count;
         }
 
         void
-        writeAlways(severities::Severity level, std::string const&) override
+        writeAlways(severities::Severity level, std::string&&) override
         {
             ++m_count;
         }

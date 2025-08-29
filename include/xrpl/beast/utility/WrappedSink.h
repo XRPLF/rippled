@@ -88,14 +88,14 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string const& text) override
+    write(beast::severities::Severity level, std::string&& text) override
     {
         using beast::Journal;
         sink_.write(level, prefix_ + text);
     }
 
     void
-    writeAlways(severities::Severity level, std::string const& text) override
+    writeAlways(severities::Severity level, std::string&& text) override
     {
         using beast::Journal;
         sink_.writeAlways(level, prefix_ + text);
