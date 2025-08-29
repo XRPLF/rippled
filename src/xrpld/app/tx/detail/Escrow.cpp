@@ -127,8 +127,9 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     XRPAmount txnFees{Transactor::calculateBaseFee(view, tx)};
     if (tx.isFieldPresent(sfFinishFunction))
     {
-        // TODO: make this fee increase based on the extra compute run
-        txnFees += 1000;
+        // 10 base fees for the transaction (1 is in
+        // `Transactor::calculateBaseFee`), plus 5 drops per byte
+        txnFees += 9 * view.fees().base + 5 * tx[sfFinishFunction].size();
     }
     return txnFees;
 }
@@ -503,6 +504,17 @@ escrowLockApplyHelper<MPTIssue>(
     return tesSUCCESS;
 }
 
+template <class T>
+static uint32_t
+calculateAdditionalReserve(T const& finishFunction)
+{
+    if (!finishFunction)
+        return 1;
+    // First 500 bytes included in the normal reserve
+    // Each additional 500 bytes requires an additional reserve
+    return 1 + (finishFunction->size() / 500);
+}
+
 TER
 EscrowCreate::doApply()
 {
@@ -546,9 +558,11 @@ EscrowCreate::doApply()
 
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
+    auto const reserveToAdd =
+        calculateAdditionalReserve(ctx_.tx[~sfFinishFunction]);
 
     auto const reserve =
-        ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
+        ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + reserveToAdd);
 
     if (mSourceBalance < reserve)
         return tecINSUFFICIENT_RESERVE;
@@ -654,11 +668,7 @@ EscrowCreate::doApply()
 
     // increment owner count
     // TODO: determine actual reserve based on FinishFunction size
-    adjustOwnerCount(
-        ctx_.view(),
-        sle,
-        ctx_.tx.isFieldPresent(sfFinishFunction) ? 2 : 1,
-        ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sle, reserveToAdd, ctx_.journal);
     ctx_.view().update(sle);
     return tesSUCCESS;
 }
@@ -773,7 +783,11 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     if (auto const allowance = tx[~sfComputationAllowance]; allowance)
     {
-        extraFee += (*allowance) * view.fees().gasPrice / MICRO_DROPS_PER_DROP;
+        // The extra fee is the allowance in drops, rounded up to the nearest
+        // whole drop.
+        // Integer math rounds down by default, so we add 1 to round up.
+        extraFee +=
+            ((*allowance) * view.fees().gasPrice) / MICRO_DROPS_PER_DROP + 1;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -1375,13 +1389,12 @@ EscrowFinish::doApply()
 
     ctx_.view().update(sled);
 
+    auto const reserveToSubtract =
+        calculateAdditionalReserve((*slep)[~sfFinishFunction]);
+
     // Adjust source owner count
     auto const sle = ctx_.view().peek(keylet::account(account));
-    adjustOwnerCount(
-        ctx_.view(),
-        sle,
-        slep->isFieldPresent(sfFinishFunction) ? -2 : -1,
-        ctx_.journal);
+    adjustOwnerCount(ctx_.view(), sle, -1 * reserveToSubtract, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger
@@ -1592,11 +1605,9 @@ EscrowCancel::doApply()
         }
     }
 
-    adjustOwnerCount(
-        ctx_.view(),
-        sle,
-        slep->isFieldPresent(sfFinishFunction) ? -2 : -1,
-        ctx_.journal);
+    auto const reserveToSubtract =
+        calculateAdditionalReserve((*slep)[~sfFinishFunction]);
+    adjustOwnerCount(ctx_.view(), sle, -1 * reserveToSubtract, ctx_.journal);
     ctx_.view().update(sle);
 
     // Remove escrow from ledger

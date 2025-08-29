@@ -109,6 +109,9 @@ struct Config
         std::uint16_t port,
         bool validationPublicKey,
         int ipLimit);
+
+    friend bool
+    operator==(Config const& lhs, Config const& rhs);
 };
 
 //------------------------------------------------------------------------------
@@ -136,7 +139,13 @@ using Endpoints = std::vector<Endpoint>;
 //------------------------------------------------------------------------------
 
 /** Possible results from activating a slot. */
-enum class Result { duplicate, full, success };
+enum class Result {
+    inboundDisabled,
+    duplicatePeer,
+    ipLimitExceeded,
+    full,
+    success
+};
 
 /**
  * @brief Converts a `Result` enum value to its string representation.
@@ -157,12 +166,16 @@ to_string(Result result) noexcept
 {
     switch (result)
     {
-        case Result::success:
-            return "success";
-        case Result::duplicate:
-            return "duplicate connection";
+        case Result::inboundDisabled:
+            return "inbound disabled";
+        case Result::duplicatePeer:
+            return "peer already connected";
+        case Result::ipLimitExceeded:
+            return "ip limit exceeded";
         case Result::full:
             return "slots full";
+        case Result::success:
+            return "success";
     }
 
     return "unknown";
@@ -234,7 +247,7 @@ public:
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a detected self-connection.
     */
-    virtual std::shared_ptr<Slot>
+    virtual std::pair<std::shared_ptr<Slot>, Result>
     new_inbound_slot(
         beast::IP::Endpoint const& local_endpoint,
         beast::IP::Endpoint const& remote_endpoint) = 0;
@@ -243,7 +256,7 @@ public:
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a duplicate connection.
     */
-    virtual std::shared_ptr<Slot>
+    virtual std::pair<std::shared_ptr<Slot>, Result>
     new_outbound_slot(beast::IP::Endpoint const& remote_endpoint) = 0;
 
     /** Called when mtENDPOINTS is received. */
