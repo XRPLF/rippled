@@ -20,8 +20,10 @@
 #ifndef RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
 #define RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -704,6 +706,76 @@ private:
         beast::Journal const&) const;
 };
 
+class ValidVault
+{
+    Number static const zero;
+
+    struct Vault final
+    {
+        Asset asset = {};
+        AccountID pseudoId = {};
+        uint192 shareMPTID = beast::zero;
+        Number assetsTotal = 0;
+        Number assetsAvailable = 0;
+        Number assetsMaximum = 0;
+        Number lossUnrealized = 0;
+
+        Vault static make(SLE const&);
+    };
+
+    struct Shares final
+    {
+        Asset asset = {};
+        MPTIssue share = {};
+        AccountID issuer = {};
+        Number sharesTotal = 0;
+
+        Shares static make(SLE const&);
+    };
+
+    std::optional<Vault> updatedVault = {};
+    std::vector<Shares> updatedMPTs = {};
+    std::optional<Vault> deletedVault = {};
+    std::vector<Shares> deletedMPTs = {};
+
+    static bool
+    finalizeCreate(Vault const&, Shares const&, beast::Journal const& j);
+    static bool
+    finalizeSet(Vault const&, Shares const&, beast::Journal const& j);
+    static bool
+    finalizeDeposit(
+        std::pair<Vault const&, Vault const&>,
+        std::pair<Shares const&, Shares const&>,
+        Number deposit,
+        beast::Journal const& j);
+    static bool
+    finalizeWithdraw(
+        std::tuple<Vault const&, Vault const&, Number>,
+        std::tuple<Shares const&, Shares const&, Number>,
+        beast::Journal const& j);
+    static bool
+    finalizeClawback(
+        std::pair<Vault const&, Vault const&>,
+        std::pair<Shares const&, Shares const&>,
+        Number clawback,
+        beast::Journal const& j);
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -725,7 +797,8 @@ using InvariantChecks = std::tuple<
     ValidMPTIssuance,
     ValidPermissionedDomain,
     ValidPermissionedDEX,
-    ValidAMM>;
+    ValidAMM,
+    ValidVault>;
 
 /**
  * @brief get a tuple of all invariant checks
