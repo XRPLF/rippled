@@ -2,7 +2,7 @@
   "architecture": [
     {
       "platform": "windows/amd64",
-      "runner": ["windows-latest"]
+      "runner": ["windows-2025"]
     }
   ],
   "os": [
