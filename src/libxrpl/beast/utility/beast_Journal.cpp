@@ -94,7 +94,7 @@ Journal::getNullSink()
 
 //------------------------------------------------------------------------------
 
-std::string
+std::string_view
 severities::to_string(Severity severity)
 {
     switch (severity)
@@ -189,7 +189,7 @@ Journal::JsonLogContext::reset(
             value = threadIdStream.str();
         }
     };
-    thread_local ThreadIdStringInitializer threadId;
+    thread_local ThreadIdStringInitializer const threadId;
 
     attributes_.emplace_null();
     location_ = location;
@@ -233,7 +233,7 @@ Journal::JsonLogContext::reset(
 void
 Journal::initMessageContext(
     std::source_location location,
-    severities::Severity severity)
+    severities::Severity severity) const
 {
     currentJsonLogContext_.reset(location, severity, m_attributes);
 }

@@ -97,7 +97,7 @@ enum Severity {
     kNone = kDisabled
 };
 
-std::string
+std::string_view
 to_string(Severity severity);
 }  // namespace severities
 
@@ -215,10 +215,10 @@ private:
     // Invariant: m_sink always points to a valid Sink
     Sink* m_sink = nullptr;
 
-    static void
+    void
     initMessageContext(
         std::source_location location,
-        severities::Severity severity);
+        severities::Severity severity) const;
 
     static std::string
     formatLog(std::string const& message);
