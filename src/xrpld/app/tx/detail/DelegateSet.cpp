@@ -28,15 +28,15 @@
 
 namespace ripple {
 
+bool
+DelegateSet::isEnabled(PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featurePermissionDelegation);
+}
+
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePermissionDelegation))
-        return temDISABLED;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
     if (permissions.size() > permissionMaxSize)
         return temARRAY_TOO_LARGE;
@@ -53,7 +53,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
