@@ -682,6 +682,16 @@ STObject::getFieldV256(SField const& field) const
     return getFieldByConstRef<STVector256>(field, empty);
 }
 
+STObject
+STObject::getFieldObject(SField const& field) const
+{
+    STObject const empty{field};
+    auto ret = getFieldByConstRef<STObject>(field, empty);
+    if (ret != empty)
+        ret.applyTemplateFromSField(field);
+    return ret;
+}
+
 STArray const&
 STObject::getFieldArray(SField const& field) const
 {
@@ -817,6 +827,12 @@ STObject::setFieldPathSet(SField const& field, STPathSet const& v)
 
 void
 STObject::setFieldArray(SField const& field, STArray const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
+STObject::setFieldObject(SField const& field, STObject const& v)
 {
     setFieldUsingAssignment(field, v);
 }
