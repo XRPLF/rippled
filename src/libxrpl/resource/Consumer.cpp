@@ -148,6 +148,12 @@ Consumer::entry()
     return *m_entry;
 }
 
+void
+Consumer::setPublicKey(PublicKey const& publicKey)
+{
+    m_entry->publicKey = publicKey;
+}
+
 std::ostream&
 operator<<(std::ostream& os, Consumer const& v)
 {

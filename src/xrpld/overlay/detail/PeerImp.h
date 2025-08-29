@@ -71,6 +71,7 @@ private:
 
     Application& app_;
     id_t const id_;
+    std::string fingerprint_;
     beast::WrappedSink sink_;
     beast::WrappedSink p_sink_;
     beast::Journal const journal_;
@@ -457,7 +458,7 @@ private:
     cancelTimer();
 
     static std::string
-    makePrefix(id_t id);
+    makePrefix(id_t id, std::string const& fingerprint);
 
     // Called when the timer wait completes
     void
@@ -518,6 +519,12 @@ private:
     void
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
+
+    std::string const&
+    fingerprint() const override
+    {
+        return fingerprint_;
+    }
 
 public:
     //--------------------------------------------------------------------------
@@ -662,8 +669,9 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , sink_(app_.journal("Peer"), makePrefix(id))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id))
+    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey))
+    , sink_(app_.journal("Peer"), makePrefix(id, fingerprint_))
+    , p_sink_(app_.journal("Protocol"), makePrefix(id, fingerprint_))
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
