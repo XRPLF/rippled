@@ -637,7 +637,7 @@ JSS(trusted_validator_keys);  // out: ValidatorList
 JSS(tx);                      // out: STTx, AccountTx*
 JSS(tx_blob);                 // in/out: Submit,
                               // in: TransactionSign, AccountTx*
-JSS(tx_hash);                 // in: TransactionEntry
+JSS(tx_hash);                 // in: TransactionEntry, simulate
 JSS(tx_json);                 // in/out: TransactionSign
                               // out: TransactionEntry
 JSS(tx_signing_hash);         // out: TransactionSign
