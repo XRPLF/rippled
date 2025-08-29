@@ -168,20 +168,37 @@ public:
         friend class Journal;
     };
 
-    struct JsonLogContext
+    class JsonLogContext
     {
-        std::source_location location = {};
-        boost::json::value messageParams;
+        std::source_location location_ = {};
+        boost::json::value attributes_;
 
+    public:
         JsonLogContext() = default;
 
-        void
-        reset(std::source_location location_) noexcept
+        boost::json::value&
+        messageParams()
         {
-            location = location_;
-            messageParams = {};
-            messageParams.emplace_object();
+            return attributes_.as_object()["Params"];
         }
+
+        boost::json::value&
+        attributes()
+        {
+            return attributes_;
+        }
+
+        std::source_location&
+        location()
+        {
+            return location_;
+        }
+
+        void
+        reset(
+            std::source_location location,
+            severities::Severity severity,
+            std::optional<JsonLogAttributes> const& attributes) noexcept;
     };
 
 private:
@@ -199,13 +216,12 @@ private:
     Sink* m_sink = nullptr;
 
     static void
-    initMessageContext(std::source_location location);
+    initMessageContext(
+        std::source_location location,
+        severities::Severity severity);
 
     static std::string
-    formatLog(
-        std::string const& message,
-        severities::Severity severity,
-        std::optional<JsonLogAttributes> const& attributes = std::nullopt);
+    formatLog(std::string const& message);
 
 public:
     //--------------------------------------------------------------------------
@@ -298,25 +314,16 @@ public:
     {
     public:
         ScopedStream(ScopedStream const& other)
-            : ScopedStream(other.m_attributes, other.m_sink, other.m_level)
+            : ScopedStream(other.m_sink, other.m_level)
         {
         }
 
-        ScopedStream(
-            std::optional<JsonLogAttributes> attributes,
-            Sink& sink,
-            Severity level);
+        ScopedStream(Sink& sink, Severity level);
 
         template <typename T>
-        ScopedStream(
-            std::optional<JsonLogAttributes> attributes,
-            Stream const& stream,
-            T const& t);
+        ScopedStream(Stream const& stream, T const& t);
 
-        ScopedStream(
-            std::optional<JsonLogAttributes> attributes,
-            Stream const& stream,
-            std::ostream& manip(std::ostream&));
+        ScopedStream(Stream const& stream, std::ostream& manip(std::ostream&));
 
         ScopedStream&
         operator=(ScopedStream const&) = delete;
@@ -337,7 +344,6 @@ public:
         operator<<(T const& t) const;
 
     private:
-        std::optional<JsonLogAttributes> m_attributes;
         Sink& m_sink;
         Severity const m_level;
         std::ostringstream mutable m_ostream;
@@ -372,11 +378,7 @@ public:
 
             Constructor is inlined so checking active() very inexpensive.
         */
-        Stream(
-            std::optional<JsonLogAttributes> attributes,
-            Sink& sink,
-            Severity level)
-            : m_attributes(std::move(attributes)), m_sink(sink), m_level(level)
+        Stream(Sink& sink, Severity level) : m_sink(sink), m_level(level)
         {
             XRPL_ASSERT(
                 m_level < severities::kDisabled,
@@ -384,8 +386,7 @@ public:
         }
 
         /** Construct or copy another Stream. */
-        Stream(Stream const& other)
-            : Stream(other.m_attributes, other.m_sink, other.m_level)
+        Stream(Stream const& other) : Stream(other.m_sink, other.m_level)
         {
         }
 
@@ -432,7 +433,6 @@ public:
         /** @} */
 
     private:
-        std::optional<JsonLogAttributes> m_attributes;
         Sink& m_sink;
         Severity m_level;
     };
@@ -512,7 +512,7 @@ public:
     Stream
     stream(Severity level) const
     {
-        return Stream(m_attributes, *m_sink, level);
+        return Stream(*m_sink, level);
     }
 
     /** Returns `true` if any message would be logged at this severity level.
@@ -531,48 +531,48 @@ public:
     trace(std::source_location location = std::source_location::current()) const
     {
         if (m_jsonLogsEnabled)
-            initMessageContext(location);
-        return {m_attributes, *m_sink, severities::kTrace};
+            initMessageContext(location, severities::kTrace);
+        return {*m_sink, severities::kTrace};
     }
 
     Stream
     debug(std::source_location location = std::source_location::current()) const
     {
         if (m_jsonLogsEnabled)
-            initMessageContext(location);
-        return {m_attributes, *m_sink, severities::kDebug};
+            initMessageContext(location, severities::kDebug);
+        return {*m_sink, severities::kDebug};
     }
 
     Stream
     info(std::source_location location = std::source_location::current()) const
     {
         if (m_jsonLogsEnabled)
-            initMessageContext(location);
-        return {m_attributes, *m_sink, severities::kInfo};
+            initMessageContext(location, severities::kInfo);
+        return {*m_sink, severities::kInfo};
     }
 
     Stream
     warn(std::source_location location = std::source_location::current()) const
     {
         if (m_jsonLogsEnabled)
-            initMessageContext(location);
-        return {m_attributes, *m_sink, severities::kWarning};
+            initMessageContext(location, severities::kWarning);
+        return {*m_sink, severities::kWarning};
     }
 
     Stream
     error(std::source_location location = std::source_location::current()) const
     {
         if (m_jsonLogsEnabled)
-            initMessageContext(location);
-        return {m_attributes, *m_sink, severities::kError};
+            initMessageContext(location, severities::kError);
+        return {*m_sink, severities::kError};
     }
 
     Stream
     fatal(std::source_location location = std::source_location::current()) const
     {
         if (m_jsonLogsEnabled)
-            initMessageContext(location);
-        return {m_attributes, *m_sink, severities::kFatal};
+            initMessageContext(location, severities::kFatal);
+        return {*m_sink, severities::kFatal};
     }
     /** @} */
 
@@ -609,11 +609,8 @@ static_assert(std::is_nothrow_destructible<Journal>::value == true, "");
 //------------------------------------------------------------------------------
 
 template <typename T>
-Journal::ScopedStream::ScopedStream(
-    std::optional<JsonLogAttributes> attributes,
-    Stream const& stream,
-    T const& t)
-    : ScopedStream(std::move(attributes), stream.sink(), stream.level())
+Journal::ScopedStream::ScopedStream(Stream const& stream, T const& t)
+    : ScopedStream(stream.sink(), stream.level())
 {
     m_ostream << t;
 }
@@ -632,7 +629,7 @@ template <typename T>
 Journal::ScopedStream
 Journal::Stream::operator<<(T const& t) const
 {
-    return {m_attributes, *this, t};
+    return {*this, t};
 }
 
 namespace detail {
@@ -749,7 +746,7 @@ operator<<(std::ostream& os, LogParameter<T> const& param)
     if (!beast::Journal::m_jsonLogsEnabled)
         return os;
     detail::setJsonValue(
-        beast::Journal::currentJsonLogContext_.messageParams,
+        beast::Journal::currentJsonLogContext_.messageParams(),
         param.name_,
         param.value_,
         &os);
@@ -763,7 +760,7 @@ operator<<(std::ostream& os, LogField<T> const& param)
     if (!beast::Journal::m_jsonLogsEnabled)
         return os;
     detail::setJsonValue(
-        beast::Journal::currentJsonLogContext_.messageParams,
+        beast::Journal::currentJsonLogContext_.messageParams(),
         param.name_,
         param.value_,
         nullptr);

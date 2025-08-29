@@ -182,62 +182,83 @@ Journal::JsonLogAttributes::combine(
 }
 
 void
-Journal::initMessageContext(std::source_location location)
+Journal::JsonLogContext::reset(
+    std::source_location location,
+    severities::Severity severity,
+    std::optional<JsonLogAttributes> const& attributes) noexcept
 {
-    currentJsonLogContext_.reset(location);
+    struct ThreadIdStringInitializer
+    {
+        std::string value;
+        ThreadIdStringInitializer()
+        {
+            std::stringstream threadIdStream;
+            threadIdStream << std::this_thread::get_id();
+            value = threadIdStream.str();
+        }
+    };
+    thread_local ThreadIdStringInitializer threadId;
+
+    attributes_.emplace_null();
+    location_ = location;
+    if (globalLogAttributes_.has_value())
+    {
+        attributes_ = globalLogAttributes_->contextValues();
+
+        if (attributes.has_value())
+        {
+            for (auto& [key, value] : attributes->contextValues().as_object())
+            {
+                attributes_.as_object()[key] = value;
+            }
+        }
+    }
+    else if (attributes.has_value())
+    {
+        attributes_ = attributes->contextValues();
+    }
+
+    if (attributes_.is_null())
+    {
+        attributes_ = {};
+        attributes_.emplace_object();
+    }
+
+    attributes_.as_object()["Params"] = boost::json::object{};
+    attributes_.as_object()["Function"] =
+        currentJsonLogContext_.location().function_name();
+    attributes_.as_object()["File"] =
+        currentJsonLogContext_.location().file_name();
+    attributes_.as_object()["Line"] = currentJsonLogContext_.location().line();
+    attributes_.as_object()["ThreadId"] = threadId.value;
+    attributes_.as_object()["Level"] = to_string(severity);
+    attributes_.as_object()["Time"] =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch())
+            .count();
+}
+
+void
+Journal::initMessageContext(
+    std::source_location location,
+    severities::Severity severity)
+{
+    currentJsonLogContext_.reset(location, severity, m_attributes);
 }
 
 std::string
-Journal::formatLog(
-    std::string const& message,
-    severities::Severity severity,
-    std::optional<JsonLogAttributes> const& attributes)
+Journal::formatLog(std::string const& message)
 {
     if (!m_jsonLogsEnabled)
     {
         return message;
     }
 
-    boost::json::value doc;
+    auto& attributes = currentJsonLogContext_.attributes().as_object();
 
-    if (globalLogAttributes_)
-    {
-        doc = globalLogAttributes_->contextValues_;
-    }
-    else
-    {
-        doc.emplace_object();
-    }
+    attributes["Message"] = message;
 
-    if (attributes.has_value())
-    {
-        for (auto& [key, value] : attributes->contextValues_.as_object())
-        {
-            doc.as_object()[key] = value;
-        }
-    }
-
-    auto& logContext = doc.as_object();
-
-    logContext["Function"] = currentJsonLogContext_.location.function_name();
-    logContext["File"] = currentJsonLogContext_.location.file_name();
-    logContext["Line"] = currentJsonLogContext_.location.line();
-
-    std::stringstream threadIdStream;
-    threadIdStream << std::this_thread::get_id();
-    auto threadIdStr = threadIdStream.str();
-
-    logContext["ThreadId"] = threadIdStr;
-    logContext["Params"] = currentJsonLogContext_.messageParams;
-    auto severityStr = to_string(severity);
-    logContext["Level"] = severityStr;
-    logContext["Message"] = message;
-    logContext["Time"] =
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count();
-
-    return boost::json::serialize(doc);
+    return boost::json::serialize(attributes);
 }
 
 void
@@ -298,21 +319,17 @@ Journal::Sink::threshold(Severity thresh)
 
 //------------------------------------------------------------------------------
 
-Journal::ScopedStream::ScopedStream(
-    std::optional<JsonLogAttributes> attributes,
-    Sink& sink,
-    Severity level)
-    : m_attributes(std::move(attributes)), m_sink(sink), m_level(level)
+Journal::ScopedStream::ScopedStream(Sink& sink, Severity level)
+    : m_sink(sink), m_level(level)
 {
     // Modifiers applied from all ctors
     m_ostream << std::boolalpha << std::showbase;
 }
 
 Journal::ScopedStream::ScopedStream(
-    std::optional<JsonLogAttributes> attributes,
     Stream const& stream,
     std::ostream& manip(std::ostream&))
-    : ScopedStream(std::move(attributes), stream.sink(), stream.level())
+    : ScopedStream(stream.sink(), stream.level())
 {
     m_ostream << manip;
 }
@@ -323,9 +340,9 @@ Journal::ScopedStream::~ScopedStream()
     if (!s.empty())
     {
         if (s == "\n")
-            m_sink.write(m_level, formatLog("", m_level, m_attributes));
+            m_sink.write(m_level, formatLog(""));
         else
-            m_sink.write(m_level, formatLog(s, m_level, m_attributes));
+            m_sink.write(m_level, formatLog(s));
     }
 }
 
@@ -340,7 +357,7 @@ Journal::ScopedStream::operator<<(std::ostream& manip(std::ostream&)) const
 Journal::ScopedStream
 Journal::Stream::operator<<(std::ostream& manip(std::ostream&)) const
 {
-    return {m_attributes, *this, manip};
+    return {*this, manip};
 }
 
 }  // namespace beast
