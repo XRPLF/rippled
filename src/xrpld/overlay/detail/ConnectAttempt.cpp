@@ -24,6 +24,9 @@
 
 #include <xrpl/json/json_reader.h>
 
+#include <chrono>
+#include <sstream>
+
 namespace ripple {
 
 ConnectAttempt::ConnectAttempt(
@@ -59,7 +62,6 @@ ConnectAttempt::~ConnectAttempt()
 {
     if (slot_ != nullptr)
         overlay_.peerFinder().on_closed(slot_);
-    JLOG(journal_.trace()) << "~ConnectAttempt";
 }
 
 void
@@ -68,16 +70,20 @@ ConnectAttempt::stop()
     if (!strand_.running_in_this_thread())
         return boost::asio::post(
             strand_, std::bind(&ConnectAttempt::stop, shared_from_this()));
-    if (socket_.is_open())
-    {
-        JLOG(journal_.debug()) << "Stop";
-    }
-    close();
+
+    if (!socket_.is_open())
+        return;
+
+    JLOG(journal_.debug()) << "stop: Stop";
+
+    shutdown();
 }
 
 void
 ConnectAttempt::run()
 {
+    ioPending_ = true;
+
     stream_.next_layer().async_connect(
         remote_endpoint_,
         boost::asio::bind_executor(
@@ -91,39 +97,98 @@ ConnectAttempt::run()
 //------------------------------------------------------------------------------
 
 void
+ConnectAttempt::shutdown()
+{
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::ConnectAttempt::shutdown: strand in this thread");
+
+    if (!socket_.is_open())
+        return;
+
+    shutdown_ = true;
+
+    boost::beast::get_lowest_layer(stream_).cancel();
+
+    tryAsyncShutdown();
+}
+
+void
+ConnectAttempt::tryAsyncShutdown()
+{
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::ConnectAttempt::tryAsyncShutdown : strand in this thread");
+
+    if (!shutdown_ || shutdownStarted_)
+        return;
+
+    if (ioPending_)
+        return;
+
+    shutdownStarted_ = true;
+    setTimer();
+
+    // gracefully shutdown the SSL socket, performing a shutdown handshake
+    stream_.async_shutdown(bind_executor(
+        strand_,
+        std::bind(
+            &ConnectAttempt::onShutdown,
+            shared_from_this(),
+            std::placeholders::_1)));
+}
+
+void
+ConnectAttempt::onShutdown(error_code ec)
+{
+    cancelTimer();
+
+    if (ec)
+    {
+        // - eof: the stream was cleanly closed
+        // - operation_aborted: an expired timer (slow shutdown)
+        // - stream_truncated: the tcp connection closed (no handshake) it could
+        // occur if a peer does not perform a graceful disconnect
+        // - broken_pipe: the peer is gone
+        if (ec != boost::asio::error::eof &&
+            ec != boost::asio::error::operation_aborted)
+        {
+            JLOG(journal_.debug()) << "onShutdown: " << ec.message();
+        }
+    }
+
+    close();
+}
+
+void
 ConnectAttempt::close()
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
         "ripple::ConnectAttempt::close : strand in this thread");
-    if (socket_.is_open())
-    {
-        try
-        {
-            timer_.cancel();
-            socket_.close();
-        }
-        catch (boost::system::system_error const&)
-        {
-            // ignored
-        }
+    if (!socket_.is_open())
+        return;
 
-        JLOG(journal_.debug()) << "Closed";
-    }
+    cancelTimer();
+
+    error_code ec;
+    socket_.close(ec);
+
+    JLOG(journal_.info()) << "close: Closed";
 }
 
 void
 ConnectAttempt::fail(std::string const& reason)
 {
     JLOG(journal_.debug()) << reason;
-    close();
+    shutdown();
 }
 
 void
 ConnectAttempt::fail(std::string const& name, error_code ec)
 {
     JLOG(journal_.debug()) << name << ": " << ec.message();
-    close();
+    shutdown();
 }
 
 void
@@ -133,11 +198,11 @@ ConnectAttempt::setTimer()
     {
         timer_.expires_after(std::chrono::seconds(15));
     }
-    catch (boost::system::system_error const& e)
+    catch (std::exception const& ex)
     {
-        JLOG(journal_.error()) << "setTimer: " << e.code();
-        return;
-    }
+        JLOG(journal_.error()) << "setTimer: " << ex.what();
+        return close();
+    };
 
     timer_.async_wait(boost::asio::bind_executor(
         strand_,
@@ -165,14 +230,18 @@ ConnectAttempt::onTimer(error_code ec)
 {
     if (!socket_.is_open())
         return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
     if (ec)
     {
+        // do not initiate shutdown, timers are frequently cancelled
+        if (ec == boost::asio::error::operation_aborted)
+            return;
+
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
         return close();
     }
+
     fail("Timeout");
 }
 
@@ -181,18 +250,31 @@ ConnectAttempt::onConnect(error_code ec)
 {
     cancelTimer();
 
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    endpoint_type local_endpoint;
-    if (!ec)
-        local_endpoint = socket_.local_endpoint(ec);
+    ioPending_ = false;
+
     if (ec)
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return tryAsyncShutdown();
+
         return fail("onConnect", ec);
+    }
+
     if (!socket_.is_open())
         return;
-    JLOG(journal_.trace()) << "onConnect";
+
+    // check if connection has really been established
+    socket_.local_endpoint(ec);
+    if (ec)
+        return fail("onConnect", ec);
+
+    if (shutdown_)
+        return tryAsyncShutdown();
 
     setTimer();
+
+    ioPending_ = true;
+
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
@@ -208,24 +290,29 @@ void
 ConnectAttempt::onHandshake(error_code ec)
 {
     cancelTimer();
-    if (!socket_.is_open())
-        return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    endpoint_type local_endpoint;
-    if (!ec)
-        local_endpoint = socket_.local_endpoint(ec);
+
+    ioPending_ = false;
+
+    if (ec)
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return tryAsyncShutdown();
+
+        return fail("onHandshake", ec);
+    }
+
+    auto const local_endpoint = socket_.local_endpoint(ec);
     if (ec)
         return fail("onHandshake", ec);
-    JLOG(journal_.trace()) << "onHandshake";
 
+    // check if we connected to ourselves
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::from_asio(local_endpoint)))
-        return fail("Duplicate connection");
+        return fail("Self connection");
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (!sharedValue)
-        return close();  // makeSharedValue logs
+        return shutdown();  // makeSharedValue logs
 
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
@@ -242,7 +329,12 @@ ConnectAttempt::onHandshake(error_code ec)
         remote_endpoint_.address(),
         app_);
 
+    if (shutdown_)
+        return tryAsyncShutdown();
+
     setTimer();
+    ioPending_ = true;
+
     boost::beast::http::async_write(
         stream_,
         req_,
@@ -258,12 +350,23 @@ void
 ConnectAttempt::onWrite(error_code ec)
 {
     cancelTimer();
-    if (!socket_.is_open())
-        return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
+
+    ioPending_ = false;
+
     if (ec)
+    {
+        if (ec == boost::asio::error::operation_aborted)
+            return tryAsyncShutdown();
+
         return fail("onWrite", ec);
+    }
+
+    if (shutdown_)
+        return tryAsyncShutdown();
+
+    setTimer();
+    ioPending_ = true;
+
     boost::beast::http::async_read(
         stream_,
         read_buf_,
@@ -281,38 +384,26 @@ ConnectAttempt::onRead(error_code ec)
 {
     cancelTimer();
 
-    if (!socket_.is_open())
-        return;
-    if (ec == boost::asio::error::operation_aborted)
-        return;
-    if (ec == boost::asio::error::eof)
-    {
-        JLOG(journal_.info()) << "EOF";
-        setTimer();
-        return stream_.async_shutdown(boost::asio::bind_executor(
-            strand_,
-            std::bind(
-                &ConnectAttempt::onShutdown,
-                shared_from_this(),
-                std::placeholders::_1)));
-    }
-    if (ec)
-        return fail("onRead", ec);
-    processResponse();
-}
+    ioPending_ = false;
 
-void
-ConnectAttempt::onShutdown(error_code ec)
-{
-    cancelTimer();
-    if (!ec)
+    if (ec)
     {
-        JLOG(journal_.error()) << "onShutdown: expected error condition";
-        return close();
+        if (ec == boost::asio::error::eof)
+        {
+            JLOG(journal_.debug()) << "EOF";
+            return shutdown();
+        }
+
+        if (ec == boost::asio::error::operation_aborted)
+            return tryAsyncShutdown();
+
+        return fail("onRead", ec);
     }
-    if (ec != boost::asio::error::eof)
-        return fail("onShutdown", ec);
-    close();
+
+    if (shutdown_)
+        return tryAsyncShutdown();
+
+    processResponse();
 }
 
 //--------------------------------------------------------------------------
@@ -361,7 +452,7 @@ ConnectAttempt::processResponse()
         JLOG(journal_.info())
             << "Unable to upgrade to peer protocol: " << response_.result()
             << " (" << response_.reason() << ")";
-        return close();
+        return shutdown();
     }
 
     // Just because our peer selected a particular protocol version doesn't
@@ -381,11 +472,11 @@ ConnectAttempt::processResponse()
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (!sharedValue)
-        return close();  // makeSharedValue logs
+        return shutdown();  // makeSharedValue logs
 
     try
     {
-        auto publicKey = verifyHandshake(
+        auto const publicKey = verifyHandshake(
             response_,
             *sharedValue,
             overlay_.setup().networkID,
@@ -393,11 +484,10 @@ ConnectAttempt::processResponse()
             remote_endpoint_.address(),
             app_);
 
-        JLOG(journal_.info())
-            << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
-
         JLOG(journal_.debug())
             << "Protocol: " << to_string(*negotiatedProtocol);
+        JLOG(journal_.info())
+            << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
 
         auto const member = app_.cluster().member(publicKey);
         if (member)
@@ -405,10 +495,21 @@ ConnectAttempt::processResponse()
             JLOG(journal_.info()) << "Cluster name: " << *member;
         }
 
-        auto const result = overlay_.peerFinder().activate(
-            slot_, publicKey, static_cast<bool>(member));
+        auto const result =
+            overlay_.peerFinder().activate(slot_, publicKey, !member->empty());
         if (result != PeerFinder::Result::success)
-            return fail("Outbound " + std::string(to_string(result)));
+        {
+            std::stringstream ss;
+            ss << "Outbound Connect Attempt " << remote_endpoint_ << " "
+               << to_string(result);
+            return fail(ss.str());
+        }
+
+        if (!socket_.is_open())
+            return;
+
+        if (shutdown_)
+            return tryAsyncShutdown();
 
         auto const peer = std::make_shared<PeerImp>(
             app_,
