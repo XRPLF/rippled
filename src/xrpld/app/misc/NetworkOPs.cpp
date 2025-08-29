@@ -458,6 +458,8 @@ public:
     clearLedgerFetch() override;
     Json::Value
     getLedgerFetchInfo() override;
+    bool
+    isFallingBehind() const override;
     std::uint32_t
     acceptLedger(
         std::optional<std::chrono::milliseconds> consensusDelay) override;
@@ -752,6 +754,7 @@ private:
     std::atomic<bool> amendmentBlocked_{false};
     std::atomic<bool> amendmentWarned_{false};
     std::atomic<bool> unlBlocked_{false};
+    std::atomic<bool> fallingBehind_{false};
 
     ClosureCounter<void, boost::system::error_code const&> waitHandlerCounter_;
     boost::asio::steady_timer heartbeatTimer_;
@@ -1950,7 +1953,10 @@ NetworkOPsImp::checkLastClosedLedger(
 
     if (!consensus)
         consensus = app_.getInboundLedgers().acquire(
-            closedLedger, 0, InboundLedger::Reason::CONSENSUS);
+            closedLedger,
+            0,
+            InboundLedger::Reason::CONSENSUS,
+            "checkLastClosedLedger");
 
     if (consensus &&
         (!m_ledgerMaster.canBeCurrent(consensus) ||
@@ -2049,13 +2055,25 @@ NetworkOPsImp::beginConsensus(
 
     auto closingInfo = m_ledgerMaster.getCurrentLedger()->info();
 
-    JLOG(m_journal.info()) << "Consensus time for #" << closingInfo.seq
+    JLOG(m_journal.info()) << "beginConsensus time for #" << closingInfo.seq
                            << " with LCL " << closingInfo.parentHash;
 
-    auto prevLedger = m_ledgerMaster.getLedgerByHash(closingInfo.parentHash);
+    fallingBehind_ = false;
+    if (closingInfo.seq < m_ledgerMaster.getValidLedgerIndex() - 1)
+    {
+        fallingBehind_ = true;
+        JLOG(m_journal.warn())
+            << "beginConsensus Current ledger " << closingInfo.seq
+            << " is at least 2 behind validated "
+            << m_ledgerMaster.getValidLedgerIndex();
+    }
+
+    auto const prevLedger =
+        m_ledgerMaster.getLedgerByHash(closingInfo.parentHash);
 
     if (!prevLedger)
     {
+        fallingBehind_ = true;
         // this shouldn't happen unless we jump ledgers
         if (mMode == OperatingMode::FULL)
         {
@@ -2110,7 +2128,7 @@ NetworkOPsImp::beginConsensus(
         mLastConsensusPhase = currPhase;
     }
 
-    JLOG(m_journal.debug()) << "Initiating consensus engine";
+    JLOG(m_journal.debug()) << "beginConsensus Initiating consensus engine";
     return true;
 }
 
@@ -2206,7 +2224,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
     {
         // check if the ledger is good enough to go to FULL
         // Note: Do not go to FULL if we don't have the previous ledger
-        // check if the ledger is bad enough to go to CONNECTE  D -- TODO
+        // check if the ledger is bad enough to go to CONNECTED -- TODO
         auto current = m_ledgerMaster.getCurrentLedger();
         if (app_.timeKeeper().now() < (current->info().parentCloseTime +
                                        2 * current->info().closeTimeResolution))
@@ -3045,6 +3063,12 @@ Json::Value
 NetworkOPsImp::getLedgerFetchInfo()
 {
     return app_.getInboundLedgers().getInfo();
+}
+
+bool
+NetworkOPsImp::isFallingBehind() const
+{
+    return fallingBehind_;
 }
 
 void
