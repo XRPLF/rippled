@@ -38,6 +38,67 @@ serializePayChanAuthorization(
     msg.add64(amt.drops());
 }
 
+inline void
+serializePayChanAuthorization(
+    Serializer& msg,
+    uint256 const& key,
+    IOUAmount const& amt,
+    Currency const& cur,
+    AccountID const& iss)
+{
+    msg.add32(HashPrefix::paymentChannelClaim);
+    msg.addBitString(key);
+    if (amt == beast::zero)
+        msg.add64(STAmount::cIssuedCurrency);
+    else if (amt.signum() == -1)  // 512 = not native
+        msg.add64(
+            amt.mantissa() |
+            (static_cast<std::uint64_t>(amt.exponent() + 512 + 97)
+             << (64 - 10)));
+    else  // 256 = positive
+        msg.add64(
+            amt.mantissa() |
+            (static_cast<std::uint64_t>(amt.exponent() + 512 + 256 + 97)
+             << (64 - 10)));
+    msg.addBitString(cur);
+    msg.addBitString(iss);
+}
+
+inline void
+serializePayChanAuthorization(
+    Serializer& msg,
+    uint256 const& key,
+    MPTAmount const& amt,
+    MPTID const& mptID,
+    AccountID const& iss)
+{
+    msg.add32(HashPrefix::paymentChannelClaim);
+    msg.addBitString(key);
+    msg.add64(amt.value());
+    msg.addBitString(mptID);
+    msg.addBitString(iss);
+}
+
+inline void
+serializePayChanAuthorization(
+    Serializer& msg,
+    uint256 const& key,
+    STAmount const& amt)
+{
+    if (amt.native())
+        serializePayChanAuthorization(msg, key, amt.xrp());
+    else if (amt.holds<Issue>())
+        serializePayChanAuthorization(
+            msg, key, amt.iou(), amt.issue().currency, amt.issue().account);
+    else if (amt.holds<MPTIssue>())
+    {
+        auto const mpt = amt.get<MPTIssue>();
+        auto const mptID = mpt.getMptID();
+        serializePayChanAuthorization(
+            msg, key, amt.mpt(), mptID, amt.getIssuer());
+    }
+}
+
 }  // namespace ripple
 
 #endif

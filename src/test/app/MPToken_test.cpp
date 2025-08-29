@@ -2151,35 +2151,6 @@ class MPToken_test : public beast::unit_test::suite
                 jv = offer(alice, mpt, USD(100));
                 test(jv, jss::TakerGets.c_str());
             }
-            // PaymentChannelCreate
-            {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::PaymentChannelCreate;
-                jv[jss::Account] = alice.human();
-                jv[jss::Destination] = carol.human();
-                jv[jss::SettleDelay] = 1;
-                jv[sfPublicKey.fieldName] = strHex(alice.pk().slice());
-                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
-                test(jv, jss::Amount.c_str());
-            }
-            // PaymentChannelFund
-            {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::PaymentChannelFund;
-                jv[jss::Account] = alice.human();
-                jv[sfChannel.fieldName] = to_string(uint256{1});
-                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
-                test(jv, jss::Amount.c_str());
-            }
-            // PaymentChannelClaim
-            {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::PaymentChannelClaim;
-                jv[jss::Account] = alice.human();
-                jv[sfChannel.fieldName] = to_string(uint256{1});
-                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
-                test(jv, jss::Amount.c_str());
-            }
             // NFTokenCreateOffer
             {
                 Json::Value jv;

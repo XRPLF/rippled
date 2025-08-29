@@ -56,6 +56,58 @@ ownerCount(Env const& env, Account const& account)
     return env.ownerCount(account);
 }
 
+/* Token (IOU/MPT) Locking */
+/******************************************************************************/
+uint64_t
+mptEscrowed(
+    jtx::Env const& env,
+    jtx::Account const& account,
+    jtx::MPT const& mpt)
+{
+    auto const sle = env.le(keylet::mptoken(mpt.mpt(), account));
+    if (sle && sle->isFieldPresent(sfLockedAmount))
+        return (*sle)[sfLockedAmount];
+    return 0;
+}
+
+uint64_t
+issuerMPTEscrowed(jtx::Env const& env, jtx::MPT const& mpt)
+{
+    auto const sle = env.le(keylet::mptIssuance(mpt.mpt()));
+    if (sle && sle->isFieldPresent(sfLockedAmount))
+        return (*sle)[sfLockedAmount];
+    return 0;
+}
+
+jtx::PrettyAmount
+issuerBalance(jtx::Env& env, jtx::Account const& account, Issue const& issue)
+{
+    Json::Value params;
+    params[jss::account] = account.human();
+    auto jrr = env.rpc("json", "gateway_balances", to_string(params));
+    auto const result = jrr[jss::result];
+    auto const obligations =
+        result[jss::obligations][to_string(issue.currency)];
+    if (obligations.isNull())
+        return {STAmount(issue, 0), account.name()};
+    STAmount const amount = amountFromString(issue, obligations.asString());
+    return {amount, account.name()};
+}
+
+jtx::PrettyAmount
+issuerEscrowed(jtx::Env& env, jtx::Account const& account, Issue const& issue)
+{
+    Json::Value params;
+    params[jss::account] = account.human();
+    auto jrr = env.rpc("json", "gateway_balances", to_string(params));
+    auto const result = jrr[jss::result];
+    auto const locked = result[jss::locked][to_string(issue.currency)];
+    if (locked.isNull())
+        return {STAmount(issue, 0), account.name()};
+    STAmount const amount = amountFromString(issue, locked.asString());
+    return {amount, account.name()};
+}
+
 /* Path finding */
 /******************************************************************************/
 void
@@ -209,99 +261,6 @@ expectLedgerEntryRoot(
     STAmount const& expectedValue)
 {
     return accountBalance(env, acct) == to_string(expectedValue.xrp());
-}
-
-/* Payment Channel */
-/******************************************************************************/
-Json::Value
-create(
-    AccountID const& account,
-    AccountID const& to,
-    STAmount const& amount,
-    NetClock::duration const& settleDelay,
-    PublicKey const& pk,
-    std::optional<NetClock::time_point> const& cancelAfter,
-    std::optional<std::uint32_t> const& dstTag)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::PaymentChannelCreate;
-    jv[jss::Account] = to_string(account);
-    jv[jss::Destination] = to_string(to);
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
-    jv[jss::SettleDelay] = settleDelay.count();
-    jv[sfPublicKey.fieldName] = strHex(pk.slice());
-    if (cancelAfter)
-        jv[sfCancelAfter.fieldName] = cancelAfter->time_since_epoch().count();
-    if (dstTag)
-        jv[sfDestinationTag.fieldName] = *dstTag;
-    return jv;
-}
-
-Json::Value
-fund(
-    AccountID const& account,
-    uint256 const& channel,
-    STAmount const& amount,
-    std::optional<NetClock::time_point> const& expiration)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::PaymentChannelFund;
-    jv[jss::Account] = to_string(account);
-    jv[sfChannel.fieldName] = to_string(channel);
-    jv[jss::Amount] = amount.getJson(JsonOptions::none);
-    if (expiration)
-        jv[sfExpiration.fieldName] = expiration->time_since_epoch().count();
-    return jv;
-}
-
-Json::Value
-claim(
-    AccountID const& account,
-    uint256 const& channel,
-    std::optional<STAmount> const& balance,
-    std::optional<STAmount> const& amount,
-    std::optional<Slice> const& signature,
-    std::optional<PublicKey> const& pk)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::PaymentChannelClaim;
-    jv[jss::Account] = to_string(account);
-    jv["Channel"] = to_string(channel);
-    if (amount)
-        jv[jss::Amount] = amount->getJson(JsonOptions::none);
-    if (balance)
-        jv["Balance"] = balance->getJson(JsonOptions::none);
-    if (signature)
-        jv["Signature"] = strHex(*signature);
-    if (pk)
-        jv["PublicKey"] = strHex(pk->slice());
-    return jv;
-}
-
-uint256
-channel(
-    AccountID const& account,
-    AccountID const& dst,
-    std::uint32_t seqProxyValue)
-{
-    auto const k = keylet::payChan(account, dst, seqProxyValue);
-    return k.key;
-}
-
-STAmount
-channelBalance(ReadView const& view, uint256 const& chan)
-{
-    auto const slep = view.read({ltPAYCHAN, chan});
-    if (!slep)
-        return XRPAmount{-1};
-    return (*slep)[sfBalance];
-}
-
-bool
-channelExists(ReadView const& view, uint256 const& chan)
-{
-    auto const slep = view.read({ltPAYCHAN, chan});
-    return bool(slep);
 }
 
 /* Crossing Limits */

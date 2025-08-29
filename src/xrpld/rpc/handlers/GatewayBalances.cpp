@@ -150,18 +150,49 @@ doGatewayBalances(RPC::JsonContext& context)
             *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
                 if (sle->getType() == ltESCROW)
                 {
-                    auto const& escrow = sle->getFieldAmount(sfAmount);
-                    auto& bal = locked[escrow.getCurrency()];
+                    auto const& amount = sle->getFieldAmount(sfAmount);
+                    auto& bal = locked[amount.getCurrency()];
                     if (bal == beast::zero)
                     {
                         // This is needed to set the currency code correctly
-                        bal = escrow;
+                        bal = amount;
                     }
                     else
                     {
                         try
                         {
-                            bal += escrow;
+                            bal += amount;
+                        }
+                        catch (std::runtime_error const&)
+                        {
+                            // Presumably the exception was caused by overflow.
+                            // On overflow return the largest valid STAmount.
+                            // Very large sums of STAmount are approximations
+                            // anyway.
+                            bal = STAmount(
+                                bal.issue(),
+                                STAmount::cMaxValue,
+                                STAmount::cMaxOffset);
+                        }
+                    }
+                }
+
+                if (sle->getType() == ltPAYCHAN)
+                {
+                    auto const& amount = sle->getFieldAmount(sfAmount);
+                    auto const& balance = sle->getFieldAmount(sfBalance);
+                    auto const& netAmount = amount - balance;
+                    auto& bal = locked[netAmount.getCurrency()];
+                    if (bal == beast::zero)
+                    {
+                        // This is needed to set the currency code correctly
+                        bal = netAmount;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            bal += netAmount;
                         }
                         catch (std::runtime_error const&)
                         {
