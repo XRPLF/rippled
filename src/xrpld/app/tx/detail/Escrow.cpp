@@ -538,6 +538,11 @@ EscrowCreate::doApply()
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
 
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
+    }
+
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
         auto const xferRate = transferRate(ctx_.view(), amount);
