@@ -21,6 +21,7 @@
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/json/json_reader.h>
 
@@ -52,6 +53,7 @@ ConnectAttempt::ConnectAttempt(
     , stream_(*stream_ptr_)
     , slot_(slot)
 {
+    ++app_.getPerfLog().getPeerCounters().connection.totalOutboundAttempts;
     JLOG(journal_.debug()) << "Connect " << remote_endpoint;
 }
 
@@ -72,6 +74,7 @@ ConnectAttempt::stop()
     {
         JLOG(journal_.debug()) << "Stop";
     }
+    ++app_.getPerfLog().getPeerCounters().connection.outboundConnectCloseStop;
     close();
 }
 
@@ -171,8 +174,14 @@ ConnectAttempt::onTimer(error_code ec)
     {
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectCloseOnTimer;
         return close();
     }
+    ++app_.getPerfLog()
+          .getPeerCounters()
+          .connection.outboundConnectFailTimeouts;
     fail("Timeout");
 }
 
@@ -187,7 +196,12 @@ ConnectAttempt::onConnect(error_code ec)
     if (!ec)
         local_endpoint = socket_.local_endpoint(ec);
     if (ec)
+    {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectFailOnConnectError;
         return fail("onConnect", ec);
+    }
     if (!socket_.is_open())
         return;
     JLOG(journal_.trace()) << "onConnect";
@@ -216,16 +230,31 @@ ConnectAttempt::onHandshake(error_code ec)
     if (!ec)
         local_endpoint = socket_.local_endpoint(ec);
     if (ec)
+    {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectFailOnHandshakeError;
         return fail("onHandshake", ec);
+    }
     JLOG(journal_.trace()) << "onHandshake";
 
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::from_asio(local_endpoint)))
+    {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectFailOnHandshakeDuplicate;
         return fail("Duplicate connection");
+    }
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (!sharedValue)
+    {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectCloseOnHandshake;
         return close();  // makeSharedValue logs
+    }
 
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
@@ -263,7 +292,12 @@ ConnectAttempt::onWrite(error_code ec)
     if (ec == boost::asio::error::operation_aborted)
         return;
     if (ec)
+    {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectFailOnWriteError;
         return fail("onWrite", ec);
+    }
     boost::beast::http::async_read(
         stream_,
         read_buf_,
@@ -297,7 +331,12 @@ ConnectAttempt::onRead(error_code ec)
                 std::placeholders::_1)));
     }
     if (ec)
+    {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectFailOnReadError;
         return fail("onRead", ec);
+    }
     processResponse();
 }
 
@@ -308,10 +347,21 @@ ConnectAttempt::onShutdown(error_code ec)
     if (!ec)
     {
         JLOG(journal_.error()) << "onShutdown: expected error condition";
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectCloseOnShutdownNoError;
         return close();
     }
     if (ec != boost::asio::error::eof)
+    {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectFailOnShutdownError;
         return fail("onShutdown", ec);
+    }
+    ++app_.getPerfLog()
+          .getPeerCounters()
+          .connection.outboundConnectCloseOnShutdown;
     close();
 }
 
@@ -361,6 +411,9 @@ ConnectAttempt::processResponse()
         JLOG(journal_.info())
             << "Unable to upgrade to peer protocol: " << response_.result()
             << " (" << response_.reason() << ")";
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectCloseUpgrade;
         return close();
     }
 
@@ -375,13 +428,23 @@ ConnectAttempt::processResponse()
             negotiatedProtocol = pvs[0];
 
         if (!negotiatedProtocol)
+        {
+            ++app_.getPerfLog()
+                  .getPeerCounters()
+                  .connection.outboundConnectFailProtocol;
             return fail(
                 "processResponse: Unable to negotiate protocol version");
+        }
     }
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (!sharedValue)
+    {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectCloseShared;
         return close();  // makeSharedValue logs
+    }
 
     try
     {
@@ -408,7 +471,12 @@ ConnectAttempt::processResponse()
         auto const result = overlay_.peerFinder().activate(
             slot_, publicKey, static_cast<bool>(member));
         if (result != PeerFinder::Result::success)
+        {
+            ++app_.getPerfLog()
+                  .getPeerCounters()
+                  .connection.outboundConnectFailSlotsFull;
             return fail("Outbound " + std::string(to_string(result)));
+        }
 
         auto const peer = std::make_shared<PeerImp>(
             app_,
@@ -426,6 +494,9 @@ ConnectAttempt::processResponse()
     }
     catch (std::exception const& e)
     {
+        ++app_.getPerfLog()
+              .getPeerCounters()
+              .connection.outboundConnectFailOnHandshakeFailure;
         return fail(std::string("Handshake failure (") + e.what() + ")");
     }
 }
