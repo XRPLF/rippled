@@ -98,7 +98,7 @@ Journal::getNullSink()
 
 //------------------------------------------------------------------------------
 
-std::string_view
+std::string
 severities::to_string(Severity severity)
 {
     switch (severity)
