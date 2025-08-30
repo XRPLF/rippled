@@ -454,16 +454,15 @@ public:
     Journal(
         Journal const& other,
         std::optional<JsonLogAttributes> attributes = std::nullopt)
-        : m_sink(other.m_sink)
+            : m_attributes(other.m_attributes)
+            , m_sink(other.m_sink)
     {
         if (attributes.has_value())
-            m_attributes = std::move(attributes.value());
-        if (other.m_attributes.has_value())
         {
-            if (m_attributes.has_value())
-                m_attributes->combine(other.m_attributes->contextValues_);
+            if (m_attributes)
+                m_attributes->combine(attributes->contextValues_);
             else
-                m_attributes = other.m_attributes;
+                m_attributes = std::move(attributes);
         }
     }
     /** Create a journal that writes to the specified sink. */
