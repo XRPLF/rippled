@@ -97,7 +97,7 @@ enum Severity {
     kNone = kDisabled
 };
 
-std::string_view
+std::string
 to_string(Severity severity);
 }  // namespace severities
 
