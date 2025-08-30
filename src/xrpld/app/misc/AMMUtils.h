@@ -24,11 +24,24 @@
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <utility>
 
 namespace ripple {
+
+// Template alias for amount pairs used in AMM operations
+template <typename TIn, typename TOut>
+using TAmountPair = std::pair<TIn, TOut>;
 
 class ReadView;
 class ApplyView;
@@ -98,6 +111,188 @@ ammAccountHolds(
 /** Delete trustlines to AMM. If all trustlines are deleted then
  * AMM object and account are deleted. Otherwise tecIMPCOMPLETE is returned.
  */
+
+// Concentrated Liquidity Fee Functions
+
+/** Calculate fee growth for concentrated liquidity positions.
+ */
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityFeeGrowth(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t currentTick,
+    STAmount const& amountIn,
+    STAmount const& amountOut,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+/** Update fee growth for a concentrated liquidity position.
+ */
+TER
+ammConcentratedLiquidityUpdatePositionFees(
+    ApplyView& view,
+    Keylet const& positionKey,
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::int32_t currentTick,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    beast::Journal const& j);
+
+/** Calculate fees owed to a concentrated liquidity position.
+ */
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityCalculateFeesOwed(
+    ReadView const& view,
+    Keylet const& positionKey,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    beast::Journal const& j);
+
+/** Update tick fee growth for concentrated liquidity.
+ */
+TER
+ammConcentratedLiquidityUpdateTickFeeGrowth(
+    ApplyView& view,
+    std::int32_t tick,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    bool isAboveCurrentTick,
+    beast::Journal const& j);
+
+// Integrated AMM swap functions
+template <typename TIn, typename TOut>
+TOut
+ammSwapAssetIn(
+    ReadView const& view,
+    uint256 const& ammID,
+    TAmountPair<TIn, TOut> const& pool,
+    TIn const& assetIn,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+template <typename TIn, typename TOut>
+TOut
+ammConcentratedLiquiditySwapAssetIn(
+    ReadView const& view,
+    uint256 const& ammID,
+    TAmountPair<TIn, TOut> const& pool,
+    TIn const& assetIn,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+// Tick crossing functions
+template <typename TIn, typename TOut>
+std::pair<TOut, TER>
+ammConcentratedLiquiditySwapWithTickCrossing(
+    ApplyView& view,
+    uint256 const& ammID,
+    TIn const& assetIn,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+/** Execute a complete tick crossing for concentrated liquidity */
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityExecuteTickCrossing(
+    ApplyView& view,
+    uint256 const& ammID,
+    std::int32_t fromTick,
+    std::int32_t toTick,
+    STAmount const& liquidityDelta,
+    beast::Journal const& j);
+
+/** Find all positions that are active at a specific tick */
+std::vector<std::pair<AccountID, ConcentratedLiquidityPosition>>
+ammConcentratedLiquidityFindPositionsAtTick(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tick);
+
+/** Calculate fees owed for a position between two ticks */
+STAmount
+ammConcentratedLiquidityCalculateFeesOwed(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::uint8_t feeIndex);
+
+/** Calculate fee growth outside a specific tick */
+STAmount
+ammConcentratedLiquidityCalculateFeeGrowthOutside(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tick,
+    std::uint8_t feeIndex);
+
+std::uint64_t
+calculateTargetSqrtPrice(
+    std::uint64_t currentSqrtPriceX64,
+    STAmount const& assetIn,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+/** Find the next initialized tick in the direction of the swap */
+std::int32_t
+findNextInitializedTick(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t currentTick,
+    std::uint64_t targetSqrtPriceX64);
+
+std::tuple<STAmount, STAmount, std::uint64_t>
+calculateSwapStep(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t currentTick,
+    std::uint64_t currentSqrtPriceX64,
+    std::int32_t nextTick,
+    STAmount const& maxInput,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+STAmount
+calculateOutputForInput(
+    std::uint64_t sqrtPriceStartX64,
+    std::uint64_t sqrtPriceEndX64,
+    STAmount const& input,
+    beast::Journal const& j);
+
+std::pair<STAmount, STAmount>
+calculateFeeGrowthForSwap(
+    STAmount const& input,
+    STAmount const& output,
+    std::uint16_t tradingFee,
+    beast::Journal const& j);
+
+TER
+crossTick(
+    ApplyView& view,
+    uint256 const& ammID,
+    std::int32_t tick,
+    std::uint64_t newSqrtPriceX64,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    beast::Journal const& j);
+
+// Helper functions for price conversion
+std::int32_t
+sqrtPriceX64ToTick(std::uint64_t sqrtPriceX64);
+
+std::uint64_t
+tickToSqrtPriceX64(std::int32_t tick);
+
+// Helper function for calculating fee growth inside a tick range
+std::pair<STAmount, STAmount>
+ammConcentratedLiquidityCalculateFeeGrowthInside(
+    ReadView const& view,
+    uint256 const& ammID,
+    std::int32_t tickLower,
+    std::int32_t tickUpper,
+    std::int32_t currentTick,
+    STAmount const& feeGrowthGlobal0,
+    STAmount const& feeGrowthGlobal1,
+    beast::Journal const& j);
 TER
 deleteAMMAccount(
     Sandbox& view,
@@ -135,6 +330,23 @@ verifyAndAdjustLPTokenBalance(
     STAmount const& lpTokens,
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account);
+
+/** Calculate liquidity delta for concentrated liquidity tick crossing */
+STAmount
+ammConcentratedLiquidityCalculateLiquidityDelta(
+    ReadView const& view,
+    std::uint64_t sqrtPriceX64,
+    std::uint64_t targetSqrtPriceX64,
+    STAmount const& amount,
+    beast::Journal const& j);
+
+/** Update the position registry with a new position */
+void
+ammConcentratedLiquidityUpdatePositionRegistry(
+    uint256 const& ammID,
+    AccountID const& owner,
+    ConcentratedLiquidityPosition const& position,
+    bool add);
 
 }  // namespace ripple
 

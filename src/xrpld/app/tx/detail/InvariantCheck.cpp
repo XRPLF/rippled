@@ -543,6 +543,8 @@ LedgerEntryTypesMatch::visitEntry(
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
             case ltVAULT:
+            case ltCONCENTRATED_LIQUIDITY_POSITION:
+            case ltCONCENTRATED_LIQUIDITY_TICK:
                 break;
             default:
                 invalidTypeAdded_ = true;

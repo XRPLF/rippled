@@ -74,6 +74,7 @@ XRPL_FEATURE(DID,                        Supported::yes, VoteBehavior::DefaultNo
 XRPL_FIX    (DisallowIncomingV1,         Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(XChainBridge,               Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMM,                        Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(AMMConcentratedLiquidity,   Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(Clawback,                   Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (ReducedOffersV1,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (NFTokenRemint,              Supported::yes, VoteBehavior::DefaultNo)
