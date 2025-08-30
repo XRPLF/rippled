@@ -68,9 +68,13 @@ JSS(Flags);                // in/out: TransactionSign; field.
 JSS(Holder);               // field.
 JSS(Invalid);              //
 JSS(Issuer);               // in: Credential transactions
+JSS(IssuingChainDoor);     // field.
+JSS(IssuingChainIssue);    // field.
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
 JSS(LimitAmount);          // field.
+JSS(LockingChainDoor);     // field.
+JSS(LockingChainIssue);    // field.
 JSS(NetworkID);            // field.
 JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
@@ -391,6 +395,7 @@ JSS(load_fee);                // out: LoadFeeTrackImp, NetworkOPs
 JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
+JSS(locked);                  // out: GatewayBalances
 JSS(low);                     // out: BookChanges
 JSS(lowest_sequence);         // out: AccountInfo
 JSS(lowest_ticket);           // out: AccountInfo

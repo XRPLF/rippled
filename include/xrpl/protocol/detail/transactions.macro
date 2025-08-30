@@ -38,12 +38,13 @@ TRANSACTION(ttPAYMENT, 0, Payment, Delegation::delegatable, ({
     {sfDestinationTag, soeOPTIONAL},
     {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
     {sfCredentialIDs, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type creates an escrow object. */
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, Delegation::delegatable, ({
     {sfDestination, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfCondition, soeOPTIONAL},
     {sfCancelAfter, soeOPTIONAL},
     {sfFinishAfter, soeOPTIONAL},
@@ -93,6 +94,7 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate, Delegation::delegatable, ({
     {sfTakerGets, soeREQUIRED},
     {sfExpiration, soeOPTIONAL},
     {sfOfferSequence, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type cancels existing offers to trade one asset for another. */
@@ -407,6 +409,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate, Delegation::de
     {sfTransferFee, soeOPTIONAL},
     {sfMaximumAmount, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type destroys a MPTokensIssuance instance */
@@ -418,6 +421,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy, Delegation::
 TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet, Delegation::delegatable, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */
@@ -476,7 +480,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate, Delegation::delegatable, ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetsMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
-    {sfDomainID, soeOPTIONAL}, // PermissionedDomainID
+    {sfDomainID, soeOPTIONAL},
     {sfWithdrawalPolicy, soeOPTIONAL},
     {sfData, soeOPTIONAL},
 }))
@@ -485,7 +489,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate, Delegation::delegatable, ({
 TRANSACTION(ttVAULT_SET, 66, VaultSet, Delegation::delegatable, ({
     {sfVaultID, soeREQUIRED},
     {sfAssetsMaximum, soeOPTIONAL},
-    {sfDomainID, soeOPTIONAL}, // PermissionedDomainID
+    {sfDomainID, soeOPTIONAL},
     {sfData, soeOPTIONAL},
 }))
 
@@ -505,6 +509,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw, Delegation::delegatable, ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfDestination, soeOPTIONAL},
+    {sfDestinationTag, soeOPTIONAL},
 }))
 
 /** This transaction claws back tokens from a vault. */

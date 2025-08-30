@@ -61,7 +61,10 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // LCOV_EXCL_START
     if (baseFee > maxAmount - view.fees().base)
-        throw std::overflow_error("XRPAmount overflow");
+    {
+        JLOG(debugLog().error()) << "BatchTrace: Base fee overflow detected.";
+        return XRPAmount{INITIAL_XRP};
+    }
     // LCOV_EXCL_STOP
 
     XRPAmount const batchBase = view.fees().base + baseFee;
@@ -72,32 +75,36 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         auto const& txns = tx.getFieldArray(sfRawTransactions);
 
-        XRPL_ASSERT(
-            txns.size() <= maxBatchTxCount,
-            "Raw Transactions array exceeds max entries.");
-
         // LCOV_EXCL_START
         if (txns.size() > maxBatchTxCount)
-            throw std::length_error(
-                "Raw Transactions array exceeds max entries");
+        {
+            JLOG(debugLog().error())
+                << "BatchTrace: Raw Transactions array exceeds max entries.";
+            return XRPAmount{INITIAL_XRP};
+        }
         // LCOV_EXCL_STOP
 
         for (STObject txn : txns)
         {
             STTx const stx = STTx{std::move(txn)};
 
-            XRPL_ASSERT(
-                stx.getTxnType() != ttBATCH, "Inner Batch transaction found.");
-
             // LCOV_EXCL_START
             if (stx.getTxnType() == ttBATCH)
-                throw std::invalid_argument("Inner Batch transaction found");
+            {
+                JLOG(debugLog().error())
+                    << "BatchTrace: Inner Batch transaction found.";
+                return XRPAmount{INITIAL_XRP};
+            }
             // LCOV_EXCL_STOP
 
             auto const fee = ripple::calculateBaseFee(view, stx);
             // LCOV_EXCL_START
             if (txnFees > maxAmount - fee)
-                throw std::overflow_error("XRPAmount overflow");
+            {
+                JLOG(debugLog().error())
+                    << "BatchTrace: XRPAmount overflow in txnFees calculation.";
+                return XRPAmount{INITIAL_XRP};
+            }
             // LCOV_EXCL_STOP
             txnFees += fee;
         }
@@ -108,13 +115,14 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (tx.isFieldPresent(sfBatchSigners))
     {
         auto const& signers = tx.getFieldArray(sfBatchSigners);
-        XRPL_ASSERT(
-            signers.size() <= maxBatchTxCount,
-            "Batch Signers array exceeds max entries.");
 
         // LCOV_EXCL_START
         if (signers.size() > maxBatchTxCount)
-            throw std::length_error("Batch Signers array exceeds max entries");
+        {
+            JLOG(debugLog().error())
+                << "BatchTrace: Batch Signers array exceeds max entries.";
+            return XRPAmount{INITIAL_XRP};
+        }
         // LCOV_EXCL_STOP
 
         for (STObject const& signer : signers)
@@ -128,16 +136,28 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // LCOV_EXCL_START
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
-        throw std::overflow_error("XRPAmount overflow");
+    {
+        JLOG(debugLog().error())
+            << "BatchTrace: XRPAmount overflow in signerCount calculation.";
+        return XRPAmount{INITIAL_XRP};
+    }
     // LCOV_EXCL_STOP
 
     XRPAmount signerFees = signerCount * view.fees().base;
 
     // LCOV_EXCL_START
     if (signerFees > maxAmount - txnFees)
-        throw std::overflow_error("XRPAmount overflow");
+    {
+        JLOG(debugLog().error())
+            << "BatchTrace: XRPAmount overflow in signerFees calculation.";
+        return XRPAmount{INITIAL_XRP};
+    }
     if (txnFees + signerFees > maxAmount - batchBase)
-        throw std::overflow_error("XRPAmount overflow");
+    {
+        JLOG(debugLog().error())
+            << "BatchTrace: XRPAmount overflow in total fee calculation.";
+        return XRPAmount{INITIAL_XRP};
+    }
     // LCOV_EXCL_STOP
 
     // 10 drops per batch signature + sum of inner tx fees + batchBase

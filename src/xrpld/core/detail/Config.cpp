@@ -19,7 +19,6 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpld/net/HTTPClient.h>
 
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
@@ -27,6 +26,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
 
@@ -409,7 +409,8 @@ Config::setup(
         legacy("database_path", boost::filesystem::absolute(dataDir).string());
     }
 
-    HTTPClient::initializeSSLContext(*this, j_);
+    HTTPClient::initializeSSLContext(
+        this->SSL_VERIFY_DIR, this->SSL_VERIFY_FILE, this->SSL_VERIFY, j_);
 
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;
@@ -737,8 +738,44 @@ Config::loadFromString(std::string const& fileContents)
     if (exists(SECTION_REDUCE_RELAY))
     {
         auto sec = section(SECTION_REDUCE_RELAY);
-        VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
-        VP_REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
+
+        /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+        // vp_enable config option is deprecated by vp_base_squelch_enable    //
+        // This option is kept for backwards compatibility. When squelching   //
+        // is the default algorithm, it must be replaced with:                //
+        //  VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =                             //
+        //  sec.value_or("vp_base_squelch_enable", true);                     //
+        if (sec.exists("vp_base_squelch_enable") && sec.exists("vp_enable"))
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_REDUCE_RELAY
+                " cannot specify both vp_base_squelch_enable and vp_enable "
+                "options. "
+                "vp_enable was deprecated and replaced by "
+                "vp_base_squelch_enable");
+
+        if (sec.exists("vp_base_squelch_enable"))
+            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                sec.value_or("vp_base_squelch_enable", false);
+        else if (sec.exists("vp_enable"))
+            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                sec.value_or("vp_enable", false);
+        else
+            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
+        /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+
+        /////////////////////  !!TEMPORARY CODE BLOCK!! ///////////////////////
+        // Temporary squelching config for the peers selected as a source of //
+        // validator messages. The config must be removed once squelching is //
+        // made the default routing algorithm.                               //
+        VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS =
+            sec.value_or("vp_base_squelch_max_selected_peers", 5);
+        if (VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS < 3)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_REDUCE_RELAY
+                " vp_base_squelch_max_selected_peers must be "
+                "greater than or equal to 3");
+        /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+
         TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
         TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
         TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);
@@ -747,9 +784,9 @@ Config::loadFromString(std::string const& fileContents)
             TX_REDUCE_RELAY_MIN_PEERS < 10)
             Throw<std::runtime_error>(
                 "Invalid " SECTION_REDUCE_RELAY
-                ", tx_min_peers must be greater or equal to 10"
-                ", tx_relay_percentage must be greater or equal to 10 "
-                "and less or equal to 100");
+                ", tx_min_peers must be greater than or equal to 10"
+                ", tx_relay_percentage must be greater than or equal to 10 "
+                "and less than or equal to 100");
     }
 
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))

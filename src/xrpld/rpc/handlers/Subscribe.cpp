@@ -21,8 +21,8 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/ledger/ReadView.h>
-#include <xrpld/net/RPCSub.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/RPCSub.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
@@ -76,7 +76,7 @@ doSubscribe(RPC::JsonContext& context)
             {
                 auto rspSub = make_RPCSub(
                     context.app.getOPs(),
-                    context.app.getIOService(),
+                    context.app.getIOContext(),
                     context.app.getJobQueue(),
                     strUrl,
                     strUsername,
@@ -303,6 +303,20 @@ doSubscribe(RPC::JsonContext& context)
                 takerID = parseBase58<AccountID>(j[jss::taker].asString());
                 if (!takerID)
                     return rpcError(rpcBAD_ISSUER);
+            }
+
+            if (j.isMember(jss::domain))
+            {
+                uint256 domain;
+                if (!j[jss::domain].isString() ||
+                    !domain.parseHex(j[jss::domain].asString()))
+                {
+                    return rpcError(rpcDOMAIN_MALFORMED);
+                }
+                else
+                {
+                    book.domain = domain;
+                }
             }
 
             if (!isConsistent(book))

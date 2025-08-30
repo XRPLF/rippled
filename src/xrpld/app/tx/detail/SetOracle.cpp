@@ -209,6 +209,17 @@ SetOracle::doApply()
 {
     auto const oracleID = keylet::oracle(account_, ctx_.tx[sfOracleDocumentID]);
 
+    auto populatePriceData = [](STObject& priceData, STObject const& entry) {
+        setPriceDataInnerObjTemplate(priceData);
+        priceData.setFieldCurrency(
+            sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
+        priceData.setFieldCurrency(
+            sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
+        priceData.setFieldU64(sfAssetPrice, entry.getFieldU64(sfAssetPrice));
+        if (entry.isFieldPresent(sfScale))
+            priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
+    };
+
     if (auto sle = ctx_.view().peek(oracleID))
     {
         // update
@@ -249,15 +260,7 @@ SetOracle::doApply()
             {
                 // add a token pair with the price
                 STObject priceData{sfPriceData};
-                setPriceDataInnerObjTemplate(priceData);
-                priceData.setFieldCurrency(
-                    sfBaseAsset, entry.getFieldCurrency(sfBaseAsset));
-                priceData.setFieldCurrency(
-                    sfQuoteAsset, entry.getFieldCurrency(sfQuoteAsset));
-                priceData.setFieldU64(
-                    sfAssetPrice, entry.getFieldU64(sfAssetPrice));
-                if (entry.isFieldPresent(sfScale))
-                    priceData.setFieldU8(sfScale, entry.getFieldU8(sfScale));
+                populatePriceData(priceData, entry);
                 pairs.emplace(key, std::move(priceData));
             }
         }
@@ -285,7 +288,26 @@ SetOracle::doApply()
         sle->setFieldVL(sfProvider, ctx_.tx[sfProvider]);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
-        auto const& series = ctx_.tx.getFieldArray(sfPriceDataSeries);
+
+        STArray series;
+        if (!ctx_.view().rules().enabled(fixPriceOracleOrder))
+        {
+            series = ctx_.tx.getFieldArray(sfPriceDataSeries);
+        }
+        else
+        {
+            std::map<std::pair<Currency, Currency>, STObject> pairs;
+            for (auto const& entry : ctx_.tx.getFieldArray(sfPriceDataSeries))
+            {
+                auto const key = tokenPairKey(entry);
+                STObject priceData{sfPriceData};
+                populatePriceData(priceData, entry);
+                pairs.emplace(key, std::move(priceData));
+            }
+            for (auto const& iter : pairs)
+                series.push_back(std::move(iter.second));
+        }
+
         sle->setFieldArray(sfPriceDataSeries, series);
         sle->setFieldVL(sfAssetClass, ctx_.tx[sfAssetClass]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);

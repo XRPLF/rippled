@@ -18,7 +18,7 @@ if(tests)
   endif()
 endif()
 
-option(unity "Creates a build using UNITY support in cmake. This is the default" ON)
+option(unity "Creates a build using UNITY support in cmake." OFF)
 if(unity)
   if(NOT is_ci)
     set(CMAKE_UNITY_BUILD_BATCH_SIZE 15 CACHE STRING "")
@@ -118,7 +118,7 @@ option(beast_no_unit_test_inline
   "Prevents unit test definitions from being inserted into global table"
   OFF)
 option(single_io_service_thread
-  "Restricts the number of threads calling io_service::run to one. \
+  "Restricts the number of threads calling io_context::run to one. \
   This can be useful when debugging."
   OFF)
 option(boost_show_deprecated

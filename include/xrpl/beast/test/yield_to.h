@@ -8,12 +8,13 @@
 #ifndef BEAST_TEST_YIELD_TO_HPP
 #define BEAST_TEST_YIELD_TO_HPP
 
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/optional.hpp>
+#include <boost/thread/csbl/memory/allocator_arg.hpp>
 
 #include <condition_variable>
-#include <functional>
 #include <mutex>
 #include <thread>
 #include <vector>
@@ -30,10 +31,12 @@ namespace test {
 class enable_yield_to
 {
 protected:
-    boost::asio::io_service ios_;
+    boost::asio::io_context ios_;
 
 private:
-    boost::optional<boost::asio::io_service::work> work_;
+    boost::optional<boost::asio::executor_work_guard<
+        boost::asio::io_context::executor_type>>
+        work_;
     std::vector<std::thread> threads_;
     std::mutex m_;
     std::condition_variable cv_;
@@ -43,7 +46,8 @@ public:
     /// The type of yield context passed to functions.
     using yield_context = boost::asio::yield_context;
 
-    explicit enable_yield_to(std::size_t concurrency = 1) : work_(ios_)
+    explicit enable_yield_to(std::size_t concurrency = 1)
+        : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
         while (concurrency--)
@@ -57,9 +61,9 @@ public:
             t.join();
     }
 
-    /// Return the `io_service` associated with the object
-    boost::asio::io_service&
-    get_io_service()
+    /// Return the `io_context` associated with the object
+    boost::asio::io_context&
+    get_io_context()
     {
         return ios_;
     }
@@ -112,13 +116,18 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
 {
     boost::asio::spawn(
         ios_,
+        boost::allocator_arg,
+        boost::context::fixedsize_stack(2 * 1024 * 1024),
         [&](yield_context yield) {
             f(yield);
             std::lock_guard lock{m_};
             if (--running_ == 0)
                 cv_.notify_all();
         },
-        boost::coroutines::attributes(2 * 1024 * 1024));
+        [](std::exception_ptr e) {
+            if (e)
+                std::rethrow_exception(e);
+        });
     spawn(fn...);
 }
 

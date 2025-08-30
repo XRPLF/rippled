@@ -49,10 +49,11 @@ public:
     preclaim(PreclaimContext const& ctx);
 
     static TER
-    authorize(
+    createMPToken(
         ApplyView& view,
-        beast::Journal journal,
-        MPTAuthorizeArgs const& args);
+        MPTID const& mptIssuanceID,
+        AccountID const& account,
+        std::uint32_t const flags);
 
     TER
     doApply() override;

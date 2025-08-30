@@ -19,6 +19,7 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/DelegateUtils.h>
+#include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/ledger/View.h>
@@ -69,6 +70,10 @@ Payment::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
@@ -233,7 +238,8 @@ Payment::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j);
+        !isTesSuccess(err))
         return err;
 
     return preflight2(ctx);
@@ -250,7 +256,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -269,7 +275,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
         amountIssue.account == tx[sfDestination])
         return tesSUCCESS;
 
-    return tecNO_PERMISSION;
+    return tecNO_DELEGATE_PERMISSION;
 }
 
 TER
@@ -353,9 +359,21 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+    if (auto const err =
+            credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
         !isTesSuccess(err))
         return err;
+
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        if (!permissioned_dex::accountInDomain(
+                ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+
+        if (!permissioned_dex::accountInDomain(
+                ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+    }
 
     return tesSUCCESS;
 }
@@ -434,8 +452,13 @@ Payment::doApply()
             //  1. If Account == Destination, or
             //  2. If Account is deposit preauthorized by destination.
 
-            if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+            if (auto err = verifyDepositPreauth(
+                    ctx_.tx,
+                    ctx_.view(),
+                    account_,
+                    dstAccountID,
+                    sleDst,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -458,6 +481,7 @@ Payment::doApply()
                 dstAccountID,
                 account_,
                 ctx_.tx.getFieldPathSet(sfPaths),
+                ctx_.tx[~sfDomainID],
                 ctx_.app.logs(),
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
@@ -504,8 +528,13 @@ Payment::doApply()
             ter != tesSUCCESS)
             return ter;
 
-        if (auto err =
-                verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+        if (auto err = verifyDepositPreauth(
+                ctx_.tx,
+                ctx_.view(),
+                account_,
+                dstAccountID,
+                sleDst,
+                ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -551,7 +580,16 @@ Payment::doApply()
         auto res = accountSend(
             pv, account_, dstAccountID, amountDeliver, ctx_.journal);
         if (res == tesSUCCESS)
+        {
             pv.apply(ctx_.rawView());
+
+            // If the actual amount delivered is different from the original
+            // amount due to partial payment or transfer fee, we need to update
+            // DelieveredAmount using the actual delivered amount
+            if (view().rules().enabled(fixMPTDeliveredAmount) &&
+                amountDeliver != dstAmount)
+                ctx_.deliver(amountDeliver);
+        }
         else if (res == tecINSUFFICIENT_FUNDS || res == tecPATH_DRY)
             res = tecPATH_PARTIAL;
 
@@ -627,8 +665,13 @@ Payment::doApply()
         if (dstAmount > dstReserve ||
             sleDst->getFieldAmount(sfBalance) > dstReserve)
         {
-            if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+            if (auto err = verifyDepositPreauth(
+                    ctx_.tx,
+                    ctx_.view(),
+                    account_,
+                    dstAccountID,
+                    sleDst,
+                    ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }

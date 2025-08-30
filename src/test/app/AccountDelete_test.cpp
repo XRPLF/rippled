@@ -292,7 +292,7 @@ public:
         //  o New-styled PayChannels with the backlink.
         // So we start the test using old-style PayChannels.  Then we pass
         // the amendment to get new-style PayChannels.
-        Env env{*this, supported_amendments() - fixPayChanRecipientOwnerDir};
+        Env env{*this, testable_amendments() - fixPayChanRecipientOwnerDir};
         Account const alice("alice");
         Account const becky("becky");
         Account const gw("gw");
@@ -335,26 +335,11 @@ public:
         env(check::cancel(becky, checkId));
         env.close();
 
-        // Lambda to create an escrow.
-        auto escrowCreate = [](jtx::Account const& account,
-                               jtx::Account const& to,
-                               STAmount const& amount,
-                               NetClock::time_point const& cancelAfter) {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::EscrowCreate;
-            jv[jss::Account] = account.human();
-            jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
-            jv[sfFinishAfter.jsonName] =
-                cancelAfter.time_since_epoch().count() + 1;
-            jv[sfCancelAfter.jsonName] =
-                cancelAfter.time_since_epoch().count() + 2;
-            return jv;
-        };
-
         using namespace std::chrono_literals;
         std::uint32_t const escrowSeq{env.seq(alice)};
-        env(escrowCreate(alice, becky, XRP(333), env.now() + 2s));
+        env(escrow::create(alice, becky, XRP(333)),
+            escrow::finish_time(env.now() + 3s),
+            escrow::cancel_time(env.now() + 4s));
         env.close();
 
         // alice and becky should be unable to delete their accounts because
@@ -366,17 +351,39 @@ public:
         // Now cancel the escrow, but create a payment channel between
         // alice and becky.
 
-        // Lambda to cancel an escrow.
-        auto escrowCancel =
-            [](Account const& account, Account const& from, std::uint32_t seq) {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::EscrowCancel;
-                jv[jss::Account] = account.human();
-                jv[sfOwner.jsonName] = from.human();
-                jv[sfOfferSequence.jsonName] = seq;
-                return jv;
-            };
-        env(escrowCancel(becky, alice, escrowSeq));
+        bool const withTokenEscrow =
+            env.current()->rules().enabled(featureTokenEscrow);
+        if (withTokenEscrow)
+        {
+            Account const gw1("gw1");
+            Account const carol("carol");
+            auto const USD = gw1["USD"];
+            env.fund(XRP(100000), carol, gw1);
+            env(fset(gw1, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(USD(10000), carol);
+            env.close();
+            env(pay(gw1, carol, USD(100)));
+            env.close();
+
+            std::uint32_t const escrowSeq{env.seq(carol)};
+            env(escrow::create(carol, becky, USD(1)),
+                escrow::finish_time(env.now() + 3s),
+                escrow::cancel_time(env.now() + 4s));
+            env.close();
+
+            incLgrSeqForAccDel(env, gw1);
+
+            env(acctdelete(gw1, becky),
+                fee(acctDelFee),
+                ter(tecHAS_OBLIGATIONS));
+            env.close();
+
+            env(escrow::cancel(becky, carol, escrowSeq));
+            env.close();
+        }
+
+        env(escrow::cancel(becky, alice, escrowSeq));
         env.close();
 
         Keylet const alicePayChanKey{
@@ -454,7 +461,7 @@ public:
 
         // We need an old-style PayChannel that doesn't provide a backlink
         // from the destination.  So don't enable the amendment with that fix.
-        Env env{*this, supported_amendments() - fixPayChanRecipientOwnerDir};
+        Env env{*this, testable_amendments() - fixPayChanRecipientOwnerDir};
         Account const alice("alice");
         Account const becky("becky");
 
@@ -529,7 +536,7 @@ public:
 
         testcase("Amendment enable");
 
-        Env env{*this, supported_amendments() - featureDeletableAccounts};
+        Env env{*this, testable_amendments() - featureDeletableAccounts};
         Account const alice("alice");
         Account const becky("becky");
 
@@ -1121,7 +1128,7 @@ public:
             Account const becky{"becky"};
             Account const carol{"carol"};
 
-            Env env{*this, supported_amendments() - featureCredentials};
+            Env env{*this, testable_amendments() - featureCredentials};
             env.fund(XRP(100000), alice, becky, carol);
             env.close();
 
