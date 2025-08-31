@@ -174,8 +174,9 @@ public:
 
     class JsonLogContext
     {
-        rapidjson::Value attributes_;
+        rapidjson::Value messageParams_;
         rapidjson::MemoryPoolAllocator<> allocator_;
+        std::optional<std::string> journalAttributesJson_;
 
     public:
         JsonLogContext() = default;
@@ -189,20 +190,20 @@ public:
         rapidjson::Value&
         messageParams()
         {
-            return attributes_["Params"];
+            return messageParams_;
         }
 
-        rapidjson::Value&
-        attributes()
+        std::optional<std::string>&
+        journalAttributesJson()
         {
-            return attributes_;
+            return journalAttributesJson_;
         }
 
         void
         reset(
             std::source_location location,
             severities::Severity severity,
-            std::optional<JsonLogAttributes> const& attributes) noexcept;
+            std::optional<std::string> const& journalAttributesJson) noexcept;
     };
 
 private:
@@ -210,7 +211,9 @@ private:
     using Severity = severities::Severity;
 
     std::optional<JsonLogAttributes> m_attributes;
+    std::optional<std::string> m_attributesJson;
     static std::optional<JsonLogAttributes> globalLogAttributes_;
+    static std::optional<std::string> globalLogAttributesJson_;
     static std::mutex globalLogAttributesMutex_;
     static bool m_jsonLogsEnabled;
 
@@ -226,6 +229,9 @@ private:
 
     static std::string
     formatLog(std::string&& message);
+
+    void
+    rebuildAttributeJson();
 
 public:
     //--------------------------------------------------------------------------
@@ -457,18 +463,8 @@ public:
 
     Journal(
         Journal const& other,
-        std::optional<JsonLogAttributes> attributes = std::nullopt)
-            : m_attributes(other.m_attributes)
-            , m_sink(other.m_sink)
-    {
-        if (attributes.has_value())
-        {
-            if (m_attributes)
-                m_attributes->combine(attributes->contextValues_);
-            else
-                m_attributes = std::move(attributes);
-        }
-    }
+        std::optional<JsonLogAttributes> attributes = std::nullopt);
+
     /** Create a journal that writes to the specified sink. */
     explicit Journal(
         Sink& sink,
@@ -481,6 +477,7 @@ public:
             m_attributes = std::move(attributes);
             m_attributes->setModuleName(name);
         }
+        rebuildAttributeJson();
     }
 
     Journal&
@@ -491,6 +488,7 @@ public:
 
         m_sink = other.m_sink;
         m_attributes = other.m_attributes;
+        rebuildAttributeJson();
         return *this;
     }
 
@@ -499,6 +497,7 @@ public:
     {
         m_sink = other.m_sink;
         m_attributes = std::move(other.m_attributes);
+        rebuildAttributeJson();
         return *this;
     }
 
@@ -586,19 +585,11 @@ public:
     {
         std::lock_guard lock(globalLogAttributesMutex_);
         globalLogAttributes_ = std::nullopt;
+        globalLogAttributesJson_ = std::nullopt;
     }
 
     static void
-    addGlobalAttributes(JsonLogAttributes globalLogAttributes)
-    {
-        std::lock_guard lock(globalLogAttributesMutex_);
-        if (!globalLogAttributes_)
-        {
-            globalLogAttributes_ = JsonLogAttributes{};
-        }
-        globalLogAttributes_->combine(
-            globalLogAttributes.contextValues());
-    }
+    addGlobalAttributes(JsonLogAttributes globalLogAttributes);
 };
 
 #ifndef __INTELLISENSE__

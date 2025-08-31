@@ -164,9 +164,11 @@ TEST_CASE("Global attributes")
         jsonLog.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(jsonLog.IsObject());
-    CHECK(jsonLog.HasMember("Field1"));
-    CHECK(jsonLog["Field1"].IsString());
-    CHECK(jsonLog["Field1"].GetString() == std::string{"Value1"});
+    CHECK(jsonLog.HasMember("GlobalParams"));
+    CHECK(jsonLog["GlobalParams"].IsObject());
+    CHECK(jsonLog["GlobalParams"].HasMember("Field1"));
+    CHECK(jsonLog["GlobalParams"]["Field1"].IsString());
+    CHECK(jsonLog["GlobalParams"]["Field1"].GetString() == std::string{"Value1"});
     beast::Journal::disableStructuredJournal();
 }
 
@@ -194,12 +196,11 @@ TEST_CASE("Global attributes inheritable")
         jsonLog.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(jsonLog.IsObject());
-    CHECK(jsonLog.HasMember("Field1"));
-    CHECK(jsonLog["Field1"].IsString());
-    // Field1 should be overwritten to Value3
-    CHECK(jsonLog["Field1"].GetString() == std::string{"Value3"});
-    CHECK(jsonLog["Field2"].IsString());
-    CHECK(jsonLog["Field2"].GetString() == std::string{"Value2"});
+    CHECK(jsonLog["GlobalParams"].HasMember("Field1"));
+    CHECK(jsonLog["GlobalParams"]["Field1"].IsString());
+    CHECK(jsonLog["GlobalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(jsonLog["JournalParams"]["Field1"].GetString() == std::string{"Value3"});
+    CHECK(jsonLog["JournalParams"]["Field2"].GetString() == std::string{"Value2"});
     beast::Journal::disableStructuredJournal();
 }
 
@@ -234,7 +235,9 @@ class JsonLogStreamFixture
 {
 public:
     JsonLogStreamFixture()
-        : sink_(beast::severities::kAll, logStream_), j_(sink_)
+        : sink_(beast::severities::kAll, logStream_), j_(sink_, "Test", log::attributes(
+            log::attr("Field1", "Value1")
+        ))
     {
         beast::Journal::enableStructuredJournal();
     }
@@ -264,8 +267,9 @@ private:
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
 {
+    beast::Journal::addGlobalAttributes(log::attributes(log::attr("Field2", "Value2")));
     journal().debug() << std::boolalpha << true << std::noboolalpha << " Test "
-                      << std::boolalpha << false;
+                      << std::boolalpha << false << log::field("Field3", "Value3");
 
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
@@ -274,20 +278,27 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue.IsObject());
-    CHECK(logValue.HasMember("Function"));
-    CHECK(logValue.HasMember("File"));
-    CHECK(logValue.HasMember("Line"));
-    CHECK(logValue.HasMember("ThreadId"));
-    CHECK(logValue.HasMember("Params"));
-    CHECK(logValue.HasMember("Level"));
+    CHECK(logValue.HasMember("GlobalParams"));
+    CHECK(logValue.HasMember("JournalParams"));
+    CHECK(logValue.HasMember("MessageParams"));
     CHECK(logValue.HasMember("Message"));
-    CHECK(logValue.HasMember("Time"));
 
-    CHECK(logValue["Function"].IsString());
-    CHECK(logValue["File"].IsString());
-    CHECK(logValue["Line"].IsNumber());
-    CHECK(logValue["Params"].IsObject());
+    CHECK(logValue["GlobalParams"].IsObject());
+    CHECK(logValue["JournalParams"].IsObject());
+    CHECK(logValue["MessageParams"].IsObject());
     CHECK(logValue["Message"].IsString());
+
+    CHECK(logValue["MessageParams"].HasMember("Function"));
+    CHECK(logValue["MessageParams"].HasMember("File"));
+    CHECK(logValue["MessageParams"].HasMember("Line"));
+    CHECK(logValue["MessageParams"].HasMember("ThreadId"));
+    CHECK(logValue["MessageParams"].HasMember("Level"));
+    CHECK(logValue["MessageParams"].HasMember("Time"));
+
+    CHECK(logValue["MessageParams"]["Function"].IsString());
+    CHECK(logValue["MessageParams"]["File"].IsString());
+    CHECK(logValue["MessageParams"]["Line"].IsNumber());
+
     CHECK(logValue["Message"].GetString() == std::string{"true Test false"});
 }
 
@@ -305,7 +316,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
             rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
-            logValue["Level"].GetString() ==
+            logValue["MessageParams"]["Level"].GetString() ==
             beast::severities::to_string(beast::severities::kTrace));
     }
 
@@ -321,7 +332,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
             rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
-            logValue["Level"].GetString() ==
+            logValue["MessageParams"]["Level"].GetString() ==
             beast::severities::to_string(beast::severities::kDebug));
     }
 
@@ -337,7 +348,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
             rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
-            logValue["Level"].GetString() ==
+            logValue["MessageParams"]["Level"].GetString() ==
             beast::severities::to_string(beast::severities::kInfo));
     }
 
@@ -353,7 +364,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
             rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
-            logValue["Level"].GetString() ==
+            logValue["MessageParams"]["Level"].GetString() ==
             beast::severities::to_string(beast::severities::kWarning));
     }
 
@@ -369,7 +380,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
             rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
-            logValue["Level"].GetString() ==
+            logValue["MessageParams"]["Level"].GetString() ==
             beast::severities::to_string(beast::severities::kError));
     }
 
@@ -385,7 +396,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
             rapidjson::ParseErrorCode::kParseErrorNone);
 
         CHECK(
-            logValue["Level"].GetString() ==
+            logValue["MessageParams"]["Level"].GetString() ==
             beast::severities::to_string(beast::severities::kFatal));
     }
 }
@@ -401,7 +412,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogStream")
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(
-        logValue["Level"].GetString() ==
+        logValue["MessageParams"]["Level"].GetString() ==
         beast::severities::to_string(beast::severities::kError));
 }
 
@@ -418,15 +429,12 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogParams")
     CHECK(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
-    CHECK(logValue["Params"].IsObject());
-    CHECK(logValue["Params"]["Field1"].IsNumber());
-    CHECK(logValue["Params"]["Field1"].GetInt() == 1);
-    // UInt64 doesn't fit in Json::Value so it should be converted to a string
-    // NOTE: We should expect it to be an int64 after we make the json library
-    // support in64 and uint64
-    CHECK(logValue["Params"]["Field2"].IsNumber());
+    CHECK(logValue["MessageParams"].IsObject());
+    CHECK(logValue["MessageParams"]["Field1"].IsNumber());
+    CHECK(logValue["MessageParams"]["Field1"].GetInt() == 1);
+    CHECK(logValue["MessageParams"]["Field2"].IsNumber());
     CHECK(
-        logValue["Params"]["Field2"].GetUint64() ==
+        logValue["MessageParams"]["Field2"].GetUint64() ==
         std::numeric_limits<std::uint64_t>::max());
     CHECK(logValue["Message"].IsString());
     CHECK(
@@ -447,15 +455,15 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
     CHECK(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
-    CHECK(logValue["Params"].IsObject());
-    CHECK(logValue["Params"]["Field1"].IsNumber());
-    CHECK(logValue["Params"]["Field1"].GetInt() == 1);
+    CHECK(logValue["MessageParams"].IsObject());
+    CHECK(logValue["MessageParams"]["Field1"].IsNumber());
+    CHECK(logValue["MessageParams"]["Field1"].GetInt() == 1);
     // UInt64 doesn't fit in Json::Value so it should be converted to a string
     // NOTE: We should expect it to be an int64 after we make the json library
     // support in64 and uint64
-    CHECK(logValue["Params"]["Field2"].IsNumber());
+    CHECK(logValue["MessageParams"]["Field2"].IsNumber());
     CHECK(
-        logValue["Params"]["Field2"].GetUint64() ==
+        logValue["MessageParams"]["Field2"].GetUint64() ==
         std::numeric_limits<std::uint64_t>::max());
     CHECK(logValue["Message"].IsString());
     CHECK(logValue["Message"].GetString() == std::string{"Test"});
@@ -475,10 +483,10 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributes")
     CHECK(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
-    CHECK(logValue["Field1"].IsString());
-    CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
-    CHECK(logValue["Field2"].IsNumber());
-    CHECK(logValue["Field2"].GetInt() == 2);
+    CHECK(logValue["JournalParams"]["Field1"].IsString());
+    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
+    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
 }
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
@@ -498,13 +506,13 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
     CHECK(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
-    CHECK(logValue["Field1"].IsString());
-    CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
-    CHECK(logValue["Field3"].IsString());
-    CHECK(logValue["Field3"].GetString() == std::string{"Value3"});
+    CHECK(logValue["JournalParams"]["Field1"].IsString());
+    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(logValue["JournalParams"]["Field3"].IsString());
+    CHECK(logValue["JournalParams"]["Field3"].GetString() == std::string{"Value3"});
     // Field2 should be overwritten to 0
-    CHECK(logValue["Field2"].IsNumber());
-    CHECK(logValue["Field2"].GetInt() == 0);
+    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
+    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 0);
 }
 
 TEST_CASE_FIXTURE(
@@ -526,13 +534,13 @@ TEST_CASE_FIXTURE(
     CHECK(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
-    CHECK(logValue["Field1"].IsString());
-    CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
-    CHECK(logValue["Field3"].IsString());
-    CHECK(logValue["Field3"].GetString() == std::string{"Value3"});
+    CHECK(logValue["JournalParams"]["Field1"].IsString());
+    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(logValue["JournalParams"]["Field3"].IsString());
+    CHECK(logValue["JournalParams"]["Field3"].GetString() == std::string{"Value3"});
     // Field2 should be overwritten to 0
-    CHECK(logValue["Field2"].IsNumber());
-    CHECK(logValue["Field2"].GetInt() == 0);
+    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
+    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 0);
 }
 
 TEST_CASE_FIXTURE(
@@ -555,10 +563,10 @@ TEST_CASE_FIXTURE(
     CHECK(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
-    CHECK(logValue["Field1"].IsString());
-    CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
-    CHECK(logValue["Field2"].IsNumber());
-    CHECK(logValue["Field2"].GetInt() == 2);
+    CHECK(logValue["JournalParams"]["Field1"].IsString());
+    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
+    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
 }
 
 TEST_CASE_FIXTURE(
@@ -581,8 +589,8 @@ TEST_CASE_FIXTURE(
     CHECK(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
-    CHECK(logValue["Field1"].IsString());
-    CHECK(logValue["Field1"].GetString() == std::string{"Value1"});
-    CHECK(logValue["Field2"].IsNumber());
-    CHECK(logValue["Field2"].GetInt() == 2);
+    CHECK(logValue["JournalParams"]["Field1"].IsString());
+    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
+    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
 }

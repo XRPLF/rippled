@@ -32,6 +32,8 @@
 namespace beast {
 
 std::optional<Journal::JsonLogAttributes> Journal::globalLogAttributes_;
+std::optional<std::string> Journal::globalLogAttributesJson_;
+
 std::mutex Journal::globalLogAttributesMutex_;
 bool Journal::m_jsonLogsEnabled = false;
 thread_local Journal::JsonLogContext Journal::currentJsonLogContext_{};
@@ -169,11 +171,44 @@ Journal::JsonLogAttributes::combine(
     }
 }
 
+Journal::Journal(
+    Journal const& other,
+    std::optional<JsonLogAttributes> attributes)
+    : m_attributes(other.m_attributes), m_sink(other.m_sink)
+{
+    if (attributes.has_value())
+    {
+        if (m_attributes)
+            m_attributes->combine(attributes->contextValues_);
+        else
+            m_attributes = std::move(attributes);
+    }
+    rebuildAttributeJson();
+}
+
+void
+Journal::addGlobalAttributes(JsonLogAttributes globalLogAttributes)
+{
+    std::lock_guard lock(globalLogAttributesMutex_);
+    if (!globalLogAttributes_)
+    {
+        globalLogAttributes_ = JsonLogAttributes{};
+    }
+    globalLogAttributes_->combine(globalLogAttributes.contextValues());
+
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer writer{buffer};
+
+    globalLogAttributes_->contextValues().Accept(writer);
+
+    globalLogAttributesJson_ = {buffer.GetString()};
+}
+
 void
 Journal::JsonLogContext::reset(
     std::source_location location,
     severities::Severity severity,
-    std::optional<JsonLogAttributes> const& attributes) noexcept
+    std::optional<std::string> const& journalAttributesJson) noexcept
 {
     struct ThreadIdStringInitializer
     {
@@ -187,67 +222,37 @@ Journal::JsonLogContext::reset(
     };
     thread_local ThreadIdStringInitializer const threadId;
 
-    attributes_.SetObject();
-    if (globalLogAttributes_.has_value())
-    {
-        attributes_.CopyFrom(globalLogAttributes_->contextValues(), allocator_);
-        if (attributes.has_value())
-        {
-            for (auto const& [key, value] :
-             attributes->contextValues().GetObject())
-            {
-                attributes_.RemoveMember(key);
+    journalAttributesJson_ = journalAttributesJson;
 
-                rapidjson::Value jsonValue;
-                jsonValue.CopyFrom(value, allocator_);
+    messageParams_.SetObject();
 
-                attributes_.AddMember(
-                    rapidjson::Value{key, allocator_},
-                    rapidjson::Value{value, allocator_},
-                    allocator_);
-            }
-        }
-    }
-    else if (attributes.has_value())
-    {
-        attributes_.CopyFrom(attributes->contextValues(), allocator_);
-    }
-
-    attributes_.RemoveMember("Function");
-    attributes_.AddMember(
+    messageParams_.AddMember(
         rapidjson::StringRef("Function"),
         rapidjson::Value{location.function_name(), allocator_},
         allocator_);
 
-    attributes_.RemoveMember("File");
-    attributes_.AddMember(
+    messageParams_.AddMember(
         rapidjson::StringRef("File"),
         rapidjson::Value{location.file_name(), allocator_},
         allocator_);
 
-    attributes_.RemoveMember("Line");
-    attributes_.AddMember(
+    messageParams_.AddMember(
         rapidjson::StringRef("Line"),
         location.line(),
         allocator_);
-    attributes_.RemoveMember("ThreadId");
-    attributes_.AddMember(
+
+    messageParams_.AddMember(
         rapidjson::StringRef("ThreadId"),
         rapidjson::Value{threadId.value.c_str(), allocator_},
         allocator_);
-    attributes_.RemoveMember("Params");
-    attributes_.AddMember(
-        rapidjson::StringRef("Params"),
-        rapidjson::Value{rapidjson::kObjectType},
-        allocator_);
+
     auto severityStr = to_string(severity);
-    attributes_.RemoveMember("Level");
-    attributes_.AddMember(
+    messageParams_.AddMember(
         rapidjson::StringRef("Level"),
         rapidjson::Value{severityStr.c_str(), allocator_},
         allocator_);
-    attributes_.RemoveMember("Time");
-    attributes_.AddMember(
+
+    messageParams_.AddMember(
         rapidjson::StringRef("Time"),
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch())
@@ -260,7 +265,7 @@ Journal::initMessageContext(
     std::source_location location,
     severities::Severity severity) const
 {
-    currentJsonLogContext_.reset(location, severity, m_attributes);
+    currentJsonLogContext_.reset(location, severity, m_attributesJson);
 }
 
 std::string
@@ -271,21 +276,57 @@ Journal::formatLog(std::string&& message)
         return message;
     }
 
-    auto& attributes = currentJsonLogContext_.attributes();
-
-    attributes.RemoveMember("Message");
-    attributes.AddMember(
-        rapidjson::StringRef("Message"),
-        rapidjson::Value{rapidjson::StringRef(message.c_str()), currentJsonLogContext_.allocator()},
-        currentJsonLogContext_.allocator()
-    );
+    auto& messageParams = currentJsonLogContext_.messageParams();
 
     rapidjson::StringBuffer buffer;
     rapidjson::Writer writer(buffer);
 
-    attributes.Accept(writer);
+    writer.StartObject();
+    if (globalLogAttributesJson_.has_value())
+    {
+        writer.Key("GlobalParams");
+        writer.RawValue(
+            globalLogAttributesJson_->c_str(),
+            globalLogAttributesJson_->length(),
+            rapidjson::kObjectType);
+    }
+
+    if (currentJsonLogContext_.journalAttributesJson().has_value())
+    {
+        writer.Key("JournalParams");
+        writer.RawValue(
+            currentJsonLogContext_.journalAttributesJson()->c_str(),
+            currentJsonLogContext_.journalAttributesJson()->length(),
+            rapidjson::kObjectType);
+    }
+
+    writer.Key("MessageParams");
+    messageParams.Accept(writer);
+
+    writer.Key("Message");
+    writer.String(message.c_str(), message.length());
+
+    writer.EndObject();
 
     return {buffer.GetString()};
+}
+
+void
+Journal::rebuildAttributeJson()
+{
+    if (m_attributes.has_value())
+    {
+        rapidjson::StringBuffer buffer;
+        rapidjson::Writer writer{buffer};
+
+        m_attributes->contextValues().Accept(writer);
+
+        m_attributesJson = {buffer.GetString()};
+    }
+    else
+    {
+        m_attributesJson = {};
+    }
 }
 
 void
