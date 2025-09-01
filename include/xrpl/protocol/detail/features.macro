@@ -32,7 +32,7 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
-XRPL_FIX    (PriceOracleOrder,           Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FIX    (PriceOracleOrder,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (MPTDeliveredAmount,         Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMClawbackRounding,        Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
