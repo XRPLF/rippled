@@ -22,7 +22,13 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <boost/asio/execution/allocator.hpp>
+#include <boost/coroutine/attributes.hpp>
+#include <boost/system/result.hpp>
+
 #include <rapidjson/document.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
 
 #include <deque>
 #include <optional>
@@ -174,23 +180,27 @@ public:
 
     class JsonLogContext
     {
-        rapidjson::Value messageParams_;
-        rapidjson::MemoryPoolAllocator<> allocator_;
+        rapidjson::StringBuffer buffer_;
+        rapidjson::Writer<rapidjson::StringBuffer> messageParamsWriter_;
         std::optional<std::string> journalAttributesJson_;
 
     public:
-        JsonLogContext() = default;
-
-        rapidjson::MemoryPoolAllocator<>&
-        allocator()
+        JsonLogContext()
+            : messageParamsWriter_(buffer_)
         {
-            return allocator_;
+
         }
 
-        rapidjson::Value&
+        rapidjson::Writer<rapidjson::StringBuffer>&
+        writer()
+        {
+            return messageParamsWriter_;
+        }
+
+        char const*
         messageParams()
         {
-            return messageParams_;
+            return buffer_.GetString();
         }
 
         std::optional<std::string>&
@@ -461,9 +471,28 @@ public:
     /** Journal has no default constructor. */
     Journal() = delete;
 
+    template <typename TAttributesFactory>
     Journal(
         Journal const& other,
-        std::optional<JsonLogAttributes> attributes = std::nullopt);
+        TAttributesFactory&& attributesFactory = nullptr)
+        : m_attributes(other.m_attributes)
+        , m_sink(other.m_sink)
+        , m_attributesJson(other.m_attributesJson)
+    {
+/*
+        if constexpr (!std::is_same_v<std::decay_t<TAttributesFactory>, std::nullptr_t>)
+        {
+            if (attributes.has_value())
+            {
+                if (m_attributes)
+                    m_attributes->combine(attributes->contextValues_);
+                else
+                    m_attributes = std::move(attributes);
+            }
+            rebuildAttributeJson();
+        }
+*/
+    }
 
     /** Create a journal that writes to the specified sink. */
     explicit Journal(
@@ -699,39 +728,59 @@ using logwstream = basic_logstream<wchar_t>;
 namespace ripple::log {
 
 namespace detail {
-template <typename T>
+template <typename T, typename OutputStream>
 void
 setJsonValue(
-    rapidjson::Value& object,
-    rapidjson::MemoryPoolAllocator<>& allocator,
+    rapidjson::Writer<OutputStream>& writer,
     char const* name,
     T&& value,
     std::ostream* outStream)
 {
     using ValueType = std::decay_t<T>;
-    rapidjson::Value jsonValue;
-    if constexpr (std::constructible_from<
-                      rapidjson::Value,
-                      ValueType,
-                      rapidjson::MemoryPoolAllocator<>&>)
+    writer.Key(name);
+    if constexpr (std::is_integral_v<ValueType>)
     {
-        jsonValue = rapidjson::Value{value, allocator};
+        if constexpr (std::is_signed_v<ValueType>)
+        {
+            writer.Int64(value);
+        }
+        else
+        {
+            writer.Uint64(value);
+        }
         if (outStream)
         {
             (*outStream) << value;
         }
     }
-    else if constexpr (std::constructible_from<rapidjson::Value, ValueType>)
+    else if constexpr (std::is_floating_point_v<ValueType>)
     {
-        jsonValue = rapidjson::Value{value};
+        writer.Double(value);
+
         if (outStream)
         {
             (*outStream) << value;
         }
     }
-    else if constexpr (std::same_as<ValueType, std::string>)
+    else if constexpr (std::is_same_v<ValueType, bool>)
     {
-        jsonValue = rapidjson::Value{value.c_str(), allocator};
+        writer.Bool(value);
+        if (outStream)
+        {
+            (*outStream) << value;
+        }
+    }
+    else if constexpr (std::is_same_v<ValueType, char const*> || std::is_same_v<ValueType, char*>)
+    {
+        writer.String(value);
+        if (outStream)
+        {
+            (*outStream) << value;
+        }
+    }
+    else if constexpr (std::is_same_v<ValueType, std::string>)
+    {
+        writer.String(value.c_str(), value.length());
         if (outStream)
         {
             (*outStream) << value;
@@ -742,17 +791,13 @@ setJsonValue(
         std::ostringstream oss;
         oss << value;
 
-        jsonValue = rapidjson::Value{oss.str().c_str(), allocator};
+        writer.String(oss.str().c_str(), oss.str().length());
 
         if (outStream)
         {
             (*outStream) << oss.str();
         }
     }
-
-    object.RemoveMember(name);
-    object.AddMember(
-        rapidjson::StringRef(name), std::move(jsonValue), allocator);
 }
 }  // namespace detail
 
@@ -763,8 +808,7 @@ operator<<(std::ostream& os, LogParameter<T> const& param)
     if (!beast::Journal::m_jsonLogsEnabled)
         return os;
     detail::setJsonValue(
-        beast::Journal::currentJsonLogContext_.messageParams(),
-        beast::Journal::currentJsonLogContext_.allocator(),
+        beast::Journal::currentJsonLogContext_.writer(),
         param.name_,
         param.value_,
         &os);
@@ -778,8 +822,7 @@ operator<<(std::ostream& os, LogField<T> const& param)
     if (!beast::Journal::m_jsonLogsEnabled)
         return os;
     detail::setJsonValue(
-        beast::Journal::currentJsonLogContext_.messageParams(),
-        beast::Journal::currentJsonLogContext_.allocator(),
+        beast::Journal::currentJsonLogContext_.writer(),
         param.name_,
         param.value_,
         nullptr);
@@ -801,20 +844,17 @@ field(char const* name, T&& value)
 }
 
 template <typename... Pair>
-[[nodiscard]] beast::Journal::JsonLogAttributes
+[[nodiscard]] auto
 attributes(Pair&&... pairs)
 {
-    beast::Journal::JsonLogAttributes result;
-
-    (detail::setJsonValue(
-         result.contextValues(),
-         result.allocator(),
-         pairs.first,
-         pairs.second,
-         nullptr),
-     ...);
-
-    return result;
+    return [&](rapidjson::Writer<rapidjson::Writer<char>>& writer) {
+        (detail::setJsonValue(
+             writer,
+             pairs.first,
+             pairs.second,
+             nullptr),
+         ...);
+    };
 }
 
 template <typename T>
