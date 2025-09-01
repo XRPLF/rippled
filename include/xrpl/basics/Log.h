@@ -68,8 +68,7 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string&& text)
-            override;
+        write(beast::severities::Severity level, std::string&& text) override;
 
         void
         writeAlways(beast::severities::Severity level, std::string&& text)
@@ -187,11 +186,19 @@ public:
     beast::Journal::Sink&
     operator[](std::string const& name);
 
+    template <typename AttributesFactory>
     beast::Journal
-    journal(
-        std::string const& name,
-        std::optional<beast::Journal::JsonLogAttributes> attributes =
-            std::nullopt);
+    journal(std::string const& name, AttributesFactory&& factory)
+    {
+        return beast::Journal{
+            get(name), name, std::forward<AttributesFactory>(factory)};
+    }
+
+    beast::Journal
+    journal(std::string const& name)
+    {
+        return beast::Journal{get(name), name};
+    }
 
     beast::severities::Severity
     threshold() const;

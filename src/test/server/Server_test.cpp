@@ -92,8 +92,7 @@ public:
         }
 
         void
-        write(beast::severities::Severity level, std::string&& text)
-            override
+        write(beast::severities::Severity level, std::string&& text) override
         {
             if (level < threshold())
                 return;

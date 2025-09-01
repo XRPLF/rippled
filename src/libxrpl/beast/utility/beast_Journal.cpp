@@ -19,10 +19,6 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
-#include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
-
 #include <ios>
 #include <ostream>
 #include <ranges>
@@ -31,9 +27,7 @@
 
 namespace beast {
 
-std::optional<Journal::JsonLogAttributes> Journal::globalLogAttributes_;
-std::optional<std::string> Journal::globalLogAttributesJson_;
-
+std::string Journal::globalLogAttributesJson_;
 std::mutex Journal::globalLogAttributesMutex_;
 bool Journal::m_jsonLogsEnabled = false;
 thread_local Journal::JsonLogContext Journal::currentJsonLogContext_{};
@@ -125,75 +119,11 @@ severities::to_string(Severity severity)
     return "";
 }
 
-Journal::JsonLogAttributes::JsonLogAttributes()
-{
-    contextValues_.SetObject();
-}
-
-Journal::JsonLogAttributes::JsonLogAttributes(JsonLogAttributes const& other)
-{
-    contextValues_.SetObject();
-    contextValues_.CopyFrom(other.contextValues_, allocator_);
-}
-
-Journal::JsonLogAttributes&
-Journal::JsonLogAttributes::operator=(JsonLogAttributes const& other)
-{
-    if (&other == this)
-    {
-        return *this;
-    }
-    contextValues_.CopyFrom(other.contextValues_, allocator_);
-    return *this;
-}
-
-void
-Journal::JsonLogAttributes::setModuleName(std::string const& name)
-{
-    contextValues_.AddMember(
-        rapidjson::StringRef("Module"),
-        rapidjson::Value{name.c_str(), allocator_},
-        allocator_);
-}
-
-void
-Journal::JsonLogAttributes::combine(
-    AttributeFields const& from)
-{
-    for (auto& member : from.GetObject())
-    {
-        contextValues_.RemoveMember(member.name);
-
-        contextValues_.AddMember(
-            rapidjson::Value{member.name, allocator_},
-            rapidjson::Value{member.value, allocator_},
-            allocator_);
-    }
-}
-
-void
-Journal::addGlobalAttributes(JsonLogAttributes globalLogAttributes)
-{
-    std::lock_guard lock(globalLogAttributesMutex_);
-    if (!globalLogAttributes_)
-    {
-        globalLogAttributes_ = JsonLogAttributes{};
-    }
-    globalLogAttributes_->combine(globalLogAttributes.contextValues());
-
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer writer{buffer};
-
-    globalLogAttributes_->contextValues().Accept(writer);
-
-    globalLogAttributesJson_ = {buffer.GetString()};
-}
-
 void
 Journal::JsonLogContext::reset(
     std::source_location location,
     severities::Severity severity,
-    std::optional<std::string> const& journalAttributesJson) noexcept
+    std::string const& journalAttributesJson) noexcept
 {
     struct ThreadIdStringInitializer
     {
@@ -207,32 +137,47 @@ Journal::JsonLogContext::reset(
     };
     thread_local ThreadIdStringInitializer const threadId;
 
-    journalAttributesJson_ = journalAttributesJson;
+    buffer_.str("");
 
-    buffer_.Clear();
+    writer().startObject();
 
-    writer().StartObject();
+    if (!journalAttributesJson.empty())
+    {
+        writer().writeKey("JournalParams");
+        writer().writeRaw(journalAttributesJson);
+        writer().endObject();
+    }
 
-    writer().Key("Function");
-    writer().String(location.function_name());
+    if (!globalLogAttributesJson_.empty())
+    {
+        writer().writeKey("GlobalParams");
+        writer().writeRaw(globalLogAttributesJson_);
+        writer().endObject();
+    }
 
-    writer().Key("File");
-    writer().String(location.file_name());
+    writer().writeKey("MessageParams");
+    writer().startObject();
 
-    writer().Key("Line");
-    writer().Int64(location.line());
+    writer().writeKey("Function");
+    writer().writeString(location.function_name());
 
-    writer().Key("ThreadId");
-    writer().String(threadId.value.c_str());
+    writer().writeKey("File");
+    writer().writeString(location.file_name());
+
+    writer().writeKey("Line");
+    writer().writeInt(location.line());
+
+    writer().writeKey("ThreadId");
+    writer().writeString(threadId.value);
 
     auto severityStr = to_string(severity);
-    writer().Key("Level");
-    writer().String(severityStr.c_str());
+    writer().writeKey("Level");
+    writer().writeString(severityStr);
 
-    writer().Key("Time");
-    writer().Uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
+    writer().writeKey("Time");
+    writer().writeUInt(std::chrono::duration_cast<std::chrono::milliseconds>(
+                           std::chrono::system_clock::now().time_since_epoch())
+                           .count());
 }
 
 void
@@ -251,58 +196,16 @@ Journal::formatLog(std::string&& message)
         return message;
     }
 
-    currentJsonLogContext_.writer().EndObject();
-    auto messageParams = currentJsonLogContext_.messageParams();
+    auto& writer = currentJsonLogContext_.writer();
 
-    rapidjson::StringBuffer buffer;
-    rapidjson::Writer writer(buffer);
+    writer.endObject();
 
-    writer.StartObject();
-    if (globalLogAttributesJson_.has_value())
-    {
-        writer.Key("GlobalParams");
-        writer.RawValue(
-            globalLogAttributesJson_->c_str(),
-            globalLogAttributesJson_->length(),
-            rapidjson::kObjectType);
-    }
+    writer.writeKey("Message");
+    writer.writeString(message);
 
-    if (currentJsonLogContext_.journalAttributesJson().has_value())
-    {
-        writer.Key("JournalParams");
-        writer.RawValue(
-            currentJsonLogContext_.journalAttributesJson()->c_str(),
-            currentJsonLogContext_.journalAttributesJson()->length(),
-            rapidjson::kObjectType);
-    }
+    writer.endObject();
 
-    writer.Key("MessageParams");
-    writer.RawValue(messageParams, std::strlen(messageParams), rapidjson::kObjectType);
-
-    writer.Key("Message");
-    writer.String(message.c_str(), message.length());
-
-    writer.EndObject();
-
-    return {buffer.GetString()};
-}
-
-void
-Journal::rebuildAttributeJson()
-{
-    if (m_attributes.has_value())
-    {
-        rapidjson::StringBuffer buffer;
-        rapidjson::Writer writer{buffer};
-
-        m_attributes->contextValues().Accept(writer);
-
-        m_attributesJson = {buffer.GetString()};
-    }
-    else
-    {
-        m_attributesJson = {};
-    }
+    return writer.str();
 }
 
 void

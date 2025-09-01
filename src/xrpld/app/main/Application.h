@@ -260,8 +260,10 @@ public:
     virtual beast::Journal
     journal(
         std::string const& name,
-        std::optional<beast::Journal::JsonLogAttributes> attributes =
-            std::nullopt) = 0;
+        std::function<void(beast::SimpleJsonWriter&)> const& attributes) = 0;
+
+    virtual beast::Journal
+    journal(std::string const& name) = 0;
 
     /* Returns the number of file descriptors the application needs */
     virtual int

@@ -56,9 +56,7 @@ Logs::Sink::write(beast::severities::Severity level, std::string&& text)
 }
 
 void
-Logs::Sink::writeAlways(
-    beast::severities::Severity level,
-    std::string&& text)
+Logs::Sink::writeAlways(beast::severities::Severity level, std::string&& text)
 {
     logs_.write(level, partition_, std::move(text), console());
 }
@@ -160,14 +158,6 @@ beast::Journal::Sink&
 Logs::operator[](std::string const& name)
 {
     return get(name);
-}
-
-beast::Journal
-Logs::journal(
-    std::string const& name,
-    std::optional<beast::Journal::JsonLogAttributes> attributes)
-{
-    return beast::Journal{get(name), name, std::move(attributes)};
 }
 
 beast::severities::Severity

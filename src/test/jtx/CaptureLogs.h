@@ -57,8 +57,7 @@ class CaptureLogs : public Logs
         }
 
         void
-        write(beast::severities::Severity level, std::string&& text)
-            override
+        write(beast::severities::Severity level, std::string&& text) override
         {
             std::lock_guard lock(strmMutex_);
             strm_ << text;
