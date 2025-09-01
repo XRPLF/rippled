@@ -20,6 +20,8 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/unit_test.h>
 
+#include <boost/predef/os/linux.h>
+
 #include <thread>
 
 namespace ripple {
@@ -56,33 +58,72 @@ private:
         if (beast::getCurrentThreadName() == myName)
             *state = 2;
     }
+#if BOOST_OS_LINUX
+    // Helper function to test a specific name.
+    // It creates a thread, sets the name, and checks if the OS-level
+    // name matches the expected (potentially truncated) name.
+    void
+    testName(std::string const& nameToSet, std::string const& expectedName)
+    {
+        constexpr static std::size_t maxThreadNameLen = 15;
+        std::thread t([&] {
+            beast::setCurrentThreadName(nameToSet);
+
+            // Initialize buffer to be safe.
+            char actualName[maxThreadNameLen + 1] = {};
+            pthread_getname_np(pthread_self(), actualName, sizeof(actualName));
+
+            BEAST_EXPECT(std::string(actualName) == expectedName);
+        });
+        t.join();
+    }
+#endif
 
 public:
     void
     run() override
     {
-        // Make two different threads with two different names.  Make sure
-        // that the expected thread names are still there when the thread
-        // exits.
-        std::atomic<bool> stop{false};
+        // Test 1: Make two different threads with two different names.
+        // Make sure that the expected thread names are still there
+        // when the thread exits.
+        {
+            std::atomic<bool> stop{false};
 
-        std::atomic<int> stateA{0};
-        std::thread tA(exerciseName, "tA", &stop, &stateA);
+            std::atomic<int> stateA{0};
+            std::thread tA(exerciseName, "tA", &stop, &stateA);
 
-        std::atomic<int> stateB{0};
-        std::thread tB(exerciseName, "tB", &stop, &stateB);
+            std::atomic<int> stateB{0};
+            std::thread tB(exerciseName, "tB", &stop, &stateB);
 
-        // Wait until both threads have set their names.
-        while (stateA == 0 || stateB == 0)
-            ;
+            // Wait until both threads have set their names.
+            while (stateA == 0 || stateB == 0)
+                ;
 
-        stop = true;
-        tA.join();
-        tB.join();
+            stop = true;
+            tA.join();
+            tB.join();
 
-        // Both threads should still have the expected name when they exit.
-        BEAST_EXPECT(stateA == 2);
-        BEAST_EXPECT(stateB == 2);
+            // Both threads should still have the expected name when they exit.
+            BEAST_EXPECT(stateA == 2);
+            BEAST_EXPECT(stateB == 2);
+        }
+#if BOOST_OS_LINUX
+        // Test 2: On Linux, verify that thread names longer than 15 characters
+        // are truncated to 15 characters (the 16th character is reserved for
+        // the null terminator).
+        {
+            testName(
+                "123456789012345",
+                "123456789012345");  // 15 chars, no truncation
+            testName(
+                "1234567890123456", "123456789012345");  // 16 chars, truncated
+            testName(
+                "ThisIsAVeryLongThreadNameExceedingLimit",
+                "ThisIsAVeryLong");      // 39 chars, truncated
+            testName("", "");            // empty name
+            testName("short", "short");  // short name, no truncation
+        }
+#endif
     }
 };
 
