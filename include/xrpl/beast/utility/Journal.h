@@ -82,73 +82,77 @@ class SimpleJsonWriter
 public:
     explicit SimpleJsonWriter(std::ostringstream& stream) : stream_(stream)
     {
+        stream_.imbue(std::locale::classic());
     }
 
     void
     startObject() const
     {
-        stream_ << "{";
+        stream_.put('{');
     }
     void
     endObject() const
     {
         stream_.seekp(-1, std::ios_base::end);
-        stream_ << "},";
+        stream_.write("},", 2);
     }
     void
     writeKey(std::string_view key) const
     {
         writeString(key);
         stream_.seekp(-1, std::ios_base::end);
-        stream_ << ":";
+        stream_.put(':');
     }
     void
     startArray() const
     {
-        stream_ << "[";
+        stream_.put('[');
     }
     void
     endArray() const
     {
         stream_.seekp(-1, std::ios_base::end);
-        stream_ << "],";
+        stream_.write("],", 2);
     }
     void
     writeString(std::string_view str) const
     {
-        stream_ << "\"";
+        stream_.put('"');
         escape(str, stream_);
-        stream_ << "\",";
+        stream_.write("\",", 2);
     }
-    void
+    std::string_view
     writeInt(std::int64_t val) const
     {
-        stream_ << val << ",";
+        return pushNumber(val, stream_);
     }
-    void
+    std::string_view
     writeUInt(std::uint64_t val) const
     {
-        stream_ << val << ",";
+        return pushNumber(val, stream_);
     }
-    void
+    std::string_view
     writeDouble(double val) const
     {
-        stream_ << val << ",";
+        return pushNumber(val, stream_);
     }
-    void
+    std::string_view
     writeBool(bool val) const
     {
-        stream_ << (val ? "true," : "false,");
+        auto str = val ? "true," : "false,";
+        stream_.write(str, std::strlen(str));
+        return str;
     }
     void
     writeNull() const
     {
-        stream_ << "null" << ",";
+        stream_.write("null", std::strlen("null"));
+        stream_.put(',');
     }
     void
     writeRaw(std::string_view str) const
     {
-        stream_ << str;
+        stream_.write(str.data(), str.length());
     }
 
     [[nodiscard]] std::string
@@ -160,11 +164,69 @@ public:
     }
 
 private:
+    template <typename T>
+    static std::string_view
+    pushNumber(T val, std::ostringstream& stream)
+    {
+        static char buffer[128];
+        auto result = std::to_chars(std::begin(buffer), std::end(buffer), val);
+        *result.ptr = ',';
+        auto len = result.ptr - std::begin(buffer);
+        stream.write(buffer, len + 1);
+        return {buffer, static_cast<size_t>(len)};
+    }
+
     static void
     escape(std::string_view str, std::ostringstream& os)
     {
-        // TODO: Support it
-        os << str;
+        static constexpr char HEX[] = "0123456789ABCDEF";
+
+        const char* p = str.data();
+        const char* end = p + str.size();
+        const char* chunk = p;
+
+        while (p < end) {
+            auto c = static_cast<unsigned char>(*p);
+
+            // JSON requires escaping for <0x20 and the two specials below.
+            bool needsEscape = (c < 0x20) || (c == '"') || (c == '\\');
+
+            if (!needsEscape) {
+                ++p;
+                continue;
+            }
+
+            // Flush the preceding safe run in one go.
+            if (chunk != p)
+                os.write(chunk, p - chunk);
+
+            switch (c) {
+                case '"':  os.write("\\\"", 2); break;
+                case '\\': os.write("\\\\", 2); break;
+                case '\b': os.write("\\b",  2); break;
+                case '\f': os.write("\\f",  2); break;
+                case '\n': os.write("\\n",  2); break;
+                case '\r': os.write("\\r",  2); break;
+                case '\t': os.write("\\t",  2); break;
+                default: {
+                    // Other C0 controls -> \u00XX (JSON compliant)
+                    char buf[6]{
+                        '\\','u','0','0',
+                        HEX[(c >> 4) & 0xF],
+                        HEX[c & 0xF]
+                    };
+                    os.write(buf, 6);
+                    break;
+                }
+            }
+
+            ++p;
+            chunk = p;
+        }
+
+        // Flush trailing safe run
+        if (chunk != p)
+            os.write(chunk, p - chunk);
     }
 
     std::ostringstream& stream_;
@@ -769,6 +831,13 @@ using logwstream = basic_logstream<wchar_t>;
 namespace ripple::log {
 
 namespace detail {
+
+template <typename T>
+concept CanToChars = requires (T val)
+{
+    { to_chars(std::declval<char*>(), std::declval<char*>(), val) } -> std::convertible_to<std::to_chars_result>;
+};
+
 template <typename T>
 void
 setJsonValue(
@@ -781,34 +850,35 @@ setJsonValue(
     writer.writeKey(name);
     if constexpr (std::is_integral_v<ValueType>)
     {
+        std::string_view sv;
         if constexpr (std::is_signed_v<ValueType>)
         {
-            writer.writeInt(value);
+            sv = writer.writeInt(value);
         }
         else
         {
-            writer.writeUInt(value);
+            sv = writer.writeUInt(value);
         }
         if (outStream)
         {
-            (*outStream) << value;
+            outStream->write(sv.data(), sv.size());
         }
     }
     else if constexpr (std::is_floating_point_v<ValueType>)
     {
-        writer.writeDouble(value);
+        auto sv = writer.writeDouble(value);
 
         if (outStream)
         {
-            (*outStream) << value;
+            outStream->write(sv.data(), sv.size());
         }
     }
     else if constexpr (std::is_same_v<ValueType, bool>)
     {
-        writer.writeBool(value);
+        auto sv = writer.writeBool(value);
         if (outStream)
         {
-            (*outStream) << value;
+            outStream->write(sv.data(), sv.size());
         }
     }
     else if constexpr (
@@ -818,7 +888,7 @@ setJsonValue(
         writer.writeString(value);
         if (outStream)
         {
-            (*outStream) << value;
+            outStream->write(value, std::strlen(value));
         }
     }
     else if constexpr (std::is_same_v<ValueType, std::string>)
@@ -826,12 +896,30 @@ setJsonValue(
         writer.writeString(value);
         if (outStream)
         {
-            (*outStream) << value;
+            outStream->write(value.c_str(), value.length());
         }
     }
     else
     {
+        if constexpr (CanToChars<ValueType>)
+        {
+            char buffer[1024];
+            std::to_chars_result result = to_chars(std::begin(buffer), std::end(buffer), value);
+            if (result.ec == std::errc{})
+            {
+                std::string_view sv;
+                sv = {std::begin(buffer), result.ptr};
+                writer.writeString(sv);
+                if (outStream)
+                {
+                    outStream->write(sv.data(), sv.size());
+                }
+                return;
+            }
+        }
+
         std::ostringstream oss;
+        oss.imbue(std::locale::classic());
         oss << value;
 
         auto str = oss.str();
@@ -840,7 +928,7 @@ setJsonValue(
 
         if (outStream)
         {
-            (*outStream) << str;
+            outStream->write(str.c_str(), static_cast<std::streamsize>(str.size()));
         }
     }
 }
