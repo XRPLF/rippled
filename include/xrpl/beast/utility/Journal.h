@@ -22,15 +22,6 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <boost/asio/execution/allocator.hpp>
-#include <boost/coroutine/attributes.hpp>
-#include <boost/system/result.hpp>
-
-#include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
-
-#include <deque>
 #include <optional>
 #include <source_location>
 #include <sstream>
@@ -86,6 +77,99 @@ operator<<(std::ostream& os, LogParameter<T> const& param);
 
 namespace beast {
 
+class SimpleJsonWriter
+{
+public:
+    explicit SimpleJsonWriter(std::ostringstream& stream) : stream_(stream)
+    {
+    }
+
+    void
+    startObject() const
+    {
+        stream_ << "{";
+    }
+    void
+    endObject() const
+    {
+        stream_.seekp(-1, std::ios_base::end);
+        stream_ << "},";
+    }
+    void
+    writeKey(std::string_view key) const
+    {
+        writeString(key);
+        stream_.seekp(-1, std::ios_base::end);
+        stream_ << ":";
+    }
+    void
+    startArray() const
+    {
+        stream_ << "[";
+    }
+    void
+    endArray() const
+    {
+        stream_.seekp(-1, std::ios_base::end);
+        stream_ << "],";
+    }
+    void
+    writeString(std::string_view str) const
+    {
+        stream_ << "\"";
+        escape(str, stream_);
+        stream_ << "\",";
+    }
+    void
+    writeInt(std::int64_t val) const
+    {
+        stream_ << val << ",";
+    }
+    void
+    writeUInt(std::uint64_t val) const
+    {
+        stream_ << val << ",";
+    }
+    void
+    writeDouble(double val) const
+    {
+        stream_ << val << ",";
+    }
+    void
+    writeBool(bool val) const
+    {
+        stream_ << (val ? "true," : "false,");
+    }
+    void
+    writeNull() const
+    {
+        stream_ << "null" << ",";
+    }
+    void
+    writeRaw(std::string_view str) const
+    {
+        stream_ << str;
+    }
+
+    [[nodiscard]] std::string
+    str() const
+    {
+        auto result = stream_.str();
+        result.pop_back();
+        return result;
+    }
+
+private:
+    static void
+    escape(std::string_view str, std::ostringstream& os)
+    {
+        // TODO: Support it
+        os << str;
+    }
+
+    std::ostringstream& stream_;
+};
+
 /** A namespace for easy access to logging severity values. */
 namespace severities {
 /** Severity level / threshold of a Journal message. */
@@ -136,94 +220,36 @@ public:
 
     class Sink;
 
-    class JsonLogAttributes
-    {
-    public:
-        using AttributeFields = rapidjson::Value;
-
-        JsonLogAttributes();
-        JsonLogAttributes(JsonLogAttributes const& other);
-
-        JsonLogAttributes&
-        operator=(JsonLogAttributes const& other);
-
-        void
-        setModuleName(std::string const& name);
-
-        void
-        combine(AttributeFields const& from);
-
-        AttributeFields&
-        contextValues()
-        {
-            return contextValues_;
-        }
-
-        [[nodiscard]] AttributeFields const&
-        contextValues() const
-        {
-            return contextValues_;
-        }
-
-        rapidjson::MemoryPoolAllocator<>&
-        allocator()
-        {
-            return allocator_;
-        }
-
-    private:
-        AttributeFields contextValues_;
-        rapidjson::MemoryPoolAllocator<> allocator_;
-
-        friend class Journal;
-    };
-
     class JsonLogContext
     {
-        rapidjson::StringBuffer buffer_;
-        rapidjson::Writer<rapidjson::StringBuffer> messageParamsWriter_;
-        std::optional<std::string> journalAttributesJson_;
+        std::ostringstream buffer_;
+        SimpleJsonWriter messageParamsWriter_;
 
     public:
-        JsonLogContext()
-            : messageParamsWriter_(buffer_)
+        JsonLogContext() : messageParamsWriter_(buffer_)
         {
-
         }
 
-        rapidjson::Writer<rapidjson::StringBuffer>&
+        SimpleJsonWriter&
         writer()
         {
             return messageParamsWriter_;
-        }
-
-        char const*
-        messageParams()
-        {
-            return buffer_.GetString();
-        }
-
-        std::optional<std::string>&
-        journalAttributesJson()
-        {
-            return journalAttributesJson_;
         }
 
         void
         reset(
             std::source_location location,
             severities::Severity severity,
-            std::optional<std::string> const& journalAttributesJson) noexcept;
+            std::string const& journalAttributesJson) noexcept;
     };
 
 private:
     // Severity level / threshold of a Journal message.
     using Severity = severities::Severity;
 
-    std::optional<JsonLogAttributes> m_attributes;
-    std::optional<std::string> m_attributesJson;
-    static std::optional<JsonLogAttributes> globalLogAttributes_;
-    static std::optional<std::string> globalLogAttributesJson_;
+    std::string m_name;
+    std::string m_attributesJson;
+    static std::string globalLogAttributesJson_;
     static std::mutex globalLogAttributesMutex_;
     static bool m_jsonLogsEnabled;
 
@@ -239,9 +265,6 @@ private:
 
     static std::string
     formatLog(std::string&& message);
-
-    void
-    rebuildAttributeJson();
 
 public:
     //--------------------------------------------------------------------------
@@ -471,42 +494,46 @@ public:
     /** Journal has no default constructor. */
     Journal() = delete;
 
-    template <typename TAttributesFactory>
-    Journal(
-        Journal const& other,
-        TAttributesFactory&& attributesFactory = nullptr)
-        : m_attributes(other.m_attributes)
-        , m_sink(other.m_sink)
+    Journal(Journal const& other)
+        : m_name(other.m_name)
         , m_attributesJson(other.m_attributesJson)
+        , m_sink(other.m_sink)
     {
-/*
-        if constexpr (!std::is_same_v<std::decay_t<TAttributesFactory>, std::nullptr_t>)
+    }
+
+    template <typename TAttributesFactory>
+    Journal(Journal const& other, TAttributesFactory&& attributesFactory)
+        : m_name(other.m_name), m_sink(other.m_sink)
+    {
+        std::ostringstream stream{other.m_attributesJson, std::ios_base::app};
+        SimpleJsonWriter writer{stream};
+        if (other.m_attributesJson.empty())
         {
-            if (attributes.has_value())
-            {
-                if (m_attributes)
-                    m_attributes->combine(attributes->contextValues_);
-                else
-                    m_attributes = std::move(attributes);
-            }
-            rebuildAttributeJson();
+            writer.startObject();
         }
-*/
+        attributesFactory(writer);
+        m_attributesJson = stream.str();
     }
 
     /** Create a journal that writes to the specified sink. */
+    explicit Journal(Sink& sink, std::string const& name = {})
+        : m_name(name), m_sink(&sink)
+    {
+    }
+
+    /** Create a journal that writes to the specified sink. */
+    template <typename TAttributesFactory>
     explicit Journal(
         Sink& sink,
-        std::string const& name = {},
-        std::optional<JsonLogAttributes> attributes = std::nullopt)
-        : m_sink(&sink)
+        std::string const& name,
+        TAttributesFactory&& attributesFactory)
+        : m_name(name), m_sink(&sink)
     {
-        if (attributes)
-        {
-            m_attributes = std::move(attributes);
-            m_attributes->setModuleName(name);
-        }
-        rebuildAttributeJson();
+        std::ostringstream stream;
+        SimpleJsonWriter writer{stream};
+        writer.startObject();
+        attributesFactory(writer);
+        m_attributesJson = stream.str();
     }
 
     Journal&
@@ -516,8 +543,8 @@ public:
             return *this;
 
         m_sink = other.m_sink;
-        m_attributes = other.m_attributes;
-        rebuildAttributeJson();
+        m_name = other.m_name;
+        m_attributesJson = other.m_attributesJson;
         return *this;
     }
 
@@ -525,8 +552,8 @@ public:
     operator=(Journal&& other) noexcept
     {
         m_sink = other.m_sink;
-        m_attributes = std::move(other.m_attributes);
-        rebuildAttributeJson();
+        m_name = std::move(other.m_name);
+        m_attributesJson = std::move(other.m_attributesJson);
         return *this;
     }
 
@@ -539,7 +566,9 @@ public:
 
     /** Returns a stream for this sink, with the specified severity level. */
     Stream
-    stream(Severity level, std::source_location location = std::source_location::current()) const
+    stream(
+        Severity level,
+        std::source_location location = std::source_location::current()) const
     {
         if (m_jsonLogsEnabled)
             initMessageContext(location, level);
@@ -585,8 +614,6 @@ public:
     Stream
     warn(std::source_location location = std::source_location::current()) const
     {
-        char const* a = "a";
-        rapidjson::Value v{a, 1};
         if (m_jsonLogsEnabled)
             initMessageContext(location, severities::kWarning);
         return {*m_sink, severities::kWarning};
@@ -613,12 +640,26 @@ public:
     resetGlobalAttributes()
     {
         std::lock_guard lock(globalLogAttributesMutex_);
-        globalLogAttributes_ = std::nullopt;
-        globalLogAttributesJson_ = std::nullopt;
+        globalLogAttributesJson_.clear();
     }
 
+    template <typename TAttributesFactory>
     static void
-    addGlobalAttributes(JsonLogAttributes globalLogAttributes);
+    addGlobalAttributes(TAttributesFactory&& factory)
+    {
+        std::lock_guard lock(globalLogAttributesMutex_);
+
+        auto isEmpty = globalLogAttributesJson_.empty();
+        std::ostringstream stream{
+            std::move(globalLogAttributesJson_), std::ios_base::app};
+        SimpleJsonWriter writer{stream};
+        if (isEmpty)
+        {
+            writer.startObject();
+        }
+        factory(writer);
+        globalLogAttributesJson_ = stream.str();
+    }
 };
 
 #ifndef __INTELLISENSE__
@@ -728,25 +769,25 @@ using logwstream = basic_logstream<wchar_t>;
 namespace ripple::log {
 
 namespace detail {
-template <typename T, typename OutputStream>
+template <typename T>
 void
 setJsonValue(
-    rapidjson::Writer<OutputStream>& writer,
+    beast::SimpleJsonWriter& writer,
     char const* name,
     T&& value,
     std::ostream* outStream)
 {
     using ValueType = std::decay_t<T>;
-    writer.Key(name);
+    writer.writeKey(name);
     if constexpr (std::is_integral_v<ValueType>)
     {
         if constexpr (std::is_signed_v<ValueType>)
         {
-            writer.Int64(value);
+            writer.writeInt(value);
         }
         else
         {
-            writer.Uint64(value);
+            writer.writeUInt(value);
         }
         if (outStream)
         {
@@ -755,7 +796,7 @@ setJsonValue(
     }
     else if constexpr (std::is_floating_point_v<ValueType>)
     {
-        writer.Double(value);
+        writer.writeDouble(value);
 
         if (outStream)
         {
@@ -764,15 +805,17 @@ setJsonValue(
     }
     else if constexpr (std::is_same_v<ValueType, bool>)
     {
-        writer.Bool(value);
+        writer.writeBool(value);
         if (outStream)
         {
             (*outStream) << value;
         }
     }
-    else if constexpr (std::is_same_v<ValueType, char const*> || std::is_same_v<ValueType, char*>)
+    else if constexpr (
+        std::is_same_v<ValueType, char const*> ||
+        std::is_same_v<ValueType, char*>)
     {
-        writer.String(value);
+        writer.writeString(value);
         if (outStream)
         {
             (*outStream) << value;
@@ -780,7 +823,7 @@ setJsonValue(
     }
     else if constexpr (std::is_same_v<ValueType, std::string>)
     {
-        writer.String(value.c_str(), value.length());
+        writer.writeString(value);
         if (outStream)
         {
             (*outStream) << value;
@@ -791,11 +834,13 @@ setJsonValue(
         std::ostringstream oss;
         oss << value;
 
-        writer.String(oss.str().c_str(), oss.str().length());
+        auto str = oss.str();
+
+        writer.writeString(str);
 
         if (outStream)
         {
-            (*outStream) << oss.str();
+            (*outStream) << str;
         }
     }
 }
@@ -847,13 +892,8 @@ template <typename... Pair>
 [[nodiscard]] auto
 attributes(Pair&&... pairs)
 {
-    return [&](rapidjson::Writer<rapidjson::Writer<char>>& writer) {
-        (detail::setJsonValue(
-             writer,
-             pairs.first,
-             pairs.second,
-             nullptr),
-         ...);
+    return [&](beast::SimpleJsonWriter& writer) {
+        (detail::setJsonValue(writer, pairs.first, pairs.second, nullptr), ...);
     };
 }
 

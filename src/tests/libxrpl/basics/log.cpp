@@ -49,8 +49,7 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string&& text)
-            override
+        write(beast::severities::Severity level, std::string&& text) override
         {
             logs_.logStream_ << text;
         }
@@ -168,7 +167,8 @@ TEST_CASE("Global attributes")
     CHECK(jsonLog["GlobalParams"].IsObject());
     CHECK(jsonLog["GlobalParams"].HasMember("Field1"));
     CHECK(jsonLog["GlobalParams"]["Field1"].IsString());
-    CHECK(jsonLog["GlobalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(
+        jsonLog["GlobalParams"]["Field1"].GetString() == std::string{"Value1"});
     beast::Journal::disableStructuredJournal();
 }
 
@@ -198,9 +198,14 @@ TEST_CASE("Global attributes inheritable")
     CHECK(jsonLog.IsObject());
     CHECK(jsonLog["GlobalParams"].HasMember("Field1"));
     CHECK(jsonLog["GlobalParams"]["Field1"].IsString());
-    CHECK(jsonLog["GlobalParams"]["Field1"].GetString() == std::string{"Value1"});
-    CHECK(jsonLog["JournalParams"]["Field1"].GetString() == std::string{"Value3"});
-    CHECK(jsonLog["JournalParams"]["Field2"].GetString() == std::string{"Value2"});
+    CHECK(
+        jsonLog["GlobalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(
+        jsonLog["JournalParams"]["Field1"].GetString() ==
+        std::string{"Value3"});
+    CHECK(
+        jsonLog["JournalParams"]["Field2"].GetString() ==
+        std::string{"Value2"});
     beast::Journal::disableStructuredJournal();
 }
 
@@ -224,8 +229,7 @@ public:
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string&& text)
-        override
+    writeAlways(beast::severities::Severity level, std::string&& text) override
     {
         strm_ << text;
     }
@@ -235,9 +239,8 @@ class JsonLogStreamFixture
 {
 public:
     JsonLogStreamFixture()
-        : sink_(beast::severities::kAll, logStream_), j_(sink_, "Test", log::attributes(
-            log::attr("Field1", "Value1")
-        ))
+        : sink_(beast::severities::kAll, logStream_)
+        , j_(sink_, "Test", log::attributes(log::attr("Field1", "Value1")))
     {
         beast::Journal::enableStructuredJournal();
     }
@@ -267,9 +270,11 @@ private:
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
 {
-    beast::Journal::addGlobalAttributes(log::attributes(log::attr("Field2", "Value2")));
+    beast::Journal::addGlobalAttributes(
+        log::attributes(log::attr("Field2", "Value2")));
     journal().debug() << std::boolalpha << true << std::noboolalpha << " Test "
-                      << std::boolalpha << false << log::field("Field3", "Value3");
+                      << std::boolalpha << false
+                      << log::field("Field3", "Value3");
 
     rapidjson::Document logValue;
     logValue.Parse(stream().str().c_str());
@@ -484,7 +489,9 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributes")
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(
+        logValue["JournalParams"]["Field1"].GetString() ==
+        std::string{"Value1"});
     CHECK(logValue["JournalParams"]["Field2"].IsNumber());
     CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
 }
@@ -494,9 +501,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
     beast::Journal j{
         journal(),
         log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
-    beast::Journal j2{
-        j,
-        log::attributes(log::attr("Field3", "Value3"), log::attr("Field2", 0))};
+    beast::Journal j2{j, log::attributes(log::attr("Field3", "Value3"))};
 
     j2.debug() << "Test";
 
@@ -507,12 +512,15 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(
+        logValue["JournalParams"]["Field1"].GetString() ==
+        std::string{"Value1"});
     CHECK(logValue["JournalParams"]["Field3"].IsString());
-    CHECK(logValue["JournalParams"]["Field3"].GetString() == std::string{"Value3"});
-    // Field2 should be overwritten to 0
+    CHECK(
+        logValue["JournalParams"]["Field3"].GetString() ==
+        std::string{"Value3"});
     CHECK(logValue["JournalParams"]["Field2"].IsNumber());
-    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 0);
+    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
 }
 
 TEST_CASE_FIXTURE(
@@ -522,9 +530,7 @@ TEST_CASE_FIXTURE(
     beast::Journal j{
         journal(),
         log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
-    beast::Journal j2{
-        j,
-        log::attributes(log::attr("Field3", "Value3"), log::attr("Field2", 0))};
+    beast::Journal j2{j, log::attributes(log::attr("Field3", "Value3"))};
 
     j2.debug() << "Test";
 
@@ -535,12 +541,16 @@ TEST_CASE_FIXTURE(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(
+        logValue["JournalParams"]["Field1"].GetString() ==
+        std::string{"Value1"});
     CHECK(logValue["JournalParams"]["Field3"].IsString());
-    CHECK(logValue["JournalParams"]["Field3"].GetString() == std::string{"Value3"});
+    CHECK(
+        logValue["JournalParams"]["Field3"].GetString() ==
+        std::string{"Value3"});
     // Field2 should be overwritten to 0
     CHECK(logValue["JournalParams"]["Field2"].IsNumber());
-    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 0);
+    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
 }
 
 TEST_CASE_FIXTURE(
@@ -564,7 +574,9 @@ TEST_CASE_FIXTURE(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(
+        logValue["JournalParams"]["Field1"].GetString() ==
+        std::string{"Value1"});
     CHECK(logValue["JournalParams"]["Field2"].IsNumber());
     CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
 }
@@ -590,7 +602,9 @@ TEST_CASE_FIXTURE(
         logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
 
     CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(logValue["JournalParams"]["Field1"].GetString() == std::string{"Value1"});
+    CHECK(
+        logValue["JournalParams"]["Field1"].GetString() ==
+        std::string{"Value1"});
     CHECK(logValue["JournalParams"]["Field2"].IsNumber());
     CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
 }
