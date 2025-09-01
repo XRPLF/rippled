@@ -140,7 +140,7 @@ private:
     void
     run()
     {
-        beast::setCurrentThreadName("Resource::Manager");
+        beast::setCurrentThreadName("Resource::Mngr");
         for (;;)
         {
             logic_.periodicActivity();
