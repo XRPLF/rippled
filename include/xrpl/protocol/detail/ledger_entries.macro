@@ -507,4 +507,3 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
 
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE
-

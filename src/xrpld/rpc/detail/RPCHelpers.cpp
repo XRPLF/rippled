@@ -189,7 +189,7 @@ getAccountObjects(
 
     auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
 
-    // this is a mutable version of limit, used to seemlessly switch
+    // this is a mutable version of limit, used to seamlessly switch
     // to iterating directory entries when nftokenpages are exhausted
     uint32_t mlimit = limit;
 
@@ -372,7 +372,7 @@ ledgerFromRequest(T& ledger, JsonContext& context)
             indexValue = legacyLedger;
     }
 
-    if (hashValue)
+    if (!hashValue.isNull())
     {
         if (!hashValue.isString())
             return {rpcINVALID_PARAMS, "ledgerHashNotString"};
@@ -382,6 +382,9 @@ ledgerFromRequest(T& ledger, JsonContext& context)
             return {rpcINVALID_PARAMS, "ledgerHashMalformed"};
         return getLedger(ledger, ledgerHash, context);
     }
+
+    if (!indexValue.isConvertibleTo(Json::stringValue))
+        return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
 
     auto const index = indexValue.asString();
 
@@ -394,11 +397,11 @@ ledgerFromRequest(T& ledger, JsonContext& context)
     if (index == "closed")
         return getLedger(ledger, LedgerShortcut::CLOSED, context);
 
-    std::uint32_t iVal;
-    if (beast::lexicalCastChecked(iVal, index))
-        return getLedger(ledger, iVal, context);
+    std::uint32_t val;
+    if (!beast::lexicalCastChecked(val, index))
+        return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
 
-    return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+    return getLedger(ledger, val, context);
 }
 }  // namespace
 
@@ -585,7 +588,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
     return Status::OK;
 }
 
-// Explicit instantiaion of above three functions
+// Explicit instantiation of above three functions
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context&);
 
