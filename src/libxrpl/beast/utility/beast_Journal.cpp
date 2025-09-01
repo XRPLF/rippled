@@ -131,6 +131,7 @@ Journal::JsonLogContext::reset(
         ThreadIdStringInitializer()
         {
             std::stringstream threadIdStream;
+            threadIdStream.imbue(std::locale::classic());
             threadIdStream << std::this_thread::get_id();
             value = threadIdStream.str();
         }
