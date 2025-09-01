@@ -22,7 +22,8 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <optional>
+#include <charconv>
+#include <string>
 #include <source_location>
 #include <sstream>
 #include <utility>
