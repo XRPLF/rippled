@@ -171,21 +171,6 @@ Journal::JsonLogAttributes::combine(
     }
 }
 
-Journal::Journal(
-    Journal const& other,
-    std::optional<JsonLogAttributes> attributes)
-    : m_attributes(other.m_attributes), m_sink(other.m_sink)
-{
-    if (attributes.has_value())
-    {
-        if (m_attributes)
-            m_attributes->combine(attributes->contextValues_);
-        else
-            m_attributes = std::move(attributes);
-    }
-    rebuildAttributeJson();
-}
-
 void
 Journal::addGlobalAttributes(JsonLogAttributes globalLogAttributes)
 {
@@ -224,40 +209,30 @@ Journal::JsonLogContext::reset(
 
     journalAttributesJson_ = journalAttributesJson;
 
-    messageParams_.SetObject();
+    buffer_.Clear();
 
-    messageParams_.AddMember(
-        rapidjson::StringRef("Function"),
-        rapidjson::Value{location.function_name(), allocator_},
-        allocator_);
+    writer().StartObject();
 
-    messageParams_.AddMember(
-        rapidjson::StringRef("File"),
-        rapidjson::Value{location.file_name(), allocator_},
-        allocator_);
+    writer().Key("Function");
+    writer().String(location.function_name());
 
-    messageParams_.AddMember(
-        rapidjson::StringRef("Line"),
-        location.line(),
-        allocator_);
+    writer().Key("File");
+    writer().String(location.file_name());
 
-    messageParams_.AddMember(
-        rapidjson::StringRef("ThreadId"),
-        rapidjson::Value{threadId.value.c_str(), allocator_},
-        allocator_);
+    writer().Key("Line");
+    writer().Int64(location.line());
+
+    writer().Key("ThreadId");
+    writer().String(threadId.value.c_str());
 
     auto severityStr = to_string(severity);
-    messageParams_.AddMember(
-        rapidjson::StringRef("Level"),
-        rapidjson::Value{severityStr.c_str(), allocator_},
-        allocator_);
+    writer().Key("Level");
+    writer().String(severityStr.c_str());
 
-    messageParams_.AddMember(
-        rapidjson::StringRef("Time"),
-        std::chrono::duration_cast<std::chrono::milliseconds>(
+    writer().Key("Time");
+    writer().Uint64(std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::system_clock::now().time_since_epoch())
-            .count(),
-        allocator_);
+            .count());
 }
 
 void
@@ -276,7 +251,8 @@ Journal::formatLog(std::string&& message)
         return message;
     }
 
-    auto& messageParams = currentJsonLogContext_.messageParams();
+    currentJsonLogContext_.writer().EndObject();
+    auto messageParams = currentJsonLogContext_.messageParams();
 
     rapidjson::StringBuffer buffer;
     rapidjson::Writer writer(buffer);
@@ -301,7 +277,7 @@ Journal::formatLog(std::string&& message)
     }
 
     writer.Key("MessageParams");
-    messageParams.Accept(writer);
+    writer.RawValue(messageParams, std::strlen(messageParams), rapidjson::kObjectType);
 
     writer.Key("Message");
     writer.String(message.c_str(), message.length());
