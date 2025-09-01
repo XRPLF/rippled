@@ -138,7 +138,7 @@ Journal::JsonLogContext::reset(
     };
     thread_local ThreadIdStringInitializer const threadId;
 
-    buffer_.str("");
+    buffer_.clear();
 
     writer().startObject();
 
@@ -206,7 +206,7 @@ Journal::formatLog(std::string&& message)
 
     writer.endObject();
 
-    return writer.str();
+    return writer.finish();
 }
 
 void
