@@ -80,46 +80,44 @@ namespace beast {
 class SimpleJsonWriter
 {
 public:
-    explicit SimpleJsonWriter(std::ostringstream& stream) : stream_(stream)
+    explicit SimpleJsonWriter(std::string& stream) : stream_(stream)
     {
-        stream_.imbue(std::locale::classic());
     }
 
     void
     startObject() const
     {
-        stream_.put('{');
+        stream_.append("{", 1);
     }
     void
     endObject() const
     {
-        stream_.seekp(-1, std::ios_base::end);
-        stream_.write("},", 2);
+        stream_.pop_back();
+        stream_.append("},", 2);
     }
     void
     writeKey(std::string_view key) const
     {
         writeString(key);
-        stream_.seekp(-1, std::ios_base::end);
-        stream_.put(':');
+        *stream_.rbegin() = ':';
     }
     void
     startArray() const
     {
-        stream_.put('[');
+        stream_.append("[", 1);
     }
     void
     endArray() const
     {
-        stream_.seekp(-1, std::ios_base::end);
-        stream_.write("],", 2);
+        stream_.pop_back();
+        stream_.append("],", 2);
     }
     void
     writeString(std::string_view str) const
     {
-        stream_.put('"');
+        stream_.push_back('"');
         escape(str, stream_);
-        stream_.write("\",", 2);
+        stream_.append("\",", 2);
     }
     std::string_view
     writeInt(std::int64_t val) const
@@ -140,44 +138,43 @@ public:
     writeBool(bool val) const
     {
         auto str = val ? "true," : "false,";
-        stream_.write(str, std::strlen(str));
+        stream_.append(str, std::strlen(str));
         return str;
     }
     void
     writeNull() const
     {
-        stream_.write("null", std::strlen("null"));
-        stream_.put(',');
+        stream_.append("null", std::strlen("null"));
+        stream_.push_back(',');
     }
     void
     writeRaw(std::string_view str) const
     {
-        stream_.write(str.data(), str.length());
+        stream_.append(str);
     }
 
     [[nodiscard]] std::string
-    str() const
+    finish()
     {
-        auto result = stream_.str();
-        result.pop_back();
-        return result;
+        stream_.pop_back();
+        return stream_;
     }
 
 private:
     template <typename T>
     static std::string_view
-    pushNumber(T val, std::ostringstream& stream)
+    pushNumber(T val, std::string& stream)
     {
         static char buffer[128];
         auto result = std::to_chars(std::begin(buffer), std::end(buffer), val);
         *result.ptr = ',';
         auto len = result.ptr - std::begin(buffer);
-        stream.write(buffer, len + 1);
+        stream.append(buffer, len + 1);
         return {buffer, static_cast<size_t>(len)};
     }
 
     static void
-    escape(std::string_view str, std::ostringstream& os)
+    escape(std::string_view str, std::string& os)
     {
         static constexpr char HEX[] = "0123456789ABCDEF";
 
@@ -198,16 +195,16 @@ private:
 
             // Flush the preceding safe run in one go.
             if (chunk != p)
-                os.write(chunk, p - chunk);
+                os.append(chunk, p - chunk);
 
             switch (c) {
-                case '"':  os.write("\\\"", 2); break;
-                case '\\': os.write("\\\\", 2); break;
-                case '\b': os.write("\\b",  2); break;
-                case '\f': os.write("\\f",  2); break;
-                case '\n': os.write("\\n",  2); break;
-                case '\r': os.write("\\r",  2); break;
-                case '\t': os.write("\\t",  2); break;
+                case '"':  os.append("\\\"", 2); break;
+                case '\\': os.append("\\\\", 2); break;
+                case '\b': os.append("\\b",  2); break;
+                case '\f': os.append("\\f",  2); break;
+                case '\n': os.append("\\n",  2); break;
+                case '\r': os.append("\\r",  2); break;
+                case '\t': os.append("\\t",  2); break;
                 default: {
                     // Other C0 controls -> \u00XX (JSON compliant)
                     char buf[6]{
@@ -215,7 +212,7 @@ private:
                         HEX[(c >> 4) & 0xF],
                         HEX[c & 0xF]
                     };
-                    os.write(buf, 6);
+                    os.append(buf, 6);
                     break;
                 }
             }
@@ -226,10 +223,10 @@ private:
 
         // Flush trailing safe run
         if (chunk != p)
-            os.write(chunk, p - chunk);
+            os.append(chunk, p - chunk);
     }
 
-    std::ostringstream& stream_;
+    std::string& stream_;
 };
 
 /** A namespace for easy access to logging severity values. */
@@ -284,7 +281,7 @@ public:
 
     class JsonLogContext
     {
-        std::ostringstream buffer_;
+        std::string buffer_;
         SimpleJsonWriter messageParamsWriter_;
 
     public:
@@ -567,14 +564,14 @@ public:
     Journal(Journal const& other, TAttributesFactory&& attributesFactory)
         : m_name(other.m_name), m_sink(other.m_sink)
     {
-        std::ostringstream stream{other.m_attributesJson, std::ios_base::app};
+        std::string stream{other.m_attributesJson};
         SimpleJsonWriter writer{stream};
         if (other.m_attributesJson.empty())
         {
             writer.startObject();
         }
         attributesFactory(writer);
-        m_attributesJson = stream.str();
+        m_attributesJson = std::move(stream);
     }
 
     /** Create a journal that writes to the specified sink. */
@@ -591,11 +588,11 @@ public:
         TAttributesFactory&& attributesFactory)
         : m_name(name), m_sink(&sink)
     {
-        std::ostringstream stream;
+        std::string stream;
         SimpleJsonWriter writer{stream};
         writer.startObject();
         attributesFactory(writer);
-        m_attributesJson = stream.str();
+        m_attributesJson = std::move(stream);
     }
 
     Journal&
@@ -712,15 +709,14 @@ public:
         std::lock_guard lock(globalLogAttributesMutex_);
 
         auto isEmpty = globalLogAttributesJson_.empty();
-        std::ostringstream stream{
-            std::move(globalLogAttributesJson_), std::ios_base::app};
+        std::string stream{std::move(globalLogAttributesJson_)};
         SimpleJsonWriter writer{stream};
         if (isEmpty)
         {
             writer.startObject();
         }
         factory(writer);
-        globalLogAttributesJson_ = stream.str();
+        globalLogAttributesJson_ = std::move(stream);
     }
 };
 
