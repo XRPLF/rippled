@@ -125,6 +125,7 @@ void
 Journal::JsonLogContext::reset(
     std::source_location location,
     severities::Severity severity,
+    std::string_view moduleName,
     std::string_view journalAttributesJson) noexcept
 {
     struct ThreadIdStringInitializer
@@ -161,6 +162,8 @@ Journal::JsonLogContext::reset(
         }
     }
 
+    writer().writeKey("ModuleName");
+    writer().writeString(moduleName);
     writer().writeKey("MessageParams");
     writer().startObject();
 
@@ -191,7 +194,7 @@ Journal::initMessageContext(
     std::source_location location,
     severities::Severity severity) const
 {
-    currentJsonLogContext_.reset(location, severity, m_attributesJson);
+    currentJsonLogContext_.reset(location, severity, m_name, m_attributesJson);
 }
 
 std::string_view

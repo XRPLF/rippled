@@ -337,6 +337,7 @@ public:
         reset(
             std::source_location location,
             severities::Severity severity,
+            std::string_view moduleName,
             std::string_view journalAttributesJson) noexcept;
     };
 
