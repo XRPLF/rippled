@@ -171,7 +171,7 @@ Journal::JsonLogContext::reset(
     writer().writeString(location.file_name());
 
     writer().writeKey("Line");
-    writer().writeInt(static_cast<std::int32_t>(location.line()));
+    writer().writeUInt(location.line());
 
     writer().writeKey("ThreadId");
     writer().writeString(threadId.value);
