@@ -191,10 +191,7 @@ Journal::initMessageContext(
     std::source_location location,
     severities::Severity severity) const
 {
-    currentJsonLogContext_.reset(
-        location,
-        severity,
-        m_attributesJson);
+    currentJsonLogContext_.reset(location, severity, m_attributesJson);
 }
 
 std::string_view
