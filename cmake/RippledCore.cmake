@@ -85,7 +85,6 @@ target_link_libraries(xrpl.libxrpl.basics PUBLIC xrpl.libxrpl.beast)
 add_module(xrpl json)
 target_link_libraries(xrpl.libxrpl.json PUBLIC xrpl.libxrpl.basics)
 
-
 add_module(xrpl crypto)
 target_link_libraries(xrpl.libxrpl.crypto PUBLIC xrpl.libxrpl.basics)
 

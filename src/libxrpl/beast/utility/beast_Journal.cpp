@@ -94,29 +94,30 @@ Journal::getNullSink()
 
 //------------------------------------------------------------------------------
 
-std::string
+std::string_view
 severities::to_string(Severity severity)
 {
+    using namespace std::string_view_literals;
     switch (severity)
     {
         case kDisabled:
-            return "disabled";
+            return "disabled"sv;
         case kTrace:
-            return "trace";
+            return "trace"sv;
         case kDebug:
-            return "debug";
+            return "debug"sv;
         case kInfo:
-            return "info";
+            return "info"sv;
         case kWarning:
-            return "warning";
+            return "warning"sv;
         case kError:
-            return "error";
+            return "error"sv;
         case kFatal:
-            return "fatal";
+            return "fatal"sv;
         default:
             UNREACHABLE("Unexpected severity value!");
     }
-    return "";
+    return ""sv;
 }
 
 void
