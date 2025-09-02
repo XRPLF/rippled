@@ -186,7 +186,7 @@ doNoRippleCheck(RPC::JsonContext& context)
 
                     STAmount limitAmount(ownedItem->getFieldAmount(
                         bLow ? sfLowLimit : sfHighLimit));
-                    limitAmount.setIssuer(peer);
+                    limitAmount.get<Issue>().account = peer;
 
                     Json::Value& tx = jvTransactions.append(Json::objectValue);
                     tx["TransactionType"] = jss::TrustSet;

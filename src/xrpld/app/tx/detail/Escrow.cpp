@@ -844,7 +844,7 @@ escrowUnlockApplyHelper<Issue>(
 
         Currency const& currency = issue.currency;
         STAmount initialBalance(issue);
-        initialBalance.setIssuer(noAccount());
+        initialBalance.get<Issue>().account = noAccount();
 
         // clang-format off
         if (TER const ter = trustCreate(

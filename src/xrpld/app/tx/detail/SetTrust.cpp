@@ -187,7 +187,7 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
         : sleRippleState->getFieldAmount(sfLowLimit);
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer(tx[sfAccount]);
+    saLimitAllow.get<Issue>().account = tx[sfAccount];
 
     if (curLimit != saLimitAllow)
         return tecNO_DELEGATE_PERMISSION;
@@ -454,7 +454,7 @@ SetTrust::doApply()
     }
 
     STAmount saLimitAllow = saLimitAmount;
-    saLimitAllow.setIssuer(account_);
+    saLimitAllow.get<Issue>().account = account_;
 
     SLE::pointer sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));

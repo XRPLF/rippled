@@ -236,7 +236,7 @@ applyHelper<Issue>(ApplyContext& ctx)
     AccountID const holder = clawAmount.getIssuer();  // cannot be reference
 
     // Replace the `issuer` field with issuer's account
-    clawAmount.setIssuer(issuer);
+    clawAmount.get<Issue>().account = issuer;
     if (holder == issuer)
         return tecINTERNAL;
 

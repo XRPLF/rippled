@@ -194,6 +194,10 @@ public:
     constexpr TIss const&
     get() const;
 
+    template <ValidIssueType TIss>
+    TIss&
+    get();
+
     AccountID const&
     getIssuer() const;
 
@@ -481,6 +485,13 @@ STAmount::asset() const
 template <ValidIssueType TIss>
 constexpr TIss const&
 STAmount::get() const
+{
+    return mAsset.get<TIss>();
+}
+
+template <ValidIssueType TIss>
+TIss&
+STAmount::get()
 {
     return mAsset.get<TIss>();
 }

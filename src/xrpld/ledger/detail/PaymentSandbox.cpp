@@ -328,7 +328,7 @@ PaymentSandbox::balanceHookIOU(
     // calculates (but always less than the actual balance).
     auto adjustedAmt = std::min({amount, lastBal - delta, minBal});
     if (amount.holds<Issue>())
-        adjustedAmt.setIssuer(amount.getIssuer());
+        adjustedAmt.get<Issue>().account = amount.getIssuer();
 
     if (isXRP(issuer) && adjustedAmt < beast::zero)
         // A calculated negative XRP balance is not an error case. Consider a

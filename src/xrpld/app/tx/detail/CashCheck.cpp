@@ -439,7 +439,7 @@ CashCheck::doApply()
                     Currency const currency =
                         flowDeliver.asset().get<Issue>().currency;
                     STAmount initialBalance(flowDeliver.asset());
-                    initialBalance.setIssuer(noAccount());
+                    initialBalance.get<Issue>().account = noAccount();
 
                     // clang-format off
                 if (TER const ter = trustCreate(

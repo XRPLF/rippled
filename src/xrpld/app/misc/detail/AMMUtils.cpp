@@ -152,7 +152,7 @@ ammLPHolds(
             // Put balance in account terms.
             amount.negate();
         }
-        amount.setIssuer(ammAccount);
+        amount.get<Issue>().account = ammAccount;
 
         JLOG(j.trace()) << "ammLPHolds:"
                         << " lpAccount=" << to_string(lpAccount)
@@ -240,7 +240,7 @@ ammAccountHolds(
             auto amount = (*sle)[sfBalance];
             if (ammAccountID > issue.account)
                 amount.negate();
-            amount.setIssuer(issue.account);
+            amount.get<Issue>().account = issue.account;
             return amount;
         }
     }

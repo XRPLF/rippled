@@ -197,7 +197,7 @@ Env::balance(Account const& account, Issue const& issue) const
     if (!sle)
         return {STAmount(issue, 0), account.name()};
     auto amount = sle->getFieldAmount(sfBalance);
-    amount.setIssuer(issue.account);
+    amount.get<Issue>().account = issue.account;
     if (account.id() > issue.account)
         amount.negate();
     return {amount, lookup(issue.account).name()};

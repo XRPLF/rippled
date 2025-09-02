@@ -451,7 +451,7 @@ accountHolds(
             // Put balance in account terms.
             amount.negate();
         }
-        amount.setIssuer(issuer);
+        amount.get<Issue>().account = issuer;
     }
     else
     {
@@ -1757,7 +1757,7 @@ rippleCreditIOU(
     STAmount const saReceiverLimit(Issue{currency, uReceiverID});
     STAmount saBalance{saAmount};
 
-    saBalance.setIssuer(noAccount());
+    saBalance.get<Issue>().account = noAccount();
 
     JLOG(j.debug()) << "rippleCreditIOU: "
                        "create line: "
@@ -2295,7 +2295,7 @@ issueIOU(
     STAmount const limit(Issue{issue.currency, account});
     STAmount final_balance = amount;
 
-    final_balance.setIssuer(noAccount());
+    final_balance.get<Issue>().account = noAccount();
 
     auto const receiverAccount = view.peek(keylet::account(account));
     if (!receiverAccount)

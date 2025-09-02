@@ -337,15 +337,15 @@ expectLine(
             STAmount low{issue};
             STAmount high{issue};
 
-            low.setIssuer(accountLow ? account : issue.account);
-            high.setIssuer(accountLow ? issue.account : account);
+            low.get<Issue>().account = accountLow ? account : issue.account;
+            high.get<Issue>().account = accountLow ? issue.account : account;
 
             expectDefaultTrustLine = sle->getFieldAmount(sfLowLimit) == low &&
                 sle->getFieldAmount(sfHighLimit) == high;
         }
 
         auto amount = sle->getFieldAmount(sfBalance);
-        amount.setIssuer(value.getIssuer());
+        amount.get<Issue>().account = value.getIssuer();
         if (!accountLow)
             amount.negate();
         return amount == value && expectDefaultTrustLine;

@@ -529,7 +529,7 @@ struct AnyAmount
     {
         if (!is_any)
             return;
-        value.setIssuer(id);
+        value.get<Issue>().account = id;
     }
 };
 

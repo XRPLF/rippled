@@ -40,7 +40,7 @@ creditLimit(
     {
         result = sleRippleState->getFieldAmount(
             account < issuer ? sfLowLimit : sfHighLimit);
-        result.setIssuer(account);
+        result.get<Issue>().account = account;
     }
 
     XRPL_ASSERT(
@@ -78,7 +78,7 @@ creditBalance(
         result = sleRippleState->getFieldAmount(sfBalance);
         if (account < issuer)
             result.negate();
-        result.setIssuer(account);
+        result.get<Issue>().account = account;
     }
 
     XRPL_ASSERT(

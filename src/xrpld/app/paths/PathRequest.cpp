@@ -689,7 +689,7 @@ PathRequest::findPaths(
         {
             Json::Value jvEntry(Json::objectValue);
             if (rc.actualAmountIn.holds<Issue>())
-                rc.actualAmountIn.setIssuer(sourceAccount);
+                rc.actualAmountIn.get<Issue>().account = sourceAccount;
             jvEntry[jss::source_amount] =
                 rc.actualAmountIn.getJson(JsonOptions::none);
             jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::none);

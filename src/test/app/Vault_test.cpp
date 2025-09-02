@@ -1951,7 +1951,7 @@ class Vault_test : public beast::unit_test::suite
                             STAmount(issue, 0),
                             env.lookup(issue.account).name()};
                     auto amount = sle->getFieldAmount(sfBalance);
-                    amount.setIssuer(issue.account);
+                    amount.get<Issue>().account = issue.account;
                     if (account > issue.account)
                         amount.negate();
                     return {amount, env.lookup(issue.account).name()};

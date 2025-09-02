@@ -2267,8 +2267,10 @@ public:
             STAmount low{issue};
             STAmount high{issue};
 
-            low.setIssuer(accountLow ? account.id() : issue.account);
-            high.setIssuer(accountLow ? issue.account : account.id());
+            low.get<Issue>().account =
+                (accountLow ? account.id() : issue.account);
+            high.get<Issue>().account =
+                (accountLow ? issue.account : account.id());
 
             BEAST_EXPECT(sleTrust->getFieldAmount(sfLowLimit) == low);
             BEAST_EXPECT(sleTrust->getFieldAmount(sfHighLimit) == high);
