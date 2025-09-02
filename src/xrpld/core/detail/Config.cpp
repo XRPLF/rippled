@@ -690,7 +690,8 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
         DEBUG_LOGFILE = strTemp;
 
-    LOG_STYLE = LogStyle::Json;
+    if (getSingleSection(secConfig, SECTION_LOG_STYLE, strTemp, j_))
+        LOG_STYLE = LogStyle::fromString(strTemp);
 
     if (getSingleSection(secConfig, SECTION_SWEEP_INTERVAL, strTemp, j_))
     {
