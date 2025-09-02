@@ -156,9 +156,7 @@ Journal::JsonLogContext::reset(
         if (!globalLogAttributesJson_.empty())
         {
             writer().writeKey("GlobalParams");
-            writer().writeRaw(std::string_view{
-                std::begin(globalLogAttributesJson_),
-                std::end(globalLogAttributesJson_)});
+            writer().writeRaw(globalLogAttributesJson_);
             writer().endObject();
         }
     }
@@ -196,8 +194,7 @@ Journal::initMessageContext(
     currentJsonLogContext_.reset(
         location,
         severity,
-        std::string_view{
-            std::begin(m_attributesJson), std::end(m_attributesJson)});
+        m_attributesJson);
 }
 
 std::string_view
