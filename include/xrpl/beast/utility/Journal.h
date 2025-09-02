@@ -23,6 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <charconv>
+#include <mutex>
 #include <shared_mutex>
 #include <source_location>
 #include <sstream>
