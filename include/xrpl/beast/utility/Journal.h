@@ -128,37 +128,12 @@ public:
         buffer_.append("\","sv);
     }
     std::string_view
-    writeInt(std::int8_t val) const
-    {
-        return pushNumber(val, buffer_);
-    }
-    std::string_view
-    writeInt(std::int16_t val) const
-    {
-        return pushNumber(val, buffer_);
-    }
-    std::string_view
     writeInt(std::int32_t val) const
     {
         return pushNumber(val, buffer_);
     }
     std::string_view
     writeInt(std::int64_t val) const
-    {
-        return pushNumber(val, buffer_);
-    }
-    std::string_view
-    writeUInt(std::size_t val) const
-    {
-        return pushNumber(val, buffer_);
-    }
-    std::string_view
-    writeUInt(std::uint8_t val) const
-    {
-        return pushNumber(val, buffer_);
-    }
-    std::string_view
-    writeUInt(std::uint16_t val) const
     {
         return pushNumber(val, buffer_);
     }
@@ -919,11 +894,25 @@ setJsonValue(
         std::string_view sv;
         if constexpr (std::is_signed_v<ValueType>)
         {
-            sv = writer.writeInt(value);
+            if constexpr (sizeof(ValueType) > 4)
+            {
+                sv = writer.writeInt(static_cast<std::int64_t>(value));
+            }
+            else
+            {
+                sv = writer.writeInt(static_cast<std::int32_t>(value));
+            }
         }
         else
         {
-            sv = writer.writeUInt(value);
+            if constexpr (sizeof(ValueType) > 4)
+            {
+                sv = writer.writeUInt(static_cast<std::uint64_t>(value));
+            }
+            else
+            {
+                sv = writer.writeUInt(static_cast<std::uint32_t>(value));
+            }
         }
         if (outStream)
         {
