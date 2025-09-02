@@ -831,15 +831,6 @@ public:
     bool
     serverOkay(std::string& reason) override;
 
-    beast::Journal
-    journal(
-        std::string const& name,
-        std::function<beast::JournalAttributesFactory> const& attributes)
-        override;
-
-    beast::Journal
-    journal(std::string const& name) override;
-
     //--------------------------------------------------------------------------
 
     bool
@@ -2173,20 +2164,6 @@ ApplicationImp::serverOkay(std::string& reason)
     }
 
     return true;
-}
-
-beast::Journal
-ApplicationImp::journal(
-    std::string const& name,
-    std::function<beast::JournalAttributesFactory> const& attributes)
-{
-    return logs_->journal(name, std::move(attributes));
-}
-
-beast::Journal
-ApplicationImp::journal(std::string const& name)
-{
-    return logs_->journal(name);
 }
 
 void

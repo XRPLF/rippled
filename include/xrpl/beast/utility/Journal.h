@@ -79,14 +79,6 @@ operator<<(std::ostream& os, LogParameter<T> const& param);
 
 namespace beast {
 
-// Forward declaration for use in interfaces
-namespace detail {
-class SimpleJsonWriter;
-}
-
-// Type alias for journal attribute factory functions
-using JournalAttributesFactory = void(detail::SimpleJsonWriter&);
-
 namespace detail {
 
 class SimpleJsonWriter

@@ -257,13 +257,18 @@ public:
     virtual bool
     serverOkay(std::string& reason) = 0;
 
-    virtual beast::Journal
-    journal(
-        std::string const& name,
-        std::function<beast::JournalAttributesFactory> const& attributes) = 0;
+    template <typename TAttributesFactory>
+    beast::Journal
+    journal(std::string const& name, TAttributesFactory&& factory)
+    {
+        return logs().journal(name, std::forward<TAttributesFactory>(factory));
+    }
 
-    virtual beast::Journal
-    journal(std::string const& name) = 0;
+    beast::Journal
+    journal(std::string const& name)
+    {
+        return logs().journal(name);
+    }
 
     /* Returns the number of file descriptors the application needs */
     virtual int
