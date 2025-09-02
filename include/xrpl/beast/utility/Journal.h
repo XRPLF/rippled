@@ -23,9 +23,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <charconv>
-#include <string>
 #include <source_location>
 #include <sstream>
+#include <string>
+#include <string_view>
 #include <utility>
 
 namespace ripple::log {
@@ -88,40 +89,53 @@ public:
     void
     startObject() const
     {
-        stream_.append("{", 1);
+        stream_.push_back('{');
     }
     void
     endObject() const
     {
+        using namespace std::string_view_literals;
         stream_.pop_back();
-        stream_.append("},", 2);
+        stream_.append("},"sv);
     }
     void
     writeKey(std::string_view key) const
     {
         writeString(key);
-        *stream_.rbegin() = ':';
+        stream_.back() = ':';
     }
     void
     startArray() const
     {
-        stream_.append("[", 1);
+        stream_.push_back('[');
     }
     void
     endArray() const
     {
+        using namespace std::string_view_literals;
         stream_.pop_back();
-        stream_.append("],", 2);
+        stream_.append("],"sv);
     }
     void
     writeString(std::string_view str) const
     {
+        using namespace std::string_view_literals;
         stream_.push_back('"');
         escape(str, stream_);
-        stream_.append("\",", 2);
+        stream_.append("\","sv);
+    }
+    std::string_view
+    writeInt(std::int32_t val) const
+    {
+        return pushNumber(val, stream_);
     }
     std::string_view
     writeInt(std::int64_t val) const
+    {
+        return pushNumber(val, stream_);
+    }
+    std::string_view
+    writeUInt(std::uint32_t val) const
     {
         return pushNumber(val, stream_);
     }
@@ -138,15 +152,16 @@ public:
     std::string_view
     writeBool(bool val) const
     {
-        auto str = val ? "true," : "false,";
-        stream_.append(str, std::strlen(str));
+        using namespace std::string_view_literals;
+        auto str = val ? "true,"sv : "false,"sv;
+        stream_.append(str);
         return str;
     }
     void
     writeNull() const
     {
-        stream_.append("null", std::strlen("null"));
-        stream_.push_back(',');
+        using namespace std::string_view_literals;
+        stream_.append("null,"sv);
     }
     void
     writeRaw(std::string_view str) const
@@ -154,11 +169,10 @@ public:
         stream_.append(str);
     }
 
-    [[nodiscard]] std::string
+    [[nodiscard]] std::string_view
     finish()
     {
-        stream_.pop_back();
-        return stream_;
+        return std::string_view{stream_.c_str(), stream_.size() - 1};
     }
 
 private:
@@ -166,10 +180,11 @@ private:
     static std::string_view
     pushNumber(T val, std::string& stream)
     {
-        static char buffer[128];
+        thread_local char buffer[128];
         auto result = std::to_chars(std::begin(buffer), std::end(buffer), val);
-        *result.ptr = ',';
-        auto len = result.ptr - std::begin(buffer);
+        auto ptr = result.ptr;
+        *ptr = ',';
+        auto len = ptr - std::begin(buffer);
         stream.append(buffer, len + 1);
         return {buffer, static_cast<size_t>(len)};
     }
@@ -179,17 +194,19 @@ private:
     {
         static constexpr char HEX[] = "0123456789ABCDEF";
 
-        const char* p = str.data();
-        const char* end = p + str.size();
-        const char* chunk = p;
+        char const* p = str.data();
+        char const* end = p + str.size();
+        char const* chunk = p;
 
-        while (p < end) {
+        while (p < end)
+        {
             auto c = static_cast<unsigned char>(*p);
 
             // JSON requires escaping for <0x20 and the two specials below.
             bool needsEscape = (c < 0x20) || (c == '"') || (c == '\\');
 
-            if (!needsEscape) {
+            if (!needsEscape)
+            {
                 ++p;
                 continue;
             }
@@ -198,21 +215,33 @@ private:
             if (chunk != p)
                 os.append(chunk, p - chunk);
 
-            switch (c) {
-                case '"':  os.append("\\\"", 2); break;
-                case '\\': os.append("\\\\", 2); break;
-                case '\b': os.append("\\b",  2); break;
-                case '\f': os.append("\\f",  2); break;
-                case '\n': os.append("\\n",  2); break;
-                case '\r': os.append("\\r",  2); break;
-                case '\t': os.append("\\t",  2); break;
+            switch (c)
+            {
+                case '"':
+                    os.append("\\\"", 2);
+                    break;
+                case '\\':
+                    os.append("\\\\", 2);
+                    break;
+                case '\b':
+                    os.append("\\b", 2);
+                    break;
+                case '\f':
+                    os.append("\\f", 2);
+                    break;
+                case '\n':
+                    os.append("\\n", 2);
+                    break;
+                case '\r':
+                    os.append("\\r", 2);
+                    break;
+                case '\t':
+                    os.append("\\t", 2);
+                    break;
                 default: {
                     // Other C0 controls -> \u00XX (JSON compliant)
                     char buf[6]{
-                        '\\','u','0','0',
-                        HEX[(c >> 4) & 0xF],
-                        HEX[c & 0xF]
-                    };
+                        '\\', 'u', '0', '0', HEX[(c >> 4) & 0xF], HEX[c & 0xF]};
                     os.append(buf, 6);
                     break;
                 }
@@ -288,6 +317,7 @@ public:
     public:
         JsonLogContext() : messageParamsWriter_(buffer_)
         {
+            buffer_.reserve(1024 * 5);
         }
 
         SimpleJsonWriter&
@@ -300,7 +330,7 @@ public:
         reset(
             std::source_location location,
             severities::Severity severity,
-            std::string const& journalAttributesJson) noexcept;
+            std::string_view journalAttributesJson) noexcept;
     };
 
 private:
@@ -323,7 +353,7 @@ private:
         std::source_location location,
         severities::Severity severity) const;
 
-    static std::string
+    static std::string_view
     formatLog(std::string&& message);
 
 public:
@@ -830,9 +860,10 @@ namespace ripple::log {
 namespace detail {
 
 template <typename T>
-concept CanToChars = requires (T val)
-{
-    { to_chars(std::declval<char*>(), std::declval<char*>(), val) } -> std::convertible_to<std::to_chars_result>;
+concept CanToChars = requires(T val) {
+    {
+        to_chars(std::declval<char*>(), std::declval<char*>(), val)
+    } -> std::convertible_to<std::to_chars_result>;
 };
 
 template <typename T>
@@ -901,7 +932,8 @@ setJsonValue(
         if constexpr (CanToChars<ValueType>)
         {
             char buffer[1024];
-            std::to_chars_result result = to_chars(std::begin(buffer), std::end(buffer), value);
+            std::to_chars_result result =
+                to_chars(std::begin(buffer), std::end(buffer), value);
             if (result.ec == std::errc{})
             {
                 std::string_view sv;
@@ -925,7 +957,8 @@ setJsonValue(
 
         if (outStream)
         {
-            outStream->write(str.c_str(), static_cast<std::streamsize>(str.size()));
+            outStream->write(
+                str.c_str(), static_cast<std::streamsize>(str.size()));
         }
     }
 }

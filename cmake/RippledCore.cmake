@@ -51,8 +51,6 @@ target_link_libraries(xrpl.libpb
 # TODO: Clean up the number of library targets later.
 add_library(xrpl.imports.main INTERFACE)
 
-find_package(RapidJSON)
-
 target_link_libraries(xrpl.imports.main
   INTERFACE
     LibArchive::LibArchive
@@ -77,7 +75,6 @@ add_module(xrpl beast)
 target_link_libraries(xrpl.libxrpl.beast PUBLIC
   xrpl.imports.main
   xrpl.libpb
-  rapidjson
 )
 
 # Level 02
