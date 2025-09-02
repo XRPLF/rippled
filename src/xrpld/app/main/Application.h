@@ -260,7 +260,7 @@ public:
     virtual beast::Journal
     journal(
         std::string const& name,
-        std::function<void(beast::SimpleJsonWriter&)> const& attributes) = 0;
+        std::function<beast::JournalAttributesFactory> const& attributes) = 0;
 
     virtual beast::Journal
     journal(std::string const& name) = 0;

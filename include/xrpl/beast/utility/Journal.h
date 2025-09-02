@@ -79,6 +79,16 @@ operator<<(std::ostream& os, LogParameter<T> const& param);
 
 namespace beast {
 
+// Forward declaration for use in interfaces
+namespace detail {
+class SimpleJsonWriter;
+}
+
+// Type alias for journal attribute factory functions
+using JournalAttributesFactory = void(detail::SimpleJsonWriter&);
+
+namespace detail {
+
 class SimpleJsonWriter
 {
 public:
@@ -125,12 +135,37 @@ public:
         stream_.append("\","sv);
     }
     std::string_view
+    writeInt(std::int8_t val) const
+    {
+        return pushNumber(val, stream_);
+    }
+    std::string_view
+    writeInt(std::int16_t val) const
+    {
+        return pushNumber(val, stream_);
+    }
+    std::string_view
     writeInt(std::int32_t val) const
     {
         return pushNumber(val, stream_);
     }
     std::string_view
     writeInt(std::int64_t val) const
+    {
+        return pushNumber(val, stream_);
+    }
+    std::string_view
+    writeUInt(std::size_t val) const
+    {
+        return pushNumber(val, stream_);
+    }
+    std::string_view
+    writeUInt(std::uint8_t val) const
+    {
+        return pushNumber(val, stream_);
+    }
+    std::string_view
+    writeUInt(std::uint16_t val) const
     {
         return pushNumber(val, stream_);
     }
@@ -259,6 +294,8 @@ private:
     std::string& stream_;
 };
 
+}  // namespace detail
+
 /** A namespace for easy access to logging severity values. */
 namespace severities {
 /** Severity level / threshold of a Journal message. */
@@ -312,7 +349,7 @@ public:
     class JsonLogContext
     {
         std::string buffer_;
-        SimpleJsonWriter messageParamsWriter_;
+        detail::SimpleJsonWriter messageParamsWriter_;
 
     public:
         JsonLogContext() : messageParamsWriter_(buffer_)
@@ -320,7 +357,7 @@ public:
             buffer_.reserve(1024 * 5);
         }
 
-        SimpleJsonWriter&
+        detail::SimpleJsonWriter&
         writer()
         {
             return messageParamsWriter_;
@@ -596,7 +633,7 @@ public:
         : m_name(other.m_name), m_sink(other.m_sink)
     {
         std::string stream{other.m_attributesJson};
-        SimpleJsonWriter writer{stream};
+        detail::SimpleJsonWriter writer{stream};
         if (other.m_attributesJson.empty())
         {
             writer.startObject();
@@ -620,7 +657,7 @@ public:
         : m_name(name), m_sink(&sink)
     {
         std::string stream;
-        SimpleJsonWriter writer{stream};
+        detail::SimpleJsonWriter writer{stream};
         writer.startObject();
         attributesFactory(writer);
         m_attributesJson = std::move(stream);
@@ -741,7 +778,7 @@ public:
 
         auto isEmpty = globalLogAttributesJson_.empty();
         std::string stream{std::move(globalLogAttributesJson_)};
-        SimpleJsonWriter writer{stream};
+        detail::SimpleJsonWriter writer{stream};
         if (isEmpty)
         {
             writer.startObject();
@@ -860,7 +897,7 @@ namespace ripple::log {
 namespace detail {
 
 template <typename T>
-concept CanToChars = requires(T val) {
+concept ToCharsFormattable = requires(T val) {
     {
         to_chars(std::declval<char*>(), std::declval<char*>(), val)
     } -> std::convertible_to<std::to_chars_result>;
@@ -869,14 +906,22 @@ concept CanToChars = requires(T val) {
 template <typename T>
 void
 setJsonValue(
-    beast::SimpleJsonWriter& writer,
+    beast::detail::SimpleJsonWriter& writer,
     char const* name,
     T&& value,
     std::ostream* outStream)
 {
     using ValueType = std::decay_t<T>;
     writer.writeKey(name);
-    if constexpr (std::is_integral_v<ValueType>)
+    if constexpr (std::is_same_v<ValueType, bool>)
+    {
+        auto sv = writer.writeBool(value);
+        if (outStream)
+        {
+            outStream->write(sv.data(), sv.size());
+        }
+    }
+    else if constexpr (std::is_integral_v<ValueType>)
     {
         std::string_view sv;
         if constexpr (std::is_signed_v<ValueType>)
@@ -896,14 +941,6 @@ setJsonValue(
     {
         auto sv = writer.writeDouble(value);
 
-        if (outStream)
-        {
-            outStream->write(sv.data(), sv.size());
-        }
-    }
-    else if constexpr (std::is_same_v<ValueType, bool>)
-    {
-        auto sv = writer.writeBool(value);
         if (outStream)
         {
             outStream->write(sv.data(), sv.size());
@@ -929,15 +966,14 @@ setJsonValue(
     }
     else
     {
-        if constexpr (CanToChars<ValueType>)
+        if constexpr (ToCharsFormattable<ValueType>)
         {
             char buffer[1024];
             std::to_chars_result result =
                 to_chars(std::begin(buffer), std::end(buffer), value);
             if (result.ec == std::errc{})
             {
-                std::string_view sv;
-                sv = {std::begin(buffer), result.ptr};
+                std::string_view sv{std::begin(buffer), result.ptr};
                 writer.writeString(sv);
                 if (outStream)
                 {
@@ -1010,7 +1046,7 @@ template <typename... Pair>
 [[nodiscard]] auto
 attributes(Pair&&... pairs)
 {
-    return [&](beast::SimpleJsonWriter& writer) {
+    return [&](beast::detail::SimpleJsonWriter& writer) {
         (detail::setJsonValue(writer, pairs.first, pairs.second, nullptr), ...);
     };
 }
