@@ -60,7 +60,6 @@ public:
 private:
     using clock_type = std::chrono::steady_clock;
     using error_code = boost::system::error_code;
-    using socket_type = boost::asio::ip::tcp::socket;
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream<middle_type>;
     using address_type = boost::asio::ip::address;
@@ -76,8 +75,6 @@ private:
     beast::Journal const journal_;
     beast::Journal const p_journal_;
     std::unique_ptr<stream_type> stream_ptr_;
-    socket_type& socket_;
-    stream_type& stream_;
     boost::asio::strand<boost::asio::executor> strand_;
     waitable_timer timer_;
 
@@ -519,6 +516,9 @@ private:
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
+    bool
+    socketOpen() const;
+
 public:
     //--------------------------------------------------------------------------
     //
@@ -667,10 +667,8 @@ PeerImp::PeerImp(
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
-    , socket_(stream_ptr_->next_layer().socket())
-    , stream_(*stream_ptr_)
-    , strand_(boost::asio::make_strand(socket_.get_executor()))
-    , timer_(waitable_timer{socket_.get_executor()})
+    , strand_(boost::asio::make_strand(stream_ptr_->get_executor()))
+    , timer_(waitable_timer{stream_ptr_->get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(false)
