@@ -835,7 +835,7 @@ public:
     beast::Journal
     journal(
         std::string const& name,
-        std::function<void(beast::SimpleJsonWriter&)> const& attributes)
+        std::function<beast::JournalAttributesFactory> const& attributes)
         override;
 
     beast::Journal
@@ -2176,7 +2176,7 @@ ApplicationImp::serverOkay(std::string& reason)
 beast::Journal
 ApplicationImp::journal(
     std::string const& name,
-    std::function<void(beast::SimpleJsonWriter&)> const& attributes)
+    std::function<beast::JournalAttributesFactory> const& attributes)
 {
     return logs_->journal(name, std::move(attributes));
 }
