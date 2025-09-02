@@ -579,7 +579,8 @@ After any updates or changes to dependencies, you may need to do the following:
    ```
 
 3. Re-run [conan export](#patched-recipes) if needed.
-4. Re-run [conan install](#build-and-test).
+4. [Regenerate lockfile](#conan-lockfile).
+5. Re-run [conan install](#build-and-test).
 
 ### `protobuf/port_def.inc` file not found
 
