@@ -123,7 +123,7 @@ void
 Journal::JsonLogContext::reset(
     std::source_location location,
     severities::Severity severity,
-    std::string const& journalAttributesJson) noexcept
+    std::string_view journalAttributesJson) noexcept
 {
     struct ThreadIdStringInitializer
     {
@@ -152,7 +152,9 @@ Journal::JsonLogContext::reset(
     if (!globalLogAttributesJson_.empty())
     {
         writer().writeKey("GlobalParams");
-        writer().writeRaw(globalLogAttributesJson_);
+        writer().writeRaw(std::string_view{
+            std::begin(globalLogAttributesJson_),
+            std::end(globalLogAttributesJson_)});
         writer().endObject();
     }
 
@@ -166,7 +168,7 @@ Journal::JsonLogContext::reset(
     writer().writeString(location.file_name());
 
     writer().writeKey("Line");
-    writer().writeInt(location.line());
+    writer().writeInt(static_cast<std::int32_t>(location.line()));
 
     writer().writeKey("ThreadId");
     writer().writeString(threadId.value);
@@ -176,9 +178,9 @@ Journal::JsonLogContext::reset(
     writer().writeString(severityStr);
 
     writer().writeKey("Time");
-    writer().writeUInt(std::chrono::duration_cast<std::chrono::milliseconds>(
-                           std::chrono::system_clock::now().time_since_epoch())
-                           .count());
+    writer().writeInt(std::chrono::duration_cast<std::chrono::milliseconds>(
+                          std::chrono::system_clock::now().time_since_epoch())
+                          .count());
 }
 
 void
@@ -186,10 +188,14 @@ Journal::initMessageContext(
     std::source_location location,
     severities::Severity severity) const
 {
-    currentJsonLogContext_.reset(location, severity, m_attributesJson);
+    currentJsonLogContext_.reset(
+        location,
+        severity,
+        std::string_view{
+            std::begin(m_attributesJson), std::end(m_attributesJson)});
 }
 
-std::string
+std::string_view
 Journal::formatLog(std::string&& message)
 {
     if (!m_jsonLogsEnabled)
@@ -288,9 +294,9 @@ Journal::ScopedStream::~ScopedStream()
     if (!s.empty())
     {
         if (s == "\n")
-            m_sink.write(m_level, formatLog(""));
+            m_sink.write(m_level, std::string{formatLog("")});
         else
-            m_sink.write(m_level, formatLog(std::move(s)));
+            m_sink.write(m_level, std::string{formatLog(std::move(s))});
     }
 }
 

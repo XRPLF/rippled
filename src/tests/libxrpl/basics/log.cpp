@@ -20,7 +20,10 @@
 #include <xrpl/basics/Log.h>
 
 #include <doctest/doctest.h>
-#include <rapidjson/document.h>
+#include <boost/json.hpp>
+
+#include <numbers>
+#include <iostream>
 
 using namespace ripple;
 
@@ -51,21 +54,21 @@ private:
         void
         write(beast::severities::Severity level, std::string&& text) override
         {
-            logs_.logStream_ << text;
+            logs_.write(level, partition_, text, false);
         }
 
         void
         writeAlways(beast::severities::Severity level, std::string&& text)
             override
         {
-            logs_.logStream_ << text;
+            logs_.write(level, partition_, text, false);
         }
     };
 
-    std::stringstream& logStream_;
+    std::string& logStream_;
 
 public:
-    MockLogs(std::stringstream& logStream, beast::severities::Severity level)
+    MockLogs(std::string& logStream, beast::severities::Severity level)
         : Logs(level), logStream_(logStream)
     {
     }
@@ -77,23 +80,35 @@ public:
     {
         return std::make_unique<Sink>(partition, startingLevel, *this);
     }
+
+    void
+    write(
+        beast::severities::Severity level,
+        std::string const& partition,
+        std::string const& text,
+        bool console)
+    {
+        std::string s;
+        format(s, text, level, partition);
+        logStream_.append(s);
+    }
 };
 
 TEST_CASE("Text logs")
 {
-    std::stringstream logStream;
+    std::string logStream;
 
     MockLogs logs{logStream, beast::severities::kAll};
 
     logs.journal("Test").debug() << "Test";
 
-    CHECK(logStream.str().find("Test") != std::string::npos);
+    CHECK(logStream.find("Test") != std::string::npos);
 
-    logStream.str("");
+    logStream.clear();
 
     logs.journal("Test").debug() << "\n";
 
-    CHECK(logStream.str().find("\n") == std::string::npos);
+    CHECK(logStream.find("\n") == std::string::npos);
 }
 
 TEST_CASE("Test format output")
@@ -118,35 +133,34 @@ TEST_CASE("Test format output when structured logs are enabled")
 
 TEST_CASE("Enable json logs")
 {
-    std::stringstream logStream;
+    std::string logStream;
 
     MockLogs logs{logStream, beast::severities::kAll};
 
-    logs.journal("Test").debug() << "Test";
+    logs.journal("Test ").debug() << "Test123";
 
-    CHECK(logStream.str() == "Test");
+    CHECK(logStream.find("Test123") != std::string::npos);
 
-    logStream.str("");
+    logStream.clear();
 
     beast::Journal::enableStructuredJournal();
 
     logs.journal("Test").debug() << "\n";
 
-    rapidjson::Document doc;
-    doc.Parse(logStream.str().c_str());
+    boost::system::error_code ec;
+    auto doc = boost::json::parse(logStream, ec);
+    CHECK(ec == boost::system::errc::success);
 
-    CHECK(doc.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(doc.IsObject());
-    CHECK(doc.HasMember("Message"));
-    CHECK(doc["Message"].IsString());
-    CHECK(doc["Message"].GetString() == std::string{""});
+    CHECK(doc.is_object());
+    CHECK(doc.as_object().contains("Message"));
+    CHECK(doc.as_object()["Message"].is_string());
+    CHECK(doc.as_object()["Message"].get_string() == "");
     beast::Journal::disableStructuredJournal();
 }
 
 TEST_CASE("Global attributes")
 {
-    std::stringstream logStream;
+    std::string logStream;
 
     MockLogs logs{logStream, beast::severities::kAll};
 
@@ -156,25 +170,23 @@ TEST_CASE("Global attributes")
 
     logs.journal("Test").debug() << "Test";
 
-    rapidjson::Document jsonLog;
-    jsonLog.Parse(logStream.str().c_str());
+    boost::system::error_code ec;
+    auto jsonLog = boost::json::parse(logStream, ec);
+    CHECK(ec == boost::system::errc::success);
 
+    CHECK(jsonLog.is_object());
+    CHECK(jsonLog.as_object().contains("GlobalParams"));
+    CHECK(jsonLog.as_object()["GlobalParams"].is_object());
+    CHECK(jsonLog.as_object()["GlobalParams"].as_object().contains("Field1"));
+    CHECK(jsonLog.as_object()["GlobalParams"].as_object()["Field1"].is_string());
     CHECK(
-        jsonLog.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(jsonLog.IsObject());
-    CHECK(jsonLog.HasMember("GlobalParams"));
-    CHECK(jsonLog["GlobalParams"].IsObject());
-    CHECK(jsonLog["GlobalParams"].HasMember("Field1"));
-    CHECK(jsonLog["GlobalParams"]["Field1"].IsString());
-    CHECK(
-        jsonLog["GlobalParams"]["Field1"].GetString() == std::string{"Value1"});
+        jsonLog.as_object()["GlobalParams"].as_object()["Field1"].get_string() == "Value1");
     beast::Journal::disableStructuredJournal();
 }
 
 TEST_CASE("Global attributes inheritable")
 {
-    std::stringstream logStream;
+    std::string logStream;
 
     MockLogs logs{logStream, beast::severities::kAll};
 
@@ -189,23 +201,19 @@ TEST_CASE("Global attributes inheritable")
             .debug()
         << "Test";
 
-    rapidjson::Document jsonLog;
-    jsonLog.Parse(logStream.str().c_str());
+    boost::system::error_code ec;
+    auto jsonLog = boost::json::parse(logStream, ec);
+    CHECK(ec == boost::system::errc::success);
 
+    CHECK(jsonLog.is_object());
+    CHECK(jsonLog.as_object()["GlobalParams"].as_object().contains("Field1"));
+    CHECK(jsonLog.as_object()["GlobalParams"].as_object()["Field1"].is_string());
     CHECK(
-        jsonLog.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(jsonLog.IsObject());
-    CHECK(jsonLog["GlobalParams"].HasMember("Field1"));
-    CHECK(jsonLog["GlobalParams"]["Field1"].IsString());
+        jsonLog.as_object()["GlobalParams"].as_object()["Field1"].get_string() == "Value1");
     CHECK(
-        jsonLog["GlobalParams"]["Field1"].GetString() == std::string{"Value1"});
+        jsonLog.as_object()["JournalParams"].as_object()["Field1"].get_string() == "Value3");
     CHECK(
-        jsonLog["JournalParams"]["Field1"].GetString() ==
-        std::string{"Value3"});
-    CHECK(
-        jsonLog["JournalParams"]["Field2"].GetString() ==
-        std::string{"Value2"});
+        jsonLog.as_object()["JournalParams"].as_object()["Field2"].get_string() == "Value2");
     beast::Journal::disableStructuredJournal();
 }
 
@@ -311,35 +319,33 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
                       << std::boolalpha << false
                       << log::field("Field3", "Value3");
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
-    CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
+    CHECK(logValue.is_object());
+    CHECK(logValue.as_object().contains("GlobalParams"));
+    CHECK(logValue.as_object().contains("JournalParams"));
+    CHECK(logValue.as_object().contains("MessageParams"));
+    CHECK(logValue.as_object().contains("Message"));
 
-    CHECK(logValue.IsObject());
-    CHECK(logValue.HasMember("GlobalParams"));
-    CHECK(logValue.HasMember("JournalParams"));
-    CHECK(logValue.HasMember("MessageParams"));
-    CHECK(logValue.HasMember("Message"));
+    CHECK(logValue.as_object()["GlobalParams"].is_object());
+    CHECK(logValue.as_object()["JournalParams"].is_object());
+    CHECK(logValue.as_object()["MessageParams"].is_object());
+    CHECK(logValue.as_object()["Message"].is_string());
 
-    CHECK(logValue["GlobalParams"].IsObject());
-    CHECK(logValue["JournalParams"].IsObject());
-    CHECK(logValue["MessageParams"].IsObject());
-    CHECK(logValue["Message"].IsString());
+    CHECK(logValue.as_object()["MessageParams"].as_object().contains("Function"));
+    CHECK(logValue.as_object()["MessageParams"].as_object().contains("File"));
+    CHECK(logValue.as_object()["MessageParams"].as_object().contains("Line"));
+    CHECK(logValue.as_object()["MessageParams"].as_object().contains("ThreadId"));
+    CHECK(logValue.as_object()["MessageParams"].as_object().contains("Level"));
+    CHECK(logValue.as_object()["MessageParams"].as_object().contains("Time"));
 
-    CHECK(logValue["MessageParams"].HasMember("Function"));
-    CHECK(logValue["MessageParams"].HasMember("File"));
-    CHECK(logValue["MessageParams"].HasMember("Line"));
-    CHECK(logValue["MessageParams"].HasMember("ThreadId"));
-    CHECK(logValue["MessageParams"].HasMember("Level"));
-    CHECK(logValue["MessageParams"].HasMember("Time"));
+    CHECK(logValue.as_object()["MessageParams"].as_object()["Function"].is_string());
+    CHECK(logValue.as_object()["MessageParams"].as_object()["File"].is_string());
+    CHECK(logValue.as_object()["MessageParams"].as_object()["Line"].is_number());
 
-    CHECK(logValue["MessageParams"]["Function"].IsString());
-    CHECK(logValue["MessageParams"]["File"].IsString());
-    CHECK(logValue["MessageParams"]["Line"].IsNumber());
-
-    CHECK(logValue["Message"].GetString() == std::string{"true Test false"});
+    CHECK(logValue.as_object()["Message"].get_string() == std::string{"true Test false"});
 }
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
@@ -348,15 +354,12 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         stream().str("");
         journal().trace() << "Test";
 
-        rapidjson::Document logValue;
-        logValue.Parse(stream().str().c_str());
+        boost::system::error_code ec;
+        auto logValue = boost::json::parse(stream().str(), ec);
+        CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.GetParseError() ==
-            rapidjson::ParseErrorCode::kParseErrorNone);
-
-        CHECK(
-            logValue["MessageParams"]["Level"].GetString() ==
+            logValue.as_object()["MessageParams"].as_object()["Level"].get_string() ==
             beast::severities::to_string(beast::severities::kTrace));
     }
 
@@ -364,15 +367,12 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         stream().str("");
         journal().debug() << "Test";
 
-        rapidjson::Document logValue;
-        logValue.Parse(stream().str().c_str());
+        boost::system::error_code ec;
+        auto logValue = boost::json::parse(stream().str(), ec);
+        CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.GetParseError() ==
-            rapidjson::ParseErrorCode::kParseErrorNone);
-
-        CHECK(
-            logValue["MessageParams"]["Level"].GetString() ==
+            logValue.as_object()["MessageParams"].as_object()["Level"].get_string() ==
             beast::severities::to_string(beast::severities::kDebug));
     }
 
@@ -380,15 +380,12 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         stream().str("");
         journal().info() << "Test";
 
-        rapidjson::Document logValue;
-        logValue.Parse(stream().str().c_str());
+        boost::system::error_code ec;
+        auto logValue = boost::json::parse(stream().str(), ec);
+        CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.GetParseError() ==
-            rapidjson::ParseErrorCode::kParseErrorNone);
-
-        CHECK(
-            logValue["MessageParams"]["Level"].GetString() ==
+            logValue.as_object()["MessageParams"].as_object()["Level"].get_string() ==
             beast::severities::to_string(beast::severities::kInfo));
     }
 
@@ -396,15 +393,12 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         stream().str("");
         journal().warn() << "Test";
 
-        rapidjson::Document logValue;
-        logValue.Parse(stream().str().c_str());
+        boost::system::error_code ec;
+        auto logValue = boost::json::parse(stream().str(), ec);
+        CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.GetParseError() ==
-            rapidjson::ParseErrorCode::kParseErrorNone);
-
-        CHECK(
-            logValue["MessageParams"]["Level"].GetString() ==
+            logValue.as_object()["MessageParams"].as_object()["Level"].get_string() ==
             beast::severities::to_string(beast::severities::kWarning));
     }
 
@@ -412,15 +406,12 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         stream().str("");
         journal().error() << "Test";
 
-        rapidjson::Document logValue;
-        logValue.Parse(stream().str().c_str());
+        boost::system::error_code ec;
+        auto logValue = boost::json::parse(stream().str(), ec);
+        CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.GetParseError() ==
-            rapidjson::ParseErrorCode::kParseErrorNone);
-
-        CHECK(
-            logValue["MessageParams"]["Level"].GetString() ==
+            logValue.as_object()["MessageParams"].as_object()["Level"].get_string() ==
             beast::severities::to_string(beast::severities::kError));
     }
 
@@ -428,15 +419,12 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
         stream().str("");
         journal().fatal() << "Test";
 
-        rapidjson::Document logValue;
-        logValue.Parse(stream().str().c_str());
+        boost::system::error_code ec;
+        auto logValue = boost::json::parse(stream().str(), ec);
+        CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.GetParseError() ==
-            rapidjson::ParseErrorCode::kParseErrorNone);
-
-        CHECK(
-            logValue["MessageParams"]["Level"].GetString() ==
+            logValue.as_object()["MessageParams"].as_object()["Level"].get_string() ==
             beast::severities::to_string(beast::severities::kFatal));
     }
 }
@@ -445,14 +433,12 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogStream")
 {
     journal().stream(beast::severities::kError) << "Test";
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
     CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(
-        logValue["MessageParams"]["Level"].GetString() ==
+        logValue.as_object()["MessageParams"].as_object()["Level"].get_string() ==
         beast::severities::to_string(beast::severities::kError));
 }
 
@@ -461,25 +447,28 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogParams")
     journal().debug() << "Test: " << log::param("Field1", 1) << ", "
                       << log::param(
                              "Field2",
-                             std::numeric_limits<std::uint64_t>::max());
+                             std::numeric_limits<std::uint64_t>::max())
+                      << ", "
+                      << log::param("Field3", std::numbers::pi);
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
+    CHECK(logValue.as_object()["MessageParams"].is_object());
+    CHECK(logValue.as_object()["MessageParams"].as_object()["Field1"].is_number());
+    CHECK(logValue.as_object()["MessageParams"].as_object()["Field1"].get_int64() == 1);
+    CHECK(logValue.as_object()["MessageParams"].as_object()["Field2"].is_number());
     CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(logValue["MessageParams"].IsObject());
-    CHECK(logValue["MessageParams"]["Field1"].IsNumber());
-    CHECK(logValue["MessageParams"]["Field1"].GetInt() == 1);
-    CHECK(logValue["MessageParams"]["Field2"].IsNumber());
-    CHECK(
-        logValue["MessageParams"]["Field2"].GetUint64() ==
+        logValue.as_object()["MessageParams"].as_object()["Field2"].get_uint64() ==
         std::numeric_limits<std::uint64_t>::max());
-    CHECK(logValue["Message"].IsString());
     CHECK(
-        logValue["Message"].GetString() ==
-        std::string{"Test: 1, 18446744073709551615"});
+        logValue.as_object()["MessageParams"].as_object()["Field3"].get_double() ==
+        3.141593);
+    CHECK(logValue.as_object()["Message"].is_string());
+    CHECK(
+        logValue.as_object()["Message"].get_string() ==
+        std::string{"Test: 1, 18446744073709551615, 3.141593"});
 }
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
@@ -489,24 +478,22 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
                              "Field2",
                              std::numeric_limits<std::uint64_t>::max());
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
-    CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(logValue["MessageParams"].IsObject());
-    CHECK(logValue["MessageParams"]["Field1"].IsNumber());
-    CHECK(logValue["MessageParams"]["Field1"].GetInt() == 1);
+    CHECK(logValue.as_object()["MessageParams"].is_object());
+    CHECK(logValue.as_object()["MessageParams"].as_object()["Field1"].is_number());
+    CHECK(logValue.as_object()["MessageParams"].as_object()["Field1"].get_int64() == 1);
     // UInt64 doesn't fit in Json::Value so it should be converted to a string
     // NOTE: We should expect it to be an int64 after we make the json library
     // support in64 and uint64
-    CHECK(logValue["MessageParams"]["Field2"].IsNumber());
+    CHECK(logValue.as_object()["MessageParams"].as_object()["Field2"].is_number());
     CHECK(
-        logValue["MessageParams"]["Field2"].GetUint64() ==
+        logValue.as_object()["MessageParams"].as_object()["Field2"].get_uint64() ==
         std::numeric_limits<std::uint64_t>::max());
-    CHECK(logValue["Message"].IsString());
-    CHECK(logValue["Message"].GetString() == std::string{"Test"});
+    CHECK(logValue.as_object()["Message"].is_string());
+    CHECK(logValue.as_object()["Message"].get_string() == "Test");
 }
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributes")
@@ -517,18 +504,16 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributes")
 
     j.debug() << "Test";
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field1"].is_string());
     CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(
-        logValue["JournalParams"]["Field1"].GetString() ==
+        logValue.as_object()["JournalParams"].as_object()["Field1"].get_string() ==
         std::string{"Value1"});
-    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
-    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].is_number());
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].get_int64() == 2);
 }
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
@@ -540,22 +525,20 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
 
     j2.debug() << "Test";
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field1"].is_string());
     CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(
-        logValue["JournalParams"]["Field1"].GetString() ==
+        logValue.as_object()["JournalParams"].as_object()["Field1"].get_string() ==
         std::string{"Value1"});
-    CHECK(logValue["JournalParams"]["Field3"].IsString());
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field3"].is_string());
     CHECK(
-        logValue["JournalParams"]["Field3"].GetString() ==
+        logValue.as_object()["JournalParams"].as_object()["Field3"].get_string() ==
         std::string{"Value3"});
-    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
-    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].is_number());
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].get_int64() == 2);
 }
 
 TEST_CASE_FIXTURE(
@@ -569,23 +552,21 @@ TEST_CASE_FIXTURE(
 
     j2.debug() << "Test";
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field1"].is_string());
     CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(
-        logValue["JournalParams"]["Field1"].GetString() ==
+        logValue.as_object()["JournalParams"].as_object()["Field1"].get_string() ==
         std::string{"Value1"});
-    CHECK(logValue["JournalParams"]["Field3"].IsString());
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field3"].is_string());
     CHECK(
-        logValue["JournalParams"]["Field3"].GetString() ==
+        logValue.as_object()["JournalParams"].as_object()["Field3"].get_string() ==
         std::string{"Value3"});
     // Field2 should be overwritten to 0
-    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
-    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].is_number());
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].get_int64() == 2);
 }
 
 TEST_CASE_FIXTURE(
@@ -602,18 +583,16 @@ TEST_CASE_FIXTURE(
 
     j2.debug() << "Test";
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field1"].is_string());
     CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(
-        logValue["JournalParams"]["Field1"].GetString() ==
+        logValue.as_object()["JournalParams"].as_object()["Field1"].get_string() ==
         std::string{"Value1"});
-    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
-    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].is_number());
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].get_int64() == 2);
 }
 
 TEST_CASE_FIXTURE(
@@ -630,16 +609,14 @@ TEST_CASE_FIXTURE(
 
     j2.debug() << "Test";
 
-    rapidjson::Document logValue;
-    logValue.Parse(stream().str().c_str());
+    boost::system::error_code ec;
+    auto logValue = boost::json::parse(stream().str(), ec);
+    CHECK(ec == boost::system::errc::success);
 
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field1"].is_string());
     CHECK(
-        logValue.GetParseError() == rapidjson::ParseErrorCode::kParseErrorNone);
-
-    CHECK(logValue["JournalParams"]["Field1"].IsString());
-    CHECK(
-        logValue["JournalParams"]["Field1"].GetString() ==
+        logValue.as_object()["JournalParams"].as_object()["Field1"].get_string() ==
         std::string{"Value1"});
-    CHECK(logValue["JournalParams"]["Field2"].IsNumber());
-    CHECK(logValue["JournalParams"]["Field2"].GetInt() == 2);
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].is_number());
+    CHECK(logValue.as_object()["JournalParams"].as_object()["Field2"].get_int64() == 2);
 }
