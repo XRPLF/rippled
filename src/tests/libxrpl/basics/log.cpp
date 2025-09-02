@@ -231,32 +231,32 @@ TEST_CASE("Global attributes inheritable")
 TEST_CASE("Test JsonWriter")
 {
     {
-        std::string stream;
-        beast::detail::SimpleJsonWriter writer{stream};
+        std::string buffer;
+        beast::detail::SimpleJsonWriter writer{buffer};
 
         writer.writeString("\n");
         CHECK(writer.finish() == "\"\\n\"");
     }
 
     {
-        std::string stream;
-        beast::detail::SimpleJsonWriter writer{stream};
+        std::string buffer;
+        beast::detail::SimpleJsonWriter writer{buffer};
 
         writer.writeString("\t");
         CHECK(writer.finish() == "\"\\t\"");
     }
 
     {
-        std::string stream;
-        beast::detail::SimpleJsonWriter writer{stream};
+        std::string buffer;
+        beast::detail::SimpleJsonWriter writer{buffer};
 
         writer.writeString(std::string_view{"\0", 1});
         CHECK(writer.finish() == "\"\\u0000\"");
     }
 
     {
-        std::string stream;
-        beast::detail::SimpleJsonWriter writer{stream};
+        std::string buffer;
+        beast::detail::SimpleJsonWriter writer{buffer};
 
         writer.writeString("\"\\");
         CHECK(writer.finish() == "\"\\\"\\\\\"");
