@@ -104,8 +104,8 @@ protocolMessageName(int type)
             return "replay_delta_request";
         case protocol::mtREPLAY_DELTA_RESPONSE:
             return "replay_delta_response";
-        default:
-            break;
+        case protocol::mtCLOSE:
+            return "close";
     }
     return "unknown";
 }
@@ -469,6 +469,10 @@ invokeProtocolMessage(
         case protocol::mtREPLAY_DELTA_RESPONSE:
             success = detail::invoke<protocol::TMReplayDeltaResponse>(
                 *header, buffers, handler);
+            break;
+        case protocol::mtCLOSE:
+            success =
+                detail::invoke<protocol::TMClose>(*header, buffers, handler);
             break;
         default:
             handler.onMessageUnknown(header->message_type);

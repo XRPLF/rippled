@@ -195,7 +195,7 @@ public:
 
         // The total p2p bytes sent and received on the wire
         total,
-
+        close,
         unknown  // must be last
     };
 
@@ -304,6 +304,7 @@ public:
             {replay_delta_response, "replay_delta_response"},
             {have_transactions, "have_transactions"},
             {requested_transactions, "requested_transactions"},
+            {close, "close"},
             {total, "total"}};
 
         if (auto it = category_map.find(cat); it != category_map.end())
@@ -370,6 +371,7 @@ protected:
         {have_transactions, {have_transactions}},
         {requested_transactions, {requested_transactions}},
         {total, {total}},
+        {close, {close}},
         {unknown, {unknown}},
     };
 };

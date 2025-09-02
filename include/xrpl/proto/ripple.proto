@@ -26,6 +26,7 @@ enum MessageType {
   mtREPLAY_DELTA_RESPONSE = 60;
   mtHAVE_TRANSACTIONS = 63;
   mtTRANSACTIONS = 64;
+  mtCLOSE = 65;
 }
 
 // token, iterations, target, challenge = issue demand for proof of work
@@ -340,4 +341,20 @@ message TMReplayDeltaResponse {
 
 message TMHaveTransactions {
   repeated bytes hashes = 1;
+}
+
+enum TMCloseReason {
+  crRESOURCE = 1;
+  crINVALID_CLOSED_LEDGER = 2;
+  crINVALID_PREV_LEDGER = 3;
+  crBAD_LEDGER_HEADERS = 4;
+  crLARGE_SEND_QUEUE = 5;
+  crNOT_USEFUL = 6;
+  crPING_TIMEOUT = 7;
+  crINTERNAL = 8;
+  crSHUTDOWN = 9;
+}
+
+message TMClose {
+  required TMCloseReason reason = 1;
 }
