@@ -232,7 +232,7 @@ TEST_CASE("Test JsonWriter")
 {
     {
         std::string stream;
-        beast::SimpleJsonWriter writer{stream};
+        beast::detail::SimpleJsonWriter writer{stream};
 
         writer.writeString("\n");
         CHECK(writer.finish() == "\"\\n\"");
@@ -240,7 +240,7 @@ TEST_CASE("Test JsonWriter")
 
     {
         std::string stream;
-        beast::SimpleJsonWriter writer{stream};
+        beast::detail::SimpleJsonWriter writer{stream};
 
         writer.writeString("\t");
         CHECK(writer.finish() == "\"\\t\"");
@@ -248,7 +248,7 @@ TEST_CASE("Test JsonWriter")
 
     {
         std::string stream;
-        beast::SimpleJsonWriter writer{stream};
+        beast::detail::SimpleJsonWriter writer{stream};
 
         writer.writeString(std::string_view{"\0", 1});
         CHECK(writer.finish() == "\"\\u0000\"");
@@ -256,7 +256,7 @@ TEST_CASE("Test JsonWriter")
 
     {
         std::string stream;
-        beast::SimpleJsonWriter writer{stream};
+        beast::detail::SimpleJsonWriter writer{stream};
 
         writer.writeString("\"\\");
         CHECK(writer.finish() == "\"\\\"\\\\\"");
