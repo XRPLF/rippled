@@ -3029,26 +3029,38 @@ class MPToken_test : public beast::unit_test::suite
                  .err = temBAD_TRANSFER_FEE});
         }
 
-        // Can not set non-zero transfer fee and clear MPTCanTransfer at the
+        // Test setting non-zero transfer fee and clearing MPTCanTransfer at the
         // same time
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
 
             mptAlice.create(
-                {.ownerCount = 1,
+                {.transferFee = 100,
+                 .ownerCount = 1,
                  .flags = tfMPTCanTransfer,
                  .mutableFlags =
                      tfMPTCanMutateTransferFee | tfMPTCanMutateCanTransfer});
 
+            // Can not set non-zero transfer fee and clear MPTCanTransfer at the
+            // same time
             mptAlice.set(
                 {.account = alice,
                  .mutableFlags = tfMPTClearCanTransfer,
                  .transferFee = 1,
                  .err = temMALFORMED});
+
+            // Can set transfer fee to zero and clear MPTCanTransfer at the same
+            // time. tfMPTCanTransfer will be cleared and TransferFee field will
+            // be removed.
+            mptAlice.set(
+                {.account = alice,
+                 .mutableFlags = tfMPTClearCanTransfer,
+                 .transferFee = 0});
+            BEAST_EXPECT(!mptAlice.isTransferFeePresent());
         }
 
-        // Can not set non-zero transfer fee when MPTCanTransfer was not set
+        // Can not set non-zero transfer fee when MPTCanTransfer is not set
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
@@ -3071,9 +3083,6 @@ class MPToken_test : public beast::unit_test::suite
                  .mutableFlags = tfMPTSetCanTransfer,
                  .transferFee = 100,
                  .err = tecNO_PERMISSION});
-
-            // Setting to zero is allowed when MPTCanMutateTransferFee is set
-            mptAlice.set({.account = alice, .transferFee = 0});
         }
 
         // Can not mutate transfer fee when it is not mutable
@@ -3200,6 +3209,14 @@ class MPToken_test : public beast::unit_test::suite
                 mptAlice.set({.account = alice, .transferFee = fee});
                 BEAST_EXPECT(mptAlice.checkTransferFee(fee));
             }
+
+            // Setting TransferFee to zero will remove the field
+            mptAlice.set({.account = alice, .transferFee = 0});
+            BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+
+            // Set transfer fee again
+            mptAlice.set({.account = alice, .transferFee = 10});
+            BEAST_EXPECT(mptAlice.checkTransferFee(10));
         }
 
         // Test flag toggling

@@ -310,7 +310,16 @@ MPTokenIssuanceSet::doApply()
         sle->setFieldU32(sfFlags, flagsOut);
 
     if (auto const transferFee = ctx_.tx[~sfTransferFee])
-        sle->setFieldU16(sfTransferFee, *transferFee);
+    {
+        // TransferFee uses soeDEFAULT style:
+        // - If the field is absent, it is interpreted as 0.
+        // - If the field is present, it must be non-zero.
+        // Therefore, when TransferFee is 0, the field should be removed.
+        if (transferFee == 0)
+            sle->makeFieldAbsent(sfTransferFee);
+        else
+            sle->setFieldU16(sfTransferFee, *transferFee);
+    }
 
     if (auto const metadata = ctx_.tx[~sfMPTokenMetadata])
     {
