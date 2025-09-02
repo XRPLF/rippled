@@ -62,7 +62,6 @@ test.csf > xrpl.basics
 test.csf > xrpld.consensus
 test.csf > xrpl.json
 test.csf > xrpl.protocol
-test.csf > xrpl.telemetry
 test.json > test.jtx
 test.json > xrpl.json
 test.jtx > xrpl.basics
@@ -148,12 +147,9 @@ xrpl.protocol > xrpl.json
 xrpl.resource > xrpl.basics
 xrpl.resource > xrpl.json
 xrpl.resource > xrpl.protocol
-xrpl.resource > xrpl.telemetry
 xrpl.server > xrpl.basics
 xrpl.server > xrpl.json
 xrpl.server > xrpl.protocol
-xrpl.server > xrpl.telemetry
-xrpl.telemetry > xrpl.json
 xrpld.app > test.unit_test
 xrpld.app > xrpl.basics
 xrpld.app > xrpld.conditions
@@ -165,7 +161,6 @@ xrpld.app > xrpl.ledger
 xrpld.app > xrpl.net
 xrpld.app > xrpl.protocol
 xrpld.app > xrpl.resource
-xrpld.app > xrpl.telemetry
 xrpld.conditions > xrpl.basics
 xrpld.conditions > xrpl.protocol
 xrpld.consensus > xrpl.basics
@@ -175,7 +170,6 @@ xrpld.core > xrpl.basics
 xrpld.core > xrpl.json
 xrpld.core > xrpl.net
 xrpld.core > xrpl.protocol
-xrpld.core > xrpl.telemetry
 xrpld.ledger > xrpl.basics
 xrpld.ledger > xrpl.json
 xrpld.ledger > xrpl.protocol
