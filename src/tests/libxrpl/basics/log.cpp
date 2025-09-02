@@ -503,8 +503,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogParams")
             .as_object()["Field2"]
             .get_uint64() == std::numeric_limits<std::uint64_t>::max());
     auto field3Val = logValue.as_object()["MessageParams"]
-            .as_object()["Field3"]
-            .get_double();
+                         .as_object()["Field3"]
+                         .get_double();
     auto difference = std::abs(field3Val - std::numbers::pi);
     CHECK(difference < 1e-4);
     CHECK(logValue.as_object()["Message"].is_string());
