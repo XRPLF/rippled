@@ -22,13 +22,14 @@
 #include <ios>
 #include <ostream>
 #include <ranges>
+#include <shared_mutex>
 #include <string>
 #include <thread>
 
 namespace beast {
 
 std::string Journal::globalLogAttributesJson_;
-std::mutex Journal::globalLogAttributesMutex_;
+std::shared_mutex Journal::globalLogAttributesMutex_;
 bool Journal::m_jsonLogsEnabled = false;
 thread_local Journal::JsonLogContext Journal::currentJsonLogContext_{};
 
@@ -150,13 +151,16 @@ Journal::JsonLogContext::reset(
         writer().endObject();
     }
 
-    if (!globalLogAttributesJson_.empty())
     {
-        writer().writeKey("GlobalParams");
-        writer().writeRaw(std::string_view{
-            std::begin(globalLogAttributesJson_),
-            std::end(globalLogAttributesJson_)});
-        writer().endObject();
+        std::shared_lock lock(globalLogAttributesMutex_);
+        if (!globalLogAttributesJson_.empty())
+        {
+            writer().writeKey("GlobalParams");
+            writer().writeRaw(std::string_view{
+                std::begin(globalLogAttributesJson_),
+                std::end(globalLogAttributesJson_)});
+            writer().endObject();
+        }
     }
 
     writer().writeKey("MessageParams");

@@ -23,6 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <charconv>
+#include <shared_mutex>
 #include <source_location>
 #include <sstream>
 #include <string>
@@ -84,140 +85,140 @@ namespace detail {
 class SimpleJsonWriter
 {
 public:
-    explicit SimpleJsonWriter(std::string& stream) : stream_(stream)
+    explicit SimpleJsonWriter(std::string& buffer) : buffer_(buffer)
     {
     }
 
     void
     startObject() const
     {
-        stream_.push_back('{');
+        buffer_.push_back('{');
     }
     void
     endObject() const
     {
         using namespace std::string_view_literals;
-        stream_.pop_back();
-        stream_.append("},"sv);
+        buffer_.pop_back();
+        buffer_.append("},"sv);
     }
     void
     writeKey(std::string_view key) const
     {
         writeString(key);
-        stream_.back() = ':';
+        buffer_.back() = ':';
     }
     void
     startArray() const
     {
-        stream_.push_back('[');
+        buffer_.push_back('[');
     }
     void
     endArray() const
     {
         using namespace std::string_view_literals;
-        stream_.pop_back();
-        stream_.append("],"sv);
+        buffer_.pop_back();
+        buffer_.append("],"sv);
     }
     void
     writeString(std::string_view str) const
     {
         using namespace std::string_view_literals;
-        stream_.push_back('"');
-        escape(str, stream_);
-        stream_.append("\","sv);
+        buffer_.push_back('"');
+        escape(str, buffer_);
+        buffer_.append("\","sv);
     }
     std::string_view
     writeInt(std::int8_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeInt(std::int16_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeInt(std::int32_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeInt(std::int64_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeUInt(std::size_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeUInt(std::uint8_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeUInt(std::uint16_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeUInt(std::uint32_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeUInt(std::uint64_t val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeDouble(double val) const
     {
-        return pushNumber(val, stream_);
+        return pushNumber(val, buffer_);
     }
     std::string_view
     writeBool(bool val) const
     {
         using namespace std::string_view_literals;
         auto str = val ? "true,"sv : "false,"sv;
-        stream_.append(str);
+        buffer_.append(str);
         return str;
     }
     void
     writeNull() const
     {
         using namespace std::string_view_literals;
-        stream_.append("null,"sv);
+        buffer_.append("null,"sv);
     }
     void
     writeRaw(std::string_view str) const
     {
-        stream_.append(str);
+        buffer_.append(str);
     }
 
     [[nodiscard]] std::string_view
     finish()
     {
-        return std::string_view{stream_.c_str(), stream_.size() - 1};
+        return std::string_view{buffer_.c_str(), buffer_.size() - 1};
     }
 
 private:
     template <typename T>
     static std::string_view
-    pushNumber(T val, std::string& stream)
+    pushNumber(T val, std::string& str)
     {
         thread_local char buffer[128];
         auto result = std::to_chars(std::begin(buffer), std::end(buffer), val);
         auto ptr = result.ptr;
         *ptr = ',';
         auto len = ptr - std::begin(buffer);
-        stream.append(buffer, len + 1);
+        str.append(buffer, len + 1);
         return {buffer, static_cast<size_t>(len)};
     }
 
     static void
-    escape(std::string_view str, std::string& os)
+    escape(std::string_view str, std::string& buffer)
     {
         static constexpr char HEX[] = "0123456789ABCDEF";
 
@@ -240,36 +241,36 @@ private:
 
             // Flush the preceding safe run in one go.
             if (chunk != p)
-                os.append(chunk, p - chunk);
+                buffer.append(chunk, p - chunk);
 
             switch (c)
             {
                 case '"':
-                    os.append("\\\"", 2);
+                    buffer.append("\\\"", 2);
                     break;
                 case '\\':
-                    os.append("\\\\", 2);
+                    buffer.append("\\\\", 2);
                     break;
                 case '\b':
-                    os.append("\\b", 2);
+                    buffer.append("\\b", 2);
                     break;
                 case '\f':
-                    os.append("\\f", 2);
+                    buffer.append("\\f", 2);
                     break;
                 case '\n':
-                    os.append("\\n", 2);
+                    buffer.append("\\n", 2);
                     break;
                 case '\r':
-                    os.append("\\r", 2);
+                    buffer.append("\\r", 2);
                     break;
                 case '\t':
-                    os.append("\\t", 2);
+                    buffer.append("\\t", 2);
                     break;
                 default: {
                     // Other C0 controls -> \u00XX (JSON compliant)
                     char buf[6]{
                         '\\', 'u', '0', '0', HEX[(c >> 4) & 0xF], HEX[c & 0xF]};
-                    os.append(buf, 6);
+                    buffer.append(buf, 6);
                     break;
                 }
             }
@@ -280,10 +281,10 @@ private:
 
         // Flush trailing safe run
         if (chunk != p)
-            os.append(chunk, p - chunk);
+            buffer.append(chunk, p - chunk);
     }
 
-    std::string& stream_;
+    std::string& buffer_;
 };
 
 }  // namespace detail
@@ -369,7 +370,7 @@ private:
     std::string m_name;
     std::string m_attributesJson;
     static std::string globalLogAttributesJson_;
-    static std::mutex globalLogAttributesMutex_;
+    static std::shared_mutex globalLogAttributesMutex_;
     static bool m_jsonLogsEnabled;
 
     static thread_local JsonLogContext currentJsonLogContext_;
@@ -624,14 +625,14 @@ public:
     Journal(Journal const& other, TAttributesFactory&& attributesFactory)
         : m_name(other.m_name), m_sink(other.m_sink)
     {
-        std::string stream{other.m_attributesJson};
-        detail::SimpleJsonWriter writer{stream};
+        std::string buffer{other.m_attributesJson};
+        detail::SimpleJsonWriter writer{buffer};
         if (other.m_attributesJson.empty())
         {
             writer.startObject();
         }
         attributesFactory(writer);
-        m_attributesJson = std::move(stream);
+        m_attributesJson = std::move(buffer);
     }
 
     /** Create a journal that writes to the specified sink. */
@@ -648,11 +649,11 @@ public:
         TAttributesFactory&& attributesFactory)
         : m_name(name), m_sink(&sink)
     {
-        std::string stream;
-        detail::SimpleJsonWriter writer{stream};
+        std::string buffer;
+        detail::SimpleJsonWriter writer{buffer};
         writer.startObject();
         attributesFactory(writer);
-        m_attributesJson = std::move(stream);
+        m_attributesJson = std::move(buffer);
     }
 
     Journal&
@@ -758,7 +759,7 @@ public:
     static void
     resetGlobalAttributes()
     {
-        std::lock_guard lock(globalLogAttributesMutex_);
+        std::unique_lock lock(globalLogAttributesMutex_);
         globalLogAttributesJson_.clear();
     }
 
@@ -766,17 +767,17 @@ public:
     static void
     addGlobalAttributes(TAttributesFactory&& factory)
     {
-        std::lock_guard lock(globalLogAttributesMutex_);
+        std::unique_lock lock(globalLogAttributesMutex_);
 
         auto isEmpty = globalLogAttributesJson_.empty();
-        std::string stream{std::move(globalLogAttributesJson_)};
-        detail::SimpleJsonWriter writer{stream};
+        std::string buffer{std::move(globalLogAttributesJson_)};
+        detail::SimpleJsonWriter writer{buffer};
         if (isEmpty)
         {
             writer.startObject();
         }
         factory(writer);
-        globalLogAttributesJson_ = std::move(stream);
+        globalLogAttributesJson_ = std::move(buffer);
     }
 };
 
