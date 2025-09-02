@@ -1,0 +1,169 @@
+# This workflow builds the binary from the selected commit (not earlier than 2.5.0 release)
+name: Build selected commit
+
+# This workflow can only be triggered manually, by a project maintainer
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Commit to build from."
+        required: false
+        type: string
+      build_container:
+        description: "Build container image to use"
+        required: true
+        type: string
+        default: ghcr.io/xrplf/ci/debian-bullseye:gcc-12
+      strip_symbols:
+        description: "Strip debug symbols"
+        required: true
+        type: boolean
+        default: true
+      archive_archive:
+        description: "Archive rippled binary"
+        required: true
+        type: boolean
+        default: false
+      build_only:
+        description: "Only build, do not run unit tests"
+        required: true
+        type: boolean
+        default: false
+      build_dir:
+        description: "The directory where to build."
+        required: false
+        type: string
+        default: ".build"
+      build_type:
+        description: "Build type (Debug or Release)"
+        required: true
+        type: choice
+        default: Release
+        options:
+          - Debug
+          - Release
+      cmake_args:
+        description: "CMake args for build"
+        required: true
+        type: string
+        default: "-Dxrpld=ON -Dtests=ON -Dassert=OFF -Dunity=OFF"
+      conan_remote_name:
+        description: "The name of the Conan remote to use."
+        required: true
+        type: string
+        default: xrplf
+      conan_remote_url:
+        description: "The URL of the Conan endpoint to use."
+        required: true
+        type: string
+        default: https://conan.ripplex.io
+      dependencies_force_build:
+        description: "Force building of all dependencies."
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ["self-hosted", "Linux", "X64", "heavy"]
+    container: inputs.build_container
+    steps:
+      - name: Checkout this workflow
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          sparse-checkout: |
+            .github
+            conan
+      - name: Checkout the commit to build
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+        with:
+          ref: inputs.commit
+          sparse-checkout: |
+            conanfile.py
+            CMakeLists.txt
+            cmake
+            include
+            src
+      - name: Prepare runner
+        uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
+        with:
+          disable_ccache: true
+      - name: Check configuration
+        run: |
+          echo 'Checking path.'
+          echo ${PATH} | tr ':' '\n'
+
+          echo 'Checking environment variables.'
+          env | sort
+
+          echo 'Checking CMake version.'
+          cmake --version
+
+          echo 'Checking compiler version.'
+          ${CC}
+
+          echo 'Checking Conan version.'
+          conan --version
+
+          echo 'Checking Ninja version.'
+          ninja --version
+
+          echo 'Checking nproc version.'
+          nproc --version
+      - name: Set up Conan configuration
+        run: |
+          echo 'Installing configuration.'
+          cat conan/global.conf >> $(conan config home)/global.conf
+
+          echo 'Conan configuration:'
+          conan config show '*'
+      - name: Set up Conan profile
+        run: |
+          echo 'Installing profile.'
+          conan config install conan/profiles/default -tf $(conan config home)/profiles/
+
+          echo 'Conan profile:'
+          conan profile show
+      - name: Set up Conan remote
+        shell: bash
+        run: |
+          echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
+          conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+
+          echo 'Listing Conan remotes.'
+          conan remote list
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
+        with:
+          build_dir: ${{ inputs.build_dir }}
+          build_type: ${{ inputs.build_type }}
+          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_url: ${{ inputs.conan_remote_url }}
+          force_build: ${{ inputs.dependencies_force_build }}
+          force_upload: false
+      - name: Build and test binary
+        uses: ./.github/actions/build-test
+        with:
+          build_dir: ${{ inputs.build_dir }}
+          build_only: ${{ inputs.build_only }}
+          build_type: ${{ inputs.build_type }}
+          cmake_args: ${{ inputs.cmake_args }}
+          cmake_target: "all"
+          os: "linux"
+      - name: Strip symbols
+        if: ${{ inputs.strip_symbols == 'true' }}
+        run: |
+          strip -D --strip-unneeded ${{ inputs.build_dir }}/rippled
+          ${{ inputs.build_dir }}/rippled --version
+      - name: Move the binary
+        run: |
+          mv ${{ inputs.build_dir }}/rippled .
+      - name: Archive rippled binary
+        if: ${{ inputs.archive_archive == 'true' }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: rippled
+          path: ./rippled
+          retention-days: 90
+          compression-level: 8
+          overwrite: true
