@@ -29,11 +29,6 @@ on:
         required: true
         type: boolean
         default: false
-      build_dir:
-        description: "The directory where to build."
-        required: false
-        type: string
-        default: ".build"
       build_type:
         description: "Build type (Debug or Release)"
         required: true
@@ -47,21 +42,16 @@ on:
         required: true
         type: string
         default: "-Dxrpld=ON -Dtests=ON -Dassert=OFF -Dunity=OFF"
-      conan_remote_name:
-        description: "The name of the Conan remote to use."
-        required: true
-        type: string
-        default: xrplf
-      conan_remote_url:
-        description: "The URL of the Conan endpoint to use."
-        required: true
-        type: string
-        default: https://conan.ripplex.io
       dependencies_force_build:
         description: "Force building of all dependencies."
         required: false
         type: boolean
         default: false
+
+env:
+  CONAN_REMOTE_NAME: xrplf
+  CONAN_REMOTE_URL: https://conan.ripplex.io
+  BUILD_DIR: .build
 
 jobs:
   build:
@@ -127,24 +117,24 @@ jobs:
       - name: Set up Conan remote
         shell: bash
         run: |
-          echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
-          conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+          echo "Adding Conan remote '${{ env.CONAN_REMOTE_NAME }}' at ${{ env.CONAN_REMOTE_URL }}."
+          conan remote add --index 0 --force ${{ env.CONAN_REMOTE_NAME }} ${{ env.CONAN_REMOTE_URL }}
 
           echo 'Listing Conan remotes.'
           conan remote list
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
-          build_dir: ${{ inputs.build_dir }}
+          build_dir: ${{ env.BUILD_DIR }}
           build_type: ${{ inputs.build_type }}
-          conan_remote_name: ${{ inputs.conan_remote_name }}
-          conan_remote_url: ${{ inputs.conan_remote_url }}
+          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+          conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
           force_build: ${{ inputs.dependencies_force_build }}
           force_upload: false
       - name: Build and test binary
         uses: ./.github/actions/build-test
         with:
-          build_dir: ${{ inputs.build_dir }}
+          build_dir: ${{ env.BUILD_DIR }}
           build_only: ${{ inputs.build_only }}
           build_type: ${{ inputs.build_type }}
           cmake_args: ${{ inputs.cmake_args }}
@@ -153,11 +143,11 @@ jobs:
       - name: Strip symbols
         if: ${{ inputs.strip_symbols == 'true' }}
         run: |
-          strip -D --strip-unneeded ${{ inputs.build_dir }}/rippled
-          ${{ inputs.build_dir }}/rippled --version
+          strip -D --strip-unneeded ${{ env.BUILD_DIR }}/rippled
+          ${{ env.BUILD_DIR }}/rippled --version
       - name: Move the binary
         run: |
-          mv ${{ inputs.build_dir }}/rippled .
+          mv ${{ env.BUILD_DIR }}/rippled .
       - name: Archive rippled binary
         if: ${{ inputs.archive_archive == 'true' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
