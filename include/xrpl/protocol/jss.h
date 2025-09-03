@@ -266,6 +266,7 @@ JSS(errored);
 JSS(error_code);              // out: error
 JSS(error_exception);         // out: Submit
 JSS(error_message);           // out: error
+JSS(escrowed);                // out: escrowed
 JSS(expand);                  // in: handler/Ledger
 JSS(expected_date);           // out: any (warnings)
 JSS(expected_date_UTC);       // out: any (warnings)

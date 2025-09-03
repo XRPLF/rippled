@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/EscrowUtils.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
@@ -118,6 +119,7 @@ closeChannel(
     std::shared_ptr<SLE> const& slep,
     ApplyView& view,
     uint256 const& key,
+    AccountID const& txAccount,
     beast::Journal j)
 {
     AccountID const src = (*slep)[sfAccount];
@@ -133,10 +135,10 @@ closeChannel(
     }
 
     // Remove PayChan from recipient's owner directory, if present.
+    AccountID const dst = (*slep)[sfDestination];
     if (auto const page = (*slep)[~sfDestinationNode];
         page && view.rules().enabled(fixPayChanRecipientOwnerDir))
     {
-        auto const dst = (*slep)[sfDestination];
         if (!view.dirRemove(keylet::ownerDir(dst), *page, key, true))
         {
             JLOG(j.fatal())
@@ -153,8 +155,64 @@ closeChannel(
     XRPL_ASSERT(
         (*slep)[sfAmount] >= (*slep)[sfBalance],
         "ripple::closeChannel : minimum channel amount");
-    (*sle)[sfBalance] =
-        (*sle)[sfBalance] + (*slep)[sfAmount] - (*slep)[sfBalance];
+
+    auto const reqDelta = (*slep)[sfAmount] - (*slep)[sfBalance];
+    auto const issuer = reqDelta.getIssuer();
+
+    // Only Update the balance if there is a positive delta.
+    if (reqDelta > beast::zero)
+    {
+        if (isXRP(reqDelta))
+            (*sle)[sfBalance] = (*sle)[sfBalance] + reqDelta;
+        else
+        {
+            if (!view.rules().enabled(featureTokenPaychan))
+                return temDISABLED;
+
+            if (auto const ret = std::visit(
+                    [&]<typename T>(T const&) {
+                        return escrowUnlockPreclaimHelper<T>(
+                            view, src, reqDelta, false);
+                    },
+                    reqDelta.asset().value());
+                !isTesSuccess(ret))
+                return ret;
+
+            // Rate lockedRate = slep->isFieldPresent(sfTransferRate)
+            //     ? ripple::Rate(slep->getFieldU32(sfTransferRate))
+            //     : parityRate;
+            bool const createAsset = src == txAccount;
+            if (auto const ret = std::visit(
+                    [&]<typename T>(T const&) {
+                        return escrowUnlockApplyHelper<T>(
+                            view,
+                            parityRate,
+                            sle,
+                            (*sle)[sfBalance],
+                            reqDelta,
+                            issuer,
+                            src,
+                            src,
+                            createAsset,
+                            j);
+                    },
+                    reqDelta.asset().value());
+                !isTesSuccess(ret))
+                return ret;
+        }
+    }
+
+    // Remove escrow from issuers owner directory, if present.
+    if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
+    {
+        if (!view.dirRemove(keylet::ownerDir(issuer), *optPage, key, true))
+        {
+            JLOG(j.fatal())
+                << "Could not remove paychan from issuer owner directory";
+            return tefBAD_LEDGER;
+        }
+    }
+
     adjustOwnerCount(view, sle, -1, j);
     view.update(sle);
 
@@ -168,7 +226,8 @@ closeChannel(
 TxConsequences
 PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{
+        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
 }
 
 NotTEC
@@ -180,8 +239,23 @@ PayChanCreate::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    if (isXRP(ctx.tx[sfAmount]) && (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
+
+    STAmount const amount{ctx.tx[sfAmount]};
+    if (!isXRP(amount))
+    {
+        if (!ctx.rules.enabled(featureTokenPaychan))
+            return temBAD_AMOUNT;
+
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return createPreflightHelper<T>(ctx);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         return temDST_IS_SRC;
@@ -200,6 +274,7 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
     if (!sle)
         return terNO_ACCOUNT;
 
+    STAmount const amount{ctx.tx[sfAmount]};
     // Check reserve and funds availability
     {
         auto const balance = (*sle)[sfBalance];
@@ -209,15 +284,15 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        if (balance < reserve + ctx.tx[sfAmount])
+        if (isXRP(amount) && balance < reserve + ctx.tx[sfAmount])
             return tecUNFUNDED;
     }
 
-    auto const dst = ctx.tx[sfDestination];
+    auto const dest = ctx.tx[sfDestination];
 
     {
         // Check destination account
-        auto const sled = ctx.view.read(keylet::account(dst));
+        auto const sled = ctx.view.read(keylet::account(dest));
         if (!sled)
             return tecNO_DST;
 
@@ -247,6 +322,17 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
+    if (!isXRP(amount))
+    {
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return createPreclaimHelper<T>(ctx, account, dest, amount);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
+
     return tesSUCCESS;
 }
 
@@ -254,6 +340,7 @@ TER
 PayChanCreate::doApply()
 {
     auto const account = ctx_.tx[sfAccount];
+    STAmount const amount{ctx_.tx[sfAmount]};
     auto const sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
@@ -265,27 +352,34 @@ PayChanCreate::doApply()
             return tecEXPIRED;
     }
 
-    auto const dst = ctx_.tx[sfDestination];
+    auto const dest = ctx_.tx[sfDestination];
 
     // Create PayChan in ledger.
     //
     // Note that we we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet =
-        keylet::payChan(account, dst, ctx_.tx.getSeqValue());
+        keylet::payChan(account, dest, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
-    (*slep)[sfAmount] = ctx_.tx[sfAmount];
+    (*slep)[sfAmount] = amount;
     // Amount channel has already paid
-    (*slep)[sfBalance] = ctx_.tx[sfAmount].zeroed();
+    (*slep)[sfBalance] = amount.zeroed();
     (*slep)[sfAccount] = account;
-    (*slep)[sfDestination] = dst;
+    (*slep)[sfDestination] = dest;
     (*slep)[sfSettleDelay] = ctx_.tx[sfSettleDelay];
     (*slep)[sfPublicKey] = ctx_.tx[sfPublicKey];
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+
+    if (ctx_.view().rules().enabled(featureTokenPaychan) && !isXRP(amount))
+    {
+        auto const xferRate = transferRate(ctx_.view(), amount);
+        if (xferRate != parityRate)
+            (*slep)[sfTransferRate] = xferRate.value;
+    }
 
     ctx_.view().insert(slep);
 
@@ -304,14 +398,38 @@ PayChanCreate::doApply()
     if (ctx_.view().rules().enabled(fixPayChanRecipientOwnerDir))
     {
         auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(dst), payChanKeylet, describeOwnerDir(dst));
+            keylet::ownerDir(dest), payChanKeylet, describeOwnerDir(dest));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfDestinationNode] = *page;
     }
 
+    AccountID const issuer = amount.getIssuer();
+    if (!isXRP(amount) && issuer != account_ && issuer != dest &&
+        !amount.holds<MPTIssue>())
+    {
+        auto page = ctx_.view().dirInsert(
+            keylet::ownerDir(issuer), payChanKeylet, describeOwnerDir(issuer));
+        if (!page)
+            return tecDIR_FULL;
+        (*slep)[sfIssuerNode] = *page;
+    }
+
     // Deduct owner's balance, increment owner count
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    if (isXRP(amount))
+        (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+    else
+    {
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return escrowLockApplyHelper<T>(
+                        ctx_.view(), issuer, account_, amount, j_);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
+
     adjustOwnerCount(ctx_.view(), sle, 1, ctx_.journal);
     ctx_.view().update(sle);
 
@@ -323,7 +441,8 @@ PayChanCreate::doApply()
 TxConsequences
 PayChanFund::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{
+        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
 }
 
 NotTEC
@@ -335,8 +454,23 @@ PayChanFund::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
+    STAmount const amount{ctx.tx[sfAmount]};
+    if (isXRP(amount) && amount <= beast::zero)
         return temBAD_AMOUNT;
+
+    if (!isXRP(amount))
+    {
+        if (!ctx.rules.enabled(featureTokenPaychan))
+            return temBAD_AMOUNT;
+
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return createPreflightHelper<T>(ctx);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
 
     return preflight2(ctx);
 }
@@ -350,7 +484,7 @@ PayChanFund::doApply()
         return tecNO_ENTRY;
 
     AccountID const src = (*slep)[sfAccount];
-    auto const txAccount = ctx_.tx[sfAccount];
+    AccountID const dst = (*slep)[sfDestination];
     auto const expiration = (*slep)[~sfExpiration];
 
     {
@@ -360,10 +494,10 @@ PayChanFund::doApply()
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (expiration && closeTime >= *expiration))
             return closeChannel(
-                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
+                slep, ctx_.view(), k.key, account_, ctx_.app.journal("View"));
     }
 
-    if (src != txAccount)
+    if (src != account_)
         // only the owner can add funds or extend
         return tecNO_PERMISSION;
 
@@ -381,10 +515,11 @@ PayChanFund::doApply()
         ctx_.view().update(slep);
     }
 
-    auto const sle = ctx_.view().peek(keylet::account(txAccount));
+    auto const sle = ctx_.view().peek(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
+    STAmount const amount{ctx_.tx[sfAmount]};
     {
         // Check reserve and funds availability
         auto const balance = (*sle)[sfBalance];
@@ -394,21 +529,44 @@ PayChanFund::doApply()
         if (balance < reserve)
             return tecINSUFFICIENT_RESERVE;
 
-        if (balance < reserve + ctx_.tx[sfAmount])
+        if (isXRP(amount) && balance < reserve + amount)
             return tecUNFUNDED;
     }
 
+    // if (!isXRP(amount))
+    // {
+    //     if (auto const ret = std::visit(
+    //             [&]<typename T>(T const&) {
+    //                 return createPreclaimHelper<T>(ctx_, src, dst, amount);
+    //             },
+    //             amount.asset().value());
+    //         !isTesSuccess(ret))
+    //         return ret;
+    // }
+
     // do not allow adding funds if dst does not exist
-    if (AccountID const dst = (*slep)[sfDestination];
-        !ctx_.view().read(keylet::account(dst)))
+    if (!ctx_.view().read(keylet::account(dst)))
     {
         return tecNO_DST;
     }
 
-    (*slep)[sfAmount] = (*slep)[sfAmount] + ctx_.tx[sfAmount];
-    ctx_.view().update(slep);
+    if (isXRP(amount))
+        (*sle)[sfBalance] = (*sle)[sfBalance] - amount;
+    else
+    {
+        AccountID const issuer = amount.getIssuer();
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return escrowLockApplyHelper<T>(
+                        ctx_.view(), issuer, account_, amount, j_);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
 
-    (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
+    (*slep)[sfAmount] = (*slep)[sfAmount] + amount;
+    ctx_.view().update(slep);
     ctx_.view().update(sle);
 
     return tesSUCCESS;
@@ -427,15 +585,17 @@ PayChanClaim::preflight(PreflightContext const& ctx)
         return ret;
 
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP(*bal) || *bal <= beast::zero))
+    if (bal && *bal <= beast::zero)
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP(*amt) || *amt <= beast::zero))
+    if (amt && *amt <= beast::zero)
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)
         return temBAD_AMOUNT;
+
+    // std::cout << "PayChanClaim::preflight: balance: " << *bal << std::endl;
 
     {
         auto const flags = ctx.tx.getFlags();
@@ -456,8 +616,8 @@ PayChanClaim::preflight(PreflightContext const& ctx)
         // The signature isn't needed if txAccount == src, but if it's
         // present, check it
 
-        auto const reqBalance = bal->xrp();
-        auto const authAmt = amt ? amt->xrp() : reqBalance;
+        auto const reqBalance = bal;
+        auto const authAmt = amt ? amt : reqBalance;
 
         if (reqBalance > authAmt)
             return temBAD_AMOUNT;
@@ -468,7 +628,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
 
         PublicKey const pk(ctx.tx[sfPublicKey]);
         Serializer msg;
-        serializePayChanAuthorization(msg, k.key, authAmt);
+        serializePayChanAuthorization(msg, k.key, *authAmt);
         if (!verify(pk, msg.slice(), *sig, /*canonical*/ true))
             return temBAD_SIGNATURE;
     }
@@ -491,6 +651,27 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(err))
         return err;
 
+    Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
+    auto const slep = ctx.view.read(k);
+    if (!slep)
+        return tecNO_TARGET;
+
+    AccountID const dest = (*slep)[sfDestination];
+    STAmount const amount = (*slep)[sfAmount];
+    if (!isXRP(amount) && ctx.tx.isFieldPresent(sfBalance))
+    {
+        if (!ctx.view.rules().enabled(featureTokenPaychan))
+            return temDISABLED;
+
+        if (auto const ret = std::visit(
+                [&]<typename T>(T const&) {
+                    return escrowUnlockPreclaimHelper<T>(
+                        ctx.view, dest, amount);
+                },
+                amount.asset().value());
+            !isTesSuccess(ret))
+            return ret;
+    }
     return tesSUCCESS;
 }
 
@@ -504,7 +685,6 @@ PayChanClaim::doApply()
 
     AccountID const src = (*slep)[sfAccount];
     AccountID const dst = (*slep)[sfDestination];
-    AccountID const txAccount = ctx_.tx[sfAccount];
 
     auto const curExpiration = (*slep)[~sfExpiration];
     {
@@ -514,19 +694,19 @@ PayChanClaim::doApply()
         if ((cancelAfter && closeTime >= *cancelAfter) ||
             (curExpiration && closeTime >= *curExpiration))
             return closeChannel(
-                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
+                slep, ctx_.view(), k.key, account_, ctx_.app.journal("View"));
     }
 
-    if (txAccount != src && txAccount != dst)
+    if (account_ != src && account_ != dst)
         return tecNO_PERMISSION;
 
     if (ctx_.tx[~sfBalance])
     {
-        auto const chanBalance = slep->getFieldAmount(sfBalance).xrp();
-        auto const chanFunds = slep->getFieldAmount(sfAmount).xrp();
-        auto const reqBalance = ctx_.tx[sfBalance].xrp();
+        auto const chanBalance = slep->getFieldAmount(sfBalance);
+        auto const chanFunds = slep->getFieldAmount(sfAmount);
+        auto const reqBalance = ctx_.tx[sfBalance];
 
-        if (txAccount == dst && !ctx_.tx[~sfSignature])
+        if (account_ == dst && !ctx_.tx[~sfSignature])
             return temBAD_SIGNATURE;
 
         if (ctx_.tx[~sfSignature])
@@ -551,30 +731,62 @@ PayChanClaim::doApply()
         // featureDepositAuth to remove the bug.
         bool const depositAuth{ctx_.view().rules().enabled(featureDepositAuth)};
         if (!depositAuth &&
-            (txAccount == src && (sled->getFlags() & lsfDisallowXRP)))
+            (account_ == src && (sled->getFlags() & lsfDisallowXRP)))
             return tecNO_TARGET;
 
         if (depositAuth)
         {
             if (auto err = verifyDepositPreauth(
-                    ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
+                    ctx_.tx, ctx_.view(), account_, dst, sled, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
 
         (*slep)[sfBalance] = ctx_.tx[sfBalance];
-        XRPAmount const reqDelta = reqBalance - chanBalance;
+        STAmount const reqDelta = reqBalance - chanBalance;
         XRPL_ASSERT(
             reqDelta >= beast::zero,
             "ripple::PayChanClaim::doApply : minimum balance delta");
-        (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
+
+        // Transfer amount to destination
+        if (isXRP(reqDelta))
+            (*sled)[sfBalance] = (*sled)[sfBalance] + reqDelta;
+        else
+        {
+            if (!ctx_.view().rules().enabled(featureTokenPaychan))
+                return temDISABLED;
+
+            Rate lockedRate = slep->isFieldPresent(sfTransferRate)
+                ? ripple::Rate(slep->getFieldU32(sfTransferRate))
+                : parityRate;
+            auto const issuer = reqDelta.getIssuer();
+            bool const createAsset = dst == account_;
+            if (auto const ret = std::visit(
+                    [&]<typename T>(T const&) {
+                        return escrowUnlockApplyHelper<T>(
+                            ctx_.view(),
+                            lockedRate,
+                            sled,
+                            mPriorBalance,
+                            reqDelta,
+                            issuer,
+                            src,
+                            dst,
+                            createAsset,
+                            j_);
+                    },
+                    reqDelta.asset().value());
+                !isTesSuccess(ret))
+                return ret;
+        }
+
         ctx_.view().update(sled);
         ctx_.view().update(slep);
     }
 
     if (ctx_.tx.getFlags() & tfRenew)
     {
-        if (src != txAccount)
+        if (src != account_)
             return tecNO_PERMISSION;
         (*slep)[~sfExpiration] = std::nullopt;
         ctx_.view().update(slep);
@@ -583,9 +795,9 @@ PayChanClaim::doApply()
     if (ctx_.tx.getFlags() & tfClose)
     {
         // Channel will close immediately if dry or the receiver closes
-        if (dst == txAccount || (*slep)[sfBalance] == (*slep)[sfAmount])
+        if (dst == account_ || (*slep)[sfBalance] == (*slep)[sfAmount])
             return closeChannel(
-                slep, ctx_.view(), k.key, ctx_.app.journal("View"));
+                slep, ctx_.view(), k.key, account_, ctx_.app.journal("View"));
 
         auto const settleExpiration =
             ctx_.view().info().parentCloseTime.time_since_epoch().count() +

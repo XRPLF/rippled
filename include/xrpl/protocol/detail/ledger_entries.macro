@@ -377,6 +377,8 @@ LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfDestinationNode,      soeOPTIONAL},
+    {sfTransferRate,         soeOPTIONAL},
+    {sfIssuerNode,           soeOPTIONAL},
 }))
 
 /** The ledger object which tracks the AMM.
