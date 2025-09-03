@@ -77,7 +77,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
 /** This transaction type completes an existing escrow. */
 TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
     Delegation::delegatable,
-    mayAuthorizeMPT,
+    noPriv,
     ({
     {sfOwner, soeREQUIRED},
     {sfOfferSequence, soeREQUIRED},

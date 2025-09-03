@@ -37,6 +37,25 @@
 
 namespace ripple {
 
+/*
+assert(enforce)
+
+There are several asserts (or XRPL_ASSERTs) in this file that check a variable
+named `enforce` when an invariant fails. At first glace, those asserts may look
+incorrect, but they are not.
+
+Those asserts take advantage of two facts:
+1. `asserts` are not (normally) executed in release builds.
+2. Invariants should *never* fail, except in tests that specifically modify
+   the open ledger to break them.
+
+To make it sort of a second-layer of invariant enforcement aimed at
+_developers_. It's designed to fire if a developer writes code that violates an
+invariant, and runs it in unit tests or a develop build that _does not have the
+relevant amendments enabled_. It's intentionally a pain in the neck so that bad
+code gets caught and fixed as early as possible.
+*/
+
 enum Privilege {
     noPriv =
         0x0000,  // The transaction can not do any of the enumerated operations
@@ -75,7 +94,7 @@ operator|(Privilege lhs, Privilege rhs)
     }
 
 bool
-checkMyPrivilege(STTx const& tx, Privilege priv)
+hasPrivilege(STTx const& tx, Privilege priv)
 {
     switch (tx.getTxnType())
     {
@@ -432,7 +451,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if (checkMyPrivilege(tx, mustDeleteAcct) && result == tesSUCCESS)
+    if (hasPrivilege(tx, mustDeleteAcct) && result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -449,7 +468,7 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if (checkMyPrivilege(tx, mayDeleteAcct) && result == tesSUCCESS &&
+    if (hasPrivilege(tx, mayDeleteAcct) && result == tesSUCCESS &&
         accountsDeleted_ == 1)
         return true;
 
@@ -505,6 +524,8 @@ AccountRootsDeletedClean::finalize(
             JLOG(j.fatal())
                 << "Invariant failed: account deletion left behind a "
                 << typeName << " object";
+            // The comment above starting with "assert(enforce)" explains this
+            // assert.
             XRPL_ASSERT(
                 enforce,
                 "ripple::AccountRootsDeletedClean::finalize::objectExists : "
@@ -750,6 +771,8 @@ TransfersNotFrozen::finalize(
         // just in case so rippled doesn't crash in release.
         if (!issuerSle)
         {
+            // The comment above starting with "assert(enforce)" explains this
+            // assert.
             XRPL_ASSERT(
                 enforce,
                 "ripple::TransfersNotFrozen::finalize : enforce "
@@ -938,7 +961,7 @@ TransfersNotFrozen::validateFrozenState(
     }
 
     // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && checkMyPrivilege(tx, overrideFreeze))
+    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, overrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
@@ -949,6 +972,7 @@ TransfersNotFrozen::validateFrozenState(
 
     JLOG(j.fatal()) << "Invariant failed: Attempting to move frozen funds for "
                     << tx.getTransactionID();
+    // The comment above starting with "assert(enforce)" explains this assert.
     XRPL_ASSERT(
         enforce,
         "ripple::TransfersNotFrozen::validateFrozenState : enforce "
@@ -998,13 +1022,12 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (checkMyPrivilege(tx, createAcct | createPseudoAcct) &&
-        result == tesSUCCESS)
+    if (hasPrivilege(tx, createAcct | createPseudoAcct) && result == tesSUCCESS)
     {
         bool const pseudoAccount =
             (pseudoAccount_ && view.rules().enabled(featureSingleAssetVault));
 
-        if (pseudoAccount && !checkMyPrivilege(tx, createPseudoAcct))
+        if (pseudoAccount && !hasPrivilege(tx, createPseudoAcct))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";
@@ -1238,7 +1261,7 @@ NFTokenCountTracking::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (!checkMyPrivilege(tx, changeNFTCounts))
+    if (!hasPrivilege(tx, changeNFTCounts))
     {
         if (beforeMintedTotal != afterMintedTotal)
         {
@@ -1423,12 +1446,12 @@ ValidMPTIssuance::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const _fee,
-    ReadView const& _view,
+    ReadView const& view,
     beast::Journal const& j)
 {
     if (result == tesSUCCESS)
     {
-        if (checkMyPrivilege(tx, createMPTIssuance))
+        if (hasPrivilege(tx, createMPTIssuance))
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -1449,7 +1472,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (checkMyPrivilege(tx, destroyMPTIssuance))
+        if (hasPrivilege(tx, destroyMPTIssuance))
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -1470,7 +1493,17 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        if (checkMyPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT))
+        // ttESCROW_FINISH may authorize an MPT, but it can't have the
+        // mayAuthorizeMPT privilege, because that may cause
+        // non-amendment-gated side effects.
+        bool const enforceEscrowFinish = (tx.getTxnType() == ttESCROW_FINISH) &&
+            (view.rules().enabled(featureSingleAssetVault)
+             /*
+               TODO: Uncomment when LendingProtocol is defined
+               || view.rules().enabled(featureLendingProtocol)*/
+            );
+        if (hasPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT) ||
+            enforceEscrowFinish)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -1496,7 +1529,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer && !checkMyPrivilege(tx, mayAuthorizeMPT) &&
+                !submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -1507,6 +1540,17 @@ ValidMPTIssuance::finalize(
                 return false;
             }
 
+            return true;
+        }
+        if (tx.getTxnType() == ttESCROW_FINISH)
+        {
+            // ttESCROW_FINISH may authorize an MPT, but it can't have the
+            // mayAuthorizeMPT privilege, because that may cause
+            // non-amendment-gated side effects.
+            XRPL_ASSERT_PARTS(
+                !enforceEscrowFinish,
+                "ripple::ValidMPTIssuance::finalize",
+                "not escrow finish tx");
             return true;
         }
     }
@@ -1711,6 +1755,8 @@ ValidPseudoAccounts::finalize(
     beast::Journal const& j)
 {
     bool const enforce = view.rules().enabled(featureSingleAssetVault);
+
+    // The comment above starting with "assert(enforce)" explains this assert.
     XRPL_ASSERT(
         errors_.empty() || enforce,
         "ripple::ValidPseudoAccounts::finalize : no bad "

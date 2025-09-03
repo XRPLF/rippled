@@ -300,7 +300,7 @@ public:
     static int
     compare(SField const& f1, SField const& f2);
 
-    static std::map<int, SField const*> const&
+    static std::unordered_map<int, SField const*> const&
     getKnownCodeToField()
     {
         return knownCodeToField;
@@ -308,8 +308,8 @@ public:
 
 private:
     static int num;
-    static std::map<int, SField const*> knownCodeToField;
-    static std::map<std::string, SField const*> knownNameToField;
+    static std::unordered_map<int, SField const*> knownCodeToField;
+    static std::unordered_map<std::string, SField const*> knownNameToField;
 };
 
 /** A field with a type known at compile time. */
