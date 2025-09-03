@@ -1096,9 +1096,13 @@ getPseudoAccountFields()
     static std::vector<SField const*> const pseudoFields = []() {
         auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
         if (!ar)
+        {
+            // LCOV_EXCL_START
             LogicError(
                 "ripple::isPseudoAccount : unable to find account root ledger "
                 "format");
+            // LCOV_EXCL_STOP
+        }
         auto const& soTemplate = ar->getSOTemplate();
 
         std::vector<SField const*> pseudoFields;

@@ -394,6 +394,8 @@ JSS(load_factor_local);       // out: NetworkOPs
 JSS(load_factor_net);         // out: NetworkOPs
 JSS(load_factor_server);      // out: NetworkOPs
 JSS(load_fee);                // out: LoadFeeTrackImp, NetworkOPs
+JSS(loan_broker_id);          // in: LedgerEntry
+JSS(loan_seq);                // in: LedgerEntry
 JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
