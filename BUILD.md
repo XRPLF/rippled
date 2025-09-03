@@ -159,8 +159,8 @@ version that no longer requires a patch, no action is required on your part, as
 the new recipe will be automatically pulled from the official Conan Center.
 
 > [!NOTE]
-> You might need to add `--lockfile=""` to your `conan install command`
-> to avoid automatic use of the existing 'conan.lock' file when you run `conan export` manually on your machine
+> You might need to add `--lockfile=""` to your `conan install` command
+> to avoid automatic use of the existing `conan.lock` file when you run `conan export` manually on your machine
 
 ### Conan profile tweaks
 
