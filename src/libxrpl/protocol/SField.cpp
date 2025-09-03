@@ -28,8 +28,8 @@ namespace ripple {
 // Storage for static const members.
 SField::IsSigning const SField::notSigning;
 int SField::num = 0;
-std::map<int, SField const*> SField::knownCodeToField;
-std::map<std::string, SField const*> SField::knownNameToField;
+std::unordered_map<int, SField const*> SField::knownCodeToField;
+std::unordered_map<std::string, SField const*> SField::knownNameToField;
 
 // Give only this translation unit permission to construct SFields
 struct SField::private_access_tag_t

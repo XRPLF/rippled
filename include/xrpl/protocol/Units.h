@@ -50,25 +50,32 @@ struct unitlessTag;
 class BipsTag;
 class TenthBipsTag;
 
-template <class T>
-using enable_if_unit_t = typename std::enable_if_t<
-    std::is_class_v<T> && std::is_object_v<typename T::unit_type> &&
-    std::is_object_v<typename T::value_type>>;
+// These names don't have to be too descriptive, because we're in the "unit"
+// namespace.
 
-/** `is_usable_unit_v` is checked to ensure that only values with
+template <class T>
+concept Valid = std::is_class_v<T> && std::is_object_v<typename T::unit_type> &&
+    std::is_object_v<typename T::value_type>;
+
+/** `Usable` is checked to ensure that only values with
     known valid type tags can be used (sometimes transparently) in
     non-unit contexts. At the time of implementation, this includes
     all known tags, but more may be added in the future, and they
     should not be added automatically unless determined to be
     appropriate.
 */
-template <class T, class = enable_if_unit_t<T>>
-constexpr bool is_usable_unit_v =
-    std::is_same_v<typename T::unit_type, feelevelTag> ||
-    std::is_same_v<typename T::unit_type, unitlessTag> ||
-    std::is_same_v<typename T::unit_type, dropTag> ||
-    std::is_same_v<typename T::unit_type, BipsTag> ||
-    std::is_same_v<typename T::unit_type, TenthBipsTag>;
+template <class T>
+concept Usable = Valid<T> &&
+    (std::is_same_v<typename T::unit_type, feelevelTag> ||
+     std::is_same_v<typename T::unit_type, unitlessTag> ||
+     std::is_same_v<typename T::unit_type, dropTag> ||
+     std::is_same_v<typename T::unit_type, BipsTag> ||
+     std::is_same_v<typename T::unit_type, TenthBipsTag>);
+
+template <class Other, class VU>
+concept Compatible = Valid<VU> && std::is_arithmetic_v<Other> &&
+    std::is_arithmetic_v<typename VU::value_type> &&
+    std::is_convertible_v<Other, typename VU::value_type>;
 
 template <class UnitTag, class T>
 class ValueUnit : private boost::totally_ordered<ValueUnit<UnitTag, T>>,
@@ -84,25 +91,6 @@ public:
 
 private:
     value_type value_;
-
-protected:
-    template <class Other>
-    static constexpr bool is_compatible_v =
-        std::is_arithmetic_v<Other> && std::is_arithmetic_v<value_type> &&
-        std::is_convertible_v<Other, value_type>;
-
-    template <class OtherValue, class = enable_if_unit_t<OtherValue>>
-    static constexpr bool is_compatiblevalue_v =
-        is_compatible_v<typename OtherValue::value_type> &&
-        std::is_same_v<UnitTag, typename OtherValue::unit_type>;
-
-    template <class Other>
-    using enable_if_compatible_t =
-        typename std::enable_if_t<is_compatible_v<Other>>;
-
-    template <class OtherValue>
-    using enable_if_compatiblevalue_t =
-        typename std::enable_if_t<is_compatiblevalue_v<OtherValue>>;
 
 public:
     ValueUnit() = default;
@@ -135,12 +123,9 @@ public:
     /** Instances with the same unit, and a type that is
         "safe" to convert to this one can be converted
         implicitly */
-    template <
-        class Other,
-        class = std::enable_if_t<
-            is_compatible_v<Other> &&
-            is_safetocasttovalue_v<value_type, Other>>>
+    template <Compatible<ValueUnit> Other>
     constexpr ValueUnit(ValueUnit<unit_type, Other> const& value)
+        requires SafeToCast<Other, value_type>
         : ValueUnit(safe_cast<value_type>(value.value()))
     {
     }
@@ -255,7 +240,7 @@ public:
         return value_ == other.value_;
     }
 
-    template <class Other, class = enable_if_compatible_t<Other>>
+    template <Compatible<ValueUnit> Other>
     constexpr bool
     operator==(ValueUnit<unit_type, Other> const& other) const
     {
@@ -268,7 +253,7 @@ public:
         return value_ == other;
     }
 
-    template <class Other, class = enable_if_compatible_t<Other>>
+    template <Compatible<ValueUnit> Other>
     constexpr bool
     operator!=(ValueUnit<unit_type, Other> const& other) const
     {
@@ -310,12 +295,13 @@ public:
         return static_cast<double>(value_) / reference.value();
     }
 
-    // `is_usable_unit_v` is checked to ensure that only values with
+    // `Usable` is checked to ensure that only values with
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    std::enable_if_t<is_usable_unit_v<ValueUnit>, Json::Value>
+    Json::Value
     jsonClipped() const
+        requires Usable<ValueUnit>
     {
         if constexpr (std::is_integral_v<value_type>)
         {
@@ -372,43 +358,27 @@ to_string(ValueUnit<UnitTag, T> const& amount)
     return std::to_string(amount.value());
 }
 
-template <class Source, class = enable_if_unit_t<Source>>
+template <Valid Source>
 constexpr bool can_muldiv_source_v =
     std::is_convertible_v<typename Source::value_type, std::uint64_t>;
 
-template <class Dest, class = enable_if_unit_t<Dest>>
+template <Valid Dest>
 constexpr bool can_muldiv_dest_v =
     can_muldiv_source_v<Dest> &&  // Dest is also a source
     std::is_convertible_v<std::uint64_t, typename Dest::value_type> &&
     sizeof(typename Dest::value_type) >= sizeof(std::uint64_t);
 
-template <
-    class Source1,
-    class Source2,
-    class = enable_if_unit_t<Source1>,
-    class = enable_if_unit_t<Source2>>
+template <Valid Source1, Valid Source2>
 constexpr bool can_muldiv_sources_v =
     can_muldiv_source_v<Source1> && can_muldiv_source_v<Source2> &&
     std::is_same_v<typename Source1::unit_type, typename Source2::unit_type>;
 
-template <
-    class Source1,
-    class Source2,
-    class Dest,
-    class = enable_if_unit_t<Source1>,
-    class = enable_if_unit_t<Source2>,
-    class = enable_if_unit_t<Dest>>
+template <Valid Source1, Valid Source2, Valid Dest>
 constexpr bool can_muldiv_v =
     can_muldiv_sources_v<Source1, Source2> && can_muldiv_dest_v<Dest>;
 // Source and Dest can be the same by default
 
-template <
-    class Source1,
-    class Source2,
-    class Dest,
-    class = enable_if_unit_t<Source1>,
-    class = enable_if_unit_t<Source2>,
-    class = enable_if_unit_t<Dest>>
+template <Valid Source1, Valid Source2, Valid Dest>
 constexpr bool can_muldiv_commute_v = can_muldiv_v<Source1, Source2, Dest> &&
     !std::is_same_v<typename Source1::unit_type, typename Dest::unit_type>;
 
