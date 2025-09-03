@@ -158,6 +158,10 @@ updated dependencies with the newer version. However, if we switch to a newer
 version that no longer requires a patch, no action is required on your part, as
 the new recipe will be automatically pulled from the official Conan Center.
 
+> [!NOTE]
+> You might need to add `--lockfile=""` to your `conan install` command
+> to avoid automatic use of the existing `conan.lock` file when you run `conan export` manually on your machine
+
 ### Conan profile tweaks
 
 #### Missing compiler version
@@ -466,6 +470,21 @@ tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
    The location of `rippled` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
 
+#### Conan lockfile
+
+To achieve reproducible dependencies, we use [Conan lockfile](https://docs.conan.io/2/tutorial/versioning/lockfiles.html).
+
+The `conan.lock` file in the repository contains a "snapshot" of the current dependencies.
+It is implicitly used when running `conan` commands, you don't need to specify it.
+
+You have to update this file every time you add a new dependency or change a revision or version of an existing dependency.
+
+To do that, run the following command in the repository root:
+
+```bash
+conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True'
+```
+
 ## Coverage report
 
 The coverage report is intended for developers using compilers GCC
@@ -564,7 +583,8 @@ After any updates or changes to dependencies, you may need to do the following:
    ```
 
 3. Re-run [conan export](#patched-recipes) if needed.
-4. Re-run [conan install](#build-and-test).
+4. [Regenerate lockfile](#conan-lockfile).
+5. Re-run [conan install](#build-and-test).
 
 ### `protobuf/port_def.inc` file not found
 

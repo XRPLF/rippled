@@ -117,6 +117,8 @@ jobs:
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Prepare runner
         uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
+        with:
+          disable_ccache: false
 
       - name: Check configuration (Windows)
         if: ${{ inputs.os == 'windows' }}
