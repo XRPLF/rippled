@@ -35,8 +35,7 @@ target_compile_options (opts
 
 target_link_libraries (opts
   INTERFACE
-    $<$<AND:$<BOOL:${coverage}>,$<COMPILE_LANGUAGE:CXX>:-${COVERAGE_CXX_COMPILER_FLAGS}>
-    $<$<AND:$<BOOL:${coverage}>,$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>
+    $<$<BOOL:${coverage}>:-${COVERAGE_LINKER_FLAGS}>
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
