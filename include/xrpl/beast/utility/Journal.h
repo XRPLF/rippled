@@ -638,7 +638,7 @@ public:
     operator=(Journal const& other)
     {
         if (&other == this)
-            return *this;   // LCOV_EXCL_LINE
+            return *this;  // LCOV_EXCL_LINE
 
         m_sink = other.m_sink;
         m_name = other.m_name;
@@ -996,7 +996,8 @@ setJsonValue(
             return;
         }
 
-        static_assert(ToCharsFormattable<ValueType> || StreamFormattable<ValueType>);
+        static_assert(
+            ToCharsFormattable<ValueType> || StreamFormattable<ValueType>);
     }
 }
 }  // namespace detail
