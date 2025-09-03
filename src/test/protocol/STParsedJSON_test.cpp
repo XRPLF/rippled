@@ -141,6 +141,30 @@ public:
         }
 
         {
+            std::string const goodJson(
+                R"({"CloseResolution":"19","Method":"250",)"
+                R"("TransactionResult":"tecFROZEN"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransactionResult":"tecFROZEN"})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
+            {
+                // Integer values are always parsed as int,
+                // unless they're too big. We want a small uint.
+                jv["CloseResolution"] = Json::UInt(19);
+                STParsedJSONObject parsed("test", jv);
+                if (BEAST_EXPECT(parsed.object))
+                {
+                    std::string const& serialized(
+                        to_string(parsed.object->getJson(JsonOptions::none)));
+                    BEAST_EXPECT(serialized == expectedJson);
+                }
+            }
+        }
+
+        {
             std::string const json(R"({"CloseResolution":19,"Method":250,)"
                                    R"("TransactionResult":"terQUEUED"})");
 
@@ -224,6 +248,26 @@ public:
                 BEAST_EXPECT(
                     parsed.error[jss::error_message] ==
                     "Field 'test.Method' has bad type.");
+            }
+        }
+
+        {
+            std::string const goodJson(R"({"CloseResolution":19,"Method":250,)"
+                                       R"("TransferFee":"65535"})");
+            std::string const expectedJson(
+                R"({"CloseResolution":19,"Method":250,)"
+                R"("TransferFee":65535})");
+
+            Json::Value jv;
+            if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
+            {
+                STParsedJSONObject parsed("test", jv);
+                if (BEAST_EXPECT(parsed.object))
+                {
+                    std::string const& serialized(
+                        to_string(parsed.object->getJson(JsonOptions::none)));
+                    BEAST_EXPECT(serialized == expectedJson);
+                }
             }
         }
 
