@@ -153,8 +153,8 @@ VaultClawback::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptIssuance(*mptIssuanceID));
+    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
+    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -182,7 +182,7 @@ VaultClawback::doApply()
         "ripple::VaultClawback::doApply : loss and assets do balance");
 
     AccountID holder = tx[sfHolder];
-    Asset const share = MPTIssue(*mptIssuanceID);
+    MPTIssue const share{mptIssuanceID};
     STAmount sharesDestroyed = {share};
     STAmount assetsRecovered;
     try
@@ -287,13 +287,13 @@ VaultClawback::doApply()
     // Keep MPToken if holder is the vault owner.
     if (holder != vault->at(sfOwner))
     {
-        auto const ter =
-            removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
-        if (isTesSuccess(ter))
+        if (auto const ter =
+                removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+            isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
                 << "VaultClawback: removed empty MPToken for vault shares"
-                << " MPTID=" << to_string(*mptIssuanceID)  //
+                << " MPTID=" << to_string(mptIssuanceID)  //
                 << " account=" << toBase58(holder);
         }
         else if (ter != tecHAS_OBLIGATIONS)
@@ -301,8 +301,8 @@ VaultClawback::doApply()
             // LCOV_EXCL_START
             JLOG(j_.error())  //
                 << "VaultClawback: failed to remove MPToken for vault shares"
-                << " MPTID=" << to_string(*mptIssuanceID)  //
-                << " account=" << toBase58(holder)         //
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(holder)        //
                 << " with result: " << transToken(ter);
             return ter;
             // LCOV_EXCL_STOP

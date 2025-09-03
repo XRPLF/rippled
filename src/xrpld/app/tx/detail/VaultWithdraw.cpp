@@ -177,8 +177,8 @@ VaultWithdraw::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptIssuance(*mptIssuanceID));
+    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
+    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -194,7 +194,7 @@ VaultWithdraw::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
-    auto const share = MPTIssue(*mptIssuanceID);
+    MPTIssue const share{mptIssuanceID};
     STAmount sharesRedeemed = {share};
     STAmount assetsWithdrawn;
     try
@@ -293,13 +293,13 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (account_ != vault->at(sfOwner))
     {
-        auto const ter =
-            removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
-        if (isTesSuccess(ter))
+        if (auto const ter = removeEmptyHolding(
+                view(), account_, sharesRedeemed.asset(), j_);
+            isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
                 << "VaultWithdraw: removed empty MPToken for vault shares"
-                << " MPTID=" << to_string(*mptIssuanceID)  //
+                << " MPTID=" << to_string(mptIssuanceID)  //
                 << " account=" << toBase58(account_);
         }
         else if (ter != tecHAS_OBLIGATIONS)
@@ -307,8 +307,8 @@ VaultWithdraw::doApply()
             // LCOV_EXCL_START
             JLOG(j_.error())  //
                 << "VaultWithdraw: failed to remove MPToken for vault shares"
-                << " MPTID=" << to_string(*mptIssuanceID)  //
-                << " account=" << toBase58(account_)       //
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(account_)      //
                 << " with result: " << transToken(ter);
             return ter;
             // LCOV_EXCL_STOP
