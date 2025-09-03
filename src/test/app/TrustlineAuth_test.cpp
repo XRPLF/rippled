@@ -18,11 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/sendmax.h>
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
@@ -30,6 +26,7 @@
 #include <xrpld/app/paths/AMMOffer.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
+#include <xrpld/ledger/View.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
@@ -37,13 +34,11 @@
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/resource/Fees.h>
 
 #include <boost/regex.hpp>
-
-#include "xrpl/protocol/TER.h"
-#include "xrpl/protocol/TxFlags.h"
-#include "xrpld/ledger/View.h"
 
 #include <chrono>
 #include <tuple>

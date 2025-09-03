@@ -907,9 +907,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
 
     auto const sleDst = ctx.view.read(keylet::account(dst_));
     if (!sleDst && ctx.view.rules().enabled(fixEnforceTrustlineAuth))
-    {
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
-    }
 
     if (!(ctx.isLast && ctx.isFirst))
     {

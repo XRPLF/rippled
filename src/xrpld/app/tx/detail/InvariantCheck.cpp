@@ -32,7 +32,6 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/nftPageMask.h>
 
@@ -2047,7 +2046,7 @@ ValidAuth::visitEntry(
         if (highIssuer == lowIssuer)
             bad_ = true;
 
-        lines_.emplace(std::make_tuple(lowIssuer, highIssuer, currency));
+        lines_.emplace_back(lowIssuer, highIssuer, currency);
     }
 }
 

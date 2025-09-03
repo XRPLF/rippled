@@ -448,9 +448,7 @@ accountHolds(
             auto const sleIssuer = view.read(keylet::account(issuer));
             auto const sleAccount = view.read(keylet::account(account));
             if (!sleIssuer || !sleAccount)
-            {
                 return false;  // LCOV_EXCL_LINE
-            }
             else if (sleIssuer->isFieldPresent(sfAMMID))
             {
                 // check if the account is authorized to own both assets for
@@ -458,9 +456,7 @@ accountHolds(
                 if (checkLPTokenAuthorization(
                         view, account, sleIssuer->getFieldH256(sfAMMID)) !=
                     tesSUCCESS)
-                {
                     return false;
-                }
             }
 
             // skip pseudo accounts
@@ -469,9 +465,7 @@ accountHolds(
 
             if (requireAuth(view, Issue{currency, issuer}, account) !=
                 tesSUCCESS)
-            {
                 return false;
-            }
         }
 
         return true;
@@ -3050,19 +3044,17 @@ checkLPTokenAuthorization(
     uint256 const& ammID)
 {
     auto const sleAcct = view.read(keylet::account(acct));
-    if (sleAcct && sleAcct->isFieldPresent(sfAMMID))
+    if (!sleAcct || sleAcct->isFieldPresent(sfAMMID))
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleAmm = view.read(keylet::amm(ammID));
     if (!sleAmm)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (TER const& res =
-            requireAuth(view, (*sleAmm)[sfAsset], acct, AuthType::Legacy);
+    if (TER const res = requireAuth(view, (*sleAmm)[sfAsset], acct);
         !isTesSuccess(res))
         return res;
-    if (TER const& res =
-            requireAuth(view, (*sleAmm)[sfAsset2], acct, AuthType::Legacy);
+    if (TER const res = requireAuth(view, (*sleAmm)[sfAsset2], acct);
         !isTesSuccess(res))
         return res;
 
