@@ -693,6 +693,8 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_LOG_STYLE, strTemp, j_))
         LOG_STYLE = LogStyle::fromString(strTemp);
 
+    LOG_STYLE = LogStyle::Json;
+
     if (getSingleSection(secConfig, SECTION_SWEEP_INTERVAL, strTemp, j_))
     {
         SWEEP_INTERVAL = beast::lexicalCastThrow<std::size_t>(strTemp);
