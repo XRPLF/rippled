@@ -207,6 +207,7 @@ set(COVERAGE_COMPILER_FLAGS "-g --coverage"
 if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     include(CheckCXXCompilerFlag)
     include(CheckCCompilerFlag)
+    include(CheckLinkerFlag)
 
     check_cxx_compiler_flag(-fprofile-abs-path HAVE_cxx_fprofile_abs_path)
     if(HAVE_cxx_fprofile_abs_path)
