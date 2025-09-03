@@ -28,15 +28,15 @@ target_compile_options (opts
     $<$<AND:$<BOOL:${is_gcc}>,$<COMPILE_LANGUAGE:CXX>>:-Wsuggest-override>
     $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
     $<$<BOOL:${perf}>:-fno-omit-frame-pointer>
-    $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${coverage}>>:-g --coverage -fprofile-abs-path>
-    $<$<AND:$<BOOL:${is_clang}>,$<BOOL:${coverage}>>:-g --coverage>
+    $<$<AND:$<BOOL:${coverage}>,$<COMPILE_LANGUAGE:CXX>>:${COVERAGE_CXX_COMPILER_FLAGS}>
+    $<$<AND:$<BOOL:${coverage}>,$<COMPILE_LANGUAGE:C>>:${COVERAGE_C_COMPILER_FLAGS}>
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
 target_link_libraries (opts
   INTERFACE
-    $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${coverage}>>:-g --coverage -fprofile-abs-path>
-    $<$<AND:$<BOOL:${is_clang}>,$<BOOL:${coverage}>>:-g --coverage>
+    $<$<AND:$<BOOL:${coverage}>,$<COMPILE_LANGUAGE:CXX>:-${COVERAGE_CXX_COMPILER_FLAGS}>
+    $<$<AND:$<BOOL:${coverage}>,$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
