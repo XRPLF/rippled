@@ -26,6 +26,9 @@ tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
 {% if compiler == "apple-clang" and compiler_version >= 17 %}
 tools.build:cxxflags=['-Wno-missing-template-arg-list-after-template-kw']
 {% endif %}
+{% if compiler == "clang" and compiler_version == 16 %}
+tools.build:cxxflags=['-DBOOST_ASIO_DISABLE_CONCEPTS']
+{% endif %}
 {% if compiler == "gcc" and compiler_version < 13 %}
 tools.build:cxxflags=['-Wno-restrict']
 {% endif %}
