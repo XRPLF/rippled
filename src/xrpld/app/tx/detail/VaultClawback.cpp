@@ -154,7 +154,7 @@ VaultClawback::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptIssuance(*mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -182,12 +182,13 @@ VaultClawback::doApply()
         "ripple::VaultClawback::doApply : loss and assets do balance");
 
     AccountID holder = tx[sfHolder];
-    STAmount sharesDestroyed = {vault->at(sfShareMPTID)}, assetsRecovered;
+    Asset const share = MPTIssue(*mptIssuanceID);
+    STAmount sharesDestroyed = {share};
+    STAmount assetsRecovered;
     try
     {
         if (amount == beast::zero)
         {
-            Asset const share = *(*vault)[sfShareMPTID];
             sharesDestroyed = accountHolds(
                 view(),
                 holder,
@@ -286,14 +287,27 @@ VaultClawback::doApply()
     // Keep MPToken if holder is the vault owner.
     if (holder != vault->at(sfOwner))
     {
-        if (auto const ter =
-                removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
-            isTesSuccess(ter))
+        auto const ter =
+            removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+        if (isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
-                << "VaultClawback: removed empty MPToken for vault shares for "
-                << toBase58(holder);
+                << "VaultClawback: removed empty MPToken for vault shares"
+                << " MPTID=" << to_string(*mptIssuanceID)  //
+                << " account=" << toBase58(holder);
         }
+        else if (ter != tecHAS_OBLIGATIONS)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())  //
+                << "VaultClawback: failed to remove MPToken for vault shares"
+                << " MPTID=" << to_string(*mptIssuanceID)  //
+                << " account=" << toBase58(holder)         //
+                << " with result: " << transToken(ter);
+            return ter;
+            // LCOV_EXCL_STOP
+        }
+        // else quietly ignore, holder balance is not zero
     }
 
     // Transfer assets from vault to issuer.

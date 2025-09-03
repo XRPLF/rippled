@@ -178,7 +178,7 @@ VaultWithdraw::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
-    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    auto const sleIssuance = view().read(keylet::mptIssuance(*mptIssuanceID));
     if (!sleIssuance)
     {
         // LCOV_EXCL_START
@@ -194,8 +194,9 @@ VaultWithdraw::doApply()
 
     auto const amount = ctx_.tx[sfAmount];
     Asset const vaultAsset = vault->at(sfAsset);
-    auto const share = MPTIssue(mptIssuanceID);
-    STAmount sharesRedeemed = {vault->at(sfShareMPTID)}, assetsWithdrawn;
+    auto const share = MPTIssue(*mptIssuanceID);
+    STAmount sharesRedeemed = {share};
+    STAmount assetsWithdrawn;
     try
     {
         if (amount.asset() == vaultAsset)
@@ -292,14 +293,27 @@ VaultWithdraw::doApply()
     // Keep MPToken if holder is the vault owner.
     if (account_ != vault->at(sfOwner))
     {
-        if (auto const ter = removeEmptyHolding(
-                view(), account_, sharesRedeemed.asset(), j_);
-            isTesSuccess(ter))
+        auto const ter =
+            removeEmptyHolding(view(), account_, sharesRedeemed.asset(), j_);
+        if (isTesSuccess(ter))
         {
             JLOG(j_.debug())  //
-                << "VaultWithdraw: removed empty MPToken for vault shares for "
-                << toBase58(account_);
+                << "VaultWithdraw: removed empty MPToken for vault shares"
+                << " MPTID=" << to_string(*mptIssuanceID)  //
+                << " account=" << toBase58(account_);
         }
+        else if (ter != tecHAS_OBLIGATIONS)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())  //
+                << "VaultWithdraw: failed to remove MPToken for vault shares"
+                << " MPTID=" << to_string(*mptIssuanceID)  //
+                << " account=" << toBase58(account_)       //
+                << " with result: " << transToken(ter);
+            return ter;
+            // LCOV_EXCL_STOP
+        }
+        // else quietly ignore, account balance is not zero
     }
 
     auto const dstAcct = [&]() -> AccountID {

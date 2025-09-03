@@ -162,6 +162,8 @@ public:
             ret.exponent_ += 1;
             ret.mantissa_ /= rep(10);
         }
+        // We are guaranteed that normalize() will never throw an exception
+        // because exponent is either negative or zero at this point.
         ret.normalize();
         return ret;
     }
