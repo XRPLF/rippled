@@ -39,6 +39,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/server/detail/StreamInterface.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
@@ -72,7 +73,7 @@ PeerImp::PeerImp(
     PublicKey const& publicKey,
     ProtocolVersion protocol,
     Resource::Consumer consumer,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<StreamInterface>&& stream_ptr,
     OverlayImpl& overlay)
     : Child(overlay)
     , app_(app)
@@ -285,23 +286,24 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (sendq_size != 0)
         return;
 
-    boost::asio::async_write(
-        *stream_ptr_,
+    // Capture shared_ptr to ensure object lifetime
+    auto self = shared_from_this();
+
+    stream_ptr_->async_write(
         boost::asio::buffer(
             send_queue_.front()->getBuffer(compressionEnabled_)),
-        bind_executor(
-            strand_,
-            std::bind(
-                &PeerImp::onWriteMessage,
-                shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+        [self](boost::beast::error_code ec, std::size_t bytes) {
+            // Post completion to the strand to ensure thread safety
+            boost::asio::post(self->strand_, [self, ec, bytes]() {
+                self->onWriteMessage(ec, bytes);
+            });
+        });
 }
 
 bool
 PeerImp::socketOpen() const
 {
-    return stream_ptr_->next_layer().socket().is_open();
+    return stream_ptr_->is_open();
 }
 
 void
@@ -588,7 +590,7 @@ PeerImp::close()
         try
         {
             timer_.cancel();
-            stream_ptr_->lowest_layer().close();
+            stream_ptr_->close();
         }
         catch (boost::system::system_error const&)
         {
@@ -790,7 +792,7 @@ PeerImp::doAccept()
 
     JLOG(journal_.debug()) << "doAccept: " << remote_address_;
 
-    auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
+    auto const sharedValue = stream_ptr_->makeSharedValue(journal_);
 
     // This shouldn't fail since we already computed
     // the shared value successfully in OverlayImpl
@@ -829,24 +831,24 @@ PeerImp::doAccept()
         app_);
 
     // Write the whole buffer and only start protocol when that's done.
-    boost::asio::async_write(
-        *stream_ptr_,
+    stream_ptr_->async_write(
         write_buffer->data(),
-        boost::asio::transfer_all(),
-        bind_executor(
-            strand_,
-            [this, write_buffer, self = shared_from_this()](
-                error_code ec, std::size_t bytes_transferred) {
-                if (!socketOpen())
-                    return;
-                if (ec == boost::asio::error::operation_aborted)
-                    return;
-                if (ec)
-                    return fail("onWriteResponse", ec);
-                if (write_buffer->size() == bytes_transferred)
-                    return doProtocolStart();
-                return fail("Failed to write header");
-            }));
+        [this, write_buffer, self = shared_from_this()](
+            error_code ec, std::size_t bytes_transferred) {
+            // Post completion to the strand to ensure thread safety
+            boost::asio::post(
+                strand_, [this, write_buffer, self, ec, bytes_transferred]() {
+                    if (!socketOpen())
+                        return;
+                    if (ec == boost::asio::error::operation_aborted)
+                        return;
+                    if (ec)
+                        return fail("onWriteResponse", ec);
+                    if (write_buffer->size() == bytes_transferred)
+                        return doProtocolStart();
+                    return fail("Failed to write header");
+                });
+        });
 }
 
 std::string
@@ -907,6 +909,10 @@ PeerImp::doProtocolStart()
 void
 PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 {
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::PeerImp::onReadMessage : strand in this thread");
+
     if (!socketOpen())
         return;
     if (ec == boost::asio::error::operation_aborted)
@@ -956,21 +962,26 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         read_buffer_.consume(bytes_consumed);
     }
 
+    auto self = shared_from_this();
+
     // Timeout on writes only
     stream_ptr_->async_read_some(
         read_buffer_.prepare(std::max(Tuning::readBufferBytes, hint)),
-        bind_executor(
-            strand_,
-            std::bind(
-                &PeerImp::onReadMessage,
-                shared_from_this(),
-                std::placeholders::_1,
-                std::placeholders::_2)));
+        [self](boost::beast::error_code ec, std::size_t bytes) {
+            // Post completion to the strand to ensure thread safety
+            boost::asio::post(self->strand_, [self, ec, bytes]() {
+                self->onReadMessage(ec, bytes);
+            });
+        });
 }
 
 void
 PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::PeerImp::onWriteMessage : strand in this thread");
+
     if (!socketOpen())
         return;
     if (ec == boost::asio::error::operation_aborted)
@@ -984,7 +995,6 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
         else
             stream << "onWriteMessage";
     }
-
     metrics_.sent.add_message(bytes_transferred);
 
     XRPL_ASSERT(
@@ -994,27 +1004,31 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
     if (!send_queue_.empty())
     {
         // Timeout on writes only
-        return boost::asio::async_write(
-            *stream_ptr_,
+
+        // Capture shared_ptr to ensure object lifetime
+        auto self = shared_from_this();
+
+        return stream_ptr_->async_write(
             boost::asio::buffer(
                 send_queue_.front()->getBuffer(compressionEnabled_)),
-            bind_executor(
-                strand_,
-                std::bind(
-                    &PeerImp::onWriteMessage,
-                    shared_from_this(),
-                    std::placeholders::_1,
-                    std::placeholders::_2)));
+            [self](boost::beast::error_code ec, std::size_t bytes) {
+                // Post completion to the strand to ensure thread safety
+                boost::asio::post(self->strand_, [self, ec, bytes]() {
+                    self->onWriteMessage(ec, bytes);
+                });
+            });
     }
 
     if (gracefulClose_)
     {
-        return stream_ptr_->async_shutdown(bind_executor(
-            strand_,
-            std::bind(
-                &PeerImp::onShutdown,
-                shared_from_this(),
-                std::placeholders::_1)));
+        // Capture shared_ptr to ensure object lifetime
+        auto self = shared_from_this();
+
+        return stream_ptr_->async_shutdown([self](boost::beast::error_code ec) {
+            // Post completion to the strand to ensure thread safety
+            boost::asio::post(
+                self->strand_, [self, ec]() { self->onShutdown(ec); });
+        });
     }
 }
 
@@ -1302,8 +1316,8 @@ PeerImp::handleTransaction(
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
 
-        // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
-        // LCOV_EXCL_START
+        // Charge strongly for attempting to relay a txn with
+        // tfInnerBatchTxn LCOV_EXCL_START
         if (stx->isFlag(tfInnerBatchTxn) &&
             getCurrentTransactionRules()->enabled(featureBatch))
         {
@@ -1326,8 +1340,9 @@ PeerImp::handleTransaction(
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
             }
 
-            // Erase only if the server has seen this tx. If the server has not
-            // seen this tx then the tx could not has been queued for this peer.
+            // Erase only if the server has seen this tx. If the server has
+            // not seen this tx then the tx could not has been queued for
+            // this peer.
             else if (eraseTxQueue && txReduceRelayEnabled())
                 removeTxQueue(txID);
 
@@ -1714,14 +1729,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     }
 
     // RH TODO: when isTrusted = false we should probably also cache a key
-    // suppression for 30 seconds to avoid doing a relatively expensive lookup
-    // every time a spam packet is received
+    // suppression for 30 seconds to avoid doing a relatively expensive
+    // lookup every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
     auto const isTrusted = app_.validators().trusted(publicKey);
 
-    // If the operator has specified that untrusted proposals be dropped then
-    // this happens here I.e. before further wasting CPU verifying the signature
-    // of an untrusted key
+    // If the operator has specified that untrusted proposals be dropped
+    // then this happens here I.e. before further wasting CPU verifying the
+    // signature of an untrusted key
     if (!isTrusted)
     {
         // report untrusted proposal messages
@@ -1750,8 +1765,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getHashRouter().addSuppressionPeerWithStatus(suppression, id_);
         !added)
     {
-        // Count unique messages (Slots has it's own 'HashRouter'), which a peer
-        // receives within IDLED seconds since the message has been relayed.
+        // Count unique messages (Slots has it's own 'HashRouter'), which a
+        // peer receives within IDLED seconds since the message has been
+        // relayed.
         if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
@@ -1832,8 +1848,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
     {
         bool outOfSync{false};
         {
-            // Operations on closedLedgerHash_ and previousLedgerHash_ must be
-            // guarded by recentLock_.
+            // Operations on closedLedgerHash_ and previousLedgerHash_ must
+            // be guarded by recentLock_.
             std::lock_guard sl(recentLock_);
             if (!closedLedgerHash_.isZero())
             {
@@ -1855,8 +1871,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
             m->has_ledgerhash() && stringIsUint256Sized(m->ledgerhash())};
 
         {
-            // Operations on closedLedgerHash_ and previousLedgerHash_ must be
-            // guarded by recentLock_.
+            // Operations on closedLedgerHash_ and previousLedgerHash_ must
+            // be guarded by recentLock_.
             std::lock_guard sl(recentLock_);
             if (peerChangedLedgers)
             {
@@ -2057,7 +2073,8 @@ PeerImp::onValidatorListMessage(
     std::vector<ValidatorBlobInfo> const& blobs)
 {
     // If there are no blobs, the message is malformed (possibly because of
-    // ValidatorList class rules), so charge accordingly and skip processing.
+    // ValidatorList class rules), so charge accordingly and skip
+    // processing.
     if (blobs.empty())
     {
         JLOG(p_journal_.warn()) << "Ignored malformed " << messageType
@@ -2114,7 +2131,8 @@ PeerImp::onValidatorListMessage(
 
             XRPL_ASSERT(
                 applyResult.publisherKey,
-                "ripple::PeerImp::onValidatorListMessage : publisher key is "
+                "ripple::PeerImp::onValidatorListMessage : publisher key "
+                "is "
                 "set");
             auto const& pubKey = *applyResult.publisherKey;
 #ifndef NDEBUG
@@ -2123,7 +2141,8 @@ PeerImp::onValidatorListMessage(
             {
                 XRPL_ASSERT(
                     iter->second < applyResult.sequence,
-                    "ripple::PeerImp::onValidatorListMessage : lower sequence");
+                    "ripple::PeerImp::onValidatorListMessage : lower "
+                    "sequence");
             }
 #endif
             publisherListSequences_[pubKey] = applyResult.sequence;
@@ -2136,12 +2155,14 @@ PeerImp::onValidatorListMessage(
             std::lock_guard<std::mutex> sl(recentLock_);
             XRPL_ASSERT(
                 applyResult.sequence && applyResult.publisherKey,
-                "ripple::PeerImp::onValidatorListMessage : nonzero sequence "
+                "ripple::PeerImp::onValidatorListMessage : nonzero "
+                "sequence "
                 "and set publisher key");
             XRPL_ASSERT(
                 publisherListSequences_[*applyResult.publisherKey] <=
                     applyResult.sequence,
-                "ripple::PeerImp::onValidatorListMessage : maximum sequence");
+                "ripple::PeerImp::onValidatorListMessage : maximum "
+                "sequence");
         }
 #endif  // !NDEBUG
 
@@ -2153,7 +2174,8 @@ PeerImp::onValidatorListMessage(
             break;
         default:
             UNREACHABLE(
-                "ripple::PeerImp::onValidatorListMessage : invalid best list "
+                "ripple::PeerImp::onValidatorListMessage : invalid best "
+                "list "
                 "disposition");
     }
 
@@ -2197,7 +2219,8 @@ PeerImp::onValidatorListMessage(
             break;
         default:
             UNREACHABLE(
-                "ripple::PeerImp::onValidatorListMessage : invalid worst list "
+                "ripple::PeerImp::onValidatorListMessage : invalid worst "
+                "list "
                 "disposition");
     }
 
@@ -2257,7 +2280,8 @@ PeerImp::onValidatorListMessage(
                 break;
             default:
                 UNREACHABLE(
-                    "ripple::PeerImp::onValidatorListMessage : invalid list "
+                    "ripple::PeerImp::onValidatorListMessage : invalid "
+                    "list "
                     "disposition");
         }
     }
@@ -2301,7 +2325,8 @@ PeerImp::onMessage(
         if (!supportsFeature(ProtocolFeature::ValidatorList2Propagation))
         {
             JLOG(p_journal_.debug())
-                << "ValidatorListCollection: received validator list from peer "
+                << "ValidatorListCollection: received validator list from "
+                   "peer "
                 << "using protocol version " << to_string(protocol_)
                 << " which shouldn't support this feature.";
             fee_.update(Resource::feeUselessData, "unsupported peer");
@@ -2310,7 +2335,8 @@ PeerImp::onMessage(
         else if (m->version() < 2)
         {
             JLOG(p_journal_.debug())
-                << "ValidatorListCollection: received invalid validator list "
+                << "ValidatorListCollection: received invalid validator "
+                   "list "
                    "version "
                 << m->version() << " from peer using protocol version "
                 << to_string(protocol_);
@@ -2370,9 +2396,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
-        // RH TODO: when isTrusted = false we should probably also cache a key
-        // suppression for 30 seconds to avoid doing a relatively expensive
-        // lookup every time a spam packet is received
+        // RH TODO: when isTrusted = false we should probably also cache a
+        // key suppression for 30 seconds to avoid doing a relatively
+        // expensive lookup every time a spam packet is received
         auto const isTrusted =
             app_.validators().trusted(val->getSignerPublic());
 
@@ -2397,9 +2423,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
         if (!added)
         {
-            // Count unique messages (Slots has it's own 'HashRouter'), which a
-            // peer receives within IDLED seconds since the message has been
-            // relayed.
+            // Count unique messages (Slots has it's own 'HashRouter'),
+            // which a peer receives within IDLED seconds since the message
+            // has been relayed.
             if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
@@ -2892,8 +2918,8 @@ PeerImp::checkTransaction(
 
         if (isPseudoTx(*stx))
         {
-            // Don't do anything with pseudo transactions except put them in the
-            // TransactionMaster cache
+            // Don't do anything with pseudo transactions except put them in
+            // the TransactionMaster cache
             std::string reason;
             auto tx = std::make_shared<Transaction>(stx, reason, app_);
             XRPL_ASSERT(
@@ -3049,16 +3075,17 @@ PeerImp::checkValidation(
         return;
     }
 
-    // FIXME it should be safe to remove this try/catch. Investigate codepaths.
+    // FIXME it should be safe to remove this try/catch. Investigate
+    // codepaths.
     try
     {
         if (app_.getOPs().recvValidation(val, std::to_string(id())) ||
             cluster())
         {
-            // haveMessage contains peers, which are suppressed; i.e. the peers
-            // are the source of the message, consequently the message should
-            // not be relayed to these peers. But the message must be counted
-            // as part of the squelch logic.
+            // haveMessage contains peers, which are suppressed; i.e. the
+            // peers are the source of the message, consequently the message
+            // should not be relayed to these peers. But the message must be
+            // counted as part of the squelch logic.
             auto haveMessage =
                 overlay_.relay(*packet, key, val->getSignerPublic());
             if (!haveMessage.empty())

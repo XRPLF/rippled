@@ -35,6 +35,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/detail/StreamInterface.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
@@ -74,7 +75,7 @@ private:
     beast::WrappedSink p_sink_;
     beast::Journal const journal_;
     beast::Journal const p_journal_;
-    std::unique_ptr<stream_type> stream_ptr_;
+    std::unique_ptr<StreamInterface> stream_ptr_;
     boost::asio::strand<boost::asio::executor> strand_;
     waitable_timer timer_;
 
@@ -240,7 +241,7 @@ public:
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         Resource::Consumer consumer,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        std::unique_ptr<StreamInterface>&& stream_ptr,
         OverlayImpl& overlay);
 
     /** Create outgoing, handshaked peer. */
@@ -248,7 +249,7 @@ public:
     template <class Buffers>
     PeerImp(
         Application& app,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        std::unique_ptr<StreamInterface>&& stream_ptr,
         Buffers const& buffers,
         std::shared_ptr<PeerFinder::Slot>&& slot,
         http_response_type&& response,
@@ -650,7 +651,7 @@ private:
 template <class Buffers>
 PeerImp::PeerImp(
     Application& app,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<StreamInterface>&& stream_ptr,
     Buffers const& buffers,
     std::shared_ptr<PeerFinder::Slot>&& slot,
     http_response_type&& response,

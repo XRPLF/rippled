@@ -23,6 +23,7 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
 #include <xrpl/json/json_reader.h>
+#include <xrpl/server/detail/StreamInterface.h>
 
 namespace ripple {
 
@@ -412,7 +413,7 @@ ConnectAttempt::processResponse()
 
         auto const peer = std::make_shared<PeerImp>(
             app_,
-            std::move(stream_ptr_),
+            std::make_unique<ProductionStream>(std::move(stream_ptr_)),
             read_buf_.data(),
             std::move(slot_),
             std::move(response_),

@@ -39,6 +39,7 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/server/SimpleWriter.h>
+#include <xrpl/server/detail/StreamInterface.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/executor_work_guard.hpp>
@@ -163,7 +164,7 @@ OverlayImpl::OverlayImpl(
 
 Handoff
 OverlayImpl::onHandoff(
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<stream_type>&& ssl_stream_ptr,
     http_request_type&& request,
     endpoint_type remote_endpoint)
 {
@@ -183,7 +184,7 @@ OverlayImpl::onHandoff(
 
     error_code ec;
     auto const local_endpoint(
-        stream_ptr->next_layer().socket().local_endpoint(ec));
+        ssl_stream_ptr->next_layer().socket().local_endpoint(ec));
     if (ec)
     {
         JLOG(journal.debug()) << remote_endpoint << " failed: " << ec.message();
@@ -238,7 +239,9 @@ OverlayImpl::onHandoff(
         return handoff;
     }
 
-    auto const sharedValue = makeSharedValue(*stream_ptr, journal);
+    auto stream_ptr =
+        std::make_unique<ProductionStream>(std::move(ssl_stream_ptr));
+    auto const sharedValue = stream_ptr->makeSharedValue(journal);
     if (!sharedValue)
     {
         m_peerFinder->on_closed(slot);
