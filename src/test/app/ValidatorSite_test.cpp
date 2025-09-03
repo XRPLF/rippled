@@ -77,21 +77,20 @@ private:
         BEAST_EXPECT(trustedSites->load(emptyCfgSites));
 
         // load should accept valid validator site uris
-        std::vector<std::string> cfgSites(
-            {"http://ripple.com/",
-             "http://ripple.com/validators",
-             "http://ripple.com:8080/validators",
-             "http://207.261.33.37/validators",
-             "http://207.261.33.37:8080/validators",
-             "https://ripple.com/validators",
-             "https://ripple.com:443/validators",
-             "file:///etc/opt/ripple/validators.txt",
-             "file:///C:/Lib/validators.txt"
+        std::vector<std::string> cfgSites({
+            "http://ripple.com/", "http://ripple.com/validators",
+                "http://ripple.com:8080/validators",
+                "http://207.261.33.37/validators",
+                "http://207.261.33.37:8080/validators",
+                "https://ripple.com/validators",
+                "https://ripple.com:443/validators",
+                "file:///etc/opt/ripple/validators.txt",
+                "file:///C:/Lib/validators.txt"
 #if !_MSC_VER
-             ,
-             "file:///"
+                ,
+                "file:///"
 #endif
-            });
+        });
         BEAST_EXPECT(trustedSites->load(cfgSites));
 
         // load should reject validator site uris with invalid schemes
@@ -136,15 +135,14 @@ private:
         bool failFetch = false;
         bool failApply = false;
         int serverVersion = 1;
-        std::chrono::seconds expiresFromNow =
-            ripple::test::detail::default_expires;
+        std::chrono::seconds expiresFromNow = detail::default_expires;
         std::chrono::seconds effectiveOverlap =
-            ripple::test::detail::default_effective_overlap;
+            detail::default_effective_overlap;
         int expectedRefreshMin = 0;
     };
     void
     testFetchList(
-        ripple::test::detail::DirGuard const& good,
+        detail::DirGuard const& good,
         std::vector<FetchListConfig> const& paths)
     {
         testcase << "Fetch list - "
@@ -363,7 +361,7 @@ private:
     void
     testFileURLs()
     {
-        auto fullPath = [](ripple::test::detail::FileDirGuard const& guard) {
+        auto fullPath = [](detail::FileDirGuard const& guard) {
             auto absPath = absolute(guard.file()).string();
             if (absPath.front() != '/')
                 absPath.insert(absPath.begin(), '/');
@@ -371,16 +369,13 @@ private:
         };
         {
             // Create a file with a real validator list
-            ripple::test::detail::FileDirGuard good(
-                *this,
-                "test_val",
-                "vl.txt",
-                ripple::test::detail::realValidatorContents());
+            detail::FileDirGuard good(
+                *this, "test_val", "vl.txt", detail::realValidatorContents());
             // Create a file with arbitrary content
-            ripple::test::detail::FileDirGuard hello(
+            detail::FileDirGuard hello(
                 *this, "test_val", "helloworld.txt", "Hello, world!");
             // Create a file with malformed Json
-            ripple::test::detail::FileDirGuard json(
+            detail::FileDirGuard json(
                 *this,
                 "test_val",
                 "json.txt",
@@ -406,7 +401,7 @@ public:
     {
         testConfigLoad();
 
-        ripple::test::detail::DirGuard good(*this, "test_fetch");
+        detail::DirGuard good(*this, "test_fetch");
         for (auto ssl : {true, false})
         {
             // fetch single site
@@ -443,7 +438,7 @@ public:
                   false,
                   false,
                   1,
-                  ripple::test::detail::default_expires,
+                  detail::default_expires,
                   std::chrono::seconds{-90}}});
             // fetch single site with undending redirect (fails to load)
             testFetchList(
@@ -642,8 +637,8 @@ public:
                   false,
                   false,
                   1,
-                  ripple::test::detail::default_expires,
-                  ripple::test::detail::default_effective_overlap,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   1}});  // minimum of 1 minute
             testFetchList(
                 good,
@@ -653,8 +648,8 @@ public:
                   false,
                   false,
                   1,
-                  ripple::test::detail::default_expires,
-                  ripple::test::detail::default_effective_overlap,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   1}});  // minimum of 1 minute
             testFetchList(
                 good,
@@ -664,8 +659,8 @@ public:
                   false,
                   false,
                   1,
-                  ripple::test::detail::default_expires,
-                  ripple::test::detail::default_effective_overlap,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   10}});  // 10 minutes is fine
             testFetchList(
                 good,
@@ -675,8 +670,8 @@ public:
                   false,
                   false,
                   1,
-                  ripple::test::detail::default_expires,
-                  ripple::test::detail::default_effective_overlap,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   10}});  // 10 minutes is fine
             testFetchList(
                 good,
@@ -686,8 +681,8 @@ public:
                   false,
                   false,
                   1,
-                  ripple::test::detail::default_expires,
-                  ripple::test::detail::default_effective_overlap,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   60 * 24}});  // max of 24 hours
             testFetchList(
                 good,
@@ -697,8 +692,8 @@ public:
                   false,
                   false,
                   1,
-                  ripple::test::detail::default_expires,
-                  ripple::test::detail::default_effective_overlap,
+                  detail::default_expires,
+                  detail::default_effective_overlap,
                   60 * 24}});  // max of 24 hours
         }
         using namespace boost::filesystem;
