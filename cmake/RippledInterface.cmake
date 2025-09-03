@@ -4,7 +4,6 @@
 
 add_library (opts INTERFACE)
 add_library (Ripple::opts ALIAS opts)
-include(CodeCoverage)
 target_compile_definitions (opts
   INTERFACE
     BOOST_ASIO_DISABLE_HANDLER_TYPE_REQUIREMENTS
@@ -37,7 +36,8 @@ target_link_libraries (opts
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
-if (${coverage})
+if (coverage)
+  include(CodeCoverage)
   add_code_coverage_to_target(opts INTERFACE)
 endif ()
 
