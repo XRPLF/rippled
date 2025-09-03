@@ -71,8 +71,8 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
         ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
-SField const sfInvalid(access, -1);
-SField const sfGeneric(access, 0);
+SField const sfInvalid(access, -1, "");
+SField const sfGeneric(access, 0, "Generic");
 // The following two fields aren't used anywhere, but they break tests/have
 // downstream effects.
 SField const sfHash(access, STI_UINT256, 257, "hash");
@@ -111,10 +111,11 @@ SField::SField(
     knownNameToField[fieldName] = this;
 }
 
-SField::SField(private_access_tag_t, int fc)
+SField::SField(private_access_tag_t, int fc, char const* fn)
     : fieldCode(fc)
     , fieldType(STI_UNKNOWN)
     , fieldValue(0)
+    , fieldName(fn)
     , fieldMeta(sMD_Never)
     , fieldNum(++num)
     , signingField(IsSigning::yes)
@@ -122,8 +123,12 @@ SField::SField(private_access_tag_t, int fc)
 {
     XRPL_ASSERT(
         !knownCodeToField.contains(fieldCode),
-        "ripple::SField::SField(fc) : fieldCode is unique");
+        "ripple::SField::SField(fc,fn) : fieldCode is unique");
+    XRPL_ASSERT(
+        !knownNameToField.contains(fieldName),
+        "ripple::SField::SField(fc,fn) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
+    knownNameToField[fieldName] = this;
 }
 
 SField const&
