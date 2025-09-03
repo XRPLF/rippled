@@ -353,7 +353,9 @@ parseUint32(
             else
             {
                 ret = detail::make_stvar<STResult>(
-                    field, beast::lexicalCastThrow<Integer>(value.asString()));
+                    field,
+                    safe_cast<typename STResult::value_type>(
+                        beast::lexicalCastThrow<Integer>(value.asString())));
             }
         }
         if (!ret)
