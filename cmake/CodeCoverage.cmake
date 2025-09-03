@@ -486,6 +486,10 @@ endfunction() # setup_target_for_coverage_gcovr
 
 # Setup coverage for specific library
 function(add_code_coverage_to_target name scope)
+    separate_arguments(COVERAGE_CXX_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_COMPILER_FLAGS}")
+    separate_arguments(COVERAGE_C_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_C_COMPILER_FLAGS}")
+    separate_arguments(COVERAGE_CXX_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_LINKER_FLAGS}")
+    separate_arguments(COVERAGE_C_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_C_LINKER_FLAGS}")
     target_compile_options(${name} ${scope}
         $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
         $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
