@@ -31,9 +31,10 @@ fee::operator()(Env& env, JTx& jt) const
     if (!manual_)
         return;
     jt.fill_fee = false;
+    assert(!increment_ || !amount_);
     if (increment_)
         jt[sfFee] = STAmount(env.current()->fees().increment).getJson();
-    if (amount_)
+    else if (amount_)
         jt[sfFee] = amount_->getJson(JsonOptions::none);
 }
 
