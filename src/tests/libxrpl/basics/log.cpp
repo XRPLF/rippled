@@ -276,7 +276,9 @@ TEST_CASE("Test JsonWriter")
 }
 
 namespace test_detail {
-struct ToCharsStruct{};
+struct ToCharsStruct
+{
+};
 
 std::to_chars_result
 to_chars(char* first, char* last, ToCharsStruct)
@@ -296,7 +298,7 @@ operator<<(std::ostream& os, StreamStruct)
     return os;
 }
 
-}
+}  // namespace test_detail
 
 TEST_CASE("Test setJsonValue")
 {
@@ -307,15 +309,22 @@ TEST_CASE("Test setJsonValue")
 
     log::detail::setJsonValue<bool>(writer, "testBool", true, &stringBuf);
     log::detail::setJsonValue<std::int32_t>(writer, "testInt32", 1, &stringBuf);
-    log::detail::setJsonValue<std::uint32_t>(writer, "testUInt32", -1, &stringBuf);
+    log::detail::setJsonValue<std::uint32_t>(
+        writer, "testUInt32", -1, &stringBuf);
     log::detail::setJsonValue<std::int64_t>(writer, "testInt64", 1, &stringBuf);
-    log::detail::setJsonValue<std::uint64_t>(writer, "testUInt64", -1, &stringBuf);
+    log::detail::setJsonValue<std::uint64_t>(
+        writer, "testUInt64", -1, &stringBuf);
     log::detail::setJsonValue<double>(writer, "testDouble", 1.1, &stringBuf);
-    log::detail::setJsonValue<char const*>(writer, "testCharStar", "Char*", &stringBuf);
-    log::detail::setJsonValue<std::string>(writer, "testStdString", "StdString", &stringBuf);
-    log::detail::setJsonValue<std::string_view>(writer, "testStdStringView", "StdStringView", &stringBuf);
-    log::detail::setJsonValue<test_detail::ToCharsStruct>(writer, "testToChars", {}, &stringBuf);
-    log::detail::setJsonValue<test_detail::StreamStruct>(writer, "testStream", {}, &stringBuf);
+    log::detail::setJsonValue<char const*>(
+        writer, "testCharStar", "Char*", &stringBuf);
+    log::detail::setJsonValue<std::string>(
+        writer, "testStdString", "StdString", &stringBuf);
+    log::detail::setJsonValue<std::string_view>(
+        writer, "testStdStringView", "StdStringView", &stringBuf);
+    log::detail::setJsonValue<test_detail::ToCharsStruct>(
+        writer, "testToChars", {}, &stringBuf);
+    log::detail::setJsonValue<test_detail::StreamStruct>(
+        writer, "testStream", {}, &stringBuf);
 }
 
 TEST_CASE("Test json logging not enabled")
@@ -328,7 +337,9 @@ TEST_CASE("Test json logging not enabled")
     beast::Journal::addGlobalAttributes(
         log::attributes(log::attr("Field1", "Value1")));
 
-    logs.journal("Test123").debug() << "Test " << log::param(" Field1", "Value1") << log::field("Field2", "Value2");
+    logs.journal("Test123").debug()
+        << "Test " << log::param(" Field1", "Value1")
+        << log::field("Field2", "Value2");
 
     CHECK(logStream.find("Test Value1") != std::string::npos);
 }
@@ -685,7 +696,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test copying journal")
     {
         beast::Journal j{
             journal(),
-            log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
+            log::attributes(
+                log::attr("Field1", "Value1"), log::attr("Field2", 2))};
         beast::Journal j2{j};
 
         j2.debug() << "Test";
@@ -711,10 +723,11 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test copying journal")
     }
     {
         stream().str("");
-        beast::Journal j{
-            journal().sink()};
-        beast::Journal j2{j,
-            log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
+        beast::Journal j{journal().sink()};
+        beast::Journal j2{
+            j,
+            log::attributes(
+                log::attr("Field1", "Value1"), log::attr("Field2", 2))};
 
         j2.debug() << "Test";
 
