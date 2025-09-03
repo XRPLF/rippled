@@ -49,6 +49,10 @@ jobs:
     container: ${{ inputs.os == 'linux' && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
 
     steps:
+      - name: Cleanup workspace
+        if: ${{ runner.os == 'macOS' }}
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@ea9970b7c211b18f4c8bcdb28c29f5711752029f
+
       - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
       - name: Prepare runner
         uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
