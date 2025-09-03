@@ -308,12 +308,12 @@ TEST_CASE("Test setJsonValue")
     writer.startObject();
 
     log::detail::setJsonValue<bool>(writer, "testBool", true, &stringBuf);
-    log::detail::setJsonValue<std::int32_t>(writer, "testInt32", 1, &stringBuf);
+    log::detail::setJsonValue<std::int32_t>(writer, "testInt32", -1, &stringBuf);
     log::detail::setJsonValue<std::uint32_t>(
-        writer, "testUInt32", -1, &stringBuf);
-    log::detail::setJsonValue<std::int64_t>(writer, "testInt64", 1, &stringBuf);
+        writer, "testUInt32", 1, &stringBuf);
+    log::detail::setJsonValue<std::int64_t>(writer, "testInt64", -1, &stringBuf);
     log::detail::setJsonValue<std::uint64_t>(
-        writer, "testUInt64", -1, &stringBuf);
+        writer, "testUInt64", 1, &stringBuf);
     log::detail::setJsonValue<double>(writer, "testDouble", 1.1, &stringBuf);
     log::detail::setJsonValue<char const*>(
         writer, "testCharStar", "Char*", &stringBuf);
@@ -325,6 +325,9 @@ TEST_CASE("Test setJsonValue")
         writer, "testToChars", {}, &stringBuf);
     log::detail::setJsonValue<test_detail::StreamStruct>(
         writer, "testStream", {}, &stringBuf);
+    writer.endObject();
+
+    CHECK(writer.finish() == R"AAA({"testBool":true,"testInt32":-1,"testUInt32":1,"testInt64":-1,"testUInt64":1,"testDouble":1.1,"testCharStar":"Char*","testStdString":"StdString","testStdStringView":"StdStringView","testToChars":"0","testStream":"0"})AAA");
 }
 
 TEST_CASE("Test json logging not enabled")
