@@ -229,7 +229,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
         set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-update=atomic")
     endif()
 
-    check_linker_flag(-fprofile-update=atomic HAVE_linker_fprofile_update)
+    check_linker_flag(C -fprofile-update=atomic HAVE_linker_fprofile_update)
     if(HAVE_linker_fprofile_update)
         set(COVERAGE_LINKER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-update=atomic")
     endif()
