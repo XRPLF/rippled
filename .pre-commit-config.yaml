@@ -1,6 +1,65 @@
-# .pre-commit-config.yaml
+# To run pre-commit hooks, first install pre-commit:
+# - `pip install pre-commit==${PRE_COMMIT_VERSION}`
+# - `pip install pre-commit-hooks==${PRE_COMMIT_HOOKS_VERSION}`
+#
+# Depending on your system, you can use `brew install` or `apt install` as well
+# for installing the pre-commit package, but `pip` is needed to install the
+# hooks; you can also use `pipx` if you prefer.
+# Next, install the required formatters:
+# - `pip install clang-format==${CLANG_VERSION}`
+# - `npm install prettier@${PRETTIER_VERSION}`
+#
+# See https://github.com/XRPLF/ci/blob/main/.github/workflows/tools-rippled.yml
+# for the versions used in the CI pipeline. You will need to have the exact same
+# versions of the tools installed on your system to produce the same results as
+# the pipeline.
+#
+# Then, run the following command to install the git hook scripts:
+# - `pre-commit install`
+# You can run all configured hooks against all files with:
+# - `pre-commit run --all-files`
+# To manually run a specific hook, use:
+# - `pre-commit run <hook_id> --all-files`
+# To run the hooks against only the files changed in the current commit, use:
+# - `pre-commit run`
 repos:
-- repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: v18.1.8
-  hooks:
-  - id: clang-format
+  - repo: local
+    hooks:
+      - id: clang-format
+        name: clang-format
+        language: system
+        entry: clang-format -i
+        files: '\.(cpp|hpp|h|ipp|proto)$'
+      - id: trailing-whitespace
+        name: trailing-whitespace
+        entry: trailing-whitespace-fixer
+        language: system
+        types: [text]
+      - id: end-of-file
+        name: end-of-file
+        entry: end-of-file-fixer
+        language: system
+        types: [text]
+      - id: mixed-line-ending
+        name: mixed-line-ending
+        entry: mixed-line-ending
+        language: system
+        types: [text]
+      - id: check-merge-conflict
+        name: check-merge-conflict
+        entry: check-merge-conflict --assume-in-merge
+        language: system
+        types: [text]
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        language: system
+        entry: prettier --ignore-unknown --write
+
+exclude: |
+  (?x)^(
+      external/.*|
+      .github/scripts/levelization/results/.*\.txt|
+      conan\.lock
+  )$

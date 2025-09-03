@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
-#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 
@@ -1253,12 +1252,115 @@ addEmptyHolding(
     if (view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
 
-    return MPTokenAuthorize::authorize(
-        view,
-        journal,
-        {.priorBalance = priorBalance,
-         .mptIssuanceID = mptID,
-         .account = accountID});
+    return authorizeMPToken(view, priorBalance, mptID, accountID, journal);
+}
+
+[[nodiscard]] TER
+authorizeMPToken(
+    ApplyView& view,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    beast::Journal journal,
+    std::uint32_t flags,
+    std::optional<AccountID> holderID)
+{
+    auto const sleAcct = view.peek(keylet::account(account));
+    if (!sleAcct)
+        return tecINTERNAL;
+
+    // If the account that submitted the tx is a holder
+    // Note: `account_` is holder's account
+    //       `holderID` is NOT used
+    if (!holderID)
+    {
+        // When a holder wants to unauthorize/delete a MPT, the ledger must
+        //      - delete mptokenKey from owner directory
+        //      - delete the MPToken
+        if (flags & tfMPTUnauthorize)
+        {
+            auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+            auto const sleMpt = view.peek(mptokenKey);
+            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            if (!view.dirRemove(
+                    keylet::ownerDir(account),
+                    (*sleMpt)[sfOwnerNode],
+                    sleMpt->key(),
+                    false))
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            adjustOwnerCount(view, sleAcct, -1, journal);
+
+            view.erase(sleMpt);
+            return tesSUCCESS;
+        }
+
+        // A potential holder wants to authorize/hold a mpt, the ledger must:
+        //      - add the new mptokenKey to the owner directory
+        //      - create the MPToken object for the holder
+
+        // The reserve that is required to create the MPToken. Note
+        // that although the reserve increases with every item
+        // an account owns, in the case of MPTokens we only
+        // *enforce* a reserve if the user owns more than two
+        // items. This is similar to the reserve requirements of trust lines.
+        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
+        XRPAmount const reserveCreate(
+            (uOwnerCount < 2) ? XRPAmount(beast::zero)
+                              : view.fees().accountReserve(uOwnerCount + 1));
+
+        if (priorBalance < reserveCreate)
+            return tecINSUFFICIENT_RESERVE;
+
+        auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+        auto mptoken = std::make_shared<SLE>(mptokenKey);
+        if (auto ter = dirLink(view, account, mptoken))
+            return ter;  // LCOV_EXCL_LINE
+
+        (*mptoken)[sfAccount] = account;
+        (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+        (*mptoken)[sfFlags] = 0;
+        view.insert(mptoken);
+
+        // Update owner count.
+        adjustOwnerCount(view, sleAcct, 1, journal);
+
+        return tesSUCCESS;
+    }
+
+    auto const sleMptIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleMptIssuance)
+        return tecINTERNAL;
+
+    // If the account that submitted this tx is the issuer of the MPT
+    // Note: `account_` is issuer's account
+    //       `holderID` is holder's account
+    if (account != (*sleMptIssuance)[sfIssuer])
+        return tecINTERNAL;
+
+    auto const sleMpt = view.peek(keylet::mptoken(mptIssuanceID, *holderID));
+    if (!sleMpt)
+        return tecINTERNAL;
+
+    std::uint32_t const flagsIn = sleMpt->getFieldU32(sfFlags);
+    std::uint32_t flagsOut = flagsIn;
+
+    // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
+    // their MPToken
+    if (flags & tfMPTUnauthorize)
+        flagsOut &= ~lsfMPTAuthorized;
+    // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
+    // MPToken
+    else
+        flagsOut |= lsfMPTAuthorized;
+
+    if (flagsIn != flagsOut)
+        sleMpt->setFieldU32(sfFlags, flagsOut);
+
+    view.update(sleMpt);
+    return tesSUCCESS;
 }
 
 TER
@@ -1456,13 +1558,14 @@ removeEmptyHolding(
     if (mptoken->at(sfMPTAmount) != 0)
         return tecHAS_OBLIGATIONS;
 
-    return MPTokenAuthorize::authorize(
+    return authorizeMPToken(
         view,
+        {},  // priorBalance
+        mptID,
+        accountID,
         journal,
-        {.priorBalance = {},
-         .mptIssuanceID = mptID,
-         .account = accountID,
-         .flags = tfMPTUnauthorize});
+        tfMPTUnauthorize  // flags
+    );
 }
 
 TER
@@ -2535,15 +2638,12 @@ enforceMPTokenAuthorization(
         XRPL_ASSERT(
             maybeDomainID.has_value() && sleToken == nullptr,
             "ripple::enforceMPTokenAuthorization : new MPToken for domain");
-        if (auto const err = MPTokenAuthorize::authorize(
+        if (auto const err = authorizeMPToken(
                 view,
-                j,
-                {
-                    .priorBalance = priorBalance,
-                    .mptIssuanceID = mptIssuanceID,
-                    .account = account,
-                    .flags = 0,
-                });
+                priorBalance,   // priorBalance
+                mptIssuanceID,  // mptIssuanceID
+                account,        // account
+                j);
             !isTesSuccess(err))
             return err;
 
@@ -3012,7 +3112,6 @@ rippleUnlockEscrowMPT(
         auto const delta = amount.mpt().value();
 
         // Underflow check for subtraction
-        // LCOV_EXCL_START
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
         {  // LCOV_EXCL_START
             JLOG(j.error())

@@ -634,6 +634,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, app, ripple, 2);
 
 }  // namespace ripple

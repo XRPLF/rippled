@@ -1,0 +1,201 @@
+# This workflow builds and tests the binary for various configurations.
+name: Build and test
+
+# This workflow can only be triggered by other workflows. Note that the
+# workflow_call event does not support the 'choice' input type, see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#onworkflow_callinputsinput_idtype,
+# so we use 'string' instead.
+on:
+  workflow_call:
+    inputs:
+      build_dir:
+        description: "The directory where to build."
+        required: false
+        type: string
+        default: ".build"
+      conan_remote_name:
+        description: "The name of the Conan remote to use."
+        required: true
+        type: string
+      conan_remote_url:
+        description: "The URL of the Conan endpoint to use."
+        required: true
+        type: string
+      dependencies_force_build:
+        description: "Force building of all dependencies."
+        required: false
+        type: boolean
+        default: false
+      dependencies_force_upload:
+        description: "Force uploading of all dependencies."
+        required: false
+        type: boolean
+        default: false
+      os:
+        description: 'The operating system to use for the build ("linux", "macos", "windows").'
+        required: true
+        type: string
+      strategy_matrix:
+        # TODO: Support additional strategies, e.g. "ubuntu" for generating all Ubuntu configurations.
+        description: 'The strategy matrix to use for generating the configurations ("minimal", "all").'
+        required: false
+        type: string
+        default: "minimal"
+    secrets:
+      codecov_token:
+        description: "The Codecov token to use for uploading coverage reports."
+        required: false
+      conan_remote_username:
+        description: "The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded."
+        required: false
+      conan_remote_password:
+        description: "The password for logging into the Conan remote. If not provided, the dependencies will not be uploaded."
+        required: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.os }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Generate the strategy matrix to be used by the following job.
+  generate-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: 3.13
+      - name: Generate strategy matrix
+        working-directory: .github/scripts/strategy-matrix
+        id: generate
+        run: python generate.py ${{ inputs.strategy_matrix == 'all' && '--all' || '' }} --config=${{ inputs.os }}.json >> "${GITHUB_OUTPUT}"
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+
+  # Build and test the binary.
+  build-test:
+    needs:
+      - generate-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    runs-on: ${{ matrix.architecture.runner }}
+    container: ${{ inputs.os == 'linux' && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
+    steps:
+      - name: Check strategy matrix
+        run: |
+          echo 'Operating system distro name: ${{ matrix.os.distro_name }}'
+          echo 'Operating system distro version: ${{ matrix.os.distro_version }}'
+          echo 'Operating system compiler name: ${{ matrix.os.compiler_name }}'
+          echo 'Operating system compiler version: ${{ matrix.os.compiler_version }}'
+          echo 'Architecture platform: ${{ matrix.architecture.platform }}'
+          echo 'Architecture runner: ${{ toJson(matrix.architecture.runner) }}'
+          echo 'Build type: ${{ matrix.build_type }}'
+          echo 'Build only: ${{ matrix.build_only }}'
+          echo 'CMake arguments: ${{ matrix.cmake_args }}'
+          echo 'CMake target: ${{ matrix.cmake_target }}'
+          echo 'Config name: ${{ matrix.config_name }}'
+
+      - name: Clean workspace (MacOS)
+        if: ${{ inputs.os == 'macos' }}
+        run: |
+          WORKSPACE=${{ github.workspace }}
+          echo "Cleaning workspace '${WORKSPACE}'."
+          if [ -z "${WORKSPACE}" ] || [ "${WORKSPACE}" = "/" ]; then
+            echo "Invalid working directory '${WORKSPACE}'."
+            exit 1
+          fi
+          find "${WORKSPACE}" -depth 1 | xargs rm -rfv
+
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Prepare runner
+        uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
+        with:
+          disable_ccache: false
+
+      - name: Check configuration (Windows)
+        if: ${{ inputs.os == 'windows' }}
+        run: |
+          echo 'Checking environment variables.'
+          set
+
+          echo 'Checking CMake version.'
+          cmake --version
+
+          echo 'Checking Conan version.'
+          conan --version
+      - name: Check configuration (Linux and MacOS)
+        if: ${{ inputs.os == 'linux' || inputs.os == 'macos' }}
+        run: |
+          echo 'Checking path.'
+          echo ${PATH} | tr ':' '\n'
+
+          echo 'Checking environment variables.'
+          env | sort
+
+          echo 'Checking CMake version.'
+          cmake --version
+
+          echo 'Checking compiler version.'
+          ${{ inputs.os == 'linux' && '${CC}' || 'clang' }} --version
+
+          echo 'Checking Conan version.'
+          conan --version
+
+          echo 'Checking Ninja version.'
+          ninja --version
+
+          echo 'Checking nproc version.'
+          nproc --version
+
+      - name: Set up Conan configuration
+        run: |
+          echo 'Installing configuration.'
+          cat conan/global.conf ${{ inputs.os == 'linux' && '>>' || '>' }} $(conan config home)/global.conf
+
+          echo 'Conan configuration:'
+          conan config show '*'
+      - name: Set up Conan profile
+        run: |
+          echo 'Installing profile.'
+          conan config install conan/profiles/default -tf $(conan config home)/profiles/
+
+          echo 'Conan profile:'
+          conan profile show
+      - name: Set up Conan remote
+        shell: bash
+        run: |
+          echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
+          conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
+
+          echo 'Listing Conan remotes.'
+          conan remote list
+
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
+        with:
+          build_dir: ${{ inputs.build_dir }}
+          build_type: ${{ matrix.build_type }}
+          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_url: ${{ inputs.conan_remote_url }}
+          conan_remote_username: ${{ secrets.conan_remote_username }}
+          conan_remote_password: ${{ secrets.conan_remote_password }}
+          force_build: ${{ inputs.dependencies_force_build }}
+          force_upload: ${{ inputs.dependencies_force_upload }}
+      - name: Build and test binary
+        uses: ./.github/actions/build-test
+        with:
+          build_dir: ${{ inputs.build_dir }}
+          build_only: ${{ matrix.build_only }}
+          build_type: ${{ matrix.build_type }}
+          cmake_args: ${{ matrix.cmake_args }}
+          cmake_target: ${{ matrix.cmake_target }}
+          codecov_token: ${{ secrets.codecov_token }}
+          os: ${{ inputs.os }}
