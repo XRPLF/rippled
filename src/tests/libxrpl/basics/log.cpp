@@ -234,8 +234,8 @@ TEST_CASE("Test JsonWriter")
         std::string buffer;
         beast::detail::SimpleJsonWriter writer{buffer};
 
-        writer.writeString("\n");
-        CHECK(writer.finish() == "\"\\n\"");
+        writer.writeString("\n\r\t123\b\f123");
+        CHECK(writer.finish() == "\"\\n\\r\\t123\\b\\f123\"");
     }
 
     {
@@ -261,6 +261,76 @@ TEST_CASE("Test JsonWriter")
         writer.writeString("\"\\");
         CHECK(writer.finish() == "\"\\\"\\\\\"");
     }
+
+    {
+        std::string buffer;
+        beast::detail::SimpleJsonWriter writer{buffer};
+
+        writer.startArray();
+        writer.writeBool(true);
+        writer.writeBool(false);
+        writer.writeNull();
+        writer.endArray();
+        CHECK(writer.finish() == "[true,false,null]");
+    }
+}
+
+namespace test_detail {
+struct ToCharsStruct{};
+
+std::to_chars_result
+to_chars(char* first, char* last, ToCharsStruct)
+{
+    *first = '0';
+    return std::to_chars_result{first + 1, std::errc{}};
+}
+
+struct StreamStruct
+{
+};
+
+std::ostream&
+operator<<(std::ostream& os, StreamStruct)
+{
+    os << "0";
+    return os;
+}
+
+}
+
+TEST_CASE("Test setJsonValue")
+{
+    std::ostringstream stringBuf;
+    std::string buffer;
+    beast::detail::SimpleJsonWriter writer{buffer};
+    writer.startObject();
+
+    log::detail::setJsonValue<bool>(writer, "testBool", true, &stringBuf);
+    log::detail::setJsonValue<std::int32_t>(writer, "testInt32", 1, &stringBuf);
+    log::detail::setJsonValue<std::uint32_t>(writer, "testUInt32", -1, &stringBuf);
+    log::detail::setJsonValue<std::int64_t>(writer, "testInt64", 1, &stringBuf);
+    log::detail::setJsonValue<std::uint64_t>(writer, "testUInt64", -1, &stringBuf);
+    log::detail::setJsonValue<double>(writer, "testDouble", 1.1, &stringBuf);
+    log::detail::setJsonValue<char const*>(writer, "testCharStar", "Char*", &stringBuf);
+    log::detail::setJsonValue<std::string>(writer, "testStdString", "StdString", &stringBuf);
+    log::detail::setJsonValue<std::string_view>(writer, "testStdStringView", "StdStringView", &stringBuf);
+    log::detail::setJsonValue<test_detail::ToCharsStruct>(writer, "testToChars", {}, &stringBuf);
+    log::detail::setJsonValue<test_detail::StreamStruct>(writer, "testStream", {}, &stringBuf);
+}
+
+TEST_CASE("Test json logging not enabled")
+{
+    std::string logStream;
+
+    MockLogs logs{logStream, beast::severities::kAll};
+
+    beast::Journal::disableStructuredJournal();
+    beast::Journal::addGlobalAttributes(
+        log::attributes(log::attr("Field1", "Value1")));
+
+    logs.journal("Test123").debug() << "Test " << log::param(" Field1", "Value1") << log::field("Field2", "Value2");
+
+    CHECK(logStream.find("Test Value1") != std::string::npos);
 }
 
 /**
@@ -322,7 +392,7 @@ private:
     beast::Journal j_;
 };
 
-TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
+TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log fields")
 {
     beast::Journal::addGlobalAttributes(
         log::attributes(log::attr("Field2", "Value2")));
@@ -367,7 +437,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
         std::string{"true Test false"});
 }
 
-TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
+TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
 {
     {
         stream().str("");
@@ -460,7 +530,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogLevels")
     }
 }
 
-TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogStream")
+TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log stream")
 {
     journal().stream(beast::severities::kError) << "Test";
 
@@ -475,7 +545,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogStream")
         beast::severities::to_string(beast::severities::kError));
 }
 
-TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogParams")
+TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log params")
 {
     journal().debug() << "Test: " << log::param("Field1", 1) << ", "
                       << log::param(
@@ -513,7 +583,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogParams")
         std::string{"Test: 1, 18446744073709551615, 3.141592653589793"});
 }
 
-TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
+TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log fields")
 {
     journal().debug() << "Test" << log::field("Field1", 1)
                       << log::field(
@@ -546,7 +616,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJsonLogFields")
     CHECK(logValue.as_object()["Message"].get_string() == "Test");
 }
 
-TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributes")
+TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test journal attributes")
 {
     beast::Journal j{
         journal(),
@@ -574,7 +644,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributes")
             .get_int64() == 2);
 }
 
-TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
+TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test journal attributes inheritable")
 {
     beast::Journal j{
         journal(),
@@ -610,9 +680,68 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "TestJournalAttributesInheritable")
             .get_int64() == 2);
 }
 
+TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test copying journal")
+{
+    {
+        beast::Journal j{
+            journal(),
+            log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
+        beast::Journal j2{j};
+
+        j2.debug() << "Test";
+
+        boost::system::error_code ec;
+        auto logValue = boost::json::parse(stream().str(), ec);
+        CHECK(ec == boost::system::errc::success);
+
+        CHECK(logValue.as_object()["JournalParams"]
+                  .as_object()["Field1"]
+                  .is_string());
+        CHECK(
+            logValue.as_object()["JournalParams"]
+                .as_object()["Field1"]
+                .get_string() == std::string{"Value1"});
+        CHECK(logValue.as_object()["JournalParams"]
+                  .as_object()["Field2"]
+                  .is_number());
+        CHECK(
+            logValue.as_object()["JournalParams"]
+                .as_object()["Field2"]
+                .get_int64() == 2);
+    }
+    {
+        stream().str("");
+        beast::Journal j{
+            journal().sink()};
+        beast::Journal j2{j,
+            log::attributes(log::attr("Field1", "Value1"), log::attr("Field2", 2))};
+
+        j2.debug() << "Test";
+
+        boost::system::error_code ec;
+        auto logValue = boost::json::parse(stream().str(), ec);
+        CHECK(ec == boost::system::errc::success);
+
+        CHECK(logValue.as_object()["JournalParams"]
+                  .as_object()["Field1"]
+                  .is_string());
+        CHECK(
+            logValue.as_object()["JournalParams"]
+                .as_object()["Field1"]
+                .get_string() == std::string{"Value1"});
+        CHECK(logValue.as_object()["JournalParams"]
+                  .as_object()["Field2"]
+                  .is_number());
+        CHECK(
+            logValue.as_object()["JournalParams"]
+                .as_object()["Field2"]
+                .get_int64() == 2);
+    }
+}
+
 TEST_CASE_FIXTURE(
     JsonLogStreamFixture,
-    "TestJournalAttributesInheritableAfterMoving")
+    "Test journal attributes inheritable after moving")
 {
     beast::Journal j{
         journal(),
@@ -651,7 +780,7 @@ TEST_CASE_FIXTURE(
 
 TEST_CASE_FIXTURE(
     JsonLogStreamFixture,
-    "TestJournalAttributesInheritableAfterCopyAssignment")
+    "Test journal attributes inheritable after copy assignment")
 {
     beast::Journal j{
         std::move(journal()),
@@ -685,7 +814,7 @@ TEST_CASE_FIXTURE(
 
 TEST_CASE_FIXTURE(
     JsonLogStreamFixture,
-    "TestJournalAttributesInheritableAfterMoveAssignment")
+    "Test journal attributes inheritable after move assignment")
 {
     beast::Journal j{
         journal(),
