@@ -4,6 +4,7 @@
 
 add_library (opts INTERFACE)
 add_library (Ripple::opts ALIAS opts)
+include(CodeCoverage)
 target_compile_definitions (opts
   INTERFACE
     BOOST_ASIO_DISABLE_HANDLER_TYPE_REQUIREMENTS
@@ -28,16 +29,17 @@ target_compile_options (opts
     $<$<AND:$<BOOL:${is_gcc}>,$<COMPILE_LANGUAGE:CXX>>:-Wsuggest-override>
     $<$<BOOL:${is_gcc}>:-Wno-maybe-uninitialized>
     $<$<BOOL:${perf}>:-fno-omit-frame-pointer>
-    $<$<AND:$<BOOL:${coverage}>,$<COMPILE_LANGUAGE:CXX>>:${COVERAGE_CXX_COMPILER_FLAGS}>
-    $<$<AND:$<BOOL:${coverage}>,$<COMPILE_LANGUAGE:C>>:${COVERAGE_C_COMPILER_FLAGS}>
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
 target_link_libraries (opts
   INTERFACE
-    $<$<BOOL:${coverage}>:-${COVERAGE_LINKER_FLAGS}>
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
+
+if (${coverage})
+  add_code_coverage_to_target(opts INTERFACE)
+endif ()
 
 if(jemalloc)
   find_package(jemalloc REQUIRED)

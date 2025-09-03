@@ -104,6 +104,11 @@
 # 2025-08-28, Bronek Kozicki
 #     - fix "At least one COMMAND must be given" CMake warning from policy CMP0175
 #
+# 2025-09-03, Jingchen Wu
+#     - remove the unused function append_coverage_compiler_flags
+#     - rename append_coverage_compiler_flags_to_target to add_code_coverage_to_target
+#     - refactor add_code_coverage_to_target to make it use target_link_libraries
+#
 # USAGE:
 #
 # 1. Copy this file into your cmake modules path.
@@ -112,10 +117,8 @@
 #    using a CMake option() to enable it just optionally):
 #      include(CodeCoverage)
 #
-# 3. Append necessary compiler flags for all supported source files:
-#      append_coverage_compiler_flags()
-#    Or for specific target:
-#      append_coverage_compiler_flags_to_target(YOUR_TARGET_NAME)
+# 3. Append necessary compiler flags and linker flags for all supported source files:
+#      add_code_coverage_to_target(<target> <PRIVATE|PUBLIC|INTERFACE>)
 #
 # 3.a (OPTIONAL) Set appropriate optimization flags, e.g. -O0, -O1 or -Og
 #
@@ -209,29 +212,49 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     include(CheckCCompilerFlag)
     include(CheckLinkerFlag)
 
+    set(COVERAGE_CXX_COMPILER_FLAGS ${COVERAGE_COMPILER_FLAGS})
+    set(COVERAGE_C_COMPILER_FLAGS ${COVERAGE_COMPILER_FLAGS})
+    set(COVERAGE_CXX_LINKER_FLAGS ${COVERAGE_COMPILER_FLAGS})
+    set(COVERAGE_C_LINKER_FLAGS ${COVERAGE_COMPILER_FLAGS})
+
     check_cxx_compiler_flag(-fprofile-abs-path HAVE_cxx_fprofile_abs_path)
     if(HAVE_cxx_fprofile_abs_path)
-        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-abs-path")
+        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_CXX_COMPILER_FLAGS} -fprofile-abs-path")
     endif()
 
     check_c_compiler_flag(-fprofile-abs-path HAVE_c_fprofile_abs_path)
     if(HAVE_c_fprofile_abs_path)
-        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-abs-path")
+        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_C_COMPILER_FLAGS} -fprofile-abs-path")
+    endif()
+
+    check_linker_flag(CXX -fprofile-abs-path HAVE_cxx_linker_fprofile_abs_path)
+    if(HAVE_cxx_linker_fprofile_abs_path)
+        set(COVERAGE_CXX_LINKER_FLAGS "${COVERAGE_CXX_LINKER_FLAGS} -fprofile-abs-path")
+    endif()
+
+    check_linker_flag(C -fprofile-abs-path HAVE_c_linker_fprofile_abs_path)
+    if(HAVE_c_linker_fprofile_abs_path)
+        set(COVERAGE_C_LINKER_FLAGS "${COVERAGE_C_LINKER_FLAGS} -fprofile-abs-path")
     endif()
 
     check_cxx_compiler_flag(-fprofile-update=atomic HAVE_cxx_fprofile_update)
     if(HAVE_cxx_fprofile_update)
-        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS}  -fprofile-update=atomic")
+        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_CXX_COMPILER_FLAGS}  -fprofile-update=atomic")
     endif()
 
     check_c_compiler_flag(-fprofile-update=atomic HAVE_c_fprofile_update)
     if(HAVE_c_fprofile_update)
-        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-update=atomic")
+        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_C_COMPILER_FLAGS} -fprofile-update=atomic")
     endif()
 
-    check_linker_flag(C -fprofile-update=atomic HAVE_linker_fprofile_update)
-    if(HAVE_linker_fprofile_update)
-        set(COVERAGE_LINKER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-update=atomic")
+    check_linker_flag(CXX -fprofile-update=atomic HAVE_cxx_linker_fprofile_update)
+    if(HAVE_cxx_linker_fprofile_update)
+        set(COVERAGE_CXX_LINKER_FLAGS "${COVERAGE_CXX_LINKER_FLAGS} -fprofile-update=atomic")
+    endif()
+
+    check_linker_flag(C -fprofile-update=atomic HAVE_c_linker_fprofile_update)
+    if(HAVE_c_linker_fprofile_update)
+        set(COVERAGE_C_LINKER_FLAGS "${COVERAGE_C_LINKER_FLAGS} -fprofile-update=atomic")
     endif()
 
 endif()
@@ -461,18 +484,14 @@ function(setup_target_for_coverage_gcovr)
     )
 endfunction() # setup_target_for_coverage_gcovr
 
-function(append_coverage_compiler_flags)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COVERAGE_COMPILER_FLAGS}" PARENT_SCOPE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_COMPILER_FLAGS}" PARENT_SCOPE)
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${COVERAGE_COMPILER_FLAGS}" PARENT_SCOPE)
-    message(STATUS "Appending code coverage compiler flags: ${COVERAGE_COMPILER_FLAGS}")
-endfunction() # append_coverage_compiler_flags
-
 # Setup coverage for specific library
-function(append_coverage_compiler_flags_to_target name)
-    separate_arguments(_flag_list NATIVE_COMMAND "${COVERAGE_COMPILER_FLAGS}")
-    target_compile_options(${name} PRIVATE ${_flag_list})
-    if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-        target_link_libraries(${name} PRIVATE gcov)
-    endif()
+function(add_code_coverage_to_target name scope)
+    target_link_libraries(${name} ${scope}
+        $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
+        $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
+
+    target_link_libraries (${name} ${scope}
+            $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS}>
+            $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS}>
+    )
 endfunction()
