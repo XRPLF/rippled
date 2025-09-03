@@ -187,7 +187,7 @@ public:
         char const* fn,
         int meta = sMD_Default,
         IsSigning signing = IsSigning::yes);
-    explicit SField(private_access_tag_t, int fc);
+    explicit SField(private_access_tag_t, int fc, char const* fn);
 
     static SField const&
     getField(int fieldCode);
