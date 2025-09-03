@@ -638,7 +638,7 @@ public:
     operator=(Journal const& other)
     {
         if (&other == this)
-            return *this;
+            return *this;   // LCOV_EXCL_LINE
 
         m_sink = other.m_sink;
         m_name = other.m_name;
@@ -875,6 +875,13 @@ concept ToCharsFormattable = requires(T val) {
 };
 
 template <typename T>
+concept StreamFormattable = requires(T val) {
+    {
+        std::declval<std::ostream&>() << val
+    } -> std::convertible_to<std::ostream&>;
+};
+
+template <typename T>
 void
 setJsonValue(
     beast::detail::SimpleJsonWriter& writer,
@@ -941,12 +948,14 @@ setJsonValue(
             outStream->write(value, std::strlen(value));
         }
     }
-    else if constexpr (std::is_same_v<ValueType, std::string>)
+    else if constexpr (
+        std::is_same_v<ValueType, std::string> ||
+        std::is_same_v<ValueType, std::string_view>)
     {
         writer.writeString(value);
         if (outStream)
         {
-            outStream->write(value.c_str(), value.length());
+            outStream->write(value.data(), value.size());
         }
     }
     else
@@ -968,19 +977,26 @@ setJsonValue(
             }
         }
 
-        std::ostringstream oss;
-        oss.imbue(std::locale::classic());
-        oss << value;
-
-        auto str = oss.str();
-
-        writer.writeString(str);
-
-        if (outStream)
+        if constexpr (StreamFormattable<ValueType>)
         {
-            outStream->write(
-                str.c_str(), static_cast<std::streamsize>(str.size()));
+            std::ostringstream oss;
+            oss.imbue(std::locale::classic());
+            oss << value;
+
+            auto str = oss.str();
+
+            writer.writeString(str);
+
+            if (outStream)
+            {
+                outStream->write(
+                    str.c_str(), static_cast<std::streamsize>(str.size()));
+            }
+
+            return;
         }
+
+        static_assert(ToCharsFormattable<ValueType> || StreamFormattable<ValueType>);
     }
 }
 }  // namespace detail
@@ -990,7 +1006,10 @@ std::ostream&
 operator<<(std::ostream& os, LogParameter<T> const& param)
 {
     if (!beast::Journal::m_jsonLogsEnabled)
+    {
+        os << param.value_;
         return os;
+    }
     detail::setJsonValue(
         beast::Journal::currentJsonLogContext_.writer(),
         param.name_,
