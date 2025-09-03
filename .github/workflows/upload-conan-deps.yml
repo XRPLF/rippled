@@ -1,0 +1,56 @@
+name: Upload Conan Dependencies
+
+on:
+  schedule:
+    - cron: "0 9 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      force_source_build:
+        description: "Force source build of all dependencies"
+        required: false
+        default: false
+        type: boolean
+      force_upload:
+        description: "Force upload of all dependencies"
+        required: false
+        default: false
+        type: boolean
+  pull_request:
+    branches: [develop]
+    paths:
+      - .github/workflows/upload-conan-deps.yml
+
+      - .github/actions/build-deps/action.yml
+      - ".github/scripts/strategy-matrix/**"
+
+      - conanfile.py
+      - conan.lock
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/upload-conan-deps.yml
+
+      - .github/actions/build-deps/action.yml
+      - ".github/scripts/strategy-matrix/**"
+
+      - conanfile.py
+      - conan.lock
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  run-upload-conan-deps:
+    strategy:
+      fail-fast: true
+      matrix:
+        os: ["linux", "macos", "windows"]
+    uses: ./.github/workflows/upload-conan-deps-os.yml
+    with:
+      force_source_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
+      force_upload: ${{ github.event.inputs.force_upload == 'true' }}
+      os: ${{ matrix.os }}
+    secrets:
+      CONAN_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      CONAN_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}

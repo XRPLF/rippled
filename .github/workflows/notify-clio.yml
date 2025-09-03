@@ -9,12 +9,14 @@ on:
     inputs:
       conan_remote_name:
         description: "The name of the Conan remote to use."
-        required: true
+        required: false
         type: string
+        default: xrplf
       conan_remote_url:
         description: "The URL of the Conan endpoint to use."
-        required: true
+        required: false
         type: string
+        default: https://conan.ripplex.io
     secrets:
       clio_notify_token:
         description: "The GitHub token to notify Clio about new versions."
@@ -50,12 +52,13 @@ jobs:
           echo "channel=pr_${{ github.event.pull_request.number }}" >> "${GITHUB_OUTPUT}"
           echo 'Extracting version.'
           echo "version=$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" >> "${GITHUB_OUTPUT}"
-      - name: Add Conan remote
-        run: |
-          echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
-          conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
-          echo 'Listing Conan remotes.'
-          conan remote list
+
+      - name: Set up Conan
+        uses: ./.github/actions/setup-conan
+        with:
+          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_url: ${{ inputs.conan_remote_url }}
+
       - name: Log into Conan remote
         run: conan remote login ${{ inputs.conan_remote_name }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
       - name: Upload package
