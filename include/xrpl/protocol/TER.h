@@ -673,7 +673,8 @@ isTerRetry(TER x) noexcept
 inline bool
 isTesSuccess(TER x) noexcept
 {
-    return (x == tesSUCCESS);
+    // Makes use of TERSubset::operator bool()
+    return !(x);
 }
 
 inline bool
