@@ -1215,10 +1215,6 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                            << ", Instance Cookie: "
                            << log::param("InstanceCookie", instanceCookie_);
 
-    beast::Journal::addGlobalAttributes(log::attributes(
-        log::attr("RippledVersion", BuildInfo::getFullVersionString()),
-        log::attr("InstanceCookie", to_string(instanceCookie_))));
-
     if (numberOfThreads(*config_) < 2)
     {
         JLOG(m_journal.warn()) << "Limited to a single I/O service thread by "

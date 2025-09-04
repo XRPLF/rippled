@@ -26,14 +26,14 @@
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>
 
+#include <array>
+#include <chrono>
 #include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
-#include <utility>
-#include <chrono>
-#include <array>
 #include <span>
+#include <utility>
 
 namespace ripple {
 
@@ -150,14 +150,15 @@ private:
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
-    
+
     // Batching members
     mutable std::mutex batchMutex_;
     static constexpr size_t BATCH_BUFFER_SIZE = 64 * 1024;  // 64KB buffer
     std::array<char, BATCH_BUFFER_SIZE> batchBuffer_;
     std::span<char> writeBuffer_;  // Points to available write space
     std::span<char> readBuffer_;   // Points to data ready to flush
-    std::chrono::steady_clock::time_point lastFlush_ = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point lastFlush_ =
+        std::chrono::steady_clock::now();
 
 public:
     Logs(beast::severities::Severity level);
@@ -209,7 +210,7 @@ public:
 
     std::string
     rotate();
-    
+
     void
     flushBatch();
 
@@ -255,7 +256,7 @@ private:
         // If the message exceeds this length it will be truncated with elipses.
         maximumMessageCharacters = 12 * 1024
     };
-    
+
     void
     flushBatchUnsafe();
 };

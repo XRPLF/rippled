@@ -680,7 +680,8 @@ PeerImp::setTimer()
 
     if (ec)
     {
-        JLOG(journal_.error()) << "setTimer: " << log::param("ErrorCode", ec.message());
+        JLOG(journal_.error())
+            << "setTimer: " << log::param("ErrorCode", ec.message());
         return;
     }
     timer_.async_wait(bind_executor(
