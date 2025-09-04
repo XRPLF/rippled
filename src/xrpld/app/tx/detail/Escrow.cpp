@@ -650,6 +650,15 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
         return temMALFORMED;
 
+    return tesSUCCESS;
+}
+
+NotTEC
+EscrowFinish::preflightSigValidated(PreflightContext const& ctx)
+{
+    auto const cb = ctx.tx[~sfCondition];
+    auto const fb = ctx.tx[~sfFulfillment];
+
     if (cb && fb)
     {
         auto& router = ctx.app.getHashRouter();

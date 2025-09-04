@@ -215,6 +215,10 @@ public:
         static NotTEC
         preflight(PreflightContext const& ctx);
 
+        // Optional, rarely needed, if the transaction does any expensive
+        // checks after the signature is verified.
+        static NotTEC preflightSigValidated(PreflightContext const& ctx);
+
        * Do not try to call preflight1 or preflight2 directly.
        * Do not check whether relevant amendments are enabled in preflight.
          Instead, define isEnabled.
@@ -283,6 +287,10 @@ protected:
     // Base class always returns tfUniversalMask
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
+
+    // Base class always returns tesSUCCESS
+    static NotTEC
+    preflightSigValidated(PreflightContext const& ctx);
 
     static bool
     validDataLength(std::optional<Slice> const& slice, std::size_t maxLength);
@@ -393,7 +401,10 @@ Transactor::invokePreflight(PreflightContext const& ctx)
     if (auto const ret = T::preflight(ctx))
         return ret;
 
-    return preflight2(ctx);
+    if (auto const ret = preflight2(ctx))
+        return ret;
+
+    return T::preflightSigValidated(ctx);
 }
 
 template <class T>

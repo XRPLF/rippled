@@ -50,6 +50,9 @@ public:
     preflight(PreflightContext const& ctx);
 
     static NotTEC
+    preflightSigValidated(PreflightContext const& ctx);
+
+    static NotTEC
     checkSign(PreclaimContext const& ctx);
 
     TER

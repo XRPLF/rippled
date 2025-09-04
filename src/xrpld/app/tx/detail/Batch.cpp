@@ -241,7 +241,6 @@ Batch::preflight(PreflightContext const& ctx)
     }
 
     // Validation Inner Batch Txns
-    std::unordered_set<AccountID> requiredSigners;
     std::unordered_set<uint256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>>
         accountSeqTicket;
@@ -371,6 +370,23 @@ Batch::preflight(PreflightContext const& ctx)
                 }
             }
         }
+    }
+
+    return tesSUCCESS;
+}
+
+NotTEC
+Batch::preflightSigValidated(PreflightContext const& ctx)
+{
+    auto const parentBatchId = ctx.tx.getTransactionID();
+    auto const outerAccount = ctx.tx.getAccountID(sfAccount);
+    auto const& rawTxns = ctx.tx.getFieldArray(sfRawTransactions);
+
+    // Build the signers list
+    std::unordered_set<AccountID> requiredSigners;
+    for (STObject const& rb : rawTxns)
+    {
+        auto const innerAccount = rb.getAccountID(sfAccount);
 
         // If the inner account is the same as the outer account, do not add the
         // inner account to the required signers set.
