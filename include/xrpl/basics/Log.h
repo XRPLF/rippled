@@ -31,6 +31,9 @@
 #include <memory>
 #include <mutex>
 #include <utility>
+#include <chrono>
+#include <array>
+#include <span>
 
 namespace ripple {
 
@@ -129,33 +132,13 @@ private:
             Does nothing if there is no associated system file.
         */
         void
-        write(char const* text);
+        write(std::string_view str);
 
-        /** write to the log file and append an end of line marker.
-            Does nothing if there is no associated system file.
-        */
-        void
-        writeln(char const* text);
-
-        /** Write to the log file using std::string. */
-        /** @{ */
-        void
-        write(std::string const& str)
-        {
-            write(str.c_str());
-        }
-
-        void
-        writeln(std::string const& str)
-        {
-            writeln(str.c_str());
-        }
         /** @} */
 
     private:
         std::unique_ptr<std::ofstream> m_stream;
         boost::filesystem::path m_path;
-        std::mutex mutable fileMutex_;
     };
 
     std::mutex mutable sinkSetMutex_;
@@ -167,6 +150,14 @@ private:
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
+    
+    // Batching members
+    mutable std::mutex batchMutex_;
+    static constexpr size_t BATCH_BUFFER_SIZE = 64 * 1024;  // 64KB buffer
+    std::array<char, BATCH_BUFFER_SIZE> batchBuffer_;
+    std::span<char> writeBuffer_;  // Points to available write space
+    std::span<char> readBuffer_;   // Points to data ready to flush
+    std::chrono::steady_clock::time_point lastFlush_ = std::chrono::steady_clock::now();
 
 public:
     Logs(beast::severities::Severity level);
@@ -175,7 +166,7 @@ public:
     Logs&
     operator=(Logs const&) = delete;
 
-    virtual ~Logs() = default;
+    virtual ~Logs();  // Need to flush on destruction
 
     bool
     open(boost::filesystem::path const& pathToLogFile);
@@ -218,6 +209,9 @@ public:
 
     std::string
     rotate();
+    
+    void
+    flushBatch();
 
     /**
      * Set flag to write logs to stderr (false) or not (true).
@@ -261,6 +255,9 @@ private:
         // If the message exceeds this length it will be truncated with elipses.
         maximumMessageCharacters = 12 * 1024
     };
+    
+    void
+    flushBatchUnsafe();
 };
 
 // Wraps a Journal::Stream to skip evaluation of

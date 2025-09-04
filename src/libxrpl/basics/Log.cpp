@@ -38,6 +38,10 @@
 
 namespace ripple {
 
+namespace {
+    constexpr auto FLUSH_INTERVAL = std::chrono::milliseconds(10);  // Max delay before flush
+}
+
 Logs::Sink::Sink(
     std::string const& partition,
     beast::severities::Severity thresh,
@@ -86,7 +90,6 @@ Logs::File::open(boost::filesystem::path const& path)
 
     if (stream->good())
     {
-        std::lock_guard lock(fileMutex_);
         m_path = path;
 
         m_stream = std::move(stream);
@@ -111,33 +114,28 @@ Logs::File::closeAndReopen()
 void
 Logs::File::close()
 {
-    std::lock_guard lock(fileMutex_);
     m_stream = nullptr;
 }
 
 void
-Logs::File::write(char const* text)
+Logs::File::write(std::string_view text)
 {
-    std::lock_guard lock(fileMutex_);
     if (m_stream != nullptr)
-        (*m_stream) << text;
-}
-
-void
-Logs::File::writeln(char const* text)
-{
-    std::lock_guard lock(fileMutex_);
-    if (m_stream != nullptr)
-    {
-        (*m_stream) << text << '\n';
-    }
+        m_stream->write(text.data(), text.size());
 }
 
 //------------------------------------------------------------------------------
 
 Logs::Logs(beast::severities::Severity thresh)
     : thresh_(thresh)  // default severity
+    , writeBuffer_(batchBuffer_)  // Initially, entire buffer is available for writing
+    , readBuffer_(batchBuffer_.data(), 0)  // No data ready to flush initially
 {
+}
+
+Logs::~Logs()
+{
+    flushBatch();  // Ensure all logs are written on shutdown
 }
 
 bool
@@ -195,17 +193,71 @@ Logs::write(
 {
     std::string s;
     format(s, text, level, partition);
-    file_.writeln(s);
+    
+    // Console output still immediate for responsiveness
     if (!silent_)
         std::cerr << s << '\n';
+    
+    // Add to batch buffer for file output
+    {
+        std::lock_guard lock(batchMutex_);
+        
+        size_t logSize = s.size() + 1;  // +1 for newline
+        
+        // If log won't fit in current write buffer, flush first
+        if (logSize > writeBuffer_.size()) {
+            flushBatchUnsafe();
+        }
+        
+        // Copy log into write buffer
+        std::copy(s.begin(), s.end(), writeBuffer_.begin());
+        writeBuffer_[s.size()] = '\n';
+        
+        // Update spans: expand read buffer, shrink write buffer
+        size_t totalUsed = readBuffer_.size() + logSize;
+        readBuffer_ = std::span<char>(batchBuffer_.data(), totalUsed);
+        writeBuffer_ = std::span<char>(batchBuffer_.data() + totalUsed, 
+                                      batchBuffer_.size() - totalUsed);
+        
+        auto now = std::chrono::steady_clock::now();
+        bool shouldFlush = (now - lastFlush_) >= FLUSH_INTERVAL;
+        
+        if (shouldFlush) {
+            flushBatchUnsafe();
+            lastFlush_ = now;
+        }
+    }
+    
     // VFALCO TODO Fix console output
     // if (console)
     //    out_.write_console(s);
 }
 
+void
+Logs::flushBatch()
+{
+    std::lock_guard lock(batchMutex_);
+    flushBatchUnsafe();
+}
+
+void
+Logs::flushBatchUnsafe()
+{
+    if (readBuffer_.empty())
+        return;
+        
+    // Write the read buffer contents to file in one system call
+    file_.write(std::string_view{readBuffer_.data(), readBuffer_.size()});
+    
+    // Reset spans: entire buffer available for writing, nothing to read
+    writeBuffer_ = std::span<char>(batchBuffer_);
+    readBuffer_ = std::span<char>(batchBuffer_.data(), 0);
+}
+
 std::string
 Logs::rotate()
 {
+    flushBatch();  // Flush pending logs before rotating
     bool const wasOpened = file_.closeAndReopen();
     if (wasOpened)
         return "The log file was closed and reopened.";
