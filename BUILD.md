@@ -482,7 +482,7 @@ You have to update this file every time you add a new dependency or change a rev
 To do that, run the following command in the repository root:
 
 ```bash
-conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True'
+conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True' -r=xrplf
 ```
 
 ## Coverage report
