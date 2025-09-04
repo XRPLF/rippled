@@ -101,6 +101,7 @@ jobs:
           echo 'CMake arguments: ${{ matrix.cmake_args }}'
           echo 'CMake target: ${{ matrix.cmake_target }}'
           echo 'Config name: ${{ matrix.config_name }}'
+
       - name: Clean workspace (MacOS)
         if: ${{ inputs.os == 'macos' }}
         run: |
@@ -111,18 +112,14 @@ jobs:
             exit 1
           fi
           find "${WORKSPACE}" -depth 1 | xargs rm -rfv
+
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - name: Set up Python (Windows)
-        if: ${{ inputs.os == 'windows' }}
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+      - name: Prepare runner
+        uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
         with:
-          python-version: 3.13
-      - name: Install build tools (Windows)
-        if: ${{ inputs.os == 'windows' }}
-        run: |
-          echo 'Installing build tools.'
-          pip install wheel conan
+          disable_ccache: false
+
       - name: Check configuration (Windows)
         if: ${{ inputs.os == 'windows' }}
         run: |
@@ -134,11 +131,6 @@ jobs:
 
           echo 'Checking Conan version.'
           conan --version
-      - name: Install build tools (MacOS)
-        if: ${{ inputs.os == 'macos' }}
-        run: |
-          echo 'Installing build tools.'
-          brew install --quiet cmake conan ninja coreutils
       - name: Check configuration (Linux and MacOS)
         if: ${{ inputs.os == 'linux' || inputs.os == 'macos' }}
         run: |
@@ -162,18 +154,7 @@ jobs:
 
           echo 'Checking nproc version.'
           nproc --version
-      - name: Set up Conan home directory (MacOS)
-        if: ${{ inputs.os == 'macos' }}
-        run: |
-          echo 'Setting up Conan home directory.'
-          export CONAN_HOME=${{ github.workspace }}/.conan
-          mkdir -p ${CONAN_HOME}
-      - name: Set up Conan home directory (Windows)
-        if: ${{ inputs.os == 'windows' }}
-        run: |
-          echo 'Setting up Conan home directory.'
-          set CONAN_HOME=${{ github.workspace }}\.conan
-          mkdir -p %CONAN_HOME%
+
       - name: Set up Conan configuration
         run: |
           echo 'Installing configuration.'
@@ -196,6 +177,7 @@ jobs:
 
           echo 'Listing Conan remotes.'
           conan remote list
+
       - name: Build dependencies
         uses: ./.github/actions/build-deps
         with:
