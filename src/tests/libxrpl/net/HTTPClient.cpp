@@ -17,20 +17,20 @@
 */
 //==============================================================================
 
-#include <xrpl/net/HTTPClient.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/net/HTTPClient.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 
 #include <doctest/doctest.h>
 
 #include <atomic>
-#include <thread>
 #include <map>
+#include <thread>
 
 using namespace ripple;
 
@@ -45,7 +45,7 @@ private:
     std::thread server_thread_;
     std::atomic<bool> running_{true};
     unsigned short port_;
-    
+
     // Custom headers to return
     std::map<std::string, std::string> custom_headers_;
     std::string response_body_;
@@ -55,16 +55,15 @@ public:
     TestHTTPServer() : acceptor_(ioc_), port_(0)
     {
         // Bind to any available port
-        boost::asio::ip::tcp::endpoint endpoint{
-            boost::asio::ip::tcp::v4(), 0};
+        boost::asio::ip::tcp::endpoint endpoint{boost::asio::ip::tcp::v4(), 0};
         acceptor_.open(endpoint.protocol());
         acceptor_.set_option(boost::asio::socket_base::reuse_address(true));
         acceptor_.bind(endpoint);
         acceptor_.listen();
-        
+
         // Get the actual port that was assigned
         port_ = acceptor_.local_endpoint().port();
-        
+
         // Start server thread
         server_thread_ = std::thread([this] { run(); });
     }
@@ -74,25 +73,33 @@ public:
         stop();
     }
 
-    unsigned short port() const { return port_; }
+    unsigned short
+    port() const
+    {
+        return port_;
+    }
 
-    void setHeader(std::string const& name, std::string const& value)
+    void
+    setHeader(std::string const& name, std::string const& value)
     {
         custom_headers_[name] = value;
     }
 
-    void setResponseBody(std::string const& body)
+    void
+    setResponseBody(std::string const& body)
     {
         response_body_ = body;
     }
 
-    void setStatusCode(unsigned int code)
+    void
+    setStatusCode(unsigned int code)
     {
         status_code_ = code;
     }
 
 private:
-    void stop()
+    void
+    stop()
     {
         running_ = false;
         acceptor_.close();
@@ -100,7 +107,8 @@ private:
             server_thread_.join();
     }
 
-    void run()
+    void
+    run()
     {
         while (running_)
         {
@@ -108,20 +116,23 @@ private:
             {
                 boost::asio::ip::tcp::socket socket(ioc_);
                 acceptor_.accept(socket);
-                
-                if (!running_) break;
-                
+
+                if (!running_)
+                    break;
+
                 handleConnection(std::move(socket));
             }
             catch (std::exception const&)
             {
                 // Connection errors are expected during shutdown
-                if (!running_) break;
+                if (!running_)
+                    break;
             }
         }
     }
 
-    void handleConnection(boost::asio::ip::tcp::socket socket)
+    void
+    handleConnection(boost::asio::ip::tcp::socket socket)
     {
         try
         {
@@ -135,13 +146,13 @@ private:
             res.version(req.version());
             res.result(status_code_);
             res.set(boost::beast::http::field::server, "TestServer");
-            
+
             // Add custom headers
             for (auto const& [name, value] : custom_headers_)
             {
                 res.set(name, value);
             }
-            
+
             // Set body and prepare payload first
             res.body() = response_body_;
             res.prepare_payload();
@@ -159,7 +170,7 @@ private:
 
             // Send response
             boost::beast::http::write(socket, res);
-            
+
             // Shutdown socket gracefully
             boost::system::error_code ec;
             socket.shutdown(boost::asio::ip::tcp::socket::shutdown_send, ec);
@@ -172,7 +183,8 @@ private:
 };
 
 // Helper function to run HTTP client test
-bool runHTTPTest(
+bool
+runHTTPTest(
     TestHTTPServer& server,
     std::string const& path,
     std::atomic<bool>& completed,
@@ -181,33 +193,35 @@ bool runHTTPTest(
     boost::system::error_code& result_error)
 {
     boost::asio::io_context ioc;
-    
+
     // Create a null journal for testing
     beast::Journal j{beast::Journal::getNullSink()};
-    
+
     // Initialize HTTPClient SSL context
     HTTPClient::initializeSSLContext("", "", false, j);
 
     HTTPClient::get(
-        false, // no SSL
+        false,  // no SSL
         ioc,
         "127.0.0.1",
         server.port(),
         path,
-        1024, // max response size
+        1024,  // max response size
         std::chrono::seconds(5),
-        [&](boost::system::error_code const& ec, int status, std::string const& data) -> bool {
+        [&](boost::system::error_code const& ec,
+            int status,
+            std::string const& data) -> bool {
             result_error = ec;
             result_status = status;
             result_data = data;
             completed = true;
-            return false; // don't retry
+            return false;  // don't retry
         },
         j);
 
     // Run the IO context until completion
     auto start = std::chrono::steady_clock::now();
-    while (!completed && 
+    while (!completed &&
            std::chrono::steady_clock::now() - start < std::chrono::seconds(10))
     {
         ioc.run_one_for(std::chrono::milliseconds(10));
@@ -216,17 +230,17 @@ bool runHTTPTest(
     return completed;
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 TEST_CASE("HTTPClient case insensitive Content-Length")
 {
     // Test different cases of Content-Length header
     std::vector<std::string> header_cases = {
-        "Content-Length",    // Standard case
-        "content-length",    // Lowercase - this tests the regex icase fix
-        "CONTENT-LENGTH",    // Uppercase
-        "Content-length",    // Mixed case
-        "content-Length"     // Mixed case 2
+        "Content-Length",  // Standard case
+        "content-length",  // Lowercase - this tests the regex icase fix
+        "CONTENT-LENGTH",  // Uppercase
+        "Content-length",  // Mixed case
+        "content-Length"   // Mixed case 2
     };
 
     for (auto const& header_name : header_cases)
@@ -242,7 +256,12 @@ TEST_CASE("HTTPClient case insensitive Content-Length")
         boost::system::error_code result_error;
 
         bool test_completed = runHTTPTest(
-             server, "/test", completed, result_status, result_data, result_error);
+            server,
+            "/test",
+            completed,
+            result_status,
+            result_data,
+            result_error);
 
         // Verify results
         CHECK(test_completed);
@@ -276,7 +295,7 @@ TEST_CASE("HTTPClient basic HTTP request")
 TEST_CASE("HTTPClient empty response")
 {
     TestHTTPServer server;
-    server.setResponseBody(""); // Empty body
+    server.setResponseBody("");  // Empty body
     server.setHeader("Content-Length", "0");
 
     std::atomic<bool> completed{false};
@@ -296,7 +315,7 @@ TEST_CASE("HTTPClient empty response")
 TEST_CASE("HTTPClient different status codes")
 {
     std::vector<unsigned int> status_codes = {200, 404, 500};
-    
+
     for (auto status : status_codes)
     {
         TestHTTPServer server;
@@ -309,7 +328,12 @@ TEST_CASE("HTTPClient different status codes")
         boost::system::error_code result_error;
 
         bool test_completed = runHTTPTest(
-            server, "/status", completed, result_status, result_data, result_error);
+            server,
+            "/status",
+            completed,
+            result_status,
+            result_data,
+            result_error);
 
         CHECK(test_completed);
         CHECK(!result_error);
