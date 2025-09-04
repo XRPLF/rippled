@@ -1519,6 +1519,12 @@ ValidMPTIssuance::finalize(
 
         if (tx.getTxnType() == ttESCROW_FINISH)
             return true;
+
+        if ((tx.getTxnType() == ttVAULT_CLAWBACK ||
+             tx.getTxnType() == ttVAULT_WITHDRAW) &&
+            mptokensDeleted_ == 1 && mptokensCreated_ == 0 &&
+            mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
+            return true;
     }
 
     if (mptIssuancesCreated_ != 0)
@@ -2044,6 +2050,7 @@ ValidVault::Vault::make(SLE const& from)
     self.asset = from.at(sfAsset);
     self.pseudoId = from.getAccountID(sfAccount);
     self.shareMPTID = from.getFieldH192(sfShareMPTID);
+    self.scale = from.getFieldU8(sfScale);
     self.assetsTotal = from.at(sfAssetsTotal);
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
@@ -2496,18 +2503,22 @@ ValidVault::finalize(
         }
         else
         {
+            Number const assetsTotalScaled{
+                updatedVault->assetsTotal.mantissa(),
+                updatedVault->assetsTotal.exponent() + updatedVault->scale};
             if (updatedShares->sharesTotal <= zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: shares outstanding must "
                                    "be greater than zero";
                 result = false;
             }
-            if (updatedShares->sharesTotal > updatedVault->assetsTotal)
+            if (updatedShares->sharesTotal > assetsTotalScaled)
             {
                 JLOG(j.fatal()) << "Invariant failed: shares outstanding must "
-                                   "not be greater than assets outstanding "
-                                << "shares=" << updatedShares->sharesTotal
-                                << " assets=" << updatedVault->assetsTotal;
+                                   "not be greater than assets outstanding"
+                                << " shares=" << updatedShares->sharesTotal
+                                << " assets=" << updatedVault->assetsTotal
+                                << " assets(scaled)=" << assetsTotalScaled;
                 result = false;
             }
             if (updatedVault->assetsAvailable > updatedVault->assetsTotal)

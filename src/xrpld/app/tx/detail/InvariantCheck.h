@@ -715,6 +715,7 @@ class ValidVault
         Asset asset = {};
         AccountID pseudoId = {};
         uint192 shareMPTID = beast::zero;
+        std::uint8_t scale = 0;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
