@@ -24,6 +24,7 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include <doctest/doctest.h>
 
@@ -141,9 +142,20 @@ private:
                 res.set(name, value);
             }
             
-            // Set body and content length
+            // Set body and prepare payload first
             res.body() = response_body_;
             res.prepare_payload();
+
+            // Override Content-Length with custom headers after prepare_payload
+            // This allows us to test case-insensitive header parsing
+            for (auto const& [name, value] : custom_headers_)
+            {
+                if (boost::iequals(name, "Content-Length"))
+                {
+                    res.erase(boost::beast::http::field::content_length);
+                    res.set(name, value);
+                }
+            }
 
             // Send response
             boost::beast::http::write(socket, res);
@@ -230,7 +242,7 @@ TEST_CASE("HTTPClient case insensitive Content-Length")
         boost::system::error_code result_error;
 
         bool test_completed = runHTTPTest(
-            server, "/test", completed, result_status, result_data, result_error);
+             server, "/test", completed, result_status, result_data, result_error);
 
         // Verify results
         CHECK(test_completed);
