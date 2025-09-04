@@ -213,7 +213,6 @@ NotTEC
 Batch::preflight(PreflightContext const& ctx)
 {
     auto const parentBatchId = ctx.tx.getTransactionID();
-    auto const outerAccount = ctx.tx.getAccountID(sfAccount);
     auto const flags = ctx.tx.getFlags();
 
     if (std::popcount(
