@@ -158,22 +158,13 @@ class TrustlineAuth_test : public jtx::AMMTest
             env.close();
         };
 
-        // We are going to test the behavior when bob and carol tries to send
-        // lptoken pre/post amendment.
-        //
-        // With fixEnforceTrustlineAuth amendment, carol and bob cannot receive
-        // nor send lptoken if they doesn't have one of the trustlines
+        // Test LPToken transfers pre/post fixEnforceTrustlineAuth amendment
+        // Pre-amendment: transfers allowed even if some trustlines are missing
+        // Post-amendment: transfers fail if required trustlines are missing
         if (features[fixEnforceTrustlineAuth])
-        {
             executeLPTokenPayments(tecNO_LINE);
-        }
-        // without fixEnforceTrustlineAuth, carol and bob can still receive and
-        // send lptoken freely even tho they don't have trustlines for one of
-        // the assets
         else
-        {
             executeLPTokenPayments(tesSUCCESS);
-        }
 
         // bob and carol create trustlines for the assets that they are
         // missing.
@@ -182,19 +173,14 @@ class TrustlineAuth_test : public jtx::AMMTest
         env(trust(carol, gw["BTC"](100'000)));
         env.close();
 
-        // With fixEnforceTrustlineAuth amendment, carol and bob cannot
-        // receive nor send lptoken if they have unauthorized trustlines
-        if (features[fixEnforceTrustlineAuth])
-        {
-            executeLPTokenPayments(tecNO_AUTH);
-        }
-        // without fixEnforceTrustlineAuth, carol and bob can still receive
-        // and send lptoken freely even tho they don't have authorized
+        // Post-amendment: transfers fail if trustlines exist but are
+        // unauthorized
+        // Pre-amendment: transfers succeed even with unauthorized
         // trustlines
+        if (features[fixEnforceTrustlineAuth])
+            executeLPTokenPayments(tecNO_AUTH);
         else
-        {
             executeLPTokenPayments(tesSUCCESS);
-        }
 
         // gateway authorizes bob and carol for their respective trustlines
         env(trust(gw, bob["USD"](100'000)), txflags(tfSetfAuth));
@@ -233,32 +219,29 @@ class TrustlineAuth_test : public jtx::AMMTest
         auto carolOfferSeq = env.seq(carol);
 
         auto const createOffers = [&]() {
+            // disable the amendment temporarily to create offers
+            env.disableFeature(fixEnforceTrustlineAuth);
+            env.close();
+
+            carolOfferSeq = env.seq(carol);
+            env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
+                txflags(tfPassive));
+            env.close();
+            BEAST_EXPECT(checkOffer(
+                env, carol, carolOfferSeq, XRP(10), STAmount{lpIssue, 10}));
+
+            bobOfferSeq = env.seq(bob);
+            env(offer(bob, STAmount{lpIssue, 10}, XRP(5)), txflags(tfPassive));
+            env.close();
+            BEAST_EXPECT(checkOffer(
+                env, bob, bobOfferSeq, STAmount{lpIssue, 10}, XRP(5)));
+
+            // re-enable the amendment if the test run has enabled it
+            // originally
+            if (features[fixEnforceTrustlineAuth])
             {
-                // disable the amendment temporarily to create offers
-                env.disableFeature(fixEnforceTrustlineAuth);
+                env.enableFeature(fixEnforceTrustlineAuth);
                 env.close();
-
-                carolOfferSeq = env.seq(carol);
-                env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
-                    txflags(tfPassive));
-                env.close();
-                BEAST_EXPECT(checkOffer(
-                    env, carol, carolOfferSeq, XRP(10), STAmount{lpIssue, 10}));
-
-                bobOfferSeq = env.seq(bob);
-                env(offer(bob, STAmount{lpIssue, 10}, XRP(5)),
-                    txflags(tfPassive));
-                env.close();
-                BEAST_EXPECT(checkOffer(
-                    env, bob, bobOfferSeq, STAmount{lpIssue, 10}, XRP(5)));
-
-                // re-enable the amendment if the test run has enabled it
-                // originally
-                if (features[fixEnforceTrustlineAuth])
-                {
-                    env.enableFeature(fixEnforceTrustlineAuth);
-                    env.close();
-                }
             }
         };
 
