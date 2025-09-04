@@ -206,12 +206,7 @@ preflight2(PreflightContext const& ctx)
 //------------------------------------------------------------------------------
 
 Transactor::Transactor(ApplyContext& ctx)
-    : ctx_(ctx)
-    , account_(ctx.tx.getAccountID(sfAccount))
-    , j_(ctx.journal,
-         log::attributes(
-             log::attr("TransactionID", to_string(ctx_.tx.getTransactionID())),
-             log::attr("AccountID", to_string(account_))))
+    : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
 {
 }
 

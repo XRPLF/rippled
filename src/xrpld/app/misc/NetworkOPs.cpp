@@ -594,7 +594,7 @@ public:
             {
                 JLOG(m_journal.error())
                     << "NetworkOPs: heartbeatTimer cancel error: "
-                    << log::param("Reason", ec.message());
+                    << ec.message();
             }
 
             ec.clear();
@@ -603,7 +603,7 @@ public:
             {
                 JLOG(m_journal.error())
                     << "NetworkOPs: clusterTimer cancel error: "
-                    << log::param("Reason", ec.message());
+                    << ec.message();
             }
 
             ec.clear();
@@ -612,7 +612,7 @@ public:
             {
                 JLOG(m_journal.error())
                     << "NetworkOPs: accountHistoryTxTimer cancel error: "
-                    << log::param("Reason", ec.message());
+                    << ec.message();
             }
         }
         // Make sure that any waitHandlers pending in our timers are done.
@@ -978,7 +978,7 @@ NetworkOPsImp::setTimer(
                 {
                     // Try again later and hope for the best.
                     JLOG(m_journal.error()) << "Timer got error '"
-                                            << log::param("Error", e.message())
+                                            << e.message()
                                             << "'.  Restarting timer.";
                     onError();
                 }
@@ -1024,7 +1024,7 @@ NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 {
     JLOG(m_journal.debug())
         << "Scheduling AccountHistory job for account "
-        << log::param("AccountID", toBase58(subInfo.index_->accountId_));
+        << toBase58(subInfo.index_->accountId_);
     using namespace std::chrono_literals;
     setTimer(
         accountHistoryTxTimer_,
@@ -1057,8 +1057,7 @@ NetworkOPsImp::processHeartbeatTimer()
                 ss << "Node count (" << numPeers << ") has fallen "
                    << "below required minimum (" << minPeerCount_ << ").";
                 JLOG(m_journal.warn())
-                    << ss.str() << log::field("NodeCount", numPeers)
-                    << log::field("RequiredMinimum", minPeerCount_);
+                    << ss.str();
                 CLOG(clog.ss()) << "set mode to DISCONNECTED: " << ss.str();
             }
             else
@@ -1081,7 +1080,7 @@ NetworkOPsImp::processHeartbeatTimer()
         {
             setMode(OperatingMode::CONNECTED);
             JLOG(m_journal.info())
-                << "Node count (" << log::param("NodeCount", numPeers)
+                << "Node count (" << numPeers
                 << ") is sufficient.";
             CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers
                             << " peers. ";
@@ -1190,10 +1189,6 @@ NetworkOPsImp::strOperatingMode(OperatingMode const mode, bool const admin)
 void
 NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 {
-    beast::Journal journal{
-        m_journal,
-        log::attributes(
-            log::attr("TransactionID", to_string(iTrans->getTransactionID())))};
     if (isNeedNetworkLedger())
     {
         // Nothing we can do if we've never been in sync
@@ -1204,7 +1199,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     if (iTrans->isFlag(tfInnerBatchTxn) &&
         m_ledgerMaster.getValidatedRules().enabled(featureBatch))
     {
-        JLOG(journal.error())
+        JLOG(m_journal.error())
             << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
         return;
     }
@@ -1217,7 +1212,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     if ((flags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
-        JLOG(journal.warn()) << "Submitted transaction cached bad";
+        JLOG(m_journal.warn()) << "Submitted transaction cached bad";
         return;
     }
 
@@ -1231,14 +1226,14 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
         if (validity != Validity::Valid)
         {
-            JLOG(journal.warn()) << "Submitted transaction invalid: "
+            JLOG(m_journal.warn()) << "Submitted transaction invalid: "
                                  << log::param("Reason", reason);
             return;
         }
     }
     catch (std::exception const& ex)
     {
-        JLOG(journal.warn()) << "Exception checking transaction "
+        JLOG(m_journal.warn()) << "Exception checking transaction "
                              << log::param("TransactionID", txid) << ": "
                              << log::param("Reason", ex.what());
 
@@ -1258,16 +1253,12 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 bool
 NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 {
-    beast::Journal journal{
-        m_journal,
-        log::attributes(
-            log::attr("TransactionID", to_string(transaction->getID())))};
     auto const newFlags = app_.getHashRouter().getFlags(transaction->getID());
 
     if ((newFlags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
         // cached bad
-        JLOG(journal.warn())
+        JLOG(m_journal.warn())
             << log::param("TransactionID", transaction->getID())
             << ": cached bad!\n";
         transaction->setStatus(INVALID);
@@ -1302,7 +1293,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
     {
-        JLOG(journal.info()) << "Transaction has bad signature: "
+        JLOG(m_journal.info()) << "Transaction has bad signature: "
                              << log::param("Reason", reason);
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
@@ -1428,10 +1419,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
             if (!reason.empty())
             {
                 JLOG(m_journal.trace())
-                    << "Exception checking transaction: "
-                    << log::param(
-                           "TransactionID", to_string(transaction->getID()))
-                    << ", reason: " << log::param("Reason", reason);
+                    << "Exception checking transaction: " << reason;
             }
             app_.getHashRouter().setFlags(
                 tx->getTransactionID(), HashRouterFlags::BAD);
@@ -1571,9 +1559,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 if (transResultInfo(e.result, token, human))
                 {
                     JLOG(m_journal.info())
-                        << "TransactionResult: " << log::param("Token", token)
-                        << ": " << log::param("Human", human)
-                        << log::field("TransactionID", e.transaction->getID());
+                        << "TransactionResult: " << token << ": " << human;
                 }
             }
 #endif
@@ -1583,8 +1569,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             if (e.result == tesSUCCESS)
             {
                 JLOG(m_journal.debug())
-                    << "Transaction is now included in open ledger"
-                    << log::field("TransactionID", e.transaction->getID());
+                    << "Transaction is now included in open ledger";
                 e.transaction->setStatus(INCLUDED);
 
                 // Pop as many "reasonable" transactions for this account as
@@ -1619,9 +1604,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             else if (e.result == terQUEUED)
             {
                 JLOG(m_journal.debug())
-                    << "Transaction is likely to claim a"
-                    << " fee, but is queued until fee drops"
-                    << log::field("TransactionID", e.transaction->getID());
+                    << " fee, but is queued until fee drops";
 
                 e.transaction->setStatus(HELD);
                 // Add to held transactions, because it could get
@@ -1667,8 +1650,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     {
                         // transaction should be held
                         JLOG(m_journal.debug())
-                            << "Transaction should be held: "
-                            << log::param("Result", e.result);
+                            << "Transaction should be held: " << e.result;
                         e.transaction->setStatus(HELD);
                         m_ledgerMaster.addHeldTransaction(e.transaction);
                         e.transaction->setKept();
@@ -1676,23 +1658,17 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     else
                         JLOG(m_journal.debug())
                             << "Not holding transaction "
-                            << log::param(
-                                   "TransactionID",
-                                   to_string(e.transaction->getID()))
-                            << ": " << (e.local ? "local" : "network") << ", "
-                            << "result: " << log::param("Result", e.result)
-                            << " ledgers left: "
-                            << log::param(
-                                   "LedgersLeft",
-                                   ledgersLeft ? to_string(*ledgersLeft)
-                                               : "unspecified");
+                            << e.transaction->getID() << ": "
+                            << (e.local ? "local" : "network") << ", "
+                            << "result: " << e.result << " ledgers left: "
+                            << (ledgersLeft ? to_string(*ledgersLeft)
+                                            : "unspecified");
                 }
             }
             else
             {
                 JLOG(m_journal.debug())
-                    << "Status other than success " << e.result
-                    << log::field("TransactionID", e.transaction->getID());
+                    << "Status other than success " << e.result;
                 e.transaction->setStatus(INVALID);
             }
 
@@ -1921,19 +1897,15 @@ NetworkOPsImp::checkLastClosedLedger(
 
     uint256 closedLedger = ourClosed->info().hash;
     uint256 prevClosedLedger = ourClosed->info().parentHash;
-    JLOG(m_journal.trace())
-        << "OurClosed:  " << log::param("ClosedLedger", closedLedger);
-    JLOG(m_journal.trace())
-        << "PrevClosed: "
-        << log::param("PreviouslyClosedLedger", prevClosedLedger);
+    JLOG(m_journal.trace()) << "OurClosed:  " << closedLedger;
+    JLOG(m_journal.trace()) << "PrevClosed: " << prevClosedLedger;
 
     //-------------------------------------------------------------------------
     // Determine preferred last closed ledger
 
     auto& validations = app_.getValidations();
     JLOG(m_journal.debug())
-        << "ValidationTrie "
-        << log::param("ValidationTrie", validations.getJsonTrie());
+        << "ValidationTrie " << Json::Compact(validations.getJsonTrie());
 
     // Will rely on peer LCL if no trusted validations exist
     hash_map<uint256, std::uint32_t> peerCounts;
