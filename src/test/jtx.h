@@ -36,7 +36,7 @@
 #include <test/jtx/check.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/delegate.h>
-#include <test/jtx/delivermin.h>
+#include <test/jtx/deliver_min.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/did.h>
 #include <test/jtx/domain.h>

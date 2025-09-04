@@ -437,7 +437,7 @@ private:
         return jvRequest;
     }
 
-    // Return an error for attemping to subscribe/unsubscribe via RPC.
+    // Return an error for attempting to subscribe/unsubscribe via RPC.
     Json::Value
     parseEvented(Json::Value const& jvParams)
     {

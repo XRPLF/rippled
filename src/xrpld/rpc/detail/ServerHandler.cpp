@@ -627,7 +627,7 @@ ServerHandler::processRequest(
         {
             HTTPReply(
                 400,
-                "Unable to parse request: " + reader.getFormatedErrorMessages(),
+                "Unable to parse request: " + reader.getFormattedErrorMessages(),
                 output,
                 rpcJ);
             return;

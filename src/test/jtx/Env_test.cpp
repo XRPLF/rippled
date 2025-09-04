@@ -52,7 +52,7 @@ public:
     {
         using namespace jtx;
         {
-            Account a("chenna");
+            Account a("chad");
             Account b(a);
             a = b;
             a = std::move(b);
@@ -181,8 +181,8 @@ public:
             // flags
             env.fund(n, noripple("xavier"));
             env.require(nflags("xavier", asfDefaultRipple));
-            env.fund(n, "yana");
-            env.require(flags("yana", asfDefaultRipple));
+            env.fund(n, "zachary");
+            env.require(flags("zachary", asfDefaultRipple));
         }
 
         // trust
@@ -615,12 +615,9 @@ public:
         using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice");
-        env(noop("alice"), memodata("data"));
-        env(noop("alice"), memoformat("format"));
-        env(noop("alice"), memotype("type"));
-        env(noop("alice"), memondata("format", "type"));
-        env(noop("alice"), memonformat("data", "type"));
-        env(noop("alice"), memontype("data", "format"));
+        env(noop("alice"), memo_data("data"));
+        env(noop("alice"), memo_format("format"));
+        env(noop("alice"), memo_type("type"));
         env(noop("alice"), memo("data", "format", "type"));
         env(noop("alice"),
             memo("data1", "format1", "type1"),

@@ -144,13 +144,13 @@ intrusive_ptr_release(SHAMapItem const* x)
     {
         auto p = reinterpret_cast<std::uint8_t const*>(x);
 
-        // The SHAMapItem constuctor isn't trivial (because the destructor
+        // The SHAMapItem constructor isn't trivial (because the destructor
         // for CountedObject isn't) so we can't avoid calling it here, but
         // plan for a future where we might not need to.
         if constexpr (!std::is_trivially_destructible_v<SHAMapItem>)
             std::destroy_at(x);
 
-        // If the slabber doens't claim this pointer, it was allocated
+        // If the slabber doesn't claim this pointer, it was allocated
         // manually, so we free it manually.
         if (!detail::slabber.deallocate(const_cast<std::uint8_t*>(p)))
             delete[] p;

@@ -2958,29 +2958,29 @@ private:
             fund(env, gw, {alice, bob, carol}, XRP(10'000));
             env.trust(USD(100), alice, bob, carol);
             env(pay(alice, bob, USD(10)),
-                delivermin(USD(10)),
+                deliver_min(USD(10)),
                 ter(temBAD_AMOUNT));
             env(pay(alice, bob, USD(10)),
-                delivermin(USD(-5)),
+                deliver_min(USD(-5)),
                 txflags(tfPartialPayment),
                 ter(temBAD_AMOUNT));
             env(pay(alice, bob, USD(10)),
-                delivermin(XRP(5)),
+                deliver_min(XRP(5)),
                 txflags(tfPartialPayment),
                 ter(temBAD_AMOUNT));
             env(pay(alice, bob, USD(10)),
-                delivermin(Account(carol)["USD"](5)),
+                deliver_min(Account(carol)["USD"](5)),
                 txflags(tfPartialPayment),
                 ter(temBAD_AMOUNT));
             env(pay(alice, bob, USD(10)),
-                delivermin(USD(15)),
+                deliver_min(USD(15)),
                 txflags(tfPartialPayment),
                 ter(temBAD_AMOUNT));
             env(pay(gw, carol, USD(50)));
             AMM ammCarol(env, carol, XRP(10), USD(15));
             env(pay(alice, bob, USD(10)),
                 paths(XRP),
-                delivermin(USD(7)),
+                deliver_min(USD(7)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(5)),
                 ter(tecPATH_PARTIAL));
@@ -2998,7 +2998,7 @@ private:
             AMM ammBob(env, bob, XRP(1'000), USD(1'100));
             env(pay(alice, alice, USD(10'000)),
                 paths(XRP),
-                delivermin(USD(100)),
+                deliver_min(USD(100)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(100)));
             env.require(balance(alice, USD(100)));
@@ -3012,13 +3012,13 @@ private:
             AMM ammBob(env, bob, XRP(5'500), USD(1'200));
             env(pay(alice, carol, USD(10'000)),
                 paths(XRP),
-                delivermin(USD(200)),
+                deliver_min(USD(200)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(1'000)),
                 ter(tecPATH_PARTIAL));
             env(pay(alice, carol, USD(10'000)),
                 paths(XRP),
-                delivermin(USD(200)),
+                deliver_min(USD(200)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(1'100)));
             BEAST_EXPECT(
@@ -3041,7 +3041,7 @@ private:
             {
                 env(pay(alice, carol, USD(10'000)),
                     paths(XRP),
-                    delivermin(USD(200)),
+                    deliver_min(USD(200)),
                     txflags(tfPartialPayment),
                     sendmax(XRP(200)));
                 env.require(balance(bob, USD(0)));
@@ -3053,7 +3053,7 @@ private:
             {
                 env(pay(alice, carol, USD(10'000)),
                     paths(XRP),
-                    delivermin(USD(200)),
+                    deliver_min(USD(200)),
                     txflags(tfPartialPayment),
                     sendmax(XRPAmount(200'000'001)));
                 env.require(balance(bob, USD(0)));

@@ -571,7 +571,7 @@ public:
             testcase("deposit_authorized with expired credentials");
 
             // check expired credentials
-            char const credType2[] = "fghijk";
+            char const credType2[] = "random";
             std::uint32_t const x = env.current()
                                         ->info()
                                         .parentCloseTime.time_since_epoch()

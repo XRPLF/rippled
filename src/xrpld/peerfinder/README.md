@@ -257,7 +257,7 @@ Slot properties may be combined and are not mutually exclusive.
 - **Superpeer** (forthcoming)
 
   A superpeer slot is a connection to a peer which can accept incoming
-  connections, meets certain resource availaibility requirements (such as
+  connections, meets certain resource availability requirements (such as
   bandwidth, CPU, and storage capacity), and operates full duplex in the
   overlay. Connections which are not superpeers are by definition leaves. A
   leaf slot is a connection to a peer which does not route overlay messages to

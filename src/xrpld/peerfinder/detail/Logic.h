@@ -917,7 +917,7 @@ public:
             // Address must exist
             if (iter == connectedAddresses_.end())
                 LogicError(
-                    "PeerFinder::Logic::remove(): remote_endpont "
+                    "PeerFinder::Logic::remove(): remote_endpoint "
                     "address missing from connectedAddresses_");
 
             connectedAddresses_.erase(iter);
@@ -940,7 +940,7 @@ public:
             auto iter(fixed_.find(slot->remote_endpoint()));
             if (iter == fixed_.end())
                 LogicError(
-                    "PeerFinder::Logic::on_closed(): remote_endpont "
+                    "PeerFinder::Logic::on_closed(): remote_endpoint "
                     "missing from fixed_");
 
             iter->second.failure(m_clock.now());

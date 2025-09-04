@@ -48,7 +48,7 @@ namespace ripple {
 // 3) Object of "assets" indicating accounts that owe the gateway.
 //    (Gateways typically do not hold positive balances. This is unusual.)
 
-// gateway_balances [<ledger>] <account> [<howallet> [<hotwallet [...
+// gateway_balances [<ledger>] <account> [<hotwallet> [<hotwallet [...
 
 Json::Value
 doGatewayBalances(RPC::JsonContext& context)
