@@ -55,7 +55,7 @@ class Permission
 private:
     Permission();
 
-    std::unordered_map<std::uint16_t, std::vector<uint256>> txFeaturesMap_;
+    std::unordered_map<std::uint16_t, uint256> txFeatureMap_;
 
     std::unordered_map<std::uint16_t, Delegation> delegatableTx_;
 

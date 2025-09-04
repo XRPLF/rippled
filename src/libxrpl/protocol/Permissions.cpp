@@ -26,12 +26,12 @@ namespace ripple {
 
 Permission::Permission()
 {
-    txFeaturesMap_ = {
+    txFeatureMap_ = {
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, amendments, ...) \
-    {value, std::initializer_list<uint256> amendments},
+#define TRANSACTION(tag, value, name, delegatable, amendment, ...) \
+    {value, amendment},
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -150,20 +150,17 @@ Permission::isDelegatable(
         if (it == delegatableTx_.end())
             return false;
 
-        auto const txFeaturesIt = txFeaturesMap_.find(txType);
+        auto const txFeaturesIt = txFeatureMap_.find(txType);
         XRPL_ASSERT(
-            txFeaturesIt != txFeaturesMap_.end(),
+            txFeaturesIt != txFeatureMap_.end(),
             "ripple::Permissions::isDelegatable : tx does not exist in "
-            "txFeaturesMap_");
+            "txFeatureMap_");
 
-        // fixDelegateV1_1: Delegation is only allowed if all required
-        // amendment(s) for the transaction are enabled.
-        if (!std::all_of(
-                txFeaturesIt->second.begin(),
-                txFeaturesIt->second.end(),
-                [&rules](auto const& feature) {
-                    return rules.enabled(feature);
-                }))
+        // fixDelegateV1_1: Delegation is only allowed if the required amendment
+        // for the transaction is enabled. For transactions that do not require
+        // an amendment, delegation is always allowed.
+        if (txFeaturesIt->second != uint256{} &&
+            !rules.enabled(txFeaturesIt->second))
             return false;
     }
 

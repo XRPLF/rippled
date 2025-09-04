@@ -31,7 +31,7 @@
 /** This transaction type executes a payment. */
 TRANSACTION(ttPAYMENT, 0, Payment,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -47,7 +47,7 @@ TRANSACTION(ttPAYMENT, 0, Payment,
 /** This transaction type creates an escrow object. */
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -60,7 +60,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
 /** This transaction type completes an existing escrow. */
 TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfOwner, soeREQUIRED},
     {sfOfferSequence, soeREQUIRED},
@@ -73,7 +73,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish,
 /** This transaction type adjusts various account settings. */
 TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
     Delegation::notDelegatable,
-    {},
+    uint256{},
     ({
     {sfEmailHash, soeOPTIONAL},
     {sfWalletLocator, soeOPTIONAL},
@@ -90,7 +90,7 @@ TRANSACTION(ttACCOUNT_SET, 3, AccountSet,
 /** This transaction type cancels an existing escrow. */
 TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfOwner, soeREQUIRED},
     {sfOfferSequence, soeREQUIRED},
@@ -99,7 +99,7 @@ TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel,
 /** This transaction type sets or clears an account's "regular key". */
 TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
     Delegation::notDelegatable,
-    {},
+    uint256{},
     ({
     {sfRegularKey, soeOPTIONAL},
 }))
@@ -109,7 +109,7 @@ TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey,
 /** This transaction type creates an offer to trade one asset for another. */
 TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfTakerPays, soeREQUIRED},
     {sfTakerGets, soeREQUIRED},
@@ -121,7 +121,7 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
 /** This transaction type cancels existing offers to trade one asset for another. */
 TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfOfferSequence, soeREQUIRED},
 }))
@@ -131,7 +131,7 @@ TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel,
 /** This transaction type creates a new set of tickets. */
 TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
     Delegation::delegatable,
-    {featureTicketBatch},
+    featureTicketBatch,
     ({
     {sfTicketCount, soeREQUIRED},
 }))
@@ -143,7 +143,7 @@ TRANSACTION(ttTICKET_CREATE, 10, TicketCreate,
 // setting the SignerQuorum to zero and omitting SignerEntries.
 TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
     Delegation::notDelegatable,
-    {},
+    uint256{},
     ({
     {sfSignerQuorum, soeREQUIRED},
     {sfSignerEntries, soeOPTIONAL},
@@ -152,7 +152,7 @@ TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet,
 /** This transaction type creates a new unidirectional XRP payment channel. */
 TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED},
@@ -165,7 +165,7 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate,
 /** This transaction type funds an existing unidirectional XRP payment channel. */
 TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfChannel, soeREQUIRED},
     {sfAmount, soeREQUIRED},
@@ -175,7 +175,7 @@ TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund,
 /** This transaction type submits a claim against an existing unidirectional payment channel. */
 TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfChannel, soeREQUIRED},
     {sfAmount, soeOPTIONAL},
@@ -188,7 +188,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim,
 /** This transaction type creates a new check. */
 TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
     Delegation::delegatable,
-    {featureChecks},
+    featureChecks,
     ({
     {sfDestination, soeREQUIRED},
     {sfSendMax, soeREQUIRED},
@@ -200,7 +200,7 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
 /** This transaction type cashes an existing check. */
 TRANSACTION(ttCHECK_CASH, 17, CheckCash,
     Delegation::delegatable,
-    {featureChecks},
+    featureChecks,
     ({
     {sfCheckID, soeREQUIRED},
     {sfAmount, soeOPTIONAL},
@@ -210,7 +210,7 @@ TRANSACTION(ttCHECK_CASH, 17, CheckCash,
 /** This transaction type cancels an existing check. */
 TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel,
     Delegation::delegatable,
-    {featureChecks},
+    featureChecks,
     ({
     {sfCheckID, soeREQUIRED},
 }))
@@ -218,7 +218,7 @@ TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel,
 /** This transaction type grants or revokes authorization to transfer funds. */
 TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
     Delegation::delegatable,
-    {featureDepositPreauth},
+    featureDepositPreauth,
     ({
     {sfAuthorize, soeOPTIONAL},
     {sfUnauthorize, soeOPTIONAL},
@@ -229,7 +229,7 @@ TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth,
 /** This transaction type modifies a trustline between two accounts. */
 TRANSACTION(ttTRUST_SET, 20, TrustSet,
     Delegation::delegatable,
-    {},
+    uint256{},
     ({
     {sfLimitAmount, soeOPTIONAL},
     {sfQualityIn, soeOPTIONAL},
@@ -239,7 +239,7 @@ TRANSACTION(ttTRUST_SET, 20, TrustSet,
 /** This transaction type deletes an existing account. */
 TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
     Delegation::notDelegatable,
-    {},
+    uint256{},
     ({
     {sfDestination, soeREQUIRED},
     {sfDestinationTag, soeOPTIONAL},
@@ -251,7 +251,7 @@ TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete,
 /** This transaction mints a new NFT. */
 TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
     Delegation::delegatable,
-    {featureNonFungibleTokensV1},
+    featureNonFungibleTokensV1,
     ({
     {sfNFTokenTaxon, soeREQUIRED},
     {sfTransferFee, soeOPTIONAL},
@@ -265,7 +265,7 @@ TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint,
 /** This transaction burns (i.e. destroys) an existing NFT. */
 TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
     Delegation::delegatable,
-    {featureNonFungibleTokensV1},
+    featureNonFungibleTokensV1,
     ({
     {sfNFTokenID, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
@@ -274,7 +274,7 @@ TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn,
 /** This transaction creates a new offer to buy or sell an NFT. */
 TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer,
     Delegation::delegatable,
-    {featureNonFungibleTokensV1},
+    featureNonFungibleTokensV1,
     ({
     {sfNFTokenID, soeREQUIRED},
     {sfAmount, soeREQUIRED},
@@ -286,7 +286,7 @@ TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer,
 /** This transaction cancels an existing offer to buy or sell an existing NFT. */
 TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer,
     Delegation::delegatable,
-    {featureNonFungibleTokensV1},
+    featureNonFungibleTokensV1,
     ({
     {sfNFTokenOffers, soeREQUIRED},
 }))
@@ -294,7 +294,7 @@ TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer,
 /** This transaction accepts an existing offer to buy or sell an existing  NFT. */
 TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer,
     Delegation::delegatable,
-    {featureNonFungibleTokensV1},
+    featureNonFungibleTokensV1,
     ({
     {sfNFTokenBuyOffer, soeOPTIONAL},
     {sfNFTokenSellOffer, soeOPTIONAL},
@@ -304,7 +304,7 @@ TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer,
 /** This transaction claws back issued tokens. */
 TRANSACTION(ttCLAWBACK, 30, Clawback,
     Delegation::delegatable,
-    {featureClawback},
+    featureClawback,
     ({
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfHolder, soeOPTIONAL},
@@ -313,7 +313,7 @@ TRANSACTION(ttCLAWBACK, 30, Clawback,
 /** This transaction claws back tokens from an AMM pool. */
 TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
     Delegation::delegatable,
-    {featureAMMClawback},
+    featureAMMClawback,
     ({
     {sfHolder, soeREQUIRED},
     {sfAsset, soeREQUIRED},
@@ -324,7 +324,7 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
 /** This transaction type creates an AMM instance */
 TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     Delegation::delegatable,
-    {featureAMM},
+    featureAMM,
     ({
     {sfAmount, soeREQUIRED},
     {sfAmount2, soeREQUIRED},
@@ -334,7 +334,7 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
 /** This transaction type deposits into an AMM instance */
 TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
     Delegation::delegatable,
-    {featureAMM},
+    featureAMM,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -348,7 +348,7 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
 /** This transaction type withdraws from an AMM instance */
 TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     Delegation::delegatable,
-    {featureAMM},
+    featureAMM,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -361,7 +361,7 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
 /** This transaction type votes for the trading fee */
 TRANSACTION(ttAMM_VOTE, 38, AMMVote,
     Delegation::delegatable,
-    {featureAMM},
+    featureAMM,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -371,7 +371,7 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
 /** This transaction type bids for the auction slot */
 TRANSACTION(ttAMM_BID, 39, AMMBid,
     Delegation::delegatable,
-    {featureAMM},
+    featureAMM,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -383,7 +383,7 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
 /** This transaction type deletes AMM in the empty state */
 TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     Delegation::delegatable,
-    {featureAMM},
+    featureAMM,
     ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -392,7 +392,7 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
 /** This transactions creates a crosschain sequence number */
 TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID,
     Delegation::delegatable,
-    {featureXChainBridge},
+    featureXChainBridge,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeREQUIRED},
@@ -402,7 +402,7 @@ TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID,
 /** This transactions initiates a crosschain transaction */
 TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit,
     Delegation::delegatable,
-    {featureXChainBridge},
+    featureXChainBridge,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfXChainClaimID, soeREQUIRED},
@@ -413,7 +413,7 @@ TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit,
 /** This transaction completes a crosschain transaction */
 TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim,
     Delegation::delegatable,
-    {featureXChainBridge},
+    featureXChainBridge,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfXChainClaimID, soeREQUIRED},
@@ -425,7 +425,7 @@ TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim,
 /** This transaction initiates a crosschain account create transaction */
 TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit,
     Delegation::delegatable,
-    {featureXChainBridge},
+    featureXChainBridge,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfDestination, soeREQUIRED},
@@ -436,7 +436,7 @@ TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit,
 /** This transaction adds an attestation to a claim */
 TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation,
     Delegation::delegatable,
-    {featureXChainBridge},
+    featureXChainBridge,
     ({
     {sfXChainBridge, soeREQUIRED},
 
@@ -455,7 +455,7 @@ TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation,
 /** This transaction adds an attestation to an account */
 TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateAttestation,
     Delegation::delegatable,
-    {featureXChainBridge},
+    featureXChainBridge,
     ({
     {sfXChainBridge, soeREQUIRED},
 
@@ -475,7 +475,7 @@ TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateA
 /** This transaction modifies a sidechain */
 TRANSACTION(ttXCHAIN_MODIFY_BRIDGE, 47, XChainModifyBridge,
     Delegation::delegatable,
-    {featureXChainBridge},
+    featureXChainBridge,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeOPTIONAL},
@@ -485,7 +485,7 @@ TRANSACTION(ttXCHAIN_MODIFY_BRIDGE, 47, XChainModifyBridge,
 /** This transactions creates a sidechain */
 TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge,
     Delegation::delegatable,
-    {featureXChainBridge},
+    featureXChainBridge,
     ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeREQUIRED},
@@ -495,7 +495,7 @@ TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge,
 /** This transaction type creates or updates a DID */
 TRANSACTION(ttDID_SET, 49, DIDSet,
     Delegation::delegatable,
-    {featureDID},
+    featureDID,
     ({
     {sfDIDDocument, soeOPTIONAL},
     {sfURI, soeOPTIONAL},
@@ -505,13 +505,13 @@ TRANSACTION(ttDID_SET, 49, DIDSet,
 /** This transaction type deletes a DID */
 TRANSACTION(ttDID_DELETE, 50, DIDDelete,
     Delegation::delegatable,
-    {featureDID},
+    featureDID,
     ({}))
 
 /** This transaction type creates an Oracle instance */
 TRANSACTION(ttORACLE_SET, 51, OracleSet,
     Delegation::delegatable,
-    {featurePriceOracle},
+    featurePriceOracle,
     ({
     {sfOracleDocumentID, soeREQUIRED},
     {sfProvider, soeOPTIONAL},
@@ -524,7 +524,7 @@ TRANSACTION(ttORACLE_SET, 51, OracleSet,
 /** This transaction type deletes an Oracle instance */
 TRANSACTION(ttORACLE_DELETE, 52, OracleDelete,
     Delegation::delegatable,
-    {featurePriceOracle},
+    featurePriceOracle,
     ({
     {sfOracleDocumentID, soeREQUIRED},
 }))
@@ -532,7 +532,7 @@ TRANSACTION(ttORACLE_DELETE, 52, OracleDelete,
 /** This transaction type fixes a problem in the ledger state */
 TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix,
     Delegation::delegatable,
-    {fixNFTokenPageLinks},
+    fixNFTokenPageLinks,
     ({
     {sfLedgerFixType, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
@@ -541,7 +541,7 @@ TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix,
 /** This transaction type creates a MPTokensIssuance instance */
 TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
     Delegation::delegatable,
-    {featureMPTokensV1},
+    featureMPTokensV1,
     ({
     {sfAssetScale, soeOPTIONAL},
     {sfTransferFee, soeOPTIONAL},
@@ -553,7 +553,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate,
 /** This transaction type destroys a MPTokensIssuance instance */
 TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy,
     Delegation::delegatable,
-    {featureMPTokensV1},
+    featureMPTokensV1,
     ({
     {sfMPTokenIssuanceID, soeREQUIRED},
 }))
@@ -561,7 +561,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy,
 /** This transaction type sets flags on a MPTokensIssuance or MPToken instance */
 TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
     Delegation::delegatable,
-    {featureMPTokensV1},
+    featureMPTokensV1,
     ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
@@ -571,7 +571,7 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet,
 /** This transaction type authorizes a MPToken instance */
 TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
     Delegation::delegatable,
-    {featureMPTokensV1},
+    featureMPTokensV1,
     ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
@@ -580,7 +580,7 @@ TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize,
 /** This transaction type create an Credential instance */
 TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate,
     Delegation::delegatable,
-    {featureCredentials},
+    featureCredentials,
     ({
     {sfSubject, soeREQUIRED},
     {sfCredentialType, soeREQUIRED},
@@ -591,7 +591,7 @@ TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate,
 /** This transaction type accept an Credential object */
 TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept,
     Delegation::delegatable,
-    {featureCredentials},
+    featureCredentials,
     ({
     {sfIssuer, soeREQUIRED},
     {sfCredentialType, soeREQUIRED},
@@ -600,7 +600,7 @@ TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept,
 /** This transaction type delete an Credential object */
 TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete,
     Delegation::delegatable,
-    {featureCredentials},
+    featureCredentials,
     ({
     {sfSubject, soeOPTIONAL},
     {sfIssuer, soeOPTIONAL},
@@ -610,7 +610,7 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete,
 /** This transaction type modify a NFToken */
 TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify,
     Delegation::delegatable,
-    ({featureNonFungibleTokensV1_1, featureDynamicNFT}),
+    featureDynamicNFT,
     ({
     {sfNFTokenID, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
@@ -620,7 +620,7 @@ TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify,
 /** This transaction type creates or modifies a Permissioned Domain */
 TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 62, PermissionedDomainSet,
     Delegation::delegatable,
-    ({featurePermissionedDomains, featureCredentials}),
+    featurePermissionedDomains,
     ({
     {sfDomainID, soeOPTIONAL},
     {sfAcceptedCredentials, soeREQUIRED},
@@ -629,7 +629,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 62, PermissionedDomainSet,
 /** This transaction type deletes a Permissioned Domain */
 TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete,
     Delegation::delegatable,
-    {featurePermissionedDomains},
+    featurePermissionedDomains,
     ({
     {sfDomainID, soeREQUIRED},
 }))
@@ -637,7 +637,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete,
 /** This transaction type delegates authorized account specified permissions */
 TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
     Delegation::notDelegatable,
-    {featurePermissionDelegation},
+    featurePermissionDelegation,
     ({
     {sfAuthorize, soeREQUIRED},
     {sfPermissions, soeREQUIRED},
@@ -646,7 +646,7 @@ TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
 /** This transaction creates a single asset vault. */
 TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     Delegation::delegatable,
-    ({featureSingleAssetVault, featureMPTokensV1}),
+    featureSingleAssetVault,
     ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetsMaximum, soeOPTIONAL},
@@ -659,7 +659,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
 /** This transaction updates a single asset vault. */
 TRANSACTION(ttVAULT_SET, 66, VaultSet,
     Delegation::delegatable,
-    {featureSingleAssetVault},
+    featureSingleAssetVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAssetsMaximum, soeOPTIONAL},
@@ -670,7 +670,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
 /** This transaction deletes a single asset vault. */
 TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     Delegation::delegatable,
-    {featureSingleAssetVault},
+    featureSingleAssetVault,
     ({
     {sfVaultID, soeREQUIRED},
 }))
@@ -678,7 +678,7 @@ TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
 /** This transaction trades assets for shares with a vault. */
 TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
     Delegation::delegatable,
-    {featureSingleAssetVault},
+    featureSingleAssetVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -687,7 +687,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
 /** This transaction trades shares for assets with a vault. */
 TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     Delegation::delegatable,
-    {featureSingleAssetVault},
+    featureSingleAssetVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -698,7 +698,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
 /** This transaction claws back tokens from a vault. */
 TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     Delegation::delegatable,
-    {featureSingleAssetVault},
+    featureSingleAssetVault,
     ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
@@ -708,7 +708,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
 /** This transaction type batches together transactions. */
 TRANSACTION(ttBATCH, 71, Batch,
     Delegation::notDelegatable,
-    {featureBatch},
+    featureBatch,
     ({
     {sfRawTransactions, soeREQUIRED},
     {sfBatchSigners, soeOPTIONAL},
@@ -720,7 +720,7 @@ TRANSACTION(ttBATCH, 71, Batch,
  */
 TRANSACTION(ttAMENDMENT, 100, EnableAmendment,
     Delegation::notDelegatable,
-    {},
+    uint256{},
     ({
     {sfLedgerSequence, soeREQUIRED},
     {sfAmendment, soeREQUIRED},
@@ -731,7 +731,7 @@ TRANSACTION(ttAMENDMENT, 100, EnableAmendment,
  */
 TRANSACTION(ttFEE, 101, SetFee,
     Delegation::notDelegatable,
-    {},
+    uint256{},
     ({
     {sfLedgerSequence, soeOPTIONAL},
     // Old version uses raw numbers
@@ -751,7 +751,7 @@ TRANSACTION(ttFEE, 101, SetFee,
  */
 TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
     Delegation::notDelegatable,
-    {},
+    uint256{},
     ({
     {sfUNLModifyDisabling, soeREQUIRED},
     {sfLedgerSequence, soeREQUIRED},

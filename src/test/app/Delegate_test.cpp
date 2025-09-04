@@ -1672,56 +1672,53 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test delegate disabled tx");
         using namespace jtx;
 
-        // map of tx and required features.
+        // map of tx and required feature.
         // non-delegatable tx are not included.
         // NFTokenMint, NFTokenBurn, NFTokenCreateOffer, NFTokenCancelOffer,
         // NFTokenAcceptOffer are not included, they are tested separately.
-        std::unordered_map<std::string, std::vector<uint256>>
-            txRequiredFeatures{
-                {"TicketCreate", {featureTicketBatch}},
-                {"CheckCreate", {featureChecks}},
-                {"CheckCash", {featureChecks}},
-                {"CheckCancel", {featureChecks}},
-                {"DepositPreauth", {featureDepositPreauth}},
-                {"Clawback", {featureClawback}},
-                {"AMMClawback", {featureAMMClawback}},
-                {"AMMCreate", {featureAMM}},
-                {"AMMDeposit", {featureAMM}},
-                {"AMMWithdraw", {featureAMM}},
-                {"AMMVote", {featureAMM}},
-                {"AMMBid", {featureAMM}},
-                {"AMMDelete", {featureAMM}},
-                {"XChainCreateClaimID", {featureXChainBridge}},
-                {"XChainCommit", {featureXChainBridge}},
-                {"XChainClaim", {featureXChainBridge}},
-                {"XChainAccountCreateCommit", {featureXChainBridge}},
-                {"XChainAddClaimAttestation", {featureXChainBridge}},
-                {"XChainAddAccountCreateAttestation", {featureXChainBridge}},
-                {"XChainModifyBridge", {featureXChainBridge}},
-                {"XChainCreateBridge", {featureXChainBridge}},
-                {"DIDSet", {featureDID}},
-                {"DIDDelete", {featureDID}},
-                {"OracleSet", {featurePriceOracle}},
-                {"OracleDelete", {featurePriceOracle}},
-                {"LedgerStateFix", {fixNFTokenPageLinks}},
-                {"MPTokenIssuanceCreate", {featureMPTokensV1}},
-                {"MPTokenIssuanceDestroy", {featureMPTokensV1}},
-                {"MPTokenIssuanceSet", {featureMPTokensV1}},
-                {"MPTokenAuthorize", {featureMPTokensV1}},
-                {"CredentialCreate", {featureCredentials}},
-                {"CredentialAccept", {featureCredentials}},
-                {"CredentialDelete", {featureCredentials}},
-                {"NFTokenModify",
-                 {featureNonFungibleTokensV1_1, featureDynamicNFT}},
-                {"PermissionedDomainSet",
-                 {featurePermissionedDomains, featureCredentials}},
-                {"PermissionedDomainDelete", {featurePermissionedDomains}},
-                {"VaultCreate", {featureSingleAssetVault, featureMPTokensV1}},
-                {"VaultSet", {featureSingleAssetVault}},
-                {"VaultDelete", {featureSingleAssetVault}},
-                {"VaultDeposit", {featureSingleAssetVault}},
-                {"VaultWithdraw", {featureSingleAssetVault}},
-                {"VaultClawback", {featureSingleAssetVault}}};
+        std::unordered_map<std::string, uint256> txRequiredFeatures{
+            {"TicketCreate", featureTicketBatch},
+            {"CheckCreate", featureChecks},
+            {"CheckCash", featureChecks},
+            {"CheckCancel", featureChecks},
+            {"DepositPreauth", featureDepositPreauth},
+            {"Clawback", featureClawback},
+            {"AMMClawback", featureAMMClawback},
+            {"AMMCreate", featureAMM},
+            {"AMMDeposit", featureAMM},
+            {"AMMWithdraw", featureAMM},
+            {"AMMVote", featureAMM},
+            {"AMMBid", featureAMM},
+            {"AMMDelete", featureAMM},
+            {"XChainCreateClaimID", featureXChainBridge},
+            {"XChainCommit", featureXChainBridge},
+            {"XChainClaim", featureXChainBridge},
+            {"XChainAccountCreateCommit", featureXChainBridge},
+            {"XChainAddClaimAttestation", featureXChainBridge},
+            {"XChainAddAccountCreateAttestation", featureXChainBridge},
+            {"XChainModifyBridge", featureXChainBridge},
+            {"XChainCreateBridge", featureXChainBridge},
+            {"DIDSet", featureDID},
+            {"DIDDelete", featureDID},
+            {"OracleSet", featurePriceOracle},
+            {"OracleDelete", featurePriceOracle},
+            {"LedgerStateFix", fixNFTokenPageLinks},
+            {"MPTokenIssuanceCreate", featureMPTokensV1},
+            {"MPTokenIssuanceDestroy", featureMPTokensV1},
+            {"MPTokenIssuanceSet", featureMPTokensV1},
+            {"MPTokenAuthorize", featureMPTokensV1},
+            {"CredentialCreate", featureCredentials},
+            {"CredentialAccept", featureCredentials},
+            {"CredentialDelete", featureCredentials},
+            {"NFTokenModify", featureDynamicNFT},
+            {"PermissionedDomainSet", featurePermissionedDomains},
+            {"PermissionedDomainDelete", featurePermissionedDomains},
+            {"VaultCreate", featureSingleAssetVault},
+            {"VaultSet", featureSingleAssetVault},
+            {"VaultDelete", featureSingleAssetVault},
+            {"VaultDeposit", featureSingleAssetVault},
+            {"VaultWithdraw", featureSingleAssetVault},
+            {"VaultClawback", featureSingleAssetVault}};
 
         // fixDelegateV1_1 post-amendment: can not delegate tx if any
         // required feature disabled.
@@ -1729,20 +1726,18 @@ class Delegate_test : public beast::unit_test::suite
             auto txAmendmentDisabled = [&](FeatureBitset features,
                                            std::string const& tx) {
                 BEAST_EXPECT(txRequiredFeatures.contains(tx));
-                for (auto const& feature : txRequiredFeatures[tx])
-                {
-                    Env env(*this, features - feature);
 
-                    Account const alice{"alice"};
-                    Account const bob{"bob"};
-                    env.fund(XRP(100000), alice, bob);
-                    env.close();
+                Env env(*this, features - txRequiredFeatures[tx]);
 
-                    if (!features[fixDelegateV1_1])
-                        env(delegate::set(alice, bob, {tx}));
-                    else
-                        env(delegate::set(alice, bob, {tx}), ter(temMALFORMED));
-                }
+                Account const alice{"alice"};
+                Account const bob{"bob"};
+                env.fund(XRP(100000), alice, bob);
+                env.close();
+
+                if (!features[fixDelegateV1_1])
+                    env(delegate::set(alice, bob, {tx}));
+                else
+                    env(delegate::set(alice, bob, {tx}), ter(temMALFORMED));
             };
 
             for (auto const& tx : txRequiredFeatures)
