@@ -19,12 +19,12 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
+#include <chrono>
 #include <ios>
 #include <ostream>
 #include <ranges>
 #include <string>
 #include <thread>
-#include <chrono>
 
 namespace beast {
 
@@ -35,45 +35,50 @@ namespace {
 std::string_view
 fastTimestampToString(std::int64_t milliseconds_since_epoch)
 {
-    thread_local char buffer[64]; // "2024-01-15T10:30:45.123Z"
-    
+    thread_local char buffer[64];  // "2024-01-15T10:30:45.123Z"
+
     // Precomputed lookup table for 2-digit numbers 00-99
     static constexpr char digits[200] = {
-        '0','0','0','1','0','2','0','3','0','4','0','5','0','6','0','7','0','8','0','9',
-        '1','0','1','1','1','2','1','3','1','4','1','5','1','6','1','7','1','8','1','9',
-        '2','0','2','1','2','2','2','3','2','4','2','5','2','6','2','7','2','8','2','9',
-        '3','0','3','1','3','2','3','3','3','4','3','5','3','6','3','7','3','8','3','9',
-        '4','0','4','1','4','2','4','3','4','4','4','5','4','6','4','7','4','8','4','9',
-        '5','0','5','1','5','2','5','3','5','4','5','5','5','6','5','7','5','8','5','9',
-        '6','0','6','1','6','2','6','3','6','4','6','5','6','6','6','7','6','8','6','9',
-        '7','0','7','1','7','2','7','3','7','4','7','5','7','6','7','7','7','8','7','9',
-        '8','0','8','1','8','2','8','3','8','4','8','5','8','6','8','7','8','8','8','9',
-        '9','0','9','1','9','2','9','3','9','4','9','5','9','6','9','7','9','8','9','9'
-    };
-    
-    constexpr std::int64_t UNIX_EPOCH_DAYS = 719468; // Days from year 0 to 1970-01-01
-    
+        '0', '0', '0', '1', '0', '2', '0', '3', '0', '4', '0', '5', '0', '6',
+        '0', '7', '0', '8', '0', '9', '1', '0', '1', '1', '1', '2', '1', '3',
+        '1', '4', '1', '5', '1', '6', '1', '7', '1', '8', '1', '9', '2', '0',
+        '2', '1', '2', '2', '2', '3', '2', '4', '2', '5', '2', '6', '2', '7',
+        '2', '8', '2', '9', '3', '0', '3', '1', '3', '2', '3', '3', '3', '4',
+        '3', '5', '3', '6', '3', '7', '3', '8', '3', '9', '4', '0', '4', '1',
+        '4', '2', '4', '3', '4', '4', '4', '5', '4', '6', '4', '7', '4', '8',
+        '4', '9', '5', '0', '5', '1', '5', '2', '5', '3', '5', '4', '5', '5',
+        '5', '6', '5', '7', '5', '8', '5', '9', '6', '0', '6', '1', '6', '2',
+        '6', '3', '6', '4', '6', '5', '6', '6', '6', '7', '6', '8', '6', '9',
+        '7', '0', '7', '1', '7', '2', '7', '3', '7', '4', '7', '5', '7', '6',
+        '7', '7', '7', '8', '7', '9', '8', '0', '8', '1', '8', '2', '8', '3',
+        '8', '4', '8', '5', '8', '6', '8', '7', '8', '8', '8', '9', '9', '0',
+        '9', '1', '9', '2', '9', '3', '9', '4', '9', '5', '9', '6', '9', '7',
+        '9', '8', '9', '9'};
+
+    constexpr std::int64_t UNIX_EPOCH_DAYS =
+        719468;  // Days from year 0 to 1970-01-01
+
     std::int64_t seconds = milliseconds_since_epoch / 1000;
     int ms = milliseconds_since_epoch % 1000;
     std::int64_t days = seconds / 86400 + UNIX_EPOCH_DAYS;
     int sec_of_day = seconds % 86400;
-    
+
     // Calculate year, month, day from days using Gregorian calendar algorithm
     int era = (days >= 0 ? days : days - 146096) / 146097;
     int doe = days - era * 146097;
-    int yoe = (doe - doe/1460 + doe/36524 - doe/146096) / 365;
+    int yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
     int year = yoe + era * 400;
-    int doy = doe - (365*yoe + yoe/4 - yoe/100);
-    int mp = (5*doy + 2)/153;
-    int day = doy - (153*mp+2)/5 + 1;
+    int doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    int mp = (5 * doy + 2) / 153;
+    int day = doy - (153 * mp + 2) / 5 + 1;
     int month = mp + (mp < 10 ? 3 : -9);
     year += (month <= 2);
-    
+
     // Calculate hour, minute, second
     int hour = sec_of_day / 3600;
     int min = (sec_of_day % 3600) / 60;
     int sec = sec_of_day % 60;
-    
+
     // Format: "2024-01-15T10:30:45.123Z"
     buffer[0] = '0' + year / 1000;
     buffer[1] = '0' + (year / 100) % 10;
@@ -99,14 +104,14 @@ fastTimestampToString(std::int64_t milliseconds_since_epoch)
     buffer[21] = '0' + (ms / 10) % 10;
     buffer[22] = '0' + ms % 10;
     buffer[23] = 'Z';
-    
+
     return {buffer, 24};
 }
 
 }  // anonymous namespace
 
-std::atomic<std::shared_ptr<const std::string>> Journal::globalLogAttributesJson_;
-std::size_t Journal::m_filePathOffset_ = 0;
+std::string Journal::globalLogAttributesJson_;
+std::shared_mutex Journal::globalLogAttributesMutex_;
 bool Journal::m_jsonLogsEnabled = false;
 thread_local Journal::JsonLogContext Journal::currentJsonLogContext_{};
 
@@ -230,11 +235,11 @@ Journal::JsonLogContext::reset(
     }
 
     {
-        auto globalAttrs = globalLogAttributesJson_.load();
-        if (globalAttrs && !globalAttrs->empty())
+        std::shared_lock lock(globalLogAttributesMutex_);
+        if (!globalLogAttributesJson_.empty())
         {
             writer().writeKey("GlobalParams");
-            writer().writeRaw(*globalAttrs);
+            writer().writeRaw(globalLogAttributesJson_);
             writer().endObject();
         }
     }
@@ -249,8 +254,9 @@ Journal::JsonLogContext::reset(
 
     writer().writeKey("File");
     std::string_view fileName = location.file_name();
-    std::string_view trimmedFileName = (m_filePathOffset_ < fileName.size()) 
-        ? fileName.substr(m_filePathOffset_) 
+    constexpr size_t KEEP_CHARS = 10;
+    std::string_view trimmedFileName = (fileName.size() > KEEP_CHARS)
+        ? fileName.substr(fileName.size() - KEEP_CHARS)
         : fileName;
     writer().writeString(trimmedFileName);
 
@@ -265,7 +271,8 @@ Journal::JsonLogContext::reset(
     writer().writeString(severityStr);
 
     auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-                      std::chrono::system_clock::now().time_since_epoch()).count();
+                     std::chrono::system_clock::now().time_since_epoch())
+                     .count();
     writer().writeKey("Timestamp");
     writer().writeInt(nowMs);
     writer().writeKey("Time");
@@ -303,19 +310,6 @@ Journal::formatLog(std::string&& message)
     writer.endObject();
 
     return writer.finish();
-}
-void
-Journal::setRootPath(std::string_view fullPath, std::string_view relativePath)
-{
-    if (relativePath.size() <= fullPath.size() && 
-        fullPath.ends_with(relativePath))
-    {
-        m_filePathOffset_ = fullPath.size() - relativePath.size();
-    }
-    else
-    {
-        m_filePathOffset_ = 0;
-    }
 }
 
 void

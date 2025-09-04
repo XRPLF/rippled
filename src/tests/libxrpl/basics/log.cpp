@@ -308,10 +308,12 @@ TEST_CASE("Test setJsonValue")
     writer.startObject();
 
     log::detail::setJsonValue<bool>(writer, "testBool", true, &stringBuf);
-    log::detail::setJsonValue<std::int32_t>(writer, "testInt32", -1, &stringBuf);
+    log::detail::setJsonValue<std::int32_t>(
+        writer, "testInt32", -1, &stringBuf);
     log::detail::setJsonValue<std::uint32_t>(
         writer, "testUInt32", 1, &stringBuf);
-    log::detail::setJsonValue<std::int64_t>(writer, "testInt64", -1, &stringBuf);
+    log::detail::setJsonValue<std::int64_t>(
+        writer, "testInt64", -1, &stringBuf);
     log::detail::setJsonValue<std::uint64_t>(
         writer, "testUInt64", 1, &stringBuf);
     log::detail::setJsonValue<double>(writer, "testDouble", 1.1, &stringBuf);
@@ -327,7 +329,9 @@ TEST_CASE("Test setJsonValue")
         writer, "testStream", {}, &stringBuf);
     writer.endObject();
 
-    CHECK(writer.finish() == R"AAA({"testBool":true,"testInt32":-1,"testUInt32":1,"testInt64":-1,"testUInt64":1,"testDouble":1.1,"testCharStar":"Char*","testStdString":"StdString","testStdStringView":"StdStringView","testToChars":"0","testStream":"0"})AAA");
+    CHECK(
+        writer.finish() ==
+        R"AAA({"testBool":true,"testInt32":-1,"testUInt32":1,"testInt64":-1,"testUInt64":1,"testDouble":1.1,"testCharStar":"Char*","testStdString":"StdString","testStdStringView":"StdStringView","testToChars":"0","testStream":"0"})AAA");
 }
 
 TEST_CASE("Test json logging not enabled")
@@ -421,30 +425,24 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log fields")
     CHECK(logValue.is_object());
     CHECK(logValue.as_object().contains("GlobalParams"));
     CHECK(logValue.as_object().contains("JournalParams"));
-    CHECK(logValue.as_object().contains("MessageParams"));
+    CHECK(logValue.as_object().contains("Metadata"));
     CHECK(logValue.as_object().contains("Message"));
 
     CHECK(logValue.as_object()["GlobalParams"].is_object());
     CHECK(logValue.as_object()["JournalParams"].is_object());
-    CHECK(logValue.as_object()["MessageParams"].is_object());
+    CHECK(logValue.as_object()["Metadata"].is_object());
     CHECK(logValue.as_object()["Message"].is_string());
 
-    CHECK(
-        logValue.as_object()["MessageParams"].as_object().contains("Function"));
-    CHECK(logValue.as_object()["MessageParams"].as_object().contains("File"));
-    CHECK(logValue.as_object()["MessageParams"].as_object().contains("Line"));
-    CHECK(
-        logValue.as_object()["MessageParams"].as_object().contains("ThreadId"));
-    CHECK(logValue.as_object()["MessageParams"].as_object().contains("Level"));
-    CHECK(logValue.as_object()["MessageParams"].as_object().contains("Time"));
+    CHECK(logValue.as_object()["Metadata"].as_object().contains("Function"));
+    CHECK(logValue.as_object()["Metadata"].as_object().contains("File"));
+    CHECK(logValue.as_object()["Metadata"].as_object().contains("Line"));
+    CHECK(logValue.as_object()["Metadata"].as_object().contains("ThreadId"));
+    CHECK(logValue.as_object()["Metadata"].as_object().contains("Level"));
+    CHECK(logValue.as_object()["Metadata"].as_object().contains("Time"));
 
-    CHECK(logValue.as_object()["MessageParams"]
-              .as_object()["Function"]
-              .is_string());
-    CHECK(
-        logValue.as_object()["MessageParams"].as_object()["File"].is_string());
-    CHECK(
-        logValue.as_object()["MessageParams"].as_object()["Line"].is_number());
+    CHECK(logValue.as_object()["Metadata"].as_object()["Function"].is_string());
+    CHECK(logValue.as_object()["Metadata"].as_object()["File"].is_string());
+    CHECK(logValue.as_object()["Metadata"].as_object()["Line"].is_number());
 
     CHECK(
         logValue.as_object()["Message"].get_string() ==
@@ -462,7 +460,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["MessageParams"]
+            logValue.as_object()["Metadata"]
                 .as_object()["Level"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kTrace));
@@ -477,7 +475,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["MessageParams"]
+            logValue.as_object()["Metadata"]
                 .as_object()["Level"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kDebug));
@@ -492,7 +490,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["MessageParams"]
+            logValue.as_object()["Metadata"]
                 .as_object()["Level"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kInfo));
@@ -507,7 +505,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["MessageParams"]
+            logValue.as_object()["Metadata"]
                 .as_object()["Level"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kWarning));
@@ -522,7 +520,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["MessageParams"]
+            logValue.as_object()["Metadata"]
                 .as_object()["Level"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kError));
@@ -537,7 +535,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["MessageParams"]
+            logValue.as_object()["Metadata"]
                 .as_object()["Level"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kFatal));
@@ -553,9 +551,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log stream")
     CHECK(ec == boost::system::errc::success);
 
     CHECK(
-        logValue.as_object()["MessageParams"]
-            .as_object()["Level"]
-            .get_string() ==
+        logValue.as_object()["Metadata"].as_object()["Level"].get_string() ==
         beast::severities::to_string(beast::severities::kError));
 }
 
