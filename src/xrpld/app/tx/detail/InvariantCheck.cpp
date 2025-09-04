@@ -76,6 +76,8 @@ enum Privilege {
                                 // object (except by issuer)
     mayAuthorizeMPT = 0x0200,   // The transaction MAY create or delete an MPT
                                 // object (except by issuer)
+    mayDeleteMPT =
+        0x0400,  // The transaction MAY delete an MPT object. May not create.
 };
 constexpr Privilege
 operator|(Privilege lhs, Privilege rhs)
@@ -1587,10 +1589,9 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if ((tx.getTxnType() == ttVAULT_CLAWBACK ||
-             tx.getTxnType() == ttVAULT_WITHDRAW) &&
-            mptokensDeleted_ == 1 && mptokensCreated_ == 0 &&
-            mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
+        if (hasPrivilege(tx, mayDeleteMPT) && mptokensDeleted_ == 1 &&
+            mptokensCreated_ == 0 && mptIssuancesCreated_ == 0 &&
+            mptIssuancesDeleted_ == 0)
             return true;
     }
 

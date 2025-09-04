@@ -700,15 +700,12 @@ Transactor::checkSign(
     }
 
     // Check Single Sign
-    // This ternary is only needed to handle `simulate`
     XRPL_ASSERT(
-        !pkSigner.empty(),
-        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
+        !pkSigner.empty(), "ripple::Transactor::checkSign : non-empty signer");
 
     if (!publicKeyType(makeSlice(pkSigner)))
     {
-        JLOG(ctx.j.trace())
-            << "checkSingleSign: signing public key type is unknown";
+        JLOG(ctx.j.trace()) << "checkSign: signing public key type is unknown";
         return tefBAD_AUTH;  // FIXME: should be better error!
     }
 
@@ -838,7 +835,6 @@ Transactor::checkSingleSign(
     return tesSUCCESS;
 }
 
-// TODO generalize
 NotTEC
 Transactor::checkMultiSign(
     PreclaimContext const& ctx,
