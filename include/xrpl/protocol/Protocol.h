@@ -217,6 +217,13 @@ std::size_t constexpr maxDataPayloadLength = 256;
 /** Vault withdrawal policies */
 std::uint8_t constexpr vaultStrategyFirstComeFirstServe = 1;
 
+/** Default IOU scale factor for a Vault */
+std::uint8_t constexpr vaultDefaultIOUScale = 6;
+/** Maximum scale factor for a Vault. The number is chosen to ensure that
+1 IOU can be always converted to shares.
+10^19 > maxMPTokenAmount (2^64-1) > 10^18 */
+std::uint8_t constexpr vaultMaximumIOUScale = 18;
+
 /** Maximum recursion depth for vault shares being put as an asset inside
  * another vault; counted from 0 */
 std::uint8_t constexpr maxAssetCheckDepth = 5;

@@ -2860,58 +2860,113 @@ rippleCredit(
         saAmount.asset().value());
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets)
 {
     XRPL_ASSERT(
+        !assets.negative(),
+        "ripple::assetsToSharesDeposit : non-negative assets");
+    XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesDeposit : assets and vault match");
-    Number assetTotal = vault->at(sfAssetsTotal);
-    STAmount shares{vault->at(sfShareMPTID), static_cast<Number>(assets)};
+    if (assets.negative() || assets.asset() != vault->at(sfAsset))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Number const assetTotal = vault->at(sfAssetsTotal);
+    STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
-        return shares;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+        return STAmount{
+            shares.asset(),
+            Number(assets.mantissa(), assets.exponent() + vault->at(sfScale))
+                .truncate()};
+
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsDeposit(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares)
+{
+    XRPL_ASSERT(
+        !shares.negative(),
+        "ripple::sharesToAssetsDeposit : non-negative shares");
+    XRPL_ASSERT(
+        shares.asset() == vault->at(sfShareMPTID),
+        "ripple::sharesToAssetsDeposit : shares and vault match");
+    if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Number const assetTotal = vault->at(sfAssetsTotal);
+    STAmount assets{vault->at(sfAsset)};
+    if (assetTotal == 0)
+        return STAmount{
+            assets.asset(),
+            shares.mantissa(),
+            shares.exponent() - vault->at(sfScale),
+            false};
+
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    assets = assetTotal * (shares / shareTotal);
+    return assets;
+}
+
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets)
+    STAmount const& assets,
+    TruncateShares truncate)
 {
+    XRPL_ASSERT(
+        !assets.negative(),
+        "ripple::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesWithdraw : assets and vault match");
+    if (assets.negative() || assets.asset() != vault->at(sfAsset))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number result = shareTotal * (assets / assetTotal);
+    if (truncate == TruncateShares::yes)
+        result = result.truncate();
+    shares = result;
     return shares;
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
     XRPL_ASSERT(
+        !shares.negative(),
+        "ripple::sharesToAssetsDeposit : non-negative shares");
+    XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
         "ripple::sharesToAssetsWithdraw : shares and vault match");
+    if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }

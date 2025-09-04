@@ -74,8 +74,8 @@ public:
 
     /** @} */
 
-    /** Create an amount from an account ID. Should only be used when the secret
-     * key is unavailable, such as for pseudo-accounts. */
+    /** Create an Account from an account ID. Should only be used when the
+     * secret key is unavailable, such as for pseudo-accounts. */
     explicit Account(std::string name, AccountID const& id);
 
     enum AcctStringType { base58Seed, other };
