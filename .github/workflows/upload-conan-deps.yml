@@ -46,7 +46,7 @@ jobs:
       fail-fast: true
       matrix:
         os: ["linux", "macos", "windows"]
-    uses: ./.github/workflows/upload-conan-deps-os.yml
+    uses: ./.github/workflows/reusable-upload-conan-deps-os.yml
     with:
       force_source_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
       force_upload: ${{ github.event.inputs.force_upload == 'true' }}

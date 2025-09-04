@@ -49,7 +49,7 @@ defaults:
 jobs:
   # Generate the strategy matrix to be used by the following job.
   generate-matrix:
-    uses: ./.github/workflows/strategy-matrix.yml
+    uses: ./.github/workflows/reusable-strategy-matrix.yml
     with:
       os: ${{ inputs.os }}
       strategy_matrix: ${{ inputs.strategy_matrix }}

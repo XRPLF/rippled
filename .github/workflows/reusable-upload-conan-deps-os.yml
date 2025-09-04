@@ -34,7 +34,7 @@ on:
 
 jobs:
   generate-matrix:
-    uses: ./.github/workflows/strategy-matrix.yml
+    uses: ./.github/workflows/reusable-strategy-matrix.yml
     with:
       os: ${{ inputs.os }}
       strategy_matrix: all
