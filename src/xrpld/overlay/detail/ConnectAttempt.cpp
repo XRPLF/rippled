@@ -58,9 +58,9 @@ ConnectAttempt::ConnectAttempt(
 
 ConnectAttempt::~ConnectAttempt()
 {
-    if (slot_ != nullptr)
     // slot_ will be null if we successfully connected
     // and transferred ownership to a PeerImp
+    if (slot_ != nullptr)
         overlay_.peerFinder().on_closed(slot_);
 }
 
@@ -136,7 +136,6 @@ ConnectAttempt::tryAsyncShutdown()
         return;
 
     shutdownStarted_ = true;
-    setTimer();
 
     // gracefully shutdown the SSL socket, performing a shutdown handshake
     stream_.async_shutdown(bind_executor(
@@ -249,14 +248,13 @@ ConnectAttempt::onTimer(error_code ec)
         return close();
     }
 
-    fail("Timeout");
+    JLOG(journal_.debug()) << "onTimer: Timeout";
+    close();
 }
 
 void
 ConnectAttempt::onConnect(error_code ec)
 {
-    cancelTimer();
-
     ioPending_ = false;
 
     if (ec)
@@ -278,8 +276,6 @@ ConnectAttempt::onConnect(error_code ec)
     if (shutdown_)
         return tryAsyncShutdown();
 
-    setTimer();
-
     ioPending_ = true;
 
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
@@ -296,8 +292,6 @@ ConnectAttempt::onConnect(error_code ec)
 void
 ConnectAttempt::onHandshake(error_code ec)
 {
-    cancelTimer();
-
     ioPending_ = false;
 
     if (ec)
@@ -339,7 +333,6 @@ ConnectAttempt::onHandshake(error_code ec)
     if (shutdown_)
         return tryAsyncShutdown();
 
-    setTimer();
     ioPending_ = true;
 
     boost::beast::http::async_write(
@@ -371,7 +364,6 @@ ConnectAttempt::onWrite(error_code ec)
     if (shutdown_)
         return tryAsyncShutdown();
 
-    setTimer();
     ioPending_ = true;
 
     boost::beast::http::async_read(
@@ -390,7 +382,6 @@ void
 ConnectAttempt::onRead(error_code ec)
 {
     cancelTimer();
-
     ioPending_ = false;
 
     if (ec)
