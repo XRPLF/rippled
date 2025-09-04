@@ -790,6 +790,7 @@ run(int argc, char** argv)
 
     if (config->LOG_STYLE == LogStyle::Json)
     {
+        beast::Journal::setRootPath(std::source_location::current().file_name(), "src/xrpld/app/main/Main.cpp");
         beast::Journal::enableStructuredJournal();
         beast::Journal::addGlobalAttributes(log::attributes(
             log::attr("Application", "rippled"),

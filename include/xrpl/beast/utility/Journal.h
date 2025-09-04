@@ -22,10 +22,11 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <atomic>
 #include <charconv>
 #include <cstring>
+#include <memory>
 #include <mutex>
-#include <shared_mutex>
 #include <source_location>
 #include <sstream>
 #include <string>
@@ -347,8 +348,8 @@ private:
 
     std::string m_name;
     std::string m_attributesJson;
-    static std::string globalLogAttributesJson_;
-    static std::shared_mutex globalLogAttributesMutex_;
+    static std::atomic<std::shared_ptr<const std::string>> globalLogAttributesJson_;
+    static std::size_t m_filePathOffset_;
     static bool m_jsonLogsEnabled;
 
     static thread_local JsonLogContext currentJsonLogContext_;
@@ -366,6 +367,9 @@ private:
 
 public:
     //--------------------------------------------------------------------------
+
+    static void
+    setRootPath(std::string_view fullPath, std::string_view relativePath);
 
     static void
     enableStructuredJournal();
@@ -628,6 +632,7 @@ public:
         : m_name(name), m_sink(&sink)
     {
         std::string buffer;
+        buffer.reserve(128);
         detail::SimpleJsonWriter writer{buffer};
         writer.startObject();
         attributesFactory(writer);
@@ -737,25 +742,25 @@ public:
     static void
     resetGlobalAttributes()
     {
-        std::unique_lock lock(globalLogAttributesMutex_);
-        globalLogAttributesJson_.clear();
+        globalLogAttributesJson_.store(std::make_shared<const std::string>());
     }
 
     template <typename TAttributesFactory>
     static void
     addGlobalAttributes(TAttributesFactory&& factory)
     {
-        std::unique_lock lock(globalLogAttributesMutex_);
-
-        auto isEmpty = globalLogAttributesJson_.empty();
-        std::string buffer{std::move(globalLogAttributesJson_)};
+        auto current = globalLogAttributesJson_.load();
+        std::string buffer = current ? *current : std::string{};
+        buffer.reserve(128);
+        auto isEmpty = buffer.empty();
         detail::SimpleJsonWriter writer{buffer};
         if (isEmpty)
         {
             writer.startObject();
         }
         factory(writer);
-        globalLogAttributesJson_ = std::move(buffer);
+        
+        globalLogAttributesJson_.store(std::make_shared<const std::string>(std::move(buffer)));
     }
 };
 
