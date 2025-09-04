@@ -844,7 +844,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
 #endif
 TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     Delegation::delegatable,
-    noPriv,
+    mayDeleteMPT,
     ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
@@ -858,7 +858,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
 #endif
 TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     Delegation::delegatable,
-    noPriv,
+    mayDeleteMPT,
     ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
