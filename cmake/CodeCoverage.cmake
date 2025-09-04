@@ -105,9 +105,9 @@
 #     - fix "At least one COMMAND must be given" CMake warning from policy CMP0175
 #
 # 2025-09-03, Jingchen Wu
-#     - remove the unused function append_coverage_compiler_flags
-#     - rename append_coverage_compiler_flags_to_target to add_code_coverage_to_target
-#     - refactor add_code_coverage_to_target to make it use target_link_libraries
+#     - remove the unused function append_coverage_compiler_flags and append_coverage_compiler_flags_to_target
+#     - fix the issue where COVERAGE_CXX_COMPILER_FLAGS and COVERAGE_C_COMPILER_FLAGS are never used
+#     - remove some unused code
 #
 # USAGE:
 #
