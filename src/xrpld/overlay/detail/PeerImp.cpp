@@ -902,6 +902,9 @@ void
 PeerImp::doProtocolStart()
 {
     // a shutdown was initiated before the handshare, there is nothing to do
+    if (shutdown_)
+        return tryAsyncShutdown();
+
     onReadMessage(error_code(), 0);
 
     // Send all the validator lists that have been loaded

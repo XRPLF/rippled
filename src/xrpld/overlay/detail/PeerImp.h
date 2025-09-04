@@ -41,7 +41,6 @@
 #include <boost/thread/shared_mutex.hpp>
 
 #include <atomic>
-#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <queue>
