@@ -272,6 +272,12 @@ Transactor::getFlagsMask(PreflightContext const& ctx)
     return tfUniversalMask;
 }
 
+NotTEC
+Transactor::preflightSigValidated(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
+}
+
 TER
 Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
