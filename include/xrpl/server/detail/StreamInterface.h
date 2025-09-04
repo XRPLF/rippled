@@ -41,6 +41,9 @@ public:
     virtual void
     close() = 0;
 
+    virtual void
+    cancel() = 0;
+
     // Async I/O operations
     virtual void
     async_read_some(
@@ -100,6 +103,12 @@ public:
     close() override
     {
         stream_->lowest_layer().close();
+    }
+
+    void
+    cancel() override
+    {
+        stream_->lowest_layer().cancel();
     }
 
     void

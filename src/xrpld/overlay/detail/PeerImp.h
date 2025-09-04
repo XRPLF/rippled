@@ -100,53 +100,6 @@ private:
         boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
     using Compressed = compression::Compressed;
 
-    Application& app_;
-    id_t const id_;
-    beast::WrappedSink sink_;
-    beast::WrappedSink p_sink_;
-    beast::Journal const journal_;
-    beast::Journal const p_journal_;
-    std::unique_ptr<StreamInterface> stream_ptr_;
-    boost::asio::strand<boost::asio::executor> strand_;
-    waitable_timer timer_;
-
-    // Updated at each stage of the connection process to reflect
-    // the current conditions as closely as possible.
-    beast::IP::Endpoint const remote_address_;
-
-    // These are up here to prevent warnings about order of initializations
-    //
-    OverlayImpl& overlay_;
-    bool const inbound_;
-
-    // Protocol version to use for this link
-    ProtocolVersion protocol_;
-
-    std::atomic<Tracking> tracking_;
-    clock_type::time_point trackingTime_;
-    bool detaching_ = false;
-    // Node public key of peer.
-    PublicKey const publicKey_;
-    std::string name_;
-    std::shared_mutex mutable nameMutex_;
-
-    // The indices of the smallest and largest ledgers this peer has available
-    //
-    LedgerIndex minLedger_ = 0;
-    LedgerIndex maxLedger_ = 0;
-    uint256 closedLedgerHash_;
-    uint256 previousLedgerHash_;
-
-    boost::circular_buffer<uint256> recentLedgers_{128};
-    boost::circular_buffer<uint256> recentTxSets_{128};
-
-    std::optional<std::chrono::milliseconds> latency_;
-    std::optional<std::uint32_t> lastPingSeq_;
-    clock_type::time_point lastPingTime_;
-    clock_type::time_point const creationTime_;
-
-    reduce_relay::Squelch<UptimeClock> squelch_;
-
     // Notes on thread locking:
     //
     // During an audit it was noted that some member variables that looked
@@ -194,31 +147,6 @@ private:
         }
     };
 
-    std::mutex mutable recentLock_;
-    protocol::TMStatusChange last_status_;
-    Resource::Consumer usage_;
-    ChargeWithContext fee_;
-    std::shared_ptr<PeerFinder::Slot> const slot_;
-    boost::beast::multi_buffer read_buffer_;
-    http_request_type request_;
-    PeerAttributes const attributes_;
-    std::queue<std::shared_ptr<Message>> send_queue_;
-    bool gracefulClose_ = false;
-    int large_sendq_ = 0;
-    std::unique_ptr<LoadEvent> load_event_;
-    // The highest sequence of each PublisherList that has
-    // been sent to or received from this peer.
-    hash_map<PublicKey, std::size_t> publisherListSequences_;
-
-    // Queue of transactions' hashes that have not been
-    // relayed. The hashes are sent once a second to a peer
-    // and the peer requests missing transactions from the node.
-    hash_set<uint256> txQueue_;
-
-    LedgerReplayMsgHandler ledgerReplayMsgHandler_;
-
-    friend class OverlayImpl;
-
     class Metrics
     {
     public:
@@ -252,6 +180,79 @@ private:
         Metrics recv;
     } metrics_;
 
+    Application& app_;
+    id_t const id_;
+
+    beast::WrappedSink sink_;
+    beast::WrappedSink p_sink_;
+    beast::Journal const journal_;
+    beast::Journal const p_journal_;
+
+    std::unique_ptr<StreamInterface> stream_ptr_;
+    boost::asio::strand<boost::asio::executor> strand_;
+    waitable_timer timer_;
+
+    // Updated at each stage of the connection process to reflect
+    // the current conditions as closely as possible.
+    beast::IP::Endpoint const remote_address_;
+
+    // These are up here to prevent warnings about order of initializations
+    //
+    OverlayImpl& overlay_;
+    bool const inbound_;
+
+    // Protocol version to use for this link
+    ProtocolVersion protocol_;
+
+    std::atomic<Tracking> tracking_;
+    clock_type::time_point trackingTime_;
+    bool detaching_ = false;
+    // Node public key of peer.
+    PublicKey const publicKey_;
+    std::string name_;
+    std::shared_mutex mutable nameMutex_;
+
+    // The indices of the smallest and largest ledgers this peer has available
+    //
+    LedgerIndex minLedger_ = 0;
+    LedgerIndex maxLedger_ = 0;
+    uint256 closedLedgerHash_;
+    uint256 previousLedgerHash_;
+
+    boost::circular_buffer<uint256> recentLedgers_{128};
+    boost::circular_buffer<uint256> recentTxSets_{128};
+
+    std::optional<std::chrono::milliseconds> latency_;
+    std::optional<std::uint32_t> lastPingSeq_;
+    clock_type::time_point lastPingTime_;
+    clock_type::time_point const creationTime_;
+
+    reduce_relay::Squelch<UptimeClock> squelch_;
+
+    std::mutex mutable recentLock_;
+    protocol::TMStatusChange last_status_;
+    Resource::Consumer usage_;
+    ChargeWithContext fee_;
+    std::shared_ptr<PeerFinder::Slot> const slot_;
+    boost::beast::multi_buffer read_buffer_;
+    PeerAttributes const attributes_;
+    std::queue<std::shared_ptr<Message>> send_queue_;
+    bool gracefulClose_ = false;
+    int large_sendq_ = 0;
+    std::unique_ptr<LoadEvent> load_event_;
+    // The highest sequence of each PublisherList that has
+    // been sent to or received from this peer.
+    hash_map<PublicKey, std::size_t> publisherListSequences_;
+
+    // Queue of transactions' hashes that have not been
+    // relayed. The hashes are sent once a second to a peer
+    // and the peer requests missing transactions from the node.
+    hash_set<uint256> txQueue_;
+
+    LedgerReplayMsgHandler ledgerReplayMsgHandler_;
+
+    friend class OverlayImpl;
+
 public:
     PeerImp(PeerImp const&) = delete;
     PeerImp&
@@ -260,25 +261,23 @@ public:
     /** Create an active incoming peer from an established ssl connection. */
     PeerImp(
         Application& app,
-        id_t id,
+        OverlayImpl& overlay,
         std::shared_ptr<PeerFinder::Slot> const& slot,
-        http_request_type&& request,
-        PublicKey const& publicKey,
-        ProtocolVersion protocol,
-        Resource::Consumer consumer,
         std::unique_ptr<StreamInterface>&& stream_ptr,
+        Resource::Consumer consumer,
+        ProtocolVersion protocol,
         PeerAttributes const& attributes,
-        OverlayImpl& overlay);
+        PublicKey const& publicKey,
+        id_t id);
 
     /** Create outgoing, handshaked peer. */
-    // VFALCO legacyPublicKey should be implied by the Slot
     template <class Buffers>
     PeerImp(
         Application& app,
         std::unique_ptr<StreamInterface>&& stream_ptr,
         Buffers const& buffers,
         std::shared_ptr<PeerFinder::Slot>&& slot,
-        Resource::Consumer usage,
+        Resource::Consumer consumer,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         id_t id,

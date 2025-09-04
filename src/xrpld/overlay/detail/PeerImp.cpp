@@ -150,15 +150,14 @@ extractPeerAttributes(
 
 PeerImp::PeerImp(
     Application& app,
-    id_t id,
+    OverlayImpl& overlay,
     std::shared_ptr<PeerFinder::Slot> const& slot,
-    http_request_type&& request,
-    PublicKey const& publicKey,
-    ProtocolVersion protocol,
-    Resource::Consumer consumer,
     std::unique_ptr<StreamInterface>&& stream_ptr,
+    Resource::Consumer consumer,
+    ProtocolVersion protocol,
     PeerAttributes const& attributes,
-    OverlayImpl& overlay)
+    PublicKey const& publicKey,
+    id_t id)
     : Child(overlay)
     , app_(app)
     , id_(id)
@@ -182,7 +181,6 @@ PeerImp::PeerImp(
     , usage_(consumer)
     , fee_{Resource::feeTrivialPeer, ""}
     , slot_(slot)
-    , request_(std::move(request))
     , attributes_(attributes)
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
@@ -831,15 +829,6 @@ PeerImp::doAccept()
         read_buffer_.size() == 0,
         "ripple::PeerImp::doAccept : empty read buffer");
 
-    JLOG(journal_.debug()) << "doAccept: " << remote_address_;
-
-    auto const sharedValue = stream_ptr_->makeSharedValue(journal_);
-
-    // This shouldn't fail since we already computed
-    // the shared value successfully in OverlayImpl
-    if (!sharedValue)
-        return fail("makeSharedValue: Unexpected failure");
-
     JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
     JLOG(journal_.info()) << "Public Key: "
                           << toBase58(TokenType::NodePublic, publicKey_);
@@ -853,43 +842,7 @@ PeerImp::doAccept()
         JLOG(journal_.info()) << "Cluster name: " << *member;
     }
 
-    overlay_.activate(shared_from_this());
-
-    // XXX Set timer: connection is in grace period to be useful.
-    // XXX Set timer: connection idle (idle may vary depending on connection
-    // type.)
-
-    auto write_buffer = std::make_shared<boost::beast::multi_buffer>();
-
-    boost::beast::ostream(*write_buffer) << makeResponse(
-        !overlay_.peerFinder().config().peerPrivate,
-        request_,
-        overlay_.setup().public_ip,
-        remote_address_.address(),
-        *sharedValue,
-        overlay_.setup().networkID,
-        protocol_,
-        app_);
-
-    // Write the whole buffer and only start protocol when that's done.
-    stream_ptr_->async_write(
-        write_buffer->data(),
-        [this, write_buffer, self = shared_from_this()](
-            error_code ec, std::size_t bytes_transferred) {
-            // Post completion to the strand to ensure thread safety
-            boost::asio::post(
-                strand_, [this, write_buffer, self, ec, bytes_transferred]() {
-                    if (!socketOpen())
-                        return;
-                    if (ec == boost::asio::error::operation_aborted)
-                        return;
-                    if (ec)
-                        return fail("onWriteResponse", ec);
-                    if (write_buffer->size() == bytes_transferred)
-                        return doProtocolStart();
-                    return fail("Failed to write header");
-                });
-        });
+    doProtocolStart();
 }
 
 std::string

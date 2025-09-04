@@ -465,7 +465,6 @@ private:
 
     std::shared_ptr<Writer>
     makeErrorResponse(
-        std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
         address_type remote_address,
         std::string msg);
