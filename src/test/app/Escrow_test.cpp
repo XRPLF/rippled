@@ -2040,14 +2040,14 @@ struct Escrow_test : public beast::unit_test::suite
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
                 fee(createFee));
             env.close();
 
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            if (BEAST_EXPECT(env.ownerCount(alice) == 2))
             {
                 env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
@@ -2097,7 +2097,7 @@ struct Escrow_test : public beast::unit_test::suite
                         txMeta->getFieldI32(sfWasmReturnCode) == 5,
                         std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+                BEAST_EXPECT(env.ownerCount(alice) == 0);
             }
         }
 
@@ -2105,7 +2105,7 @@ struct Escrow_test : public beast::unit_test::suite
             // FinishFunction + Condition
             Env env(*this, features);
             env.fund(XRP(5000), alice, carol);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
             auto const seq = env.seq(alice);
             // create escrow
             env(escrowCreate,
@@ -2117,7 +2117,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const conditionFinishFee = finishFee +
                 env.current()->fees().base * (32 + (escrow::fb1.size() / 16));
 
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            if (BEAST_EXPECT(env.ownerCount(alice) == 2))
             {
                 env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
@@ -2168,7 +2168,7 @@ struct Escrow_test : public beast::unit_test::suite
                         std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 env.close();
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+                BEAST_EXPECT(env.ownerCount(alice) == 0);
             }
         }
 
@@ -2178,7 +2178,7 @@ struct Escrow_test : public beast::unit_test::suite
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
             auto const ts = env.now() + 97s;
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
@@ -2187,7 +2187,7 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(createFee));
             env.close();
 
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            if (BEAST_EXPECT(env.ownerCount(alice) == 2))
             {
                 env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
@@ -2218,7 +2218,7 @@ struct Escrow_test : public beast::unit_test::suite
                         txMeta->getFieldI32(sfWasmReturnCode) == 13,
                         std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+                BEAST_EXPECT(env.ownerCount(alice) == 0);
             }
         }
 
@@ -2228,7 +2228,7 @@ struct Escrow_test : public beast::unit_test::suite
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::finish_time(env.now() + 2s),
@@ -2236,7 +2236,7 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(createFee));
             // Don't close the ledger here
 
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            if (BEAST_EXPECT(env.ownerCount(alice) == 2))
             {
                 env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
@@ -2273,7 +2273,7 @@ struct Escrow_test : public beast::unit_test::suite
                         std::to_string(txMeta->getFieldI32(sfWasmReturnCode)));
 
                 env.close();
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+                BEAST_EXPECT(env.ownerCount(alice) == 0);
             }
         }
     }
@@ -2297,7 +2297,7 @@ struct Escrow_test : public beast::unit_test::suite
             // create escrow
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
             auto escrowCreate = escrow::create(alice, carol, XRP(1000));
             XRPAmount txnFees =
                 env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
@@ -2310,8 +2310,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             if (BEAST_EXPECT(
-                    (*env.le(alice))[sfOwnerCount] ==
-                    (1 + wasmHex.size() / 2 / 500)))
+                    env.ownerCount(alice) == (1 + wasmHex.size() / 2 / 500)))
             {
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
@@ -2350,7 +2349,7 @@ struct Escrow_test : public beast::unit_test::suite
                     BEAST_EXPECT(txMeta->getFieldI32(sfWasmReturnCode) == 1);
 
                 env.close();
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+                BEAST_EXPECT(env.ownerCount(alice) == 0);
             }
         }
     }
@@ -2374,7 +2373,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, carol);
 
             BEAST_EXPECT(env.seq(alice) == 4);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            BEAST_EXPECT(env.ownerCount(alice) == 0);
 
             // base objects that need to be created first
             auto const tokenId =
@@ -2383,7 +2382,7 @@ struct Escrow_test : public beast::unit_test::suite
             env(trust(alice, carol["USD"](1'000'000)));
             env.close();
             BEAST_EXPECT(env.seq(alice) == 6);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2);
+            BEAST_EXPECT(env.ownerCount(alice) == 2);
 
             // set up a bunch of objects to check their keylets
             AMM amm(env, carol, XRP(10), carol["USD"](1000));
@@ -2411,7 +2410,9 @@ struct Escrow_test : public beast::unit_test::suite
             env(tx);
             env.close();
 
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 15);
+            BEAST_EXPECTS(
+                env.ownerCount(alice) == 16,
+                std::to_string(env.ownerCount(alice)));
             if (BEAST_EXPECTS(
                     env.seq(alice) == 20, std::to_string(env.seq(alice))))
             {
@@ -2444,7 +2445,9 @@ struct Escrow_test : public beast::unit_test::suite
                     BEAST_EXPECTS(
                         gasUsed == allowance, std::to_string(gasUsed));
                 }
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 15);
+                BEAST_EXPECTS(
+                    env.ownerCount(alice) == 16,
+                    std::to_string(env.ownerCount(alice)));
             }
         }
     }
