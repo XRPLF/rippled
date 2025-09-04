@@ -46,7 +46,8 @@ private:
     using stream_type = boost::beast::ssl_stream<middle_type>;
     using shared_context = std::shared_ptr<boost::asio::ssl::context>;
 
-    std::chrono::seconds const connectTimeout_{15};
+    static constexpr std::chrono::seconds connectTimeout{15};
+
     Application& app_;
     std::uint32_t const id_;
     beast::WrappedSink sink_;

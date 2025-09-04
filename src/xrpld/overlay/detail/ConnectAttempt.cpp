@@ -210,7 +210,7 @@ ConnectAttempt::setTimer()
 {
     try
     {
-        timer_.expires_after(connectTimeout_);
+        timer_.expires_after(connectTimeout);
     }
     catch (std::exception const& ex)
     {

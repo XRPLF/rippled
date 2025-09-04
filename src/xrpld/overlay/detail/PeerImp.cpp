@@ -289,6 +289,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (sendq_size != 0)
         return;
 
+    writePending_ = true;
     boost::asio::async_write(
         stream_,
         boost::asio::buffer(
@@ -648,7 +649,7 @@ PeerImp::shutdown()
         strand_.running_in_this_thread(),
         "ripple::PeerImp::shutdown: strand in this thread");
 
-    if (!socket_.is_open())
+    if (!socket_.is_open() || shutdown_)
         return;
 
     shutdown_ = true;
@@ -656,7 +657,7 @@ PeerImp::shutdown()
     boost::beast::get_lowest_layer(stream_).cancel();
 
     tryAsyncShutdown();
-};
+}
 
 void
 PeerImp::onShutdown(error_code ec)
