@@ -36,11 +36,6 @@ target_link_libraries (opts
     $<$<BOOL:${profile}>:-pg>
     $<$<AND:$<BOOL:${is_gcc}>,$<BOOL:${profile}>>:-p>)
 
-if (coverage)
-  include(CodeCoverage)
-  add_code_coverage_to_target(opts INTERFACE)
-endif ()
-
 if(jemalloc)
   find_package(jemalloc REQUIRED)
   target_compile_definitions(opts INTERFACE PROFILE_JEMALLOC)

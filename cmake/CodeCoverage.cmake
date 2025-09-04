@@ -257,43 +257,27 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
         set(COVERAGE_C_LINKER_FLAGS "${COVERAGE_C_LINKER_FLAGS} -fprofile-update=atomic")
     endif()
 
-endif()
+    separate_arguments(COVERAGE_CXX_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_COMPILER_FLAGS}")
+    separate_arguments(COVERAGE_C_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_C_COMPILER_FLAGS}")
+    separate_arguments(COVERAGE_CXX_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_LINKER_FLAGS}")
+    separate_arguments(COVERAGE_C_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_C_LINKER_FLAGS}")
 
-set(CMAKE_Fortran_FLAGS_COVERAGE
-    ${COVERAGE_COMPILER_FLAGS}
-    CACHE STRING "Flags used by the Fortran compiler during coverage builds."
-    FORCE )
-set(CMAKE_CXX_FLAGS_COVERAGE
-    ${COVERAGE_COMPILER_FLAGS}
-    CACHE STRING "Flags used by the C++ compiler during coverage builds."
-    FORCE )
-set(CMAKE_C_FLAGS_COVERAGE
-    ${COVERAGE_COMPILER_FLAGS}
-    CACHE STRING "Flags used by the C compiler during coverage builds."
-    FORCE )
-set(CMAKE_EXE_LINKER_FLAGS_COVERAGE
-    ""
-    CACHE STRING "Flags used for linking binaries during coverage builds."
-    FORCE )
-set(CMAKE_SHARED_LINKER_FLAGS_COVERAGE
-    ""
-    CACHE STRING "Flags used by the shared libraries linker during coverage builds."
-    FORCE )
-mark_as_advanced(
-    CMAKE_Fortran_FLAGS_COVERAGE
-    CMAKE_CXX_FLAGS_COVERAGE
-    CMAKE_C_FLAGS_COVERAGE
-    CMAKE_EXE_LINKER_FLAGS_COVERAGE
-    CMAKE_SHARED_LINKER_FLAGS_COVERAGE )
+    # Add compiler options to the opts target
+    target_compile_options(opts INTERFACE
+            $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
+            $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
+
+    target_link_libraries (opts INTERFACE
+            $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS} gcov>
+            $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS} gcov>
+    )
+
+endif()
 
 get_property(GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 if(NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG))
     message(WARNING "Code coverage results with an optimised (non-Debug) build may be misleading")
 endif() # NOT (CMAKE_BUILD_TYPE STREQUAL "Debug" OR GENERATOR_IS_MULTI_CONFIG)
-
-if(CMAKE_C_COMPILER_ID STREQUAL "GNU" OR CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
-    link_libraries(gcov)
-endif()
 
 # Defines a target for running and collection code coverage information
 # Builds dependencies, runs the given executable and outputs reports.
@@ -483,19 +467,3 @@ function(setup_target_for_coverage_gcovr)
         COMMENT "Code coverage report saved in ${GCOVR_OUTPUT_FILE} formatted as ${Coverage_FORMAT}"
     )
 endfunction() # setup_target_for_coverage_gcovr
-
-# Setup coverage for specific library
-function(add_code_coverage_to_target name scope)
-    separate_arguments(COVERAGE_CXX_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_COMPILER_FLAGS}")
-    separate_arguments(COVERAGE_C_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_C_COMPILER_FLAGS}")
-    separate_arguments(COVERAGE_CXX_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_LINKER_FLAGS}")
-    separate_arguments(COVERAGE_C_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_C_LINKER_FLAGS}")
-    target_compile_options(${name} ${scope}
-        $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
-        $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
-
-    target_link_libraries (${name} ${scope}
-        $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS}>
-        $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS}>
-    )
-endfunction()
