@@ -798,6 +798,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     {sfDomainID, soeOPTIONAL},
     {sfWithdrawalPolicy, soeOPTIONAL},
     {sfData, soeOPTIONAL},
+    {sfScale, soeOPTIONAL},
 }))
 
 /** This transaction updates a single asset vault. */

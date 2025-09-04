@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -135,7 +136,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (isFrozen(ctx.view, account, vaultShare))
         return tecLOCKED;
 
-    if (vault->isFlag(tfVaultPrivate) && account != vault->at(sfOwner))
+    if (vault->isFlag(lsfVaultPrivate) && account != vault->at(sfOwner))
     {
         auto const maybeDomainID = sleIssuance->at(~sfDomainID);
         // Since this is a private vault and the account is not its owner, we
@@ -180,7 +181,7 @@ VaultDeposit::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const assets = ctx_.tx[sfAmount];
+    auto const amount = ctx_.tx[sfAmount];
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
@@ -194,14 +195,14 @@ VaultDeposit::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
-    if ((vault->getFlags() & tfVaultPrivate) && account_ != vault->at(sfOwner))
+    if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
                 ctx_.view(), mptIssuanceID, account_, mPriorBalance, j_);
             !isTesSuccess(err))
             return err;
     }
-    else
+    else  // !vault->isFlag(lsfVaultPrivate) || account_ == vault->at(sfOwner)
     {
         // No authorization needed, but must ensure there is MPToken
         auto sleMpt = view().read(keylet::mptoken(mptIssuanceID, account_));
@@ -218,8 +219,12 @@ VaultDeposit::doApply()
         }
 
         // If the vault is private, set the authorized flag for the vault owner
-        if (vault->isFlag(tfVaultPrivate))
+        if (vault->isFlag(lsfVaultPrivate))
         {
+            // This follows from the reverse of the outer enclosing if condition
+            XRPL_ASSERT(
+                account_ == vault->at(sfOwner),
+                "ripple::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
                     mPriorBalance,              // priorBalance
@@ -234,14 +239,52 @@ VaultDeposit::doApply()
         }
     }
 
-    // Compute exchange before transferring any amounts.
-    auto const shares = assetsToSharesDeposit(vault, sleIssuance, assets);
+    STAmount sharesCreated = {vault->at(sfShareMPTID)}, assetsDeposited;
+    try
+    {
+        // Compute exchange before transferring any amounts.
+        {
+            auto const maybeShares =
+                assetsToSharesDeposit(vault, sleIssuance, amount);
+            if (!maybeShares)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            sharesCreated = *maybeShares;
+        }
+        if (sharesCreated == beast::zero)
+            return tecPRECISION_LOSS;
+
+        auto const maybeAssets =
+            sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
+        if (!maybeAssets)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        else if (*maybeAssets > amount)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
+        assetsDeposited = *maybeAssets;
+    }
+    catch (std::overflow_error const&)
+    {
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j_.debug())  //
+            << "VaultDeposit: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", amount=" << amount;
+        return tecPATH_DRY;
+    }
+
     XRPL_ASSERT(
-        shares.asset() != assets.asset(),
+        sharesCreated.asset() != assetsDeposited.asset(),
         "ripple::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetsTotal) += assets;
-    vault->at(sfAssetsAvailable) += assets;
+    vault->at(sfAssetsTotal) += assetsDeposited;
+    vault->at(sfAssetsAvailable) += assetsDeposited;
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
@@ -250,15 +293,21 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
-    if (auto ter = accountSend(
-            view(), account_, vaultAccount, assets, j_, WaiveTransferFee::Yes))
+    if (auto const ter = accountSend(
+            view(),
+            account_,
+            vaultAccount,
+            assetsDeposited,
+            j_,
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
             account_,
-            assets.asset(),
+            assetsDeposited.asset(),
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
@@ -270,8 +319,14 @@ VaultDeposit::doApply()
     }
 
     // Transfer shares from vault to depositor.
-    if (auto ter = accountSend(
-            view(), vaultAccount, account_, shares, j_, WaiveTransferFee::Yes))
+    if (auto const ter = accountSend(
+            view(),
+            vaultAccount,
+            account_,
+            sharesCreated,
+            j_,
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
