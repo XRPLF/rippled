@@ -2718,6 +2718,10 @@ Enumerations</h2></td></tr>
 , <a class="el" href="namespaceripple.html#a4e070aef85986336795216a3e5336f8da0cc0a0507cf3d31e5089f420a4cf8b4b">Legacy</a>
  }</td></tr>
 <tr class="separator:a4e070aef85986336795216a3e5336f8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac52c3ab9078d3e039b86c985d50be183" id="r_ac52c3ab9078d3e039b86c985d50be183"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac52c3ab9078d3e039b86c985d50be183">TruncateShares</a> : bool { <a class="el" href="namespaceripple.html#ac52c3ab9078d3e039b86c985d50be183a7fa3b767c460b54a2be4d49030b349c7">no</a> = false
+, <a class="el" href="namespaceripple.html#ac52c3ab9078d3e039b86c985d50be183aa6105c0a611b41b08f1209506350279e">yes</a> = true
+ }</td></tr>
+<tr class="separator:ac52c3ab9078d3e039b86c985d50be183"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a57d7e7b27df7e719fdf5569f96be60a3" id="r_a57d7e7b27df7e719fdf5569f96be60a3"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3">NodeObjectType</a> : std::uint32_t { <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b">hotUNKNOWN</a> = 0
 , <a class="el" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ae32ab8a0b50eee52b61ca3c8e5a56da1">hotLEDGER</a> = 1
@@ -4918,12 +4922,14 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="memitem:adbbbf76f04d55cd69f1740ed38330719" id="r_adbbbf76f04d55cd69f1740ed38330719"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#adbbbf76f04d55cd69f1740ed38330719">rippleCredit</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;uSenderID, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;uReceiverID, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const  &amp;saAmount, bool bCheckIssuer, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:adbbbf76f04d55cd69f1740ed38330719"><td class="mdescLeft">&#160;</td><td class="mdescRight">Calls static rippleCreditIOU if saAmount represents <a class="el" href="classripple_1_1Issue.html" title="A currency issued by an account.">Issue</a>.  <br /></td></tr>
 <tr class="separator:adbbbf76f04d55cd69f1740ed38330719"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad4f860310e3dfc97345c3b673f7cd5d7" id="r_ad4f860310e3dfc97345c3b673f7cd5d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ad4f860310e3dfc97345c3b673f7cd5d7">assetsToSharesDeposit</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;vault, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;issuance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;assets)</td></tr>
-<tr class="separator:ad4f860310e3dfc97345c3b673f7cd5d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac527f4be8f38f42794ec9a8981c71f25" id="r_ac527f4be8f38f42794ec9a8981c71f25"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac527f4be8f38f42794ec9a8981c71f25">assetsToSharesWithdraw</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;vault, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;issuance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;assets)</td></tr>
-<tr class="separator:ac527f4be8f38f42794ec9a8981c71f25"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2538e2190b6fa5b9b2f10e74f64c905c" id="r_a2538e2190b6fa5b9b2f10e74f64c905c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2538e2190b6fa5b9b2f10e74f64c905c">sharesToAssetsWithdraw</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;vault, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;issuance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;shares)</td></tr>
-<tr class="separator:a2538e2190b6fa5b9b2f10e74f64c905c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a550c0c64a14f021fb311b1f2507e8ae4" id="r_a550c0c64a14f021fb311b1f2507e8ae4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a550c0c64a14f021fb311b1f2507e8ae4">assetsToSharesDeposit</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;vault, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;issuance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;assets)</td></tr>
+<tr class="separator:a550c0c64a14f021fb311b1f2507e8ae4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27f27d96c4c3cfa4165d71c4b2266a46" id="r_a27f27d96c4c3cfa4165d71c4b2266a46"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a27f27d96c4c3cfa4165d71c4b2266a46">sharesToAssetsDeposit</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;vault, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;issuance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;shares)</td></tr>
+<tr class="separator:a27f27d96c4c3cfa4165d71c4b2266a46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5509de8022f2d9dddf3a87f524e3503b" id="r_a5509de8022f2d9dddf3a87f524e3503b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5509de8022f2d9dddf3a87f524e3503b">assetsToSharesWithdraw</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;vault, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;issuance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;assets, <a class="el" href="namespaceripple.html#ac52c3ab9078d3e039b86c985d50be183">TruncateShares</a> truncate)</td></tr>
+<tr class="separator:a5509de8022f2d9dddf3a87f524e3503b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7db8820410ffa3288079a33bc00109ac" id="r_a7db8820410ffa3288079a33bc00109ac"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7db8820410ffa3288079a33bc00109ac">sharesToAssetsWithdraw</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;vault, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;issuance, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;shares)</td></tr>
+<tr class="separator:a7db8820410ffa3288079a33bc00109ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02de69480d9655456084663dc5d7c100" id="r_a02de69480d9655456084663dc5d7c100"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a02de69480d9655456084663dc5d7c100">rippleLockEscrowMPT</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;sender, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="separator:a02de69480d9655456084663dc5d7c100"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83da4b11e236a23156ac525c94494dcf" id="r_a83da4b11e236a23156ac525c94494dcf"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a83da4b11e236a23156ac525c94494dcf">rippleUnlockEscrowMPT</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;sender, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const &amp;receiver, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
@@ -5685,6 +5691,12 @@ Variables</h2></td></tr>
 <tr class="memitem:acadc50b4060eb3f589c30efaf67322e8" id="r_acadc50b4060eb3f589c30efaf67322e8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> constexpr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#acadc50b4060eb3f589c30efaf67322e8">vaultStrategyFirstComeFirstServe</a> = 1</td></tr>
 <tr class="memdesc:acadc50b4060eb3f589c30efaf67322e8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Vault withdrawal policies.  <br /></td></tr>
 <tr class="separator:acadc50b4060eb3f589c30efaf67322e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef2955b4ba970578e96c7d829ca374fe" id="r_aef2955b4ba970578e96c7d829ca374fe"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> constexpr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aef2955b4ba970578e96c7d829ca374fe">vaultDefaultIOUScale</a> = 6</td></tr>
+<tr class="memdesc:aef2955b4ba970578e96c7d829ca374fe"><td class="mdescLeft">&#160;</td><td class="mdescRight">Default IOU scale factor for a Vault.  <br /></td></tr>
+<tr class="separator:aef2955b4ba970578e96c7d829ca374fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9713d226abb97a2f03807f678f06eb7e" id="r_a9713d226abb97a2f03807f678f06eb7e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> constexpr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9713d226abb97a2f03807f678f06eb7e">vaultMaximumIOUScale</a> = 18</td></tr>
+<tr class="memdesc:a9713d226abb97a2f03807f678f06eb7e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum scale factor for a Vault.  <br /></td></tr>
+<tr class="separator:a9713d226abb97a2f03807f678f06eb7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a11cf1f5041dbfb1076ae5dded56ed5ec" id="r_a11cf1f5041dbfb1076ae5dded56ed5ec"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> constexpr&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a11cf1f5041dbfb1076ae5dded56ed5ec">maxAssetCheckDepth</a> = 5</td></tr>
 <tr class="memdesc:a11cf1f5041dbfb1076ae5dded56ed5ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum recursion depth for vault shares being put as an asset inside another vault; counted from 0.  <br /></td></tr>
 <tr class="separator:a11cf1f5041dbfb1076ae5dded56ed5ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -6749,7 +6761,7 @@ template&lt;class T &gt; </div>
 
 <p>A ledger index. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00130">130</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00137">137</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -6768,7 +6780,7 @@ template&lt;class T &gt; </div>
 <p>A transaction identifier. </p>
 <p>The value is computed as the hash of the canonicalized, serialized transaction object. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00136">136</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00143">143</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -10401,6 +10413,34 @@ ledger.
 
 </div>
 </div>
+<a id="ac52c3ab9078d3e039b86c985d50be183" name="ac52c3ab9078d3e039b86c985d50be183"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac52c3ab9078d3e039b86c985d50be183">&#9670;&#160;</a></span>TruncateShares</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum class <a class="el" href="namespaceripple.html#ac52c3ab9078d3e039b86c985d50be183">ripple::TruncateShares</a> : bool</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">strong</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="ac52c3ab9078d3e039b86c985d50be183a7fa3b767c460b54a2be4d49030b349c7" name="ac52c3ab9078d3e039b86c985d50be183a7fa3b767c460b54a2be4d49030b349c7"></a>no&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="ac52c3ab9078d3e039b86c985d50be183aa6105c0a611b41b08f1209506350279e" name="ac52c3ab9078d3e039b86c985d50be183aa6105c0a611b41b08f1209506350279e"></a>yes&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="View_8h_source.html#l00933">933</a> of file <a class="el" href="View_8h_source.html">View.h</a>.</p>
+
+</div>
+</div>
 <a id="a57d7e7b27df7e719fdf5569f96be60a3" name="a57d7e7b27df7e719fdf5569f96be60a3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a57d7e7b27df7e719fdf5569f96be60a3">&#9670;&#160;</a></span>NodeObjectType</h2>
 
@@ -12186,7 +12226,7 @@ template&lt;class Stream , class Iter &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00274">274</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00292">292</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
 
 </div>
 </div>
@@ -12216,7 +12256,7 @@ template&lt;class Stream , class Iter &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00282">282</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00300">300</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
 
 </div>
 </div>
@@ -12246,7 +12286,7 @@ template&lt;class Stream , class Iter &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00290">290</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00308">308</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
 
 </div>
 </div>
@@ -12276,7 +12316,7 @@ template&lt;class Stream , class Iter &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00298">298</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00316">316</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
 
 </div>
 </div>
@@ -12304,7 +12344,7 @@ template&lt;class Stream , class Iter &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00332">332</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00350">350</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
 
 </div>
 </div>
@@ -12458,7 +12498,7 @@ template&lt;class Stream , class Iter &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00363">363</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Number_8h_source.html#l00381">381</a> of file <a class="el" href="Number_8h_source.html">Number.h</a>.</p>
 
 </div>
 </div>
@@ -37428,7 +37468,7 @@ template&lt;&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8cpp_source.html#l01758">1758</a> of file <a class="el" href="InvariantCheck_8cpp_source.html">InvariantCheck.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8cpp_source.html#l01764">1764</a> of file <a class="el" href="InvariantCheck_8cpp_source.html">InvariantCheck.cpp</a>.</p>
 
 </div>
 </div>
@@ -42736,14 +42776,14 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
-<a id="ad4f860310e3dfc97345c3b673f7cd5d7" name="ad4f860310e3dfc97345c3b673f7cd5d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad4f860310e3dfc97345c3b673f7cd5d7">&#9670;&#160;</a></span>assetsToSharesDeposit()</h2>
+<a id="a550c0c64a14f021fb311b1f2507e8ae4" name="a550c0c64a14f021fb311b1f2507e8ae4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a550c0c64a14f021fb311b1f2507e8ae4">&#9670;&#160;</a></span>assetsToSharesDeposit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> ripple::assetsToSharesDeposit </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; ripple::assetsToSharesDeposit </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;&#160;</td>
           <td class="paramname"><em>vault</em>, </td>
@@ -42772,50 +42812,14 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 
 </div>
 </div>
-<a id="ac527f4be8f38f42794ec9a8981c71f25" name="ac527f4be8f38f42794ec9a8981c71f25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac527f4be8f38f42794ec9a8981c71f25">&#9670;&#160;</a></span>assetsToSharesWithdraw()</h2>
+<a id="a27f27d96c4c3cfa4165d71c4b2266a46" name="a27f27d96c4c3cfa4165d71c4b2266a46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27f27d96c4c3cfa4165d71c4b2266a46">&#9670;&#160;</a></span>sharesToAssetsDeposit()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> ripple::assetsToSharesWithdraw </td>
-          <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>vault</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>issuance</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
-          <td class="paramname"><em>assets</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02815">2815</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a2538e2190b6fa5b9b2f10e74f64c905c" name="a2538e2190b6fa5b9b2f10e74f64c905c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2538e2190b6fa5b9b2f10e74f64c905c">&#9670;&#160;</a></span>sharesToAssetsWithdraw()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> ripple::sharesToAssetsWithdraw </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; ripple::sharesToAssetsDeposit </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;&#160;</td>
           <td class="paramname"><em>vault</em>, </td>
@@ -42840,7 +42844,85 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02834">2834</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02825">2825</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a5509de8022f2d9dddf3a87f524e3503b" name="a5509de8022f2d9dddf3a87f524e3503b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5509de8022f2d9dddf3a87f524e3503b">&#9670;&#160;</a></span>assetsToSharesWithdraw()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; ripple::assetsToSharesWithdraw </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>vault</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>issuance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>assets</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#ac52c3ab9078d3e039b86c985d50be183">TruncateShares</a>&#160;</td>
+          <td class="paramname"><em>truncate</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02854">2854</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a7db8820410ffa3288079a33bc00109ac" name="a7db8820410ffa3288079a33bc00109ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7db8820410ffa3288079a33bc00109ac">&#9670;&#160;</a></span>sharesToAssetsWithdraw()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt; ripple::sharesToAssetsWithdraw </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>vault</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>issuance</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td>
+          <td class="paramname"><em>shares</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02883">2883</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42882,7 +42964,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02853">2853</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02908">2908</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42930,7 +43012,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l02950">2950</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l03005">3005</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -42970,7 +43052,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if <em>now</em> refers to a time strictly after <em>mark</em>, else false. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l03096">3096</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l03151">3151</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -51216,6 +51298,59 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
+<a id="aef2955b4ba970578e96c7d829ca374fe" name="aef2955b4ba970578e96c7d829ca374fe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef2955b4ba970578e96c7d829ca374fe">&#9670;&#160;</a></span>vaultDefaultIOUScale</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> constexpr ripple::vaultDefaultIOUScale = 6</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Default IOU scale factor for a Vault. </p>
+
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00126">126</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+
+</div>
+</div>
+<a id="a9713d226abb97a2f03807f678f06eb7e" name="a9713d226abb97a2f03807f678f06eb7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9713d226abb97a2f03807f678f06eb7e">&#9670;&#160;</a></span>vaultMaximumIOUScale</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> constexpr ripple::vaultMaximumIOUScale = 18</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Maximum scale factor for a Vault. </p>
+<p>The number is chosen to ensure that 1 IOU can be always converted to shares. 10^19 &gt; maxMPTokenAmount (2^64-1) &gt; 10^18 </p>
+
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00130">130</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+
+</div>
+</div>
 <a id="a11cf1f5041dbfb1076ae5dded56ed5ec" name="a11cf1f5041dbfb1076ae5dded56ed5ec"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a11cf1f5041dbfb1076ae5dded56ed5ec">&#9670;&#160;</a></span>maxAssetCheckDepth</h2>
 
@@ -51238,7 +51373,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>Maximum recursion depth for vault shares being put as an asset inside another vault; counted from 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00127">127</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00134">134</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51264,7 +51399,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum number of trustlines to delete as part of AMM account deletion cleanup. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00141">141</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00148">148</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51290,7 +51425,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum length of a URI inside an Oracle. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00144">144</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00151">151</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51316,7 +51451,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum length of a Provider inside an Oracle. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00147">147</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00154">154</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51342,7 +51477,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum size of a data series array inside an Oracle. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00150">150</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00157">157</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51368,7 +51503,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum length of a SymbolClass inside an Oracle. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00153">153</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00160">160</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51394,7 +51529,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum allowed time difference between lastUpdateTime and the time of the last closed ledger. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00158">158</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00165">165</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51420,7 +51555,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum price scaling factor. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00162">162</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00169">169</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51446,7 +51581,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum percentage of outliers to trim. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00166">166</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00173">173</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51472,7 +51607,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum number of delegate permissions an account can grant. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00170">170</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00177">177</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
@@ -51498,7 +51633,7 @@ template&lt;class Dest , class Src &gt; </div>
 
 <p>The maximum number of transactions that can be in a batch. </p>
 
-<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00173">173</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Protocol_8h_source.html#l00180">180</a> of file <a class="el" href="Protocol_8h_source.html">Protocol.h</a>.</p>
 
 </div>
 </div>
