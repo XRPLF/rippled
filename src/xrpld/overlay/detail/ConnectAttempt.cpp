@@ -136,14 +136,16 @@ ConnectAttempt::tryAsyncShutdown()
         return;
 
     shutdownStarted_ = true;
-
     // gracefully shutdown the SSL socket, performing a shutdown handshake
-    stream_.async_shutdown(bind_executor(
-        strand_,
-        std::bind(
-            &ConnectAttempt::onShutdown,
-            shared_from_this(),
-            std::placeholders::_1)));
+    if (handshakeComplete_)
+        return stream_.async_shutdown(bind_executor(
+            strand_,
+            std::bind(
+                &ConnectAttempt::onShutdown,
+                shared_from_this(),
+                std::placeholders::_1)));
+
+    close();
 }
 
 void
@@ -306,6 +308,8 @@ ConnectAttempt::onHandshake(error_code ec)
     if (ec)
         return fail("onHandshake", ec);
 
+    handshakeComplete_ = true;
+
     // check if we connected to ourselves
     if (!overlay_.peerFinder().onConnected(
             slot_, beast::IPAddressConversion::from_asio(local_endpoint)))
@@ -349,8 +353,6 @@ ConnectAttempt::onHandshake(error_code ec)
 void
 ConnectAttempt::onWrite(error_code ec)
 {
-    cancelTimer();
-
     ioPending_ = false;
 
     if (ec)

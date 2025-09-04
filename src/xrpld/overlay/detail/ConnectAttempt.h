@@ -65,6 +65,7 @@ private:
     bool shutdown_ = false;
     bool ioPending_ = false;
     bool shutdownStarted_ = false;
+    bool handshakeComplete_ = false;
 
 public:
     ConnectAttempt(
