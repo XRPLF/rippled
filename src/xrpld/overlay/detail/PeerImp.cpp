@@ -1396,11 +1396,6 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
-        beast::Journal protocolJournal{
-            p_journal_,
-            log::attributes(
-                log::attr("TransactionID", to_string(txID)),
-                log::attr("RawTransaction", strHex(m->rawtransaction())))};
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START

@@ -1109,11 +1109,7 @@ RclConsensusLogger::RclConsensusLogger(
     bool const validating,
     beast::Journal j,
     std::source_location location)
-    : j_(j,
-         log::attributes(
-             log::attr("Role", "ConsensusLogger"),
-             log::attr("Label", label)))
-    , location_(location)
+    : j_(j)
 {
     if (!validating && !j.info())
         return;
@@ -1131,10 +1127,26 @@ RclConsensusLogger::~RclConsensusLogger()
     auto const duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - start_);
 
-    j_.info(location_) << header_ << "duration " << (duration.count() / 1000)
-                       << '.' << std::setw(3) << std::setfill('0')
-                       << (duration.count() % 1000) << "s. " << ss_->str()
-                       << log::field("Duration", duration.count());
+    std::stringstream outSs;
+    outSs << header_ << "duration " << (duration.count() / 1000) << '.'
+          << std::setw(3) << std::setfill('0') << (duration.count() % 1000)
+          << "s. " << ss_->str();
+
+    if (beast::Journal::isStructuredJournalEnabled())
+    {
+        thread_local std::string buffer;
+        buffer.reserve(1024);
+        beast::detail::SimpleJsonWriter writer{buffer};
+        writer.startObject();
+        writer.writeKey("Message");
+        writer.writeString(outSs.str());
+        writer.endObject();
+        j_.sink().writeAlways(beast::severities::kInfo, std::string{writer.finish()});
+    }
+    else
+    {
+        j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
+    }
 }
 
 }  // namespace ripple
