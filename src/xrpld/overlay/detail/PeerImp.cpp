@@ -669,8 +669,13 @@ PeerImp::onShutdown(error_code ec)
         // - stream_truncated: the tcp connection closed (no handshake) it could
         // occur if a peer does not perform a graceful disconnect
         // - broken_pipe: the peer is gone
-        if (ec != boost::asio::error::eof &&
-            ec != boost::asio::error::operation_aborted)
+        bool shouldLog =
+            (ec != boost::asio::error::eof &&
+             ec != boost::asio::error::operation_aborted &&
+             ec.message().find("application data after close notify") ==
+                 std::string::npos);
+
+        if (shouldLog)
         {
             JLOG(journal_.debug()) << "onShutdown: " << ec.message();
         }
@@ -715,8 +720,8 @@ PeerImp::setTimer(std::chrono::seconds interval)
     catch (std::exception const& ex)
     {
         JLOG(journal_.error()) << "setTimer: " << ex.what();
-        return close();
-    };
+        return shutdown();
+    }
 
     timer_.async_wait(bind_executor(
         strand_,
@@ -965,6 +970,9 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 
         return fail("onReadMessage", ec);
     }
+    // we started shutdown, no reason to process further data
+    if (shutdown_)
+        return tryAsyncShutdown();
 
     if (auto stream = journal_.trace())
     {
@@ -1007,6 +1015,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         read_buffer_.consume(bytes_consumed);
     }
 
+    // check if a shutdown was initiated while processing messages
     if (shutdown_)
         return tryAsyncShutdown();
 

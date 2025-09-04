@@ -160,8 +160,14 @@ ConnectAttempt::onShutdown(error_code ec)
         // - stream_truncated: the tcp connection closed (no handshake) it could
         // occur if a peer does not perform a graceful disconnect
         // - broken_pipe: the peer is gone
-        if (ec != boost::asio::error::eof &&
-            ec != boost::asio::error::operation_aborted)
+        // - application data after close notify: benign SSL shutdown condition
+        bool shouldLog =
+            (ec != boost::asio::error::eof &&
+             ec != boost::asio::error::operation_aborted &&
+             ec.message().find("application data after close notify") ==
+                 std::string::npos);
+
+        if (shouldLog)
         {
             JLOG(journal_.debug()) << "onShutdown: " << ec.message();
         }
