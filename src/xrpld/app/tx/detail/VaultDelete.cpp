@@ -21,6 +21,7 @@
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -128,13 +129,32 @@ VaultDelete::doApply()
 
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
-    auto const mpt = view().peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    auto const shareMPTID = *vault->at(sfShareMPTID);
+    auto const mpt = view().peek(keylet::mptIssuance(shareMPTID));
     if (!mpt)
     {
         // LCOV_EXCL_START
         JLOG(j_.error()) << "VaultDelete: missing issuance of vault shares.";
         return tefINTERNAL;
         // LCOV_EXCL_STOP
+    }
+
+    // Try to remove MPToken for vault shares for the vault owner if it exists.
+    if (auto const mptoken = view().peek(keylet::mptoken(shareMPTID, account_)))
+    {
+        if (auto const ter =
+                removeEmptyHolding(view(), account_, MPTIssue(shareMPTID), j_);
+            !isTesSuccess(ter))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())  //
+                << "VaultDelete: failed to remove vault owner's MPToken"
+                << " MPTID=" << to_string(shareMPTID)  //
+                << " account=" << toBase58(account_)   //
+                << " with result: " << transToken(ter);
+            return ter;
+            // LCOV_EXCL_STOP
+        }
     }
 
     if (!view().dirRemove(
