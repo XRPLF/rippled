@@ -24,7 +24,6 @@
 
 #include <xrpl/json/json_reader.h>
 
-#include <chrono>
 #include <sstream>
 
 namespace ripple {
@@ -55,12 +54,13 @@ ConnectAttempt::ConnectAttempt(
     , stream_(*stream_ptr_)
     , slot_(slot)
 {
-    JLOG(journal_.debug()) << "Connect " << remote_endpoint;
 }
 
 ConnectAttempt::~ConnectAttempt()
 {
     if (slot_ != nullptr)
+    // slot_ will be null if we successfully connected
+    // and transferred ownership to a PeerImp
         overlay_.peerFinder().on_closed(slot_);
 }
 
@@ -82,7 +82,16 @@ ConnectAttempt::stop()
 void
 ConnectAttempt::run()
 {
+    if (!strand_.running_in_this_thread())
+        return boost::asio::post(
+            strand_, std::bind(&ConnectAttempt::run, shared_from_this()));
+
+    JLOG(journal_.debug()) << "run: connecting to " << remote_endpoint_;
+
     ioPending_ = true;
+
+    // Allow up to connectTimeout_ seconds to establish remote peer connection
+    setTimer();
 
     stream_.next_layer().async_connect(
         remote_endpoint_,
@@ -173,8 +182,6 @@ ConnectAttempt::close()
 
     error_code ec;
     socket_.close(ec);
-
-    JLOG(journal_.info()) << "close: Closed";
 }
 
 void
@@ -196,13 +203,13 @@ ConnectAttempt::setTimer()
 {
     try
     {
-        timer_.expires_after(std::chrono::seconds(15));
+        timer_.expires_after(connectTimeout_);
     }
     catch (std::exception const& ex)
     {
         JLOG(journal_.error()) << "setTimer: " << ex.what();
         return close();
-    };
+    }
 
     timer_.async_wait(boost::asio::bind_executor(
         strand_,
