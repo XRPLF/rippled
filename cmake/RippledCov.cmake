@@ -36,3 +36,5 @@ setup_target_for_coverage_gcovr(
   EXCLUDE "src/test" "include/xrpl/beast/test" "include/xrpl/beast/unit_test" "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
   DEPENDENCIES rippled
 )
+
+add_code_coverage_to_target(opts INTERFACE)

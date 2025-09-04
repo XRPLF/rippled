@@ -106,7 +106,7 @@
 #
 # 2025-09-03, Jingchen Wu
 #     - remove the unused function append_coverage_compiler_flags and append_coverage_compiler_flags_to_target
-#     - fix the issue where COVERAGE_CXX_COMPILER_FLAGS and COVERAGE_C_COMPILER_FLAGS are never used
+#     - add a new function add_code_coverage_to_target
 #     - remove some unused code
 #
 # USAGE:
@@ -207,6 +207,12 @@ endforeach()
 
 set(COVERAGE_COMPILER_FLAGS "-g --coverage"
     CACHE INTERNAL "")
+
+set(COVERAGE_CXX_COMPILER_FLAGS "")
+set(COVERAGE_C_COMPILER_FLAGS "")
+set(COVERAGE_CXX_LINKER_FLAGS "")
+set(COVERAGE_C_LINKER_FLAGS "")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     include(CheckCXXCompilerFlag)
     include(CheckCCompilerFlag)
@@ -256,21 +262,6 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     if(HAVE_c_linker_fprofile_update)
         set(COVERAGE_C_LINKER_FLAGS "${COVERAGE_C_LINKER_FLAGS} -fprofile-update=atomic")
     endif()
-
-    separate_arguments(COVERAGE_CXX_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_COMPILER_FLAGS}")
-    separate_arguments(COVERAGE_C_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_C_COMPILER_FLAGS}")
-    separate_arguments(COVERAGE_CXX_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_LINKER_FLAGS}")
-    separate_arguments(COVERAGE_C_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_C_LINKER_FLAGS}")
-
-    # Add compiler options to the opts target
-    target_compile_options(opts INTERFACE
-            $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
-            $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
-
-    target_link_libraries (opts INTERFACE
-            $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS} gcov>
-            $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS} gcov>
-    )
 
 endif()
 
@@ -467,3 +458,20 @@ function(setup_target_for_coverage_gcovr)
         COMMENT "Code coverage report saved in ${GCOVR_OUTPUT_FILE} formatted as ${Coverage_FORMAT}"
     )
 endfunction() # setup_target_for_coverage_gcovr
+
+function(add_code_coverage_to_target name scope)
+    separate_arguments(COVERAGE_CXX_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_COMPILER_FLAGS}")
+    separate_arguments(COVERAGE_C_COMPILER_FLAGS NATIVE_COMMAND "${COVERAGE_C_COMPILER_FLAGS}")
+    separate_arguments(COVERAGE_CXX_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_CXX_LINKER_FLAGS}")
+    separate_arguments(COVERAGE_C_LINKER_FLAGS NATIVE_COMMAND "${COVERAGE_C_LINKER_FLAGS}")
+
+    # Add compiler options to the target
+    target_compile_options(${name} ${scope}
+            $<$<COMPILE_LANGUAGE:CXX>:${COVERAGE_CXX_COMPILER_FLAGS}>
+            $<$<COMPILE_LANGUAGE:C>:${COVERAGE_C_COMPILER_FLAGS}>)
+
+    target_link_libraries (${name} ${scope}
+            $<$<LINK_LANGUAGE:CXX>:${COVERAGE_CXX_LINKER_FLAGS} gcov>
+            $<$<LINK_LANGUAGE:C>:${COVERAGE_C_LINKER_FLAGS} gcov>
+    )
+endfunction() # add_code_coverage_to_target
