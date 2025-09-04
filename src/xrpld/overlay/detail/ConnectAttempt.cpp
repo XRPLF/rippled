@@ -409,48 +409,69 @@ ConnectAttempt::onRead(error_code ec)
 void
 ConnectAttempt::processResponse()
 {
-    if (response_.result() == boost::beast::http::status::service_unavailable)
-    {
-        Json::Value json;
-        Json::Reader r;
-        std::string s;
-        s.reserve(boost::asio::buffer_size(response_.body().data()));
-        for (auto const buffer : response_.body().data())
-            s.append(
-                static_cast<char const*>(buffer.data()),
-                boost::asio::buffer_size(buffer));
-        auto const success = r.parse(s, json);
-        if (success)
-        {
-            if (json.isObject() && json.isMember("peer-ips"))
-            {
-                Json::Value const& ips = json["peer-ips"];
-                if (ips.isArray())
-                {
-                    std::vector<boost::asio::ip::tcp::endpoint> eps;
-                    eps.reserve(ips.size());
-                    for (auto const& v : ips)
-                    {
-                        if (v.isString())
-                        {
-                            error_code ec;
-                            auto const ep = parse_endpoint(v.asString(), ec);
-                            if (!ec)
-                                eps.push_back(ep);
-                        }
-                    }
-                    overlay_.peerFinder().onRedirects(remote_endpoint_, eps);
-                }
-            }
-        }
-    }
-
     if (!OverlayImpl::isPeerUpgrade(response_))
     {
-        JLOG(journal_.info())
-            << "Unable to upgrade to peer protocol: " << response_.result()
-            << " (" << response_.reason() << ")";
-        return shutdown();
+        // A peer may respond with service_unavailable and a list of alternative
+        // peers to connect to, a differing status code is unexpected
+        if (response_.result() !=
+            boost::beast::http::status::service_unavailable)
+        {
+            JLOG(journal_.warn())
+                << "Unable to upgrade to peer protocol: " << response_.result()
+                << " (" << response_.reason() << ")";
+            return shutdown();
+        }
+
+        // Parse response body to determine if this is a redirect or other
+        // service unavailable
+        std::string responseBody;
+        responseBody.reserve(boost::asio::buffer_size(response_.body().data()));
+        for (auto const buffer : response_.body().data())
+            responseBody.append(
+                static_cast<char const*>(buffer.data()),
+                boost::asio::buffer_size(buffer));
+
+        Json::Value json;
+        Json::Reader reader;
+        auto const isValidJson = reader.parse(responseBody, json);
+
+        // Check if this is a redirect response (contains peer-ips field)
+        auto const isRedirect =
+            isValidJson && json.isObject() && json.isMember("peer-ips");
+
+        if (!isRedirect)
+        {
+            JLOG(journal_.warn())
+                << "processResponse: " << remote_endpoint_
+                << " failed to upgrade to peer protocol: " << response_.result()
+                << " (" << response_.reason() << ")";
+
+            return shutdown();
+        }
+
+        Json::Value const& peerIps = json["peer-ips"];
+        if (!peerIps.isArray())
+            return fail("processResponse: invalid peer-ips format");
+
+        // Extract and validate peer endpoints
+        std::vector<boost::asio::ip::tcp::endpoint> redirectEndpoints;
+        redirectEndpoints.reserve(peerIps.size());
+
+        for (auto const& ipValue : peerIps)
+        {
+            if (!ipValue.isString())
+                continue;
+
+            error_code ec;
+            auto const endpoint = parse_endpoint(ipValue.asString(), ec);
+            if (!ec)
+                redirectEndpoints.push_back(endpoint);
+        }
+
+        // Notify PeerFinder about the redirect redirectEndpoints may be empty
+        overlay_.peerFinder().onRedirects(remote_endpoint_, redirectEndpoints);
+
+        return fail("processResponse: failed to connect to peer: redirected");
     }
 
     // Just because our peer selected a particular protocol version doesn't
