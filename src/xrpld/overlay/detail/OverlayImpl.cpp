@@ -286,6 +286,10 @@ OverlayImpl::onHandoff(
             }
         }
 
+        // Extract peer attributes from the request before creating PeerImp
+        auto const attributes =
+            extractPeerAttributes(request, app_.config(), true);
+
         auto const peer = std::make_shared<PeerImp>(
             app_,
             id,
@@ -295,6 +299,7 @@ OverlayImpl::onHandoff(
             *negotiatedVersion,
             consumer,
             std::move(stream_ptr),
+            attributes,
             *this);
         {
             // As we are not on the strand, run() must be called

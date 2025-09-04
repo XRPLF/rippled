@@ -29,6 +29,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/perflog/PerfLog.h>
@@ -62,6 +63,88 @@ std::chrono::milliseconds constexpr peerHighLatency{300};
 std::chrono::seconds constexpr peerTimerInterval{60};
 }  // namespace
 
+PeerAttributes
+extractPeerAttributes(
+    boost::beast::http::fields const& headers,
+    Config const& config,
+    bool inbound)
+{
+    PeerAttributes attributes;
+
+    // Extract feature flags
+    attributes.compressionEnabled =
+        peerFeatureEnabled(headers, FEATURE_COMPR, "lz4", config.COMPRESSION);
+
+    attributes.txReduceRelayEnabled = peerFeatureEnabled(
+        headers, FEATURE_TXRR, config.TX_REDUCE_RELAY_ENABLE);
+
+    attributes.ledgerReplayEnabled = peerFeatureEnabled(
+        headers, FEATURE_LEDGER_REPLAY, config.LEDGER_REPLAY);
+
+    attributes.vpReduceRelayEnabled = peerFeatureEnabled(
+        headers, FEATURE_VPRR, config.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
+
+    // Extract connection information
+    if (auto const iter = headers.find("Crawl"); iter != headers.end())
+        attributes.crawlEnabled = boost::iequals(iter->value(), "public");
+
+    if (inbound)
+    {
+        if (auto const iter = headers.find("User-Agent"); iter != headers.end())
+            attributes.userAgent = std::string{iter->value()};
+    }
+    else
+    {
+        if (auto const iter = headers.find("Server"); iter != headers.end())
+            attributes.serverInfo = std::string{iter->value()};
+    }
+
+    if (auto const iter = headers.find("Network-ID"); iter != headers.end())
+        attributes.networkId = std::string{iter->value()};
+
+    if (auto const iter = headers.find("Server-Domain"); iter != headers.end())
+        attributes.serverDomain = std::string{iter->value()};
+
+    // Extract ledger information
+    auto parseLedgerHash =
+        [](std::string_view value) -> std::optional<uint256> {
+        if (uint256 ret; ret.parseHex(value))
+            return ret;
+
+        if (auto const s = base64_decode(value); s.size() == uint256::size())
+            return uint256{s};
+
+        return std::nullopt;
+    };
+
+    bool hasClosedLedger = false;
+    bool hasPreviousLedger = false;
+    attributes.hasValidLedgerHashes = true;
+
+    if (auto const iter = headers.find("Closed-Ledger"); iter != headers.end())
+    {
+        hasClosedLedger = true;
+        attributes.closedLedgerHash = parseLedgerHash(iter->value());
+        if (!attributes.closedLedgerHash)
+            attributes.hasValidLedgerHashes = false;
+    }
+
+    if (auto const iter = headers.find("Previous-Ledger");
+        iter != headers.end())
+    {
+        hasPreviousLedger = true;
+        attributes.previousLedgerHash = parseLedgerHash(iter->value());
+        if (!attributes.previousLedgerHash)
+            attributes.hasValidLedgerHashes = false;
+    }
+
+    // Validate ledger hash consistency
+    if (hasPreviousLedger && !hasClosedLedger)
+        attributes.hasValidLedgerHashes = false;
+
+    return attributes;
+}
+
 // TODO: Remove this exclusion once unit tests are added after the hotfix
 // release.
 
@@ -74,6 +157,7 @@ PeerImp::PeerImp(
     ProtocolVersion protocol,
     Resource::Consumer consumer,
     std::unique_ptr<StreamInterface>&& stream_ptr,
+    PeerAttributes const& attributes,
     OverlayImpl& overlay)
     : Child(overlay)
     , app_(app)
@@ -99,34 +183,16 @@ PeerImp::PeerImp(
     , fee_{Resource::feeTrivialPeer, ""}
     , slot_(slot)
     , request_(std::move(request))
-    , headers_(request_)
-    , compressionEnabled_(
-          peerFeatureEnabled(
-              headers_,
-              FEATURE_COMPR,
-              "lz4",
-              app_.config().COMPRESSION)
-              ? Compressed::On
-              : Compressed::Off)
-    , txReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_TXRR,
-          app_.config().TX_REDUCE_RELAY_ENABLE))
-    , ledgerReplayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_LEDGER_REPLAY,
-          app_.config().LEDGER_REPLAY))
+    , attributes_(attributes)
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    JLOG(journal_.info())
-        << "compression enabled " << (compressionEnabled_ == Compressed::On)
-        << " vp reduce-relay base squelch enabled "
-        << peerFeatureEnabled(
-               headers_,
-               FEATURE_VPRR,
-               app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << remote_address_ << " " << id_;
+    JLOG(journal_.info()) << "compression enabled "
+                          << attributes_.compressionEnabled
+                          << " vp reduce-relay base squelch enabled "
+                          << attributes_.vpReduceRelayEnabled
+                          << " tx reduce-relay enabled "
+                          << attributes_.txReduceRelayEnabled << " on "
+                          << remote_address_ << " " << id_;
 }
 
 PeerImp::~PeerImp()
@@ -157,47 +223,16 @@ PeerImp::run()
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::run, shared_from_this()));
 
-    auto parseLedgerHash =
-        [](std::string_view value) -> std::optional<uint256> {
-        if (uint256 ret; ret.parseHex(value))
-            return ret;
-
-        if (auto const s = base64_decode(value); s.size() == uint256::size())
-            return uint256{s};
-
-        return std::nullopt;
-    };
-
-    std::optional<uint256> closed;
-    std::optional<uint256> previous;
-
-    if (auto const iter = headers_.find("Closed-Ledger");
-        iter != headers_.end())
-    {
-        closed = parseLedgerHash(iter->value());
-
-        if (!closed)
-            fail("Malformed handshake data (1)");
-    }
-
-    if (auto const iter = headers_.find("Previous-Ledger");
-        iter != headers_.end())
-    {
-        previous = parseLedgerHash(iter->value());
-
-        if (!previous)
-            fail("Malformed handshake data (2)");
-    }
-
-    if (previous && !closed)
-        fail("Malformed handshake data (3)");
+    // Validate ledger hash consistency
+    if (!attributes_.hasValidLedgerHashes)
+        fail("Malformed handshake data");
 
     {
         std::lock_guard<std::mutex> sl(recentLock_);
-        if (closed)
-            closedLedgerHash_ = *closed;
-        if (previous)
-            previousLedgerHash_ = *previous;
+        if (attributes_.closedLedgerHash)
+            closedLedgerHash_ = *attributes_.closedLedgerHash;
+        if (attributes_.previousLedgerHash)
+            previousLedgerHash_ = *attributes_.previousLedgerHash;
     }
 
     if (inbound_)
@@ -250,19 +285,28 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     {
         overlay_.reportOutboundTraffic(
             TrafficCount::category::squelch_suppressed,
-            static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+            static_cast<int>(
+                m->getBuffer(
+                     compressionEnabled() ? Compressed::On : Compressed::Off)
+                    .size()));
         return;
     }
 
     // report categorized outgoing traffic
     overlay_.reportOutboundTraffic(
         safe_cast<TrafficCount::category>(m->getCategory()),
-        static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+        static_cast<int>(
+            m->getBuffer(
+                 compressionEnabled() ? Compressed::On : Compressed::Off)
+                .size()));
 
     // report total outgoing traffic
     overlay_.reportOutboundTraffic(
         TrafficCount::category::total,
-        static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+        static_cast<int>(
+            m->getBuffer(
+                 compressionEnabled() ? Compressed::On : Compressed::Off)
+                .size()));
 
     auto sendq_size = send_queue_.size();
 
@@ -290,8 +334,8 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     auto self = shared_from_this();
 
     stream_ptr_->async_write(
-        boost::asio::buffer(
-            send_queue_.front()->getBuffer(compressionEnabled_)),
+        boost::asio::buffer(send_queue_.front()->getBuffer(
+            compressionEnabled() ? Compressed::On : Compressed::Off)),
         [self](boost::beast::error_code ec, std::size_t bytes) {
             // Post completion to the strand to ensure thread safety
             boost::asio::post(self->strand_, [self, ec, bytes]() {
@@ -371,10 +415,7 @@ PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 bool
 PeerImp::crawl() const
 {
-    auto const iter = headers_.find("Crawl");
-    if (iter == headers_.end())
-        return false;
-    return boost::iequals(iter->value(), "public");
+    return attributes_.crawlEnabled;
 }
 
 bool
@@ -387,8 +428,8 @@ std::string
 PeerImp::getVersion() const
 {
     if (inbound_)
-        return headers_["User-Agent"];
-    return headers_["Server"];
+        return attributes_.userAgent.value_or("");
+    return attributes_.serverInfo.value_or("");
 }
 
 Json::Value
@@ -414,8 +455,8 @@ PeerImp::json()
     if (auto const d = domain(); !d.empty())
         ret[jss::server_domain] = std::string{d};
 
-    if (auto const nid = headers_["Network-ID"]; !nid.empty())
-        ret[jss::network_id] = std::string{nid};
+    if (attributes_.networkId.has_value())
+        ret[jss::network_id] = *attributes_.networkId;
 
     ret[jss::load] = usage_.balance();
 
@@ -519,7 +560,7 @@ PeerImp::supportsFeature(ProtocolFeature f) const
         case ProtocolFeature::ValidatorList2Propagation:
             return protocol_ >= make_protocol(2, 2);
         case ProtocolFeature::LedgerReplay:
-            return ledgerReplayEnabled_;
+            return attributes_.ledgerReplayEnabled;
     }
     return false;
 }
@@ -861,7 +902,7 @@ PeerImp::name() const
 std::string
 PeerImp::domain() const
 {
-    return headers_["Server-Domain"];
+    return attributes_.serverDomain.value_or("");
 }
 
 //------------------------------------------------------------------------------
@@ -1009,8 +1050,8 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
         auto self = shared_from_this();
 
         return stream_ptr_->async_write(
-            boost::asio::buffer(
-                send_queue_.front()->getBuffer(compressionEnabled_)),
+            boost::asio::buffer(send_queue_.front()->getBuffer(
+                compressionEnabled() ? Compressed::On : Compressed::Off)),
             [self](boost::beast::error_code ec, std::size_t bytes) {
                 // Post completion to the strand to ensure thread safety
                 boost::asio::post(self->strand_, [self, ec, bytes]() {
@@ -1504,7 +1545,7 @@ void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
 {
     JLOG(p_journal_.trace()) << "onMessage, TMProofPathRequest";
-    if (!ledgerReplayEnabled_)
+    if (!attributes_.ledgerReplayEnabled)
     {
         fee_.update(
             Resource::feeMalformedRequest, "proof_path_request disabled");
@@ -1542,7 +1583,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
 {
-    if (!ledgerReplayEnabled_)
+    if (!attributes_.ledgerReplayEnabled)
     {
         fee_.update(
             Resource::feeMalformedRequest, "proof_path_response disabled");
@@ -1559,7 +1600,7 @@ void
 PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
 {
     JLOG(p_journal_.trace()) << "onMessage, TMReplayDeltaRequest";
-    if (!ledgerReplayEnabled_)
+    if (!attributes_.ledgerReplayEnabled)
     {
         fee_.update(
             Resource::feeMalformedRequest, "replay_delta_request disabled");
@@ -1597,7 +1638,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
 {
-    if (!ledgerReplayEnabled_)
+    if (!attributes_.ledgerReplayEnabled)
     {
         fee_.update(
             Resource::feeMalformedRequest, "replay_delta_response disabled");

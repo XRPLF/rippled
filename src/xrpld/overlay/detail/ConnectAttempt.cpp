@@ -411,16 +411,20 @@ ConnectAttempt::processResponse()
         if (result != PeerFinder::Result::success)
             return fail("Outbound " + std::string(to_string(result)));
 
+        // Extract peer attributes from the response before creating PeerImp
+        auto const attributes =
+            extractPeerAttributes(response_, app_.config(), false);
+
         auto const peer = std::make_shared<PeerImp>(
             app_,
             std::make_unique<ProductionStream>(std::move(stream_ptr_)),
             read_buf_.data(),
             std::move(slot_),
-            std::move(response_),
             usage_,
             publicKey,
             *negotiatedProtocol,
             id_,
+            attributes,
             overlay_);
 
         overlay_.add_active(peer);

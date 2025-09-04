@@ -50,6 +50,37 @@ namespace ripple {
 struct ValidatorBlobInfo;
 class SHAMap;
 
+/** Attributes extracted from peer HTTP headers */
+struct PeerAttributes
+{
+    // Feature flags
+    bool compressionEnabled = false;
+    bool txReduceRelayEnabled = false;
+    bool ledgerReplayEnabled = false;
+    bool vpReduceRelayEnabled = false;
+
+    // Connection information
+    bool crawlEnabled = false;
+    std::optional<std::string> userAgent;
+    std::optional<std::string> serverInfo;
+    std::optional<std::string> networkId;
+    std::optional<std::string> serverDomain;
+
+    // Ledger information
+    std::optional<uint256> closedLedgerHash;
+    std::optional<uint256> previousLedgerHash;
+
+    // Validation state
+    bool hasValidLedgerHashes = false;
+};
+
+/** Extract peer attributes from HTTP headers and application configuration */
+PeerAttributes
+extractPeerAttributes(
+    boost::beast::http::fields const& headers,
+    Config const& config,
+    bool inbound);
+
 class PeerImp : public Peer,
                 public std::enable_shared_from_this<PeerImp>,
                 public OverlayImpl::Child
@@ -170,8 +201,7 @@ private:
     std::shared_ptr<PeerFinder::Slot> const slot_;
     boost::beast::multi_buffer read_buffer_;
     http_request_type request_;
-    http_response_type response_;
-    boost::beast::http::fields const& headers_;
+    PeerAttributes const attributes_;
     std::queue<std::shared_ptr<Message>> send_queue_;
     bool gracefulClose_ = false;
     int large_sendq_ = 0;
@@ -180,16 +210,11 @@ private:
     // been sent to or received from this peer.
     hash_map<PublicKey, std::size_t> publisherListSequences_;
 
-    Compressed compressionEnabled_ = Compressed::Off;
-
     // Queue of transactions' hashes that have not been
     // relayed. The hashes are sent once a second to a peer
     // and the peer requests missing transactions from the node.
     hash_set<uint256> txQueue_;
-    // true if tx reduce-relay feature is enabled on the peer.
-    bool txReduceRelayEnabled_ = false;
 
-    bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
 
     friend class OverlayImpl;
@@ -242,6 +267,7 @@ public:
         ProtocolVersion protocol,
         Resource::Consumer consumer,
         std::unique_ptr<StreamInterface>&& stream_ptr,
+        PeerAttributes const& attributes,
         OverlayImpl& overlay);
 
     /** Create outgoing, handshaked peer. */
@@ -252,11 +278,11 @@ public:
         std::unique_ptr<StreamInterface>&& stream_ptr,
         Buffers const& buffers,
         std::shared_ptr<PeerFinder::Slot>&& slot,
-        http_response_type&& response,
         Resource::Consumer usage,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         id_t id,
+        PeerAttributes const& attributes,
         OverlayImpl& overlay);
 
     virtual ~PeerImp();
@@ -429,13 +455,13 @@ public:
     bool
     compressionEnabled() const override
     {
-        return compressionEnabled_ == Compressed::On;
+        return attributes_.compressionEnabled;
     }
 
     bool
     txReduceRelayEnabled() const override
     {
-        return txReduceRelayEnabled_;
+        return attributes_.txReduceRelayEnabled;
     }
 
 private:
@@ -654,11 +680,11 @@ PeerImp::PeerImp(
     std::unique_ptr<StreamInterface>&& stream_ptr,
     Buffers const& buffers,
     std::shared_ptr<PeerFinder::Slot>&& slot,
-    http_response_type&& response,
     Resource::Consumer usage,
     PublicKey const& publicKey,
     ProtocolVersion protocol,
     id_t id,
+    PeerAttributes const& attributes,
     OverlayImpl& overlay)
     : Child(overlay)
     , app_(app)
@@ -683,37 +709,18 @@ PeerImp::PeerImp(
     , usage_(usage)
     , fee_{Resource::feeTrivialPeer}
     , slot_(std::move(slot))
-    , response_(std::move(response))
-    , headers_(response_)
-    , compressionEnabled_(
-          peerFeatureEnabled(
-              headers_,
-              FEATURE_COMPR,
-              "lz4",
-              app_.config().COMPRESSION)
-              ? Compressed::On
-              : Compressed::Off)
-    , txReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_TXRR,
-          app_.config().TX_REDUCE_RELAY_ENABLE))
-    , ledgerReplayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_LEDGER_REPLAY,
-          app_.config().LEDGER_REPLAY))
+    , attributes_(attributes)
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.info())
-        << "compression enabled " << (compressionEnabled_ == Compressed::On)
-        << " vp reduce-relay base squelch enabled "
-        << peerFeatureEnabled(
-               headers_,
-               FEATURE_VPRR,
-               app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << remote_address_ << " " << id_;
+    JLOG(journal_.info()) << "compression enabled "
+                          << attributes_.compressionEnabled
+                          << " vp reduce-relay base squelch enabled "
+                          << attributes_.vpReduceRelayEnabled
+                          << " tx reduce-relay enabled "
+                          << attributes_.txReduceRelayEnabled << " on "
+                          << remote_address_ << " " << id_;
 }
 
 template <class FwdIt, class>
