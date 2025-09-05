@@ -728,7 +728,7 @@ class ValidVault
     {
         MPTIssue share = {};
         AccountID issuer = {};
-        Number sharesTotal = 0;
+        std::uint64_t sharesTotal = 0;
 
         Shares static make(SLE const&);
     };
@@ -738,26 +738,6 @@ class ValidVault
     std::optional<Vault> deletedVault = {};
     std::vector<Shares> deletedMPTs = {};
     std::unordered_map<uint256, Number> balances = {};
-
-    static bool
-    finalizeCreate(Vault const&, Shares const&, beast::Journal const& j);
-    static bool
-    finalizeSet(Vault const&, Shares const&, beast::Journal const& j);
-    static bool
-    finalizeDeposit(
-        std::tuple<Vault const&, Vault const&, Number>,
-        std::tuple<Shares const&, Shares const&, Number>,
-        beast::Journal const& j);
-    static bool
-    finalizeWithdraw(
-        std::tuple<Vault const&, Vault const&, Number>,
-        std::tuple<Shares const&, Shares const&, Number>,
-        beast::Journal const& j);
-    static bool
-    finalizeClawback(
-        std::tuple<Vault const&, Vault const&, Number> vault,
-        std::tuple<Shares const&, Shares const&, Number> shares,
-        beast::Journal const& j);
 
 public:
     void

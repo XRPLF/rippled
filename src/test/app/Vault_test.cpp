@@ -179,6 +179,14 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " set maximum is idempotent, set it again");
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfAssetsMaximum] = asset(150).number();
+                env(tx);
+                env.close();
+            }
+
+            {
                 testcase(prefix + " set data");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfData] = "0";
