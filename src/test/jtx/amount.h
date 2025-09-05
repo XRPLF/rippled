@@ -181,7 +181,7 @@ struct PrettyAsset
 {
 private:
     Asset asset_;
-    std::uint64_t scale_;
+    std::uint32_t scale_;
 
 public:
     template <typename A>
