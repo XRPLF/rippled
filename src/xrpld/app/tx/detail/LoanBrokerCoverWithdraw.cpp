@@ -145,11 +145,12 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
     // The broker's pseudo-account is the source of funds.
     auto const pseudoAccountID = sleBroker->at(sfAccount);
 
-    // Cannot send a frozen Asset
-    if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
-        return ret;
+    // Check for freezes, unless sending directly to the issuer
     if (dstAcct != vaultAsset.getIssuer())
     {
+        // Cannot send a frozen Asset
+        if (auto const ret = checkFrozen(ctx.view, pseudoAccountID, vaultAsset))
+            return ret;
         // Destination account cannot receive if asset is deep frozen
         if (auto const ret = checkDeepFrozen(ctx.view, dstAcct, vaultAsset))
             return ret;
@@ -205,8 +206,21 @@ LoanBrokerCoverWithdraw::doApply()
 
     // Move the funds from the broker's pseudo-account to the dstAcct
 
-    if (dstAcct != account_ && !amount.native())
+    if (dstAcct == account_ || amount.native())
     {
+        // Transfer assets directly from pseudo-account to depositor.
+        // Because this is either a self-transfer or an XRP payment, there is no
+        // need to use the payment engine.
+        return accountSend(
+            view(), brokerPseudoID, dstAcct, amount, j_, WaiveTransferFee::Yes);
+    }
+
+    {
+        // If sending the Cover to a different account, then this is
+        // effectively a payment. Use the Payment transaction code to call
+        // the payment engine, though only a subset of the functionality is
+        // supported in this transaction. e.g. No paths, no partial
+        // payments.
         bool const mptDirect = amount.holds<MPTIssue>();
         STAmount const maxSourceAmount =
             Payment::getMaxSourceAmount(brokerPseudoID, amount);
@@ -225,11 +239,6 @@ LoanBrokerCoverWithdraw::doApply()
             .deliverMin = std::nullopt,
             .j = j_};
 
-        // If sending the Cover to a different account, then this is
-        // effectively a payment. Use the Payment transaction code to call
-        // the payment engine, though only a subset of the functionality is
-        // supported in this transaction. e.g. No paths, no partial
-        // payments.
         TER ret;
         if (mptDirect)
         {
@@ -250,10 +259,6 @@ LoanBrokerCoverWithdraw::doApply()
         }
         return ret;
     }
-
-    // Transfer assets from pseudo-account to depositor.
-    return accountSend(
-        view(), brokerPseudoID, dstAcct, amount, j_, WaiveTransferFee::Yes);
 }
 
 //------------------------------------------------------------------------------

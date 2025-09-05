@@ -87,6 +87,8 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
+    auto const vaultID = tx[sfVaultID];
+
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         auto const sleBroker = ctx.view.read(keylet::loanbroker(*brokerID));
@@ -95,7 +97,7 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
             return tecNO_ENTRY;
         }
-        if (tx[sfVaultID] != sleBroker->at(sfVaultID))
+        if (vaultID != sleBroker->at(sfVaultID))
         {
             JLOG(ctx.j.warn())
                 << "Can not change VaultID on an existing LoanBroker.";
@@ -109,7 +111,6 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        auto const vaultID = tx[sfVaultID];
         auto const sleVault = ctx.view.read(keylet::vault(vaultID));
         if (!sleVault)
         {
@@ -150,7 +151,6 @@ LoanBrokerSet::doApply()
     else
     {
         // Create a new LoanBroker pointing back to the given Vault
-        auto const vaultID = tx[sfVaultID];
         auto const sleVault = view.read(keylet::vault(vaultID));
         auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const sequence = tx.getSeqValue();

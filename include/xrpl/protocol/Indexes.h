@@ -348,18 +348,18 @@ Keylet
 loanbroker(AccountID const& owner, std::uint32_t seq) noexcept;
 
 inline Keylet
-loanbroker(uint256 const& vaultKey)
+loanbroker(uint256 const& key)
 {
-    return {ltLOAN_BROKER, vaultKey};
+    return {ltLOAN_BROKER, key};
 }
 
 Keylet
 loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept;
 
 inline Keylet
-loan(uint256 const& vaultKey)
+loan(uint256 const& key)
 {
-    return {ltLOAN, vaultKey};
+    return {ltLOAN, key};
 }
 
 Keylet

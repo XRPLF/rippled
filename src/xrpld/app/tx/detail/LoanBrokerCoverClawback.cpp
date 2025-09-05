@@ -64,6 +64,7 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
 
     if (amount)
     {
+        // XRP has no counterparty, and thus nobody can claw it back
         if (amount->native())
             return temBAD_AMOUNT;
 
@@ -81,6 +82,9 @@ LoanBrokerCoverClawback::preflight(PreflightContext const& ctx)
                 return temINVALID;
 
             auto const account = ctx.tx[sfAccount];
+            // Since we don't have a LoanBrokerID, holder _should_ be the loan
+            // broker's pseudo-account, but we don't know yet whether it is, so
+            // use a generic placeholder name.
             auto const holder = amount->getIssuer();
             if (holder == account || holder == beast::zero)
                 return temINVALID;
@@ -100,6 +104,9 @@ determineBrokerID(ReadView const& view, STTx const& tx)
     if (!dstAmount || !dstAmount->holds<Issue>())
         return Unexpected{tecINTERNAL};
 
+    // Since we don't have a LoanBrokerID, holder _should_ be the loan broker's
+    // pseudo-account, but we don't know yet whether it is, so use a generic
+    // placeholder name.
     auto const holder = dstAmount->getIssuer();
     auto const sle = view.read(keylet::account(holder));
     if (!sle)
