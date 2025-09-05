@@ -636,7 +636,12 @@ template <std::size_t Bits, class Tag>
 inline std::string
 to_short_string(base_uint<Bits, Tag> const& a)
 {
-    return to_string(a).substr(0, 8) + "...";
+    // LCOV_EXCL_START
+    if constexpr (a.bytes <= 4)
+        return to_string(a);
+    else
+        // LCOV_EXCL_STOP
+        return strHex(a.cbegin(), a.cbegin() + 4) + "...";
 }
 
 template <std::size_t Bits, class Tag>

@@ -361,7 +361,7 @@ ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
 [[nodiscard]]
 inline bool
-checkVL(Slice const& result, std::string expected)
+checkVL(Slice const& result, std::string const& expected)
 {
     Serializer s;
     s.addRaw(result);
