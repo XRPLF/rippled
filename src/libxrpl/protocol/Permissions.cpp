@@ -153,8 +153,7 @@ Permission::isDelegatable(
         auto const txFeaturesIt = txFeatureMap_.find(txType);
         XRPL_ASSERT(
             txFeaturesIt != txFeatureMap_.end(),
-            "ripple::Permissions::isDelegatable : tx does not exist in "
-            "txFeatureMap_");
+            "ripple::Permissions::isDelegatable : tx exists in txFeatureMap_");
 
         // fixDelegateV1_1: Delegation is only allowed if the required amendment
         // for the transaction is enabled. For transactions that do not require
