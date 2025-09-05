@@ -32,6 +32,7 @@ on:
       - "tests/**"
       - "CMakeLists.txt"
       - "conanfile.py"
+      - "conan.lock"
 
   # Run at 06:32 UTC on every day of the week from Monday through Friday. This
   # will force all dependencies to be rebuilt, which is useful to verify that
