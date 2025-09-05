@@ -55,7 +55,7 @@ jobs:
       - name: Calculate conan reference
         id: conan_ref
         run: |
-          echo "conan_ref=${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/@${{ steps.generate.outputs.channel }}" >> "${GITHUB_OUTPUT}"
+          echo "conan_ref=${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/${{ steps.generate.outputs.channel }}" >> "${GITHUB_OUTPUT}"
 
       - name: Set up Conan
         uses: ./.github/actions/setup-conan
