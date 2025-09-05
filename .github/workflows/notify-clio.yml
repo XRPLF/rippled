@@ -50,6 +50,10 @@ jobs:
           echo "channel=pr_${{ github.event.pull_request.number }}" >> "${GITHUB_OUTPUT}"
           echo 'Extracting version.'
           echo "version=$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" >> "${GITHUB_OUTPUT}"
+      - name: Calculate conan reference
+        id: conan_ref
+        run: |
+          echo "conan_ref=${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/${{ steps.generate.outputs.channel }}" >> "${GITHUB_OUTPUT}"
       - name: Add Conan remote
         run: |
           echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
@@ -61,10 +65,9 @@ jobs:
       - name: Upload package
         run: |
           conan export --user=${{ steps.generate.outputs.user }} --channel=${{ steps.generate.outputs.channel }} .
-          conan upload --confirm --check --remote=${{ inputs.conan_remote_name }} xrpl/${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/${{ steps.generate.outputs.channel }}
+          conan upload --confirm --check --remote=${{ inputs.conan_remote_name }} xrpl/${{ steps.conan_ref.outputs.conan_ref }}
     outputs:
-      channel: ${{ steps.generate.outputs.channel }}
-      version: ${{ steps.generate.outputs.version }}
+      conan_ref: ${{ steps.conan_ref.outputs.conan_ref }}
 
   notify:
     needs: upload
@@ -76,5 +79,5 @@ jobs:
         run: |
           gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
-          -F "client_payload[version]=${{ needs.upload.outputs.version }}@${{ needs.upload.outputs.user }}/${{ needs.upload.outputs.channel }}" \
-          -F "client_payload[pr]=${{ github.event.pull_request.number }}"
+          -F "client_payload[conan_ref]=${{ needs.upload.outputs.conan_ref }}" \
+          -F "client_payload[pr_url]=${{ github.event.pull_request.html_url }}"

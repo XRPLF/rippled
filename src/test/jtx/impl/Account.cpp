@@ -86,6 +86,14 @@ Account::Account(AcctStringType stringType, std::string base58SeedStr)
 {
 }
 
+Account::Account(std::string name, AccountID const& id)
+    : Account(name, randomKeyPair(KeyType::secp256k1), privateCtorTag{})
+{
+    // override the randomly generated values
+    id_ = id;
+    human_ = toBase58(id_);
+}
+
 IOU
 Account::operator[](std::string const& s) const
 {
