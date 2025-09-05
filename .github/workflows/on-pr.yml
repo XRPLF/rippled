@@ -71,6 +71,7 @@ jobs:
             tests/**
             CMakeLists.txt
             conanfile.py
+            conan.lock
       - name: Check whether to run
         # This step determines whether the rest of the workflow should
         # run. The rest of the workflow will run if this job runs AND at
