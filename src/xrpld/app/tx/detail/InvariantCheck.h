@@ -708,7 +708,7 @@ private:
 
 class ValidVault
 {
-    Number static const zero;
+    Number static constexpr zero{};
 
     struct Vault final
     {
@@ -726,7 +726,6 @@ class ValidVault
 
     struct Shares final
     {
-        Asset asset = {};
         MPTIssue share = {};
         AccountID issuer = {};
         Number sharesTotal = 0;
@@ -738,6 +737,7 @@ class ValidVault
     std::vector<Shares> updatedMPTs = {};
     std::optional<Vault> deletedVault = {};
     std::vector<Shares> deletedMPTs = {};
+    std::unordered_map<uint256, Number> balances = {};
 
     static bool
     finalizeCreate(Vault const&, Shares const&, beast::Journal const& j);
@@ -745,9 +745,8 @@ class ValidVault
     finalizeSet(Vault const&, Shares const&, beast::Journal const& j);
     static bool
     finalizeDeposit(
-        std::pair<Vault const&, Vault const&>,
-        std::pair<Shares const&, Shares const&>,
-        Number deposit,
+        std::tuple<Vault const&, Vault const&, Number>,
+        std::tuple<Shares const&, Shares const&, Number>,
         beast::Journal const& j);
     static bool
     finalizeWithdraw(

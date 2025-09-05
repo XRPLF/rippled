@@ -2079,6 +2079,7 @@ ValidVault::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    Number balance{};
     if (before)
     {
         switch (before->getType())
@@ -2090,6 +2091,33 @@ ValidVault::visitEntry(
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
                 deletedMPTs.push_back(Shares::make(*before));
+                balance = static_cast<std::int64_t>(
+                    before->getFieldU64(sfOutstandingAmount));
+                break;
+            case ltMPTOKEN:
+                balance =
+                    static_cast<std::int64_t>(before->getFieldU64(sfMPTAmount));
+                break;
+            case ltACCOUNT_ROOT:
+            case ltRIPPLE_STATE:
+                balance = before->getFieldAmount(sfBalance);
+                break;
+            default:;
+        }
+    }
+
+    // Special case - deleted implies balance went to zero
+    if (isDelete && before && balance != zero)
+    {
+        switch (after->getType())
+        {
+            case ltMPTOKEN_ISSUANCE:
+                balances[before->key()] = balance;
+                break;
+            case ltMPTOKEN:
+            case ltACCOUNT_ROOT:
+            case ltRIPPLE_STATE:
+                balances[after->key()] = balance * -1;
                 break;
             default:;
         }
@@ -2106,13 +2134,32 @@ ValidVault::visitEntry(
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
                 updatedMPTs.push_back(Shares::make(*after));
+                balance -= Number(static_cast<std::int64_t>(
+                    after->getFieldU64(sfOutstandingAmount)));
+
+                // Increase of the outstanding amount means increased
+                // liabilities, so we keep the sign here.
+                if (balance != zero)
+                    balances[after->key()] = balance;
+                break;
+            case ltMPTOKEN:
+            case ltACCOUNT_ROOT:
+            case ltRIPPLE_STATE:
+                if (after->getType() == ltMPTOKEN)
+                    balance -= Number(static_cast<std::int64_t>(
+                        after->getFieldU64(sfMPTAmount)));
+                else
+                    balance -= Number(after->getFieldAmount(sfBalance));
+
+                // Increase of the balance will give negative value so we
+                // need to reverse the sign here.
+                if (balance != zero)
+                    balances[after->key()] = balance * -1;
                 break;
             default:;
         }
     }
 }
-
-Number const ValidVault::zero(0);
 
 bool
 ValidVault::finalizeCreate(
@@ -2157,34 +2204,29 @@ ValidVault::finalizeSet(
 
 bool
 ValidVault::finalizeDeposit(
-    std::pair<Vault const&, Vault const&> vault,
-    std::pair<Shares const&, Shares const&> shares,
-    Number deposit,
+    std::tuple<Vault const&, Vault const&, Number> vault,
+    std::tuple<Shares const&, Shares const&, Number> shares,
     beast::Journal const& j)
 {
+    using std::get;
     bool result = true;
-    if (deposit <= zero)
-    {
-        JLOG(j.fatal())
-            << "Invariant failed: deposit must be greater than zero";
-        result = false;
-    }
-    if (vault.first.assetsTotal + deposit != vault.second.assetsTotal)
+    if (get<0>(vault).assetsTotal + get<2>(vault) != get<1>(vault).assetsTotal)
     {
         JLOG(j.fatal())
             << "Invariant failed: deposit and assets outstanding do not add up";
         result = false;
     }
-    if (vault.first.assetsAvailable + deposit != vault.second.assetsAvailable)
+    if (get<0>(vault).assetsAvailable + get<2>(vault) !=
+        get<1>(vault).assetsAvailable)
     {
         JLOG(j.fatal())
             << "Invariant failed: deposit and assets available do not add up";
         result = false;
     }
-    if (shares.first.sharesTotal >= shares.second.sharesTotal)
+    if (get<0>(shares).sharesTotal + get<2>(shares) !=
+        get<1>(shares).sharesTotal)
     {
-        JLOG(j.fatal())
-            << "Invariant failed: deposit must increase shares outstanding";
+        JLOG(j.fatal()) << "Invariant failed: shares outstanding do not add up";
         result = false;
     }
     return result;
@@ -2200,7 +2242,7 @@ ValidVault::finalizeWithdraw(
     bool result = true;
     Number const withdrawalAsset = get<2>(vault);
     Number const withdrawalShares = get<2>(shares);
-    if (withdrawalAsset < zero || withdrawalShares < 0)
+    if (withdrawalAsset < zero || withdrawalShares < zero)
     {
         JLOG(j.fatal())
             << "Invariant failed: withdrawal must be greater than zero";
@@ -2303,7 +2345,7 @@ bool
 ValidVault::finalize(
     STTx const& tx,
     TER const result,
-    XRPAmount const,
+    XRPAmount const fee,
     ReadView const& view,
     beast::Journal const& j)
 {
@@ -2442,6 +2484,47 @@ ValidVault::finalize(
             return false;  // That's all we can do here
         }
 
+        auto const balanceAssets = [&](AccountID id) -> std::optional<Number> {
+            auto const it = [&] {
+                if (updatedVault->asset.native())
+                    return balances.find(keylet::account(id).key);
+                else if (updatedVault->asset.holds<Issue>())
+                    return balances.find(
+                        keylet::line(id, updatedVault->asset.get<Issue>()).key);
+                else
+                    return balances.find(
+                        keylet::mptoken(
+                            updatedVault->asset.get<MPTIssue>().getMptID(), id)
+                            .key);
+            }();
+            if (it == balances.end())
+                return std::nullopt;
+            else if (
+                updatedVault->asset.native() ||
+                updatedVault->asset.holds<MPTIssue>())
+                return it->second;
+
+            // We have IOU, may need to reverse the sign of line balance
+            if (id > updatedVault->asset.get<Issue>().getIssuer())
+                return -1 * (it->second);
+            return it->second;
+        };
+
+        auto const balanceShares = [&](AccountID id) -> std::optional<Number> {
+            auto const it = [&]() {
+                if (id == updatedVault->pseudoId)
+                    return balances.find(
+                        keylet::mptIssuance(updatedVault->shareMPTID).key);
+                return balances.find(
+                    keylet::mptoken(updatedVault->shareMPTID, id).key);
+            }();
+
+            if (it == balances.end())
+                return std::nullopt;
+            else
+                return it->second;
+        };
+
         bool result = [&]() {
             switch (tx.getTxnType())
             {
@@ -2449,23 +2532,242 @@ ValidVault::finalize(
                     return finalizeCreate(*updatedVault, *updatedShares, j);
                 case ttVAULT_SET:
                     return finalizeSet(*updatedVault, *updatedShares, j);
-                case ttVAULT_DEPOSIT:
+                case ttVAULT_DEPOSIT: {
+                    auto const vaultBalance =
+                        balanceAssets(updatedVault->pseudoId);
+
+                    if (!vaultBalance)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit must change vault "
+                            "balance";
+                        return false;
+                    }
+
+                    if (*vaultBalance > tx[sfAmount])
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit must not change "
+                            "vault balance by more than deposited amount";
+                        return false;
+                    }
+
+                    if (*vaultBalance <= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit must increase "
+                            "vault balance";
+                        return false;
+                    }
+
+                    // Any payments (including deposits) made by the issuer
+                    // do not change their balance, but create funds instead.
+                    bool const issuerDeposit = [&]() -> bool {
+                        if (updatedVault->asset.native())
+                            return false;
+                        return tx[sfAccount] == updatedVault->asset.getIssuer();
+                    }();
+
+                    if (!issuerDeposit)
+                    {
+                        auto const accountBalance =
+                            [&]() -> std::optional<Number> {
+                            auto ret = balanceAssets(tx[sfAccount]);
+                            // Compensate for transaction fee deduced from
+                            // sfAccount
+                            if (ret && updatedVault->asset.native())
+                                *ret += fee.drops();
+                            if (ret && *ret == zero)
+                                return std::nullopt;
+                            return ret;
+                        }();
+
+                        if (!accountBalance)
+                        {
+                            JLOG(j.fatal()) <<  //
+                                "Invariant failed: deposit must change "
+                                "depositor balance";
+                            return false;
+                        }
+
+                        if (*accountBalance >= zero)
+                        {
+                            JLOG(j.fatal()) <<  //
+                                "Invariant failed: deposit must decrease "
+                                "depositor balance";
+                            return false;
+                        }
+
+                        if (*accountBalance * -1 != *vaultBalance)
+                        {
+                            JLOG(j.fatal()) <<  //
+                                "Invariant failed: deposit must change vault "
+                                "and depositor balance by equal amount";
+                            return false;
+                        }
+                    }
+
+                    auto const accountShares = balanceShares(tx[sfAccount]);
+                    if (!accountShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit must change depositor "
+                            "shares";
+                        return false;
+                    }
+
+                    if (*accountShares <= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit must increase depositor "
+                            "shares";
+                        return false;
+                    }
+
+                    auto const vaultShares =
+                        balanceShares(updatedVault->pseudoId);
+                    if (!vaultShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit must change vault "
+                            "shares";
+                        return false;
+                    }
+
+                    if (*vaultShares * -1 != *accountShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit must increase depositor "
+                            "and vault shares by equal amount";
+                        return false;
+                    }
+
                     return finalizeDeposit(
-                        {*deletedVault, *updatedVault},
-                        {*deletedShares, *updatedShares},
-                        tx[sfAmount],
-                        j);
-                case ttVAULT_WITHDRAW: {
-                    auto const amount = tx[sfAmount];
-                    auto const assets =
-                        amount.asset() == updatedVault->asset ? amount : zero;
-                    auto const shares =
-                        amount.asset() == updatedShares->share ? amount : zero;
-                    return finalizeWithdraw(
-                        {*deletedVault, *updatedVault, assets},
-                        {*deletedShares, *updatedShares, shares},
+                        {*deletedVault, *updatedVault, *vaultBalance},
+                        {*deletedShares, *updatedShares, *accountShares},
                         j);
                 }
+                case ttVAULT_WITHDRAW: {
+                    auto const vaultBalance =
+                        balanceAssets(updatedVault->pseudoId);
+
+                    if (!vaultBalance)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: withdrawal must "
+                                           "change vault balance";
+                        return false;
+                    }
+
+                    if (*vaultBalance >= zero)
+                    {
+                        JLOG(j.fatal()) << "Invariant failed: withdrawal must "
+                                           "decrease vault balance";
+                        return false;
+                    }
+
+                    // Any payments (including withdrawal) going to the issuer
+                    // do not change their balance, but destroy funds instead.
+                    bool const issuerWithdrawal = [&]() -> bool {
+                        if (updatedVault->asset.native())
+                            return false;
+                        auto const destination =
+                            tx[~sfDestination].value_or(tx[sfAccount]);
+                        return destination == updatedVault->asset.getIssuer();
+                    }();
+
+                    if (!issuerWithdrawal)
+                    {
+                        auto const accountBalance =
+                            [&]() -> std::optional<Number> {
+                            auto ret = balanceAssets(tx[sfAccount]);
+                            // Compensate for transaction fee deduced from
+                            // sfAccount
+                            if (ret && updatedVault->asset.native())
+                                *ret += fee.drops();
+                            if (ret && *ret == zero)
+                                return std::nullopt;
+                            return ret;
+                        }();
+
+                        auto const otherAccountBalance =
+                            [&]() -> std::optional<Number> {
+                            if (auto const destination = tx[~sfDestination];
+                                destination && *destination != tx[sfAccount])
+                                return balanceAssets(*destination);
+                            return std::nullopt;
+                        }();
+
+                        if (accountBalance.has_value() ==
+                            otherAccountBalance.has_value())
+                        {
+                            JLOG(j.fatal()) <<  //
+                                "Invariant failed: withdrawal must change one "
+                                "destination balance";
+                            return false;
+                        }
+
+                        auto const destinationBalance =  //
+                            accountBalance.has_value() ? *accountBalance
+                                                       : *otherAccountBalance;
+
+                        if (destinationBalance <= zero)
+                        {
+                            JLOG(j.fatal()) <<  //
+                                "Invariant failed: withdrawal must increase "
+                                "destination balance";
+                            return false;
+                        }
+
+                        if (*vaultBalance * -1 != destinationBalance)
+                        {
+                            JLOG(j.fatal()) <<  //
+                                "Invariant failed: withdrawal must change vault"
+                                " and destination balance by equal amount";
+                            return false;
+                        }
+                    }
+
+                    auto const accountShares = balanceShares(tx[sfAccount]);
+                    if (!accountShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: withdrawal must change "
+                            "depositor shares";
+                        return false;
+                    }
+
+                    if (*accountShares >= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: withdrawal must decrease "
+                            "depositor shares";
+                        return false;
+                    }
+
+                    auto const vaultShares =
+                        balanceShares(updatedVault->pseudoId);
+                    if (!vaultShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: withdrawal must change vault "
+                            "shares";
+                        return false;
+                    }
+
+                    if (*vaultShares * -1 != *accountShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: withdrawal must decrease "
+                            "depositor and vault shares by equal amount";
+                        return false;
+                    }
+
+                    return finalizeWithdraw(
+                        {*deletedVault, *updatedVault, *vaultBalance * -1},
+                        {*deletedShares, *updatedShares, *vaultShares},
+                        j);
+                }
+
                 case ttVAULT_CLAWBACK: {
                     auto const amount = tx[~sfAmount];
                     return finalizeClawback(

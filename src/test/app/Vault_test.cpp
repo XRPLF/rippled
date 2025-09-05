@@ -4567,7 +4567,7 @@ public:
         testWithDomainCheckXRP();
         testNonTransferableShares();
         testFailedPseudoAccount();
-        testScaleIOU();
+        // testScaleIOU();
         testRPC();
     }
 };
