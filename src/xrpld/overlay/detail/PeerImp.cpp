@@ -84,7 +84,7 @@ PeerImp::PeerImp(
     , stream_ptr_(std::move(stream_ptr))
     , socket_(stream_ptr_->next_layer().socket())
     , stream_(*stream_ptr_)
-    , strand_(socket_.get_executor())
+    , strand_(boost::asio::make_strand(socket_.get_executor()))
     , timer_(waitable_timer{socket_.get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
@@ -581,9 +581,16 @@ PeerImp::close()
     if (socket_.is_open())
     {
         detaching_ = true;  // DEPRECATED
-        error_code ec;
-        timer_.cancel(ec);
-        socket_.close(ec);
+        try
+        {
+            timer_.cancel();
+            socket_.close();
+        }
+        catch (boost::system::system_error const&)
+        {
+            // ignored
+        }
+
         overlay_.incPeerDisconnect();
         if (inbound_)
         {
@@ -654,12 +661,13 @@ PeerImp::gracefulClose()
 void
 PeerImp::setTimer()
 {
-    error_code ec;
-    timer_.expires_from_now(peerTimerInterval, ec);
-
-    if (ec)
+    try
     {
-        JLOG(journal_.error()) << "setTimer: " << ec.message();
+        timer_.expires_after(peerTimerInterval);
+    }
+    catch (boost::system::system_error const& e)
+    {
+        JLOG(journal_.error()) << "setTimer: " << e.code();
         return;
     }
     timer_.async_wait(bind_executor(
@@ -672,8 +680,14 @@ PeerImp::setTimer()
 void
 PeerImp::cancelTimer()
 {
-    error_code ec;
-    timer_.cancel(ec);
+    try
+    {
+        timer_.cancel();
+    }
+    catch (boost::system::system_error const&)
+    {
+        // ignored
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1296,13 +1310,13 @@ PeerImp::handleTransaction(
         }
         // LCOV_EXCL_STOP
 
-        int flags;
+        HashRouterFlags flags;
         constexpr std::chrono::seconds tx_interval = 10s;
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
         {
             // we have seen this transaction recently
-            if (flags & SF_BAD)
+            if (any(flags & HashRouterFlags::BAD))
             {
                 fee_.update(Resource::feeUselessData, "known bad");
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
@@ -1329,7 +1343,7 @@ PeerImp::handleTransaction(
             {
                 // Skip local checks if a server we trust
                 // put the transaction in its open ledger
-                flags |= SF_TRUSTED;
+                flags |= HashRouterFlags::TRUSTED;
             }
 
             // for non-validator nodes only -- localPublicKey is set for
@@ -2841,7 +2855,7 @@ PeerImp::doTransactions(
 
 void
 PeerImp::checkTransaction(
-    int flags,
+    HashRouterFlags flags,
     bool checkSignature,
     std::shared_ptr<STTx const> const& stx,
     bool batch)
@@ -2866,7 +2880,8 @@ PeerImp::checkTransaction(
             (stx->getFieldU32(sfLastLedgerSequence) <
              app_.getLedgerMaster().getValidLedgerIndex()))
         {
-            app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
+            app_.getHashRouter().setFlags(
+                stx->getTransactionID(), HashRouterFlags::BAD);
             charge(Resource::feeUselessData, "expired tx");
             return;
         }
@@ -2925,8 +2940,10 @@ PeerImp::checkTransaction(
                         << "Exception checking transaction: " << validReason;
                 }
 
-                // Probably not necessary to set SF_BAD, but doesn't hurt.
-                app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
+                // Probably not necessary to set HashRouterFlags::BAD, but
+                // doesn't hurt.
+                app_.getHashRouter().setFlags(
+                    stx->getTransactionID(), HashRouterFlags::BAD);
                 charge(
                     Resource::feeInvalidSignature,
                     "check transaction signature failure");
@@ -2949,12 +2966,13 @@ PeerImp::checkTransaction(
                 JLOG(p_journal_.trace())
                     << "Exception checking transaction: " << reason;
             }
-            app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
+            app_.getHashRouter().setFlags(
+                stx->getTransactionID(), HashRouterFlags::BAD);
             charge(Resource::feeInvalidSignature, "tx (impossible)");
             return;
         }
 
-        bool const trusted(flags & SF_TRUSTED);
+        bool const trusted = any(flags & HashRouterFlags::TRUSTED);
         app_.getOPs().processTransaction(
             tx, trusted, false, NetworkOPs::FailHard::no);
     }
@@ -2962,7 +2980,8 @@ PeerImp::checkTransaction(
     {
         JLOG(p_journal_.warn())
             << "Exception in " << __func__ << ": " << ex.what();
-        app_.getHashRouter().setFlags(stx->getTransactionID(), SF_BAD);
+        app_.getHashRouter().setFlags(
+            stx->getTransactionID(), HashRouterFlags::BAD);
         using namespace std::string_literals;
         charge(Resource::feeInvalidData, "tx "s + ex.what());
     }

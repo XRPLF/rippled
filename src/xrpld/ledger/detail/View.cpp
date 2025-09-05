@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
-#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 
@@ -505,8 +504,8 @@ accountHolds(
         if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
             view.rules().enabled(featureSingleAssetVault))
         {
-            if (auto const err = requireAuth(
-                    view, mptIssue, account, MPTAuthType::StrongAuth);
+            if (auto const err =
+                    requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
@@ -1215,12 +1214,115 @@ addEmptyHolding(
     if (view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
 
-    return MPTokenAuthorize::authorize(
-        view,
-        journal,
-        {.priorBalance = priorBalance,
-         .mptIssuanceID = mptID,
-         .account = accountID});
+    return authorizeMPToken(view, priorBalance, mptID, accountID, journal);
+}
+
+[[nodiscard]] TER
+authorizeMPToken(
+    ApplyView& view,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    beast::Journal journal,
+    std::uint32_t flags,
+    std::optional<AccountID> holderID)
+{
+    auto const sleAcct = view.peek(keylet::account(account));
+    if (!sleAcct)
+        return tecINTERNAL;
+
+    // If the account that submitted the tx is a holder
+    // Note: `account_` is holder's account
+    //       `holderID` is NOT used
+    if (!holderID)
+    {
+        // When a holder wants to unauthorize/delete a MPT, the ledger must
+        //      - delete mptokenKey from owner directory
+        //      - delete the MPToken
+        if (flags & tfMPTUnauthorize)
+        {
+            auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+            auto const sleMpt = view.peek(mptokenKey);
+            if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            if (!view.dirRemove(
+                    keylet::ownerDir(account),
+                    (*sleMpt)[sfOwnerNode],
+                    sleMpt->key(),
+                    false))
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            adjustOwnerCount(view, sleAcct, -1, journal);
+
+            view.erase(sleMpt);
+            return tesSUCCESS;
+        }
+
+        // A potential holder wants to authorize/hold a mpt, the ledger must:
+        //      - add the new mptokenKey to the owner directory
+        //      - create the MPToken object for the holder
+
+        // The reserve that is required to create the MPToken. Note
+        // that although the reserve increases with every item
+        // an account owns, in the case of MPTokens we only
+        // *enforce* a reserve if the user owns more than two
+        // items. This is similar to the reserve requirements of trust lines.
+        std::uint32_t const uOwnerCount = sleAcct->getFieldU32(sfOwnerCount);
+        XRPAmount const reserveCreate(
+            (uOwnerCount < 2) ? XRPAmount(beast::zero)
+                              : view.fees().accountReserve(uOwnerCount + 1));
+
+        if (priorBalance < reserveCreate)
+            return tecINSUFFICIENT_RESERVE;
+
+        auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+        auto mptoken = std::make_shared<SLE>(mptokenKey);
+        if (auto ter = dirLink(view, account, mptoken))
+            return ter;  // LCOV_EXCL_LINE
+
+        (*mptoken)[sfAccount] = account;
+        (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+        (*mptoken)[sfFlags] = 0;
+        view.insert(mptoken);
+
+        // Update owner count.
+        adjustOwnerCount(view, sleAcct, 1, journal);
+
+        return tesSUCCESS;
+    }
+
+    auto const sleMptIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleMptIssuance)
+        return tecINTERNAL;
+
+    // If the account that submitted this tx is the issuer of the MPT
+    // Note: `account_` is issuer's account
+    //       `holderID` is holder's account
+    if (account != (*sleMptIssuance)[sfIssuer])
+        return tecINTERNAL;
+
+    auto const sleMpt = view.peek(keylet::mptoken(mptIssuanceID, *holderID));
+    if (!sleMpt)
+        return tecINTERNAL;
+
+    std::uint32_t const flagsIn = sleMpt->getFieldU32(sfFlags);
+    std::uint32_t flagsOut = flagsIn;
+
+    // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
+    // their MPToken
+    if (flags & tfMPTUnauthorize)
+        flagsOut &= ~lsfMPTAuthorized;
+    // Issuer wants to authorize a holder, set lsfMPTAuthorized on their
+    // MPToken
+    else
+        flagsOut |= lsfMPTAuthorized;
+
+    if (flagsIn != flagsOut)
+        sleMpt->setFieldU32(sfFlags, flagsOut);
+
+    view.update(sleMpt);
+    return tesSUCCESS;
 }
 
 TER
@@ -1418,13 +1520,14 @@ removeEmptyHolding(
     if (mptoken->at(sfMPTAmount) != 0)
         return tecHAS_OBLIGATIONS;
 
-    return MPTokenAuthorize::authorize(
+    return authorizeMPToken(
         view,
+        {},  // priorBalance
+        mptID,
+        accountID,
         journal,
-        {.priorBalance = {},
-         .mptIssuanceID = mptID,
-         .account = accountID,
-         .flags = tfMPTUnauthorize});
+        tfMPTUnauthorize  // flags
+    );
 }
 
 TER
@@ -2298,15 +2401,27 @@ transferXRP(
 }
 
 TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account)
+requireAuth(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& account,
+    AuthType authType)
 {
     if (isXRP(issue) || issue.account == account)
         return tesSUCCESS;
+
+    auto const trustLine =
+        view.read(keylet::line(account, issue.account, issue.currency));
+    // If account has no line, and this is a strong check, fail
+    if (!trustLine && authType == AuthType::StrongAuth)
+        return tecNO_LINE;
+
+    // If this is a weak or legacy check, or if the account has a line, fail if
+    // auth is required and not set on the line
     if (auto const issuerAccount = view.read(keylet::account(issue.account));
         issuerAccount && (*issuerAccount)[sfFlags] & lsfRequireAuth)
     {
-        if (auto const trustLine =
-                view.read(keylet::line(account, issue.account, issue.currency)))
+        if (trustLine)
             return ((*trustLine)[sfFlags] &
                     ((account > issue.account) ? lsfLowAuth : lsfHighAuth))
                 ? tesSUCCESS
@@ -2322,7 +2437,7 @@ requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account,
-    MPTAuthType authType,
+    AuthType authType,
     int depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
@@ -2357,7 +2472,7 @@ requireAuth(
             if (auto const err = std::visit(
                     [&]<ValidIssueType TIss>(TIss const& issue) {
                         if constexpr (std::is_same_v<TIss, Issue>)
-                            return requireAuth(view, issue, account);
+                            return requireAuth(view, issue, account, authType);
                         else
                             return requireAuth(
                                 view, issue, account, authType, depth + 1);
@@ -2372,7 +2487,8 @@ requireAuth(
     auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
-    if (!sleToken && authType == MPTAuthType::StrongAuth)
+    if (!sleToken &&
+        (authType == AuthType::StrongAuth || authType == AuthType::Legacy))
         return tecNO_AUTH;
 
     // Note, this check is not amendment-gated because DomainID will be always
@@ -2484,15 +2600,12 @@ enforceMPTokenAuthorization(
         XRPL_ASSERT(
             maybeDomainID.has_value() && sleToken == nullptr,
             "ripple::enforceMPTokenAuthorization : new MPToken for domain");
-        if (auto const err = MPTokenAuthorize::authorize(
+        if (auto const err = authorizeMPToken(
                 view,
-                j,
-                {
-                    .priorBalance = priorBalance,
-                    .mptIssuanceID = mptIssuanceID,
-                    .account = account,
-                    .flags = 0,
-                });
+                priorBalance,   // priorBalance
+                mptIssuanceID,  // mptIssuanceID
+                account,        // account
+                j);
             !isTesSuccess(err))
             return err;
 
@@ -2680,58 +2793,113 @@ rippleCredit(
         saAmount.asset().value());
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets)
 {
     XRPL_ASSERT(
+        !assets.negative(),
+        "ripple::assetsToSharesDeposit : non-negative assets");
+    XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesDeposit : assets and vault match");
-    Number assetTotal = vault->at(sfAssetsTotal);
-    STAmount shares{vault->at(sfShareMPTID), static_cast<Number>(assets)};
+    if (assets.negative() || assets.asset() != vault->at(sfAsset))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Number const assetTotal = vault->at(sfAssetsTotal);
+    STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
-        return shares;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+        return STAmount{
+            shares.asset(),
+            Number(assets.mantissa(), assets.exponent() + vault->at(sfScale))
+                .truncate()};
+
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsDeposit(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares)
+{
+    XRPL_ASSERT(
+        !shares.negative(),
+        "ripple::sharesToAssetsDeposit : non-negative shares");
+    XRPL_ASSERT(
+        shares.asset() == vault->at(sfShareMPTID),
+        "ripple::sharesToAssetsDeposit : shares and vault match");
+    if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Number const assetTotal = vault->at(sfAssetsTotal);
+    STAmount assets{vault->at(sfAsset)};
+    if (assetTotal == 0)
+        return STAmount{
+            assets.asset(),
+            shares.mantissa(),
+            shares.exponent() - vault->at(sfScale),
+            false};
+
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    assets = assetTotal * (shares / shareTotal);
+    return assets;
+}
+
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets)
+    STAmount const& assets,
+    TruncateShares truncate)
 {
+    XRPL_ASSERT(
+        !assets.negative(),
+        "ripple::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesWithdraw : assets and vault match");
+    if (assets.negative() || assets.asset() != vault->at(sfAsset))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number result = shareTotal * (assets / assetTotal);
+    if (truncate == TruncateShares::yes)
+        result = result.truncate();
+    shares = result;
     return shares;
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
     XRPL_ASSERT(
+        !shares.negative(),
+        "ripple::sharesToAssetsDeposit : non-negative shares");
+    XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
         "ripple::sharesToAssetsWithdraw : shares and vault match");
+    if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }
@@ -2961,7 +3129,6 @@ rippleUnlockEscrowMPT(
         auto const delta = amount.mpt().value();
 
         // Underflow check for subtraction
-        // LCOV_EXCL_START
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
         {  // LCOV_EXCL_START
             JLOG(j.error())

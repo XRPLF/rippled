@@ -175,6 +175,29 @@ isFrozen(
         asset.value());
 }
 
+[[nodiscard]] inline TER
+checkFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+{
+    return isFrozen(view, account, issue) ? (TER)tecFROZEN : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptIssue)
+{
+    return isFrozen(view, account, mptIssue) ? (TER)tecLOCKED : (TER)tesSUCCESS;
+}
+
+[[nodiscard]] inline TER
+checkFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) { return checkFrozen(view, account, issue); },
+        asset.value());
+}
+
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
@@ -577,6 +600,16 @@ addEmptyHolding(
         asset.value());
 }
 
+[[nodiscard]] TER
+authorizeMPToken(
+    ApplyView& view,
+    XRPAmount const& priorBalance,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    beast::Journal journal,
+    std::uint32_t flags = 0,
+    std::optional<AccountID> holderID = std::nullopt);
+
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //
@@ -725,19 +758,40 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
-/* Check if MPToken exists:
- * - StrongAuth - before checking lsfMPTRequireAuth is set
- * - WeakAuth - after checking if lsfMPTRequireAuth is set
+/* Check if MPToken (for MPT) or trust line (for IOU) exists:
+ * - StrongAuth - before checking if authorization is required
+ * - WeakAuth
+ *    for MPT - after checking lsfMPTRequireAuth flag
+ *    for IOU - do not check if trust line exists
+ * - Legacy
+ *    for MPT - before checking lsfMPTRequireAuth flag i.e. same as StrongAuth
+ *    for IOU - do not check if trust line exists i.e. same as WeakAuth
  */
-enum class MPTAuthType : bool { StrongAuth = true, WeakAuth = false };
+enum class AuthType { StrongAuth, WeakAuth, Legacy };
 
 /** Check if the account lacks required authorization.
  *
- *   Return tecNO_AUTH or tecNO_LINE if it does
- *   and tesSUCCESS otherwise.
+ * Return tecNO_AUTH or tecNO_LINE if it does
+ * and tesSUCCESS otherwise.
+ *
+ * If StrongAuth then return tecNO_LINE if the RippleState doesn't exist. Return
+ * tecNO_AUTH if lsfRequireAuth is set on the issuer's AccountRoot, and the
+ * RippleState does exist, and the RippleState is not authorized.
+ *
+ * If WeakAuth then return tecNO_AUTH if lsfRequireAuth is set, and the
+ * RippleState exists, and is not authorized. Return tecNO_LINE if
+ * lsfRequireAuth is set and the RippleState doesn't exist. Consequently, if
+ * WeakAuth and lsfRequireAuth is *not* set, this function will return
+ * tesSUCCESS even if RippleState does *not* exist.
+ *
+ * The default "Legacy" auth type is equivalent to WeakAuth.
  */
 [[nodiscard]] TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+requireAuth(
+    ReadView const& view,
+    Issue const& issue,
+    AccountID const& account,
+    AuthType authType = AuthType::Legacy);
 
 /** Check if the account lacks required authorization.
  *
@@ -751,32 +805,33 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  * purely defensive, as we currently do not allow such vaults to be created.
  *
  * If StrongAuth then return tecNO_AUTH if MPToken doesn't exist or
- * lsfMPTRequireAuth is set and MPToken is not authorized. If WeakAuth then
- * return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken doesn't exist or is
- * not authorized (explicitly or via credentials, if DomainID is set in
- * MPTokenIssuance). Consequently, if WeakAuth and lsfMPTRequireAuth is *not*
- * set, this function will return true even if MPToken does *not* exist.
+ * lsfMPTRequireAuth is set and MPToken is not authorized.
+ *
+ * If WeakAuth then return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken
+ * doesn't exist or is not authorized (explicitly or via credentials, if
+ * DomainID is set in MPTokenIssuance). Consequently, if WeakAuth and
+ * lsfMPTRequireAuth is *not* set, this function will return true even if
+ * MPToken does *not* exist.
+ *
+ * The default "Legacy" auth type is equivalent to StrongAuth.
  */
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account,
-    MPTAuthType authType = MPTAuthType::StrongAuth,
+    AuthType authType = AuthType::Legacy,
     int depth = 0);
 
 [[nodiscard]] TER inline requireAuth(
     ReadView const& view,
     Asset const& asset,
     AccountID const& account,
-    MPTAuthType authType = MPTAuthType::StrongAuth)
+    AuthType authType = AuthType::Legacy)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue_) {
-            if constexpr (std::is_same_v<TIss, Issue>)
-                return requireAuth(view, issue_, account);
-            else
-                return requireAuth(view, issue_, account, authType);
+            return requireAuth(view, issue_, account, authType);
         },
         asset.value());
 }
@@ -857,28 +912,41 @@ deleteAMMTrustLine(
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 
-// From the perspective of a vault,
-// return the number of shares to give the depositor
-// when they deposit a fixed amount of assets.
-[[nodiscard]] STAmount
+// From the perspective of a vault, return the number of shares to give the
+// depositor when they deposit a fixed amount of assets. Since shares are MPT
+// this number is integral and always truncated in this calculation.
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets);
 
-// From the perspective of a vault,
-// return the number of shares to demand from the depositor
-// when they ask to withdraw a fixed amount of assets.
-[[nodiscard]] STAmount
+// From the perspective of a vault, return the number of assets to take from
+// depositor when they receive a fixed amount of shares. Note, since shares are
+// MPT, they are always an integral number.
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsDeposit(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares);
+
+enum class TruncateShares : bool { no = false, yes = true };
+
+// From the perspective of a vault, return the number of shares to demand from
+// the depositor when they ask to withdraw a fixed amount of assets. Since
+// shares are MPT this number is integral, and it will be rounded to nearest
+// unless explicitly requested to be truncated instead.
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets);
+    STAmount const& assets,
+    TruncateShares truncate = TruncateShares::no);
 
-// From the perspective of a vault,
-// return the number of assets to give the depositor
-// when they redeem a fixed amount of shares.
-[[nodiscard]] STAmount
+// From the perspective of a vault, return the number of assets to give the
+// depositor when they redeem a fixed amount of shares. Note, since shares are
+// MPT, they are always an integral number.
+[[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,

@@ -157,7 +157,12 @@ enum error_code_i {
     // Pathfinding
     rpcDOMAIN_MALFORMED = 97,
 
-    rpcLAST = rpcDOMAIN_MALFORMED  // rpcLAST should always equal the last code.
+    // ledger_entry
+    rpcENTRY_NOT_FOUND = 98,
+    rpcUNEXPECTED_LEDGER_TYPE = 99,
+
+    rpcLAST =
+        rpcUNEXPECTED_LEDGER_TYPE  // rpcLAST should always equal the last code.
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
@@ -169,6 +174,8 @@ enum warning_code_i {
     warnRPC_AMENDMENT_BLOCKED = 1002,
     warnRPC_EXPIRED_VALIDATOR_LIST = 1003,
     // unused = 1004
+    warnRPC_FIELDS_DEPRECATED = 2004,  // rippled needs to maintain
+                                       // compatibility with Clio on this code.
 };
 
 //------------------------------------------------------------------------------
