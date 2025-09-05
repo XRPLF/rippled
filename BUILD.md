@@ -479,11 +479,21 @@ It is implicitly used when running `conan` commands, you don't need to specify i
 
 You have to update this file every time you add a new dependency or change a revision or version of an existing dependency.
 
-To do that, run the following command in the repository root:
+> ![NOTE]
+> Conan uses local cache by default when creating a lockfile.
+
+To ensure, that lockfile creation works the same way on all developer machines, we recommend to clear the local cache before creating a new lockfile.
+
+To create a new lockfile, run the following commands in the repository root:
 
 ```bash
-conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True' -r=xrplf
+conan remove '*' --confirm
+rm conan.lock
+conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True'
 ```
+
+> ![NOTE]
+> If some dependencies are exclusive for some OS, you may need to run the last command for them adding `--profile:all <PROFILE>`.
 
 ## Coverage report
 
