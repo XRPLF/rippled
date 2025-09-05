@@ -755,9 +755,8 @@ class ValidVault
         beast::Journal const& j);
     static bool
     finalizeClawback(
-        std::pair<Vault const&, Vault const&>,
-        std::pair<Shares const&, Shares const&>,
-        Number clawback,
+        std::tuple<Vault const&, Vault const&, Number> vault,
+        std::tuple<Shares const&, Shares const&, Number> shares,
         beast::Journal const& j);
 
 public:

@@ -2213,20 +2213,21 @@ ValidVault::finalizeDeposit(
     if (get<0>(vault).assetsTotal + get<2>(vault) != get<1>(vault).assetsTotal)
     {
         JLOG(j.fatal())
-            << "Invariant failed: deposit and assets outstanding do not add up";
+            << "Invariant failed: deposit and assets outstanding must add up";
         result = false;
     }
     if (get<0>(vault).assetsAvailable + get<2>(vault) !=
         get<1>(vault).assetsAvailable)
     {
         JLOG(j.fatal())
-            << "Invariant failed: deposit and assets available do not add up";
+            << "Invariant failed: deposit and assets available must add up";
         result = false;
     }
     if (get<0>(shares).sharesTotal + get<2>(shares) !=
         get<1>(shares).sharesTotal)
     {
-        JLOG(j.fatal()) << "Invariant failed: shares outstanding do not add up";
+        JLOG(j.fatal())
+            << "Invariant failed: deposit and shares outstanding must add up";
         result = false;
     }
     return result;
@@ -2240,62 +2241,24 @@ ValidVault::finalizeWithdraw(
 {
     using std::get;
     bool result = true;
-    Number const withdrawalAsset = get<2>(vault);
-    Number const withdrawalShares = get<2>(shares);
-    if (withdrawalAsset < zero || withdrawalShares < zero)
+    if (get<0>(vault).assetsTotal - get<2>(vault) != get<1>(vault).assetsTotal)
     {
-        JLOG(j.fatal())
-            << "Invariant failed: withdrawal must be greater than zero";
+        JLOG(j.fatal()) << "Invariant failed: withdrawal and assets "
+                           "outstanding must add up";
         result = false;
     }
-    else if (withdrawalAsset != zero)
+    if (get<0>(vault).assetsAvailable - get<2>(vault) !=
+        get<1>(vault).assetsAvailable)
     {
-        if (get<0>(vault).assetsTotal - withdrawalAsset !=
-            get<1>(vault).assetsTotal)
-        {
-            JLOG(j.fatal()) << "Invariant failed: withdrawal and assets "
-                               "outstanding do not add up";
-            result = false;
-        }
-        if (get<0>(vault).assetsAvailable - withdrawalAsset !=
-            get<1>(vault).assetsAvailable)
-        {
-            JLOG(j.fatal()) << "Invariant failed: withdrawal and assets "
-                               "available do not add up";
-            result = false;
-        }
-        if (get<0>(shares).sharesTotal <= get<1>(shares).sharesTotal)
-        {
-            JLOG(j.fatal()) << "Invariant failed: withdrawal must reduce "
-                               "shares outstanding";
-            result = false;
-        }
+        JLOG(j.fatal()) << "Invariant failed: withdrawal and assets "
+                           "available must add up";
+        result = false;
     }
-    else if (withdrawalShares != zero)
+    if (get<0>(shares).sharesTotal - get<2>(shares) !=
+        get<1>(shares).sharesTotal)
     {
-        if (get<0>(shares).sharesTotal - withdrawalShares !=
-            get<1>(shares).sharesTotal)
-        {
-            JLOG(j.fatal()) << "Invariant failed: withdrawal and shares "
-                               "outstanding do not add up";
-            result = false;
-        }
-        if (get<0>(vault).assetsTotal <= get<1>(vault).assetsTotal)
-        {
-            JLOG(j.fatal()) << "Invariant failed: withdrawal must reduce "
-                               "assets outstanding";
-            result = false;
-        }
-        if (get<0>(vault).assetsAvailable <= get<1>(vault).assetsAvailable)
-        {
-            JLOG(j.fatal()) << "Invariant failed: withdrawal must reduce "
-                               "assets available";
-            result = false;
-        }
-    }
-    else
-    {
-        JLOG(j.fatal()) << "Invariant failed: withdrawal must not be zero";
+        JLOG(j.fatal()) << "Invariant failed: withdrawaland and shares "
+                           "outstanding must add up";
         result = false;
     }
 
@@ -2304,40 +2267,33 @@ ValidVault::finalizeWithdraw(
 
 bool
 ValidVault::finalizeClawback(
-    std::pair<Vault const&, Vault const&> vault,
-    std::pair<Shares const&, Shares const&> shares,
-    Number clawback,
+    std::tuple<Vault const&, Vault const&, Number> vault,
+    std::tuple<Shares const&, Shares const&, Number> shares,
     beast::Journal const& j)
 {
+    using std::get;
     bool result = true;
-    if (clawback < zero)
+    if (get<0>(vault).assetsTotal - get<2>(vault) != get<1>(vault).assetsTotal)
     {
-        JLOG(j.fatal()) << "Invariant failed: clawback must be positive";
+        JLOG(j.fatal()) << "Invariant failed: clawback and assets outstanding "
+                           "must add up";
         result = false;
     }
-    if (clawback > zero)
+    if (get<0>(vault).assetsAvailable - get<2>(vault) !=
+        get<1>(vault).assetsAvailable)
     {
-        if (vault.first.assetsTotal - clawback != vault.second.assetsTotal)
-        {
-            JLOG(j.fatal())
-                << "Invariant failed: clawback and assets outstanding "
-                   "do not add up";
-            result = false;
-        }
-        if (vault.first.assetsAvailable - clawback !=
-            vault.second.assetsAvailable)
-        {
-            JLOG(j.fatal()) << "Invariant failed: clawback and assets "
-                               "available do not add up";
-            result = false;
-        }
-    }
-    if (shares.first.sharesTotal <= shares.second.sharesTotal)
-    {
-        JLOG(j.fatal())
-            << "Invariant failed: clawback must reduce shares outstanding";
+        JLOG(j.fatal()) << "Invariant failed: clawback and assets "
+                           "available must add up";
         result = false;
     }
+    if (get<0>(shares).sharesTotal - get<2>(shares) !=
+        get<1>(shares).sharesTotal)
+    {
+        JLOG(j.fatal()) << "Invariant failed: clawback and shares "
+                           "outstanding must add up";
+        result = false;
+    }
+
     return result;
 }
 
@@ -2484,28 +2440,27 @@ ValidVault::finalize(
             return false;  // That's all we can do here
         }
 
+        auto const& asset = updatedVault->asset;
+
         auto const balanceAssets = [&](AccountID id) -> std::optional<Number> {
             auto const it = [&] {
-                if (updatedVault->asset.native())
+                if (asset.native())
                     return balances.find(keylet::account(id).key);
-                else if (updatedVault->asset.holds<Issue>())
+                else if (asset.holds<Issue>())
                     return balances.find(
-                        keylet::line(id, updatedVault->asset.get<Issue>()).key);
+                        keylet::line(id, asset.get<Issue>()).key);
                 else
                     return balances.find(
-                        keylet::mptoken(
-                            updatedVault->asset.get<MPTIssue>().getMptID(), id)
+                        keylet::mptoken(asset.get<MPTIssue>().getMptID(), id)
                             .key);
             }();
             if (it == balances.end())
                 return std::nullopt;
-            else if (
-                updatedVault->asset.native() ||
-                updatedVault->asset.holds<MPTIssue>())
+            else if (asset.native() || asset.holds<MPTIssue>())
                 return it->second;
 
             // We have IOU, may need to reverse the sign of line balance
-            if (id > updatedVault->asset.get<Issue>().getIssuer())
+            if (id > asset.get<Issue>().getIssuer())
                 return -1 * (it->second);
             return it->second;
         };
@@ -2563,9 +2518,9 @@ ValidVault::finalize(
                     // Any payments (including deposits) made by the issuer
                     // do not change their balance, but create funds instead.
                     bool const issuerDeposit = [&]() -> bool {
-                        if (updatedVault->asset.native())
+                        if (asset.native())
                             return false;
-                        return tx[sfAccount] == updatedVault->asset.getIssuer();
+                        return tx[sfAccount] == asset.getIssuer();
                     }();
 
                     if (!issuerDeposit)
@@ -2575,7 +2530,7 @@ ValidVault::finalize(
                             auto ret = balanceAssets(tx[sfAccount]);
                             // Compensate for transaction fee deduced from
                             // sfAccount
-                            if (ret && updatedVault->asset.native())
+                            if (ret && asset.native())
                                 *ret += fee.drops();
                             if (ret && *ret == zero)
                                 return std::nullopt;
@@ -2668,11 +2623,11 @@ ValidVault::finalize(
                     // Any payments (including withdrawal) going to the issuer
                     // do not change their balance, but destroy funds instead.
                     bool const issuerWithdrawal = [&]() -> bool {
-                        if (updatedVault->asset.native())
+                        if (asset.native())
                             return false;
                         auto const destination =
                             tx[~sfDestination].value_or(tx[sfAccount]);
-                        return destination == updatedVault->asset.getIssuer();
+                        return destination == asset.getIssuer();
                     }();
 
                     if (!issuerWithdrawal)
@@ -2682,7 +2637,7 @@ ValidVault::finalize(
                             auto ret = balanceAssets(tx[sfAccount]);
                             // Compensate for transaction fee deduced from
                             // sfAccount
-                            if (ret && updatedVault->asset.native())
+                            if (ret && asset.native())
                                 *ret += fee.drops();
                             if (ret && *ret == zero)
                                 return std::nullopt;
@@ -2769,11 +2724,72 @@ ValidVault::finalize(
                 }
 
                 case ttVAULT_CLAWBACK: {
+                    if (asset.native() || asset.getIssuer() != tx[sfAccount])
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback may only be performed "
+                            "by the asset issuer";
+                        return false;
+                    }
+
+                    auto const vaultBalance =
+                        balanceAssets(updatedVault->pseudoId);
+
+                    if (!vaultBalance)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must change vault "
+                            "balance";
+                        return false;
+                    }
+
+                    if (*vaultBalance >= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must decrease vault "
+                            "balance";
+                        return false;
+                    }
+
+                    auto const accountShares = balanceShares(tx[sfHolder]);
+                    if (!accountShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must change "
+                            "holder shares";
+                        return false;
+                    }
+
+                    if (*accountShares >= zero)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must decrease "
+                            "holder shares";
+                        return false;
+                    }
+
+                    auto const vaultShares =
+                        balanceShares(updatedVault->pseudoId);
+                    if (!vaultShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must change vault "
+                            "shares";
+                        return false;
+                    }
+
+                    if (*vaultShares * -1 != *accountShares)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: clawback must decrease "
+                            "holder and vault shares by equal amount";
+                        return false;
+                    }
+
                     auto const amount = tx[~sfAmount];
                     return finalizeClawback(
-                        {*deletedVault, *updatedVault},
-                        {*deletedShares, *updatedShares},
-                        amount ? *amount : zero,
+                        {*deletedVault, *updatedVault, *vaultBalance * -1},
+                        {*deletedShares, *updatedShares, *vaultShares},
                         j);
                 }
                 default:
@@ -2873,6 +2889,15 @@ ValidVault::finalize(
             JLOG(j.fatal())
                 << "Invariant failed: assets outstanding must not exceed "
                    "AssetsMaximum";
+            result = false;
+        }
+
+        if (updatedVault->lossUnrealized >
+            updatedVault->assetsTotal - updatedVault->assetsAvailable)
+        {
+            JLOG(j.fatal())  //
+                << "Invariant failed: loss unrealized must not exceed "
+                   "the difference between assets outstanding and available";
             result = false;
         }
 
