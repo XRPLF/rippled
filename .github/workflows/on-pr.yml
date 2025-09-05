@@ -54,12 +54,9 @@ jobs:
           files: |
             # These paths are unique to `on-pr.yml`.
             .github/scripts/levelization/**
-            .github/workflows/check-format.yml
             .github/workflows/check-levelization.yml
             .github/workflows/notify-clio.yml
             .github/workflows/on-pr.yml
-            .clang-format
-            .pre-commit-config.yaml
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
@@ -94,11 +91,6 @@ jobs:
           cat "${GITHUB_OUTPUT}"
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
-
-  check-format:
-    needs: should-run
-    if: needs.should-run.outputs.go == 'true'
-    uses: ./.github/workflows/check-format.yml
 
   check-levelization:
     needs: should-run
@@ -147,7 +139,6 @@ jobs:
   passed:
     needs:
       - build-test
-      - check-format
       - check-levelization
     runs-on: ubuntu-latest
     steps:
