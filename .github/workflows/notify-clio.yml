@@ -53,7 +53,7 @@ jobs:
       - name: Calculate conan reference
         id: conan_ref
         run: |
-          echo "conan_ref=${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/@${{ steps.generate.outputs.channel }}" >> "${GITHUB_OUTPUT}"
+          echo "conan_ref=${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/${{ steps.generate.outputs.channel }}" >> "${GITHUB_OUTPUT}"
       - name: Add Conan remote
         run: |
           echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
