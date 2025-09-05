@@ -165,7 +165,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(ter))
         return ter;
 
-    if (accountHolds(
+    // Asset issuer does not have any balance, they can just create funds by
+    // depositing in the vault.
+    if ((vaultAsset.native() || vaultAsset.getIssuer() != account) &&
+        accountHolds(
             ctx.view,
             account,
             vaultAsset,

@@ -387,6 +387,27 @@ class Vault_test : public beast::unit_test::suite
                     env.balance(depositor, shares) == share(50 * scale));
             }
 
+            if (!asset.raw().native())
+            {
+                testcase(prefix + " issuer deposits");
+                auto tx = vault.deposit(
+                    {.depositor = issuer,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx);
+                env.close();
+                BEAST_EXPECT(env.balance(issuer, shares) == share(10 * scale));
+
+                testcase(prefix + " issuer withdraws");
+                tx = vault.withdraw(
+                    {.depositor = issuer,
+                     .id = keylet.key,
+                     .amount = share(10 * scale)});
+                env(tx);
+                env.close();
+                BEAST_EXPECT(env.balance(issuer, shares) == share(0 * scale));
+            }
+
             {
                 testcase(prefix + " withdraw remaining assets");
                 auto tx = vault.withdraw(
