@@ -155,7 +155,7 @@ private:
                 env, alice, BTC(20'000), BTC(10'000), ter(temBAD_AMM_TOKENS));
         }
 
-        // MPT did not set lsfMPTCanTransfer
+        // MPTCanTransfer is not set and AMM creator is not the issuer of MPT
         {
             Env env{*this};
             env.fund(XRP(30'000), alice, gw);
@@ -168,6 +168,31 @@ private:
                  .flags = tfMPTCanLock});
             AMM ammAlice(
                 env, alice, BTC(20'000), XRP(10'000), ter(tecNO_PERMISSION));
+        }
+
+        // MPTokenIssuance doesn't exist
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), alice, gw);
+            env.close();
+            AMM ammAlice(
+                env,
+                alice,
+                MPT(gw, 1'000)(20'000),
+                XRP(10'000),
+                ter(tecOBJECT_NOT_FOUND));
+        }
+
+        // MPToken doesn't exist and amm creator is not the issuer
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), alice, gw);
+            env.close();
+            MPT BTC = MPTTester({
+                .env = env,
+                .issuer = gw,
+            });
+            AMM ammAlice(env, alice, BTC(20'000), XRP(10'000), ter(tecNO_AUTH));
         }
 
         // Can't have zero or negative amounts
@@ -300,7 +325,7 @@ private:
             },
             {{AMMMPT(20'000), AMMMPT(10'000)}});
 
-        // Require authorization is set
+        // MPTRequireAuth flag is set and AMM creator is not authorzied
         {
             Env env{*this};
             env.fund(XRP(30'000), gw, alice);
@@ -320,7 +345,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
-        // MPT globally locked
+        // MPTLocked flag is set and AMM creator is not the issuer of MPT
         {
             Env env{*this};
             fund(env, gw, {alice}, {USD(20'000)}, Fund::All);
@@ -458,6 +483,25 @@ private:
                     std::nullopt,
                     std::nullopt,
                     ter(temBAD_MPT));
+
+                // MPTokenIssuance object doesn't exist
+                ammAlice.deposit(
+                    alice,
+                    XRP(100),
+                    MPT(gw, 1'000)(100),
+                    std::nullopt,
+                    tfTwoAsset,
+                    ter(temBAD_AMM_TOKENS));
+
+                // MPToken object doesn't exist
+                env.fund(XRP(1'000), bob);
+                ammAlice.deposit(
+                    bob,
+                    XRP(100),
+                    MPT(ammAlice[1])(200),
+                    std::nullopt,
+                    tfTwoAsset,
+                    ter(tecNO_AUTH));
 
                 MPTTester BTC(
                     {.env = env,
@@ -944,6 +988,28 @@ private:
                     std::nullopt,
                     std::nullopt,
                     ter(tecNO_AUTH));
+        }
+
+        // MPTCanTransfer is not set and the account is not the issuer of MPT
+        {
+            Env env{*this, features};
+            Account gw("gateway"), alice{"alice"}, carol{"carol"};
+            env.fund(XRP(30'000), alice, carol, gw);
+            env.close();
+
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 1'000,
+                 .flags = tfMPTCanTrade});
+
+            AMM amm(env, gw, XRP(10'000), BTC(10'000));
+
+            amm.deposit(
+                {.account = alice,
+                 .asset1In = BTC(10),
+                 .err = ter(tecNO_PERMISSION)});
         }
 
         // Insufficient XRP balance
@@ -2226,6 +2292,14 @@ private:
                     std::nullopt,
                     ter(temBAD_MPT));
 
+                // Specified MPToken doesn't match the pool assets
+                ammAlice.withdraw(
+                    alice,
+                    XRP(100),
+                    MPT(noMPT())(100),
+                    std::nullopt,
+                    ter(temBAD_AMM_TOKENS));
+
                 // Invalid Account
                 Account bad("bad");
                 env.memoize(bad);
@@ -2324,7 +2398,74 @@ private:
             },
             {{XRP(10'000), AMMMPT(10'000)}});
 
+        // MPTokenIssuance object doesn't exist
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw, alice);
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice}, .pay = 30'000});
+
+            AMM ammAlice(env, alice, XRP(10'000), BTC(10'000));
+
+            ammAlice.withdraw(WithdrawArg{
+                .account = alice,
+                .asset1Out = MPT(gw, 1'000)(10),
+                .assets = {{XRP, MPT(gw, 1'000)}},
+                .err = ter(terNO_AMM)});
+        }
+
+        // MPTRequireAuth flag is set and the account is not authorized
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw, alice);
+            env.close();
+            auto BTCM = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 30'000,
+                 .flags = tfMPTRequireAuth | MPTDEXFlags,
+                 .authHolder = true});
+            MPT const BTC = BTCM;
+
+            AMM amm(env, alice, XRP(10'000), BTC(10'000));
+
+            BTCM.authorize(
+                {.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
+
+            amm.withdraw(WithdrawArg{
+                .account = alice,
+                .asset1Out = BTC(100),
+                .assets = {{XRP, BTC}},
+                .err = ter(tecNO_AUTH)});
+        }
+
+        // MPTCanTransfer is not set and the account is not the issuer of MPT
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw, alice);
+            env.close();
+            auto BTCM = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 30'000,
+                 .flags = tfMPTCanTrade,
+                 .authHolder = true});
+            MPT const BTC = BTCM;
+
+            AMM amm(env, gw, XRP(10'000), BTC(10'000));
+
+            amm.withdraw(WithdrawArg{
+                .account = alice,
+                .asset1Out = BTC(100),
+                .assets = {{XRP, BTC}},
+                .err = ter(tecNO_PERMISSION)});
+        }
+
         // Globally locked MPT
+        // MPTLocked flag is set and the account is not the issuer of MPT
         {
             Env env{*this};
             env.fund(XRP(30'000), gw, alice);

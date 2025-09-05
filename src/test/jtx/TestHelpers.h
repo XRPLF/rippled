@@ -513,6 +513,12 @@ create(
 
 }  // namespace check
 
+inline uint256
+getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+{
+    return keylet::check(account, uSequence).key;
+}
+
 static constexpr FeeLevel64 baseFeeLevel{256};
 static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
 

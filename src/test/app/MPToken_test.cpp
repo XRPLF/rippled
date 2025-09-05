@@ -23,6 +23,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/check.h>
 #include <test/jtx/credentials.h>
+#include <test/jtx/domain.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/xchain_bridge.h>
@@ -2735,7 +2736,27 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        // Holders are locked
+        // MPTokenIssuance object doesn't exist
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), gw, alice);
+            MPT const BTC = MPT(gw, 0);
+            MPT const ETH = MPT(gw, 1);
+
+            env(offer(alice, ETH(10), BTC(10)), ter(tecOBJECT_NOT_FOUND));
+        }
+
+        // MPToken object doesn't exist and the account is not the issuer of MPT
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), gw, alice);
+            MPTTester BTC({.env = env, .issuer = gw});
+            MPTTester ETH({.env = env, .issuer = gw});
+
+            env(offer(alice, ETH(10), BTC(10)), ter(tecUNFUNDED_OFFER));
+        }
+
+        // MPTLocked flag is set and the account is not the issuer of MPT
         {
             Account const bob = Account("bob");
             Account const dan = Account("dan");
@@ -2767,6 +2788,51 @@ class MPToken_test : public beast::unit_test::suite
 
             test(tfMPTLock, ter(tecLOCKED));
             test(tfMPTUnlock, ter(tesSUCCESS));
+        }
+
+        // MPTRequireAuth flag is set and the account is not authorized
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), gw, alice);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 100,
+                 .flags = tfMPTRequireAuth | MPTDEXFlags,
+                 .authHolder = true});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 100,
+                 .flags = tfMPTRequireAuth | MPTDEXFlags,
+                 .authHolder = true});
+
+            BTC.authorize(
+                {.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
+
+            env(offer(alice, ETH(10), BTC(10)), ter(tecUNFUNDED_OFFER));
+        }
+
+        // MPTCanTransfer is not set and the account is not the issuer of MPT
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), gw, alice);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 100,
+                 .flags = tfMPTCanTrade});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 100,
+                 .flags = tfMPTCanTrade});
+
+            env(offer(alice, ETH(10), BTC(10)), ter(tecNO_PERMISSION));
         }
 
         // XRP/MPT
@@ -3089,6 +3155,82 @@ class MPToken_test : public beast::unit_test::suite
                 txflags(tfNoRippleDirect | tfPartialPayment),
                 sendmax(XRP(1)),
                 ter(tecPATH_DRY));
+        }
+
+        // A domain payment should only consume a USD/MPT offer with a domain.
+        // It must not consume a regular USD/MPT offer.
+        {
+            Env env(*this, features);
+            Account domainOwner("DomainOwner");
+            env.fund(XRP(1'000), gw, alice, carol, bob);
+            auto const domainID = setupDomain(
+                env, {alice, bob, carol, gw}, domainOwner, "permdex-cred");
+
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .pay = 100});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .pay = 100});
+
+            auto test = [&](bool withDomain) {
+                if (withDomain)
+                    env(offer(bob, ETH(1), BTC(1)), domain(domainID));
+                else
+                    env(offer(bob, ETH(1), BTC(1)));
+
+                auto const err =
+                    withDomain ? ter(tesSUCCESS) : ter(tecPATH_DRY);
+                env(pay(alice, carol, BTC(1)),
+                    path(~(MPT)BTC),
+                    txflags(tfPartialPayment),
+                    sendmax(ETH(1)),
+                    domain(domainID),
+                    err);
+            };
+            test(true);
+            test(false);
+        }
+
+        // A hybrid USD/MPT domain offer should still be consumable by
+        // a regular payment.
+        {
+            Env env(*this, features);
+            Account domainOwner("DomainOwner");
+            env.fund(XRP(1'000), gw, alice, carol, bob);
+            auto const domainID = setupDomain(
+                env, {alice, bob, carol, gw}, domainOwner, "permdex-cred");
+
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .pay = 100});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .pay = 100});
+
+            auto test = [&](bool isHybrid) {
+                auto const flags = isHybrid ? tfHybrid : 0;
+                env(offer(bob, ETH(1), BTC(1)),
+                    txflags(flags),
+                    domain(domainID));
+
+                auto const err = isHybrid ? ter(tesSUCCESS) : ter(tecPATH_DRY);
+                env(pay(alice, carol, BTC(1)),
+                    path(~(MPT)BTC),
+                    txflags(tfPartialPayment),
+                    sendmax(ETH(1)),
+                    err);
+            };
+            test(true);
+            test(false);
         }
 
         // MPT/XRP
@@ -4554,6 +4696,39 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(mpt.checkMPTokenOutstandingAmount(100));
         }
 
+        // MPTokenIssuance object doesn't exist
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), gw, alice, carol);
+            env(check::create(alice, carol, MPT(gw)(50)),
+                ter(tecOBJECT_NOT_FOUND));
+            env.close();
+        }
+
+        // MPToken doesn't exist - can create check since MPToken will be
+        // automatically created on cash check
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), gw, alice, carol);
+            auto BTC = MPTTester({.env = env, .issuer = gw});
+            env(check::create(alice, carol, BTC(50)));
+            env.close();
+        }
+
+        // MPTRequireAuth flag is set and the account is not authorized.
+        // Can create check, which is consistent with the trustlines.
+        // It should fail on cash check.
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), gw, alice, carol);
+            auto BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .flags = tfMPTRequireAuth | MPTDEXFlags});
+            env(check::create(alice, carol, BTC(50)));
+            env.close();
+        }
+
         // MPTCanTransfer disabled
         {
             Env env{*this, features};
@@ -4596,6 +4771,87 @@ class MPToken_test : public beast::unit_test::suite
 
             // can't create
             env(check::create(alice, carol, MPT(100)), ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        // MPTokenIssuance object doesn't exist
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), gw, alice, carol);
+            auto USD =
+                MPTTester({.env = env, .issuer = gw, .holders = {alice}});
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, carol, USD(1)));
+            env.close();
+
+            // temMALFORMED because MPT is not USD. It doesn't matter if it
+            // exists or not
+            env(check::cash(carol, chkId, MPT(alice)(1)), ter(temMALFORMED));
+            env.close();
+        }
+        // MPToken object doesn't exist and the account is not the issuer of MPT
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), gw, alice, carol);
+
+            auto BTC = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice}, .pay = 1'000});
+
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+
+            env(check::create(alice, carol, BTC(1)));
+            env.close();
+
+            // MPToken is automatically created
+            env(check::cash(carol, chkId, BTC(1)));
+            env.close();
+        }
+        // MPTRequireAuth flag is set and the account is not authorized.
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), gw, alice, carol);
+
+            auto BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .flags = tfMPTRequireAuth | MPTDEXFlags,
+                 .authHolder = true});
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, carol, BTC(1)));
+            env.close();
+
+            env(check::cash(carol, chkId, BTC(1)), ter(tecPATH_PARTIAL));
+            env.close();
+        }
+
+        // MPTCanTransfer is not set and the account is not the issuer of MPT
+        {
+            Env env{*this, features};
+            env.fund(XRP(1'000), gw, alice, carol);
+
+            auto EUR = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol},
+                 .flags = tfMPTCanTrade});
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            // alice can't create since CanTransfer is not set
+            env(check::create(alice, carol, EUR(1)), ter(tecNO_PERMISSION));
+            env.close();
+
+            // consequently no check to cash
+            env(check::cash(carol, chkId, EUR(1)), ter(tecNO_ENTRY));
+            env.close();
+
+            // if issuer creates a check then carol can cash since
+            // it's a transfer from the issuer
+            uint256 const chkId1{getCheckIndex(gw, env.seq(gw))};
+            // alice can't create since CanTransfer is not set
+            env(check::create(gw, carol, EUR(1)));
+            env.close();
+
+            env(check::cash(carol, chkId1, EUR(1)));
             env.close();
         }
 
@@ -4661,11 +4917,123 @@ class MPToken_test : public beast::unit_test::suite
     {
         using namespace jtx;
         testcase("AMMClawback");
+        Account const gw{"gw"};
+        Account const alice{"alice"};
+        auto const USD = gw["USD"];
+
+        // MPTokenIssuance object doesn't exist
+        {
+            Env env(*this, features);
+            env.fund(XRP(1'000), gw, alice);
+            MPTTester BTC({.env = env, .issuer = gw});
+            AMM amm(env, gw, BTC(100), USD(100));
+            env(amm::ammClawback(gw, alice, USD, MPT(alice), std::nullopt),
+                ter(terNO_AMM));
+            env(amm::ammClawback(gw, alice, USD, BTC, MPT(alice)(100)),
+                ter(temBAD_AMOUNT));
+        }
+
+        // MPTLocked flag is set and the account is not the issuer of MPT -
+        // can still clawback since the issuer clawbacks
+        {
+            Env env(*this, features);
+            env.fund(XRP(100'000), gw, alice);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+
+            auto BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 40'000,
+                 .flags = tfMPTCanLock | tfMPTCanClawback | MPTDEXFlags});
+
+            env.trust(USD(10'000), alice);
+            env(pay(gw, alice, USD(10'000)));
+            env.close();
+
+            AMM amm(env, gw, BTC(100), USD(100));
+            env.close();
+            amm.deposit(alice, 1'000);
+            env.close();
+
+            BTC.set({.flags = tfMPTLock});
+
+            env(amm::ammClawback(gw, alice, BTC, USD, std::nullopt));
+        }
+
+        // MPTRequireAuth flag is set and the account is not authorized -
+        // can still clawback since the issuer clawbacks
+        {
+            Env env(*this, features);
+            env.fund(XRP(100'000), gw, alice);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+
+            auto BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 40'000,
+                 .flags = tfMPTRequireAuth | tfMPTCanClawback | MPTDEXFlags,
+                 .authHolder = true});
+
+            env.trust(USD(10'000), alice);
+            env(pay(gw, alice, USD(10'000)));
+            env.close();
+
+            AMM amm(env, gw, BTC(100), USD(100));
+            env.close();
+            amm.deposit(alice, 1'000);
+            env.close();
+
+            BTC.authorize(
+                {.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
+
+            env(amm::ammClawback(gw, alice, BTC, USD, std::nullopt));
+        }
+
+        // MPTCanTransfer is not set and the account is not the issuer of MPT -
+        // can't clawback since a holder can't deposit
+        {
+            Env env(*this, features);
+            env.fund(XRP(100'000), gw, alice);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+
+            auto BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 40'000,
+                 .flags = tfMPTCanClawback | tfMPTCanTrade,
+                 .authHolder = true});
+
+            env.trust(USD(10'000), alice);
+            env(pay(gw, alice, USD(10'000)));
+            env.close();
+
+            AMM amm(env, gw, BTC(100), USD(100));
+            env.close();
+            // alice can't deposit since MPTCanTransfer is not set
+            amm.deposit(DepositArg{
+                .account = alice,
+                .tokens = 1'000,
+                .err = ter(tecNO_PERMISSION)});
+            env.close();
+
+            // can't clawback since alice is not an LP
+            env(amm::ammClawback(gw, alice, BTC, USD, std::nullopt),
+                ter(tecAMM_BALANCE));
+        }
 
         {
-            Account const gw{"gw"};
-            Account const alice{"alice"};
-            auto const USD = gw["USD"];
             Env env(*this, features);
             fund(env, gw, {alice}, XRP(1'000), {USD(1'000)});
             MPTTester mpt(env, gw, {.fund = false});
@@ -4678,9 +5046,6 @@ class MPToken_test : public beast::unit_test::suite
         }
 
         {
-            Account const gw{"gw"};
-            Account const alice{"alice"};
-            auto const USD = gw["USD"];
             Env env(*this, features);
             fund(env, gw, {alice}, XRP(1'000), {USD(1'000)});
             MPTTester mpt(env, gw, {.fund = false});
@@ -4877,6 +5242,31 @@ class MPToken_test : public beast::unit_test::suite
 
             amm.deposit(DepositArg{
                 .account = alice, .asset1In = EUR(100), .err = ter(tecFROZEN)});
+        }
+
+        // Single deposit, another asset is unauthorized
+        {
+            Env env(*this);
+
+            env.fund(XRP(1'000), gw, alice);
+            env.close();
+
+            auto USDM = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+            MPT const USD = USDM;
+            MPT const EUR = MPTTester({.env = env, .issuer = gw});
+
+            env(pay(gw, alice, USD(100)));
+
+            AMM amm(env, gw, EUR(1'000), USD(1'000));
+
+            amm.deposit(DepositArg{
+                .account = alice,
+                .asset1In = EUR(100),
+                .err = ter(tecNO_AUTH)});
         }
 
         // Single withdraw, another asset is locked

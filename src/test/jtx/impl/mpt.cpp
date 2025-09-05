@@ -533,6 +533,13 @@ MPTTester::mpt(std::int64_t amount) const
     return ripple::test::jtx::MPT(issuer_.name(), *id_)(amount);
 }
 
+MPTTester::operator Asset() const
+{
+    if (!id_)
+        Throw<std::runtime_error>("MPT has not been created");
+    return Asset(*id_);
+}
+
 std::int64_t
 MPTTester::getBalance(Account const& account) const
 {

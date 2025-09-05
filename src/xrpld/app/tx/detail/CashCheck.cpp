@@ -403,7 +403,7 @@ CashCheck::doApply()
                     mPriorBalance < psb.fees().accountReserve(ownerCount + 1))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
-                                        "Insufficent reserve to create line.";
+                                        "Insufficient reserve to create line.";
 
                     return nullptr;
                 }

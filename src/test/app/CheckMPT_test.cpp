@@ -28,12 +28,6 @@ class CheckMPT_test : public beast::unit_test::suite
 {
     FeatureBitset const disallowIncoming{featureDisallowIncoming};
 
-    static uint256
-    getCheckIndex(AccountID const& account, std::uint32_t uSequence)
-    {
-        return keylet::check(account, uSequence).key;
-    }
-
     // Helper function that returns the Checks on an account.
     static std::vector<std::shared_ptr<SLE const>>
     checksOnAccount(test::jtx::Env& env, test::jtx::Account account)
@@ -364,7 +358,7 @@ class CheckMPT_test : public beast::unit_test::suite
             env.close();
         }
         {
-            // Frozen trust line.  Check creation should be similar to payment
+            // Frozen MPT.  Check creation should be similar to payment
             // behavior in the face of locked MPT.
             USDM.authorizeHolders({alice, bob});
             env(pay(gw1, alice, USD(25)));
@@ -380,7 +374,7 @@ class CheckMPT_test : public beast::unit_test::suite
             env.close();
             // Note that IOU returns tecPATH_DRY in this case.
             // IOU's internal error is terNO_LINE, which is
-            // considered ter retriable and changed to tecPATH_DRY.
+            // considered ter re-triable and changed to tecPATH_DRY.
             env(pay(alice, bob, USD(1)), ter(tecLOCKED));
             env.close();
             env(check::create(bob, alice, USD(50)), ter(tecFROZEN));
@@ -915,12 +909,6 @@ class CheckMPT_test : public beast::unit_test::suite
         env(check::create(alice, bob, USD(3)));
         env.close();
 
-#if 0
-        uint256 const chkIdFroz4{getCheckIndex(alice, env.seq(alice))};
-        env(check::create(alice, bob, USD(4)));
-        env.close();
-#endif
-
         uint256 const chkIdNoDest1{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, USD(1)));
         env.close();
@@ -929,7 +917,7 @@ class CheckMPT_test : public beast::unit_test::suite
         env(check::create(alice, bob, USD(2)), dest_tag(7));
         env.close();
 
-        // Same set of failing cases for both IOU and XRP check cashing.
+        // Same set of failing cases for both MPT and XRP check cashing.
         auto failingCases = [&env, &gw, &alice, &bob](
                                 uint256 const& chkId, STAmount const& amount) {
             // Bad fee.
@@ -1024,7 +1012,7 @@ class CheckMPT_test : public beast::unit_test::suite
         env(check::cancel(zoe, chkIdExp));
         env.close();
 
-        // Can we cash a check with frozen currency?
+        // Can we cash a check with frozen MPT?
         {
             env(pay(bob, alice, USD(20)));
             env.close();
@@ -1034,6 +1022,7 @@ class CheckMPT_test : public beast::unit_test::suite
             // Global freeze
             USDM.set({.flags = tfMPTLock});
 
+            // MPTLocked flag is set and the account is not the issuer of MPT
             env(check::cash(bob, chkIdFroz1, USD(1)), ter(tecPATH_PARTIAL));
             env.close();
             env(check::cash(bob, chkIdFroz1, check::DeliverMin(USD(1))),
@@ -1048,7 +1037,7 @@ class CheckMPT_test : public beast::unit_test::suite
             env.require(balance(alice, USD(19)));
             env.require(balance(bob, USD(1)));
 
-            // Freeze individual trustlines.
+            // Freeze individual MPT.
             USDM.set({.holder = alice, .flags = tfMPTLock});
             env(check::cash(bob, chkIdFroz2, USD(2)), ter(tecPATH_PARTIAL));
             env.close();
@@ -1063,7 +1052,7 @@ class CheckMPT_test : public beast::unit_test::suite
             env.require(balance(alice, USD(17)));
             env.require(balance(bob, USD(3)));
 
-            // Freeze bob's trustline.  bob can't cash the check.
+            // Freeze bob's MPT.  bob can't cash the check.
             USDM.set({.holder = bob, .flags = tfMPTLock});
             env(check::cash(bob, chkIdFroz3, USD(3)), ter(tecFROZEN));
             env.close();
@@ -1078,26 +1067,6 @@ class CheckMPT_test : public beast::unit_test::suite
             verifyDeliveredAmount(env, USD(3));
             env.require(balance(alice, USD(14)));
             env.require(balance(bob, USD(6)));
-
-#if 0
-            // Set bob's freeze bit in the other direction.  Check
-            // cashing fails.
-            env(trust(bob, USD(20), tfSetFreeze));
-            env.close();
-            env(check::cash(bob, chkIdFroz4, USD(4)), ter(terNO_LINE));
-            env.close();
-            env(check::cash(bob, chkIdFroz4, check::DeliverMin(USD(1))),
-                ter(terNO_LINE));
-            env.close();
-
-            // Clear bob's freeze bit and the check should be cashable.
-            env(trust(bob, USD(20), tfClearFreeze));
-            env.close();
-            env(check::cash(bob, chkIdFroz4, USD(4)));
-            env.close();
-            env.require(balance(alice, USD(10)));
-            env.require(balance(bob, USD(10)));
-#endif
         }
         {
             // Set the RequireDest flag on bob's account (after the check

@@ -277,6 +277,14 @@ public:
     PrettyAmount
     operator()(std::uint64_t amount) const;
 
+    operator Asset() const;
+
+    friend BookSpec
+    operator~(MPTTester const& mpt)
+    {
+        return ~MPT();
+    }
+
 private:
     using SLEP = std::shared_ptr<SLE const>;
     bool

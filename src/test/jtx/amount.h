@@ -440,6 +440,10 @@ public:
     MPT(Asset const& asset) : name(""), issuanceID(asset.get<MPTIssue>())
     {
     }
+    MPT(AccountID const& account, std::int32_t seq = 0)
+        : name(""), issuanceID(makeMptID(seq, account))
+    {
+    }
 
     ripple::MPTID const&
     mpt() const
