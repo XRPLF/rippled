@@ -637,7 +637,7 @@ inline std::string
 to_short_string(base_uint<Bits, Tag> const& a)
 {
     // LCOV_EXCL_START
-    if constexpr (a.bytes <= 4)
+    if constexpr (base_uint<Bits, Tag>::bytes <= 4)
         return to_string(a);
     else
         // LCOV_EXCL_STOP
