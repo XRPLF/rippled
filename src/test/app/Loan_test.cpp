@@ -1041,7 +1041,7 @@ class Loan_test : public beast::unit_test::suite
                       lender})
                 {
                     // Freeze evan
-                    deepfreeze(evan);
+                    deepfreeze(account);
 
                     // Try to create a loan with a deep frozen line
                     env(set(evan,
@@ -1054,7 +1054,7 @@ class Loan_test : public beast::unit_test::suite
 
                     // Unfreeze evan
                     BEAST_EXPECT(unfreeze);
-                    unfreeze(evan);
+                    unfreeze(account);
 
                     // Ensure the line is unfrozen with a request that is fine
                     // except too it requests more principal than the broker can
