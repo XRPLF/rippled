@@ -20,26 +20,15 @@
 #include <xrpld/app/tx/detail/LoanSet.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
-#include <xrpld/app/tx/detail/SignerEntries.h>
-#include <xrpld/app/tx/detail/VaultCreate.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -231,28 +220,41 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     Asset const asset = vault->at(sfAsset);
+    auto const vaultPseudo = vault->at(sfAccount);
 
     if (auto const ter = canAddHolding(ctx.view, asset))
         return ter;
 
-    if (auto const ret = checkFrozen(ctx.view, brokerOwner, asset))
+    // vaultPseudo is going to send funds, so it can't be frozen.
+    if (auto const ret = checkFrozen(ctx.view, vaultPseudo, asset))
     {
-        JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
+        JLOG(ctx.j.warn()) << "Vault pseudo-account is frozen.";
         return ret;
     }
+    // borrower is eventually going to have to pay back the loan, so it can't be
+    // frozen now. It is also going to receive funds, so it can't be deep
+    // frozen, but being frozen is a prerequisite for being deep frozen, so
+    // checking the one is sufficient.
+    if (auto const ret = checkFrozen(ctx.view, borrower, asset))
+    {
+        JLOG(ctx.j.warn()) << "Borrower account is frozen.";
+        return ret;
+    }
+    // TODO: Remove when LoanDraw is combined with LoanSet
+    // brokerPseudo is eventually going to send funds to the borrower, so it
+    // can't be frozen now. It is also going to receive funds, so it can't be
+    // deep frozen, but being frozen is a prerequisite for being deep frozen, so
+    // checking the one is sufficient.
     if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
     {
         JLOG(ctx.j.warn()) << "Broker pseudo-account account is frozen.";
         return ret;
     }
-    if (auto const ret = checkDeepFrozen(ctx.view, borrower, asset))
+    // brokerOwner is going to receive funds if there's an origination fee, so
+    // it can't be deep frozen
+    if (auto const ret = checkDeepFrozen(ctx.view, brokerOwner, asset))
     {
-        JLOG(ctx.j.warn()) << "Borrower account is deep frozen.";
-        return ret;
-    }
-    if (auto const ret = checkDeepFrozen(ctx.view, brokerPseudo, asset))
-    {
-        JLOG(ctx.j.warn()) << "Broker pseudo-account account is deep frozen.";
+        JLOG(ctx.j.warn()) << "Broker owner account is frozen.";
         return ret;
     }
 
@@ -264,7 +266,24 @@ LoanSet::preclaim(PreclaimContext const& ctx)
             << "Insufficient assets available in the Vault to fund the loan.";
         return tecINSUFFICIENT_FUNDS;
     }
-    auto const newDebtTotal = brokerSle->at(sfDebtTotal) + principalRequested;
+
+    TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
+    auto const paymentInterval =
+        tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
+    auto const paymentTotal = tx[~sfPaymentTotal].value_or(defaultPaymentTotal);
+    TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+
+    auto const totalInterest = loanInterestOutstandingMinusFee(
+        asset,
+        principalRequested,
+        principalRequested,
+        interestRate,
+        paymentInterval,
+        paymentTotal,
+        managementFeeRate);
+
+    auto const newDebtTotal =
+        brokerSle->at(sfDebtTotal) + principalRequested + totalInterest;
     if (auto const debtMaximum = brokerSle->at(sfDebtMaximum);
         debtMaximum != 0 && debtMaximum < newDebtTotal)
     {

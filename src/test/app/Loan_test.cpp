@@ -925,6 +925,17 @@ class Loan_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(brokerSle))
                 return;
 
+            auto const vaultPseudo = [&]() {
+                auto const vaultSle =
+                    env.le(keylet::vault(brokerSle->at(sfVaultID)));
+                if (!BEAST_EXPECT(vaultSle))
+                    // This will be wrong, but the test has failed anyway.
+                    return lender;
+                auto const vaultPseudo =
+                    Account("Vault pseudo-account", vaultSle->at(sfAccount));
+                return vaultPseudo;
+            }();
+
             auto const [freeze, deepfreeze, unfreeze, expectedResult] =
                 [&]() -> std::tuple<
                           std::function<void(Account const& holder)>,
@@ -976,8 +987,8 @@ class Loan_test : public beast::unit_test::suite
                 }
             }();
 
-            // Try freezing both the lender and the pseudo-account
-            for (auto const& account : {lender, pseudoAcct})
+            // Try freezing the accounts that can't be frozen
+            for (auto const& account : {vaultPseudo, evan, pseudoAcct})
             {
                 if (freeze)
                 {
@@ -1020,29 +1031,42 @@ class Loan_test : public beast::unit_test::suite
                 // automatically.)
                 env(trust(evan, issuer[iouCurrency](100'000)));
 
-                // Freeze evan
-                deepfreeze(evan);
+                for (auto const& account :
+                     {// these accounts can't be frozen, which deep freeze
+                      // implies
+                      vaultPseudo,
+                      evan,
+                      pseudoAcct,
+                      // these accounts can't be deep frozen
+                      lender})
+                {
+                    // Freeze evan
+                    deepfreeze(evan);
 
-                // Try to create a loan with a deep frozen line
-                env(set(evan, broker.brokerID, debtMaximumRequest, startDate),
-                    sig(sfCounterpartySignature, lender),
-                    loanSetFee,
-                    ter(expectedResult));
+                    // Try to create a loan with a deep frozen line
+                    env(set(evan,
+                            broker.brokerID,
+                            debtMaximumRequest,
+                            startDate),
+                        sig(sfCounterpartySignature, lender),
+                        loanSetFee,
+                        ter(expectedResult));
 
-                // Unfreeze evan
-                BEAST_EXPECT(unfreeze);
-                unfreeze(evan);
+                    // Unfreeze evan
+                    BEAST_EXPECT(unfreeze);
+                    unfreeze(evan);
 
-                // Ensure the line is unfrozen with a request that is fine
-                // except too it requests more principal than the broker can
-                // carry
-                env(set(evan,
-                        broker.brokerID,
-                        debtMaximumRequest + 1,
-                        startDate),
-                    sig(sfCounterpartySignature, lender),
-                    loanSetFee,
-                    ter(tecLIMIT_EXCEEDED));
+                    // Ensure the line is unfrozen with a request that is fine
+                    // except too it requests more principal than the broker can
+                    // carry
+                    env(set(evan,
+                            broker.brokerID,
+                            debtMaximumRequest + 1,
+                            startDate),
+                        sig(sfCounterpartySignature, lender),
+                        loanSetFee,
+                        ter(tecLIMIT_EXCEEDED));
+                }
             }
         }
 

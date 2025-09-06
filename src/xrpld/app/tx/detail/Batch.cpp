@@ -418,7 +418,7 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             requiredSigners.insert(innerAccount);
         // Some transactions have a Counterparty, who must also sign the
         // transaction if they are not the outer account
-        if (auto const counterparty = stx.at(~sfCounterparty);
+        if (auto const counterparty = rb.at(~sfCounterparty);
             counterparty && counterparty != outerAccount)
             requiredSigners.insert(*counterparty);
     }

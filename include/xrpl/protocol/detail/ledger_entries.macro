@@ -558,7 +558,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfPreviousPaymentDate,  soeREQUIRED},
     {sfNextPaymentDueDate,   soeREQUIRED},
     {sfPaymentRemaining,     soeREQUIRED},
-    {sfAssetsAvailable,      soeREQUIRED},
+    {sfAssetsAvailable,      soeDEFAULT},
     {sfPrincipalOutstanding, soeREQUIRED},
     // Save the original request amount for rounding / scaling of
     // other computations, particularly for IOUs

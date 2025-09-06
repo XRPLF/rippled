@@ -133,6 +133,8 @@ determineAsset(
     // This check only applies to IOUs
     auto const holder = amount.getIssuer();
 
+    // holder can be the submitting account (the issuer of the asset) if a
+    // LoanBrokerID was provided in the transaction.
     if (holder == account)
     {
         return amount.asset();

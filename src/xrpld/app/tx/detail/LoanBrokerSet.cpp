@@ -20,28 +20,14 @@
 #include <xrpld/app/tx/detail/LoanBrokerSet.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
-#include <xrpld/app/tx/detail/SignerEntries.h>
-#include <xrpld/app/tx/detail/VaultCreate.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
 
@@ -151,6 +137,7 @@ LoanBrokerSet::doApply()
     else
     {
         // Create a new LoanBroker pointing back to the given Vault
+        auto const vaultID = tx[sfVaultID];
         auto const sleVault = view.read(keylet::vault(vaultID));
         auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const sequence = tx.getSeqValue();
