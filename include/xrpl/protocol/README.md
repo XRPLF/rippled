@@ -23,9 +23,9 @@ optional fields easier to read:
   if it exists, or nothing if it doesn't." This usage of the
   tilde/bitwise NOT operator is not standard outside of the
   `rippled` codebase.
-    - As a consequence of this, `x[~sfFoo] = y[~sfFoo]`
-      assigns the value of Foo from y to x, including omitting
-      Foo from x if it doesn't exist in y.
+  - As a consequence of this, `x[~sfFoo] = y[~sfFoo]`
+    assigns the value of Foo from y to x, including omitting
+    Foo from x if it doesn't exist in y.
 
 Typically, for things that are guaranteed to exist, you use
 `x[sfFoo]` and avoid having to deal with a container that may

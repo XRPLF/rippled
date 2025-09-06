@@ -49,13 +49,6 @@ public:
     preclaim(PreclaimContext const& ctx);
 
     static TER
-    authorize(
-        ApplyView& view,
-        STTx const& tx,
-        beast::Journal journal,
-        MPTAuthorizeArgs const& args);
-
-    static TER
     createMPToken(
         ApplyView& view,
         MPTID const& mptIssuanceID,

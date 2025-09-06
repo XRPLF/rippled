@@ -5,42 +5,39 @@ platforms: Linux, macOS, or Windows.
 
 [BUILD.md]: ../../BUILD.md
 
-
 ## Linux
 
 Package ecosystems vary across Linux distributions,
 so there is no one set of instructions that will work for every Linux user.
-These instructions are written for Ubuntu 22.04.
-They are largely copied from the [script][1] used to configure our Docker
-container for continuous integration.
-That script handles many more responsibilities.
-These instructions are just the bare minimum to build one configuration of
-rippled.
-You can check that codebase for other Linux distributions and versions.
-If you cannot find yours there,
-then we hope that these instructions can at least guide you in the right
-direction.
+The instructions below are written for Debian 12 (Bookworm).
 
 ```
-apt update
-apt install --yes curl git libssl-dev pipx python3.10-dev python3-pip make g++-11 libprotobuf-dev protobuf-compiler
+export GCC_RELEASE=12
+sudo apt update
+sudo apt install --yes gcc-${GCC_RELEASE} g++-${GCC_RELEASE} python3-pip \
+  python-is-python3 python3-venv python3-dev curl wget ca-certificates \
+  git build-essential cmake ninja-build libc6-dev
+sudo pip install --break-system-packages conan
 
-curl --location --remote-name \
-  "https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1.tar.gz"
-tar -xzf cmake-3.25.1.tar.gz
-rm cmake-3.25.1.tar.gz
-cd cmake-3.25.1
-./bootstrap --parallel=$(nproc)
-make --jobs $(nproc)
-make install
-cd ..
-
-pipx install 'conan<2'
-pipx ensurepath
+sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${GCC_RELEASE} 999
+sudo update-alternatives --install \
+  /usr/bin/gcc gcc /usr/bin/gcc-${GCC_RELEASE} 100 \
+  --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_RELEASE} \
+  --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-${GCC_RELEASE} \
+  --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-${GCC_RELEASE} \
+  --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-${GCC_RELEASE} \
+  --slave /usr/bin/gcov gcov /usr/bin/gcov-${GCC_RELEASE} \
+  --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-${GCC_RELEASE} \
+  --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-dump-${GCC_RELEASE} \
+  --slave /usr/bin/lto-dump lto-dump /usr/bin/lto-dump-${GCC_RELEASE}
+sudo update-alternatives --auto cc
+sudo update-alternatives --auto gcc
 ```
 
-[1]: https://github.com/thejohnfreeman/rippled-docker/blob/master/ubuntu-22.04/install.sh
-
+If you use different Linux distribution, hope the instruction above can guide
+you in the right direction. We try to maintain compatibility with all recent
+compiler releases, so if you use a rolling distribution like e.g. Arch or CentOS
+then there is a chance that everything will "just work".
 
 ## macOS
 
@@ -52,6 +49,33 @@ minimum required (see [BUILD.md][]).
 ```
 clang --version
 ```
+
+### Install Xcode Specific Version (Optional)
+
+If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang.
+This will likely cause issues building rippled. You may want to install a specific version of Xcode:
+
+1. **Download Xcode**
+   - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)
+   - Sign in with your Apple Developer account
+   - Search for an Xcode version that includes **Apple Clang (Expected Version)**
+   - Download the `.xip` file
+
+2. **Install and Configure Xcode**
+
+   ```bash
+   # Extract the .xip file and rename for version management
+   # Example: Xcode_16.2.app
+
+   # Move to Applications directory
+   sudo mv Xcode_16.2.app /Applications/
+
+   # Set as default toolchain (persistent)
+   sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+   # Set as environment variable (temporary)
+   export DEVELOPER_DIR=/Applications/Xcode_16.2.app/Contents/Developer
+   ```
 
 The command line developer tools should include Git too:
 
@@ -72,10 +96,10 @@ and use it to install Conan:
 brew update
 brew install xz
 brew install pyenv
-pyenv install 3.10-dev
-pyenv global 3.10-dev
+pyenv install 3.11
+pyenv global 3.11
 eval "$(pyenv init -)"
-pip install 'conan<2'
+pip install 'conan'
 ```
 
 Install CMake with Homebrew too:

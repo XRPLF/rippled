@@ -79,4 +79,3 @@ mirror the JSON test as much as possible.
 Refer to the Protocol Buffers [language
 guide](https://developers.google.com/protocol-buffers/docs/proto3)
 for more detailed information about Protocol Buffers.
-

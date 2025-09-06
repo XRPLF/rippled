@@ -1,6 +1,39 @@
-# .pre-commit-config.yaml
+# To run pre-commit hooks, first install pre-commit:
+# - `pip install pre-commit==${PRE_COMMIT_VERSION}`
+#
+# Then, run the following command to install the git hook scripts:
+# - `pre-commit install`
+# You can run all configured hooks against all files with:
+# - `pre-commit run --all-files`
+# To manually run a specific hook, use:
+# - `pre-commit run <hook_id> --all-files`
+# To run the hooks against only the staged files, use:
+# - `pre-commit run`
 repos:
-- repo: https://github.com/pre-commit/mirrors-clang-format
-  rev: v18.1.8
-  hooks:
-  - id: clang-format
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: check-merge-conflict
+        args: [--assume-in-merge]
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: 7d85583be209cb547946c82fbe51f4bc5dd1d017 # frozen: v18.1.8
+    hooks:
+      - id: clang-format
+        args: [--style=file]
+        "types_or": [c++, c, proto]
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: 5ba47274f9b181bce26a5150a725577f3c336011 # frozen: v3.6.2
+    hooks:
+      - id: prettier
+
+exclude: |
+  (?x)^(
+      external/.*|
+      .github/scripts/levelization/results/.*\.txt|
+      conan\.lock
+  )$

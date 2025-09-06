@@ -248,7 +248,7 @@ AMMLiquidity<TIn, TOut>::getOffer(
             return offer;
         }
 
-        JLOG(j_.error()) << "AMMLiquidity::getOffer, failed "
+        JLOG(j_.debug()) << "AMMLiquidity::getOffer, no valid offer "
                          << ammContext_.multiPath() << " "
                          << ammContext_.curIters() << " "
                          << (clobQuality ? clobQuality->rate() : STAmount{})

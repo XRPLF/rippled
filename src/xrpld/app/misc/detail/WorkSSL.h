@@ -22,9 +22,9 @@
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/net/HTTPClientSSLContext.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/net/HTTPClientSSLContext.h>
 
 #include <boost/asio/ssl.hpp>
 #include <boost/format.hpp>
@@ -52,7 +52,7 @@ public:
         std::string const& host,
         std::string const& path,
         std::string const& port,
-        boost::asio::io_service& ios,
+        boost::asio::io_context& ios,
         beast::Journal j,
         Config const& config,
         endpoint_type const& lastEndpoint,

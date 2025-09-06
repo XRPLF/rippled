@@ -2,15 +2,16 @@
 
 ## Introduction.
 
-By default, an RPC handler runs as an uninterrupted task on the JobQueue.  This
+By default, an RPC handler runs as an uninterrupted task on the JobQueue. This
 is fine for commands that are fast to compute but might not be acceptable for
 tasks that require multiple parts or are large, like a full ledger.
 
-For this purpose, the rippled RPC handler allows *suspension with continuation*
+For this purpose, the rippled RPC handler allows _suspension with continuation_
+
 - a request to suspend execution of the RPC response and to continue it after
-some function or job has been executed.  A default continuation is supplied
-which simply reschedules the job on the JobQueue, or the programmer can supply
-their own.
+  some function or job has been executed. A default continuation is supplied
+  which simply reschedules the job on the JobQueue, or the programmer can supply
+  their own.
 
 ## The classes.
 
@@ -28,16 +29,16 @@ would prevent any other task from making forward progress when you call a
 `Callback`.
 
 A `Continuation` is a function that is given a `Callback` and promises to call
-it later.  A `Continuation` guarantees to call the `Callback` exactly once at
+it later. A `Continuation` guarantees to call the `Callback` exactly once at
 some point in the future, but it does not have to be immediately or even in the
 current thread.
 
-A `Suspend` is a function belonging to a `Coroutine`.  A `Suspend` runs a
+A `Suspend` is a function belonging to a `Coroutine`. A `Suspend` runs a
 `Continuation`, passing it a `Callback` that continues execution of the
 `Coroutine`.
 
 And finally, a `Coroutine` is a `std::function` which is given a
-`Suspend`.  This is what the RPC handler gives to the coroutine manager,
+`Suspend`. This is what the RPC handler gives to the coroutine manager,
 expecting to get called back with a `Suspend` and to be able to start execution.
 
 ## The flow of control.

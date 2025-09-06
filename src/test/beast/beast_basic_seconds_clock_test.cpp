@@ -33,6 +33,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(basic_seconds_clock, chrono, beast);
+BEAST_DEFINE_TESTSUITE(basic_seconds_clock, beast, beast);
 
 }  // namespace beast

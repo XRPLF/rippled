@@ -128,6 +128,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(Handler, test, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(Handler, rpc, ripple);
 
 }  // namespace ripple::test

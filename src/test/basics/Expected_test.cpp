@@ -243,7 +243,7 @@ struct Expected_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Expected, ripple_basics, ripple);
+BEAST_DEFINE_TESTSUITE(Expected, basics, ripple);
 
 }  // namespace test
 }  // namespace ripple

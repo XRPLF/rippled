@@ -1655,7 +1655,7 @@ vp_base_squelch_max_selected_peers=2
             };
             auto handshake = [&](int outboundEnable, int inboundEnable) {
                 beast::IP::Address addr =
-                    boost::asio::ip::address::from_string("172.1.1.100");
+                    boost::asio::ip::make_address("172.1.1.100");
 
                 setEnv(outboundEnable);
                 auto request = ripple::makeRequest(
@@ -1748,8 +1748,8 @@ class reduce_relay_simulate_test : public reduce_relay_test
     }
 };
 
-BEAST_DEFINE_TESTSUITE(reduce_relay, ripple_data, ripple);
-BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, ripple_data, ripple);
+BEAST_DEFINE_TESTSUITE(reduce_relay, overlay, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, overlay, ripple);
 
 }  // namespace test
 

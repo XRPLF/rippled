@@ -785,7 +785,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerRPC, app, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerRPC, rpc, ripple);
 
 }  // namespace test
 }  // namespace ripple
