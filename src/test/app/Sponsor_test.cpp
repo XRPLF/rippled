@@ -52,6 +52,112 @@ public:
     }
 
     void
+    testSingleSigning()
+    {
+        testcase("Single signing");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const invalid("invalid");
+
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        // Signature doesn't exist
+        auto tx = noop(alice);
+        tx[sfSponsor.jsonName][sfAccount.jsonName] = sponsor.human();
+        tx[sfSponsor.jsonName][sfSigningPubKey.jsonName] =
+            strHex(sponsor.pk().slice());
+
+        env(tx,
+            fee(XRP(1)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            ter(telENV_RPC_FAILED));
+
+        // Invalid signature
+        tx[sfSponsor.jsonName][sfTxnSignature.jsonName] = "DEADBEEF";
+        env(tx,
+            fee(XRP(1)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            ter(telENV_RPC_FAILED));
+
+        // Signer account doesn't exist
+        env(noop(alice),
+            fee(XRP(1)),
+            sponsor::as(invalid, tfSponsorReserve),
+            sponsor::sig(invalid),
+            ter(tefBAD_AUTH));
+
+        // Success
+        env(noop(alice),
+            fee(XRP(1)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            sponsor::sig(sponsor),
+            ter(tesSUCCESS));
+    }
+
+    void
+    testMultiSigning()
+    {
+        testcase("Multi signing");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const invalid("invalid");
+
+        Account const signer1("signer1");
+        Account const signer2("signer2");
+
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        env(signers(sponsor, 1, {{signer1, 1}, {signer2, 1}}));
+        env.close();
+
+        // Signature doesn't exist
+        env(noop(alice),
+            fee(XRP(1)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            ter(telENV_RPC_FAILED));
+
+        // Invalid signature
+        auto tx = noop(alice);
+        auto& signers1 =
+            tx[sfSponsor.jsonName][sfSigners.jsonName][0U][sfSigner.jsonName];
+        signers1[sfAccount.jsonName] = signer1.human();
+        signers1[sfSigningPubKey.jsonName] = strHex(signer1.pk().slice());
+        signers1[sfTxnSignature.jsonName] = "DEADBEEF";
+        env(tx,
+            fee(XRP(1)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            ter(telENV_RPC_FAILED));
+
+        // Signer account doesn't exist
+        env(noop(alice),
+            fee(XRP(1)),
+            sponsor::as(invalid, tfSponsorReserve),
+            sponsor::msig({signer1}),
+            ter(tefBAD_AUTH));
+
+        env(noop(alice),
+            fee(XRP(1)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            sponsor::msig({signer1}),
+            ter(tesSUCCESS));
+
+        env(signers(sponsor, 2, {{signer1, 1}, {signer2, 1}}));
+        env.close();
+
+        env(noop(alice),
+            fee(XRP(1)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            sponsor::msig({signer1, signer2}),
+            ter(tesSUCCESS));
+    }
+
+    void
     testTransferSponsor()
     {
         testcase("Transfer Sponsor");
@@ -658,6 +764,8 @@ public:
     run() override
     {
         testDisabled();
+        testSingleSigning();
+        testMultiSigning();
         testTransferSponsor();
         testSponsorFee();
         testSponsorAccount();

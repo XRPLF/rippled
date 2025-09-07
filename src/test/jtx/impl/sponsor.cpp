@@ -21,6 +21,7 @@
 #include <test/jtx/utility.h>
 
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/Sponsor.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -50,61 +51,70 @@ as::operator()(Env& env, JTx& jt) const
 void
 sig::operator()(Env& env, JTx& jt) const
 {
-    std::optional<STObject> st;
-    try
-    {
-        // required to cast the STObject to STTx
-        jt.jv[jss::SigningPubKey] = "";
-        st = parse(jt.jv);
-    }
-    catch (parse_error const&)
-    {
-        env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
-    }
+    auto const signer = signer_;
 
     jt.jv[sfSponsor.jsonName][sfAccount.jsonName] = signer.acct.human();
     jt.jv[sfSponsor.jsonName][sfSigningPubKey.jsonName] =
         strHex(signer.sig.pk().slice());
 
-    Serializer ss;
-    ss.add32(HashPrefix::txSign);
-    parse(jt.jv).addWithoutSigningFields(ss);
-    auto const sig =
-        ripple::sign(signer.acct.pk(), signer.acct.sk(), ss.slice());
-    jt.jv[sfSponsor.jsonName][jss::TxnSignature] =
-        strHex(Slice{sig.data(), sig.size()});
-}
-
-void
-msig::operator()(Env& env, JTx& jt) const
-{
-    auto const mySigners = signers;
-    jt.signer = [mySigners, &env](Env&, JTx& jtx) {
-        jtx[sfSponsor.getJsonName()][sfSigningPubKey.getJsonName()] = "";
+    jt.sponsorSigner = [signer, &env](Env&, JTx& jtx) {
         std::optional<STObject> st;
         try
         {
-            st = parse(jtx.jv);
+            Json::Value jv = jtx.jv;
+            st = parse(jv);
         }
         catch (parse_error const&)
         {
             env.test.log << pretty(jtx.jv) << std::endl;
             Rethrow();
         }
-        auto& js = jtx[sfSponsor.getJsonName()][sfSigners.getJsonName()];
+
+        auto const sst = st->getFieldObject(sfSponsor);
+
+        auto const signingData =
+            STTx::getSponsorSigningData(STTx{std::move(*st)});
+
+        auto const sig = ripple::sign(
+            signer.acct.pk(), signer.acct.sk(), makeSlice(signingData));
+        jtx.jv[sfSponsor.jsonName][jss::TxnSignature] =
+            strHex(Slice{sig.data(), sig.size()});
+    };
+}
+
+void
+msig::operator()(Env& env, JTx& jt) const
+{
+    jt.jv[sfSponsor.jsonName][sfSigningPubKey.jsonName] = "";
+    auto const mySigners = signers;
+    jt.sponsorSigner = [mySigners, &env](Env&, JTx& jtx) {
+        std::optional<STObject> st;
+        try
+        {
+            Json::Value jv = jtx.jv;
+            jv[jss::SigningPubKey] = "";
+            st = parse(jv);
+        }
+        catch (parse_error const&)
+        {
+            env.test.log << pretty(jtx.jv) << std::endl;
+            Rethrow();
+        }
+        auto const sst = st->getFieldObject(sfSponsor);
+        auto& js = jtx[sfSponsor.jsonName][sfSigners.jsonName];
         for (std::size_t i = 0; i < mySigners.size(); ++i)
         {
             auto const& e = mySigners[i];
-            auto& jo = js[i][sfSigner.getJsonName()];
+            auto& jo = js[i][sfSigner.jsonName];
             jo[jss::Account] = e.acct.human();
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
+            Serializer ss{
+                buildSponsorMultiSigningData(*st, e.acct.id(), sst.getFlags())};
+
             auto const sig = ripple::sign(
                 *publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
-            jo[sfTxnSignature.getJsonName()] =
-                strHex(Slice{sig.data(), sig.size()});
+            jo[sfTxnSignature.jsonName] = strHex(Slice{sig.data(), sig.size()});
         }
     };
 }

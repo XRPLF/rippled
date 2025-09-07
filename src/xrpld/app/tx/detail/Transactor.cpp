@@ -647,10 +647,11 @@ Transactor::checkSign(PreclaimContext const& ctx)
         return checkMultiSign(ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
     }
 
-    // if (ctx.tx.isFieldPresent(sfSponsor))
-    // {
-    //     // TODO: check the sponsor signature
-    // }
+    if (ctx.tx.isFieldPresent(sfSponsor))
+    {
+        if (auto const ret = checkSponsorSign(ctx); !isTesSuccess(ret))
+            return ret;
+    }
 
     // Check Single Sign
     XRPL_ASSERT(
@@ -718,6 +719,51 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
                 return ret;
         }
     }
+    return ret;
+}
+
+NotTEC
+Transactor::checkSponsorSign(PreclaimContext const& ctx)
+{
+    NotTEC ret = tesSUCCESS;
+
+    if (!ctx.tx.isFieldPresent(sfSponsor))
+        return tesSUCCESS;
+
+    auto const sponsorObj = ctx.tx.getFieldObject(sfSponsor);
+
+    auto const sponsorAcc = sponsorObj.getAccountID(sfAccount);
+    Blob const& pkSigner = sponsorObj.getFieldVL(sfSigningPubKey);
+
+    auto const sleAccount = ctx.view.read(keylet::account(sponsorAcc));
+    if (!sleAccount)
+        return tefBAD_AUTH;
+
+    if (pkSigner.empty())
+    {
+        STArray const& txSigners(sponsorObj.getFieldArray(sfSigners));
+        if (ret = checkMultiSign(
+                ctx.view, sponsorAcc, txSigners, ctx.flags, ctx.j);
+            !isTesSuccess(ret))
+            return ret;
+    }
+    else
+    {
+        // LCOV_EXCL_START
+        if (!publicKeyType(makeSlice(pkSigner)))
+            return tefBAD_AUTH;
+        // LCOV_EXCL_STOP
+
+        auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
+
+        if (ret = checkSingleSign(
+                idSigner, sponsorAcc, sleAccount, ctx.view.rules(), ctx.j);
+            !isTesSuccess(ret))
+        {
+            return ret;
+        }
+    }
+
     return ret;
 }
 

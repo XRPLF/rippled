@@ -47,10 +47,8 @@ void
 sign(Json::Value& jv, Account const& account)
 {
     jv[jss::SigningPubKey] = strHex(account.pk().slice());
-    Serializer ss;
-    ss.add32(HashPrefix::txSign);
-    parse(jv).addWithoutSigningFields(ss);
-    auto const sig = ripple::sign(account.pk(), account.sk(), ss.slice());
+    auto const blob = STTx::getSigningData(STTx{parse(jv)});
+    auto const sig = ripple::sign(account.pk(), account.sk(), makeSlice(blob));
     jv[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 }
 

@@ -49,6 +49,7 @@
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/Sponsor.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
@@ -184,13 +185,24 @@ STTx::getMentionedAccounts() const
     return list;
 }
 
-static Blob
-getSigningData(STTx const& that)
+Blob
+STTx::getSigningData(STTx const& that)
 {
     Serializer s;
     s.add32(HashPrefix::txSign);
     that.addWithoutSigningFields(s);
+    if (that.isFieldPresent(sfSponsor))
+    {
+        auto const sst = that.getFieldObject(sfSponsor);
+        addSerializeSponsorData(s, sst.getAccountID(sfAccount), sst.getFlags());
+    }
     return s.getData();
+}
+
+Blob
+STTx::getSponsorSigningData(STTx const& that)
+{
+    return startSponsorSigningData(that).getData();
 }
 
 uint256
@@ -238,7 +250,7 @@ STTx::getFeePayer() const
 {
     if (isFieldPresent(sfSponsor))
     {
-        if (getFieldObject(sfSponsor)[sfFlags] & tfSponsorFee)
+        if (getFieldObject(sfSponsor).isFlag(tfSponsorFee))
         {
             return getFieldObject(sfSponsor)[sfAccount];
         }
@@ -318,6 +330,42 @@ STTx::checkBatchSign(
             << "Batch signature check failed: " << e.what();
     }
     return Unexpected("Internal batch signature check failure.");
+}
+
+Expected<void, std::string>
+STTx::checkSponsorSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
+{
+    try
+    {
+        XRPL_ASSERT(
+            isFieldPresent(sfSponsor),
+            "STTx::checkSponsorSign: not a sponsored transaction");
+        if (!isFieldPresent(sfSponsor))
+        {
+            JLOG(debugLog().fatal()) << "not a sponsored transaction";
+            return Unexpected("Not a sponsored transaction.");
+        }
+        STObject const& sponsorObj{getFieldObject(sfSponsor)};
+
+        Blob const& signingPubKey = sponsorObj.getFieldVL(sfSigningPubKey);
+
+        auto const result = signingPubKey.empty()
+            ? checkSponsorMultiSign(sponsorObj, requireCanonicalSig, rules)
+            : checkSponsorSingleSign(sponsorObj, requireCanonicalSig);
+
+        if (!result)
+            return result;
+
+        return {};
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(debugLog().error())
+            << "Sponsor signature check failed: " << e.what();
+    }
+    return Unexpected("Sponsor signature check failure.");
 }
 
 Json::Value
@@ -458,6 +506,17 @@ STTx::checkBatchSingleSign(
 }
 
 Expected<void, std::string>
+STTx::checkSponsorSingleSign(
+    STObject const& signer,
+    RequireFullyCanonicalSig requireCanonicalSig) const
+{
+    auto const data = getSponsorSigningData(*this);
+    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
+        (requireCanonicalSig == STTx::RequireFullyCanonicalSig::yes);
+    return singleSignHelper(signer, makeSlice(data), fullyCanonical);
+}
+
+Expected<void, std::string>
 multiSignHelper(
     STObject const& signerObj,
     bool const fullyCanonical,
@@ -465,9 +524,9 @@ multiSignHelper(
     Rules const& rules)
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
-    // attempting multi-signing and we just have a bad SigningPubKey.
+    // attempting multi-signing and we just have a bad Signers.
     if (!signerObj.isFieldPresent(sfSigners))
-        return Unexpected("Empty SigningPubKey.");
+        return Unexpected("Empty Signers.");
 
     // We don't allow both an sfSigners and an sfTxnSignature.  Both fields
     // being present would indicate that the transaction is signed both ways.
@@ -555,6 +614,32 @@ STTx::checkBatchMultiSign(
         [&dataStart](AccountID const& accountID) mutable -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
+            return s;
+        },
+        rules);
+}
+
+Expected<void, std::string>
+STTx::checkSponsorMultiSign(
+    STObject const& sponsorObj,
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
+{
+    bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
+        (requireCanonicalSig == RequireFullyCanonicalSig::yes);
+
+    // We can ease the computational load inside the loop a bit by
+    // pre-constructing part of the data that we hash.  Fill a Serializer
+    // with the stuff that stays constant from signature to signature.
+    auto const data = startSponsorSigningData(*this);
+    Serializer dataStart = Serializer(data.data(), data.size());
+
+    return multiSignHelper(
+        sponsorObj,
+        fullyCanonical,
+        [&dataStart](AccountID const& accountID) mutable -> Serializer {
+            Serializer s = dataStart;
+            finishSponsorSigningData(accountID, s);
             return s;
         },
         rules);
@@ -846,6 +931,92 @@ isPseudoTx(STObject const& tx)
     auto const tt = safe_cast<TxType>(*t);
 
     return tt == ttAMENDMENT || tt == ttFEE || tt == ttUNL_MODIFY;
+}
+
+// Questions regarding buildMultiSigningData:
+//
+// Why do we include the Signer.Account in the blob to be signed?
+//
+// Unless you include the Account which is signing in the signing blob,
+// you could swap out any Signer.Account for any other, which may also
+// be on the SignerList and have a RegularKey matching the
+// Signer.SigningPubKey.
+//
+// That RegularKey may be set to allow some 3rd party to sign transactions
+// on the account's behalf, and that RegularKey could be common amongst all
+// users of the 3rd party. That's just one example of sharing the same
+// RegularKey amongst various accounts and just one vulnerability.
+//
+//   "When you have something that's easy to do that makes entire classes of
+//    attacks clearly and obviously impossible, you need a damn good reason
+//    not to do it."  --  David Schwartz
+//
+// Why would we include the signingFor account in the blob to be signed?
+//
+// In the current signing scheme, the account that a signer is `signing
+// for/on behalf of` is the tx_json.Account.
+//
+// Later we might support more levels of signing.  Suppose Bob is a signer
+// for Alice, and Carol is a signer for Bob, so Carol can sign for Bob who
+// signs for Alice.  But suppose Alice has two signers: Bob and Dave.  If
+// Carol is a signer for both Bob and Dave, then the signature needs to
+// distinguish between Carol signing for Bob and Carol signing for Dave.
+//
+// So, if we support multiple levels of signing, then we'll need to
+// incorporate the "signing for" accounts into the signing data as well.
+Serializer
+buildMultiSigningData(STObject const& obj, AccountID const& signingID)
+{
+    Serializer s{startMultiSigningData(obj)};
+    finishMultiSigningData(signingID, s);
+    return s;
+}
+
+Serializer
+startMultiSigningData(STObject const& obj)
+{
+    Serializer s;
+    s.add32(HashPrefix::txMultiSign);
+    obj.addWithoutSigningFields(s);
+    // if (obj.isFieldPresent(sfSponsor))
+    // {
+    //     auto const sst = obj.getFieldObject(sfSponsor);
+    //     addSerializeSponsorData(s, sst.getAccountID(sfAccount),
+    //     sst.getFlags());
+    // }
+    return s;
+}
+
+Serializer
+buildSponsorMultiSigningData(
+    STObject const& obj,
+    AccountID const& signingID,
+    uint32_t flags)
+{
+    Serializer s{startSponsorSigningData(obj)};
+    finishSponsorSigningData(signingID, s);
+    return s;
+}
+
+Serializer
+startSponsorSigningData(STObject const& obj)
+{
+    Serializer s;
+    s.add32(HashPrefix::sponsor);
+    STObject tmp = obj;
+    tmp.setFieldVL(sfSigningPubKey, Blob{});
+    tmp.addWithoutSigningFields(s);
+
+    XRPL_ASSERT(
+        tmp.isFieldPresent(sfSponsor),
+        "STTx::getSponsorSigningData : sponsor is not set");
+
+    if (tmp.isFieldPresent(sfSponsor))
+    {
+        auto const sst = tmp.getFieldObject(sfSponsor);
+        addSerializeSponsorData(s, sst.getAccountID(sfAccount), sst.getFlags());
+    }
+    return s;
 }
 
 }  // namespace ripple

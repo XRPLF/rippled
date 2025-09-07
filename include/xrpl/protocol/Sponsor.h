@@ -2,11 +2,9 @@
 /*
     This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2025 Ripple Labs Inc.
-
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
-
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -17,70 +15,21 @@
 */
 //==============================================================================
 
-#pragma once
-
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-
-#include "test/jtx/SignerUtils.h"
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-namespace sponsor {
-
-Json::Value
-transfer(
-    jtx::Account const& account,
-    std::optional<uint256> const& index = std::nullopt);
-
-struct as
+inline void
+addSerializeSponsorData(
+    Serializer& msg,
+    AccountID const& sponsorID,
+    std::uint32_t const& flags)
 {
-private:
-    jtx::Account sponsor_;
-    std::uint32_t flags;
+    msg.addBitString(sponsorID);
+    msg.add32(flags);
+}
 
-public:
-    as(jtx::Account const& account, std::uint32_t flags = 0)
-        : sponsor_(account), flags(flags)
-    {
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jtx) const;
-};
-
-struct sig
-{
-private:
-    Reg signer_;
-
-public:
-    sig(Reg signer) : signer_(std::move(signer))
-    {
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jtx) const;
-};
-
-struct msig
-{
-private:
-    std::vector<Reg> signers;
-
-public:
-    msig(std::vector<Reg> signers_) : signers(std::move(signers_))
-    {
-        sortSigners(signers);
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jtx) const;
-};
-
-}  // namespace sponsor
-}  // namespace jtx
-}  // namespace test
 }  // namespace ripple

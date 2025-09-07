@@ -91,6 +91,9 @@ enum class HashPrefix : std::uint32_t {
 
     /** Batch */
     batch = detail::make_hash_prefix('B', 'C', 'H'),
+
+    /** Sponsor */
+    sponsor = detail::make_hash_prefix('S', 'P', 'N'),
 };
 
 template <class Hasher>

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_TEST_JTX_JTX_H_INCLUDED
 #define RIPPLE_TEST_JTX_JTX_H_INCLUDED
 
+#include <test/jtx/Account.h>
 #include <test/jtx/basic_prop.h>
 #include <test/jtx/requires.h>
 
@@ -55,6 +56,7 @@ struct JTx
     bool fill_netid = true;
     std::shared_ptr<STTx const> stx;
     std::function<void(Env&, JTx&)> signer;
+    std::function<void(Env&, JTx&)> sponsorSigner;
 
     JTx() = default;
     JTx(JTx const&) = default;

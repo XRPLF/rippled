@@ -83,6 +83,17 @@ checkValidity(
             ? STTx::RequireFullyCanonicalSig::yes
             : STTx::RequireFullyCanonicalSig::no;
 
+        if (tx.isFieldPresent(sfSponsor) && rules.enabled(featureSponsor))
+        {
+            auto const sigVerify =
+                tx.checkSponsorSign(requireCanonicalSig, rules);
+            if (!sigVerify)
+            {
+                router.setFlags(id, SF_SIGBAD);
+                return {Validity::SigBad, sigVerify.error()};
+            }
+        }
+
         auto const sigVerify = tx.checkSign(requireCanonicalSig, rules);
         if (!sigVerify)
         {
