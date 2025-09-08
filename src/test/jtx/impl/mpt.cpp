@@ -260,7 +260,8 @@ MPTTester::set(MPTSet const& arg)
                     flags |= lsfMPTLocked;
                 else if (*arg.flags & tfMPTUnlock)
                     flags &= ~lsfMPTLocked;
-                else if (arg.mutableFlags)
+
+                if (arg.mutableFlags)
                 {
                     if (*arg.mutableFlags & tfMPTSetCanLock)
                         flags |= lsfMPTCanLock;
@@ -292,8 +293,6 @@ MPTTester::set(MPTSet const& arg)
                     else if (*arg.mutableFlags & tfMPTClearCanTransfer)
                         flags &= ~lsfMPTCanTransfer;
                 }
-                else
-                    Throw<std::runtime_error>("Invalid flags");
             }
             env_.require(mptflags(*this, flags, holder));
         };

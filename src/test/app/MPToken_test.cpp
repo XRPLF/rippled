@@ -2896,7 +2896,7 @@ class MPToken_test : public beast::unit_test::suite
                  .err = temMALFORMED});
         }
 
-        // Flags being 0 is fine
+        // Flags being 0 or tfFullyCanonicalSig is fine
         {
             Env env{*this, features};
             MPTTester mptAlice(env, alice, {.holders = {bob}});
@@ -2913,6 +2913,11 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = 0,
                  .transferFee = 100,
                  .metadata = "test"});
+            mptAlice.set(
+                {.account = alice,
+                 .flags = tfFullyCanonicalSig,
+                 .transferFee = 200,
+                 .metadata = "test2"});
         }
 
         // Invalid MutableFlags
@@ -3489,42 +3494,87 @@ class MPToken_test : public beast::unit_test::suite
         Account const bob("bob");
         Account const carol("carol");
 
-        Env env{*this, features};
+        {
+            Env env{*this, features};
 
-        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
-        mptAlice.create(
-            {.ownerCount = 1,
-             .mutableFlags =
-                 tfMPTCanMutateCanTransfer | tfMPTCanMutateTransferFee});
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .mutableFlags =
+                     tfMPTCanMutateCanTransfer | tfMPTCanMutateTransferFee});
 
-        mptAlice.authorize({.account = bob});
-        mptAlice.authorize({.account = carol});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = carol});
 
-        // Pay to bob
-        mptAlice.pay(alice, bob, 1000);
+            // Pay to bob
+            mptAlice.pay(alice, bob, 1000);
 
-        // Bob can not pay carol since MPTCanTransfer is not set
-        mptAlice.pay(bob, carol, 50, tecNO_AUTH);
+            // Bob can not pay carol since MPTCanTransfer is not set
+            mptAlice.pay(bob, carol, 50, tecNO_AUTH);
 
-        // Alice sets MPTCanTransfer
-        mptAlice.set({.account = alice, .mutableFlags = tfMPTSetCanTransfer});
+            // Can not set non-zero transfer fee when MPTCanTransfer is not set
+            mptAlice.set(
+                {.account = alice,
+                 .transferFee = 100,
+                 .err = tecNO_PERMISSION});
 
-        // Can set transfer fee now
-        BEAST_EXPECT(!mptAlice.isTransferFeePresent());
-        mptAlice.set({.account = alice, .transferFee = 100});
-        BEAST_EXPECT(mptAlice.isTransferFeePresent());
+            // Can not set non-zero transfer fee even when trying to set
+            // MPTCanTransfer at the same time
+            mptAlice.set(
+                {.account = alice,
+                 .transferFee = 100,
+                 .mutableFlags = tfMPTSetCanTransfer,
+                 .err = tecNO_PERMISSION});
 
-        // Bob can pay carol
-        mptAlice.pay(bob, carol, 50);
+            // Alice sets MPTCanTransfer
+            mptAlice.set(
+                {.account = alice, .mutableFlags = tfMPTSetCanTransfer});
 
-        // Alice clears MPTCanTransfer
-        mptAlice.set({.account = alice, .mutableFlags = tfMPTClearCanTransfer});
+            // Can set transfer fee now
+            BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+            mptAlice.set({.account = alice, .transferFee = 100});
+            BEAST_EXPECT(mptAlice.isTransferFeePresent());
 
-        // TransferFee field is removed when MPTCanTransfer is cleared
-        BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+            // Bob can pay carol
+            mptAlice.pay(bob, carol, 50);
 
-        // Bob can not pay
-        mptAlice.pay(bob, carol, 50, tecNO_AUTH);
+            // Alice clears MPTCanTransfer
+            mptAlice.set(
+                {.account = alice, .mutableFlags = tfMPTClearCanTransfer});
+
+            // TransferFee field is removed when MPTCanTransfer is cleared
+            BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+
+            // Bob can not pay
+            mptAlice.pay(bob, carol, 50, tecNO_AUTH);
+        }
+
+        // Can set transfer fee to zero when MPTCanTransfer is not set, but
+        // tfMPTCanMutateTransferFee is set.
+        {
+            Env env{*this, features};
+
+            MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+            mptAlice.create(
+                {.transferFee = 100,
+                 .ownerCount = 1,
+                 .flags = tfMPTCanTransfer,
+                 .mutableFlags =
+                     tfMPTCanMutateTransferFee | tfMPTCanMutateCanTransfer});
+
+            BEAST_EXPECT(mptAlice.checkTransferFee(100));
+
+            // Clear MPTCanTransfer and transfer fee is removed
+            mptAlice.set(
+                {.account = alice, .mutableFlags = tfMPTClearCanTransfer});
+            BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+
+            // Can still set transfer fee to zero, although it is already zero
+            mptAlice.set({.account = alice, .transferFee = 0});
+
+            // TransferFee field is still not present
+            BEAST_EXPECT(!mptAlice.isTransferFeePresent());
+        }
     }
 
     void

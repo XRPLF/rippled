@@ -96,7 +96,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
 
         // Can not set flags when mutating MPTokenIssuance
-        if (isMutate && txFlags != 0)
+        if (isMutate && (txFlags & tfUniversalMask))
             return temMALFORMED;
 
         if (auto const fee = ctx.tx[~sfTransferFee])
