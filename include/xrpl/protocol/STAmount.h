@@ -252,9 +252,6 @@ public:
     void
     clear(Asset const& asset);
 
-    void
-    setIssuer(AccountID const& uIssuer);
-
     /** Set the Issue for this amount. */
     void
     setIssue(Asset const& asset);
@@ -574,14 +571,6 @@ STAmount::clear(Asset const& asset)
 {
     setIssue(asset);
     clear();
-}
-
-inline void
-STAmount::setIssuer(AccountID const& uIssuer)
-{
-    if (!mAsset.holds<Issue>())
-        Throw<std::runtime_error>("Can't set issuer for non-Issue");
-    mAsset.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&

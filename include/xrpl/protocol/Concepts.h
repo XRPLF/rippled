@@ -43,8 +43,9 @@ concept ValidIssueType =
     std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
 
 template <typename A>
-concept AssetType = std::is_same_v<A, Asset> ||
-    std::is_convertible_v<A, Issue> || std::is_convertible_v<A, MPTIssue>;
+concept AssetType =
+    std::is_convertible_v<A, Asset> || std::is_convertible_v<A, Issue> ||
+    std::is_convertible_v<A, MPTIssue> || std::is_convertible_v<A, MPTID>;
 
 template <typename T>
 concept ValidPathAsset =
