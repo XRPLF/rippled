@@ -212,7 +212,6 @@ public:
         BEAST_EXPECT(shouldStop.has_value() && *shouldStop == true);
     }
 
-
     void
     run() override
     {

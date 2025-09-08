@@ -43,7 +43,7 @@ JobQueue::Coro::Coro(
               yield();
               if (!shouldStop())
               {
-                fn(shared_from_this());
+                  fn(shared_from_this());
               }
 #ifndef NDEBUG
               finished_ = true;

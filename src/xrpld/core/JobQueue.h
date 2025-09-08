@@ -61,6 +61,7 @@ public:
     class Coro : public std::enable_shared_from_this<Coro>
     {
         friend class JobQueue;
+
     private:
         detail::LocalValues lvs_;
         JobQueue& jq_;
@@ -286,9 +287,12 @@ private:
             if (auto coroPtr = coro.lock())
             {
                 if (auto optionalCountedJob =
-                    jobCounter_.wrap([=]() { coroPtr->resume(); }))
+                        jobCounter_.wrap([=]() { coroPtr->resume(); }))
                 {
-                    addRefCountedJob(coroPtr->type_, coroPtr->name_, std::move(*optionalCountedJob));
+                    addRefCountedJob(
+                        coroPtr->type_,
+                        coroPtr->name_,
+                        std::move(*optionalCountedJob));
                 }
             }
         }
