@@ -176,11 +176,50 @@ public:
     }
 
     void
+    stopJobQueueWhenCoroutineSuspended()
+    {
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        testcase("Stop JobQueue when a coroutine is suspended");
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FORCE_MULTI_THREAD = true;
+            return cfg;
+        }));
+
+        bool started = false;
+        bool finished = false;
+        std::optional<bool> shouldStop;
+        std::condition_variable cv;
+        std::mutex m;
+        std::unique_lock<std::mutex> lk(m);
+        auto coro = env.app().getJobQueue().postCoro(
+            jtCLIENT, "Coroutine-Test", [&](auto const& c) {
+                started = true;
+                cv.notify_all();
+                c->yield();
+                finished = true;
+                shouldStop = c->shouldStop();
+                cv.notify_all();
+            });
+
+        cv.wait_for(lk, 5s, [&]() { return started; });
+        env.app().getJobQueue().stop();
+
+        cv.wait_for(lk, 5s, [&]() { return finished; });
+        BEAST_EXPECT(finished);
+        BEAST_EXPECT(shouldStop.has_value() && *shouldStop == true);
+    }
+
+
+    void
     run() override
     {
         correct_order();
         incorrect_order();
         thread_specific_storage();
+        stopJobQueueWhenCoroutineSuspended();
     }
 };
 
