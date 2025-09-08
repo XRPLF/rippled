@@ -52,18 +52,18 @@ Logs::Sink::Sink(
 }
 
 void
-Logs::Sink::write(beast::severities::Severity level, std::string&& text)
+Logs::Sink::write(beast::severities::Severity level, std::string_view text)
 {
     if (level < threshold())
         return;
 
-    logs_.write(level, partition_, std::move(text), console());
+    logs_.write(level, partition_, text, console());
 }
 
 void
-Logs::Sink::writeAlways(beast::severities::Severity level, std::string&& text)
+Logs::Sink::writeAlways(beast::severities::Severity level, std::string_view text)
 {
-    logs_.write(level, partition_, std::move(text), console());
+    logs_.write(level, partition_, text, console());
 }
 
 //------------------------------------------------------------------------------
@@ -190,21 +190,26 @@ void
 Logs::write(
     beast::severities::Severity level,
     std::string const& partition,
-    std::string const& text,
+    std::string_view text,
     bool console)
 {
     std::string s;
-    format(s, text, level, partition);
+    std::string_view result = text;
+    if (!beast::Journal::isStructuredJournalEnabled())
+    {
+        format(s, text, level, partition);
+        result = s;
+    }
 
     // Console output still immediate for responsiveness
     if (!silent_)
-        std::cerr << s << '\n';
+        std::cerr << result << '\n';
 
     // Add to batch buffer for file output
     {
         std::lock_guard lock(batchMutex_);
 
-        size_t logSize = s.size() + 1;  // +1 for newline
+        size_t logSize = result.size() + 1;  // +1 for newline
 
         // If log won't fit in current write buffer, flush first
         if (logSize > writeBuffer_.size())
@@ -213,8 +218,8 @@ Logs::write(
         }
 
         // Copy log into write buffer
-        std::copy(s.begin(), s.end(), writeBuffer_.begin());
-        writeBuffer_[s.size()] = '\n';
+        std::copy(result.begin(), result.end(), writeBuffer_.begin());
+        writeBuffer_[result.size()] = '\n';
 
         // Update spans: expand read buffer, shrink write buffer
         size_t totalUsed = readBuffer_.size() + logSize;
@@ -378,46 +383,44 @@ Logs::fromString(std::string const& s)
 void
 Logs::format(
     std::string& output,
-    std::string const& message,
+    std::string_view message,
     beast::severities::Severity severity,
     std::string const& partition)
 {
     output = message;
-    if (!beast::Journal::isStructuredJournalEnabled())
+    output.reserve(output.size() + partition.size() + 100);
+    output += to_string(std::chrono::system_clock::now());
+
+    output += " ";
+    if (!partition.empty())
+        output += partition + ":";
+
+    using namespace beast::severities;
+    switch (severity)
     {
-        output.reserve(output.size() + partition.size() + 100);
-        output += to_string(std::chrono::system_clock::now());
-
-        output += " ";
-        if (!partition.empty())
-            output += partition + ":";
-
-        using namespace beast::severities;
-        switch (severity)
-        {
-            case kTrace:
-                output += "TRC ";
-                break;
-            case kDebug:
-                output += "DBG ";
-                break;
-            case kInfo:
-                output += "NFO ";
-                break;
-            case kWarning:
-                output += "WRN ";
-                break;
-            case kError:
-                output += "ERR ";
-                break;
-            default:
-                UNREACHABLE("ripple::Logs::format : invalid severity");
-                [[fallthrough]];
-            case kFatal:
-                output += "FTL ";
-                break;
-        }
+        case kTrace:
+            output += "TRC ";
+            break;
+        case kDebug:
+            output += "DBG ";
+            break;
+        case kInfo:
+            output += "NFO ";
+            break;
+        case kWarning:
+            output += "WRN ";
+            break;
+        case kError:
+            output += "ERR ";
+            break;
+        default:
+            UNREACHABLE("ripple::Logs::format : invalid severity");
+            [[fallthrough]];
+        case kFatal:
+            output += "FTL ";
+            break;
     }
+
 
     // Limit the maximum length of the output
     if (output.size() > maximumMessageCharacters)

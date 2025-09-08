@@ -71,10 +71,10 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string&& text) override;
+        write(beast::severities::Severity level, std::string_view text) override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string&& text)
+        writeAlways(beast::severities::Severity level, std::string_view text)
             override;
     };
 
@@ -205,7 +205,7 @@ public:
     write(
         beast::severities::Severity level,
         std::string const& partition,
-        std::string const& text,
+        std::string_view text,
         bool console);
 
     std::string
@@ -246,7 +246,7 @@ public:
     static void
     format(
         std::string& output,
-        std::string const& message,
+        std::string_view message,
         beast::severities::Severity severity,
         std::string const& partition);
 

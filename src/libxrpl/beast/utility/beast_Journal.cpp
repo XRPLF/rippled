@@ -156,12 +156,12 @@ public:
     }
 
     void
-    write(severities::Severity, std::string&&) override
+    write(severities::Severity, std::string_view) override
     {
     }
 
     void
-    writeAlways(severities::Severity, std::string&&) override
+    writeAlways(severities::Severity, std::string_view) override
     {
     }
 };
@@ -293,7 +293,7 @@ Journal::initMessageContext(
 }
 
 std::string_view
-Journal::formatLog(std::string&& message)
+Journal::formatLog(std::string const& message)
 {
     if (!m_jsonLogsEnabled)
     {
@@ -391,9 +391,9 @@ Journal::ScopedStream::~ScopedStream()
     if (!s.empty())
     {
         if (s == "\n")
-            m_sink.write(m_level, std::string{formatLog("")});
+            m_sink.write(m_level, formatLog(""));
         else
-            m_sink.write(m_level, std::string{formatLog(std::move(s))});
+            m_sink.write(m_level, formatLog(s));
     }
 }
 
