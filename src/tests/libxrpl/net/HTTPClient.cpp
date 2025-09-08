@@ -102,6 +102,10 @@ private:
     stop()
     {
         running_ = false;
+        try
+        {
+            acceptor_.cancel();
+        } catch (const boost::system::system_error& e) {}
         acceptor_.close();
         if (server_thread_.joinable())
             server_thread_.join();
