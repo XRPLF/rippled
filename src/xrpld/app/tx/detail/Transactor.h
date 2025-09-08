@@ -312,6 +312,18 @@ protected:
         unit::ValueUnit<Unit, T> max,
         unit::ValueUnit<Unit, T> min = {});
 
+    /// Minimum will usually be zero.
+    template <class T>
+    static bool
+    validNumericMinimum(std::optional<T> value, T min = {});
+
+    /// Minimum will usually be zero.
+    template <class T, class Unit>
+    static bool
+    validNumericMinimum(
+        std::optional<T> value,
+        unit::ValueUnit<Unit, T> min = {});
+
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
@@ -427,6 +439,24 @@ Transactor::validNumericRange(
     unit::ValueUnit<Unit, T> min)
 {
     return validNumericRange(value, max.value(), min.value());
+}
+
+template <class T>
+bool
+Transactor::validNumericMinimum(std::optional<T> value, T min)
+{
+    if (!value)
+        return true;
+    return value >= min;
+}
+
+template <class T, class Unit>
+bool
+Transactor::validNumericMinimum(
+    std::optional<T> value,
+    unit::ValueUnit<Unit, T> min)
+{
+    return validNumericMinimum(value, min.value());
 }
 
 }  // namespace ripple

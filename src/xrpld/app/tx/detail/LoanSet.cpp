@@ -85,6 +85,16 @@ LoanSet::preflight(PreflightContext const& ctx)
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
+    for (auto const& field :
+         {sfLoanOriginationFee,
+          sfLoanServiceFee,
+          sfLatePaymentFee,
+          sfClosePaymentFee,
+          sfPrincipalRequested})
+    {
+        if (!validNumericMinimum(tx[~field]))
+            return temINVALID;
+    }
     if (!validNumericRange(tx[~sfInterestRate], maxInterestRate))
         return temINVALID;
     if (!validNumericRange(tx[~sfOverpaymentFee], maxOverpaymentFee))
@@ -98,17 +108,16 @@ LoanSet::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     if (auto const paymentTotal = tx[~sfPaymentTotal];
-        paymentTotal && *paymentTotal == 0)
+        paymentTotal && *paymentTotal <= 0)
         return temINVALID;
 
-    if (auto const paymentInterval =
-            tx[~sfPaymentInterval].value_or(LoanSet::defaultPaymentInterval);
-        paymentInterval < LoanSet::minPaymentInterval)
+    if (auto const paymentInterval = tx[~sfPaymentInterval];
+        !validNumericMinimum(paymentInterval, LoanSet::minPaymentInterval))
         return temINVALID;
 
-    else if (auto const gracePeriod =
-                 tx[~sfGracePeriod].value_or(LoanSet::defaultGracePeriod);
-             gracePeriod > paymentInterval)
+    else if (!validNumericRange(
+                 tx[~sfGracePeriod],
+                 paymentInterval.value_or(LoanSet::defaultPaymentInterval)))
         return temINVALID;
 
     // Copied from preflight2
@@ -367,7 +376,7 @@ LoanSet::doApply()
         return ter;
     // 2. Transfer originationFee, if any, from vault pseudo-account to
     // LoanBroker owner.
-    if (originationFee)
+    if (originationFee && *originationFee)
     {
         // Create the holding if it doesn't already exist (necessary for MPTs).
         // The owner may have deleted their MPT / line at some point.
@@ -377,7 +386,7 @@ LoanSet::doApply()
                 brokerOwnerSle->at(sfBalance).value().xrp(),
                 vaultAsset,
                 j_);
-            ter != tesSUCCESS && ter != tecDUPLICATE)
+            !isTesSuccess(ter) && ter != tecDUPLICATE)
             // ignore tecDUPLICATE. That means the holding already exists, and
             // is fine here
             return ter;
