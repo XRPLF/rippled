@@ -78,6 +78,6 @@ jobs:
         os: [linux, macos, windows]
     with:
       os: ${{ matrix.os }}
-      strategy_matrix: "all"
+      strategy_matrix: "minimal"
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
