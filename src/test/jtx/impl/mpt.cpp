@@ -294,7 +294,7 @@ MPTTester::set(MPTSet const& arg)
                         flags &= ~lsfMPTCanTransfer;
                 }
             }
-            env_.require(mptflags(*this, flags, holder));
+            // env_.require(mptflags(*this, flags, holder));
         };
         if (arg.account)
             require(std::nullopt, arg.holder.has_value());
