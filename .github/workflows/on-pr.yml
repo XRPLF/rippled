@@ -123,11 +123,12 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   passed:
+    if: failure()
     needs:
       - build-test
       - check-format
       - check-levelization
     runs-on: ubuntu-latest
     steps:
-      - name: No-op
-        run: true
+      - name: Fail
+        run: false
