@@ -387,9 +387,9 @@ Logs::format(
     beast::severities::Severity severity,
     std::string const& partition)
 {
-    output = message;
-    output.reserve(output.size() + partition.size() + 100);
-    output += to_string(std::chrono::system_clock::now());
+    output.reserve(message.size() + partition.size() + 100);
+
+    output = to_string(std::chrono::system_clock::now());
 
     output += " ";
     if (!partition.empty())
@@ -421,6 +421,7 @@ Logs::format(
             break;
     }
 
+    output += message;
 
     // Limit the maximum length of the output
     if (output.size() > maximumMessageCharacters)

@@ -90,8 +90,13 @@ public:
         bool console)
     {
         std::string s;
-        format(s, text, level, partition);
-        logStream_.append(s);
+        std::string_view result = text;
+        if (!beast::Journal::isStructuredJournalEnabled())
+        {
+            format(s, text, level, partition);
+            result = s;
+        }
+        logStream_.append(result);
     }
 };
 
@@ -118,18 +123,6 @@ TEST_CASE("Test format output")
     Logs::format(output, "Message", beast::severities::kDebug, "Test");
     CHECK(output.find("Message") != std::string::npos);
     CHECK(output != "Message");
-}
-
-TEST_CASE("Test format output when structured logs are enabled")
-{
-    beast::Journal::enableStructuredJournal();
-
-    std::string output;
-    Logs::format(output, "Message", beast::severities::kDebug, "Test");
-
-    CHECK(output == "Message");
-
-    beast::Journal::disableStructuredJournal();
 }
 
 TEST_CASE("Enable json logs")
