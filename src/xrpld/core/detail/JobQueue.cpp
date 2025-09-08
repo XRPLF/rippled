@@ -26,6 +26,12 @@
 
 namespace ripple {
 
+bool
+JobQueue::Coro::shouldStop() const
+{
+    return jq_.stopping_ || jq_.stopped_ || !jq_.accepting_;
+}
+
 JobQueue::JobQueue(
     int threadCount,
     beast::insight::Collector::ptr const& collector,
@@ -295,6 +301,22 @@ JobQueue::getJobTypeData(JobType type)
 void
 JobQueue::stop()
 {
+    // Once we stop accepting new jobs, all running coroutines won't be able to
+    // get suspended and yield() will return immediately, so we can safely
+    // move m_suspendedCoros, and we can assume that no coroutine will be
+    // suspended in the future.
+    std::map<void*, std::weak_ptr<Coro>> suspendedCoros;
+    {
+        std::unique_lock lock(m_mutex);
+        accepting_ = false;
+        suspendedCoros = std::move(m_suspendedCoros);
+    }
+    if (!suspendedCoros.empty())
+    {
+        // We should resume the suspended coroutines so that the coroutines
+        // get a chance to exit cleanly.
+        onStopResumeCoros(suspendedCoros);
+    }
     stopping_ = true;
     using namespace std::chrono_literals;
     jobCounter_.join("JobQueue", 1s, m_journal);
@@ -306,7 +328,7 @@ JobQueue::stop()
         // we must wait on the condition variable to make these assertions.
         std::unique_lock<std::mutex> lock(m_mutex);
         cv_.wait(
-            lock, [this] { return m_processCount == 0 && m_jobSet.empty(); });
+            lock, [this] { return m_processCount == 0 && nSuspend_ == 0 && m_jobSet.empty(); });
         XRPL_ASSERT(
             m_processCount == 0,
             "ripple::JobQueue::stop : all processes completed");

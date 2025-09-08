@@ -41,7 +41,10 @@ JobQueue::Coro::Coro(
                   do_yield) {
               yield_ = &do_yield;
               yield();
-              fn(shared_from_this());
+              if (!shouldStop())
+              {
+                fn(shared_from_this());
+              }
 #ifndef NDEBUG
               finished_ = true;
 #endif
@@ -58,11 +61,17 @@ inline JobQueue::Coro::~Coro()
 }
 
 inline void
-JobQueue::Coro::yield() const
+JobQueue::Coro::yield()
 {
     {
         std::lock_guard lock(jq_.m_mutex);
+        if (shouldStop())
+        {
+            return;
+        }
         ++jq_.nSuspend_;
+        jq_.m_suspendedCoros[this] = weak_from_this();
+        jq_.cv_.notify_all();
     }
     (*yield_)();
 }
@@ -99,6 +108,8 @@ JobQueue::Coro::resume()
     {
         std::lock_guard lock(jq_.m_mutex);
         --jq_.nSuspend_;
+        jq_.m_suspendedCoros.erase(this);
+        jq_.cv_.notify_all();
     }
     auto saved = detail::getLocalValues().release();
     detail::getLocalValues().reset(&lvs_);
@@ -118,27 +129,6 @@ inline bool
 JobQueue::Coro::runnable() const
 {
     return static_cast<bool>(coro_);
-}
-
-inline void
-JobQueue::Coro::expectEarlyExit()
-{
-#ifndef NDEBUG
-    if (!finished_)
-#endif
-    {
-        // expectEarlyExit() must only ever be called from outside the
-        // Coro's stack.  It you're inside the stack you can simply return
-        // and be done.
-        //
-        // That said, since we're outside the Coro's stack, we need to
-        // decrement the nSuspend that the Coro's call to yield caused.
-        std::lock_guard lock(jq_.m_mutex);
-        --jq_.nSuspend_;
-#ifndef NDEBUG
-        finished_ = true;
-#endif
-    }
 }
 
 inline void

@@ -128,21 +128,17 @@ doRipplePathFind(RPC::JsonContext& context)
         // May 2017
         jvResult = context.app.getPathRequests().makeLegacyPathRequest(
             request,
-            [&context]() {
-                // Copying the shared_ptr keeps the coroutine alive up
+            [coro = context.coro]() {
+                // Capturing the shared_ptr keeps the coroutine alive up
                 // through the return.  Otherwise the storage under the
                 // captured reference could evaporate when we return from
-                // coroCopy->resume().  This is not strictly necessary, but
-                // will make maintenance easier.
-                std::shared_ptr<JobQueue::Coro> coroCopy{context.coro};
-                if (!coroCopy->post())
-                {
-                    // The post() failed, so we won't get a thread to let
-                    // the Coro finish.  We'll call Coro::resume() so the
-                    // Coro can finish on our thread.  Otherwise the
-                    // application will hang on shutdown.
-                    coroCopy->resume();
-                }
+                // coro->post().
+                // When post() failed, we won't get a thread to let
+                // the Coro finish. We should ignore the coroutine and
+                // let it destruct, as the JobQueu has been signaled to
+                // close, and resuming it manually messes up the internal
+                // state in JobQueue.
+                coro->post();
             },
             context.consumer,
             lpLedger,
@@ -150,6 +146,14 @@ doRipplePathFind(RPC::JsonContext& context)
         if (request)
         {
             context.coro->yield();
+            // Each time after we resume from yield(), we should
+            // check if cancellation has been requested. It would
+            // be a lot more elegant if we replace boost coroutine
+            // with c++ standard coroutine.
+            if (context.coro->shouldStop())
+            {
+                return jvResult;
+            }
             jvResult = request->doStatus(context.params);
         }
 
