@@ -3522,8 +3522,8 @@ class MPToken_test : public beast::unit_test::suite
             // MPTCanTransfer at the same time
             mptAlice.set(
                 {.account = alice,
-                 .transferFee = 100,
                  .mutableFlags = tfMPTSetCanTransfer,
+                 .transferFee = 100,
                  .err = tecNO_PERMISSION});
 
             // Alice sets MPTCanTransfer
