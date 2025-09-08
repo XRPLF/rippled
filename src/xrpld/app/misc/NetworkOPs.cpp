@@ -977,9 +977,9 @@ NetworkOPsImp::setTimer(
                     e.value() != boost::asio::error::operation_aborted)
                 {
                     // Try again later and hope for the best.
-                    JLOG(m_journal.error()) << "Timer got error '"
-                                            << e.message()
-                                            << "'.  Restarting timer.";
+                    JLOG(m_journal.error())
+                        << "Timer got error '" << e.message()
+                        << "'.  Restarting timer.";
                     onError();
                 }
             }))
@@ -1022,9 +1022,8 @@ NetworkOPsImp::setClusterTimer()
 void
 NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 {
-    JLOG(m_journal.debug())
-        << "Scheduling AccountHistory job for account "
-        << toBase58(subInfo.index_->accountId_);
+    JLOG(m_journal.debug()) << "Scheduling AccountHistory job for account "
+                            << toBase58(subInfo.index_->accountId_);
     using namespace std::chrono_literals;
     setTimer(
         accountHistoryTxTimer_,
@@ -1056,8 +1055,7 @@ NetworkOPsImp::processHeartbeatTimer()
                 std::stringstream ss;
                 ss << "Node count (" << numPeers << ") has fallen "
                    << "below required minimum (" << minPeerCount_ << ").";
-                JLOG(m_journal.warn())
-                    << ss.str();
+                JLOG(m_journal.warn()) << ss.str();
                 CLOG(clog.ss()) << "set mode to DISCONNECTED: " << ss.str();
             }
             else
@@ -1080,8 +1078,7 @@ NetworkOPsImp::processHeartbeatTimer()
         {
             setMode(OperatingMode::CONNECTED);
             JLOG(m_journal.info())
-                << "Node count (" << numPeers
-                << ") is sufficient.";
+                << "Node count (" << numPeers << ") is sufficient.";
             CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers
                             << " peers. ";
         }
@@ -1226,16 +1223,15 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
         if (validity != Validity::Valid)
         {
-            JLOG(m_journal.warn()) << "Submitted transaction invalid: "
-                                 << log::param("Reason", reason);
+            JLOG(m_journal.warn())
+                << "Submitted transaction invalid: " << reason;
             return;
         }
     }
     catch (std::exception const& ex)
     {
-        JLOG(m_journal.warn()) << "Exception checking transaction "
-                             << log::param("TransactionID", txid) << ": "
-                             << log::param("Reason", ex.what());
+        JLOG(m_journal.warn())
+            << "Exception checking transaction " << txid << ": " << ex.what();
 
         return;
     }
@@ -1258,9 +1254,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     if ((newFlags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
         // cached bad
-        JLOG(m_journal.warn())
-            << log::param("TransactionID", transaction->getID())
-            << ": cached bad!\n";
+        JLOG(m_journal.warn()) << transaction->getID() << ": cached bad!\n";
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         return false;
@@ -1293,8 +1287,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
     {
-        JLOG(m_journal.info()) << "Transaction has bad signature: "
-                             << log::param("Reason", reason);
+        JLOG(m_journal.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         app_.getHashRouter().setFlags(
@@ -1604,6 +1597,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             else if (e.result == terQUEUED)
             {
                 JLOG(m_journal.debug())
+                    << "Transaction is likely to claim a"
                     << " fee, but is queued until fee drops";
 
                 e.transaction->setStatus(HELD);
