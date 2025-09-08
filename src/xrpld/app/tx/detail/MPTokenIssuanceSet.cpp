@@ -224,11 +224,11 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool {
-        if (!sleMptIssuance->isFieldPresent(sfMutableFlags))
-            return false;
+    auto const currentMutableFlags =
+        (*sleMptIssuance)[~sfMutableFlags].value_or(0);
 
-        return (*sleMptIssuance)[sfMutableFlags] & mutableFlag;
+    auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool {
+        return currentMutableFlags & mutableFlag;
     };
 
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
