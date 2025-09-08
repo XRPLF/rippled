@@ -103,6 +103,7 @@ jobs:
 
   build-test:
     needs: should-run
+    if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/build-test.yml
     strategy:
       matrix:
@@ -116,6 +117,7 @@ jobs:
     needs:
       - should-run
       - build-test
+    if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/notify-clio.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
