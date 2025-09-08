@@ -113,13 +113,16 @@ private:
     void
     accept()
     {
-        if (!running_) return;
+        if (!running_)
+            return;
 
-        acceptor_.async_accept(ioc_, endpoint_, [&](
-            const boost::system::error_code& error,
-            boost::asio::ip::tcp::socket peer)
-            {
-                if (!running_) return;
+        acceptor_.async_accept(
+            ioc_,
+            endpoint_,
+            [&](boost::system::error_code const& error,
+                boost::asio::ip::tcp::socket peer) {
+                if (!running_)
+                    return;
 
                 if (!error)
                 {
@@ -192,7 +195,6 @@ runHTTPTest(
     std::string& result_data,
     boost::system::error_code& result_error)
 {
-
     // Create a null journal for testing
     beast::Journal j{beast::Journal::getNullSink()};
 
