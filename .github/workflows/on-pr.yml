@@ -23,10 +23,6 @@ defaults:
   run:
     shell: bash
 
-env:
-  CONAN_REMOTE_NAME: xrplf
-  CONAN_REMOTE_URL: https://conan.ripplex.io
-
 jobs:
   # This job determines whether the rest of the workflow should run. It runs
   # when the PR is not a draft (which should also cover merge-group) or
@@ -97,40 +93,22 @@ jobs:
     if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/check-levelization.yml
 
-  # This job works around the limitation that GitHub Actions does not support
-  # using environment variables as inputs for reusable workflows.
-  generate-outputs:
-    needs: should-run
-    if: needs.should-run.outputs.go == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: No-op
-        run: true
-    outputs:
-      conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
-      conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
-
   build-test:
-    needs: generate-outputs
+    needs: should-run
     uses: ./.github/workflows/build-test.yml
     strategy:
       matrix:
         os: [linux, macos, windows]
     with:
-      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
       os: ${{ matrix.os }}
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
 
   notify-clio:
     needs:
-      - generate-outputs
+      - should-run
       - build-test
     uses: ./.github/workflows/notify-clio.yml
-    with:
-      conan_remote_name: ${{ needs.generate-outputs.outputs.conan_remote_name }}
-      conan_remote_url: ${{ needs.generate-outputs.outputs.conan_remote_url }}
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
