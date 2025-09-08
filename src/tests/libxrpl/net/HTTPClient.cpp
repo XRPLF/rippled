@@ -223,7 +223,10 @@ runHTTPTest(
     while (!completed &&
            std::chrono::steady_clock::now() - start < std::chrono::seconds(10))
     {
-        server.ioc().run_one_for(std::chrono::milliseconds(10));
+        if (server.ioc().run_one() == 0)
+        {
+            break;
+        }
     }
 
     return completed;
