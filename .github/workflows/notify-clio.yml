@@ -9,12 +9,14 @@ on:
     inputs:
       conan_remote_name:
         description: "The name of the Conan remote to use."
-        required: true
+        required: false
         type: string
+        default: xrplf
       conan_remote_url:
         description: "The URL of the Conan endpoint to use."
-        required: true
+        required: false
         type: string
+        default: https://conan.ripplex.io
     secrets:
       clio_notify_token:
         description: "The GitHub token to notify Clio about new versions."
@@ -50,21 +52,25 @@ jobs:
           echo "channel=pr_${{ github.event.pull_request.number }}" >> "${GITHUB_OUTPUT}"
           echo 'Extracting version.'
           echo "version=$(cat src/libxrpl/protocol/BuildInfo.cpp | grep "versionString =" | awk -F '"' '{print $2}')" >> "${GITHUB_OUTPUT}"
-      - name: Add Conan remote
+      - name: Calculate conan reference
+        id: conan_ref
         run: |
-          echo "Adding Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
-          conan remote add --index 0 --force ${{ inputs.conan_remote_name }} ${{ inputs.conan_remote_url }}
-          echo 'Listing Conan remotes.'
-          conan remote list
+          echo "conan_ref=${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/${{ steps.generate.outputs.channel }}" >> "${GITHUB_OUTPUT}"
+
+      - name: Set up Conan
+        uses: ./.github/actions/setup-conan
+        with:
+          conan_remote_name: ${{ inputs.conan_remote_name }}
+          conan_remote_url: ${{ inputs.conan_remote_url }}
+
       - name: Log into Conan remote
         run: conan remote login ${{ inputs.conan_remote_name }} "${{ secrets.conan_remote_username }}" --password "${{ secrets.conan_remote_password }}"
       - name: Upload package
         run: |
           conan export --user=${{ steps.generate.outputs.user }} --channel=${{ steps.generate.outputs.channel }} .
-          conan upload --confirm --check --remote=${{ inputs.conan_remote_name }} xrpl/${{ steps.generate.outputs.version }}@${{ steps.generate.outputs.user }}/${{ steps.generate.outputs.channel }}
+          conan upload --confirm --check --remote=${{ inputs.conan_remote_name }} xrpl/${{ steps.conan_ref.outputs.conan_ref }}
     outputs:
-      channel: ${{ steps.generate.outputs.channel }}
-      version: ${{ steps.generate.outputs.version }}
+      conan_ref: ${{ steps.conan_ref.outputs.conan_ref }}
 
   notify:
     needs: upload
@@ -76,5 +82,5 @@ jobs:
         run: |
           gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
-          -F "client_payload[version]=${{ needs.upload.outputs.version }}@${{ needs.upload.outputs.user }}/${{ needs.upload.outputs.channel }}" \
-          -F "client_payload[pr]=${{ github.event.pull_request.number }}"
+          -F "client_payload[conan_ref]=${{ needs.upload.outputs.conan_ref }}" \
+          -F "client_payload[pr_url]=${{ github.event.pull_request.html_url }}"
