@@ -112,7 +112,7 @@ jobs:
       dependencies_force_build: ${{ needs.generate-outputs.outputs.dependencies_force_build == 'true' }}
       dependencies_force_upload: ${{ needs.generate-outputs.outputs.dependencies_force_upload == 'true' }}
       os: ${{ matrix.os }}
-      strategy_matrix: "all"
+      strategy_matrix: "minimal"
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
       conan_remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
