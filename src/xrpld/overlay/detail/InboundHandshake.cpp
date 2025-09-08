@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/InboundHandshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
@@ -207,7 +208,8 @@ InboundHandshake::createPeer()
         protocolVersion_,
         attributes_,
         publicKey_,
-        id_);
+        id_,
+        app_.cluster().member(publicKey_).value_or(""));
 
     // Add the peer to the overlay
     overlay_.add_active(peer);

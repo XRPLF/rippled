@@ -210,7 +210,6 @@ private:
     // Node public key of peer.
     PublicKey const publicKey_;
     std::string name_;
-    std::shared_mutex mutable nameMutex_;
 
     // The indices of the smallest and largest ledgers this peer has available
     //
@@ -268,7 +267,8 @@ public:
         ProtocolVersion protocol,
         PeerAttributes const& attributes,
         PublicKey const& publicKey,
-        id_t id);
+        id_t id,
+        std::string const& name);
 
     /** Create outgoing, handshaked peer. */
     template <class Buffers>
@@ -282,7 +282,8 @@ public:
         ProtocolVersion protocol,
         id_t id,
         PeerAttributes const& attributes,
-        OverlayImpl& overlay);
+        OverlayImpl& overlay,
+        std::string const& name);
 
     virtual ~PeerImp();
 
@@ -684,7 +685,8 @@ PeerImp::PeerImp(
     ProtocolVersion protocol,
     id_t id,
     PeerAttributes const& attributes,
-    OverlayImpl& overlay)
+    OverlayImpl& overlay,
+    std::string const& name)
     : Child(overlay)
     , app_(app)
     , id_(id)
@@ -702,6 +704,7 @@ PeerImp::PeerImp(
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
+    , name_(name)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
     , squelch_(app_.journal("Squelch"))

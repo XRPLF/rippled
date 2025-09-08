@@ -425,7 +425,8 @@ ConnectAttempt::processResponse()
             *negotiatedProtocol,
             id_,
             attributes,
-            overlay_);
+            overlay_,
+            app_.cluster().member(publicKey).value_or(""));
 
         overlay_.add_active(peer);
     }

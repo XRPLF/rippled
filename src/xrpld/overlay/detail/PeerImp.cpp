@@ -50,6 +50,7 @@
 #include <mutex>
 #include <numeric>
 #include <sstream>
+#include <string>
 
 using namespace std::chrono_literals;
 
@@ -157,7 +158,8 @@ PeerImp::PeerImp(
     ProtocolVersion protocol,
     PeerAttributes const& attributes,
     PublicKey const& publicKey,
-    id_t id)
+    id_t id,
+    std::string const& name)
     : Child(overlay)
     , app_(app)
     , id_(id)
@@ -175,6 +177,7 @@ PeerImp::PeerImp(
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
+    , name_(name)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
     , squelch_(app_.journal("Squelch"))
@@ -419,7 +422,7 @@ PeerImp::crawl() const
 bool
 PeerImp::cluster() const
 {
-    return static_cast<bool>(app_.cluster().member(publicKey_));
+    return app_.cluster().member(publicKey_).has_value();
 }
 
 std::string
@@ -835,11 +838,7 @@ PeerImp::doAccept()
 
     if (auto member = app_.cluster().member(publicKey_))
     {
-        {
-            std::unique_lock lock{nameMutex_};
-            name_ = *member;
-        }
-        JLOG(journal_.info()) << "Cluster name: " << *member;
+        JLOG(journal_.info()) << "Cluster name: " << name_;
     }
 
     doProtocolStart();
@@ -848,9 +847,8 @@ PeerImp::doAccept()
 std::string
 PeerImp::name() const
 {
-    std::shared_lock read_lock{nameMutex_};
     return name_;
-}
+}   
 
 std::string
 PeerImp::domain() const
