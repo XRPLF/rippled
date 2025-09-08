@@ -1599,6 +1599,12 @@ ValidMPTIssuance::finalize(
 
         if (txnType == ttESCROW_FINISH)
             return true;
+
+        if ((tx.getTxnType() == ttVAULT_CLAWBACK ||
+             tx.getTxnType() == ttVAULT_WITHDRAW) &&
+            mptokensDeleted_ == 1 && mptokensCreated_ == 0 &&
+            mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0)
+            return true;
     }
 
     if (mptIssuancesCreated_ != 0)

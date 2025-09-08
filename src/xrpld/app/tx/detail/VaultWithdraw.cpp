@@ -177,7 +177,7 @@ VaultWithdraw::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = (*vault)[sfShareMPTID];
+    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -192,24 +192,57 @@ VaultWithdraw::doApply()
     // to deposit into it, and this means you are also indefinitely authorized
     // to withdraw from it.
 
-    auto amount = ctx_.tx[sfAmount];
-    auto const asset = vault->at(sfAsset);
-    auto const share = MPTIssue(mptIssuanceID);
-    STAmount shares, assets;
-    if (amount.asset() == asset)
+    auto const amount = ctx_.tx[sfAmount];
+    Asset const vaultAsset = vault->at(sfAsset);
+    MPTIssue const share{mptIssuanceID};
+    STAmount sharesRedeemed = {share};
+    STAmount assetsWithdrawn;
+    try
     {
-        // Fixed assets, variable shares.
-        assets = amount;
-        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+        if (amount.asset() == vaultAsset)
+        {
+            // Fixed assets, variable shares.
+            {
+                auto const maybeShares =
+                    assetsToSharesWithdraw(vault, sleIssuance, amount);
+                if (!maybeShares)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                sharesRedeemed = *maybeShares;
+            }
+
+            if (sharesRedeemed == beast::zero)
+                return tecPRECISION_LOSS;
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsWithdrawn = *maybeAssets;
+        }
+        else if (amount.asset() == share)
+        {
+            // Fixed shares, variable assets.
+            sharesRedeemed = amount;
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesRedeemed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsWithdrawn = *maybeAssets;
+        }
+        else
+            return tefINTERNAL;  // LCOV_EXCL_LINE
     }
-    else if (amount.asset() == share)
+    catch (std::overflow_error const&)
     {
-        // Fixed shares, variable assets.
-        shares = amount;
-        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j_.debug())  //
+            << "VaultWithdraw: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", amount=" << amount.value();
+        return tecPATH_DRY;
     }
-    else
-        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (accountHolds(
             view(),
@@ -217,30 +250,71 @@ VaultWithdraw::doApply()
             share,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahIGNORE_AUTH,
-            j_) < shares)
+            j_) < sharesRedeemed)
     {
         JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // The vault must have enough assets on hand. The vault may hold assets that
-    // it has already pledged. That is why we look at AssetAvailable instead of
-    // the pseudo-account balance.
-    if (*vault->at(sfAssetsAvailable) < assets)
+    auto assetsAvailable = vault->at(sfAssetsAvailable);
+    auto assetsTotal = vault->at(sfAssetsTotal);
+    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
+    XRPL_ASSERT(
+        lossUnrealized <= (assetsTotal - assetsAvailable),
+        "ripple::VaultWithdraw::doApply : loss and assets do balance");
+
+    // The vault must have enough assets on hand. The vault may hold assets
+    // that it has already pledged. That is why we look at AssetAvailable
+    // instead of the pseudo-account balance.
+    if (*assetsAvailable < assetsWithdrawn)
     {
         JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
     }
 
-    vault->at(sfAssetsTotal) -= assets;
-    vault->at(sfAssetsAvailable) -= assets;
+    assetsTotal -= assetsWithdrawn;
+    assetsAvailable -= assetsWithdrawn;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
-    if (auto ter = accountSend(
-            view(), account_, vaultAccount, shares, j_, WaiveTransferFee::Yes))
+    if (auto const ter = accountSend(
+            view(),
+            account_,
+            vaultAccount,
+            sharesRedeemed,
+            j_,
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
+
+    // Try to remove MPToken for shares, if the account balance is zero. Vault
+    // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
+    // Keep MPToken if holder is the vault owner.
+    if (account_ != vault->at(sfOwner))
+    {
+        if (auto const ter = removeEmptyHolding(
+                view(), account_, sharesRedeemed.asset(), j_);
+            isTesSuccess(ter))
+        {
+            JLOG(j_.debug())  //
+                << "VaultWithdraw: removed empty MPToken for vault shares"
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(account_);
+        }
+        else if (ter != tecHAS_OBLIGATIONS)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())  //
+                << "VaultWithdraw: failed to remove MPToken for vault shares"
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(account_)      //
+                << " with result: " << transToken(ter);
+            return ter;
+            // LCOV_EXCL_STOP
+        }
+        // else quietly ignore, account balance is not zero
+    }
 
     auto const dstAcct = [&]() -> AccountID {
         if (ctx_.tx.isFieldPresent(sfDestination))
@@ -249,15 +323,21 @@ VaultWithdraw::doApply()
     }();
 
     // Transfer assets from vault to depositor or destination account.
-    if (auto ter = accountSend(
-            view(), vaultAccount, dstAcct, assets, j_, WaiveTransferFee::Yes))
+    if (auto const ter = accountSend(
+            view(),
+            vaultAccount,
+            dstAcct,
+            assetsWithdrawn,
+            j_,
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
             vaultAccount,
-            assets.asset(),
+            assetsWithdrawn.asset(),
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
