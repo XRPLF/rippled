@@ -42,7 +42,7 @@ class TestHTTPServer
 private:
     boost::asio::io_context ioc_;
     boost::asio::ip::tcp::acceptor acceptor_;
-    std::thread server_thread_;
+    boost::asio::ip::tcp::endpoint endpoint_;
     std::atomic<bool> running_{true};
     unsigned short port_;
 
@@ -55,22 +55,27 @@ public:
     TestHTTPServer() : acceptor_(ioc_), port_(0)
     {
         // Bind to any available port
-        boost::asio::ip::tcp::endpoint endpoint{boost::asio::ip::tcp::v4(), 0};
-        acceptor_.open(endpoint.protocol());
+        endpoint_ = {boost::asio::ip::tcp::v4(), 0};
+        acceptor_.open(endpoint_.protocol());
         acceptor_.set_option(boost::asio::socket_base::reuse_address(true));
-        acceptor_.bind(endpoint);
+        acceptor_.bind(endpoint_);
         acceptor_.listen();
 
         // Get the actual port that was assigned
         port_ = acceptor_.local_endpoint().port();
 
-        // Start server thread
-        server_thread_ = std::thread([this] { run(); });
+        accept();
     }
 
     ~TestHTTPServer()
     {
         stop();
+    }
+
+    boost::asio::io_context&
+    ioc()
+    {
+        return ioc_;
     }
 
     unsigned short
@@ -102,37 +107,25 @@ private:
     stop()
     {
         running_ = false;
-        try
-        {
-            acceptor_.cancel();
-        } catch (const boost::system::system_error& e) {}
         acceptor_.close();
-        if (server_thread_.joinable())
-            server_thread_.join();
     }
 
     void
-    run()
+    accept()
     {
-        while (running_)
-        {
-            try
-            {
-                boost::asio::ip::tcp::socket socket(ioc_);
-                acceptor_.accept(socket);
+        if (!running_) return;
 
-                if (!running_)
-                    break;
-
-                handleConnection(std::move(socket));
-            }
-            catch (std::exception const&)
+        acceptor_.async_accept(ioc_, endpoint_, [&](
+            const boost::system::error_code& error,
+            boost::asio::ip::tcp::socket peer)
             {
-                // Connection errors are expected during shutdown
-                if (!running_)
-                    break;
-            }
-        }
+                if (!running_) return;
+
+                if (!error)
+                {
+                    handleConnection(std::move(peer));
+                }
+            });
     }
 
     void
@@ -183,6 +176,9 @@ private:
         {
             // Connection handling errors are expected
         }
+
+        if (running_)
+            accept();
     }
 };
 
@@ -196,7 +192,6 @@ runHTTPTest(
     std::string& result_data,
     boost::system::error_code& result_error)
 {
-    boost::asio::io_context ioc;
 
     // Create a null journal for testing
     beast::Journal j{beast::Journal::getNullSink()};
@@ -206,7 +201,7 @@ runHTTPTest(
 
     HTTPClient::get(
         false,  // no SSL
-        ioc,
+        server.ioc(),
         "127.0.0.1",
         server.port(),
         path,
@@ -228,7 +223,7 @@ runHTTPTest(
     while (!completed &&
            std::chrono::steady_clock::now() - start < std::chrono::seconds(10))
     {
-        ioc.run_one_for(std::chrono::milliseconds(10));
+        server.ioc().run_one_for(std::chrono::milliseconds(10));
     }
 
     return completed;
