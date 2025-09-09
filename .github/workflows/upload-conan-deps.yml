@@ -2,7 +2,7 @@ name: Upload Conan Dependencies
 
 on:
   schedule:
-    - cron: "0 9 * * 1-5"
+    - cron: "0 3 * * 2-6"
   workflow_dispatch:
     inputs:
       force_source_build:
@@ -18,15 +18,8 @@ on:
   pull_request:
     branches: [develop]
     paths:
+      # This allows testing changes to the upload workflow in a PR
       - .github/workflows/upload-conan-deps.yml
-
-      - .github/workflows/reusable-strategy-matrix.yml
-
-      - .github/actions/build-deps/action.yml
-      - ".github/scripts/strategy-matrix/**"
-
-      - conanfile.py
-      - conan.lock
   push:
     branches: [develop]
     paths:
