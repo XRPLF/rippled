@@ -2,7 +2,7 @@
   "architecture": [
     {
       "platform": "macos/arm64",
-      "runner": ["self-hosted", "macOS", "ARM64", "mac-runner-m1"]
+      "runner": ["self-hosted", "macOS", "ARM64", "devbox"]
     }
   ],
   "os": [
