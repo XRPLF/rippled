@@ -24,6 +24,7 @@ on:
       - .github/workflows/reusable-upload-conan-deps-os.yml
 
       - .github/actions/build-deps/action.yml
+      - .github/actions/setup-conan/action.yml
       - ".github/scripts/strategy-matrix/**"
 
       - conanfile.py
@@ -37,6 +38,7 @@ on:
       - .github/workflows/reusable-upload-conan-deps-os.yml
 
       - .github/actions/build-deps/action.yml
+      - .github/actions/setup-conan/action.yml
       - ".github/scripts/strategy-matrix/**"
 
       - conanfile.py
