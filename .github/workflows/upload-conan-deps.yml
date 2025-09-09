@@ -33,6 +33,10 @@ on:
       - conanfile.py
       - conan.lock
 
+env:
+  CONAN_REMOTE_NAME: xrplf
+  CONAN_REMOTE_URL: https://conan.ripplex.io
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -66,6 +70,9 @@ jobs:
 
       - name: Setup Conan
         uses: ./.github/actions/setup-conan
+        with:
+          conan_remote_name: ${{ env.CONAN_REMOTE_NAME }}
+          conan_remote_url: ${{ env.CONAN_REMOTE_URL }}
 
       - name: Build dependencies
         uses: ./.github/actions/build-deps
@@ -74,10 +81,10 @@ jobs:
           build_type: ${{ matrix.build_type }}
           force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
 
-      - name: Login to Conan
+      - name: Log into Conan remote
         if: github.repository_owner == 'XRPLF' && github.event_name != 'pull_request'
-        run: conan remote login -p ${{ secrets.CONAN_PASSWORD }} ${{ inputs.conan_remote_name }} ${{ secrets.CONAN_USERNAME }}
+        run: conan remote login ${{ env.CONAN_REMOTE_NAME }} "${{ secrets.CONAN_REMOTE_USERNAME }}" --password "${{ secrets.CONAN_REMOTE_PASSWORD }}"
 
       - name: Upload Conan packages
         if: github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule'
-        run: conan upload "*" -r=${{ inputs.conan_remote_name }} --confirm ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
+        run: conan upload "*" -r=${{ env.CONAN_REMOTE_NAME }} --confirm ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
