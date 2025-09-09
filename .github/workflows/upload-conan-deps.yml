@@ -2,7 +2,7 @@ name: Upload Conan Dependencies
 
 on:
   schedule:
-    - cron: "0 9 * * 1-5"
+    - cron: "0 3 * * 2-6"
   workflow_dispatch:
     inputs:
       force_source_build:
