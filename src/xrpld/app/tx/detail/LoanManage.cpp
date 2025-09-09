@@ -64,17 +64,8 @@ LoanManage::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     // Flags are mutually exclusive
-    int numFlags = 0;
-    for (auto const flag : {
-             tfLoanDefault,
-             tfLoanImpair,
-             tfLoanUnimpair,
-         })
-    {
-        if (ctx.tx.isFlag(flag))
-            ++numFlags;
-    }
-    if (numFlags > 1)
+    auto const flags = ctx.tx[sfFlags] & tfUniversalMask;
+    if ((flags & (flags - 1)) != 0)
     {
         JLOG(ctx.j.warn())
             << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or "
