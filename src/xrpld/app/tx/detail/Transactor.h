@@ -310,19 +310,19 @@ protected:
     validNumericRange(
         std::optional<T> value,
         unit::ValueUnit<Unit, T> max,
-        unit::ValueUnit<Unit, T> min = {});
+        unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
     /// Minimum will usually be zero.
     template <class T>
     static bool
-    validNumericMinimum(std::optional<T> value, T min = {});
+    validNumericMinimum(std::optional<T> value, T min = T{});
 
     /// Minimum will usually be zero.
     template <class T, class Unit>
     static bool
     validNumericMinimum(
         std::optional<T> value,
-        unit::ValueUnit<Unit, T> min = {});
+        unit::ValueUnit<Unit, T> min = unit::ValueUnit<Unit, T>{});
 
 private:
     std::pair<TER, XRPAmount>

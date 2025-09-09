@@ -86,13 +86,13 @@ LoanSet::preflight(PreflightContext const& ctx)
         !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
     for (auto const& field :
-         {sfLoanOriginationFee,
-          sfLoanServiceFee,
-          sfLatePaymentFee,
-          sfClosePaymentFee,
-          sfPrincipalRequested})
+         {&sfLoanOriginationFee,
+          &sfLoanServiceFee,
+          &sfLatePaymentFee,
+          &sfClosePaymentFee,
+          &sfPrincipalRequested})
     {
-        if (!validNumericMinimum(tx[~field]))
+        if (!validNumericMinimum(tx[~*field]))
             return temINVALID;
     }
     if (!validNumericRange(tx[~sfInterestRate], maxInterestRate))
@@ -376,7 +376,7 @@ LoanSet::doApply()
         return ter;
     // 2. Transfer originationFee, if any, from vault pseudo-account to
     // LoanBroker owner.
-    if (originationFee && *originationFee)
+    if (originationFee && (*originationFee != Number{}))
     {
         // Create the holding if it doesn't already exist (necessary for MPTs).
         // The owner may have deleted their MPT / line at some point.
