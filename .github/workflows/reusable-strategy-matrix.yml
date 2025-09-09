@@ -5,7 +5,7 @@ on:
     inputs:
       os:
         description: 'The operating system to use for the build ("linux", "macos", "windows").'
-        required: true
+        required: false
         type: string
       strategy_matrix:
         # TODO: Support additional strategies, e.g. "ubuntu" for generating all Ubuntu configurations.
@@ -35,4 +35,4 @@ jobs:
       - name: Generate strategy matrix
         working-directory: .github/scripts/strategy-matrix
         id: generate
-        run: ./generate.py ${{ inputs.strategy_matrix == 'all' && '--all' || '' }} --config=${{ inputs.os }}.json >> "${GITHUB_OUTPUT}"
+        run: ./generate.py ${{ inputs.strategy_matrix == 'all' && '--all' || '' }} ${{ inputs.os != '' && format('--config={0}.json', inputs.os) || '' }} >> "${GITHUB_OUTPUT}"
