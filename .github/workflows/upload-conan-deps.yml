@@ -26,7 +26,6 @@ on:
       - .github/workflows/upload-conan-deps.yml
 
       - .github/workflows/reusable-strategy-matrix.yml
-      - .github/workflows/reusable-upload-conan-deps-os.yml
 
       - .github/actions/build-deps/action.yml
       - ".github/scripts/strategy-matrix/**"
@@ -39,16 +38,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  run-upload-conan-deps:
-    strategy:
-      fail-fast: true
-      matrix:
-        os: ["linux", "macos", "windows"]
-    uses: ./.github/workflows/reusable-upload-conan-deps-os.yml
+  generate-matrix:
+    uses: ./.github/workflows/reusable-strategy-matrix.yml
     with:
-      force_source_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
-      force_upload: ${{ github.event.inputs.force_upload == 'true' }}
-      os: ${{ matrix.os }}
-    secrets:
-      CONAN_USERNAME: ${{ secrets.CONAN_REMOTE_USERNAME }}
-      CONAN_PASSWORD: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+      strategy_matrix: ${{ github.event_name == 'pull_request' && 'minimal' || 'all' }}
+
+  run-upload-conan-deps:
+    needs:
+      - generate-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+      max-parallel: 10
+    runs-on: ${{ matrix.architecture.runner }}
+    container: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
+
+    steps:
+      - name: Cleanup workspace
+        if: ${{ runner.os == 'macOS' }}
+        uses: XRPLF/actions/.github/actions/cleanup-workspace@3f044c7478548e3c32ff68980eeb36ece02b364e
+
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Prepare runner
+        uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
+        with:
+          disable_ccache: false
+
+      - name: Setup Conan
+        uses: ./.github/actions/setup-conan
+
+      - name: Build dependencies
+        uses: ./.github/actions/build-deps
+        with:
+          build_dir: .build
+          build_type: ${{ matrix.build_type }}
+          force_build: ${{ github.event_name == 'schedule' || github.event.inputs.force_source_build == 'true' }}
+
+      - name: Login to Conan
+        if: github.repository_owner == 'XRPLF' && github.event_name != 'pull_request'
+        run: conan remote login -p ${{ secrets.CONAN_PASSWORD }} ${{ inputs.conan_remote_name }} ${{ secrets.CONAN_USERNAME }}
+
+      - name: Upload Conan packages
+        if: github.repository_owner == 'XRPLF' && github.event_name != 'pull_request' && github.event_name != 'schedule'
+        run: conan upload "*" -r=${{ inputs.conan_remote_name }} --confirm ${{ github.event.inputs.force_upload == 'true' && '--force' || '' }}
