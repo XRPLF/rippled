@@ -45,6 +45,7 @@ namespace jss {
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
 JSS(AcceptedCredentials);  // out: AccountObjects
+JSS(ACCOUNT_SET_FLAGS);    // out: RPC server_definitions
 JSS(Account);              // in: TransactionSign; field.
 JSS(AMMID);                // field
 JSS(Amount);               // in: TransactionSign; field.
@@ -205,6 +206,7 @@ JSS(closed_ledger);           // out: NetworkOPs
 JSS(cluster);                 // out: PeerImp
 JSS(code);                    // out: errors
 JSS(command);                 // in: RPCHandler
+JSS(common);                  // out: RPC server_definitions
 JSS(complete);                // out: NetworkOPs, InboundLedger
 JSS(complete_ledgers);        // out: NetworkOPs, PeerImp
 JSS(consensus);               // out: NetworkOPs, LedgerConsensus
@@ -374,6 +376,7 @@ JSS(ledger_min);              // in, out: AccountTx*
 JSS(ledger_time);             // out: NetworkOPs
 JSS(LEDGER_ENTRY_TYPES);      // out: RPC server_definitions
                               // matches definitions.json format
+JSS(LEDGER_FORMATS);          // out: RPC server_definitions
 JSS(levels);                  // LogLevels
 JSS(limit);                   // in/out: AccountTx*, AccountOffers,
                               //         AccountLines, AccountObjects
@@ -532,6 +535,7 @@ JSS(remaining);               // out: ValidatorList
 JSS(remote);                  // out: Logic.h
 JSS(request);                 // RPC
 JSS(requested);               // out: Manifest
+JSS(required);
 JSS(reservations);            // out: Reservations
 JSS(reserve_base);            // out: NetworkOPs
 JSS(reserve_base_xrp);        // out: NetworkOPs
@@ -630,6 +634,8 @@ JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
                               // matches definitions.json format
 JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
                               // matches definitions.json format
+JSS(TRANSACTION_FLAGS);       // out: RPC server_definitions
+JSS(TRANSACTION_FORMATS);     // out: RPC server_definitions
 JSS(TYPES);                   // out: RPC server_definitions
                               // matches definitions.json format
 JSS(transfer_rate);           // out: nft_info (clio)

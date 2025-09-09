@@ -84,7 +84,7 @@ Clawback::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.tx.getFlags() & tfClawbackMask)
+    if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
     if (auto const ret = std::visit(

@@ -184,6 +184,7 @@ admin = 127.0.0.1
         {
             Env env(*this);
             auto const result = env.rpc("server_definitions");
+            std::cout << result.toStyledString() << std::endl;
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::FIELDS));
