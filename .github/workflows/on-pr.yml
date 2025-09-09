@@ -103,6 +103,7 @@ jobs:
 
   build-test:
     needs: should-run
+    if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/build-test.yml
     strategy:
       matrix:
@@ -116,6 +117,7 @@ jobs:
     needs:
       - should-run
       - build-test
+    if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/notify-clio.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
@@ -123,11 +125,12 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   passed:
+    if: failure() || cancelled()
     needs:
       - build-test
       - check-format
       - check-levelization
     runs-on: ubuntu-latest
     steps:
-      - name: No-op
-        run: true
+      - name: Fail
+        run: false
