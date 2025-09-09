@@ -543,6 +543,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
             case ltVAULT:
+            case ltSUBSCRIPTION:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -1509,6 +1510,9 @@ ValidMPTIssuance::finalize(
         }
 
         if (tx.getTxnType() == ttESCROW_FINISH)
+            return true;
+
+        if (tx.getTxnType() == ttSUBSCRIPTION_CLAIM)
             return true;
 
         if ((tx.getTxnType() == ttVAULT_CLAWBACK ||

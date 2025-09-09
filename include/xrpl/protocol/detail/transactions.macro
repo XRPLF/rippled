@@ -526,6 +526,28 @@ TRANSACTION(ttBATCH, 71, Batch, Delegation::notDelegatable, ({
     {sfBatchSigners, soeOPTIONAL},
 }))
 
+/** This transaction type batches together transactions. */
+TRANSACTION(ttSUBSCRIPTION_SET, 72, SubscriptionSet, Delegation::delegatable, ({
+    {sfDestination, soeOPTIONAL},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfFrequency, soeOPTIONAL},
+    {sfStartTime, soeOPTIONAL},
+    {sfExpiration, soeOPTIONAL},
+    {sfDestinationTag, soeOPTIONAL},
+    {sfSubscriptionID, soeOPTIONAL},
+}))
+
+/** This transaction type batches together transactions. */
+TRANSACTION(ttSUBSCRIPTION_CANCEL, 73, SubscriptionCancel, Delegation::delegatable, ({
+    {sfSubscriptionID, soeREQUIRED},
+}))
+
+/** This transaction type batches together transactions. */
+TRANSACTION(ttSUBSCRIPTION_CLAIM, 74, SubscriptionClaim, Delegation::delegatable, ({
+    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfSubscriptionID, soeREQUIRED},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
