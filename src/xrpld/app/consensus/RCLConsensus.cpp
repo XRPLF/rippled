@@ -1136,12 +1136,13 @@ RclConsensusLogger::~RclConsensusLogger()
     {
         thread_local std::string buffer;
         buffer.reserve(1024);
+        buffer.clear();
         beast::detail::SimpleJsonWriter writer{buffer};
         writer.startObject();
         writer.writeKey("Message");
         writer.writeString(outSs.str());
         writer.endObject();
-        j_.sink().writeAlways(beast::severities::kInfo, std::string{writer.finish()});
+        j_.sink().writeAlways(beast::severities::kInfo, writer.finish());
     }
     else
     {
