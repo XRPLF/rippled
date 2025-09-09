@@ -35,7 +35,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         # Only generate a subset of configurations in PRs.
         if not all:
             # Debian:
-            # - Bookworm using GCC 13: Release and Unity on linux/arm64, set
+            # - Bookworm using GCC 13: Release and Unity on linux/amd64, set
             #   the reference fee to 500.
             # - Bookworm using GCC 15: Debug and no Unity on linux/amd64, enable
             #   code coverage (which will be done below).
@@ -47,7 +47,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
             if os['distro_name'] == 'debian':
                 skip = True
                 if os['distro_version'] == 'bookworm':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/arm64':
+                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
