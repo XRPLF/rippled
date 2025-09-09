@@ -125,7 +125,7 @@ jobs:
       conan_remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
 
   passed:
-    if: failure()
+    if: failure() || cancelled()
     needs:
       - build-test
       - check-format
