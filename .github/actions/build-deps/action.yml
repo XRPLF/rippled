@@ -1,7 +1,5 @@
-# This action installs and optionally uploads Conan dependencies to a remote
-# repository. The dependencies will only be uploaded if the credentials are
-# provided.
 name: Build Conan dependencies
+description: "Install Conan dependencies, optionally forcing a rebuild of all dependencies."
 
 # Note that actions do not support 'type' and all inputs are strings, see
 # https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
@@ -12,26 +10,8 @@ inputs:
   build_type:
     description: 'The build type to use ("Debug", "Release").'
     required: true
-  conan_remote_name:
-    description: "The name of the Conan remote to use."
-    required: true
-  conan_remote_url:
-    description: "The URL of the Conan endpoint to use."
-    required: true
-  conan_remote_username:
-    description: "The username for logging into the Conan remote. If not provided, the dependencies will not be uploaded."
-    required: false
-    default: ""
-  conan_remote_password:
-    description: "The password for logging into the Conan remote. If not provided, the dependencies will not be uploaded."
-    required: false
-    default: ""
   force_build:
     description: 'Force building of all dependencies ("true", "false").'
-    required: false
-    default: "false"
-  force_upload:
-    description: 'Force uploading of all dependencies ("true", "false").'
     required: false
     default: "false"
 
@@ -51,12 +31,3 @@ runs:
           --options:host '&:xrpld=True' \
           --settings:all build_type=${{ inputs.build_type }} \
           --format=json ..
-    - name: Upload Conan dependencies
-      if: ${{ inputs.conan_remote_username != '' && inputs.conan_remote_password != '' }}
-      shell: bash
-      working-directory: ${{ inputs.build_dir }}
-      run: |
-        echo "Logging into Conan remote '${{ inputs.conan_remote_name }}' at ${{ inputs.conan_remote_url }}."
-        conan remote login ${{ inputs.conan_remote_name }} "${{ inputs.conan_remote_username }}" --password "${{ inputs.conan_remote_password }}"
-        echo 'Uploading dependencies.'
-        conan upload '*' --confirm --check ${{ inputs.force_upload == 'true' && '--force' || '' }} --remote=${{ inputs.conan_remote_name }}
