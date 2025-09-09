@@ -48,7 +48,7 @@ jobs:
   generate-matrix:
     uses: ./.github/workflows/reusable-strategy-matrix.yml
     with:
-      strategy_matrix: all
+      strategy_matrix: ${{ github.event_name == 'pull_request' && 'minimal' || 'all' }}
 
   run-upload-conan-deps:
     needs:
