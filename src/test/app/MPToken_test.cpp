@@ -3298,11 +3298,16 @@ class MPToken_test : public beast::unit_test::suite
 
             // Can mutate the mutable flags and fields
             mptAlice.set({.account = alice, .mutableFlags = tfMPTClearCanLock});
+            BEAST_EXPECT(mptAlice.checkFlags(tfMPTCanTransfer));
             mptAlice.set({.account = alice, .mutableFlags = tfMPTSetCanLock});
+            BEAST_EXPECT(mptAlice.checkFlags(tfMPTCanTransfer | tfMPTCanLock));
             mptAlice.set({.account = alice, .mutableFlags = tfMPTClearCanLock});
+            BEAST_EXPECT(mptAlice.checkFlags(tfMPTCanTransfer));
             mptAlice.set({.account = alice, .mutableFlags = tfMPTSetCanTrade});
+            BEAST_EXPECT(mptAlice.checkFlags(tfMPTCanTransfer | tfMPTCanTrade));
             mptAlice.set(
                 {.account = alice, .mutableFlags = tfMPTClearCanTrade});
+            BEAST_EXPECT(mptAlice.checkFlags(tfMPTCanTransfer));
             mptAlice.set({.account = alice, .transferFee = 200});
         }
 
@@ -3320,9 +3325,11 @@ class MPToken_test : public beast::unit_test::suite
 
             // Lock issuance
             mptAlice.set({.account = alice, .flags = tfMPTLock});
+            BEAST_EXPECT(mptAlice.checkFlags(tfMPTCanLock | tfMPTLock));
 
             // Can mutate the mutable flags and fields
             mptAlice.set({.account = alice, .mutableFlags = tfMPTClearCanLock});
+            BEAST_EXPECT(mptAlice.checkFlags(tfMPTLock));
             mptAlice.set({.account = alice, .mutableFlags = tfMPTSetCanLock});
             mptAlice.set({.account = alice, .mutableFlags = tfMPTClearCanLock});
             mptAlice.set(

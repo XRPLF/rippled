@@ -237,6 +237,9 @@ public:
     MPT
     operator[](std::string const& name);
 
+    std::uint32_t
+    getFlags(std::optional<Account> const& holder) const;
+
 private:
     using SLEP = std::shared_ptr<SLE const>;
     bool
@@ -267,9 +270,6 @@ private:
 
     static std::unordered_map<std::string, Account>
     makeHolders(std::vector<Account> const& holders);
-
-    std::uint32_t
-    getFlags(std::optional<Account> const& holder) const;
 };
 
 }  // namespace jtx

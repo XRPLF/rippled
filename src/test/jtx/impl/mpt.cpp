@@ -254,6 +254,7 @@ MPTTester::set(MPTSet const& arg)
         auto require = [&](std::optional<Account> const& holder,
                            bool unchanged) {
             auto flags = getFlags(holder);
+            auto tmp = flags;
             if (!unchanged)
             {
                 if (*arg.flags & tfMPTLock)
@@ -294,7 +295,16 @@ MPTTester::set(MPTSet const& arg)
                         flags &= ~lsfMPTCanTransfer;
                 }
             }
-            // env_.require(mptflags(*this, flags, holder));
+            // auto res = mptflags(*this, flags, holder);
+            auto res = checkFlags(flags, holder);
+            if (!res)
+            {
+                if (holder)
+                    std::cout << "holder: " << holder->human() << ", ";
+                std::cout << "expected: " << flags
+                          << ", actual: " << getFlags(holder)
+                          << ", tmp: " << tmp << std::endl;
+            }
         };
         if (arg.account)
             require(std::nullopt, arg.holder.has_value());
