@@ -29,7 +29,7 @@ namespace jtx {
 void
 mptflags::operator()(Env& env) const
 {
-    // env.test.expect(tester_.checkFlags(flags_, holder_));
+    tester_.checkFlags(flags_, holder_);
 }
 
 void
@@ -355,7 +355,7 @@ MPTTester::checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const
     });
 }
 
-[[nodiscard]] bool
+bool
 MPTTester::checkFlags(
     uint32_t const expectedFlags,
     std::optional<Account> const& holder) const

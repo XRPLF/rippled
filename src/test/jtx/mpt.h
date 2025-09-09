@@ -181,7 +181,7 @@ public:
     [[nodiscard]] bool
     checkMPTokenOutstandingAmount(std::int64_t expectedAmount) const;
 
-    [[nodiscard]] bool
+    bool
     checkFlags(
         uint32_t const expectedFlags,
         std::optional<Account> const& holder = std::nullopt) const;
