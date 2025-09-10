@@ -2,6 +2,7 @@ from conan import ConanFile, __version__ as conan_version
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 import re
 
+
 class Xrpl(ConanFile):
     name = 'xrpl'
 
@@ -30,6 +31,7 @@ class Xrpl(ConanFile):
         'openssl/3.5.2',
         'soci/4.0.3',
         'zlib/1.3.1',
+        'wamr/2.4.1',
     ]
 
     test_requires = [
@@ -133,6 +135,7 @@ class Xrpl(ConanFile):
         self.folders.generators = 'build/generators'
 
     generators = 'CMakeDeps'
+
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables['tests'] = self.options.tests
@@ -190,6 +193,7 @@ class Xrpl(ConanFile):
             'protobuf::libprotobuf',
             'soci::soci',
             'sqlite3::sqlite',
+            'wamr::wamr',
             'xxhash::xxhash',
             'zlib::zlib',
         ]
