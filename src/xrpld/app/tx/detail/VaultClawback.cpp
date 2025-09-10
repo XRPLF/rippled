@@ -21,8 +21,10 @@
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
@@ -151,7 +153,7 @@ VaultClawback::doApply()
     if (!vault)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    auto const mptIssuanceID = (*vault)[sfShareMPTID];
+    auto const mptIssuanceID = *((*vault)[sfShareMPTID]);
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
     {
@@ -161,68 +163,169 @@ VaultClawback::doApply()
         // LCOV_EXCL_STOP
     }
 
-    Asset const asset = vault->at(sfAsset);
+    Asset const vaultAsset = vault->at(sfAsset);
     STAmount const amount = [&]() -> STAmount {
         auto const maybeAmount = tx[~sfAmount];
         if (maybeAmount)
             return *maybeAmount;
-        return {sfAmount, asset, 0};
+        return {sfAmount, vaultAsset, 0};
     }();
     XRPL_ASSERT(
-        amount.asset() == asset,
+        amount.asset() == vaultAsset,
         "ripple::VaultClawback::doApply : matching asset");
 
+    auto assetsAvailable = vault->at(sfAssetsAvailable);
+    auto assetsTotal = vault->at(sfAssetsTotal);
+    [[maybe_unused]] auto const lossUnrealized = vault->at(sfLossUnrealized);
+    XRPL_ASSERT(
+        lossUnrealized <= (assetsTotal - assetsAvailable),
+        "ripple::VaultClawback::doApply : loss and assets do balance");
+
     AccountID holder = tx[sfHolder];
-    STAmount assets, shares;
-    if (amount == beast::zero)
+    MPTIssue const share{mptIssuanceID};
+    STAmount sharesDestroyed = {share};
+    STAmount assetsRecovered;
+    try
     {
-        Asset share = *(*vault)[sfShareMPTID];
-        shares = accountHolds(
-            view(),
-            holder,
-            share,
-            FreezeHandling::fhIGNORE_FREEZE,
-            AuthHandling::ahIGNORE_AUTH,
-            j_);
-        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
+        if (amount == beast::zero)
+        {
+            sharesDestroyed = accountHolds(
+                view(),
+                holder,
+                share,
+                FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
+                j_);
+
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsRecovered = *maybeAssets;
+        }
+        else
+        {
+            assetsRecovered = amount;
+            {
+                auto const maybeShares =
+                    assetsToSharesWithdraw(vault, sleIssuance, assetsRecovered);
+                if (!maybeShares)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                sharesDestroyed = *maybeShares;
+            }
+
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsRecovered = *maybeAssets;
+        }
+
+        // Clamp to maximum.
+        if (assetsRecovered > *assetsAvailable)
+        {
+            assetsRecovered = *assetsAvailable;
+            // Note, it is important to truncate the number of shares, otherwise
+            // the corresponding assets might breach the AssetsAvailable
+            {
+                auto const maybeShares = assetsToSharesWithdraw(
+                    vault, sleIssuance, assetsRecovered, TruncateShares::yes);
+                if (!maybeShares)
+                    return tecINTERNAL;  // LCOV_EXCL_LINE
+                sharesDestroyed = *maybeShares;
+            }
+
+            auto const maybeAssets =
+                sharesToAssetsWithdraw(vault, sleIssuance, sharesDestroyed);
+            if (!maybeAssets)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            assetsRecovered = *maybeAssets;
+            if (assetsRecovered > *assetsAvailable)
+            {
+                // LCOV_EXCL_START
+                JLOG(j_.error())
+                    << "VaultClawback: invalid rounding of shares.";
+                return tecINTERNAL;
+                // LCOV_EXCL_STOP
+            }
+        }
     }
-    else
+    catch (std::overflow_error const&)
     {
-        assets = amount;
-        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
+        // It's easy to hit this exception from Number with large enough Scale
+        // so we avoid spamming the log and only use debug here.
+        JLOG(j_.debug())  //
+            << "VaultClawback: overflow error with"
+            << " scale=" << (int)vault->at(sfScale).value()  //
+            << ", assetsTotal=" << vault->at(sfAssetsTotal).value()
+            << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
+            << ", amount=" << amount.value();
+        return tecPATH_DRY;
     }
 
-    // Clamp to maximum.
-    Number maxAssets = *vault->at(sfAssetsAvailable);
-    if (assets > maxAssets)
-    {
-        assets = maxAssets;
-        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
-    }
+    if (sharesDestroyed == beast::zero)
+        return tecPRECISION_LOSS;
 
-    if (shares == beast::zero)
-        return tecINSUFFICIENT_FUNDS;
-
-    vault->at(sfAssetsTotal) -= assets;
-    vault->at(sfAssetsAvailable) -= assets;
+    assetsTotal -= assetsRecovered;
+    assetsAvailable -= assetsRecovered;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from holder to vault.
-    if (auto ter = accountSend(
-            view(), holder, vaultAccount, shares, j_, WaiveTransferFee::Yes))
+    if (auto const ter = accountSend(
+            view(),
+            holder,
+            vaultAccount,
+            sharesDestroyed,
+            j_,
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
+    // Try to remove MPToken for shares, if the holder balance is zero. Vault
+    // pseudo-account will never set lsfMPTAuthorized, so we ignore flags.
+    // Keep MPToken if holder is the vault owner.
+    if (holder != vault->at(sfOwner))
+    {
+        if (auto const ter =
+                removeEmptyHolding(view(), holder, sharesDestroyed.asset(), j_);
+            isTesSuccess(ter))
+        {
+            JLOG(j_.debug())  //
+                << "VaultClawback: removed empty MPToken for vault shares"
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(holder);
+        }
+        else if (ter != tecHAS_OBLIGATIONS)
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.error())  //
+                << "VaultClawback: failed to remove MPToken for vault shares"
+                << " MPTID=" << to_string(mptIssuanceID)  //
+                << " account=" << toBase58(holder)        //
+                << " with result: " << transToken(ter);
+            return ter;
+            // LCOV_EXCL_STOP
+        }
+        // else quietly ignore, holder balance is not zero
+    }
+
     // Transfer assets from vault to issuer.
-    if (auto ter = accountSend(
-            view(), vaultAccount, account_, assets, j_, WaiveTransferFee::Yes))
+    if (auto const ter = accountSend(
+            view(),
+            vaultAccount,
+            account_,
+            assetsRecovered,
+            j_,
+            WaiveTransferFee::Yes);
+        !isTesSuccess(ter))
         return ter;
 
     // Sanity check
     if (accountHolds(
             view(),
             vaultAccount,
-            assets.asset(),
+            assetsRecovered.asset(),
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
