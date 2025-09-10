@@ -30,4 +30,4 @@ runs:
           --options:host '&:tests=True' \
           --options:host '&:xrpld=True' \
           --settings:all build_type=${{ inputs.build_type }} \
-          --format=json ..
+          ..

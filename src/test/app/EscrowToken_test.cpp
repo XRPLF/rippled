@@ -3426,7 +3426,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const preAliceMPT = env.balance(alice, MPT);
             auto const preOutstanding = env.balance(gw, MPT);
             auto const preEscrowed = issuerMPTEscrowed(env, MPT);
-            BEAST_EXPECT(preOutstanding == MPT(10'000));
+            BEAST_EXPECT(preOutstanding == MPT(-10'000));
             BEAST_EXPECT(preEscrowed == 0);
 
             env(escrow::create(alice, gw, MPT(1'000)),
@@ -3449,7 +3449,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1'000));
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == preOutstanding - MPT(1'000));
+            BEAST_EXPECT(env.balance(gw, MPT) == preOutstanding + MPT(1'000));
             BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == preEscrowed);
         }
     }
@@ -3759,7 +3759,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 10);
             BEAST_EXPECT(env.balance(bob, MPT) == MPT(0));
             BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(10));
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-10));
             mptGw.authorize({.account = bob, .flags = tfMPTUnauthorize});
             mptGw.destroy(
                 {.id = mptGw.issuanceID(),
