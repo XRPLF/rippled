@@ -99,6 +99,7 @@ JSS(Signer);                             // field.
 JSS(Signers);                            // field.
 JSS(SigningPubKey);                      // field.
 JSS(Subject);                            // in: Credential transactions
+JSS(SubscriptionID);                     // in: Subscription transactions
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.
 JSS(TradingFee);                         // in/out: AMM trading fee
@@ -283,6 +284,7 @@ JSS(fee_mult_max);            // in: TransactionSign
 JSS(fee_ref);                 // out: NetworkOPs, DEPRECATED
 JSS(fetch_pack);              // out: NetworkOPs
 JSS(FIELDS);                  // out: RPC server_definitions
+JSS(Frequency);               // in: Subscription transactions
                               // matches definitions.json format
 JSS(first);                   // out: rpc/Version
 JSS(finished);

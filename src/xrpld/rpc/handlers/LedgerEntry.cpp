@@ -681,6 +681,32 @@ parseXChainOwnedCreateAccountClaimID(
     return keylet.key;
 }
 
+static Expected<uint256, Json::Value>
+parseSubscription(Json::Value const& params, Json::StaticString const fieldName)
+{
+    if (!params.isObject())
+    {
+        return parseObjectID(params, fieldName);
+    }
+
+    auto const account = LedgerEntryHelpers::requiredAccountID(
+        params, jss::account, "malformedAccount");
+    if (!account)
+        return Unexpected(account.error());
+
+    auto const destination = LedgerEntryHelpers::requiredAccountID(
+        params, jss::destination, "malformedDestination");
+    if (!destination)
+        return Unexpected(destination.error());
+
+    auto const seq = LedgerEntryHelpers::requiredUInt32(
+        params, jss::seq, "malformedRequest");
+    if (!seq)
+        return Unexpected(seq.error());
+
+    return keylet::subscription(*account, *destination, *seq).key;
+}
+
 using FunctionType = Expected<uint256, Json::Value> (*)(
     Json::Value const&,
     Json::StaticString const);
