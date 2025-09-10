@@ -375,9 +375,11 @@ class JsonLogStreamFixture
 public:
     JsonLogStreamFixture()
         : sink_(beast::severities::kAll, logStream_)
-        , j_(sink_, "Test", log::attributes(log::attr("Field1", "Value1")))
+        , j_(beast::Journal::getNullSink())
     {
+        beast::Journal::resetGlobalAttributes();
         beast::Journal::enableStructuredJournal();
+        j_ = beast::Journal{sink_, "Test", log::attributes(log::attr("Field1", "Value1"))};
     }
 
     ~JsonLogStreamFixture()
