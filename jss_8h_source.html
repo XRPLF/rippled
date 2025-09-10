@@ -794,7 +794,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00710" name="l00710"></a><span class="lineno">  710</span><span class="preprocessor">#pragma push_macro(&quot;TRANSACTION&quot;)</span></div>
 <div class="line"><a id="l00711" name="l00711"></a><span class="lineno">  711</span><span class="preprocessor">#undef TRANSACTION</span></div>
 <div class="line"><a id="l00712" name="l00712"></a><span class="lineno">  712</span> </div>
-<div class="line"><a id="l00713" name="l00713"></a><span class="lineno">  713</span><span class="preprocessor">#define TRANSACTION(tag, value, name, delegatable, fields) JSS(name);</span></div>
+<div class="line"><a id="l00713" name="l00713"></a><span class="lineno">  713</span><span class="preprocessor">#define TRANSACTION(tag, value, name, ...) JSS(name);</span></div>
 <div class="line"><a id="l00714" name="l00714"></a><span class="lineno">  714</span> </div>
 <div class="line"><a id="l00715" name="l00715"></a><span class="lineno">  715</span><span class="preprocessor">#include &lt;xrpl/protocol/detail/transactions.macro&gt;</span></div>
 <div class="line"><a id="l00716" name="l00716"></a><span class="lineno">  716</span> </div>
