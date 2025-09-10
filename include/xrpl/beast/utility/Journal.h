@@ -658,7 +658,10 @@ public:
         std::string buffer;
         buffer.reserve(128);
         detail::SimpleJsonWriter writer{buffer};
-        writer.startObject();
+        if (jsonLogsEnabled_)
+        {
+            writer.startObject();
+        }
         attributesFactory(writer);
         attributes_ = std::move(buffer);
     }
