@@ -17,41 +17,10 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/xrplf/ci/tools-rippled-pre-commit
     steps:
-      # The $GITHUB_WORKSPACE and ${{ github.workspace }} might not point to the
-      # same directory for jobs running in containers. The actions/checkout step
-      # is *supposed* to checkout into $GITHUB_WORKSPACE and then add it to
-      # safe.directory (see instructions at https://github.com/actions/checkout)
-      # but that is apparently not happening for some container images. We
-      # therefore preemptively add both directories to safe.directory. See also
-      # https://github.com/actions/runner/issues/2058 for more details.
-      - name: Configure git safe.directory
-        run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-          git config --global --add safe.directory ${{ github.workspace }}
       - name: Checkout repository
         uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
-      - name: Check configuration
-        run: |
-          echo 'Checking path.'
-          echo ${PATH} | tr ':' '\n'
-
-          echo 'Checking environment variables.'
-          env | sort
-
-          echo 'Checking pre-commit version.'
-          pre-commit --version
-
-          echo 'Checking clang-format version.'
-          clang-format --version
-
-          echo 'Checking NPM version.'
-          npm --version
-
-          echo 'Checking Node.js version.'
-          node --version
-
-          echo 'Checking prettier version.'
-          prettier --version
+      - name: Prepare runner
+        uses: XRPLF/actions/.github/actions/prepare-runner@638e0dc11ea230f91bd26622fb542116bb5254d5
       - name: Format code
         run: pre-commit run --show-diff-on-failure --color=always --all-files
       - name: Check for differences

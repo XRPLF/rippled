@@ -1,18 +1,5 @@
 # To run pre-commit hooks, first install pre-commit:
 # - `pip install pre-commit==${PRE_COMMIT_VERSION}`
-# - `pip install pre-commit-hooks==${PRE_COMMIT_HOOKS_VERSION}`
-#
-# Depending on your system, you can use `brew install` or `apt install` as well
-# for installing the pre-commit package, but `pip` is needed to install the
-# hooks; you can also use `pipx` if you prefer.
-# Next, install the required formatters:
-# - `pip install clang-format==${CLANG_VERSION}`
-# - `npm install prettier@${PRETTIER_VERSION}`
-#
-# See https://github.com/XRPLF/ci/blob/main/.github/workflows/tools-rippled.yml
-# for the versions used in the CI pipeline. You will need to have the exact same
-# versions of the tools installed on your system to produce the same results as
-# the pipeline.
 #
 # Then, run the following command to install the git hook scripts:
 # - `pre-commit install`
@@ -20,42 +7,29 @@
 # - `pre-commit run --all-files`
 # To manually run a specific hook, use:
 # - `pre-commit run <hook_id> --all-files`
-# To run the hooks against only the files changed in the current commit, use:
+# To run the hooks against only the staged files, use:
 # - `pre-commit run`
 repos:
-  - repo: local
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: check-merge-conflict
+        args: [--assume-in-merge]
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: 7d85583be209cb547946c82fbe51f4bc5dd1d017 # frozen: v18.1.8
     hooks:
       - id: clang-format
-        name: clang-format
-        language: system
-        entry: clang-format -i
-        files: '\.(cpp|hpp|h|ipp|proto)$'
-      - id: trailing-whitespace
-        name: trailing-whitespace
-        entry: trailing-whitespace-fixer
-        language: system
-        types: [text]
-      - id: end-of-file
-        name: end-of-file
-        entry: end-of-file-fixer
-        language: system
-        types: [text]
-      - id: mixed-line-ending
-        name: mixed-line-ending
-        entry: mixed-line-ending
-        language: system
-        types: [text]
-      - id: check-merge-conflict
-        name: check-merge-conflict
-        entry: check-merge-conflict --assume-in-merge
-        language: system
-        types: [text]
-  - repo: local
+        args: [--style=file]
+        "types_or": [c++, c, proto]
+
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: 5ba47274f9b181bce26a5150a725577f3c336011 # frozen: v3.6.2
     hooks:
       - id: prettier
-        name: prettier
-        language: system
-        entry: prettier --ignore-unknown --write
 
 exclude: |
   (?x)^(
