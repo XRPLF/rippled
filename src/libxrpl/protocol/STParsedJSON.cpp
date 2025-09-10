@@ -83,6 +83,7 @@ constexpr std::
     return static_cast<U1>(value);
 }
 
+// LCOV_EXCL_START
 static std::string
 make_name(std::string const& object, std::string const& field)
 {
@@ -201,6 +202,7 @@ non_object_in_array(std::string const& item, Json::UInt index)
         "Item '" + item + "' at index " + std::to_string(index) +
             " is not an object.  Arrays may only contain objects.");
 }
+// LCOV_EXCL_STOP
 
 // This function is used by parseObject to parse any JSON type that doesn't
 // recurse.  Everything represented here is a leaf-type.
@@ -216,10 +218,13 @@ parseLeaf(
 
     auto const& field = SField::getField(fieldName);
 
+    // checked in parseObject
     if (field == sfInvalid)
     {
+        // LCOV_EXCL_START
         error = unknown_field(json_name, fieldName);
         return ret;
+        // LCOV_EXCL_STOP
     }
 
     switch (field.fieldType)
@@ -702,6 +707,12 @@ parseLeaf(
                         bool hasCurrency = false;
                         AccountID uAccount, uIssuer;
                         Currency uCurrency;
+
+                        if (!account && !currency && !issuer)
+                        {
+                            error = invalid_data(element_name);
+                            return ret;
+                        }
 
                         if (account)
                         {
