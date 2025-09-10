@@ -47,6 +47,7 @@ ConnectAttempt::ConnectAttempt(
     , usage_(usage)
     , strand_(boost::asio::make_strand(io_context))
     , timer_(io_context)
+    , stepTimer_(io_context)
     , stream_ptr_(std::make_unique<stream_type>(
           socket_type(std::forward<boost::asio::io_context&>(io_context)),
           *context))
@@ -91,7 +92,7 @@ ConnectAttempt::run()
     ioPending_ = true;
 
     // Allow up to connectTimeout_ seconds to establish remote peer connection
-    setTimer();
+    setTimer(ConnectionStep::TcpConnect);
 
     stream_.next_layer().async_connect(
         remote_endpoint_,
@@ -206,24 +207,70 @@ ConnectAttempt::fail(std::string const& name, error_code ec)
 }
 
 void
-ConnectAttempt::setTimer()
+ConnectAttempt::setTimer(ConnectionStep step)
 {
+    currentStep_ = step;
+
+    // Set global timer (only if not already set)
+    if (timer_.expiry() == std::chrono::steady_clock::time_point{})
+    {
+        try
+        {
+            timer_.expires_after(connectTimeout);
+            timer_.async_wait(boost::asio::bind_executor(
+                strand_,
+                std::bind(
+                    &ConnectAttempt::onTimer,
+                    shared_from_this(),
+                    std::placeholders::_1)));
+        }
+        catch (std::exception const& ex)
+        {
+            JLOG(journal_.error()) << "setTimer (global): " << ex.what();
+            return close();
+        }
+    }
+
+    // Set step-specific timer
     try
     {
-        timer_.expires_after(connectTimeout);
+        std::chrono::seconds stepTimeout;
+        switch (step)
+        {
+            case ConnectionStep::TcpConnect:
+                stepTimeout = StepTimeouts::tcpConnect;
+                break;
+            case ConnectionStep::TlsHandshake:
+                stepTimeout = StepTimeouts::tlsHandshake;
+                break;
+            case ConnectionStep::HttpWrite:
+                stepTimeout = StepTimeouts::httpWrite;
+                break;
+            case ConnectionStep::HttpRead:
+                stepTimeout = StepTimeouts::httpRead;
+                break;
+            case ConnectionStep::Complete:
+                return;  // No timer needed for complete step
+        }
+
+        // call to expires_after cancels previous timer
+        stepTimer_.expires_after(stepTimeout);
+        stepTimer_.async_wait(boost::asio::bind_executor(
+            strand_,
+            std::bind(
+                &ConnectAttempt::onTimer,
+                shared_from_this(),
+                std::placeholders::_1)));
+
+        JLOG(journal_.trace()) << "setTimer: " << stepToString(step)
+                               << " timeout=" << stepTimeout.count() << "s";
     }
     catch (std::exception const& ex)
     {
-        JLOG(journal_.error()) << "setTimer: " << ex.what();
+        JLOG(journal_.error())
+            << "setTimer (step " << stepToString(step) << "): " << ex.what();
         return close();
     }
-
-    timer_.async_wait(boost::asio::bind_executor(
-        strand_,
-        std::bind(
-            &ConnectAttempt::onTimer,
-            shared_from_this(),
-            std::placeholders::_1)));
 }
 
 void
@@ -232,6 +279,7 @@ ConnectAttempt::cancelTimer()
     try
     {
         timer_.cancel();
+        stepTimer_.cancel();
     }
     catch (boost::system::system_error const&)
     {
@@ -256,7 +304,26 @@ ConnectAttempt::onTimer(error_code ec)
         return close();
     }
 
-    JLOG(journal_.debug()) << "onTimer: Timeout";
+    // Determine which timer expired by checking their expiry times
+    auto const now = std::chrono::steady_clock::now();
+    bool globalExpired = (timer_.expiry() <= now);
+    bool stepExpired = (stepTimer_.expiry() <= now);
+
+    if (globalExpired)
+    {
+        JLOG(journal_.debug())
+            << "onTimer: Global timeout; step: " << stepToString(currentStep_);
+    }
+    else if (stepExpired)
+    {
+        JLOG(journal_.debug())
+            << "onTimer: Step timeout; step: " << stepToString(currentStep_);
+    }
+    else
+    {
+        JLOG(journal_.warn()) << "onTimer: Unexpected timer callback";
+    }
+
     close();
 }
 
@@ -285,6 +352,8 @@ ConnectAttempt::onConnect(error_code ec)
         return tryAsyncShutdown();
 
     ioPending_ = true;
+
+    setTimer(ConnectionStep::TlsHandshake);
 
     stream_.set_verify_mode(boost::asio::ssl::verify_none);
     stream_.async_handshake(
@@ -345,6 +414,8 @@ ConnectAttempt::onHandshake(error_code ec)
 
     ioPending_ = true;
 
+    setTimer(ConnectionStep::HttpWrite);
+
     boost::beast::http::async_write(
         stream_,
         req_,
@@ -374,6 +445,8 @@ ConnectAttempt::onWrite(error_code ec)
 
     ioPending_ = true;
 
+    setTimer(ConnectionStep::HttpRead);
+
     boost::beast::http::async_read(
         stream_,
         read_buf_,
@@ -391,6 +464,7 @@ ConnectAttempt::onRead(error_code ec)
 {
     cancelTimer();
     ioPending_ = false;
+    currentStep_ = ConnectionStep::Complete;
 
     if (ec)
     {

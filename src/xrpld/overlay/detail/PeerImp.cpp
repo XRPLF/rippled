@@ -733,6 +733,10 @@ PeerImp::setTimer(std::chrono::seconds interval)
 void
 PeerImp::onTimer(error_code const& ec)
 {
+    XRPL_ASSERT(
+        strand_.running_in_this_thread(),
+        "ripple::PeerImp::onTimer : strand in this thread");
+
     if (!socket_.is_open())
         return;
 
