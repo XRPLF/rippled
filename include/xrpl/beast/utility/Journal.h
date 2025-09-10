@@ -324,11 +324,32 @@ public:
     {
         std::string buffer_;
         detail::SimpleJsonWriter messageParamsWriter_;
+        bool hasMessageParams_ = false;
 
     public:
         JsonLogContext() : messageParamsWriter_(buffer_)
         {
             buffer_.reserve(1024 * 5);
+        }
+
+        void
+        startMessageParams()
+        {
+            if (!hasMessageParams_)
+            {
+                writer().writeKey("Data");
+                writer().startObject();
+                hasMessageParams_ = true;
+            }
+        }
+
+        void
+        endMessageParams()
+        {
+            if (hasMessageParams_)
+            {
+                writer().endObject();
+            }
         }
 
         detail::SimpleJsonWriter&
@@ -1014,6 +1035,7 @@ operator<<(std::ostream& os, LogParameter<T> const& param)
         os << param.value_;
         return os;
     }
+    beast::Journal::currentJsonLogContext_.startMessageParams();
     detail::setJsonValue(
         beast::Journal::currentJsonLogContext_.writer(),
         param.name_,
@@ -1028,6 +1050,7 @@ operator<<(std::ostream& os, LogField<T> const& param)
 {
     if (!beast::Journal::m_jsonLogsEnabled)
         return os;
+    beast::Journal::currentJsonLogContext_.startMessageParams();
     detail::setJsonValue(
         beast::Journal::currentJsonLogContext_.writer(),
         param.name_,

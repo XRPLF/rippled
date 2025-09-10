@@ -216,7 +216,6 @@ Journal::JsonLogContext::reset(
         ThreadIdStringInitializer()
         {
             std::stringstream threadIdStream;
-            threadIdStream.imbue(std::locale::classic());
             threadIdStream << std::this_thread::get_id();
             value = threadIdStream.str();
         }
@@ -229,7 +228,7 @@ Journal::JsonLogContext::reset(
 
     if (!journalAttributesJson.empty())
     {
-        writer().writeKey("JournalParams");
+        writer().writeKey("Jnl");
         writer().writeRaw(journalAttributesJson);
         writer().endObject();
     }
@@ -238,50 +237,45 @@ Journal::JsonLogContext::reset(
         std::shared_lock lock(globalLogAttributesMutex_);
         if (!globalLogAttributesJson_.empty())
         {
-            writer().writeKey("GlobalParams");
+            writer().writeKey("Gbl");
             writer().writeRaw(globalLogAttributesJson_);
             writer().endObject();
         }
     }
 
-    writer().writeKey("ModuleName");
-    writer().writeString(moduleName);
-    writer().writeKey("Metadata");
+    writer().writeKey("Mtd");
     writer().startObject();
 
-    writer().writeKey("Function");
-    writer().writeString(location.function_name());
+    writer().writeKey("Mdl");
+    writer().writeString(moduleName);
 
-    writer().writeKey("File");
+    writer().writeKey("Fl");
+    constexpr size_t FILE_NAME_KEEP_CHARS = 20;
     std::string_view fileName = location.file_name();
-    constexpr size_t KEEP_CHARS = 10;
-    std::string_view trimmedFileName = (fileName.size() > KEEP_CHARS)
-        ? fileName.substr(fileName.size() - KEEP_CHARS)
+    std::string_view trimmedFileName = (fileName.size() > FILE_NAME_KEEP_CHARS)
+        ? fileName.substr(fileName.size() - FILE_NAME_KEEP_CHARS)
         : fileName;
     writer().writeString(trimmedFileName);
 
-    writer().writeKey("Line");
+    writer().writeKey("Ln");
     writer().writeUInt(location.line());
 
-    writer().writeKey("ThreadId");
+    writer().writeKey("ThId");
     writer().writeString(threadId.value);
 
     auto severityStr = to_string(severity);
-    writer().writeKey("Level");
+    writer().writeKey("Lv");
     writer().writeString(severityStr);
 
     auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
                      std::chrono::system_clock::now().time_since_epoch())
                      .count();
-    writer().writeKey("Timestamp");
-    writer().writeInt(nowMs);
-    writer().writeKey("Time");
+    writer().writeKey("Tm");
     writer().writeString(fastTimestampToString(nowMs));
 
     writer().endObject();
 
-    writer().writeKey("MessageParams");
-    writer().startObject();
+    hasMessageParams_ = false;
 }
 
 void
@@ -302,9 +296,9 @@ Journal::formatLog(std::string const& message)
 
     auto& writer = currentJsonLogContext_.writer();
 
-    writer.endObject();
+    currentJsonLogContext_.endMessageParams();
 
-    writer.writeKey("Message");
+    writer.writeKey("Msg");
     writer.writeString(message);
 
     writer.endObject();
