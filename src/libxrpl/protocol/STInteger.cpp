@@ -251,4 +251,82 @@ STUInt64::getJson(JsonOptions) const
     return convertToString(value_, 16);  // Convert to base 16
 }
 
+//------------------------------------------------------------------------------
+
+template <>
+STInteger<std::int32_t>::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, sit.get32())
+{
+}
+
+template <>
+SerializedTypeID
+STInt32::getSType() const
+{
+    return STI_INT32;
+}
+
+template <>
+std::string
+STInt32::getText() const
+{
+    return std::to_string(value_);
+}
+
+template <>
+Json::Value
+STInt32::getJson(JsonOptions) const
+{
+    return value_;
+}
+
+//------------------------------------------------------------------------------
+
+template <>
+STInteger<std::int64_t>::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, sit.get64())
+{
+}
+
+template <>
+SerializedTypeID
+STInt64::getSType() const
+{
+    return STI_INT64;
+}
+
+template <>
+std::string
+STInt64::getText() const
+{
+    return std::to_string(value_);
+}
+
+template <>
+Json::Value
+STInt64::getJson(JsonOptions) const
+{
+    auto convertToString = [](int64_t const value, int const base) {
+        XRPL_ASSERT(
+            base == 10 || base == 16,
+            "ripple::STInt64::getJson : base 10 or 16");
+        std::string str(
+            base == 10 ? 20 : 16, 0);  // Allocate space depending on base
+        auto ret =
+            std::to_chars(str.data(), str.data() + str.size(), value, base);
+        XRPL_ASSERT(
+            ret.ec == std::errc(),
+            "ripple::STInt64::getJson : to_chars succeeded");
+        str.resize(std::distance(str.data(), ret.ptr));
+        return str;
+    };
+
+    if (auto const& fName = getFName(); fName.shouldMeta(SField::sMD_BaseTen))
+    {
+        return convertToString(value_, 10);  // Convert to base 10
+    }
+
+    return convertToString(value_, 16);  // Convert to base 16
+}
+
 }  // namespace ripple

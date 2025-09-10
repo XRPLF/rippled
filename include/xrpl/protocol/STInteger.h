@@ -81,6 +81,9 @@ using STUInt16 = STInteger<std::uint16_t>;
 using STUInt32 = STInteger<std::uint32_t>;
 using STUInt64 = STInteger<std::uint64_t>;
 
+using STInt32 = STInteger<std::int32_t>;
+using STInt64 = STInteger<std::int64_t>;
+
 template <typename Integer>
 inline STInteger<Integer>::STInteger(Integer v) : value_(v)
 {
