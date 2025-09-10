@@ -202,7 +202,7 @@ Logs::write(
     }
 
     // Add to batch buffer for file output
-    {
+    if (false) {
         std::lock_guard lock(batchMutex_);
 
         // Console output still immediate for responsiveness

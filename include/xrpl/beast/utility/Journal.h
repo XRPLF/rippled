@@ -93,6 +93,9 @@ public:
     {
     }
 
+    std::string&
+    buffer() { return buffer_; }
+
     void
     startObject() const
     {
@@ -363,18 +366,18 @@ public:
             std::source_location location,
             severities::Severity severity,
             std::string_view moduleName,
-            std::string_view journalAttributesJson) noexcept;
+            std::string_view journalAttributes) noexcept;
     };
 
 private:
     // Severity level / threshold of a Journal message.
     using Severity = severities::Severity;
 
-    std::string m_name;
-    std::string m_attributesJson;
-    static std::string globalLogAttributesJson_;
+    std::string name_;
+    std::string attributes_;
+    static std::string globalLogAttributes_;
     static std::shared_mutex globalLogAttributesMutex_;
-    static bool m_jsonLogsEnabled;
+    static bool jsonLogsEnabled_;
 
     static thread_local JsonLogContext currentJsonLogContext_;
 
@@ -618,29 +621,29 @@ public:
     Journal() = delete;
 
     Journal(Journal const& other)
-        : m_name(other.m_name)
-        , m_attributesJson(other.m_attributesJson)
+        : name_(other.name_)
+        , attributes_(other.attributes_)
         , m_sink(other.m_sink)
     {
     }
 
     template <typename TAttributesFactory>
     Journal(Journal const& other, TAttributesFactory&& attributesFactory)
-        : m_name(other.m_name), m_sink(other.m_sink)
+        : name_(other.name_), m_sink(other.m_sink)
     {
-        std::string buffer{other.m_attributesJson};
+        std::string buffer{other.attributes_};
         detail::SimpleJsonWriter writer{buffer};
-        if (other.m_attributesJson.empty())
+        if (other.attributes_.empty() && jsonLogsEnabled_)
         {
             writer.startObject();
         }
         attributesFactory(writer);
-        m_attributesJson = std::move(buffer);
+        attributes_ = std::move(buffer);
     }
 
     /** Create a journal that writes to the specified sink. */
     explicit Journal(Sink& sink, std::string const& name = {})
-        : m_name(name), m_sink(&sink)
+        : name_(name), m_sink(&sink)
     {
     }
 
@@ -650,14 +653,14 @@ public:
         Sink& sink,
         std::string const& name,
         TAttributesFactory&& attributesFactory)
-        : m_name(name), m_sink(&sink)
+        : name_(name), m_sink(&sink)
     {
         std::string buffer;
         buffer.reserve(128);
         detail::SimpleJsonWriter writer{buffer};
         writer.startObject();
         attributesFactory(writer);
-        m_attributesJson = std::move(buffer);
+        attributes_ = std::move(buffer);
     }
 
     Journal&
@@ -667,8 +670,8 @@ public:
             return *this;  // LCOV_EXCL_LINE
 
         m_sink = other.m_sink;
-        m_name = other.m_name;
-        m_attributesJson = other.m_attributesJson;
+        name_ = other.name_;
+        attributes_ = other.attributes_;
         return *this;
     }
 
@@ -676,8 +679,8 @@ public:
     operator=(Journal&& other) noexcept
     {
         m_sink = other.m_sink;
-        m_name = std::move(other.m_name);
-        m_attributesJson = std::move(other.m_attributesJson);
+        name_ = std::move(other.name_);
+        attributes_ = std::move(other.attributes_);
         return *this;
     }
 
@@ -694,8 +697,7 @@ public:
         Severity level,
         std::source_location location = std::source_location::current()) const
     {
-        if (m_jsonLogsEnabled)
-            initMessageContext(location, level);
+        initMessageContext(location, level);
         return Stream(*m_sink, level);
     }
 
@@ -714,48 +716,42 @@ public:
     Stream
     trace(std::source_location location = std::source_location::current()) const
     {
-        if (m_jsonLogsEnabled)
-            initMessageContext(location, severities::kTrace);
+        initMessageContext(location, severities::kTrace);
         return {*m_sink, severities::kTrace};
     }
 
     Stream
     debug(std::source_location location = std::source_location::current()) const
     {
-        if (m_jsonLogsEnabled)
-            initMessageContext(location, severities::kDebug);
+        initMessageContext(location, severities::kDebug);
         return {*m_sink, severities::kDebug};
     }
 
     Stream
     info(std::source_location location = std::source_location::current()) const
     {
-        if (m_jsonLogsEnabled)
-            initMessageContext(location, severities::kInfo);
+        initMessageContext(location, severities::kInfo);
         return {*m_sink, severities::kInfo};
     }
 
     Stream
     warn(std::source_location location = std::source_location::current()) const
     {
-        if (m_jsonLogsEnabled)
-            initMessageContext(location, severities::kWarning);
+        initMessageContext(location, severities::kWarning);
         return {*m_sink, severities::kWarning};
     }
 
     Stream
     error(std::source_location location = std::source_location::current()) const
     {
-        if (m_jsonLogsEnabled)
-            initMessageContext(location, severities::kError);
+        initMessageContext(location, severities::kError);
         return {*m_sink, severities::kError};
     }
 
     Stream
     fatal(std::source_location location = std::source_location::current()) const
     {
-        if (m_jsonLogsEnabled)
-            initMessageContext(location, severities::kFatal);
+        initMessageContext(location, severities::kFatal);
         return {*m_sink, severities::kFatal};
     }
     /** @} */
@@ -764,7 +760,7 @@ public:
     resetGlobalAttributes()
     {
         std::unique_lock lock(globalLogAttributesMutex_);
-        globalLogAttributesJson_.clear();
+        globalLogAttributes_.clear();
     }
 
     template <typename TAttributesFactory>
@@ -772,10 +768,10 @@ public:
     addGlobalAttributes(TAttributesFactory&& factory)
     {
         std::unique_lock lock(globalLogAttributesMutex_);
-        globalLogAttributesJson_.reserve(128);
-        auto isEmpty = globalLogAttributesJson_.empty();
-        detail::SimpleJsonWriter writer{globalLogAttributesJson_};
-        if (isEmpty)
+        globalLogAttributes_.reserve(1024);
+        auto isEmpty = globalLogAttributes_.empty();
+        detail::SimpleJsonWriter writer{globalLogAttributes_};
+        if (isEmpty && jsonLogsEnabled_)
         {
             writer.startObject();
         }
@@ -907,6 +903,33 @@ concept StreamFormattable = requires(T val) {
 
 template <typename T>
 void
+setTextValue(
+    beast::detail::SimpleJsonWriter& writer,
+    char const* name,
+    T&& value)
+{
+    using ValueType = std::decay_t<T>;
+    writer.buffer() += name;
+    writer.buffer() += ": ";
+    if constexpr (
+        std::is_same_v<ValueType, std::string> ||
+        std::is_same_v<ValueType, std::string_view> ||
+        std::is_same_v<ValueType, char const*> ||
+        std::is_same_v<ValueType, char*>)
+    {
+        writer.buffer() += value;
+    }
+    else
+    {
+        std::ostringstream oss;
+        oss << value;
+        writer.buffer() += value;;
+    }
+    writer.buffer() += " ";
+}
+
+template <typename T>
+void
 setJsonValue(
     beast::detail::SimpleJsonWriter& writer,
     char const* name,
@@ -1030,7 +1053,7 @@ template <typename T>
 std::ostream&
 operator<<(std::ostream& os, LogParameter<T> const& param)
 {
-    if (!beast::Journal::m_jsonLogsEnabled)
+    if (!beast::Journal::jsonLogsEnabled_)
     {
         os << param.value_;
         return os;
@@ -1048,7 +1071,7 @@ template <typename T>
 std::ostream&
 operator<<(std::ostream& os, LogField<T> const& param)
 {
-    if (!beast::Journal::m_jsonLogsEnabled)
+    if (!beast::Journal::jsonLogsEnabled_)
         return os;
     beast::Journal::currentJsonLogContext_.startMessageParams();
     detail::setJsonValue(
@@ -1078,7 +1101,14 @@ template <typename... Pair>
 attributes(Pair&&... pairs)
 {
     return [&](beast::detail::SimpleJsonWriter& writer) {
-        (detail::setJsonValue(writer, pairs.first, pairs.second, nullptr), ...);
+        if (beast::Journal::isStructuredJournalEnabled())
+        {
+            (detail::setJsonValue(writer, pairs.first, pairs.second, nullptr), ...);
+        }
+        else
+        {
+            (detail::setTextValue(writer, pairs.first, pairs.second), ...);
+        }
     };
 }
 
