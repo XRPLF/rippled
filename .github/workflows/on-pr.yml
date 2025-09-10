@@ -60,8 +60,10 @@ jobs:
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
             .github/actions/build-test/**
+            .github/actions/setup-conan/**
             .github/scripts/strategy-matrix/**
             .github/workflows/build-test.yml
+            .github/workflows/reusable-strategy-matrix.yml
             .codecov.yml
             cmake/**
             conan/**
