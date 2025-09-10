@@ -3684,7 +3684,7 @@ public:
         // testInvalidCreateDynamic(all);
         // testInvalidSetDynamic(all);
         // testMutateMPT(all);
-        // testMutateCanLock(all);
+        testMutateCanLock(all);
         // testMutateRequireAuth(all);
         // testMutateCanEscrow(all);
         // testMutateCanTransfer(all);
