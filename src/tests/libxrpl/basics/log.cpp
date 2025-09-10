@@ -120,9 +120,9 @@ TEST_CASE("Text logs")
 TEST_CASE("Test format output")
 {
     std::string output;
-    Logs::format(output, "Message", beast::severities::kDebug, "Test");
-    CHECK(output.find("Message") != std::string::npos);
-    CHECK(output != "Message");
+    Logs::format(output, "Msg", beast::severities::kDebug, "Test");
+    CHECK(output.find("Msg") != std::string::npos);
+    CHECK(output != "Msg");
 }
 
 TEST_CASE("Enable json logs")
@@ -146,9 +146,9 @@ TEST_CASE("Enable json logs")
     CHECK(ec == boost::system::errc::success);
 
     CHECK(doc.is_object());
-    CHECK(doc.as_object().contains("Message"));
-    CHECK(doc.as_object()["Message"].is_string());
-    CHECK(doc.as_object()["Message"].get_string() == "");
+    CHECK(doc.as_object().contains("Msg"));
+    CHECK(doc.as_object()["Msg"].is_string());
+    CHECK(doc.as_object()["Msg"].get_string() == "");
     beast::Journal::disableStructuredJournal();
 }
 
@@ -169,13 +169,13 @@ TEST_CASE("Global attributes")
     CHECK(ec == boost::system::errc::success);
 
     CHECK(jsonLog.is_object());
-    CHECK(jsonLog.as_object().contains("GlobalParams"));
-    CHECK(jsonLog.as_object()["GlobalParams"].is_object());
-    CHECK(jsonLog.as_object()["GlobalParams"].as_object().contains("Field1"));
+    CHECK(jsonLog.as_object().contains("Glb"));
+    CHECK(jsonLog.as_object()["Glb"].is_object());
+    CHECK(jsonLog.as_object()["Glb"].as_object().contains("Field1"));
     CHECK(
-        jsonLog.as_object()["GlobalParams"].as_object()["Field1"].is_string());
+        jsonLog.as_object()["Glb"].as_object()["Field1"].is_string());
     CHECK(
-        jsonLog.as_object()["GlobalParams"]
+        jsonLog.as_object()["Glb"]
             .as_object()["Field1"]
             .get_string() == "Value1");
     beast::Journal::disableStructuredJournal();
@@ -203,19 +203,19 @@ TEST_CASE("Global attributes inheritable")
     CHECK(ec == boost::system::errc::success);
 
     CHECK(jsonLog.is_object());
-    CHECK(jsonLog.as_object()["GlobalParams"].as_object().contains("Field1"));
+    CHECK(jsonLog.as_object()["Glb"].as_object().contains("Field1"));
     CHECK(
-        jsonLog.as_object()["GlobalParams"].as_object()["Field1"].is_string());
+        jsonLog.as_object()["Glb"].as_object()["Field1"].is_string());
     CHECK(
-        jsonLog.as_object()["GlobalParams"]
+        jsonLog.as_object()["Glb"]
             .as_object()["Field1"]
             .get_string() == "Value1");
     CHECK(
-        jsonLog.as_object()["JournalParams"]
+        jsonLog.as_object()["Jnl"]
             .as_object()["Field1"]
             .get_string() == "Value3");
     CHECK(
-        jsonLog.as_object()["JournalParams"]
+        jsonLog.as_object()["Jnl"]
             .as_object()["Field2"]
             .get_string() == "Value2");
     beast::Journal::disableStructuredJournal();
@@ -416,29 +416,27 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log fields")
     CHECK(ec == boost::system::errc::success);
 
     CHECK(logValue.is_object());
-    CHECK(logValue.as_object().contains("GlobalParams"));
-    CHECK(logValue.as_object().contains("JournalParams"));
-    CHECK(logValue.as_object().contains("Metadata"));
-    CHECK(logValue.as_object().contains("Message"));
+    CHECK(logValue.as_object().contains("Glb"));
+    CHECK(logValue.as_object().contains("Jnl"));
+    CHECK(logValue.as_object().contains("Mtd"));
+    CHECK(logValue.as_object().contains("Msg"));
 
-    CHECK(logValue.as_object()["GlobalParams"].is_object());
-    CHECK(logValue.as_object()["JournalParams"].is_object());
-    CHECK(logValue.as_object()["Metadata"].is_object());
-    CHECK(logValue.as_object()["Message"].is_string());
+    CHECK(logValue.as_object()["Glb"].is_object());
+    CHECK(logValue.as_object()["Jnl"].is_object());
+    CHECK(logValue.as_object()["Mtd"].is_object());
+    CHECK(logValue.as_object()["Msg"].is_string());
 
-    CHECK(logValue.as_object()["Metadata"].as_object().contains("Function"));
-    CHECK(logValue.as_object()["Metadata"].as_object().contains("File"));
-    CHECK(logValue.as_object()["Metadata"].as_object().contains("Line"));
-    CHECK(logValue.as_object()["Metadata"].as_object().contains("ThreadId"));
-    CHECK(logValue.as_object()["Metadata"].as_object().contains("Level"));
-    CHECK(logValue.as_object()["Metadata"].as_object().contains("Time"));
+    CHECK(logValue.as_object()["Mtd"].as_object().contains("Fl"));
+    CHECK(logValue.as_object()["Mtd"].as_object().contains("Ln"));
+    CHECK(logValue.as_object()["Mtd"].as_object().contains("ThId"));
+    CHECK(logValue.as_object()["Mtd"].as_object().contains("Lv"));
+    CHECK(logValue.as_object()["Mtd"].as_object().contains("Tm"));
 
-    CHECK(logValue.as_object()["Metadata"].as_object()["Function"].is_string());
-    CHECK(logValue.as_object()["Metadata"].as_object()["File"].is_string());
-    CHECK(logValue.as_object()["Metadata"].as_object()["Line"].is_number());
+    CHECK(logValue.as_object()["Mtd"].as_object()["Fl"].is_string());
+    CHECK(logValue.as_object()["Mtd"].as_object()["Ln"].is_number());
 
     CHECK(
-        logValue.as_object()["Message"].get_string() ==
+        logValue.as_object()["Msg"].get_string() ==
         std::string{"true Test false"});
 }
 
@@ -453,8 +451,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["Metadata"]
-                .as_object()["Level"]
+            logValue.as_object()["Mtd"]
+                .as_object()["Lv"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kTrace));
     }
@@ -468,8 +466,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["Metadata"]
-                .as_object()["Level"]
+            logValue.as_object()["Mtd"]
+                .as_object()["Lv"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kDebug));
     }
@@ -483,8 +481,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["Metadata"]
-                .as_object()["Level"]
+            logValue.as_object()["Mtd"]
+                .as_object()["Lv"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kInfo));
     }
@@ -498,8 +496,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["Metadata"]
-                .as_object()["Level"]
+            logValue.as_object()["Mtd"]
+                .as_object()["Lv"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kWarning));
     }
@@ -513,8 +511,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["Metadata"]
-                .as_object()["Level"]
+            logValue.as_object()["Mtd"]
+                .as_object()["Lv"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kError));
     }
@@ -528,8 +526,8 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log levels")
         CHECK(ec == boost::system::errc::success);
 
         CHECK(
-            logValue.as_object()["Metadata"]
-                .as_object()["Level"]
+            logValue.as_object()["Mtd"]
+                .as_object()["Lv"]
                 .get_string() ==
             beast::severities::to_string(beast::severities::kFatal));
     }
@@ -544,7 +542,7 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log stream")
     CHECK(ec == boost::system::errc::success);
 
     CHECK(
-        logValue.as_object()["Metadata"].as_object()["Level"].get_string() ==
+        logValue.as_object()["Mtd"].as_object()["Lv"].get_string() ==
         beast::severities::to_string(beast::severities::kError));
 }
 
@@ -560,29 +558,29 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log params")
     auto logValue = boost::json::parse(stream().str(), ec);
     CHECK(ec == boost::system::errc::success);
 
-    CHECK(logValue.as_object()["MessageParams"].is_object());
-    CHECK(logValue.as_object()["MessageParams"]
+    CHECK(logValue.as_object()["Dt"].is_object());
+    CHECK(logValue.as_object()["Dt"]
               .as_object()["Field1"]
               .is_number());
     CHECK(
-        logValue.as_object()["MessageParams"]
+        logValue.as_object()["Dt"]
             .as_object()["Field1"]
             .get_int64() == 1);
-    CHECK(logValue.as_object()["MessageParams"]
+    CHECK(logValue.as_object()["Dt"]
               .as_object()["Field2"]
               .is_number());
     CHECK(
-        logValue.as_object()["MessageParams"]
+        logValue.as_object()["Dt"]
             .as_object()["Field2"]
             .get_uint64() == std::numeric_limits<std::uint64_t>::max());
-    auto field3Val = logValue.as_object()["MessageParams"]
+    auto field3Val = logValue.as_object()["Dt"]
                          .as_object()["Field3"]
                          .get_double();
     auto difference = std::abs(field3Val - std::numbers::pi);
     CHECK(difference < 1e-4);
-    CHECK(logValue.as_object()["Message"].is_string());
+    CHECK(logValue.as_object()["Msg"].is_string());
     CHECK(
-        logValue.as_object()["Message"].get_string() ==
+        logValue.as_object()["Msg"].get_string() ==
         std::string{"Test: 1, 18446744073709551615, 3.141592653589793"});
 }
 
@@ -597,26 +595,26 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test json log fields")
     auto logValue = boost::json::parse(stream().str(), ec);
     CHECK(ec == boost::system::errc::success);
 
-    CHECK(logValue.as_object()["MessageParams"].is_object());
-    CHECK(logValue.as_object()["MessageParams"]
+    CHECK(logValue.as_object()["Dt"].is_object());
+    CHECK(logValue.as_object()["Dt"]
               .as_object()["Field1"]
               .is_number());
     CHECK(
-        logValue.as_object()["MessageParams"]
+        logValue.as_object()["Dt"]
             .as_object()["Field1"]
             .get_int64() == 1);
     // UInt64 doesn't fit in Json::Value so it should be converted to a string
     // NOTE: We should expect it to be an int64 after we make the json library
     // support in64 and uint64
-    CHECK(logValue.as_object()["MessageParams"]
+    CHECK(logValue.as_object()["Dt"]
               .as_object()["Field2"]
               .is_number());
     CHECK(
-        logValue.as_object()["MessageParams"]
+        logValue.as_object()["Dt"]
             .as_object()["Field2"]
             .get_uint64() == std::numeric_limits<std::uint64_t>::max());
-    CHECK(logValue.as_object()["Message"].is_string());
-    CHECK(logValue.as_object()["Message"].get_string() == "Test");
+    CHECK(logValue.as_object()["Msg"].is_string());
+    CHECK(logValue.as_object()["Msg"].get_string() == "Test");
 }
 
 TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test journal attributes")
@@ -631,18 +629,18 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test journal attributes")
     auto logValue = boost::json::parse(stream().str(), ec);
     CHECK(ec == boost::system::errc::success);
 
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field1"]
               .is_string());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field1"]
             .get_string() == std::string{"Value1"});
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field2"]
               .is_number());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field2"]
             .get_int64() == 2);
 }
@@ -660,25 +658,25 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test journal attributes inheritable")
     auto logValue = boost::json::parse(stream().str(), ec);
     CHECK(ec == boost::system::errc::success);
 
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field1"]
               .is_string());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field1"]
             .get_string() == std::string{"Value1"});
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field3"]
               .is_string());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field3"]
             .get_string() == std::string{"Value3"});
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field2"]
               .is_number());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field2"]
             .get_int64() == 2);
 }
@@ -698,18 +696,18 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test copying journal")
         auto logValue = boost::json::parse(stream().str(), ec);
         CHECK(ec == boost::system::errc::success);
 
-        CHECK(logValue.as_object()["JournalParams"]
+        CHECK(logValue.as_object()["Jnl"]
                   .as_object()["Field1"]
                   .is_string());
         CHECK(
-            logValue.as_object()["JournalParams"]
+            logValue.as_object()["Jnl"]
                 .as_object()["Field1"]
                 .get_string() == std::string{"Value1"});
-        CHECK(logValue.as_object()["JournalParams"]
+        CHECK(logValue.as_object()["Jnl"]
                   .as_object()["Field2"]
                   .is_number());
         CHECK(
-            logValue.as_object()["JournalParams"]
+            logValue.as_object()["Jnl"]
                 .as_object()["Field2"]
                 .get_int64() == 2);
     }
@@ -727,18 +725,18 @@ TEST_CASE_FIXTURE(JsonLogStreamFixture, "Test copying journal")
         auto logValue = boost::json::parse(stream().str(), ec);
         CHECK(ec == boost::system::errc::success);
 
-        CHECK(logValue.as_object()["JournalParams"]
+        CHECK(logValue.as_object()["Jnl"]
                   .as_object()["Field1"]
                   .is_string());
         CHECK(
-            logValue.as_object()["JournalParams"]
+            logValue.as_object()["Jnl"]
                 .as_object()["Field1"]
                 .get_string() == std::string{"Value1"});
-        CHECK(logValue.as_object()["JournalParams"]
+        CHECK(logValue.as_object()["Jnl"]
                   .as_object()["Field2"]
                   .is_number());
         CHECK(
-            logValue.as_object()["JournalParams"]
+            logValue.as_object()["Jnl"]
                 .as_object()["Field2"]
                 .get_int64() == 2);
     }
@@ -759,26 +757,26 @@ TEST_CASE_FIXTURE(
     auto logValue = boost::json::parse(stream().str(), ec);
     CHECK(ec == boost::system::errc::success);
 
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field1"]
               .is_string());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field1"]
             .get_string() == std::string{"Value1"});
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field3"]
               .is_string());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field3"]
             .get_string() == std::string{"Value3"});
     // Field2 should be overwritten to 0
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field2"]
               .is_number());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field2"]
             .get_int64() == 2);
 }
@@ -801,18 +799,18 @@ TEST_CASE_FIXTURE(
     auto logValue = boost::json::parse(stream().str(), ec);
     CHECK(ec == boost::system::errc::success);
 
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field1"]
               .is_string());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field1"]
             .get_string() == std::string{"Value1"});
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field2"]
               .is_number());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field2"]
             .get_int64() == 2);
 }
@@ -835,18 +833,18 @@ TEST_CASE_FIXTURE(
     auto logValue = boost::json::parse(stream().str(), ec);
     CHECK(ec == boost::system::errc::success);
 
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field1"]
               .is_string());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field1"]
             .get_string() == std::string{"Value1"});
-    CHECK(logValue.as_object()["JournalParams"]
+    CHECK(logValue.as_object()["Jnl"]
               .as_object()["Field2"]
               .is_number());
     CHECK(
-        logValue.as_object()["JournalParams"]
+        logValue.as_object()["Jnl"]
             .as_object()["Field2"]
             .get_int64() == 2);
 }

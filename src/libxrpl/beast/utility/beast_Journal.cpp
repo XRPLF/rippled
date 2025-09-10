@@ -237,7 +237,7 @@ Journal::JsonLogContext::reset(
         std::shared_lock lock(globalLogAttributesMutex_);
         if (!globalLogAttributesJson_.empty())
         {
-            writer().writeKey("Gbl");
+            writer().writeKey("Glb");
             writer().writeRaw(globalLogAttributesJson_);
             writer().endObject();
         }
