@@ -110,9 +110,9 @@ fastTimestampToString(std::int64_t milliseconds_since_epoch)
 
 }  // anonymous namespace
 
-std::string Journal::globalLogAttributesJson_;
+std::string Journal::globalLogAttributes_;
 std::shared_mutex Journal::globalLogAttributesMutex_;
-bool Journal::m_jsonLogsEnabled = false;
+bool Journal::jsonLogsEnabled_ = false;
 thread_local Journal::JsonLogContext Journal::currentJsonLogContext_{};
 
 //------------------------------------------------------------------------------
@@ -208,7 +208,7 @@ Journal::JsonLogContext::reset(
     std::source_location location,
     severities::Severity severity,
     std::string_view moduleName,
-    std::string_view journalAttributesJson) noexcept
+    std::string_view journalAttributes) noexcept
 {
     struct ThreadIdStringInitializer
     {
@@ -224,21 +224,26 @@ Journal::JsonLogContext::reset(
 
     buffer_.clear();
 
+    if (!jsonLogsEnabled_)
+    {
+        return;
+    }
+
     writer().startObject();
 
-    if (!journalAttributesJson.empty())
+    if (!journalAttributes.empty())
     {
         writer().writeKey("Jnl");
-        writer().writeRaw(journalAttributesJson);
+        writer().writeRaw(journalAttributes);
         writer().endObject();
     }
 
     {
         std::shared_lock lock(globalLogAttributesMutex_);
-        if (!globalLogAttributesJson_.empty())
+        if (!globalLogAttributes_.empty())
         {
             writer().writeKey("Glb");
-            writer().writeRaw(globalLogAttributesJson_);
+            writer().writeRaw(globalLogAttributes_);
             writer().endObject();
         }
     }
@@ -283,15 +288,17 @@ Journal::initMessageContext(
     std::source_location location,
     severities::Severity severity) const
 {
-    currentJsonLogContext_.reset(location, severity, m_name, m_attributesJson);
+    currentJsonLogContext_.reset(location, severity, name_, attributes_);
 }
 
 std::string_view
 Journal::formatLog(std::string const& message)
 {
-    if (!m_jsonLogsEnabled)
+    if (!jsonLogsEnabled_)
     {
-        return message;
+        currentJsonLogContext_.writer().buffer() += " ";
+        currentJsonLogContext_.writer().buffer() += message;
+        return currentJsonLogContext_.writer().buffer();
     }
 
     auto& writer = currentJsonLogContext_.writer();
@@ -309,20 +316,20 @@ Journal::formatLog(std::string const& message)
 void
 Journal::enableStructuredJournal()
 {
-    m_jsonLogsEnabled = true;
+    jsonLogsEnabled_ = true;
 }
 
 void
 Journal::disableStructuredJournal()
 {
-    m_jsonLogsEnabled = false;
+    jsonLogsEnabled_ = false;
     resetGlobalAttributes();
 }
 
 bool
 Journal::isStructuredJournalEnabled()
 {
-    return m_jsonLogsEnabled;
+    return jsonLogsEnabled_;
 }
 
 Journal::Sink::Sink(Severity thresh, bool console)
