@@ -105,7 +105,7 @@ private:
         static constexpr std::chrono::seconds tlsHandshake{
             8};  // SSL handshake timeout
         static constexpr std::chrono::seconds httpWrite{
-            2};  // HTTP write timeout
+            3};  // HTTP write timeout
         static constexpr std::chrono::seconds httpRead{3};  // HTTP read timeout
     };
 
