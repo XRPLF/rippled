@@ -362,6 +362,11 @@ enum TECcodes : TERUnderlyingType {
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
     tecNO_DELEGATE_PERMISSION = 198,
+    tecAMM_INVALID_TICK_RANGE = 199,
+    tecAMM_INSUFFICIENT_LIQUIDITY = 200,
+    tecAMM_POSITION_NOT_FOUND = 201,
+    tecAMM_TICK_NOT_INITIALIZED = 202,
+    tecAMM_INVALID_POSITION_NONCE = 203,
 };
 
 //------------------------------------------------------------------------------

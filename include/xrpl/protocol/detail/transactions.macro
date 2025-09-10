@@ -329,6 +329,10 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     {sfAmount, soeREQUIRED},
     {sfAmount2, soeREQUIRED},
     {sfTradingFee, soeREQUIRED},
+    {sfTickLower, soeOPTIONAL},
+    {sfTickUpper, soeOPTIONAL},
+    {sfLiquidity, soeOPTIONAL},
+    {sfTickSpacing, soeOPTIONAL},
 }))
 
 /** This transaction type deposits into an AMM instance */
@@ -704,6 +708,41 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
     {sfAmount, soeOPTIONAL, soeMPTSupported},
+}))
+
+/** This transaction deposits liquidity into concentrated liquidity positions */
+TRANSACTION(ttAMM_CONCENTRATED_DEPOSIT, 42, AMMConcentratedDeposit, Delegation::delegatable, ({
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfTickLower, soeREQUIRED},
+    {sfTickUpper, soeREQUIRED},
+    {sfLiquidity, soeREQUIRED},
+    {sfAmount0Max, soeREQUIRED},
+    {sfAmount1Max, soeREQUIRED},
+    {sfLiquidityMin, soeOPTIONAL}
+}))
+
+/** This transaction withdraws liquidity from concentrated liquidity positions */
+TRANSACTION(ttAMM_CONCENTRATED_WITHDRAW, 43, AMMConcentratedWithdraw, Delegation::delegatable, ({
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfTickLower, soeREQUIRED},
+    {sfTickUpper, soeREQUIRED},
+    {sfLiquidity, soeREQUIRED},
+    {sfAmount0Min, soeOPTIONAL},
+    {sfAmount1Min, soeOPTIONAL},
+    {sfCollectFees, soeOPTIONAL}
+}))
+
+/** This transaction collects fees from concentrated liquidity positions */
+TRANSACTION(ttAMM_CONCENTRATED_COLLECT, 44, AMMConcentratedCollect, Delegation::delegatable, ({
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+    {sfTickLower, soeREQUIRED},
+    {sfTickUpper, soeREQUIRED},
+    {sfPositionNonce, soeREQUIRED},
+    {sfAmount0Max, soeOPTIONAL},
+    {sfAmount1Max, soeOPTIONAL}
 }))
 
 /** This transaction type batches together transactions. */
