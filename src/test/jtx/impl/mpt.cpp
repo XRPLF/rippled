@@ -256,10 +256,13 @@ MPTTester::set(MPTSet const& arg)
             auto flags = getFlags(holder);
             if (!unchanged)
             {
-                if (*arg.flags & tfMPTLock)
-                    flags |= lsfMPTLocked;
-                else if (*arg.flags & tfMPTUnlock)
-                    flags &= ~lsfMPTLocked;
+                if (arg.flags)
+                {
+                    if (*arg.flags & tfMPTLock)
+                        flags |= lsfMPTLocked;
+                    else if (*arg.flags & tfMPTUnlock)
+                        flags &= ~lsfMPTLocked;
+                }
 
                 if (arg.mutableFlags)
                 {
