@@ -50,6 +50,68 @@ namespace ripple {
 struct ValidatorBlobInfo;
 class SHAMap;
 
+/**
+ * @class PeerImp
+ * @brief This class manages established peer-to-peer connections, handles
+ message exchange, monitors connection health, and graceful shutdown.
+ *
+
+ * The PeerImp shutdown mechanism is a multi-stage process
+ * designed to ensure graceful connection termination while handling ongoing
+ * I/O operations safely. The shutdown can be initiated from multiple points
+ * and follows a deterministic state machine.
+ *
+ * The shutdown process can be triggered from several entry points:
+ * - **External requests**: `stop()` method called by overlay management
+ * - **Error conditions**: `fail(error_code)` or `fail(string)` on protocol
+ * violations
+ * - **Timer expiration**: Various timeout scenarios (ping timeout, large send
+ * queue)
+ * - **Connection health**: Peer tracking divergence or unknown state timeouts
+ *
+ * The shutdown follows this progression:
+ *
+ * Normal Operation → shutdown() → tryAsyncShutdown() → onShutdown() → close()
+ *                      ↓              ↓                 ↓              ↓
+ *                 Set shutdown_   SSL graceful      Timer cancel   Socket close
+ *                 Cancel timer    shutdown start    & cleanup      & metrics
+ *                 5s safety timer Set shutdownStarted_              update
+ *
+ * Two primary flags coordinate the shutdown process:
+ * - `shutdown_`: Set when shutdown is requested
+ * - `shutdownStarted_`: Set when SSL shutdown begins
+ *
+ * The shutdown mechanism carefully coordinates with ongoing read/write
+ * operations:
+ *
+ * **Read Operations (`onReadMessage`)**:
+ * - Checks `shutdown_` flag after processing each message batch
+ * - If shutdown initiated during processing, calls `tryAsyncShutdown()`
+ *
+ * **Write Operations (`onWriteMessage`)**:
+ * - Checks `shutdown_` flag before queuing new writes
+ * - Calls `tryAsyncShutdown()` when shutdown flag detected
+ *
+ * Multiple timers require coordination during shutdown:
+ * 1. **Peer Timer**: Regular ping/pong timer cancelled immediately in
+ * `shutdown()`
+ * 2. **Shutdown Timer**: 5-second safety timer ensures shutdown completion
+ * 3. **Operation Cancellation**: All pending async operations are cancelled
+ *
+ * The shutdown implements fallback mechanisms:
+ * - **Graceful Path**: SSL shutdown → Socket close → Cleanup
+ * - **Forced Path**: If SSL shutdown fails or times out, proceeds to socket
+ * close
+ * - **Safety Timer**: 5-second timeout prevents hanging shutdowns
+ *
+ * All shutdown operations are serialized through the boost::asio::strand to
+ * ensure thread safety. The strand guarantees that shutdown state changes
+ * and I/O operation callbacks are executed sequentially.
+ *
+ * @note This class requires careful coordination between async operations,
+ * timer management, and shutdown procedures to ensure no resource leaks
+ * or hanging connections in high-throughput networking scenarios.
+ */
 class PeerImp : public Peer,
                 public std::enable_shared_from_this<PeerImp>,
                 public OverlayImpl::Child
@@ -80,6 +142,8 @@ private:
     socket_type& socket_;
     stream_type& stream_;
     boost::asio::strand<boost::asio::executor> strand_;
+
+    // Multi-purpose timer for peer activity monitoring and shutdown safety
     waitable_timer timer_;
 
     // Updated at each stage of the connection process to reflect
@@ -175,10 +239,19 @@ private:
     http_response_type response_;
     boost::beast::http::fields const& headers_;
     std::queue<std::shared_ptr<Message>> send_queue_;
+
+    // Primary shutdown flag set when shutdown is requested
     bool shutdown_ = false;
+
+    // SSL shutdown coordination flag
     bool shutdownStarted_ = false;
+
+    // Indicates a read operation is currently pending
     bool readPending_ = false;
+
+    // Indicates a write operation is currently pending
     bool writePending_ = false;
+
     int large_sendq_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
