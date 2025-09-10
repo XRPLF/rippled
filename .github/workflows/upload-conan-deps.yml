@@ -28,6 +28,7 @@ on:
       - .github/workflows/reusable-strategy-matrix.yml
 
       - .github/actions/build-deps/action.yml
+      - .github/actions/setup-conan/action.yml
       - ".github/scripts/strategy-matrix/**"
 
       - conanfile.py
