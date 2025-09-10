@@ -201,13 +201,13 @@ Logs::write(
         result = s;
     }
 
-    // Console output still immediate for responsiveness
-    if (!silent_)
-        std::cerr << result << '\n';
-
     // Add to batch buffer for file output
     {
         std::lock_guard lock(batchMutex_);
+
+        // Console output still immediate for responsiveness
+        if (!silent_)
+            std::cerr << result << '\n';
 
         size_t logSize = result.size() + 1;  // +1 for newline
 

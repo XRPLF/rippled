@@ -1139,8 +1139,10 @@ RclConsensusLogger::~RclConsensusLogger()
         buffer.clear();
         beast::detail::SimpleJsonWriter writer{buffer};
         writer.startObject();
-        writer.writeKey("Message");
+        writer.writeKey("Msg");
         writer.writeString(outSs.str());
+        writer.writeKey("Tm");
+        writer.writeString(to_string(std::chrono::system_clock::now()));
         writer.endObject();
         j_.sink().writeAlways(beast::severities::kInfo, writer.finish());
     }
