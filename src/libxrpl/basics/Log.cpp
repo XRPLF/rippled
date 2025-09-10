@@ -202,7 +202,7 @@ Logs::write(
     }
 
     // Add to batch buffer for file output
-    if (false) {
+    {
         std::lock_guard lock(batchMutex_);
 
         // Console output still immediate for responsiveness
@@ -220,6 +220,8 @@ Logs::write(
         // Copy log into write buffer
         std::copy(result.begin(), result.end(), writeBuffer_.begin());
         writeBuffer_[result.size()] = '\n';
+
+        return;
 
         // Update spans: expand read buffer, shrink write buffer
         size_t totalUsed = readBuffer_.size() + logSize;
