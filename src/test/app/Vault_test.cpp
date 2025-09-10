@@ -2913,6 +2913,12 @@ class Vault_test : public beast::unit_test::suite
                 tx[sfDomainID] = to_string(domainId);
                 env(tx);
                 env.close();
+
+                // Should be idempotent
+                tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfDomainID] = to_string(domainId);
+                env(tx);
+                env.close();
             }
         }
 

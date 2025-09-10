@@ -2050,7 +2050,6 @@ ValidVault::Vault::make(SLE const& from)
     self.asset = from.at(sfAsset);
     self.pseudoId = from.getAccountID(sfAccount);
     self.shareMPTID = from.getFieldH192(sfShareMPTID);
-    self.scale = from.getFieldU8(sfScale);
     self.assetsTotal = from.at(sfAssetsTotal);
     self.assetsAvailable = from.at(sfAssetsAvailable);
     self.assetsMaximum = from.at(sfAssetsMaximum);
@@ -2232,10 +2231,6 @@ ValidVault::finalize(
          tx.getTxnType() == ttVAULT_CLAWBACK) &&
         !updatedVault.has_value())
     {
-        // Note, ttVAULT_SET might not update a vault
-        if (tx.getTxnType() == ttVAULT_SET)
-            return true;
-
         JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                            "without updating or creating a vault";
         return false;  // That's all we can do here
@@ -2766,8 +2761,8 @@ ValidVault::finalize(
 
                     return result;
                 }
-                default:
-                    return false;
+                default:           // LCOV_EXCL_LINE
+                    return false;  // LCOV_EXCL_LINE
             }
         }();
 
