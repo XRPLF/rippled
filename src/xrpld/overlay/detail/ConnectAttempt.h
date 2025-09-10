@@ -88,8 +88,8 @@ private:
         Complete       // Connection successfully established
     };
 
-    // Global timeout for entire connection process (hard limit)
-    static constexpr std::chrono::seconds connectTimeout{20};
+    // A timeout for connection process, greater than all step timeouts
+    static constexpr std::chrono::seconds connectTimeout{25};
 
     /**
      * @struct StepTimeouts
@@ -103,7 +103,7 @@ private:
         static constexpr std::chrono::seconds tcpConnect{
             8};  // TCP connection timeout
         static constexpr std::chrono::seconds tlsHandshake{
-            5};  // SSL handshake timeout
+            8};  // SSL handshake timeout
         static constexpr std::chrono::seconds httpWrite{
             2};  // HTTP write timeout
         static constexpr std::chrono::seconds httpRead{3};  // HTTP read timeout
