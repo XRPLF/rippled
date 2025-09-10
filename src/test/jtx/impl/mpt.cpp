@@ -248,60 +248,62 @@ MPTTester::set(MPTSet const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
-    submit(arg, jv);
-    // if (submit(arg, jv) == tesSUCCESS &&
-    //     (arg.flags.value_or(0) || arg.mutableFlags))
-    // {
-    //     auto require = [&](std::optional<Account> const& holder,
-    //                        bool unchanged) {
-    //         auto flags = getFlags(holder);
-    //         if (!unchanged)
-    //         {
-    //             if (*arg.flags & tfMPTLock)
-    //                 flags |= lsfMPTLocked;
-    //             else if (*arg.flags & tfMPTUnlock)
-    //                 flags &= ~lsfMPTLocked;
+    if (submit(arg, jv) == tesSUCCESS &&
+        (arg.flags.value_or(0) || arg.mutableFlags))
+    {
+        auto require = [&](std::optional<Account> const& holder,
+                           bool unchanged) {
+            auto flags = getFlags(holder);
+            if (!unchanged)
+            {
+                if (arg.flags)
+                {
+                    if (*arg.flags & tfMPTLock)
+                        flags |= lsfMPTLocked;
+                    else if (*arg.flags & tfMPTUnlock)
+                        flags &= ~lsfMPTLocked;
+                }
 
-    //             if (arg.mutableFlags)
-    //             {
-    //                 if (*arg.mutableFlags & tfMPTSetCanLock)
-    //                     flags |= lsfMPTCanLock;
-    //                 else if (*arg.mutableFlags & tfMPTClearCanLock)
-    //                     flags &= ~lsfMPTCanLock;
+                if (arg.mutableFlags)
+                {
+                    if (*arg.mutableFlags & tfMPTSetCanLock)
+                        flags |= lsfMPTCanLock;
+                    else if (*arg.mutableFlags & tfMPTClearCanLock)
+                        flags &= ~lsfMPTCanLock;
 
-    //                 if (*arg.mutableFlags & tfMPTSetRequireAuth)
-    //                     flags |= lsfMPTRequireAuth;
-    //                 else if (*arg.mutableFlags & tfMPTClearRequireAuth)
-    //                     flags &= ~lsfMPTRequireAuth;
+                    if (*arg.mutableFlags & tfMPTSetRequireAuth)
+                        flags |= lsfMPTRequireAuth;
+                    else if (*arg.mutableFlags & tfMPTClearRequireAuth)
+                        flags &= ~lsfMPTRequireAuth;
 
-    //                 if (*arg.mutableFlags & tfMPTSetCanEscrow)
-    //                     flags |= lsfMPTCanEscrow;
-    //                 else if (*arg.mutableFlags & tfMPTClearCanEscrow)
-    //                     flags &= ~lsfMPTCanEscrow;
+                    if (*arg.mutableFlags & tfMPTSetCanEscrow)
+                        flags |= lsfMPTCanEscrow;
+                    else if (*arg.mutableFlags & tfMPTClearCanEscrow)
+                        flags &= ~lsfMPTCanEscrow;
 
-    //                 if (*arg.mutableFlags & tfMPTSetCanClawback)
-    //                     flags |= lsfMPTCanClawback;
-    //                 else if (*arg.mutableFlags & tfMPTClearCanClawback)
-    //                     flags &= ~lsfMPTCanClawback;
+                    if (*arg.mutableFlags & tfMPTSetCanClawback)
+                        flags |= lsfMPTCanClawback;
+                    else if (*arg.mutableFlags & tfMPTClearCanClawback)
+                        flags &= ~lsfMPTCanClawback;
 
-    //                 if (*arg.mutableFlags & tfMPTSetCanTrade)
-    //                     flags |= lsfMPTCanTrade;
-    //                 else if (*arg.mutableFlags & tfMPTClearCanTrade)
-    //                     flags &= ~lsfMPTCanTrade;
+                    if (*arg.mutableFlags & tfMPTSetCanTrade)
+                        flags |= lsfMPTCanTrade;
+                    else if (*arg.mutableFlags & tfMPTClearCanTrade)
+                        flags &= ~lsfMPTCanTrade;
 
-    //                 if (*arg.mutableFlags & tfMPTSetCanTransfer)
-    //                     flags |= lsfMPTCanTransfer;
-    //                 else if (*arg.mutableFlags & tfMPTClearCanTransfer)
-    //                     flags &= ~lsfMPTCanTransfer;
-    //             }
-    //         }
-    //         env_.require(mptflags(*this, flags, holder));
-    //     };
-    //     if (arg.account)
-    //         require(std::nullopt, arg.holder.has_value());
-    //     if (arg.holder)
-    //         require(*arg.holder, false);
-    // }
+                    if (*arg.mutableFlags & tfMPTSetCanTransfer)
+                        flags |= lsfMPTCanTransfer;
+                    else if (*arg.mutableFlags & tfMPTClearCanTransfer)
+                        flags &= ~lsfMPTCanTransfer;
+                }
+            }
+            env_.require(mptflags(*this, flags, holder));
+        };
+        if (arg.account)
+            require(std::nullopt, arg.holder.has_value());
+        if (arg.holder)
+            require(*arg.holder, false);
+    }
 }
 
 bool
