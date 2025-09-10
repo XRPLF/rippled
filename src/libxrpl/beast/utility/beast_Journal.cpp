@@ -296,7 +296,6 @@ Journal::formatLog(std::string const& message)
 {
     if (!jsonLogsEnabled_)
     {
-        currentJsonLogContext_.writer().buffer() += " ";
         currentJsonLogContext_.writer().buffer() += message;
         return currentJsonLogContext_.writer().buffer();
     }
