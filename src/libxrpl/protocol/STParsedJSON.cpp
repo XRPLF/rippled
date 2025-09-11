@@ -1107,24 +1107,4 @@ STParsedJSONObject::STParsedJSONObject(
     object = parseObject(name, json, sfGeneric, 0, error);
 }
 
-//------------------------------------------------------------------------------
-
-STParsedJSONArray::STParsedJSONArray(
-    std::string const& name,
-    Json::Value const& json)
-{
-    using namespace STParsedJSONDetail;
-    auto arr = parseArray(name, json, sfGeneric, 0, error);
-    if (!arr)
-        array.reset();
-    else
-    {
-        auto p = dynamic_cast<STArray*>(&arr->get());
-        if (p == nullptr)
-            array.reset();
-        else
-            array = std::move(*p);
-    }
-}
-
 }  // namespace ripple
