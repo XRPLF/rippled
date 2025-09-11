@@ -187,9 +187,11 @@ Functions</h2></td></tr>
 <tr class="memitem:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a2e549c81edcbd0befcfa4ee871c6f27e">computeBookChanges</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; L const &gt; const &amp;lpAccepted)</td></tr>
 <tr class="separator:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a193a678f625ec77262c8d5f3ca91df03" id="r_a193a678f625ec77262c8d5f3ca91df03"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a193a678f625ec77262c8d5f3ca91df03">encodeCTID</a> (uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept</td></tr>
+<tr class="memdesc:a193a678f625ec77262c8d5f3ca91df03"><td class="mdescLeft">&#160;</td><td class="mdescRight">Encodes ledger sequence, transaction index, and network ID into a CTID string.  <br /></td></tr>
 <tr class="separator:a193a678f625ec77262c8d5f3ca91df03"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4b48e37f1a6940816047cd107faebca" id="r_ae4b48e37f1a6940816047cd107faebca"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
 <tr class="memitem:ae4b48e37f1a6940816047cd107faebca"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; uint32_t, uint16_t, uint16_t &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ae4b48e37f1a6940816047cd107faebca">decodeCTID</a> (T const ctid) noexcept</td></tr>
+<tr class="memdesc:ae4b48e37f1a6940816047cd107faebca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Decodes a CTID string or integer into its component parts.  <br /></td></tr>
 <tr class="separator:ae4b48e37f1a6940816047cd107faebca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58fb48a81509167c40346305cea629c5" id="r_a58fb48a81509167c40346305cea629c5"><td class="memTemplParams" colspan="2">template&lt;class GetLedgerIndex , class GetCloseTime &gt; </td></tr>
 <tr class="memitem:a58fb48a81509167c40346305cea629c5"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a58fb48a81509167c40346305cea629c5">getDeliveredAmount</a> (GetLedgerIndex const &amp;getLedgerIndex, GetCloseTime const &amp;getCloseTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;serializedTx, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;transactionMeta)</td></tr>
@@ -1451,7 +1453,18 @@ template&lt;class L &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CTID_8h_source.html#l00043">43</a> of file <a class="el" href="CTID_8h_source.html">CTID.h</a>.</p>
+<p>Encodes ledger sequence, transaction index, and network ID into a CTID string. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ledgerSeq</td><td><a class="el" href="classripple_1_1Ledger.html" title="Holds a ledger.">Ledger</a> sequence number (max 0x0FFF'FFFF). </td></tr>
+    <tr><td class="paramname">txnIndex</td><td><a class="el" href="classripple_1_1Transaction.html">Transaction</a> index within the ledger (max 0xFFFF). </td></tr>
+    <tr><td class="paramname">networkID</td><td>Network identifier (max 0xFFFF). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Optional CTID string in uppercase hexadecimal, or <a class="elRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::nullopt</a> if inputs are out of range. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="CTID_8h_source.html#l00053">53</a> of file <a class="el" href="CTID_8h_source.html">CTID.h</a>.</p>
 
 </div>
 </div>
@@ -1481,7 +1494,22 @@ template&lt;typename T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="CTID_8h_source.html#l00060">60</a> of file <a class="el" href="CTID_8h_source.html">CTID.h</a>.</p>
+<p>Decodes a CTID string or integer into its component parts. </p>
+<dl class="tparams"><dt>Template Parameters</dt><dd>
+  <table class="tparams">
+    <tr><td class="paramname">T</td><td>Type of the CTID input (string, string_view, char*, integral). </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ctid</td><td>CTID value to decode. </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>Optional tuple of (ledgerSeq, txnIndex, networkID), or <a class="elRef" href="http://en.cppreference.com/w/cpp/types/is_same.html">std::nullopt</a> if invalid. </dd></dl>
+
+<p class="definition">Definition at line <a class="el" href="CTID_8h_source.html#l00083">83</a> of file <a class="el" href="CTID_8h_source.html">CTID.h</a>.</p>
 
 </div>
 </div>
