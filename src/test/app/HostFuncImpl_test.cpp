@@ -264,8 +264,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        // Use featureSmartEscrow for testing
-        auto const amendmentId = featureSmartEscrow;
+        // Use featureTokenEscrow for testing
+        auto const amendmentId = featureTokenEscrow;
 
         // Test by id
         {
@@ -275,7 +275,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         // Test by name
-        std::string const amendmentName = "SmartEscrow";
+        std::string const amendmentName = "TokenEscrow";
         {
             auto const result = hfs.isAmendmentEnabled(amendmentName);
             BEAST_EXPECT(result.has_value());
@@ -360,7 +360,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             obj.setAccountID(sfAccount, env.master.id());
             obj.setAccountID(sfOwner, env.master.id());
             obj.setFieldU32(sfOfferSequence, env.seq(env.master));
-            obj.setFieldU32(sfComputationAllowance, 1000);
             obj.setFieldArray(sfMemos, STArray{});
         });
         ApplyContext ac = createApplyContext(env, ov, stx);
@@ -381,11 +380,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto const offerSeq = hfs.getTxField(sfOfferSequence);
             BEAST_EXPECT(offerSeq && *offerSeq == toBytes(env.seq(env.master)));
-
-            auto const compAllowance = hfs.getTxField(sfComputationAllowance);
-            std::uint32_t const expectedAllowance = 1000;
-            BEAST_EXPECT(
-                compAllowance && *compAllowance == toBytes(expectedAllowance));
 
             auto const notPresent = hfs.getTxField(sfDestination);
             if (BEAST_EXPECT(!notPresent.has_value()))
