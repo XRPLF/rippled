@@ -111,3 +111,6 @@ bld.rippled/
 
 # Suggested in-tree build directory
 /.build*/
+
+# Rust
+external/*/target

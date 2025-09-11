@@ -96,6 +96,7 @@ set(SECP256K1_BUILD_EXHAUSTIVE_TESTS FALSE)
 set(SECP256K1_BUILD_CTIME_TESTS FALSE)
 set(SECP256K1_BUILD_EXAMPLES FALSE)
 add_subdirectory(external/secp256k1)
+add_subdirectory(external/rust-test)
 add_library(secp256k1::secp256k1 ALIAS secp256k1)
 add_subdirectory(external/ed25519-donna)
 add_subdirectory(external/antithesis-sdk)
@@ -129,6 +130,7 @@ target_link_libraries(ripple_libs INTERFACE
   secp256k1::secp256k1
   soci::soci
   SQLite::SQLite3
+  RustTest
 )
 
 # Work around changes to Conan recipe for now.
