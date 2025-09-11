@@ -155,7 +155,7 @@ private:
     mutable std::mutex batchMutex_;
     static constexpr size_t BATCH_BUFFER_SIZE = 64 * 1024;  // 64KB buffer
     std::array<char, BATCH_BUFFER_SIZE> batchBuffer_{};
-    std::span<char> writeBuffer_;  // Points to available write space
+    static thread_local std::span<char> writeBuffer_;  // Points to available write space
     std::span<char> readBuffer_;   // Points to data ready to flush
     std::chrono::steady_clock::time_point lastFlush_ =
         std::chrono::steady_clock::now();

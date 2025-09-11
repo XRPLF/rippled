@@ -37,6 +37,7 @@
 #include <vector>
 
 namespace ripple {
+thread_local std::span<char> Logs::writeBuffer_{};
 
 namespace {
 constexpr auto FLUSH_INTERVAL =
@@ -129,8 +130,8 @@ Logs::File::write(std::string_view text)
 
 Logs::Logs(beast::severities::Severity thresh)
     : thresh_(thresh)  // default severity
-    , writeBuffer_(
-          batchBuffer_)  // Initially, entire buffer is available for writing
+    // , writeBuffer_(
+    //       batchBuffer_)  // Initially, entire buffer is available for writing
     , readBuffer_(batchBuffer_.data(), 0)  // No data ready to flush initially
 {
 }
