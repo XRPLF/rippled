@@ -82,18 +82,11 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
     auto const paymentRemaining = loanSle->at(sfPaymentRemaining);
     TenthBips32 const lateInterestRate{loanSle->at(sfLateInterestRate)};
-    auto const startDate = loanSle->at(sfStartDate);
 
     if (loanSle->at(sfBorrower) != account)
     {
         JLOG(ctx.j.warn()) << "Loan does not belong to the account.";
         return tecNO_PERMISSION;
-    }
-
-    if (!hasExpired(ctx.view, startDate))
-    {
-        JLOG(ctx.j.warn()) << "Loan has not started yet.";
-        return tecTOO_SOON;
     }
 
     if (paymentRemaining == 0 || principalOutstanding == 0)

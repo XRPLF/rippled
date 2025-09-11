@@ -1,3 +1,4 @@
+#if LOANDRAW
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -121,7 +122,7 @@ LoanDraw::preclaim(PreclaimContext const& ctx)
 
     if (amount.asset() != asset)
     {
-        JLOG(ctx.j.warn()) << "Loan amount does not match the Vault asset.";
+        JLOG(ctx.j.warn()) << "Draw amount does not match the Vault asset.";
         return tecWRONG_ASSET;
     }
 
@@ -189,3 +190,4 @@ LoanDraw::doApply()
 //------------------------------------------------------------------------------
 
 }  // namespace ripple
+#endif

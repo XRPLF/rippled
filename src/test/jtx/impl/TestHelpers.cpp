@@ -450,7 +450,6 @@ Json::Value
 set(AccountID const& account,
     uint256 const& loanBrokerID,
     Number principalRequested,
-    NetClock::time_point const& startDate,
     std::uint32_t flags)
 {
     Json::Value jv;
@@ -459,7 +458,6 @@ set(AccountID const& account,
     jv[sfLoanBrokerID] = to_string(loanBrokerID);
     jv[sfPrincipalRequested] = to_string(principalRequested);
     jv[sfFlags] = flags;
-    jv[sfStartDate] = startDate.time_since_epoch().count();
     return jv;
 }
 
@@ -485,6 +483,7 @@ del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
     return jv;
 }
 
+#if LOANDRAW
 Json::Value
 draw(
     AccountID const& account,
@@ -500,6 +499,7 @@ draw(
     jv[sfFlags] = flags;
     return jv;
 }
+#endif
 
 Json::Value
 pay(AccountID const& account,

@@ -2631,10 +2631,7 @@ class Batch_test : public beast::unit_test::suite
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
-                            set(lender,
-                                brokerKeylet.key,
-                                asset(1000).value(),
-                                env.now() + 3600s),
+                            set(lender, brokerKeylet.key, asset(1000).value()),
                             // Not allowed to include the counterparty signature
                             sig(sfCounterpartySignature, borrower),
                             sig(none),
@@ -2642,8 +2639,7 @@ class Batch_test : public beast::unit_test::suite
                             seq(none)),
                         lenderSeq + 1),
                     batch::inner(
-                        draw(
-                            lender,
+                        pay(lender,
                             loanKeylet.key,
                             STAmount{asset, asset(500).value()}),
                         lenderSeq + 2));
@@ -2655,18 +2651,14 @@ class Batch_test : public beast::unit_test::suite
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
-                            set(lender,
-                                brokerKeylet.key,
-                                asset(1000).value(),
-                                env.now() + 3600s),
+                            set(lender, brokerKeylet.key, asset(1000).value()),
                             // Counterparty must be set
                             sig(none),
                             fee(none),
                             seq(none)),
                         lenderSeq + 1),
                     batch::inner(
-                        draw(
-                            lender,
+                        pay(lender,
                             loanKeylet.key,
                             STAmount{asset, asset(500).value()}),
                         lenderSeq + 2));
@@ -2678,10 +2670,7 @@ class Batch_test : public beast::unit_test::suite
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
-                            set(lender,
-                                brokerKeylet.key,
-                                asset(1000).value(),
-                                env.now() + 3600s),
+                            set(lender, brokerKeylet.key, asset(1000).value()),
                             // Counterparty must sign the outer transaction
                             counterparty(borrower.id()),
                             sig(none),
@@ -2689,8 +2678,7 @@ class Batch_test : public beast::unit_test::suite
                             seq(none)),
                         lenderSeq + 1),
                     batch::inner(
-                        draw(
-                            lender,
+                        pay(lender,
                             loanKeylet.key,
                             STAmount{asset, asset(500).value()}),
                         lenderSeq + 2));
@@ -2706,17 +2694,14 @@ class Batch_test : public beast::unit_test::suite
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
-                            set(lender,
-                                brokerKeylet.key,
-                                asset(1000).value(),
-                                env.now() + 3600s),
+                            set(lender, brokerKeylet.key, asset(1000).value()),
                             counterparty(borrower.id()),
                             sig(none),
                             fee(none),
                             seq(none)),
                         lenderSeq + 1),
                     batch::inner(
-                        draw(
+                        pay(
                             // However, this inner transaction will fail,
                             // because the lender is not allowed to draw the
                             // transaction
@@ -2741,10 +2726,7 @@ class Batch_test : public beast::unit_test::suite
                     batch::outer(lender, lenderSeq, batchFee, tfAllOrNothing),
                     batch::inner(
                         env.json(
-                            set(lender,
-                                brokerKeylet.key,
-                                asset(1000).value(),
-                                env.now() + 3600s),
+                            set(lender, brokerKeylet.key, asset(1000).value()),
                             counterparty(borrower.id()),
                             sig(none),
                             fee(none),
