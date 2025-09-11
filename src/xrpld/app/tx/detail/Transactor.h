@@ -395,6 +395,15 @@ Transactor::invokePreflight(PreflightContext const& ctx)
     // TODO: If #5650 is merged, use its transaction -> amendment lookup here to
     // do a first-pass check. Rewrite or remove any `isEnabled` overloads that
     // check those default amendments.
+
+    // Using this lookup does NOT require checking the fixDelegateV1_1. The data
+    // exists regardless of whether it is enabled.
+    auto const feature =
+        Permission::getInstance().getTxFeature(ctx.tx.getTxnType());
+
+    if (feature && !ctx.rules.enabled(*feature))
+        return temDISABLED;
+
     if (!T::isEnabled(ctx))
         return temDISABLED;
 
