@@ -20,7 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 #define RIPPLE_APP_LEDGER_BOOKLISTENERS_H_INCLUDED
 
-#include <xrpld/net/InfoSub.h>
+#include <xrpld/rpc/InfoSub.h>
 
 #include <xrpl/protocol/MultiApiJson.h>
 

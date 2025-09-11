@@ -1,4 +1,5 @@
-# Notes on the musig module API
+Notes on the musig module API
+===========================
 
 The following sections contain additional notes on the API of the musig module (`include/secp256k1_musig.h`).
 A usage example can be found in `examples/musig.c`.

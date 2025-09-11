@@ -117,7 +117,10 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcORACLE_MALFORMED,       "oracleMalformed",      "Oracle request is malformed.", 400},
     {rpcBAD_CREDENTIALS,        "badCredentials",       "Credentials do not exist, are not accepted, or have expired.", 400},
     {rpcTX_SIGNED,              "transactionSigned",    "Transaction should not be signed.", 400},
-    {rpcDOMAIN_MALFORMED,       "domainMalformed",      "Domain is malformed.", 400}};
+    {rpcDOMAIN_MALFORMED,       "domainMalformed",      "Domain is malformed.", 400},
+    {rpcENTRY_NOT_FOUND,        "entryNotFound",        "Entry not found.", 400},
+    {rpcUNEXPECTED_LEDGER_TYPE, "unexpectedLedgerType", "Unexpected ledger type.", 400},
+};
 // clang-format on
 
 // Sort and validate unorderedErrorInfos at compile time.  Should be
