@@ -227,6 +227,8 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:ad099ae7bd836dc512073d3800da28b8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a209fbc86d71e00fb2bc8776c218a6475" id="r_a209fbc86d71e00fb2bc8776c218a6475"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Simulate__test.html#a209fbc86d71e00fb2bc8776c218a6475">testTx</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;tx, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;)&gt; const &amp;validate, bool testSerialized=true)</td></tr>
 <tr class="separator:a209fbc86d71e00fb2bc8776c218a6475"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad7984489d0f4a4435e022c7c3c32e0f4" id="r_ad7984489d0f4a4435e022c7c3c32e0f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Simulate__test.html#ad7984489d0f4a4435e022c7c3c32e0f4">testTxJsonMetadataField</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;tx, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;)&gt; const &amp;validate, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;expectedMetadataKey, bool testSerialized=true)</td></tr>
+<tr class="separator:ad7984489d0f4a4435e022c7c3c32e0f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a191eed57089191a36cb79543f331f0d3" id="r_a191eed57089191a36cb79543f331f0d3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Simulate__test.html#a191eed57089191a36cb79543f331f0d3">getJsonMetadata</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> txResult) const</td></tr>
 <tr class="separator:a191eed57089191a36cb79543f331f0d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa115dcfa3e1999e23989b027847b99c7" id="r_aa115dcfa3e1999e23989b027847b99c7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Simulate__test.html#aa115dcfa3e1999e23989b027847b99c7">testParamErrors</a> ()</td></tr>
@@ -253,6 +255,8 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:aa26d5fbff6178a6cfeff1bd0ba687fb7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44889ba92511fc4bed893f7d063cc4b5" id="r_a44889ba92511fc4bed893f7d063cc4b5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Simulate__test.html#a44889ba92511fc4bed893f7d063cc4b5">testSuccessfulTransactionNetworkID</a> ()</td></tr>
 <tr class="separator:a44889ba92511fc4bed893f7d063cc4b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a230c3e3c508e114b4e7e7212e748f7b4" id="r_a230c3e3c508e114b4e7e7212e748f7b4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1Simulate__test.html#a230c3e3c508e114b4e7e7212e748f7b4">testSuccessfulTransactionAdditionalMetadata</a> ()</td></tr>
+<tr class="separator:a230c3e3c508e114b4e7e7212e748f7b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf73a1f738d097ca74935f643f07ef80" id="r_aaf73a1f738d097ca74935f643f07ef80"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1unit__test_1_1suite.html#aaf73a1f738d097ca74935f643f07ef80">propagate_abort</a> ()</td></tr>
 <tr class="separator:aaf73a1f738d097ca74935f643f07ef80"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -424,6 +428,62 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="ad7984489d0f4a4435e022c7c3c32e0f4" name="ad7984489d0f4a4435e022c7c3c32e0f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad7984489d0f4a4435e022c7c3c32e0f4">&#9670;&#160;</a></span>testTxJsonMetadataField()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::Simulate_test::testTxJsonMetadataField </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;&#160;</td>
+          <td class="paramname"><em>env</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>tx</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>validate</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
+          <td class="paramname"><em>expectedMetadataKey</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>testSerialized</em> = <code>true</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00135">135</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a191eed57089191a36cb79543f331f0d3" name="a191eed57089191a36cb79543f331f0d3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a191eed57089191a36cb79543f331f0d3">&#9670;&#160;</a></span>getJsonMetadata()</h2>
 
@@ -448,7 +508,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00135">135</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00161">161</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -475,7 +535,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00149">149</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00175">175</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -502,7 +562,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00433">433</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00459">459</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -529,7 +589,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00469">469</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00495">495</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -556,7 +616,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00499">499</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00525">525</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -583,7 +643,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00572">572</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00598">598</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -610,7 +670,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00620">620</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00646">646</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -637,7 +697,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00701">701</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00727">727</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -664,7 +724,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00800">800</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00826">826</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -691,7 +751,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00856">856</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00882">882</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -718,7 +778,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00929">929</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00955">955</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -745,7 +805,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l00998">998</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l01024">1024</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -772,7 +832,34 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l01116">1116</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l01142">1142</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a230c3e3c508e114b4e7e7212e748f7b4" name="a230c3e3c508e114b4e7e7212e748f7b4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a230c3e3c508e114b4e7e7212e748f7b4">&#9670;&#160;</a></span>testSuccessfulTransactionAdditionalMetadata()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::Simulate_test::testSuccessfulTransactionAdditionalMetadata </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l01216">1216</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -803,7 +890,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classbeast_1_1unit__test_1_1suite.html#aea7ffa0eca5e015d21be62a18adb8393">beast::unit_test::suite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l01191">1191</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Simulate__test_8cpp_source.html#l01294">1294</a> of file <a class="el" href="Simulate__test_8cpp_source.html">Simulate_test.cpp</a>.</p>
 
 </div>
 </div>
