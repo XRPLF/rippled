@@ -55,9 +55,11 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
           ctx.rules.enabled(featureSingleAssetVault)))
         return temDISABLED;
 
-    auto const isMutate = ctx.tx.isFieldPresent(sfMutableFlags) ||
-        ctx.tx.isFieldPresent(sfMPTokenMetadata) ||
-        ctx.tx.isFieldPresent(sfTransferFee);
+    auto const mutableFlags = ctx.tx[~sfMutableFlags];
+    auto const metadata = ctx.tx[~sfMPTokenMetadata];
+    auto const transferFee = ctx.tx[~sfTransferFee];
+    auto const isMutate = mutableFlags || metadata || transferFee;
+
     if (isMutate && !ctx.rules.enabled(featureDynamicMPT))
         return temDISABLED;
 
@@ -99,19 +101,13 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         if (isMutate && (txFlags & tfUniversalMask))
             return temMALFORMED;
 
-        if (auto const fee = ctx.tx[~sfTransferFee])
-        {
-            if (fee > maxTransferFee)
-                return temBAD_TRANSFER_FEE;
-        }
+        if (transferFee && *transferFee > maxTransferFee)
+            return temBAD_TRANSFER_FEE;
 
-        if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
-        {
-            if (metadata->length() > maxMPTokenMetadataLength)
-                return temMALFORMED;
-        }
+        if (metadata && metadata->length() > maxMPTokenMetadataLength)
+            return temMALFORMED;
 
-        if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
+        if (mutableFlags)
         {
             if (!*mutableFlags ||
                 (*mutableFlags & tfMPTokenIssuanceSetMutableMask))
@@ -129,8 +125,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
             // in the same transaction is not allowed.
-            if (auto const fee = ctx.tx[~sfTransferFee].value_or(0);
-                fee && (*mutableFlags & tfMPTClearCanTransfer))
+            if (transferFee.value_or(0) &&
+                (*mutableFlags & tfMPTClearCanTransfer))
                 return temMALFORMED;
         }
     }

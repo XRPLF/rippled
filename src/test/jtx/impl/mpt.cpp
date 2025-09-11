@@ -248,8 +248,7 @@ MPTTester::set(MPTSet const& arg)
         jv[sfTransferFee] = *arg.transferFee;
     if (arg.metadata)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
-    if (submit(arg, jv) == tesSUCCESS &&
-        (arg.flags.value_or(0) || arg.mutableFlags))
+    if (submit(arg, jv) == tesSUCCESS && (arg.flags || arg.mutableFlags))
     {
         auto require = [&](std::optional<Account> const& holder,
                            bool unchanged) {
