@@ -264,8 +264,8 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             keylet::escrow(env.master, env.seq(env.master));
         WasmHostFunctionsImpl hfs(ac, dummyEscrow);
 
-        // Use featureSmartEscrow for testing
-        auto const amendmentId = featureSmartEscrow;
+        // Use featureTokenEscrow for testing
+        auto const amendmentId = featureTokenEscrow;
 
         // Test by id
         {
@@ -275,7 +275,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         // Test by name
-        std::string const amendmentName = "SmartEscrow";
+        std::string const amendmentName = "TokenEscrow";
         {
             auto const result = hfs.isAmendmentEnabled(amendmentName);
             BEAST_EXPECT(result.has_value());
