@@ -68,9 +68,13 @@ JSS(Flags);                // in/out: TransactionSign; field.
 JSS(Holder);               // field.
 JSS(Invalid);              //
 JSS(Issuer);               // in: Credential transactions
+JSS(IssuingChainDoor);     // field.
+JSS(IssuingChainIssue);    // field.
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
 JSS(LimitAmount);          // field.
+JSS(LockingChainDoor);     // field.
+JSS(LockingChainIssue);    // field.
 JSS(NetworkID);            // field.
 JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
@@ -706,7 +710,7 @@ JSS(write_load);              // out: GetCounts
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) JSS(name);
+#define TRANSACTION(tag, value, name, ...) JSS(name);
 
 #include <xrpl/protocol/detail/transactions.macro>
 
