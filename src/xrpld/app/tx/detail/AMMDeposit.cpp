@@ -608,7 +608,8 @@ AMMDeposit::deposit(
         ammAccount,
         amountDepositActual,
         ctx_.journal,
-        WaiveTransferFee::Yes);
+        WaiveTransferFee::Yes,
+        AllowMPTOverflow::No);
     if (res != tesSUCCESS)
     {
         JLOG(ctx_.journal.debug())
@@ -634,7 +635,8 @@ AMMDeposit::deposit(
             ammAccount,
             *amount2DepositActual,
             ctx_.journal,
-            WaiveTransferFee::Yes);
+            WaiveTransferFee::Yes,
+            AllowMPTOverflow::No);
         if (res != tesSUCCESS)
         {
             JLOG(ctx_.journal.debug())

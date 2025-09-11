@@ -344,7 +344,8 @@ applyCreate(
                 accountId,
                 amount,
                 ctx_.journal,
-                WaiveTransferFee::Yes))
+                WaiveTransferFee::Yes,
+                AllowMPTOverflow::No))
             return res;
 
         // Set AMM flag on AMM trustline

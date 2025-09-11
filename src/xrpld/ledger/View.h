@@ -42,6 +42,7 @@
 namespace ripple {
 
 enum class WaiveTransferFee : bool { No = false, Yes };
+enum class AllowMPTOverflow : bool { No = false, Yes };
 enum class SkipEntry : bool { No = false, Yes };
 
 //------------------------------------------------------------------------------
@@ -794,7 +795,8 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
-    WaiveTransferFee waiveFee = WaiveTransferFee::No);
+    WaiveTransferFee waiveFee = WaiveTransferFee::No,
+    AllowMPTOverflow allowOverflow = AllowMPTOverflow::Yes);
 
 [[nodiscard]] TER
 issueIOU(

@@ -2260,6 +2260,50 @@ class Vault_test : public beast::unit_test::suite
             env(tx2, ter{tecWRONG_ASSET});
             env.close();
         }
+
+        {
+            testcase("MPT OutstandingAmount > MaximumAmount");
+
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
+            Account alice{"alice"};
+            Account issuer{"issuer"};
+            env.fund(XRP(1'000), alice, issuer);
+            env.close();
+            Vault vault{env};
+
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = issuer,
+                 .holders = {alice},
+                 .maxAmt = 100});
+
+            auto [tx, k] = vault.create({.owner = issuer, .asset = BTC});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = issuer, .id = k.key, .amount = BTC(110)});
+            // accountHolds is the first check and the issuer has only BTC(100)
+            // available
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+
+            // OutstandingAmount == MaximumAmount
+            env(pay(issuer, alice, BTC(100)));
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = issuer, .id = k.key, .amount = BTC(100)});
+            // the issuer has BTC(0) available
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = alice, .id = k.key, .amount = BTC(100)});
+            // alice transfers BTC(100), OutstandingAmount is 100
+            env(tx);
+            env.close();
+        }
     }
 
     void

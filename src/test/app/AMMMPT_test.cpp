@@ -380,6 +380,26 @@ private:
             AMM ammBob(env, bob, USD(10'000), BTC(10'000));
             BEAST_EXPECT(ammBob.ammExists());
         }
+
+        // OutstandingAmount > MaximumAmount
+        {
+            Env env{*this};
+            env.fund(XRP(1'000), gw, alice);
+
+            MPTTester BTC(
+                {.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 100});
+
+            // OutstandingAmount is 0, issuer issues 10 over MaximumAmount
+            AMM amm(env, gw, XRP(100), BTC(110), ter(tecPATH_DRY));
+
+            env(pay(gw, alice, BTC(100)));
+
+            // OutstandingAmount is 100, issuer issues 100 over MaximumAmount
+            AMM amm1(env, gw, XRP(100), BTC(100), ter(tecPATH_DRY));
+            // This is fine - alice transfers 100 to AMM. OutstandingAmount
+            // is 100.
+            AMM ammAlice(env, alice, XRP(100), BTC(100));
+        }
     }
 
     void
@@ -1225,6 +1245,29 @@ private:
                     ter(tecAMM_FAILED));
             },
             {{XRP(1000), AMMMPT(1000)}});
+
+        // OutstandingAmount > MaximumAmount
+        {
+            Env env{*this};
+            env.fund(XRP(1'000), gw, alice);
+
+            MPTTester BTC(
+                {.env = env, .issuer = gw, .holders = {alice}, .maxAmt = 100});
+
+            AMM amm(env, gw, XRP(100), BTC(90));
+            // OutstandingAmount is 90, issuer issues 1 over MaximumAmount
+            amm.deposit(DepositArg{
+                .account = gw, .asset1In = BTC(11), .err = ter(tecPATH_DRY)});
+
+            env(pay(gw, alice, BTC(10)));
+
+            // OutstandingAmount is 100, issuer issues 10 over MaximumAmount
+            amm.deposit(DepositArg{
+                .account = gw, .asset1In = BTC(10), .err = ter(tecPATH_DRY)});
+            // This is fine - alice transfers 10 to AMM. OutstandingAmount
+            // is 100.
+            amm.deposit(DepositArg{.account = alice, .asset1In = BTC(10)});
+        }
     }
 
     void

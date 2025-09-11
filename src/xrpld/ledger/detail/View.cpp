@@ -1963,6 +1963,27 @@ accountSendIOU(
     return terResult;
 }
 
+/** Checks for two types of OutstandingAmount overflow during a send operation.
+ * 1.  **Direct rippleCredit (Multiplier: 1):** A true overflow check when
+ * `OutstandingAmount > MaximumAmount`. This threshold is used for direct
+ * rippleCredit transactions that bypass the payment engine.
+ * 2.  **accountSend & Payment Engine (Multiplier: 2):** A temporary overflow
+ * check when `OutstandingAmount > 2 * MaximumAmount`. This higher threshold
+ * is used for `accountSend` and payments processed via the payment engine.
+ */
+static bool
+isMPTOverflow(
+    std::int64_t sendAmount,
+    std::uint64_t outstandingAmount,
+    std::int64_t maximumAmount,
+    AllowMPTOverflow allowOverflow)
+{
+    auto const multiplier = allowOverflow == AllowMPTOverflow::Yes ? 2 : 1;
+    return (
+        sendAmount > maximumAmount ||
+        outstandingAmount > (multiplier * maximumAmount - sendAmount));
+}
+
 static TER
 rippleCreditMPT(
     ApplyView& view,
@@ -1987,8 +2008,8 @@ rippleCreditMPT(
     {
         if (view.rules().enabled(featureMPTokensV2))
         {
-            // Don't overflow uint64
-            if (amt > maxAmount || outstanding > (2 * maxAmount - amt))
+            if (isMPTOverflow(
+                    amt, outstanding, maxAmount, AllowMPTOverflow::Yes))
                 return tecPATH_DRY;
         }
         (*sleIssuance)[sfOutstandingAmount] += amt;
@@ -2054,7 +2075,8 @@ rippleSendMPT(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
-    WaiveTransferFee waiveFee)
+    WaiveTransferFee waiveFee,
+    AllowMPTOverflow allowOverflow)
 {
     XRPL_ASSERT(
         uSenderID != uReceiverID,
@@ -2077,19 +2099,14 @@ rippleSendMPT(
             auto const sendAmount = saAmount.mpt().value();
             auto const maxAmount = maxMPTAmount(*sle);
             auto const outstanding = sle->getFieldU64(sfOutstandingAmount);
-            if (view.rules().enabled(featureMPTokensV2))
-            {
-                // Don't overflow uint64
-                if (sendAmount > maxAmount ||
-                    outstanding > (2 * maxAmount - sendAmount))
-                    return tecPATH_DRY;
-            }
-            else
-            {
-                if (sendAmount > maxAmount ||
-                    outstanding > (maxAmount - sendAmount))
-                    return tecPATH_DRY;
-            }
+            auto const mptokensV2 = view.rules().enabled(featureMPTokensV2);
+            allowOverflow =
+                (allowOverflow == AllowMPTOverflow::Yes && mptokensV2)
+                ? AllowMPTOverflow::Yes
+                : AllowMPTOverflow::No;
+            if (isMPTOverflow(
+                    sendAmount, outstanding, maxAmount, allowOverflow))
+                return tecPATH_DRY;
         }
 
         // Direct send: redeeming MPTs and/or sending own MPTs.
@@ -2128,7 +2145,8 @@ accountSendMPT(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    WaiveTransferFee waiveFee)
+    WaiveTransferFee waiveFee,
+    AllowMPTOverflow allowOverflow)
 {
     XRPL_ASSERT(
         saAmount >= beast::zero && saAmount.holds<MPTIssue>(),
@@ -2143,7 +2161,14 @@ accountSendMPT(
     STAmount saActual{saAmount.asset()};
 
     return rippleSendMPT(
-        view, uSenderID, uReceiverID, saAmount, saActual, j, waiveFee);
+        view,
+        uSenderID,
+        uReceiverID,
+        saAmount,
+        saActual,
+        j,
+        waiveFee,
+        allowOverflow);
 }
 
 TER
@@ -2153,7 +2178,8 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
-    WaiveTransferFee waiveFee)
+    WaiveTransferFee waiveFee,
+    AllowMPTOverflow allowOverflow)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
@@ -2162,7 +2188,13 @@ accountSend(
                     view, uSenderID, uReceiverID, saAmount, j, waiveFee);
             else
                 return accountSendMPT(
-                    view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+                    view,
+                    uSenderID,
+                    uReceiverID,
+                    saAmount,
+                    j,
+                    waiveFee,
+                    allowOverflow);
         },
         saAmount.asset().value());
 }
