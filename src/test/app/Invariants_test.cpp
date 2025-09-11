@@ -1950,7 +1950,8 @@ class Invariants_test : public beast::unit_test::suite
             });
 
         doInvariantCheck(
-            {"vault operation succeeded without updating shares"},
+            {"vault operation succeeded without updating shares",
+             "assets available must not be greater than assets outstanding"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
                 auto sleVault = ac.view().peek(keylet);
@@ -2017,8 +2018,28 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"loss unrealized must not exceed "
-             "the difference between assets outstanding and available"},
+            {"vault transaction must not change loss unrealized",
+             "set must not change assets outstanding"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                return adjust(
+                    ac.view(),
+                    keylet,
+                    args(A2.id(), 0, [&](Adjustements& sample) {
+                        sample.lossUnrealized = 13;
+                        sample.assetsTotal = 20;
+                    }));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"loss unrealized must not exceed the difference "
+             "between assets outstanding and available",
+             "vault transaction must not change loss unrealized"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
                 return adjust(
@@ -2039,7 +2060,7 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"assets outstanding must not exceed AssetsMaximum"},
+            {"assets outstanding must not exceed assets maximum"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
                 return adjust(
@@ -2060,7 +2081,7 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"AssetsMaximum must be positive"},
+            {"assets maximum must be positive"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
                 return adjust(
@@ -2104,7 +2125,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {
                 "created vault must be empty",
-                "AssetsMaximum must be positive",
+                "assets maximum must be positive",
                 "shares issuer must be vault pseudo-account",
             },
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
@@ -2187,7 +2208,9 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {"deposit must increase vault balance",
              "deposit must decrease depositor balance",
-             "deposit must change vault and depositor balance by equal amount"},
+             "deposit must change vault and depositor balance by equal amount",
+             "deposit and assets outstanding must add up",
+             "deposit and assets available must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
 
@@ -2374,10 +2397,12 @@ class Invariants_test : public beast::unit_test::suite
             precloseXrp);
 
         doInvariantCheck(
-            {"withdrawal must decrease vault balance",
+            {"withdrawal must change vault and destination balance by "
+             "equal amount",
+             "withdrawal must decrease vault balance",
              "withdrawal must increase destination balance",
-             "withdrawal must change vault and destination balance by equal "
-             "amount"},
+             "withdrawal and assets outstanding must add up",
+             "withdrawal and assets available must add up"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
 
