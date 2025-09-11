@@ -425,12 +425,6 @@ ModuleWrapper::makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
             case WT_I64:
                 v.data[i] = wasm_valtype_new_i64();
                 break;
-            case WT_F32:
-                v.data[i] = wasm_valtype_new_f32();
-                break;
-            case WT_F64:
-                v.data[i] = wasm_valtype_new_f64();
-                break;
             default:
                 throw std::runtime_error("invalid import type");
         }
@@ -451,12 +445,6 @@ ModuleWrapper::makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
                 break;
             case WT_I64:
                 v.data[0] = wasm_valtype_new_i64();
-                break;
-            case WT_F32:
-                v.data[0] = wasm_valtype_new_f32();
-                break;
-            case WT_F64:
-                v.data[0] = wasm_valtype_new_f64();
                 break;
             default:
                 throw std::runtime_error("invalid return type");
@@ -679,12 +667,6 @@ WamrEngine::convertParams(std::vector<WasmParam> const& params)
                 break;
             case WT_I64:
                 v.push_back(WASM_I64_VAL(p.of.i64));
-                break;
-            case WT_F32:
-                v.push_back(WASM_F32_VAL(p.of.f32));
-                break;
-            case WT_F64:
-                v.push_back(WASM_F64_VAL(p.of.f64));
                 break;
             case WT_U8V: {
                 auto const sz = p.of.u8v.sz;
