@@ -19,6 +19,7 @@
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STXChainBridge.h>
 
 namespace ripple {
 
@@ -287,9 +288,10 @@ class STParsedJSON_test : public beast::unit_test::suite
         // NOTE: the JSON parser doesn't support > UInt32, so those values must
         // be in hex
         // Test string value out of range
+        // string is interpreted as hex
         {
             Json::Value j;
-            j[sfIndexNext] = "18446744073709551616";
+            j[sfIndexNext] = "10000000000000000";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -313,7 +315,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test hex string value with invalid characters
         {
             Json::Value j;
-            j[sfIndexNext] = "abcdefg";
+            j[sfIndexNext] = "abcdefga";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
@@ -1097,6 +1099,330 @@ class STParsedJSON_test : public beast::unit_test::suite
     }
 
     void
+    testIssue()
+    {
+        // Valid Issue: currency and issuer as base58
+        {
+            Json::Value j;
+            Json::Value issueJson(Json::objectValue);
+            issueJson["currency"] = "USD";
+            issueJson["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfAsset] = issueJson;
+            STParsedJSONObject obj("Test", j);
+            if (BEAST_EXPECTS(
+                    obj.object.has_value(), obj.error.toStyledString()))
+            {
+                BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
+                auto const& issueField = (*obj.object)[sfAsset];
+                auto const& issue = issueField.value().get<Issue>();
+                BEAST_EXPECT(issue.currency.size() == 20);
+                BEAST_EXPECT(issue.account.size() == 20);
+            }
+        }
+
+        // Valid Issue: currency as hex
+        {
+            Json::Value j;
+            Json::Value issueJson(Json::objectValue);
+            issueJson["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
+            issueJson["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfAsset] = issueJson;
+            STParsedJSONObject obj("Test", j);
+            if (BEAST_EXPECT(obj.object.has_value()))
+            {
+                BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
+                auto const& issueField = (*obj.object)[sfAsset];
+                auto const& issue = issueField.value().get<Issue>();
+                BEAST_EXPECT(issue.currency.size() == 20);
+                BEAST_EXPECT(issue.account.size() == 20);
+            }
+        }
+
+        // Valid Issue: MPTID
+        {
+            Json::Value j;
+            Json::Value issueJson(Json::objectValue);
+            issueJson["mpt_issuance_id"] =
+                "0000000000000000000000004D5054494431323334234234";
+            j[sfAsset] = issueJson;
+            STParsedJSONObject obj("Test", j);
+            if (BEAST_EXPECT(obj.object.has_value()))
+            {
+                BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
+                auto const& issueField = (*obj.object)[sfAsset];
+                auto const& issue = issueField.value().get<MPTIssue>();
+                BEAST_EXPECT(issue.getMptID().size() == 24);
+            }
+        }
+
+        // Invalid Issue: missing currency
+        {
+            Json::Value j;
+            Json::Value issue(Json::objectValue);
+            issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfAsset] = issue;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid Issue: missing issuer
+        {
+            Json::Value j;
+            Json::Value issue(Json::objectValue);
+            issue["currency"] = "USD";
+            j[sfAsset] = issue;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid Issue: currency too long
+        {
+            Json::Value j;
+            Json::Value issue(Json::objectValue);
+            issue["currency"] = "USDD";
+            issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfAsset] = issue;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid Issue: issuer not base58 or hex
+        {
+            Json::Value j;
+            Json::Value issue(Json::objectValue);
+            issue["currency"] = "USD";
+            issue["issuer"] = "notAValidIssuer";
+            j[sfAsset] = issue;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid Issue: currency not string
+        {
+            Json::Value j;
+            Json::Value issue(Json::objectValue);
+            issue["currency"] = Json::Value(Json::arrayValue);
+            issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfAsset] = issue;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid Issue: issuer not string
+        {
+            Json::Value j;
+            Json::Value issue(Json::objectValue);
+            issue["currency"] = "USD";
+            issue["issuer"] = Json::Value(Json::objectValue);
+            j[sfAsset] = issue;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid Issue: not an object
+        {
+            Json::Value j;
+            j[sfAsset] = "notanobject";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+    }
+
+    void
+    testXChainBridge()
+    {
+        // Valid XChainBridge
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value issuingChainIssue(Json::objectValue);
+            issuingChainIssue["currency"] = "USD";
+            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            Json::Value lockingChainIssue(Json::objectValue);
+            lockingChainIssue["currency"] = "EUR";
+            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["LockingChainIssue"] = lockingChainIssue;
+            bridge["IssuingChainIssue"] = issuingChainIssue;
+            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            if (BEAST_EXPECT(obj.object.has_value()))
+            {
+                BEAST_EXPECT(obj.object->isFieldPresent(sfXChainBridge));
+                auto const& bridgeField = (*obj.object)[sfXChainBridge];
+                BEAST_EXPECT(
+                    bridgeField->lockingChainIssue().currency.size() == 20);
+                BEAST_EXPECT(
+                    bridgeField->issuingChainIssue().currency.size() == 20);
+            }
+        }
+
+        // Valid XChainBridge: issues as hex currency
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value issuingChainIssue(Json::objectValue);
+            issuingChainIssue["currency"] =
+                "0123456789ABCDEF01230123456789ABCDEF0123";
+            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            Json::Value lockingChainIssue(Json::objectValue);
+            lockingChainIssue["currency"] =
+                "0123456789ABCDEF01230123456789ABCDEF0123";
+            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["LockingChainIssue"] = lockingChainIssue;
+            bridge["IssuingChainIssue"] = issuingChainIssue;
+            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            if (BEAST_EXPECT(obj.object.has_value()))
+            {
+                BEAST_EXPECT(obj.object->isFieldPresent(sfXChainBridge));
+                auto const& bridgeField = (*obj.object)[sfXChainBridge];
+                BEAST_EXPECT(
+                    bridgeField->lockingChainIssue().currency.size() == 20);
+                BEAST_EXPECT(
+                    bridgeField->issuingChainIssue().currency.size() == 20);
+            }
+        }
+
+        // Invalid XChainBridge: missing LockingChainIssue
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value issuingChainIssue(Json::objectValue);
+            issuingChainIssue["currency"] = "USD";
+            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["IssuingChainIssue"] = issuingChainIssue;
+            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid XChainBridge: missing IssuingChainIssue
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value lockingChainIssue(Json::objectValue);
+            lockingChainIssue["currency"] = "EUR";
+            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["LockingChainIssue"] = lockingChainIssue;
+            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid XChainBridge: missing LockingChainDoor
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value issuingChainIssue(Json::objectValue);
+            issuingChainIssue["currency"] = "USD";
+            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["IssuingChainIssue"] = issuingChainIssue;
+            Json::Value lockingChainIssue(Json::objectValue);
+            lockingChainIssue["currency"] = "EUR";
+            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["LockingChainIssue"] = lockingChainIssue;
+            bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid XChainBridge: missing IssuingChainDoor
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value issuingChainIssue(Json::objectValue);
+            issuingChainIssue["currency"] = "USD";
+            issuingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["IssuingChainIssue"] = issuingChainIssue;
+            Json::Value lockingChainIssue(Json::objectValue);
+            lockingChainIssue["currency"] = "EUR";
+            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["LockingChainIssue"] = lockingChainIssue;
+            bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid XChainBridge: IssuingChainIssue not an object
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            bridge["LockingChainIssue"] = "notanobject";
+            bridge["IssuingChainIssue"] = "notanobject";
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid XChainBridge: IssuingChainIssue missing currency
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value asset(Json::objectValue);
+            asset["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            Json::Value lockingChainIssue(Json::objectValue);
+            lockingChainIssue["currency"] = "EUR";
+            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["LockingChainIssue"] = lockingChainIssue;
+            bridge["IssuingChainIssue"] = asset;
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid XChainBridge: asset missing issuer
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value asset(Json::objectValue);
+            asset["currency"] = "USD";
+            Json::Value lockingChainIssue(Json::objectValue);
+            lockingChainIssue["currency"] = "EUR";
+            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["LockingChainIssue"] = lockingChainIssue;
+            bridge["IssuingChainIssue"] = asset;
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid XChainBridge: asset issuer not base58
+        {
+            Json::Value j;
+            Json::Value bridge(Json::objectValue);
+            Json::Value asset(Json::objectValue);
+            asset["currency"] = "USD";
+            asset["issuer"] = "notAValidBase58Account";
+            Json::Value lockingChainIssue(Json::objectValue);
+            lockingChainIssue["currency"] = "EUR";
+            lockingChainIssue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            bridge["LockingChainIssue"] = lockingChainIssue;
+            bridge["IssuingChainIssue"] = asset;
+            j[sfXChainBridge] = bridge;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid XChainBridge: not an object
+        {
+            Json::Value j;
+            j[sfXChainBridge] = "notanobject";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+    }
+
+    void
     testObject()
     {
         {
@@ -1236,6 +1562,8 @@ class STParsedJSON_test : public beast::unit_test::suite
         testUInt256();
         testAmount();
         testPathSet();
+        testIssue();
+        testXChainBridge();
         testObject();
         testArray();
     }
