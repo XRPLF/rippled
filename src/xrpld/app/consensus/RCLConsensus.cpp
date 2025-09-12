@@ -1132,10 +1132,10 @@ RclConsensusLogger::~RclConsensusLogger()
           << std::setw(3) << std::setfill('0') << (duration.count() % 1000)
           << "s. " << ss_->str();
 
+    auto node = beast::Journal::rentFromPool();
     if (beast::Journal::isStructuredJournalEnabled())
     {
-        auto node = beast::Journal::rentFromPool();
-        beast::detail::SimpleJsonWriter writer{node->data};
+        beast::detail::SimpleJsonWriter writer{&node.str()};
         writer.startObject();
         writer.writeKey("Msg");
         writer.writeString(outSs.str());
@@ -1143,12 +1143,12 @@ RclConsensusLogger::~RclConsensusLogger()
         writer.writeString(to_string(std::chrono::system_clock::now()));
         writer.endObject();
         writer.finish();
-        j_.sink().writeAlways(beast::severities::kInfo, writer.buffer(), node);
     }
     else
     {
-        j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
+        node.str() = outSs.str();
     }
+    j_.sink().writeAlways(beast::severities::kInfo, node);
 }
 
 }  // namespace ripple

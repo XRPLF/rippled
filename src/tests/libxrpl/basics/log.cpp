@@ -53,13 +53,13 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
+        write(beast::severities::Severity level, beast::Journal::StringBuffer text) override
         {
             logs_.write(level, partition_, text, false);
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr)
+        writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text)
             override
         {
             logs_.write(level, partition_, text, false);
@@ -86,17 +86,19 @@ public:
     write(
         beast::severities::Severity level,
         std::string const& partition,
-        std::string_view text,
+        beast::Journal::StringBuffer text,
         bool console)
     {
         std::string s;
-        std::string_view result = text;
+        std::string_view result = text.str();
         if (!beast::Journal::isStructuredJournalEnabled())
         {
-            format(s, text, level, partition);
-            result = s;
+            format(s, text.str(), level, partition);
+            text.str() = s;
+            result = text.str();
         }
         logStream_.append(result);
+        beast::Journal::returnStringBuffer(std::move(text));
     }
 };
 
@@ -228,7 +230,8 @@ TEST_CASE("Test JsonWriter")
         beast::detail::SimpleJsonWriter writer{buffer};
 
         writer.writeString("\n\r\t123\b\f123");
-        CHECK(writer.finish() == "\"\\n\\r\\t123\\b\\f123\"");
+        writer.finish();
+        CHECK(writer.buffer() == "\"\\n\\r\\t123\\b\\f123\"");
     }
 
     {
@@ -236,7 +239,8 @@ TEST_CASE("Test JsonWriter")
         beast::detail::SimpleJsonWriter writer{buffer};
 
         writer.writeString("\t");
-        CHECK(writer.finish() == "\"\\t\"");
+        writer.finish();
+        CHECK(writer.buffer() == "\"\\t\"");
     }
 
     {
@@ -244,7 +248,8 @@ TEST_CASE("Test JsonWriter")
         beast::detail::SimpleJsonWriter writer{buffer};
 
         writer.writeString(std::string_view{"\0", 1});
-        CHECK(writer.finish() == "\"\\u0000\"");
+        writer.finish();
+        CHECK(writer.buffer() == "\"\\u0000\"");
     }
 
     {
@@ -252,7 +257,8 @@ TEST_CASE("Test JsonWriter")
         beast::detail::SimpleJsonWriter writer{buffer};
 
         writer.writeString("\"\\");
-        CHECK(writer.finish() == "\"\\\"\\\\\"");
+        writer.finish();
+        CHECK(writer.buffer() == "\"\\\"\\\\\"");
     }
 
     {
@@ -264,7 +270,8 @@ TEST_CASE("Test JsonWriter")
         writer.writeBool(false);
         writer.writeNull();
         writer.endArray();
-        CHECK(writer.finish() == "[true,false,null]");
+        writer.finish();
+        CHECK(writer.buffer() == "[true,false,null]");
     }
 }
 
@@ -321,9 +328,10 @@ TEST_CASE("Test setJsonValue")
     log::detail::setJsonValue<test_detail::StreamStruct>(
         writer, "testStream", {}, &stringBuf);
     writer.endObject();
+    writer.finish();
 
     CHECK(
-        writer.finish() ==
+        writer.buffer() ==
         R"AAA({"testBool":true,"testInt32":-1,"testUInt32":1,"testInt64":-1,"testUInt64":1,"testDouble":1.1,"testCharStar":"Char*","testStdString":"StdString","testStdStringView":"StdStringView","testToChars":"0","testStream":"0"})AAA");
 }
 
@@ -358,15 +366,15 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
+    write(beast::severities::Severity level, beast::Journal::StringBuffer text) override
     {
-        strm_ << text;
+        strm_ << text.str();
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
+    writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text) override
     {
-        strm_ << text;
+        strm_ << text.str();
     }
 };
 

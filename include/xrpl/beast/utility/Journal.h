@@ -35,164 +35,6 @@
 #include <string_view>
 #include <utility>
 
-namespace beast {
-
-class StringBufferPool {
-public:
-    // ----- Empty index marker -----
-    static constexpr std::uint32_t kEmptyIdx = std::numeric_limits<std::uint32_t>::max();
-
-    // ----- Single-word CAS target: {tag | idx} with pack/unpack -----
-    struct Head {
-        std::uint32_t tag;
-        std::uint32_t idx; // kEmptyIdx means empty
-
-        static std::uint64_t pack(Head h) noexcept {
-            return (std::uint64_t(h.tag) << 32) | h.idx;
-        }
-        static Head unpack(std::uint64_t v) noexcept {
-            return Head{ std::uint32_t(v >> 32), std::uint32_t(v) };
-        }
-    };
-
-    // ----- Internal node -----
-    struct Node {
-        std::uint32_t next_idx{kEmptyIdx};
-        std::uint32_t self_idx{kEmptyIdx};
-        std::string   buf{};
-    };
-    static_assert(std::is_standard_layout_v<Node>, "Node must be standard layout");
-
-    // ----- User-facing move-only RAII handle -----
-    class Handle {
-    public:
-        Handle() = default;
-        Handle(Handle&& other) noexcept
-            : owner_(other.owner_), node_(other.node_) {
-            other.owner_ = nullptr; other.node_ = nullptr;
-        }
-        Handle& operator=(Handle&& other) noexcept {
-            if (this != &other) {
-                // Return current if still held
-                if (owner_ && node_) owner_->give_back(std::move(*this));
-                owner_ = other.owner_;
-                node_  = other.node_;
-                other.owner_ = nullptr;
-                other.node_  = nullptr;
-            }
-            return *this;
-        }
-
-        Handle(const Handle&) = delete;
-        Handle& operator=(const Handle&) = delete;
-
-        ~Handle() noexcept {
-            if (owner_ && node_) owner_->give_back(std::move(*this));
-        }
-
-        bool valid() const noexcept { return node_ != nullptr; }
-        std::string&       string()       noexcept { return node_->buf; }
-        const std::string& string() const noexcept { return node_->buf; }
-
-    private:
-        friend class StringBufferPool;
-        Handle(StringBufferPool* owner, Node* n) : owner_(owner), node_(n) {}
-
-        StringBufferPool* owner_ = nullptr;
-        Node* node_ = nullptr;
-    };
-
-    explicit StringBufferPool(std::uint32_t grow_by = 20)
-        : grow_by_(grow_by), head_(Head::pack({0, kEmptyIdx})) {}
-
-    // Rent a buffer; grows on demand. Returns move-only RAII handle.
-    Handle rent() {
-        for (;;) {
-            std::uint64_t old64 = head_.load(std::memory_order_acquire);
-            Head old = Head::unpack(old64);
-            if (old.idx == kEmptyIdx) { grow_(); continue; }      // rare slow path
-
-            Node& n = nodes_[old.idx];
-            std::uint32_t next = n.next_idx;
-
-            Head neu{ std::uint32_t(old.tag + 1), next };
-            if (head_.compare_exchange_weak(old64, Head::pack(neu),
-                                            std::memory_order_acq_rel,
-                                            std::memory_order_acquire)) {
-                return {this, &n};
-            }
-        }
-    }
-
-private:
-    // Only the pool/handle can call this
-    void give_back(Handle&& h) noexcept {
-        Node* node = h.node_;
-        if (!node) return; // already invalid
-        const std::uint32_t idx = node->self_idx;
-
-        node->buf.clear();
-
-        for (;;) {
-            std::uint64_t old64 = head_.load(std::memory_order_acquire);
-            Head old = Head::unpack(old64);
-
-            node->next_idx = old.idx;
-
-            Head neu{ std::uint32_t(old.tag + 1), idx };
-            if (head_.compare_exchange_weak(old64, Head::pack(neu),
-                                            std::memory_order_acq_rel,
-                                            std::memory_order_acquire)) {
-                // Invalidate handle (prevents double return)
-                h.owner_ = nullptr;
-                h.node_  = nullptr;
-                return;
-            }
-        }
-    }
-
-    void grow_() {
-        if (Head::unpack(head_.load(std::memory_order_acquire)).idx != kEmptyIdx) return;
-        std::scoped_lock lk(grow_mu_);
-        if (Head::unpack(head_.load(std::memory_order_acquire)).idx != kEmptyIdx) return;
-
-        const std::uint32_t base = static_cast<std::uint32_t>(nodes_.size());
-        nodes_.resize(base + grow_by_); // indices [base .. base+grow_by_-1]
-
-        // Init nodes and local chain
-        for (std::uint32_t i = 0; i < grow_by_; ++i) {
-            std::uint32_t idx = base + i;
-            Node& n = nodes_[idx];
-            n.self_idx = idx;
-            n.next_idx = (i + 1 < grow_by_) ? (idx + 1) : kEmptyIdx;
-        }
-
-        // Splice chain onto global head: [base .. base+grow_by_-1]
-        const std::uint32_t chain_head = base;
-        const std::uint32_t chain_tail = base + grow_by_ - 1;
-
-        for (;;) {
-            std::uint64_t old64 = head_.load(std::memory_order_acquire);
-            Head old = Head::unpack(old64);
-
-            nodes_[chain_tail].next_idx = old.idx; // tail -> old head
-            Head neu{ std::uint32_t(old.tag + 1), chain_head };
-
-            if (head_.compare_exchange_weak(old64, Head::pack(neu),
-                                            std::memory_order_acq_rel,
-                                            std::memory_order_acquire)) {
-                break;
-            }
-        }
-    }
-
-    const std::uint32_t        grow_by_;
-    std::atomic<std::uint64_t> head_;     // single 64-bit CAS (Head packed)
-    std::mutex                 grow_mu_;  // only during growth
-    std::deque<Node>           nodes_;    // stable storage for nodes/strings
-};
-} // namespace beast
-
 namespace ripple::log {
 template <typename T>
 class LogParameter
@@ -248,102 +90,107 @@ namespace detail {
 class SimpleJsonWriter
 {
 public:
-    explicit SimpleJsonWriter(std::string& buffer) : buffer_(buffer)
+    explicit SimpleJsonWriter(std::string* buffer) : buffer_(buffer)
     {
     }
 
+    SimpleJsonWriter() = default;
+
+    SimpleJsonWriter(SimpleJsonWriter const& other) = default;
+    SimpleJsonWriter& operator=(SimpleJsonWriter const& other) = default;
+
     std::string&
-    buffer() { return buffer_; }
+    buffer() { return *buffer_; }
 
     void
     startObject() const
     {
-        buffer_.push_back('{');
+        buffer_->push_back('{');
     }
     void
     endObject() const
     {
         using namespace std::string_view_literals;
-        if (buffer_.back() == ',')
-            buffer_.pop_back();
-        buffer_.append("},"sv);
+        if (buffer_->back() == ',')
+            buffer_->pop_back();
+        buffer_->append("},"sv);
     }
     void
     writeKey(std::string_view key) const
     {
         writeString(key);
-        buffer_.back() = ':';
+        buffer_->back() = ':';
     }
     void
     startArray() const
     {
-        buffer_.push_back('[');
+        buffer_->push_back('[');
     }
     void
     endArray() const
     {
         using namespace std::string_view_literals;
-        if (buffer_.back() == ',')
-            buffer_.pop_back();
-        buffer_.append("],"sv);
+        if (buffer_->back() == ',')
+            buffer_->pop_back();
+        buffer_->append("],"sv);
     }
     void
     writeString(std::string_view str) const
     {
         using namespace std::string_view_literals;
-        buffer_.push_back('"');
-        escape(str, buffer_);
-        buffer_.append("\","sv);
+        buffer_->push_back('"');
+        escape(str, *buffer_);
+        buffer_->append("\","sv);
     }
     std::string_view
     writeInt(std::int32_t val) const
     {
-        return pushNumber(val, buffer_);
+        return pushNumber(val, *buffer_);
     }
     std::string_view
     writeInt(std::int64_t val) const
     {
-        return pushNumber(val, buffer_);
+        return pushNumber(val, *buffer_);
     }
     std::string_view
     writeUInt(std::uint32_t val) const
     {
-        return pushNumber(val, buffer_);
+        return pushNumber(val, *buffer_);
     }
     std::string_view
     writeUInt(std::uint64_t val) const
     {
-        return pushNumber(val, buffer_);
+        return pushNumber(val, *buffer_);
     }
     std::string_view
     writeDouble(double val) const
     {
-        return pushNumber(val, buffer_);
+        return pushNumber(val, *buffer_);
     }
     std::string_view
     writeBool(bool val) const
     {
         using namespace std::string_view_literals;
         auto str = val ? "true,"sv : "false,"sv;
-        buffer_.append(str);
+        buffer_->append(str);
         return str;
     }
     void
     writeNull() const
     {
         using namespace std::string_view_literals;
-        buffer_.append("null,"sv);
+        buffer_->append("null,"sv);
     }
     void
     writeRaw(std::string_view str) const
     {
-        buffer_.append(str);
+        buffer_->append(str);
     }
 
     void
     finish()
     {
-        buffer_.pop_back();
+        buffer_->pop_back();
     }
 
 private:
@@ -427,7 +274,7 @@ private:
             buffer.append(chunk, p - chunk);
     }
 
-    std::string& buffer_;
+    std::string* buffer_ = nullptr;
 };
 
 }  // namespace detail
@@ -482,23 +329,141 @@ public:
 
     class Sink;
 
-    using MessagePoolNode = lockfree::queue<std::string>::Node*;
+    class StringBufferPool {
+    public:
+        static constexpr std::uint32_t kEmptyIdx = std::numeric_limits<std::uint32_t>::max();
+
+        struct Head {
+            std::uint32_t tag;
+            std::uint32_t idx; // kEmptyIdx means empty
+        };
+
+        struct Node {
+            std::uint32_t next_idx{kEmptyIdx};
+            std::uint32_t self_idx{kEmptyIdx};
+            std::string   buf{};
+        };
+
+        class StringBuffer
+        {
+        public:
+            StringBuffer() = default;
+
+            std::string&
+            str() { return node_->buf; }
+
+        private:
+            StringBuffer(StringBufferPool* owner, Node* node)
+                : owner_(owner), node_(node) {}
+
+            StringBufferPool* owner_ = nullptr;
+            Node* node_ = nullptr;
+
+            friend class StringBufferPool;
+        };
+
+        explicit StringBufferPool(std::uint32_t grow_by = 20)
+            : growBy_(grow_by), head_({0, kEmptyIdx}) {}
+
+        // Rent a buffer; grows on demand. Returns move-only RAII handle.
+        StringBuffer rent() {
+            for (;;) {
+                auto old = head_.load(std::memory_order_acquire);
+                if (old.idx == kEmptyIdx) { grow(); continue; }      // rare slow path
+
+                Node& n = nodes_[old.idx];
+                std::uint32_t next = n.next_idx;
+
+                Head neu{ old.tag + 1, next };
+                if (head_.compare_exchange_weak(old, neu,
+                                                std::memory_order_acq_rel,
+                                                std::memory_order_acquire)) {
+                    return {this, &n};
+                }
+            }
+        }
+
+        // Only the pool/handle can call this
+        void giveBack(StringBuffer&& h) noexcept {
+            Node* node = h.node_;
+            if (!node) return; // already invalid
+            const std::uint32_t idx = node->self_idx;
+
+            for (;;) {
+                auto old = head_.load(std::memory_order_acquire);
+
+                node->next_idx = old.idx;
+
+                Head neu{ std::uint32_t(old.tag + 1), idx };
+                if (head_.compare_exchange_weak(old, neu,
+                                                std::memory_order_acq_rel,
+                                                std::memory_order_acquire)) {
+                    // Invalidate handle (prevents double return)
+                    h.owner_ = nullptr;
+                    h.node_  = nullptr;
+                    return;
+                }
+            }
+        }
+
+    private:
+
+        void grow() {
+            if (head_.load(std::memory_order_acquire).idx != kEmptyIdx) return;
+            std::scoped_lock lk(growMutex_);
+            if (head_.load(std::memory_order_acquire).idx != kEmptyIdx) return;
+
+            auto base = static_cast<std::uint32_t>(nodes_.size());
+            nodes_.resize(base + growBy_);
+
+            // Init nodes and local chain
+            for (std::uint32_t i = 0; i < growBy_; ++i) {
+                std::uint32_t idx = base + i;
+                Node& n = nodes_[idx];
+                n.self_idx = idx;
+                n.next_idx = (i + 1 < growBy_) ? (idx + 1) : kEmptyIdx;
+            }
+
+            // Splice chain onto global head: [base .. base+grow_by_-1]
+            const std::uint32_t chain_head = base;
+            const std::uint32_t chain_tail = base + growBy_ - 1;
+
+            for (;;) {
+                auto old = head_.load(std::memory_order_acquire);
+
+                nodes_[chain_tail].next_idx = old.idx; // tail -> old head
+                Head neu{ std::uint32_t(old.tag + 1), chain_head };
+
+                if (head_.compare_exchange_weak(old, neu,
+                                                std::memory_order_acq_rel,
+                                                std::memory_order_acquire)) {
+                    break;
+                }
+            }
+        }
+
+        const std::uint32_t growBy_;
+
+        // single 64-bit CAS
+        std::atomic<Head> head_;
+
+        // only during growth
+        std::mutex growMutex_;
+
+        // stable storage for nodes/strings
+        std::deque<Node> nodes_;
+    };
+    using StringBuffer = StringBufferPool::StringBuffer;
 
     class JsonLogContext
     {
-        MessagePoolNode messageBuffer_;
-        detail::SimpleJsonWriter messageParamsWriter_;
+        StringBuffer messageBuffer_;
+        detail::SimpleJsonWriter jsonWriter_;
         bool hasMessageParams_ = false;
-
+        bool messageBufferHandedOut_ = true;
     public:
-        explicit JsonLogContext()
-            : messageBuffer_(rentFromPool())
-            , messageParamsWriter_(messageBuffer_->data)
-        {
-            messageBuffer_->data.reserve(1024 * 5);
-        }
 
-        MessagePoolNode
+        StringBuffer
         messageBuffer() { return messageBuffer_; }
 
         void
@@ -524,11 +489,14 @@ public:
         detail::SimpleJsonWriter&
         writer()
         {
-            return messageParamsWriter_;
+            return jsonWriter_;
         }
 
         void
-        reset(
+        finish();
+
+        void
+        start(
             std::source_location location,
             severities::Severity severity,
             std::string_view moduleName,
@@ -545,7 +513,7 @@ private:
     static std::shared_mutex globalLogAttributesMutex_;
     static bool jsonLogsEnabled_;
 
-    static lockfree::queue<std::string> messagePool_;
+    static StringBufferPool messagePool_;
     static thread_local JsonLogContext currentJsonLogContext_;
 
     // Invariant: m_sink always points to a valid Sink
@@ -556,25 +524,20 @@ private:
         std::source_location location,
         severities::Severity severity) const;
 
-    static MessagePoolNode
+    static StringBuffer
     formatLog(std::string const& message);
 
 public:
     //--------------------------------------------------------------------------
 
-    static MessagePoolNode
+    static StringBuffer
     rentFromPool()
     {
-        auto node = messagePool_.pop();
-        if (!node)
-        {
-            node = new lockfree::queue<std::string>::Node();
-        }
-        return node;
+        return messagePool_.rent();
     }
 
     static void
-    returnMessageNode(MessagePoolNode node) { messagePool_.push(node); }
+    returnStringBuffer(StringBuffer&& node) { messagePool_.giveBack(std::move(node)); }
 
     static void
     enableStructuredJournal();
@@ -625,7 +588,7 @@ public:
             level is below the current threshold().
         */
         virtual void
-        write(Severity level, std::string_view text, MessagePoolNode owner = nullptr) = 0;
+        write(Severity level, StringBuffer text) = 0;
 
         /** Bypass filter and write text to the sink at the specified severity.
          * Always write the message, but maintain the same formatting as if
@@ -635,7 +598,7 @@ public:
          * @param text Text to write to sink.
          */
         virtual void
-        writeAlways(Severity level, std::string_view text, MessagePoolNode owner = nullptr) = 0;
+        writeAlways(Severity level, StringBuffer text) = 0;
 
     private:
         Severity thresh_;
@@ -813,7 +776,7 @@ public:
         : name_(other.name_), m_sink(other.m_sink)
     {
         std::string buffer{other.attributes_};
-        detail::SimpleJsonWriter writer{buffer};
+        detail::SimpleJsonWriter writer{&buffer};
         if (other.attributes_.empty() && jsonLogsEnabled_)
         {
             writer.startObject();
@@ -838,7 +801,7 @@ public:
     {
         std::string buffer;
         buffer.reserve(128);
-        detail::SimpleJsonWriter writer{buffer};
+        detail::SimpleJsonWriter writer{&buffer};
         if (jsonLogsEnabled_)
         {
             writer.startObject();
@@ -954,7 +917,7 @@ public:
         std::unique_lock lock(globalLogAttributesMutex_);
         globalLogAttributes_.reserve(1024);
         auto isEmpty = globalLogAttributes_.empty();
-        detail::SimpleJsonWriter writer{globalLogAttributes_};
+        detail::SimpleJsonWriter writer{&globalLogAttributes_};
         if (isEmpty && jsonLogsEnabled_)
         {
             writer.startObject();

@@ -53,18 +53,18 @@ Logs::Sink::Sink(
 }
 
 void
-Logs::Sink::write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner)
+Logs::Sink::write(beast::severities::Severity level, beast::Journal::StringBuffer text)
 {
     if (level < threshold())
         return;
 
-    logs_.write(level, partition_, text, owner, console());
+    logs_.write(level, partition_, text, console());
 }
 
 void
-Logs::Sink::writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner)
+Logs::Sink::writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text)
 {
-    logs_.write(level, partition_, text, owner, console());
+    logs_.write(level, partition_, text, console());
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ Logs::File::close()
 }
 
 void
-Logs::File::write(std::string&& text)
+Logs::File::write(std::string const& text)
 {
     if (m_stream.has_value())
         m_stream->write(text.data(), text.size());
@@ -141,10 +141,8 @@ Logs::~Logs()
 {
     // Signal log thread to stop and wait for it to finish
     {
-        std::lock_guard<std::mutex> lock(logMutex_);
         stopLogThread_ = true;
     }
-    logCondition_.notify_all();
     
     if (logThread_.joinable())
         logThread_.join();
@@ -202,27 +200,25 @@ void
 Logs::write(
     beast::severities::Severity level,
     std::string const& partition,
-    std::string_view text,
-    beast::Journal::MessagePoolNode owner,
+    beast::Journal::StringBuffer text,
     bool console)
 {
     std::string s;
-    std::string_view result = text;
+    std::string_view result = text.str();
     if (!beast::Journal::isStructuredJournalEnabled())
     {
-        format(s, text, level, partition);
-        result = s;
+        format(s, text.str(), level, partition);
+        text.str() = s;
+        result = text.str();
     }
 
     // if (!silent_)
-    //     std::cerr << s << '\n';
+    //     std::cerr << result << '\n';
 
-    // Get a node from the pool or create a new one
-    if (!owner) return;
-    messages_.push(owner);
+    messages_.push(text);
     
     // Signal log thread that new messages are available
-    logCondition_.notify_one();
+    // logCondition_.notify_one();
 
     // Add to batch buffer for file output
     if (0) {
@@ -291,41 +287,24 @@ Logs::flushBatchUnsafe()
 void
 Logs::logThreadWorker()
 {
-    beast::lockfree::queue<std::string>::Node* node;
-    
     while (!stopLogThread_)
     {
-        std::unique_lock<std::mutex> lock(logMutex_);
-        
-        // Wait for messages or stop signal
-        logCondition_.wait(lock, [this] { 
-            return stopLogThread_ || !messages_.empty(); 
-        });
-        
+        std::this_thread::sleep_for(FLUSH_INTERVAL);
+
+        beast::Journal::StringBuffer buffer;
         // Process all available messages
-        while ((node = messages_.pop()))
+        while (messages_.pop(buffer))
         {
-            // Write to file
-            file_.write(std::move(node->data));
-            
             // Also write to console if not silent
             if (!silent_)
-                std::cerr << node->data << '\n';
-            
+                std::cerr << buffer.str() << '\n';
+
+            // Write to file
+            file_.write(buffer.str());
+
             // Return node to pool for reuse
-            beast::Journal::returnMessageNode(node);
+            beast::Journal::returnStringBuffer(std::move(buffer));
         }
-    }
-    
-    // Process any remaining messages on shutdown
-    while ((node = messages_.pop()))
-    {
-        file_.write(std::move(node->data));
-        if (!silent_)
-            std::cerr << node->data << '\n';
-        
-        // Return node to pool for reuse
-        beast::Journal::returnMessageNode(node);
     }
 }
 
