@@ -30,11 +30,11 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testUInt8()
     {
-        STUInt8 u8(42);
-        BEAST_EXPECT(u8.value() == 42);
-        BEAST_EXPECT(u8.getText() == "42");
+        STUInt8 u8(255);
+        BEAST_EXPECT(u8.value() == 255);
+        BEAST_EXPECT(u8.getText() == "255");
         BEAST_EXPECT(u8.getSType() == STI_UINT8);
-        BEAST_EXPECT(u8.getJson(JsonOptions::none) == 42);
+        BEAST_EXPECT(u8.getJson(JsonOptions::none) == 255);
 
         // there is some special handling for sfTransactionResult
         STUInt8 tr(sfTransactionResult, 0);
@@ -73,11 +73,11 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testUInt32()
     {
-        STUInt32 u32(1234567890);
-        BEAST_EXPECT(u32.value() == 1234567890);
-        BEAST_EXPECT(u32.getText() == "1234567890");
+        STUInt32 u32(4'294'967'295);
+        BEAST_EXPECT(u32.value() == 4'294'967'295u);
+        BEAST_EXPECT(u32.getText() == "4294967295");
         BEAST_EXPECT(u32.getSType() == STI_UINT32);
-        BEAST_EXPECT(u32.getJson(JsonOptions::none) == 1234567890);
+        BEAST_EXPECT(u32.getJson(JsonOptions::none) == 4'294'967'295u);
 
         // there is some special handling for sfPermissionValue
         STUInt32 pv(sfPermissionValue, ttPAYMENT + 1);
@@ -95,15 +95,15 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testUInt64()
     {
-        STUInt64 u64(0x123456789ABCDEF0ull);
-        BEAST_EXPECT(u64.value() == 0x123456789ABCDEF0ull);
-        BEAST_EXPECT(u64.getText() == "1311768467463790320");
+        STUInt64 u64(0xFFFFFFFFFFFFFFFFull);
+        BEAST_EXPECT(u64.value() == 0xFFFFFFFFFFFFFFFFull);
+        BEAST_EXPECT(u64.getText() == "18446744073709551615");
         BEAST_EXPECT(u64.getSType() == STI_UINT64);
 
         // By default, getJson returns hex string
         auto jsonVal = u64.getJson(JsonOptions::none);
         BEAST_EXPECT(jsonVal.isString());
-        BEAST_EXPECT(jsonVal.asString() == "123456789abcdef0");
+        BEAST_EXPECT(jsonVal.asString() == "ffffffffffffffff");
     }
 
     void
