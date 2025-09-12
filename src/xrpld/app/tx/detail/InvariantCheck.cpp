@@ -2078,18 +2078,26 @@ ValidVault::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    // If `before` is empty, this means an object is being created
+    // If `after` is empty, this means an object is being deleted
+    // Otherwise it's a modification of an object.
+    //
+    // `Number balance` will capture the difference between "before" state
+    // (zero if created) and "after" state (zero if destroyed), so the
+    // invariants can validate that the change in account balances matches
+    // the change in vault balances.
     Number balance{};
     if (before)
     {
         switch (before->getType())
         {
             case ltVAULT:
-                deletedVault = Vault::make(*before);
+                beforeVault_ = Vault::make(*before);
                 break;
             case ltMPTOKEN_ISSUANCE:
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
-                deletedMPTs.push_back(Shares::make(*before));
+                beforeMPTs_.push_back(Shares::make(*before));
                 balance = static_cast<std::int64_t>(
                     before->getFieldU64(sfOutstandingAmount));
                 break;
@@ -2111,12 +2119,12 @@ ValidVault::visitEntry(
         switch (after->getType())
         {
             case ltMPTOKEN_ISSUANCE:
-                balances[before->key()] = balance;
+                balances_[before->key()] = balance;
                 break;
             case ltMPTOKEN:
             case ltACCOUNT_ROOT:
             case ltRIPPLE_STATE:
-                balances[after->key()] = balance * -1;
+                balances_[after->key()] = balance * -1;
                 break;
             default:;
         }
@@ -2127,19 +2135,19 @@ ValidVault::visitEntry(
         switch (after->getType())
         {
             case ltVAULT:
-                updatedVault = Vault::make(*after);
+                afterVault_ = Vault::make(*after);
                 break;
             case ltMPTOKEN_ISSUANCE:
                 // At this moment we have no way of telling if this object holds
                 // vault shares or something else. Save it for finalize.
-                updatedMPTs.push_back(Shares::make(*after));
+                afterMPTs_.push_back(Shares::make(*after));
                 balance -= Number(static_cast<std::int64_t>(
                     after->getFieldU64(sfOutstandingAmount)));
 
                 // Increase of the outstanding amount means increased
                 // liabilities, so we keep the sign here.
                 if (balance != zero)
-                    balances[after->key()] = balance;
+                    balances_[after->key()] = balance;
                 break;
             case ltMPTOKEN:
             case ltACCOUNT_ROOT:
@@ -2153,7 +2161,7 @@ ValidVault::visitEntry(
                 // Increase of the balance will give negative value so we
                 // need to reverse the sign here.
                 if (balance != zero)
-                    balances[after->key()] = balance * -1;
+                    balances_[after->key()] = balance * -1;
                 break;
             default:;
         }
@@ -2176,22 +2184,23 @@ ValidVault::finalize(
 
     // First special handling for ttVAULT_DELETE, which is the only
     // vault-modifying transaction without an "after" state of the vault
-    if (tx.getTxnType() == ttVAULT_DELETE && !deletedVault.has_value())
+    if (tx.getTxnType() == ttVAULT_DELETE)
     {
-        JLOG(j.fatal()) <<  //
-            "Invariant failed: vault deletion succeeded without deleting a "
-            "vault";
-        return false;  // That's all we can do here
-    }
-    else if (tx.getTxnType() == ttVAULT_DELETE)
-    {
+        if (!beforeVault_)
+        {
+            JLOG(j.fatal()) <<  //
+                "Invariant failed: vault deletion succeeded without deleting a "
+                "vault";
+            return false;  // That's all we can do here
+        }
+
         // At this moment we only know a vault is being deleted and there
         // might be some MPTokenIssuance objects which are deleted in the
         // same transaction. Find the one matching this vault.
         auto deletedShares = [&]() -> std::optional<Shares> {
-            for (auto& e : deletedMPTs)
+            for (auto const& e : beforeMPTs_)
             {
-                if (e.share.getMptID() == deletedVault->shareMPTID)
+                if (e.share.getMptID() == beforeVault_->shareMPTID)
                     return std::move(e);
             }
             return std::nullopt;
@@ -2211,13 +2220,13 @@ ValidVault::finalize(
                                "shares outstanding";
             result = false;
         }
-        if (deletedVault->assetsTotal != zero)
+        if (beforeVault_->assetsTotal != zero)
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
                                "assets outstanding";
             result = false;
         }
-        if (deletedVault->assetsAvailable != zero)
+        if (beforeVault_->assetsAvailable != zero)
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
                                "assets available";
@@ -2228,7 +2237,7 @@ ValidVault::finalize(
     }
 
     auto const updatedShares = [&]() -> std::optional<Shares> {
-        if (!updatedVault)
+        if (!afterVault_)
             return std::nullopt;
 
         // At this moment we only know that a vault is being updated and there
@@ -2236,41 +2245,40 @@ ValidVault::finalize(
         // same transaction. Find the one matching the shares to this vault.
         // Note, we expect updatedMPTs collection to be extremely small. For
         // such collections linear search is faster than lookup.
-        for (auto& e : updatedMPTs)
+        for (auto const& e : afterMPTs_)
         {
-            if (e.share.getMptID() == updatedVault->shareMPTID)
+            if (e.share.getMptID() == afterVault_->shareMPTID)
                 return std::move(e);
         }
 
         auto const sleShares =
-            view.read(keylet::mptIssuance(updatedVault->shareMPTID));
+            view.read(keylet::mptIssuance(afterVault_->shareMPTID));
 
-        if (sleShares)
-            return Shares::make(*sleShares);
-
-        return std::nullopt;
+        return sleShares ? std::optional<Shares>(Shares::make(*sleShares))
+                         : std::nullopt;
     }();
-
-    if (updatedVault && !updatedShares)
-    {
-        JLOG(j.fatal()) << "Invariant failed: updated vault must have shares";
-        return false;  // That's all we can do here
-    }
 
     bool result = true;
 
     // Universal transaction checks
-    if (updatedVault)
+    if (afterVault_)
     {
+        if (!updatedShares)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: updated vault must have shares";
+            return false;  // That's all we can do here
+        }
+
         if (updatedShares && updatedShares->sharesTotal == 0)
         {
-            if (updatedVault->assetsTotal != zero)
+            if (afterVault_->assetsTotal != zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: updated zero sized "
                                    "vault must have no assets outstanding";
                 result = false;
             }
-            if (updatedVault->assetsAvailable != zero)
+            if (afterVault_->assetsAvailable != zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: updated zero sized "
                                    "vault must have no assets available";
@@ -2278,22 +2286,22 @@ ValidVault::finalize(
             }
         }
 
-        if (updatedVault->assetsAvailable < zero)
+        if (afterVault_->assetsAvailable < zero)
         {
             JLOG(j.fatal())
                 << "Invariant failed: assets available must be positive";
             result = false;
         }
 
-        if (updatedVault->assetsAvailable > updatedVault->assetsTotal)
+        if (afterVault_->assetsAvailable > afterVault_->assetsTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: assets available must "
                                "not be greater than assets outstanding";
             result = false;
         }
         else if (
-            updatedVault->lossUnrealized >
-            updatedVault->assetsTotal - updatedVault->assetsAvailable)
+            afterVault_->lossUnrealized >
+            afterVault_->assetsTotal - afterVault_->assetsAvailable)
         {
             JLOG(j.fatal())  //
                 << "Invariant failed: loss unrealized must not exceed "
@@ -2301,22 +2309,22 @@ ValidVault::finalize(
             result = false;
         }
 
-        if (updatedVault->assetsTotal < zero)
+        if (afterVault_->assetsTotal < zero)
         {
             JLOG(j.fatal())
                 << "Invariant failed: assets outstanding must be positive";
             result = false;
         }
 
-        if (updatedVault->assetsMaximum < zero)
+        if (afterVault_->assetsMaximum < zero)
         {
             JLOG(j.fatal())
                 << "Invariant failed: assets maximum must be positive";
             result = false;
         }
         else if (
-            updatedVault->assetsMaximum > zero &&
-            updatedVault->assetsTotal > updatedVault->assetsMaximum)
+            afterVault_->assetsMaximum > zero &&
+            afterVault_->assetsTotal > afterVault_->assetsMaximum)
         {
             JLOG(j.fatal())
                 << "Invariant failed: assets outstanding must not exceed "
@@ -2331,7 +2339,7 @@ ValidVault::finalize(
         tx.getTxnType() == ttVAULT_WITHDRAW ||  //
         tx.getTxnType() == ttVAULT_CLAWBACK)
     {
-        if (!updatedVault.has_value())
+        if (!afterVault_)
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault operation succeeded without updating "
@@ -2341,7 +2349,7 @@ ValidVault::finalize(
 
         // Transactor makes this condition impossible, but since we need to
         // access deletedVault then we also need a defensive check.
-        if (!deletedVault.has_value() &&
+        if (!beforeVault_ &&
             (tx.getTxnType() == ttVAULT_SET ||       //
              tx.getTxnType() == ttVAULT_DEPOSIT ||   //
              tx.getTxnType() == ttVAULT_WITHDRAW ||  //
@@ -2355,8 +2363,8 @@ ValidVault::finalize(
         }
 
         // One universal check for all vault transaction types
-        if (deletedVault &&
-            updatedVault->lossUnrealized != deletedVault->lossUnrealized)
+        if (beforeVault_ &&
+            afterVault_->lossUnrealized != beforeVault_->lossUnrealized)
         {
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault transaction must not change loss "
@@ -2364,16 +2372,16 @@ ValidVault::finalize(
             result = false;
         }
 
-        auto deletedShares = [&]() -> std::optional<Shares> {
-            for (auto& e : deletedMPTs)
+        auto const beforeShares = [&]() -> std::optional<Shares> {
+            for (auto& e : beforeMPTs_)
             {
-                if (e.share.getMptID() == deletedVault->shareMPTID)
+                if (e.share.getMptID() == beforeVault_->shareMPTID)
                     return std::move(e);
             }
             return std::nullopt;
         }();
 
-        if (!deletedShares.has_value() &&
+        if (!beforeShares &&
             (tx.getTxnType() == ttVAULT_DEPOSIT ||   //
              tx.getTxnType() == ttVAULT_WITHDRAW ||  //
              tx.getTxnType() == ttVAULT_CLAWBACK))
@@ -2383,44 +2391,42 @@ ValidVault::finalize(
             return false;  // That's all we can do here
         }
 
-        auto const& asset = updatedVault->asset;
-
+        auto const& vaultAsset = afterVault_->asset;
         auto const balanceAssets = [&](AccountID id) -> std::optional<Number> {
             auto const it = [&] {
-                if (asset.native())
-                    return balances.find(keylet::account(id).key);
-                else if (asset.holds<Issue>())
-                    return balances.find(
-                        keylet::line(id, asset.get<Issue>()).key);
+                if (vaultAsset.native())
+                    return balances_.find(keylet::account(id).key);
+                else if (vaultAsset.holds<Issue>())
+                    return balances_.find(
+                        keylet::line(id, vaultAsset.get<Issue>()).key);
                 else
-                    return balances.find(
-                        keylet::mptoken(asset.get<MPTIssue>().getMptID(), id)
+                    return balances_.find(
+                        keylet::mptoken(
+                            vaultAsset.get<MPTIssue>().getMptID(), id)
                             .key);
             }();
-            if (it == balances.end())
+            if (it == balances_.end())
                 return std::nullopt;
-            else if (asset.native() || asset.holds<MPTIssue>())
+            else if (vaultAsset.native() || vaultAsset.holds<MPTIssue>())
                 return it->second;
 
             // We have IOU, may need to reverse the sign of line balance
-            if (id > asset.get<Issue>().getIssuer())
+            if (id > vaultAsset.get<Issue>().getIssuer())
                 return -1 * (it->second);
             return it->second;
         };
 
         auto const balanceShares = [&](AccountID id) -> std::optional<Number> {
             auto const it = [&]() {
-                if (id == updatedVault->pseudoId)
-                    return balances.find(
-                        keylet::mptIssuance(updatedVault->shareMPTID).key);
-                return balances.find(
-                    keylet::mptoken(updatedVault->shareMPTID, id).key);
+                if (id == afterVault_->pseudoId)
+                    return balances_.find(
+                        keylet::mptIssuance(afterVault_->shareMPTID).key);
+                return balances_.find(
+                    keylet::mptoken(afterVault_->shareMPTID, id).key);
             }();
 
-            if (it == balances.end())
-                return std::nullopt;
-            else
-                return it->second;
+            return it != balances_.end() ? std::optional<Number>(it->second)
+                                         : std::nullopt;
         };
 
         // Technically this does not need to be a lambda, but it's more
@@ -2433,9 +2439,9 @@ ValidVault::finalize(
                 case ttVAULT_CREATE: {
                     bool result = true;
 
-                    if (updatedVault->assetsAvailable != zero ||
-                        updatedVault->assetsTotal != zero ||
-                        updatedVault->lossUnrealized != zero ||
+                    if (afterVault_->assetsAvailable != zero ||
+                        afterVault_->assetsTotal != zero ||
+                        afterVault_->lossUnrealized != zero ||
                         updatedShares->sharesTotal != 0)
                     {
                         JLOG(j.fatal()) << "Invariant failed: created "
@@ -2443,7 +2449,7 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (updatedVault->pseudoId != updatedShares->issuer)
+                    if (afterVault_->pseudoId != updatedShares->issuer)
                     {
                         JLOG(j.fatal())
                             << "Invariant failed: shares issuer must be "
@@ -2457,7 +2463,7 @@ ValidVault::finalize(
                     bool result = true;
 
                     auto const vaultBalance =
-                        balanceAssets(updatedVault->pseudoId);
+                        balanceAssets(afterVault_->pseudoId);
                     if (vaultBalance)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2466,8 +2472,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (deletedVault && updatedVault &&
-                        deletedVault->assetsTotal != updatedVault->assetsTotal)
+                    if (beforeVault_ && afterVault_ &&
+                        beforeVault_->assetsTotal != afterVault_->assetsTotal)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: set must not change assets "
@@ -2475,9 +2481,9 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (deletedVault && updatedVault &&
-                        deletedVault->assetsAvailable !=
-                            updatedVault->assetsAvailable)
+                    if (beforeVault_ && afterVault_ &&
+                        beforeVault_->assetsAvailable !=
+                            afterVault_->assetsAvailable)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: set must not change assets "
@@ -2485,9 +2491,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (deletedShares && updatedShares &&
-                        deletedShares->sharesTotal !=
-                            updatedShares->sharesTotal)
+                    if (beforeShares && updatedShares &&
+                        beforeShares->sharesTotal != updatedShares->sharesTotal)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: set must not change shares "
@@ -2501,7 +2506,7 @@ ValidVault::finalize(
                     bool result = true;
 
                     auto const vaultBalance =
-                        balanceAssets(updatedVault->pseudoId);
+                        balanceAssets(afterVault_->pseudoId);
 
                     if (!vaultBalance)
                     {
@@ -2530,9 +2535,9 @@ ValidVault::finalize(
                     // Any payments (including deposits) made by the issuer
                     // do not change their balance, but create funds instead.
                     bool const issuerDeposit = [&]() -> bool {
-                        if (asset.native())
+                        if (vaultAsset.native())
                             return false;
-                        return tx[sfAccount] == asset.getIssuer();
+                        return tx[sfAccount] == vaultAsset.getIssuer();
                     }();
 
                     if (!issuerDeposit)
@@ -2542,7 +2547,7 @@ ValidVault::finalize(
                             auto ret = balanceAssets(tx[sfAccount]);
                             // Compensate for transaction fee deduced from
                             // sfAccount
-                            if (ret && asset.native())
+                            if (ret && vaultAsset.native())
                                 *ret += fee.drops();
                             if (ret && *ret == zero)
                                 return std::nullopt;
@@ -2592,7 +2597,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultShares =
-                        balanceShares(updatedVault->pseudoId);
+                        balanceShares(afterVault_->pseudoId);
                     if (!vaultShares)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2609,15 +2614,15 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (deletedVault->assetsTotal + *vaultBalance !=
-                        updatedVault->assetsTotal)
+                    if (beforeVault_->assetsTotal + *vaultBalance !=
+                        afterVault_->assetsTotal)
                     {
                         JLOG(j.fatal()) << "Invariant failed: deposit and "
                                            "assets outstanding must add up";
                         result = false;
                     }
-                    if (deletedVault->assetsAvailable + *vaultBalance !=
-                        updatedVault->assetsAvailable)
+                    if (beforeVault_->assetsAvailable + *vaultBalance !=
+                        afterVault_->assetsAvailable)
                     {
                         JLOG(j.fatal()) << "Invariant failed: deposit and "
                                            "assets available must add up";
@@ -2630,7 +2635,7 @@ ValidVault::finalize(
                     bool result = true;
 
                     auto const vaultBalance =
-                        balanceAssets(updatedVault->pseudoId);
+                        balanceAssets(afterVault_->pseudoId);
 
                     if (!vaultBalance)
                     {
@@ -2649,11 +2654,11 @@ ValidVault::finalize(
                     // Any payments (including withdrawal) going to the issuer
                     // do not change their balance, but destroy funds instead.
                     bool const issuerWithdrawal = [&]() -> bool {
-                        if (asset.native())
+                        if (vaultAsset.native())
                             return false;
                         auto const destination =
                             tx[~sfDestination].value_or(tx[sfAccount]);
-                        return destination == asset.getIssuer();
+                        return destination == vaultAsset.getIssuer();
                     }();
 
                     if (!issuerWithdrawal)
@@ -2663,7 +2668,7 @@ ValidVault::finalize(
                             auto ret = balanceAssets(tx[sfAccount]);
                             // Compensate for transaction fee deduced from
                             // sfAccount
-                            if (ret && asset.native())
+                            if (ret && vaultAsset.native())
                                 *ret += fee.drops();
                             if (ret && *ret == zero)
                                 return std::nullopt;
@@ -2688,8 +2693,8 @@ ValidVault::finalize(
                         }
 
                         auto const destinationBalance =  //
-                            accountBalance.has_value() ? *accountBalance
-                                                       : *otherAccountBalance;
+                            accountBalance ? *accountBalance
+                                           : *otherAccountBalance;
 
                         if (destinationBalance <= zero)
                         {
@@ -2726,7 +2731,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultShares =
-                        balanceShares(updatedVault->pseudoId);
+                        balanceShares(afterVault_->pseudoId);
                     if (!vaultShares)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2744,8 +2749,8 @@ ValidVault::finalize(
                     }
 
                     // Note, vaultBalance is negative (see check above)
-                    if (deletedVault->assetsTotal + *vaultBalance !=
-                        updatedVault->assetsTotal)
+                    if (beforeVault_->assetsTotal + *vaultBalance !=
+                        afterVault_->assetsTotal)
                     {
                         JLOG(j.fatal())
                             << "Invariant failed: withdrawal and assets "
@@ -2753,8 +2758,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (deletedVault->assetsAvailable + *vaultBalance !=
-                        updatedVault->assetsAvailable)
+                    if (beforeVault_->assetsAvailable + *vaultBalance !=
+                        afterVault_->assetsAvailable)
                     {
                         JLOG(j.fatal())
                             << "Invariant failed: withdrawal and assets "
@@ -2767,7 +2772,8 @@ ValidVault::finalize(
                 case ttVAULT_CLAWBACK: {
                     bool result = true;
 
-                    if (asset.native() || asset.getIssuer() != tx[sfAccount])
+                    if (vaultAsset.native() ||
+                        vaultAsset.getIssuer() != tx[sfAccount])
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback may only be performed "
@@ -2776,7 +2782,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultBalance =
-                        balanceAssets(updatedVault->pseudoId);
+                        balanceAssets(afterVault_->pseudoId);
 
                     if (!vaultBalance)
                     {
@@ -2812,7 +2818,7 @@ ValidVault::finalize(
                     }
 
                     auto const vaultShares =
-                        balanceShares(updatedVault->pseudoId);
+                        balanceShares(afterVault_->pseudoId);
                     if (!vaultShares)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2829,8 +2835,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (deletedVault->assetsTotal + *vaultBalance !=
-                        updatedVault->assetsTotal)
+                    if (beforeVault_->assetsTotal + *vaultBalance !=
+                        afterVault_->assetsTotal)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets outstanding "
@@ -2838,8 +2844,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (deletedVault->assetsAvailable + *vaultBalance !=
-                        updatedVault->assetsAvailable)
+                    if (beforeVault_->assetsAvailable + *vaultBalance !=
+                        afterVault_->assetsAvailable)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback and assets "

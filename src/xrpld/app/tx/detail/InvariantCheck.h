@@ -750,11 +750,11 @@ class ValidVault
         Shares static make(SLE const&);
     };
 
-    std::optional<Vault> updatedVault = {};
-    std::vector<Shares> updatedMPTs = {};
-    std::optional<Vault> deletedVault = {};
-    std::vector<Shares> deletedMPTs = {};
-    std::unordered_map<uint256, Number> balances = {};
+    std::optional<Vault> afterVault_ = {};
+    std::vector<Shares> afterMPTs_ = {};
+    std::optional<Vault> beforeVault_ = {};
+    std::vector<Shares> beforeMPTs_ = {};
+    std::unordered_map<uint256, Number> balances_ = {};
 
 public:
     void
