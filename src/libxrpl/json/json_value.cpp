@@ -24,6 +24,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -685,7 +686,9 @@ Value::isConvertibleTo(ValueType other) const
                 (other == intValue && value_.real_ >= minInt &&
                  value_.real_ <= maxInt) ||
                 (other == uintValue && value_.real_ >= 0 &&
-                 value_.real_ <= maxUInt) ||
+                 value_.real_ <= maxUInt &&
+                 std::fabs(round(value_.real_) - value_.real_) <
+                     std::numeric_limits<double>::epsilon()) ||
                 other == realValue || other == stringValue ||
                 other == booleanValue;
 
