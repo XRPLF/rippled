@@ -227,7 +227,7 @@ TEST_CASE("Test JsonWriter")
 {
     {
         std::string buffer;
-        beast::detail::SimpleJsonWriter writer{buffer};
+        beast::detail::SimpleJsonWriter writer{&buffer};
 
         writer.writeString("\n\r\t123\b\f123");
         writer.finish();
@@ -236,7 +236,7 @@ TEST_CASE("Test JsonWriter")
 
     {
         std::string buffer;
-        beast::detail::SimpleJsonWriter writer{buffer};
+        beast::detail::SimpleJsonWriter writer{&buffer};
 
         writer.writeString("\t");
         writer.finish();
@@ -245,7 +245,7 @@ TEST_CASE("Test JsonWriter")
 
     {
         std::string buffer;
-        beast::detail::SimpleJsonWriter writer{buffer};
+        beast::detail::SimpleJsonWriter writer{&buffer};
 
         writer.writeString(std::string_view{"\0", 1});
         writer.finish();
@@ -254,7 +254,7 @@ TEST_CASE("Test JsonWriter")
 
     {
         std::string buffer;
-        beast::detail::SimpleJsonWriter writer{buffer};
+        beast::detail::SimpleJsonWriter writer{&buffer};
 
         writer.writeString("\"\\");
         writer.finish();
@@ -263,7 +263,7 @@ TEST_CASE("Test JsonWriter")
 
     {
         std::string buffer;
-        beast::detail::SimpleJsonWriter writer{buffer};
+        beast::detail::SimpleJsonWriter writer{&buffer};
 
         writer.startArray();
         writer.writeBool(true);
@@ -304,7 +304,7 @@ TEST_CASE("Test setJsonValue")
 {
     std::ostringstream stringBuf;
     std::string buffer;
-    beast::detail::SimpleJsonWriter writer{buffer};
+    beast::detail::SimpleJsonWriter writer{&buffer};
     writer.startObject();
 
     log::detail::setJsonValue<bool>(writer, "testBool", true, &stringBuf);
