@@ -43,6 +43,7 @@ constexpr auto FLUSH_INTERVAL =
     std::chrono::milliseconds(10);  // Max delay before flush
 }
 
+
 Logs::Sink::Sink(
     std::string const& partition,
     beast::severities::Severity thresh,
@@ -52,18 +53,18 @@ Logs::Sink::Sink(
 }
 
 void
-Logs::Sink::write(beast::severities::Severity level, std::string_view text)
+Logs::Sink::write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner)
 {
     if (level < threshold())
         return;
 
-    logs_.write(level, partition_, text, console());
+    logs_.write(level, partition_, text, owner, console());
 }
 
 void
-Logs::Sink::writeAlways(beast::severities::Severity level, std::string_view text)
+Logs::Sink::writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner)
 {
-    logs_.write(level, partition_, text, console());
+    logs_.write(level, partition_, text, owner, console());
 }
 
 //------------------------------------------------------------------------------
@@ -75,7 +76,7 @@ Logs::File::File() : m_stream(nullptr)
 bool
 Logs::File::isOpen() const noexcept
 {
-    return m_stream != nullptr;
+    return m_stream.has_value();
 }
 
 bool
@@ -86,10 +87,9 @@ Logs::File::open(boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr<std::ofstream> stream(
-        new std::ofstream(path.c_str(), std::fstream::app));
+    std::ofstream stream(path.c_str(), std::fstream::app);
 
-    if (stream->good())
+    if (stream.good())
     {
         m_path = path;
 
@@ -115,13 +115,13 @@ Logs::File::closeAndReopen()
 void
 Logs::File::close()
 {
-    m_stream = nullptr;
+    m_stream.reset();
 }
 
 void
-Logs::File::write(std::string_view text)
+Logs::File::write(std::string&& text)
 {
-    if (m_stream != nullptr)
+    if (m_stream.has_value())
         m_stream->write(text.data(), text.size());
 }
 
@@ -132,11 +132,23 @@ Logs::Logs(beast::severities::Severity thresh)
     , writeBuffer_(
           batchBuffer_)  // Initially, entire buffer is available for writing
     , readBuffer_(batchBuffer_.data(), 0)  // No data ready to flush initially
+    , stopLogThread_(false)
 {
+    logThread_ = std::thread(&Logs::logThreadWorker, this);
 }
 
 Logs::~Logs()
 {
+    // Signal log thread to stop and wait for it to finish
+    {
+        std::lock_guard<std::mutex> lock(logMutex_);
+        stopLogThread_ = true;
+    }
+    logCondition_.notify_all();
+    
+    if (logThread_.joinable())
+        logThread_.join();
+    
     flushBatch();  // Ensure all logs are written on shutdown
 }
 
@@ -191,6 +203,7 @@ Logs::write(
     beast::severities::Severity level,
     std::string const& partition,
     std::string_view text,
+    beast::Journal::MessagePoolNode owner,
     bool console)
 {
     std::string s;
@@ -201,8 +214,18 @@ Logs::write(
         result = s;
     }
 
+    // if (!silent_)
+    //     std::cerr << s << '\n';
+
+    // Get a node from the pool or create a new one
+    if (!owner) return;
+    messages_.push(owner);
+    
+    // Signal log thread that new messages are available
+    logCondition_.notify_one();
+
     // Add to batch buffer for file output
-    {
+    if (0) {
         // std::lock_guard lock(batchMutex_);
 
         // Console output still immediate for responsiveness
@@ -258,11 +281,52 @@ Logs::flushBatchUnsafe()
         return;
 
     // Write the read buffer contents to file in one system call
-    file_.write(std::string_view{readBuffer_.data(), readBuffer_.size()});
+    // file_.write(std::string_view{readBuffer_.data(), readBuffer_.size()});
 
     // Reset spans: entire buffer available for writing, nothing to read
     writeBuffer_ = std::span<char>(batchBuffer_);
     readBuffer_ = std::span<char>(batchBuffer_.data(), 0);
+}
+
+void
+Logs::logThreadWorker()
+{
+    beast::lockfree::queue<std::string>::Node* node;
+    
+    while (!stopLogThread_)
+    {
+        std::unique_lock<std::mutex> lock(logMutex_);
+        
+        // Wait for messages or stop signal
+        logCondition_.wait(lock, [this] { 
+            return stopLogThread_ || !messages_.empty(); 
+        });
+        
+        // Process all available messages
+        while ((node = messages_.pop()))
+        {
+            // Write to file
+            file_.write(std::move(node->data));
+            
+            // Also write to console if not silent
+            if (!silent_)
+                std::cerr << node->data << '\n';
+            
+            // Return node to pool for reuse
+            beast::Journal::returnMessageNode(node);
+        }
+    }
+    
+    // Process any remaining messages on shutdown
+    while ((node = messages_.pop()))
+    {
+        file_.write(std::move(node->data));
+        if (!silent_)
+            std::cerr << node->data << '\n';
+        
+        // Return node to pool for reuse
+        beast::Journal::returnMessageNode(node);
+    }
 }
 
 std::string

@@ -1134,17 +1134,16 @@ RclConsensusLogger::~RclConsensusLogger()
 
     if (beast::Journal::isStructuredJournalEnabled())
     {
-        thread_local std::string buffer;
-        buffer.reserve(1024);
-        buffer.clear();
-        beast::detail::SimpleJsonWriter writer{buffer};
+        auto node = beast::Journal::rentFromPool();
+        beast::detail::SimpleJsonWriter writer{node->data};
         writer.startObject();
         writer.writeKey("Msg");
         writer.writeString(outSs.str());
         writer.writeKey("Tm");
         writer.writeString(to_string(std::chrono::system_clock::now()));
         writer.endObject();
-        j_.sink().writeAlways(beast::severities::kInfo, writer.finish());
+        writer.finish();
+        j_.sink().writeAlways(beast::severities::kInfo, writer.buffer(), node);
     }
     else
     {

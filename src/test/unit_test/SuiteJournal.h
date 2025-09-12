@@ -49,24 +49,25 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string_view text) override;
+    write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string_view text) override;
+    writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override;
 };
 
 inline void
-SuiteJournalSink::write(beast::severities::Severity level, std::string_view text)
+SuiteJournalSink::write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
-        writeAlways(level, std::move(text));
+        writeAlways(level, text, owner);
 }
 
 inline void
 SuiteJournalSink::writeAlways(
     beast::severities::Severity level,
-    std::string_view text)
+    std::string_view text,
+    beast::Journal::MessagePoolNode owner)
 {
     using namespace beast::severities;
 
@@ -134,15 +135,15 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string_view text) override
+    write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
     {
         if (level < threshold())
             return;
-        writeAlways(level, std::move(text));
+        writeAlways(level, text, owner);
     }
 
     inline void
-    writeAlways(beast::severities::Severity level, std::string_view text) override
+    writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode = nullptr) override
     {
         strm_ << text << std::endl;
     }
