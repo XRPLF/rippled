@@ -113,7 +113,7 @@ fastTimestampToString(std::int64_t milliseconds_since_epoch)
 std::string Journal::globalLogAttributes_;
 std::shared_mutex Journal::globalLogAttributesMutex_;
 bool Journal::jsonLogsEnabled_ = false;
-lockfree::queue<std::string> Journal::messagePool_{};
+Journal::StringBufferPool Journal::messagePool_{};
 thread_local Journal::JsonLogContext Journal::currentJsonLogContext_{};
 
 //------------------------------------------------------------------------------
@@ -157,12 +157,12 @@ public:
     }
 
     void
-    write(severities::Severity, std::string_view, Journal::MessagePoolNode = nullptr) override
+    write(severities::Severity, Journal::StringBuffer) override
     {
     }
 
     void
-    writeAlways(severities::Severity, std::string_view, Journal::MessagePoolNode = nullptr) override
+    writeAlways(severities::Severity, Journal::StringBuffer) override
     {
     }
 };
@@ -205,7 +205,7 @@ severities::to_string(Severity severity)
 }
 
 void
-Journal::JsonLogContext::reset(
+Journal::JsonLogContext::start(
     std::source_location location,
     severities::Severity severity,
     std::string_view moduleName,
@@ -223,7 +223,16 @@ Journal::JsonLogContext::reset(
     };
     thread_local ThreadIdStringInitializer const threadId;
 
-    messageBuffer_->data.clear();
+    if (!messageBufferHandedOut_)
+    {
+        returnStringBuffer(std::move(messageBuffer_));
+        messageBufferHandedOut_ = true;
+    }
+    messageBuffer_ = rentFromPool();
+    messageBufferHandedOut_ = false;
+    messageBuffer_.str().reserve(1024 * 5);
+    messageBuffer_.str().clear();
+    jsonWriter_ = detail::SimpleJsonWriter{&messageBuffer_.str()};
 
     if (!jsonLogsEnabled_)
     {
@@ -285,14 +294,22 @@ Journal::JsonLogContext::reset(
 }
 
 void
+Journal::JsonLogContext::finish()
+{
+    messageBufferHandedOut_ = true;
+    messageBuffer_ = {};
+    jsonWriter_ = {};
+}
+
+void
 Journal::initMessageContext(
     std::source_location location,
     severities::Severity severity) const
 {
-    currentJsonLogContext_.reset(location, severity, name_, attributes_);
+    currentJsonLogContext_.start(location, severity, name_, attributes_);
 }
 
-Journal::MessagePoolNode
+Journal::StringBuffer
 Journal::formatLog(std::string const& message)
 {
     if (!jsonLogsEnabled_)
@@ -397,7 +414,8 @@ Journal::ScopedStream::~ScopedStream()
             s = "";
 
         auto messageHandle = formatLog(s);
-        m_sink.write(m_level, messageHandle->data, messageHandle);
+        m_sink.write(m_level, messageHandle);
+        currentJsonLogContext_.finish();
     }
 }
 
@@ -405,14 +423,6 @@ std::ostream&
 Journal::ScopedStream::operator<<(std::ostream& manip(std::ostream&)) const
 {
     return m_ostream << manip;
-}
-
-//------------------------------------------------------------------------------
-
-Journal::ScopedStream
-Journal::Stream::operator<<(std::ostream& manip(std::ostream&)) const
-{
-    return {*this, manip};
 }
 
 }  // namespace beast

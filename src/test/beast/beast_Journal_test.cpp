@@ -48,14 +48,14 @@ public:
         }
 
         void
-        write(severities::Severity level, std::string_view, beast::Journal::MessagePoolNode = nullptr) override
+        write(severities::Severity level, Journal::StringBuffer) override
         {
             if (level >= threshold())
                 ++m_count;
         }
 
         void
-        writeAlways(severities::Severity level, std::string_view, beast::Journal::MessagePoolNode = nullptr) override
+        writeAlways(severities::Severity level, Journal::StringBuffer) override
         {
             ++m_count;
         }

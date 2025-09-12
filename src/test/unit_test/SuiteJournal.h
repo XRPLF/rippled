@@ -49,25 +49,24 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override;
+    write(beast::severities::Severity level, beast::Journal::StringBuffer text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override;
+    writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text) override;
 };
 
 inline void
-SuiteJournalSink::write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner)
+SuiteJournalSink::write(beast::severities::Severity level, beast::Journal::StringBuffer text)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
-        writeAlways(level, text, owner);
+        writeAlways(level, text);
 }
 
 inline void
 SuiteJournalSink::writeAlways(
     beast::severities::Severity level,
-    std::string_view text,
-    beast::Journal::MessagePoolNode owner)
+    beast::Journal::StringBuffer text)
 {
     using namespace beast::severities;
 
@@ -94,7 +93,7 @@ SuiteJournalSink::writeAlways(
 
     static std::mutex log_mutex;
     std::lock_guard lock(log_mutex);
-    suite_.log << s << partition_ << text << std::endl;
+    suite_.log << s << partition_ << text.str() << std::endl;
 }
 
 class SuiteJournal
@@ -135,17 +134,17 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
+    write(beast::severities::Severity level, beast::Journal::StringBuffer text) override
     {
         if (level < threshold())
             return;
-        writeAlways(level, text, owner);
+        writeAlways(level, text);
     }
 
     inline void
-    writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode = nullptr) override
+    writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text) override
     {
-        strm_ << text << std::endl;
+        strm_ << text.str() << std::endl;
     }
 
     std::stringstream const&

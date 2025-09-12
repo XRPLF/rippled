@@ -26,6 +26,8 @@
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>
 
+#include <boost/lockfree/queue.hpp>
+
 #include <array>
 #include <atomic>
 #include <chrono>
@@ -74,10 +76,10 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override;
+        write(beast::severities::Severity level, beast::Journal::StringBuffer text) override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr)
+        writeAlways(beast::severities::Severity level, beast::Journal::StringBuffer text)
             override;
     };
 
@@ -135,7 +137,7 @@ private:
             Does nothing if there is no associated system file.
         */
         void
-        write(std::string&& str);
+        write(std::string const& str);
 
         /** @} */
 
@@ -156,7 +158,7 @@ private:
 
     // Batching members
     mutable std::mutex batchMutex_;
-    beast::lockfree::queue<std::string> messages_;
+    boost::lockfree::queue<beast::Journal::StringBuffer, boost::lockfree::capacity<100>> messages_;
     static constexpr size_t BATCH_BUFFER_SIZE = 64 * 1024;  // 64KB buffer
     std::array<char, BATCH_BUFFER_SIZE> batchBuffer_{};
     std::span<char> writeBuffer_;  // Points to available write space
@@ -217,8 +219,7 @@ public:
     write(
         beast::severities::Severity level,
         std::string const& partition,
-        std::string_view text,
-        beast::Journal::MessagePoolNode owner,
+        beast::Journal::StringBuffer text,
         bool console);
 
     std::string
@@ -280,12 +281,16 @@ private:
 // Wraps a Journal::Stream to skip evaluation of
 // expensive argument lists if the stream is not active.
 #ifndef JLOG
+#define JLOG_JOIN_(a,b) a##b
+#define JLOG_JOIN(a,b)  JLOG_JOIN_(a,b)
+#define JLOG_UNIQUE(base) JLOG_JOIN(base, __LINE__)   // line-based unique name
+
 #define JLOG(x) \
-    if (!x)     \
-    {           \
-    }           \
-    else        \
-        x
+    if (auto JLOG_UNIQUE(stream) = (x); !JLOG_UNIQUE(stream)) \
+    { \
+    } \
+    else \
+        JLOG_UNIQUE(stream)
 #endif
 
 #ifndef CLOG
