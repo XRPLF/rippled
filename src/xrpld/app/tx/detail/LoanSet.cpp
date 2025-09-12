@@ -217,7 +217,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    auto const brokerPseudo = brokerSle->at(sfAccount);
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vault)
         // Should be impossible

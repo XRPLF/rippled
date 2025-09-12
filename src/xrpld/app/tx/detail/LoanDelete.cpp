@@ -121,10 +121,10 @@ LoanDelete::doApply()
     auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
     if (!vaultSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const vaultAsset = vaultSle->at(sfAsset);
 
 #if LOANDRAW
     // transfer any remaining funds to the borrower
+    auto const vaultAsset = vaultSle->at(sfAsset);
     auto assetsAvailableProxy = loanSle->at(sfAssetsAvailable);
     if (assetsAvailableProxy != 0)
     {

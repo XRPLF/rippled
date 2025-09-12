@@ -1147,7 +1147,7 @@ class Loan_test : public beast::unit_test::suite
             }
             return std::make_pair(Number{}, AccountID{});
         };
-        auto replenishCover = [&env, &coverAvailable, this](
+        auto replenishCover = [&env, &coverAvailable](
                                   BrokerInfo const& broker,
                                   AccountID const& brokerAcct,
                                   Number const& startingCoverAvailable,
