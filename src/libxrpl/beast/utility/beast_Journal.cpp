@@ -113,6 +113,7 @@ fastTimestampToString(std::int64_t milliseconds_since_epoch)
 std::string Journal::globalLogAttributes_;
 std::shared_mutex Journal::globalLogAttributesMutex_;
 bool Journal::jsonLogsEnabled_ = false;
+lockfree::queue<std::string> Journal::messagePool_{};
 thread_local Journal::JsonLogContext Journal::currentJsonLogContext_{};
 
 //------------------------------------------------------------------------------
@@ -156,12 +157,12 @@ public:
     }
 
     void
-    write(severities::Severity, std::string_view) override
+    write(severities::Severity, std::string_view, Journal::MessagePoolNode = nullptr) override
     {
     }
 
     void
-    writeAlways(severities::Severity, std::string_view) override
+    writeAlways(severities::Severity, std::string_view, Journal::MessagePoolNode = nullptr) override
     {
     }
 };
@@ -222,7 +223,7 @@ Journal::JsonLogContext::reset(
     };
     thread_local ThreadIdStringInitializer const threadId;
 
-    buffer_.clear();
+    messageBuffer_->data.clear();
 
     if (!jsonLogsEnabled_)
     {
@@ -291,13 +292,13 @@ Journal::initMessageContext(
     currentJsonLogContext_.reset(location, severity, name_, attributes_);
 }
 
-std::string_view
+Journal::MessagePoolNode
 Journal::formatLog(std::string const& message)
 {
     if (!jsonLogsEnabled_)
     {
         currentJsonLogContext_.writer().buffer() += message;
-        return currentJsonLogContext_.writer().buffer();
+        return currentJsonLogContext_.messageBuffer();
     }
 
     auto& writer = currentJsonLogContext_.writer();
@@ -309,7 +310,9 @@ Journal::formatLog(std::string const& message)
 
     writer.endObject();
 
-    return writer.finish();
+    writer.finish();
+
+    return currentJsonLogContext_.messageBuffer();
 }
 
 void
@@ -391,9 +394,10 @@ Journal::ScopedStream::~ScopedStream()
     if (!s.empty())
     {
         if (s == "\n")
-            m_sink.write(m_level, formatLog(""));
-        else
-            m_sink.write(m_level, formatLog(s));
+            s = "";
+
+        auto messageHandle = formatLog(s);
+        m_sink.write(m_level, messageHandle->data, messageHandle);
     }
 }
 

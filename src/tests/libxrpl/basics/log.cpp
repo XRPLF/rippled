@@ -53,13 +53,13 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string_view text) override
+        write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
         {
             logs_.write(level, partition_, text, false);
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string_view text)
+        writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr)
             override
         {
             logs_.write(level, partition_, text, false);
@@ -358,13 +358,13 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string_view text) override
+    write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
     {
         strm_ << text;
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string_view text) override
+    writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
     {
         strm_ << text;
     }

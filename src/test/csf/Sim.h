@@ -49,7 +49,7 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, std::string_view text) override
+    write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
     {
         if (level < threshold())
             return;
@@ -59,7 +59,7 @@ public:
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string_view text) override
+    writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
     {
         std::cout << clock_.now().time_since_epoch().count() << " " << text
                   << std::endl;

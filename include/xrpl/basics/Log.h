@@ -27,12 +27,15 @@
 #include <boost/filesystem.hpp>
 
 #include <array>
+#include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <span>
+#include <thread>
 #include <utility>
 
 namespace ripple {
@@ -71,10 +74,10 @@ private:
         operator=(Sink const&) = delete;
 
         void
-        write(beast::severities::Severity level, std::string_view text) override;
+        write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override;
 
         void
-        writeAlways(beast::severities::Severity level, std::string_view text)
+        writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr)
             override;
     };
 
@@ -132,12 +135,12 @@ private:
             Does nothing if there is no associated system file.
         */
         void
-        write(std::string_view str);
+        write(std::string&& str);
 
         /** @} */
 
     private:
-        std::unique_ptr<std::ofstream> m_stream;
+        std::optional<std::ofstream> m_stream;
         boost::filesystem::path m_path;
     };
 
@@ -153,11 +156,18 @@ private:
 
     // Batching members
     mutable std::mutex batchMutex_;
-public:
+    beast::lockfree::queue<std::string> messages_;
     static constexpr size_t BATCH_BUFFER_SIZE = 64 * 1024;  // 64KB buffer
     std::array<char, BATCH_BUFFER_SIZE> batchBuffer_{};
     std::span<char> writeBuffer_;  // Points to available write space
     std::span<char> readBuffer_;   // Points to data ready to flush
+
+    // Log thread members
+    std::thread logThread_;
+    std::atomic<bool> stopLogThread_;
+    std::mutex logMutex_;
+    std::condition_variable logCondition_;
+    
 private:
     std::chrono::steady_clock::time_point lastFlush_ =
         std::chrono::steady_clock::now();
@@ -208,6 +218,7 @@ public:
         beast::severities::Severity level,
         std::string const& partition,
         std::string_view text,
+        beast::Journal::MessagePoolNode owner,
         bool console);
 
     std::string
@@ -261,6 +272,9 @@ private:
 
     void
     flushBatchUnsafe();
+    
+    void
+    logThreadWorker();
 };
 
 // Wraps a Journal::Stream to skip evaluation of

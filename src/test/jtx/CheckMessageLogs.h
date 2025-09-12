@@ -45,17 +45,17 @@ class CheckMessageLogs : public Logs
         }
 
         void
-        write(beast::severities::Severity level, std::string_view text) override
+        write(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr) override
         {
             if (text.find(owner_.msg_) != std::string::npos)
                 *owner_.pFound_ = true;
         }
 
         void
-        writeAlways(beast::severities::Severity level, std::string_view text)
+        writeAlways(beast::severities::Severity level, std::string_view text, beast::Journal::MessagePoolNode owner = nullptr)
             override
         {
-            write(level, std::move(text));
+            write(level, text, owner);
         }
     };
 
