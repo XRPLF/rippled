@@ -706,6 +706,24 @@ private:
         beast::Journal const&) const;
 };
 
+/**
+ * @brief Invariants: Vault object and MPTokenIssuance for vaultshares
+ *
+ * - vault deleted and vault created is empty
+ * - vault must have MPTokenIssuance for shares
+ * - vault without shares outstanding must have no shares
+ * - loss unrealized does not exceed the difference between assets total and
+ *   assets available
+ * - assets available does not exceed assets total
+ * - vault deposit increases assets and share issuance, and adds to
+ *   total assets, assets available and shares outstanding
+ * - vault withdrawal and clawback reduce assets and share issuance, and
+ *   subtracts from total assets, assets available and shares outstanding
+ * - set must not alter the vault assets or shares balance
+ * - no vault transaction can change loss unrealized (it's updated by loan
+ *   transactions)
+ *
+ */
 class ValidVault
 {
     Number static constexpr zero{};
