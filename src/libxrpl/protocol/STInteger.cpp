@@ -177,23 +177,10 @@ STUInt32::getText() const
 {
     if (getFName() == sfPermissionValue)
     {
-        auto const permissionValue =
-            static_cast<GranularPermissionType>(value_);
-        auto const granular =
-            Permission::getInstance().getGranularName(permissionValue);
-
-        if (granular)
-        {
-            return *granular;
-        }
-        else
-        {
-            auto const txType =
-                Permission::getInstance().permissionToTxType(value_);
-            auto item = TxFormats::getInstance().findByType(txType);
-            if (item != nullptr)
-                return item->getName();
-        }
+        auto const permissionName =
+            Permission::getInstance().getPermissionName(value_);
+        if (permissionName)
+            return *permissionName;
     }
     return std::to_string(value_);
 }
@@ -204,23 +191,10 @@ STUInt32::getJson(JsonOptions) const
 {
     if (getFName() == sfPermissionValue)
     {
-        auto const permissionValue =
-            static_cast<GranularPermissionType>(value_);
-        auto const granular =
-            Permission::getInstance().getGranularName(permissionValue);
-
-        if (granular)
-        {
-            return *granular;
-        }
-        else
-        {
-            auto const txType =
-                Permission::getInstance().permissionToTxType(value_);
-            auto item = TxFormats::getInstance().findByType(txType);
-            if (item != nullptr)
-                return item->getName();
-        }
+        auto const permissionName =
+            Permission::getInstance().getPermissionName(value_);
+        if (permissionName)
+            return *permissionName;
     }
 
     return value_;
