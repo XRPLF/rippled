@@ -2120,6 +2120,15 @@ class LedgerEntry_test : public beast::unit_test::suite
                     jv[jss::result][jss::index] == badKey, to_string(jv));
             }
 
+            // "index":"field" using API 2
+            params.clear();
+            params[jss::ledger_index] = jss::validated;
+            params[jss::index] = field;
+            params[jss::api_version] = 2;
+            jv = env.rpc("json", "ledger_entry", to_string(params));
+            checkResult(false, jv, expectedType, "malformedRequest");
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::index));
+
             // Test good values
             // Use the "field":true notation
             params.clear();
@@ -2139,10 +2148,11 @@ class LedgerEntry_test : public beast::unit_test::suite
             checkResult(good, jv, expectedType);
             BEAST_EXPECT(jv[jss::result][jss::index].asString() == hexKey);
 
-            // Use the "index":"field" notation
+            // Use the "index":"field" notation with API 3
             params.clear();
             params[jss::ledger_index] = jss::validated;
             params[jss::index] = field;
+            params[jss::api_version] = 3;
             jv = env.rpc("json", "ledger_entry", to_string(params));
             // Index is correct either way
             BEAST_EXPECT(jv[jss::result][jss::index].asString() == hexKey);
