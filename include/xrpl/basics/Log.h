@@ -290,7 +290,7 @@ private:
     { \
     } \
     else \
-        JLOG_UNIQUE(stream)
+        std::move(JLOG_UNIQUE(stream))
 #endif
 
 #ifndef CLOG
