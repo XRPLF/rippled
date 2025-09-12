@@ -23,6 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <thread>
+#include <deque>
 #include <atomic>
 #include <charconv>
 #include <cstring>
