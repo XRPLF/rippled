@@ -461,8 +461,13 @@ public:
         StringBuffer messageBuffer_;
         detail::SimpleJsonWriter jsonWriter_;
         bool hasMessageParams_ = false;
-        bool messageBufferHandedOut_ = true;
+        std::size_t messageOffset_ = 0;
     public:
+
+        JsonLogContext()
+            : messageBuffer_(rentFromPool())
+            , jsonWriter_(&messageBuffer_.str())
+        {}
 
         StringBuffer
         messageBuffer() { return messageBuffer_; }
@@ -492,6 +497,9 @@ public:
         {
             return jsonWriter_;
         }
+
+        void
+        reuseJson();
 
         void
         finish();
@@ -739,11 +747,32 @@ public:
         /** Output stream support. */
         /** @{ */
         ScopedStream
-        operator<<(std::ostream& manip(std::ostream&)) const;
+        operator<<(std::ostream& manip(std::ostream&)) const &&
+        {
+            return {*this, manip};
+        }
 
         template <typename T>
         ScopedStream
-        operator<<(T const& t) const;
+        operator<<(T const& t) const &&
+        {
+            return {*this, t};
+        }
+
+        ScopedStream
+        operator<<(std::ostream& manip(std::ostream&)) const &
+        {
+            currentJsonLogContext_.reuseJson();
+            return {*this, manip};
+        }
+
+        template <typename T>
+        ScopedStream
+        operator<<(T const& t) const &
+        {
+            currentJsonLogContext_.reuseJson();
+            return {*this, t};
+        }
         /** @} */
 
     private:
@@ -954,13 +983,6 @@ Journal::ScopedStream::operator<<(T const& t) const
 }
 
 //------------------------------------------------------------------------------
-
-template <typename T>
-Journal::ScopedStream
-Journal::Stream::operator<<(T const& t) const
-{
-    return {*this, t};
-}
 
 namespace detail {
 

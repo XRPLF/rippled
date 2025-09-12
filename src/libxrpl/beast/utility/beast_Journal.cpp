@@ -223,19 +223,13 @@ Journal::JsonLogContext::start(
     };
     thread_local ThreadIdStringInitializer const threadId;
 
-    if (!messageBufferHandedOut_)
-    {
-        returnStringBuffer(std::move(messageBuffer_));
-        messageBufferHandedOut_ = true;
-    }
-    messageBuffer_ = rentFromPool();
-    messageBufferHandedOut_ = false;
-    messageBuffer_.str().reserve(1024 * 5);
+    messageOffset_ = 0;
     messageBuffer_.str().clear();
     jsonWriter_ = detail::SimpleJsonWriter{&messageBuffer_.str()};
 
     if (!jsonLogsEnabled_)
     {
+        messageBuffer_.str() = journalAttributes;
         return;
     }
 
@@ -294,11 +288,27 @@ Journal::JsonLogContext::start(
 }
 
 void
+Journal::JsonLogContext::reuseJson()
+{
+    messageOffset_ = messageBuffer_.str().size();
+}
+void
 Journal::JsonLogContext::finish()
 {
-    messageBufferHandedOut_ = true;
-    messageBuffer_ = {};
-    jsonWriter_ = {};
+    if (messageOffset_ != 0)
+    {
+        auto buffer = rentFromPool();
+        std::string_view json{messageBuffer_.str()};
+        buffer.str() = json.substr(0, messageOffset_);
+        messageBuffer_ = buffer;
+    }
+    else
+    {
+        messageBuffer_ = rentFromPool();
+    }
+    
+    messageBuffer_.str().reserve(1024 * 5);
+    jsonWriter_ = detail::SimpleJsonWriter{&messageBuffer_.str()};
 }
 
 void
@@ -414,8 +424,8 @@ Journal::ScopedStream::~ScopedStream()
             s = "";
 
         auto messageHandle = formatLog(s);
-        m_sink.write(m_level, messageHandle);
         currentJsonLogContext_.finish();
+        m_sink.write(m_level, messageHandle);
     }
 }
 
