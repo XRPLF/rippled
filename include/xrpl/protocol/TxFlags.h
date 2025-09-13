@@ -113,8 +113,9 @@ constexpr std::uint32_t tfOfferCreateMask =
 constexpr std::uint32_t tfNoRippleDirect                   = 0x00010000;
 constexpr std::uint32_t tfPartialPayment                   = 0x00020000;
 constexpr std::uint32_t tfLimitQuality                     = 0x00040000;
+constexpr std::uint32_t tfSponsorCreatedAccount            = 0x00080000;
 constexpr std::uint32_t tfPaymentMask =
-    ~(tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
+    ~(tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect | tfSponsorCreatedAccount);
 constexpr std::uint32_t tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
 
 // TrustSet flags:

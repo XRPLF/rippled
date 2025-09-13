@@ -98,6 +98,15 @@ Payment::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
+    if (txFlags & tfSponsorCreatedAccount)
+    {
+        if (!ctx.rules.enabled(featureSponsor))
+            return temINVALID_FLAG;
+
+        if (!dstAmount.native())
+            return temMALFORMED;
+    }
+
     if (mptDirect && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
@@ -330,19 +339,24 @@ Payment::preclaim(PreclaimContext const& ctx)
             return tecNO_DST_INSUF_XRP;
         }
     }
-    else if (
-        (sleDst->getFlags() & lsfRequireDestTag) &&
-        !ctx.tx.isFieldPresent(sfDestinationTag))
+    else
     {
-        // The tag is basically account-specific information we don't
-        // understand, but we can require someone to fill it in.
+        if (txFlags & tfSponsorCreatedAccount)
+            return tecNO_SPONSOR_PERMISSION;
 
-        // We didn't make this test for a newly-formed account because there's
-        // no way for this field to be set.
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: DestinationTag required.";
+        if ((sleDst->getFlags() & lsfRequireDestTag) &&
+            !ctx.tx.isFieldPresent(sfDestinationTag))
+        {
+            // The tag is basically account-specific information we don't
+            // understand, but we can require someone to fill it in.
 
-        return tecDST_TAG_NEEDED;
+            // We didn't make this test for a newly-formed account because
+            // there's no way for this field to be set.
+            JLOG(ctx.j.trace())
+                << "Malformed transaction: DestinationTag required.";
+
+            return tecDST_TAG_NEEDED;
+        }
     }
 
     // Payment with at least one intermediate step and uses transitive balances.
@@ -415,12 +429,19 @@ Payment::doApply()
         sleDst->setAccountID(sfAccount, dstAccountID);
         sleDst->setFieldU32(sfSequence, seqno);
 
-        auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-        if (sponsor.has_value())
+        if (txFlags & tfSponsorCreatedAccount)
         {
+            auto const sponsor = view().peek(keylet::account(account_));
+            if (!sponsor)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            auto const currentSponsoringAccountCount =
+                sponsor->getFieldU32(sfSponsoringAccountCount);
+            sponsor->setFieldU32(
+                sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
+            view().update(sponsor);
+
             addSponsorToLedgerEntry(sleDst, sponsor);
-            sponsor.value()->setFieldU32(sfSponsoringAccountCount, 1);
-            view().update(sponsor.value());
+            view().update(sponsor);
         }
 
         view().insert(sleDst);

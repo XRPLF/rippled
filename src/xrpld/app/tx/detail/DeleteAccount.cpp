@@ -299,6 +299,15 @@ DeleteAccount::preclaim(PreclaimContext const& ctx)
             return tecHAS_OBLIGATIONS;
     }
 
+    if (sleAccount->isFieldPresent(sfSponsorAccount))
+    {
+        if (dst != sleAccount->getAccountID(sfSponsorAccount))
+            return tecNO_SPONSOR_PERMISSION;
+    }
+    if (sleAccount->isFieldPresent(sfSponsoringOwnerCount) ||
+        sleAccount->isFieldPresent(sfSponsoringAccountCount))
+        return tecHAS_OBLIGATIONS;
+
     // We don't allow an account to be deleted if its sequence number
     // is within 256 of the current ledger.  This prevents replay of old
     // transactions if this account is resurrected after it is deleted.
@@ -429,6 +438,22 @@ DeleteAccount::doApply()
     (*dst)[sfBalance] = (*dst)[sfBalance] + mSourceBalance;
     (*src)[sfBalance] = (*src)[sfBalance] - mSourceBalance;
     ctx_.deliver(mSourceBalance);
+
+    if (src->isFieldPresent(sfSponsorAccount))
+    {
+        auto const sponsorAcc = src->getAccountID(sfSponsorAccount);
+        auto sponsorSle = view().peek(keylet::account(sponsorAcc));
+
+        auto const sponsoringAccountCount =
+            sponsorSle->getFieldU32(sfSponsoringAccountCount);
+
+        if (sponsoringAccountCount == 1)
+            sponsorSle->makeFieldAbsent(sfSponsoringAccountCount);
+        else
+            sponsorSle->setFieldU32(
+                sfSponsoringAccountCount, sponsoringAccountCount - 1);
+        view().update(sponsorSle);
+    }
 
     XRPL_ASSERT(
         (*src)[sfBalance] == XRPAmount(0),

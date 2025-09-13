@@ -276,7 +276,7 @@ SponsorshipSet::deleteSponsorship(
     std::shared_ptr<SLE> const& sle,
     beast::Journal j)
 {
-    auto const sponsor = sle->getAccountID(sfSponsorAccount);
+    auto const sponsor = sle->getAccountID(sfAccount);
     auto const sponsee = sle->getAccountID(sfSponsee);
 
     // adjust balance
@@ -285,8 +285,12 @@ SponsorshipSet::deleteSponsorship(
         return tecINTERNAL;
 
     auto const feeAmount = sle->getFieldAmount(sfFeeAmount);
-
     (*sponsorAccSle)[sfBalance] += feeAmount;
+
+    auto const reserveSponsor = getLedgerEntryReserveSponsor(view, sle);
+    adjustOwnerCount(view, sponsorAccSle, reserveSponsor, -1, j);
+
+    view.update(sponsorAccSle);
 
     // delete sponsor node
     view.dirRemove(

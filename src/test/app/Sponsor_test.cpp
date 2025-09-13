@@ -527,16 +527,48 @@ public:
 
         Account const alice("alice");
         Account const sponsor("sponsor");
+        Account const bob("bob");
+        Account const charlie("charlie");
         env.fund(XRP(10000), alice, sponsor);
 
-        Account const bob("bob");
-        env(pay(alice, bob, STAmount(env.current()->fees().accountReserve(0))),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+        // Account is not sponsored by normal Sponsor specification
+        {
+            env(pay(alice,
+                    bob,
+                    STAmount(env.current()->fees().accountReserve(0))),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
+            auto const bobSle = env.le(keylet::account(bob));
+            BEAST_EXPECT(!bobSle->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 0);
+        }
+
+        // Use tfSponsorCreatedAccount to sponsor an account
+        {
+            // to funded accoutn
+            env(pay(sponsor,
+                    bob,
+                    STAmount(env.current()->fees().accountReserve(0))),
+                txflags(tfSponsorCreatedAccount),
+                ter(tecNO_SPONSOR_PERMISSION));
+
+            // to non-funded account
+            env(pay(sponsor,
+                    charlie,
+                    STAmount(env.current()->fees().accountReserve(0))),
+                txflags(tfSponsorCreatedAccount));
+            env.close();
+
+            auto const charlieSle = env.le(keylet::account(charlie));
+            BEAST_EXPECT(charlieSle->isFieldPresent(sfSponsorAccount));
+            BEAST_EXPECT(
+                charlieSle->getAccountID(sfSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(sponsoredOwnerCount(env, charlie) == 0);
+            BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
+        }
     }
 
     void
@@ -926,25 +958,66 @@ public:
     {
         testcase("AccountDelete");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
 
-        env.fund(XRP(1000000), alice, bob, sponsor);
-        env.close();
+        {
+            // Delete Account with ltSponsorship
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
 
-        // set sponsor
-        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
-        env.close();
+            // set sponsor
+            env(sponsor::set(sponsor, alice, 0, 100, XRP(100)),
+                ter(tesSUCCESS));
+            env.close();
 
-        // AccountDelete
-        env(acctdelete(alice, bob));
-        env.close();
+            incLgrSeqForAccDel(env, alice);
 
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            auto const keylet = keylet::sponsor(sponsor, alice);
+            auto const sponsorObj = env.le(keylet);
+            BEAST_EXPECT(sponsorObj);
+
+            // AccountDelete
+            auto const requiredFee = drops(env.current()->fees().increment);
+            env(acctdelete(alice, bob), fee(requiredFee), ter(tesSUCCESS));
+            env.close();
+        }
+
+        {
+            // Delete SponsoredAccount
+            Env env{*this, testable_amendments()};
+            env.memoize(alice);
+            env.fund(XRP(1000000), bob, sponsor);
+            env.close();
+
+            // create SponsoredAccount
+            env(pay(sponsor, alice, XRP(10000)),
+                txflags(tfSponsorCreatedAccount));
+            env.close();
+
+            incLgrSeqForAccDel(env, alice);
+
+            // AccountDelete: destination = non-sponsor
+            auto const requiredFee = drops(env.current()->fees().increment);
+            env(acctdelete(alice, bob),
+                fee(requiredFee),
+                ter(tecNO_SPONSOR_PERMISSION));
+
+            auto const sponsorSle = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(
+                sponsorSle->getFieldU32(sfSponsoringAccountCount) == 1);
+
+            incLgrSeqForAccDel(env, alice);
+
+            // AccountDelete: destination = sponsor
+            env(acctdelete(alice, sponsor), fee(requiredFee), ter(tesSUCCESS));
+
+            auto const sponsorSle2 = env.le(keylet::account(sponsor));
+            BEAST_EXPECT(
+                !sponsorSle2->isFieldPresent(sfSponsoringAccountCount));
+        }
     }
 
     void
@@ -986,7 +1059,7 @@ public:
         testSponsorReserve();
         testDisallowIncoming();
 
-        // testAccountDelete();
+        testAccountDelete();
     }
 };
 
