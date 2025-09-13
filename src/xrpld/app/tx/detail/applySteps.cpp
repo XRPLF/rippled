@@ -62,6 +62,7 @@
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
+#include <xrpld/app/tx/detail/SponsorSet.h>
 #include <xrpld/app/tx/detail/SponsorTransfer.h>
 #include <xrpld/app/tx/detail/VaultClawback.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
@@ -205,6 +206,11 @@ invoke_preclaim(PreclaimContext const& ctx)
                     return result;
 
                 result = T::checkPermission(ctx.view, ctx.tx);
+
+                if (result != tesSUCCESS)
+                    return result;
+
+                result = T::checkSponsor(ctx.view, ctx.tx);
 
                 if (result != tesSUCCESS)
                     return result;

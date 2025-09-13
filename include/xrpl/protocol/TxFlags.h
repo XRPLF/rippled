@@ -62,9 +62,10 @@ constexpr std::uint32_t tfInnerBatchTxn                    = 0x40000000;
 constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig | tfInnerBatchTxn;
 constexpr std::uint32_t tfUniversalMask                    = ~tfUniversal;
 
-// Sponsor flags:
+// Sponsor flags (Global):
 constexpr std::uint32_t tfSponsorFee                       = 0x00000001;
 constexpr std::uint32_t tfSponsorReserve                   = 0x00000002;
+constexpr std::uint32_t tfSponsorMask                        = tfSponsorFee | tfSponsorReserve;
 
 // AccountSet flags:
 constexpr std::uint32_t tfRequireDestTag                   = 0x00010000;
@@ -97,6 +98,7 @@ constexpr std::uint32_t asfDisallowIncomingPayChan         = 14;
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 constexpr std::uint32_t asfAllowTrustLineClawback          = 16;
 constexpr std::uint32_t asfAllowTrustLineLocking           = 17;
+constexpr std::uint32_t asfDisallowIncomingSponsor         = 19;
 
 // OfferCreate flags:
 constexpr std::uint32_t tfPassive                          = 0x00010000;
@@ -252,6 +254,14 @@ constexpr std::uint32_t tfIndependent                  = 0x00080000;
  */
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
+
+// SponsorSet flags:
+constexpr std::uint32_t tfSponsorshipSetRequireSignForFee                    = 0x00010000;
+constexpr std::uint32_t tfSponsorshipClearRequireSignForFee                  = 0x00020000;
+constexpr std::uint32_t tfSponsorshipSetRequireSignForReserve                = 0x00040000;
+constexpr std::uint32_t tfSponsorshipClearRequireSignForReserve              = 0x00080000;
+constexpr std::uint32_t tfDeleteObject                                       = 0x00100000;
+constexpr std::uint32_t tfSponsorSetMask = ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee | tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve | tfDeleteObject);
 
 // clang-format on
 

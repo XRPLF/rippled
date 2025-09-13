@@ -112,6 +112,10 @@ XRPNotCreated::visitEntry(
                 if (isXRP((*before)[sfAmount]))
                     drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
+            case ltSPONSORSHIP:
+                if (before->isFieldPresent(sfFeeAmount))
+                    drops_ -= (*before)[sfFeeAmount].xrp().drops();
+                break;
             default:
                 break;
         }
@@ -133,6 +137,10 @@ XRPNotCreated::visitEntry(
             case ltESCROW:
                 if (!isDelete && isXRP((*after)[sfAmount]))
                     drops_ += (*after)[sfAmount].xrp().drops();
+                break;
+            case ltSPONSORSHIP:
+                if (!isDelete && after->isFieldPresent(sfFeeAmount))
+                    drops_ += (*after)[sfFeeAmount].xrp().drops();
                 break;
             default:
                 break;
@@ -543,6 +551,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
             case ltVAULT:
+            case ltSPONSORSHIP:
                 break;
             default:
                 invalidTypeAdded_ = true;

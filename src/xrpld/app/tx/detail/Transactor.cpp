@@ -167,16 +167,9 @@ preflight1(PreflightContext const& ctx)
             JLOG(ctx.j.fatal()) << "preflight1: invalid sponsor account";
             return temMALFORMED;
         }
-        if (!(sponsor[sfFlags] & tfSponsorFee) &&
-            !(sponsor[sfFlags] & tfSponsorReserve))
+        if (!(sponsor.getFlags() & tfSponsorMask))
         {
             JLOG(ctx.j.fatal()) << "preflight1: invalid sponsor flags";
-            return temMALFORMED;
-        }
-        if (!sponsor.isFieldPresent(sfTxnSignature) &&
-            !sponsor.isFieldPresent(sfSigners))
-        {
-            JLOG(ctx.j.fatal()) << "preflight1: no sfTxnSignature or sfSigners";
             return temMALFORMED;
         }
     }
@@ -255,6 +248,41 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
     return checkTxPermission(sle, tx);
 }
 
+TER
+Transactor::checkSponsor(ReadView const& view, STTx const& tx)
+{
+    if (!tx.isFieldPresent(sfSponsor))
+        return tesSUCCESS;
+
+    auto const txSponsor = tx.getFieldObject(sfSponsor);
+
+    auto const sponsorAcc = txSponsor.getAccountID(sfAccount);
+    auto const sponseeAcc = tx.getAccountID(sfAccount);
+
+    auto const sponsorSle = view.read(keylet::sponsor(sponsorAcc, sponseeAcc));
+    if (!sponsorSle)
+        return tesSUCCESS;
+
+    auto const hasSignature = txSponsor.isFieldPresent(sfTxnSignature) ||
+        !txSponsor.getFieldVL(sfSigningPubKey).empty() ||
+        txSponsor.isFieldPresent(sfSigners);
+
+    if (txSponsor.isFlag(tfSponsorFee) &&
+        sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
+    {
+        if (!hasSignature)
+            return tecNO_SPONSOR_PERMISSION;
+    }
+    if (txSponsor.isFlag(tfSponsorReserve) &&
+        sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    {
+        if (!hasSignature)
+            return tecNO_SPONSOR_PERMISSION;
+    }
+
+    return tesSUCCESS;
+}
+
 XRPAmount
 Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
@@ -263,6 +291,7 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     // The computation has two parts:
     //  * The base fee, which is the same for most transactions.
     //  * The additional cost of each multisignature on the transaction.
+    //  * The additional cost of each multisignature on the sponsor.
     XRPAmount const baseFee = view.fees().base;
 
     // Each signer adds one more baseFee to the minimum required fee
@@ -270,7 +299,16 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     std::size_t const signerCount =
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
-    return baseFee + (signerCount * baseFee);
+    std::size_t sponsorSignerCount = 0;
+    if (tx.isFieldPresent(sfSponsor))
+    {
+        auto const sponsorObj = tx.getFieldObject(sfSponsor);
+        sponsorSignerCount += sponsorObj.isFieldPresent(sfSigners)
+            ? sponsorObj.getFieldArray(sfSigners).size()
+            : 0;
+    }
+
+    return baseFee + ((signerCount + sponsorSignerCount) * baseFee);
 }
 
 XRPAmount
@@ -352,6 +390,17 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
+    auto const isFeeSponsorObj = [&]() -> bool {
+        if (ctx_.tx.isFieldPresent(sfSponsor))
+        {
+            auto const sponsor = ctx_.tx.getFieldObject(sfSponsor);
+            if (sponsor.getFieldVL(sfSigningPubKey).empty() &&
+                !sponsor.isFieldPresent(sfSigners))
+                return sponsor.getFlags() & tfSponsorFee;
+        }
+        return false;
+    };
+
     if (ctx_.tx.isFieldPresent(sfDelegate))
     {
         // Delegated transactions are paid by the delegated account.
@@ -363,6 +412,19 @@ Transactor::payFee()
         delegatedSle->setFieldAmount(
             sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
         view().update(delegatedSle);
+    }
+    else if (isFeeSponsorObj())
+    {
+        auto const sponsor = ctx_.tx.getFieldObject(sfSponsor);
+        auto const sponsorAcc = sponsor.getAccountID(sfAccount);
+        auto const sponsorSle =
+            view().peek(keylet::sponsor(sponsorAcc, account_));
+        if (!sponsorSle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        sponsorSle->setFieldAmount(
+            sfFeeAmount, sponsorSle->getFieldAmount(sfFeeAmount) - feePaid);
+        view().update(sponsorSle);
     }
     else
     {
@@ -649,8 +711,15 @@ Transactor::checkSign(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfSponsor))
     {
-        if (auto const ret = checkSponsorSign(ctx); !isTesSuccess(ret))
-            return ret;
+        auto const sponsorObj = ctx.tx.getFieldObject(sfSponsor);
+        auto const isCoSigned = sponsorObj.isFieldPresent(sfTxnSignature) ||
+            !sponsorObj.getFieldVL(sfSigningPubKey).empty() ||
+            sponsorObj.isFieldPresent(sfSigners);
+        if (isCoSigned)
+        {
+            if (auto const ret = checkSponsorSign(ctx); !isTesSuccess(ret))
+                return ret;
+        }
     }
 
     // Check Single Sign

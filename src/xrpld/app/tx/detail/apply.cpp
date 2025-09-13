@@ -85,12 +85,19 @@ checkValidity(
 
         if (tx.isFieldPresent(sfSponsor) && rules.enabled(featureSponsor))
         {
-            auto const sigVerify =
-                tx.checkSponsorSign(requireCanonicalSig, rules);
-            if (!sigVerify)
+            auto const sponsorObj = tx.getFieldObject(sfSponsor);
+            auto const isCoSigned = sponsorObj.isFieldPresent(sfTxnSignature) ||
+                !sponsorObj.getFieldVL(sfSigningPubKey).empty() ||
+                sponsorObj.isFieldPresent(sfSigners);
+            if (isCoSigned)
             {
-                router.setFlags(id, SF_SIGBAD);
-                return {Validity::SigBad, sigVerify.error()};
+                auto const sigVerify =
+                    tx.checkSponsorSign(requireCanonicalSig, rules);
+                if (!sigVerify)
+                {
+                    router.setFlags(id, SF_SIGBAD);
+                    return {Validity::SigBad, sigVerify.error()};
+                }
             }
         }
 

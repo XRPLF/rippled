@@ -21,8 +21,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-
-#include "test/jtx/SignerUtils.h"
+#include <test/jtx/SignerUtils.h>
 
 namespace ripple {
 namespace test {
@@ -31,10 +30,33 @@ namespace jtx {
 namespace sponsor {
 
 Json::Value
+set(jtx::Account const& account,
+    jtx::Account const& sponsee,
+    std::uint32_t flags,
+    std::optional<std::uint32_t> reserveCount = std::nullopt,
+    std::optional<STAmount> feeAmount = std::nullopt);
+
+Json::Value
+del(jtx::Account const& account, jtx::Account const& sponsee);
+
+Json::Value
 transfer(
     jtx::Account const& account,
     std::optional<uint256> const& index = std::nullopt);
 
+struct sponsorAcc
+{
+private:
+    jtx::Account sponsor_;
+
+public:
+    sponsorAcc(jtx::Account const& account) : sponsor_(account)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const;
+};
 struct as
 {
 private:

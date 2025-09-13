@@ -1,0 +1,273 @@
+//------------------------------------------------------------------------------
+/*
+  This file is part of rippled: https://github.com/ripple/rippled
+  Copyright (c) 2025 Ripple Labs Inc.
+
+  Permission to use, copy, modify, and/or distribute this software for any
+  purpose  with  or without fee is hereby granted, provided that the above
+  copyright notice and this permission notice appear in all copies.
+
+  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#include <xrpld/app/tx/detail/SponsorSet.h>
+#include <xrpld/ledger/View.h>
+
+#include <xrpl/protocol/TxFlags.h>
+
+namespace ripple {
+
+NotTEC
+SponsorSet::preflight(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureSponsor))
+        return temDISABLED;
+
+    if (auto const ter = preflight1(ctx))
+        return ter;
+
+    // check Flags
+    {
+        if (ctx.tx.getFlags() & tfSponsorSetMask)
+            return temINVALID_FLAG;
+
+        if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForFee) &&
+            ctx.tx.isFlag(tfSponsorshipClearRequireSignForFee))
+            return temINVALID_FLAG;
+
+        if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForReserve) &&
+            ctx.tx.isFlag(tfSponsorshipClearRequireSignForReserve))
+            return temINVALID_FLAG;
+
+        if (ctx.tx.isFlag(tfDeleteObject))
+        {
+            // check Flags
+            if (ctx.tx.getFlags() &
+                (tfSponsorshipSetRequireSignForFee |
+                 tfSponsorshipSetRequireSignForReserve |
+                 tfSponsorshipClearRequireSignForFee |
+                 tfSponsorshipClearRequireSignForReserve))
+                return temINVALID_FLAG;
+        }
+    }
+
+    if (ctx.tx.isFieldPresent(sfSponsorAccount))
+    {
+        // SponsorAccount is used when sponsee Deleting ltSponsorship
+        // Account        => Sponsee of Sponsorshop
+        // SponsorAccount => Sponsor of Sponsorshop
+        // Sponsee        => Sponsee of Sponsorshop
+        if (ctx.tx.getAccountID(sfAccount) ==
+                ctx.tx.getAccountID(sfSponsorAccount) ||
+            ctx.tx.getAccountID(sfSponsee) !=
+                ctx.tx.getAccountID(sfSponsorAccount) ||
+            !ctx.tx.isFlag(tfDeleteObject))
+            return temMALFORMED;
+    }
+
+    auto const sponsor = ctx.tx.isFieldPresent(sfSponsorAccount)
+        ? ctx.tx.getAccountID(sfSponsorAccount)
+        : ctx.tx.getAccountID(sfAccount);
+    auto const sponsee = ctx.tx.getAccountID(sfSponsee);
+
+    if (sponsee == sponsor)
+        return temMALFORMED;
+
+    if (ctx.tx.isFieldPresent(sfFeeAmount))
+    {
+        if (ctx.tx.getFlags() & tfSponsorshipClearRequireSignForFee)
+            return temMALFORMED;
+
+        auto const feeAmount = ctx.tx.getFieldAmount(sfFeeAmount);
+
+        if (!isXRP(feeAmount))
+            return temBAD_AMOUNT;
+
+        if (feeAmount.xrp().drops() <= 0)
+            return temBAD_AMOUNT;
+    }
+
+    if (ctx.tx.isFieldPresent(sfReserveCount))
+    {
+        if (ctx.tx.getFlags() & tfSponsorshipClearRequireSignForReserve)
+            return temMALFORMED;
+
+        auto const reserveCount = ctx.tx.getFieldU32(sfReserveCount);
+        // TODO: max reserveCount?
+        if (reserveCount < 1)
+            return temMALFORMED;
+    }
+
+    if (ctx.tx.isFlag(tfDeleteObject))
+    {
+        if (ctx.tx.isFieldPresent(sfFeeAmount) ||
+            ctx.tx.isFieldPresent(sfReserveCount))
+            return temMALFORMED;
+    }
+
+    return preflight2(ctx);
+}
+
+TER
+SponsorSet::preclaim(PreclaimContext const& ctx)
+{
+    auto const sponsor = ctx.tx.isFieldPresent(sfSponsorAccount)
+        ? ctx.tx.getAccountID(sfSponsorAccount)
+        : ctx.tx.getAccountID(sfAccount);
+    auto const sponsee = ctx.tx[sfSponsee];
+
+    // check Sponsee
+    auto const sponseeSle = ctx.view.read(keylet::account(sponsee));
+    if (!sponseeSle)
+        return tecNO_DST;
+
+    // check if object exists
+    auto const sponsorObjSle = ctx.view.read(keylet::sponsor(sponsor, sponsee));
+
+    if (ctx.tx.isFlag(tfDeleteObject) && !sponsorObjSle)
+        return tecNO_ENTRY;
+
+    if (sponseeSle->isFlag(lsfDisallowIncomingSponsor) && !sponsorObjSle)
+        // new sponsor creation is not allowed by disallowIncomingSponsor flag
+        return tecNO_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
+SponsorSet::doApply()
+{
+    auto const sponseeAcc = ctx_.tx[sfSponsee];
+    auto const keylet = keylet::sponsor(account_, sponseeAcc);
+
+    auto const sponsorAcc = ctx_.tx.isFieldPresent(sfSponsorAccount)
+        ? ctx_.tx.getAccountID(sfSponsorAccount)
+        : account_;
+
+    auto const sponsorAccSle = ctx_.view().peek(keylet::account(sponsorAcc));
+    if (!sponsorAccSle)
+        return tecINTERNAL;
+
+    auto const sponsorObjSle = ctx_.view().peek(keylet);
+
+    if (ctx_.tx.isFlag(tfDeleteObject))
+    {
+        // Delete
+        if (!sponsorObjSle)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        auto const sponsor =
+            getLedgerEntryReserveSponsor(ctx_.view(), sponsorObjSle);
+        adjustOwnerCount(ctx_.view(), sponsorAccSle, sponsor, -1, ctx_.journal);
+
+        ctx_.view().dirRemove(
+            keylet::ownerDir(sponsorAcc),
+            (*sponsorObjSle)[sfSponsorNode],
+            sponsorObjSle->key(),
+            false);
+        ctx_.view().dirRemove(
+            keylet::ownerDir(sponseeAcc),
+            (*sponsorObjSle)[sfSponseeNode],
+            sponsorObjSle->key(),
+            false);
+
+        // transfer feeAmount from ledger entry
+        auto const feeAmount = sponsorObjSle->getFieldAmount(sfFeeAmount);
+        (*sponsorAccSle)[sfBalance] += feeAmount;
+
+        ctx_.view().erase(sponsorObjSle);
+
+        return tesSUCCESS;
+    }
+
+    auto const feeAmount = ctx_.tx[~sfFeeAmount];
+    auto const reserveCount = ctx_.tx[~sfReserveCount];
+
+    auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
+
+    if (!sponsorObjSle)
+    {
+        // Create
+        auto newSle = std::make_shared<SLE>(keylet);
+
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(),
+                sponsorAccSle,
+                mPriorBalance,
+                reserveSponsorAccSle,
+                1);
+            !isTesSuccess(ret))
+            return tecUNFUNDED;
+
+        (*newSle)[sfAccount] = sponsorAcc;
+        (*newSle)[sfSponsee] = sponseeAcc;
+        (*newSle)[sfFlags] = ctx_.tx.getFlags();
+        if (feeAmount)
+        {
+            (*sponsorAccSle)[sfBalance] -= *feeAmount;
+            (*newSle)[sfFeeAmount] = *feeAmount;
+        }
+        if (reserveCount)
+        {
+            (*newSle)[sfReserveCount] = *reserveCount;
+        }
+
+        auto const sponsorPage = view().dirInsert(
+            keylet::ownerDir(sponsorAcc), keylet, describeOwnerDir(sponsorAcc));
+        (*newSle)[sfSponsorNode] = *sponsorPage;
+
+        auto const sponseePage = view().dirInsert(
+            keylet::ownerDir(sponseeAcc), keylet, describeOwnerDir(sponseeAcc));
+        (*newSle)[sfSponseeNode] = *sponseePage;
+
+        auto viewJ = ctx_.app.journal("View");
+
+        adjustOwnerCount(view(), sponsorAccSle, reserveSponsorAccSle, 1, viewJ);
+        addSponsorToLedgerEntry(newSle, reserveSponsorAccSle);
+
+        ctx_.view().insert(newSle);
+        return tesSUCCESS;
+    }
+
+    // Update
+    if (feeAmount)
+    {
+        // TODO: transfer feeAmount to ledger entry
+        (*sponsorAccSle)[sfBalance] -= *feeAmount;
+        (*sponsorObjSle)[sfFeeAmount] += *feeAmount;
+    }
+
+    if (reserveCount)
+        (*sponsorObjSle)[sfReserveCount] =
+            (*sponsorObjSle)[sfReserveCount] + *reserveCount;
+
+    // TODO: update Flags?
+    auto flags = sponsorObjSle->getFieldU32(sfFlags);
+    if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
+        flags |= lsfSponsorshipRequireSignForFee;
+
+    if (ctx_.tx.isFlag(tfSponsorshipClearRequireSignForFee))
+        flags &= ~lsfSponsorshipRequireSignForFee;
+
+    if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForReserve))
+        flags |= lsfSponsorshipRequireSignForReserve;
+
+    if (ctx_.tx.isFlag(tfSponsorshipClearRequireSignForReserve))
+        flags &= ~lsfSponsorshipRequireSignForReserve;
+
+    if (flags != (*sponsorObjSle)[sfFlags])
+        (*sponsorObjSle)[sfFlags] = flags;
+
+    ctx_.view().update(sponsorObjSle);
+
+    return tesSUCCESS;
+}
+
+}  // namespace ripple

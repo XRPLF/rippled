@@ -22,6 +22,7 @@
 
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/Sponsor.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -31,14 +32,50 @@ namespace jtx {
 namespace sponsor {
 
 Json::Value
+set(jtx::Account const& account,
+    jtx::Account const& sponsee,
+    uint32_t flags,
+    std::optional<uint32_t> reserveCount,
+    std::optional<STAmount> feeAmount)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::SponsorSet;
+    jv[jss::Account] = account.human();
+    jv[sfSponsee.jsonName] = sponsee.human();
+    jv[sfFlags.jsonName] = flags;
+    if (reserveCount)
+        jv[sfReserveCount.jsonName] = *reserveCount;
+    if (feeAmount)
+        jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::none);
+    return jv;
+}
+
+Json::Value
+del(jtx::Account const& account, jtx::Account const& sponsee)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::SponsorSet;
+    jv[jss::Account] = account.human();
+    jv[sfSponsee.jsonName] = sponsee.human();
+    jv[sfFlags.jsonName] = tfDeleteObject;
+    return jv;
+}
+
+Json::Value
 transfer(jtx::Account const& account, std::optional<uint256> const& index)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::SponsorTransfer;
     jv[jss::Account] = account.human();
     if (index)
-        jv[sfLedgerIndex.jsonName] = to_string(*index);
+        jv[sfObjectID.jsonName] = to_string(*index);
     return jv;
+}
+
+void
+sponsorAcc::operator()(Env& env, JTx& jt) const
+{
+    jt.jv[sfSponsorAccount.jsonName] = sponsor_.human();
 }
 
 void
@@ -85,7 +122,6 @@ sig::operator()(Env& env, JTx& jt) const
 void
 msig::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfSponsor.jsonName][sfSigningPubKey.jsonName] = "";
     auto const mySigners = signers;
     jt.sponsorSigner = [mySigners, &env](Env&, JTx& jtx) {
         std::optional<STObject> st;

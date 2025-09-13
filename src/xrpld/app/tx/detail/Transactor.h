@@ -209,6 +209,9 @@ public:
 
     static TER
     checkPermission(ReadView const& view, STTx const& tx);
+
+    static TER
+    checkSponsor(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
 
     // Interface used by DeleteAccount

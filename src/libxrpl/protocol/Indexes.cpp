@@ -96,6 +96,7 @@ enum class LedgerNameSpace : std::uint16_t {
     PERMISSIONED_DOMAIN = 'm',
     DELEGATE = 'E',
     VAULT = 'V',
+    SPONSORSHIP = 'N',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -330,6 +331,14 @@ Keylet
 signers(AccountID const& account) noexcept
 {
     return signers(account, 0);
+}
+
+Keylet
+sponsor(AccountID const& sponsor, AccountID const& sponsee) noexcept
+{
+    return {
+        ltSPONSORSHIP,
+        indexHash(LedgerNameSpace::SPONSORSHIP, sponsor, sponsee)};
 }
 
 Keylet

@@ -49,6 +49,110 @@ public:
             ter(temDISABLED));
 
         env(sponsor::transfer(alice), ter(temDISABLED));
+        env(sponsor::set(sponsor, alice, 0), ter(temDISABLED));
+    }
+
+    void
+    testInvalidSponsorSet()
+    {
+        testcase("Invalid SponsorSet");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        Account const noFunded("noFunded");
+        Account const gw("gw");
+
+        auto const USD = gw["USD"];
+        env.fund(XRP(10000), alice, sponsor, gw);
+        env.close();
+
+        //
+        // preflight
+        //
+
+        // Invalid flags
+        {
+            env(sponsor::set(
+                    sponsor, alice, ~tfSponsorSetMask - tfInnerBatchTxn),
+                ter(temINVALID_FLAG));
+
+            env(sponsor::set(
+                    sponsor,
+                    alice,
+                    tfSponsorshipSetRequireSignForFee |
+                        tfSponsorshipClearRequireSignForFee),
+                ter(temINVALID_FLAG));
+
+            env(sponsor::set(
+                    sponsor,
+                    alice,
+                    tfSponsorshipSetRequireSignForReserve |
+                        tfSponsorshipClearRequireSignForReserve),
+                ter(temINVALID_FLAG));
+
+            for (auto flag :
+                 {tfSponsorshipSetRequireSignForFee,
+                  tfSponsorshipClearRequireSignForFee,
+                  tfSponsorshipSetRequireSignForReserve,
+                  tfSponsorshipClearRequireSignForReserve})
+            {
+                env(sponsor::set(sponsor, alice, tfDeleteObject | flag),
+                    ter(temINVALID_FLAG));
+            }
+        }
+
+        // invalid SponsorAccount
+        env(sponsor::set(alice, sponsor, tfDeleteObject),
+            sponsor::sponsorAcc(alice),
+            ter(temMALFORMED));
+        env(sponsor::set(alice, sponsor, tfDeleteObject),
+            sponsor::sponsorAcc(bob),
+            ter(temMALFORMED));
+        env(sponsor::set(alice, alice, 0),
+            sponsor::sponsorAcc(sponsor),
+            ter(temMALFORMED));
+
+        // Invalid Sponsee
+        env(sponsor::set(sponsor, sponsor, 0), ter(temMALFORMED));
+
+        // Invalid feeAmount
+        env(sponsor::set(
+                sponsor, alice, tfSponsorshipClearRequireSignForFee, 0, XRP(1)),
+            ter(temMALFORMED));
+
+        for (auto amt : {XRP(-1), XRP(0), USD(1)})
+        {
+            env(sponsor::set(sponsor, alice, 0, 1, amt), ter(temBAD_AMOUNT));
+        }
+
+        // Invalid reserveCount
+        env(sponsor::set(
+                sponsor, alice, tfSponsorshipClearRequireSignForReserve, 1),
+            ter(temMALFORMED));
+        env(sponsor::set(sponsor, alice, 0, 0), ter(temMALFORMED));
+
+        // Invalid Delete operation
+        env(sponsor::set(sponsor, alice, tfDeleteObject, 1), ter(temMALFORMED));
+        env(sponsor::set(sponsor, alice, tfDeleteObject, std::nullopt, XRP(1)),
+            ter(temMALFORMED));
+
+        //
+        // preclaim
+        //
+
+        // Invalid Sponsee
+        env(sponsor::set(sponsor, noFunded, 0), ter(tecNO_DST));
+
+        // Invalid Delete operation (not found)
+        env(sponsor::set(sponsor, alice, tfDeleteObject), ter(tecNO_ENTRY));
+
+        // DisallowIncomingSponsor: tested in other testcase
+
+        // create sponsor to use above tests
+        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
+        env.close();
     }
 
     void
@@ -115,12 +219,6 @@ public:
 
         env(signers(sponsor, 1, {{signer1, 1}, {signer2, 1}}));
         env.close();
-
-        // Signature doesn't exist
-        env(noop(alice),
-            fee(XRP(1)),
-            sponsor::as(sponsor, tfSponsorReserve),
-            ter(telENV_RPC_FAILED));
 
         // Invalid signature
         auto tx = noop(alice);
@@ -367,19 +465,57 @@ public:
         using namespace test::jtx;
 
         testcase("Sponsor Fee");
-        Env env{*this, testable_amendments()};
-        Account const alice("alice");
-        Account const sponsor("sponsor");
-        env.fund(XRP(10000), alice, sponsor);
 
-        env(noop(alice),
-            fee(XRP(1)),
-            sponsor::as(sponsor, tfSponsorFee),
-            sponsor::sig(sponsor));
-        env.close();
+        {
+            // co-signing
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, sponsor);
+            env.close();
 
-        BEAST_EXPECT(env.balance(alice) == XRP(10000));
-        BEAST_EXPECT(env.balance(sponsor) == XRP(9999));
+            env(noop(alice),
+                fee(XRP(1)),
+                sponsor::as(sponsor, tfSponsorFee),
+                sponsor::sig(sponsor),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == XRP(10000));
+            BEAST_EXPECT(env.balance(sponsor) == XRP(9999));
+        }
+        {
+            // pre funded
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, sponsor);
+            env.close();
+
+            env(sponsor::set(sponsor, alice, 0, std::nullopt, XRP(1)),
+                ter(tesSUCCESS));
+            env.close();
+
+            auto const sle = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(sle->getFieldAmount(sfFeeAmount) == XRP(1));
+            BEAST_EXPECT(!sle->isFieldPresent(sfReserveCount));
+
+            auto const sponsorBalanceBefore = env.balance(sponsor);
+            auto const aliceBalanceBefore = env.balance(alice);
+
+            env(noop(alice),
+                fee(drops(500)),
+                sponsor::as(sponsor, tfSponsorFee),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice) == aliceBalanceBefore);
+            BEAST_EXPECT(env.balance(sponsor) == sponsorBalanceBefore);
+
+            auto const sle2 = env.le(keylet::sponsor(sponsor, alice));
+            BEAST_EXPECT(
+                sle2->getFieldAmount(sfFeeAmount) == XRP(1) - drops(500));
+        }
     }
 
     void
@@ -418,6 +554,7 @@ public:
 
         env.fund(XRP(10000), alice, bob);
         env.fund(drops(reserve) + drops(increment) - drops(1), sponsor);
+        env.close();
 
         // check sponsor balance
         env(check::create(alice, bob, XRP(1)),
@@ -483,6 +620,7 @@ public:
         auto USD = gw["USD"];
 
         env.fund(XRP(10000), alice, gw, sponsor);
+        env.close();
 
         // OfferCreate
         auto const seq = env.seq(alice);
@@ -518,6 +656,7 @@ public:
         Account const sponsor("master");
 
         env.fund(XRP(1000000), alice, sponsor);
+        env.close();
 
         // TicketCreate
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
@@ -551,6 +690,7 @@ public:
         Account const sponsor("sponsor");
 
         env.fund(XRP(1000000), issuer, subject, sponsor);
+        env.close();
 
         // CredentialsCreate
         env(credentials::create(subject, issuer, "credType"),
@@ -599,6 +739,7 @@ public:
         Account const sponsor("sponsor");
 
         env.fund(XRP(1000000), alice, bob, sponsor);
+        env.close();
 
         // DelegateSet
         env(delegate::set(alice, bob, {"Payment"}),
@@ -634,6 +775,7 @@ public:
         Account const sponsor("sponsor");
 
         env.fund(XRP(1000000), alice, sponsor);
+        env.close();
 
         // DIDSet
         env(did::set(alice),
@@ -700,6 +842,7 @@ public:
         Account const sponsor("sponsor");
 
         env.fund(XRP(1000000), alice, sponsor);
+        env.close();
 
         Account const bob("bob");
 
@@ -738,6 +881,73 @@ public:
     }
 
     void
+    testDisallowIncoming()
+    {
+        testcase("DisallowIncoming");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+
+        env.fund(XRP(1000000), alice, sponsor);
+        env.close();
+
+        // set DisallowIncomingSponsor
+        env(fset(alice, asfDisallowIncomingSponsor));
+        env.close();
+
+        // Create sponsor should fail
+        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)),
+            ter(tecNO_PERMISSION));
+        env.close();
+
+        // clear flag
+        env(fclear(alice, asfDisallowIncomingSponsor));
+        env.close();
+
+        // Create sponsor
+        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
+        env.close();
+
+        // set flag
+        env(fset(alice, asfDisallowIncomingSponsor));
+        env.close();
+
+        // Update sponsor should success
+        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
+        env.close();
+
+        // Delete sponsor shoud success
+        env(sponsor::set(sponsor, alice, tfDeleteObject), ter(tesSUCCESS));
+        env.close();
+    }
+    void
+    testAccountDelete()
+    {
+        testcase("AccountDelete");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+
+        env.fund(XRP(1000000), alice, bob, sponsor);
+        env.close();
+
+        // set sponsor
+        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
+        env.close();
+
+        // AccountDelete
+        env(acctdelete(alice, bob));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+    }
+
+    void
     testSponsorReserve()
     {
         testCheck();
@@ -764,12 +974,19 @@ public:
     run() override
     {
         testDisabled();
+        testInvalidSponsorSet();
+
         testSingleSigning();
         testMultiSigning();
+        // testInvalidSigninig(); // borh TxnSignature and Signers are present
+        // -> error
         testTransferSponsor();
         testSponsorFee();
         testSponsorAccount();
         testSponsorReserve();
+        testDisallowIncoming();
+
+        // testAccountDelete();
     }
 };
 

@@ -507,5 +507,17 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
 
+/** A ledger object representing a sponsorship.
+    \sa keylet::sponsor
+ */
+LEDGER_ENTRY(ltSPONSORSHIP, 0x0085, Sponsorship, sponsorship, ({
+    {sfAccount,       soeREQUIRED},
+    {sfSponsee,              soeREQUIRED},
+    {sfSponsorNode,          soeREQUIRED},
+    {sfSponseeNode,          soeREQUIRED},
+    {sfFeeAmount,            soeOPTIONAL},
+    {sfReserveCount,         soeOPTIONAL},
+}))
+
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE

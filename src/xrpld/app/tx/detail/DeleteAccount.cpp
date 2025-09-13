@@ -25,6 +25,7 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
+#include <xrpld/app/tx/detail/SponsorSet.h>
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
@@ -194,6 +195,18 @@ removeDelegateFromLedger(
     return DelegateSet::deleteDelegate(view, sleDel, account, j);
 }
 
+TER
+removeSponsorshipFromLedger(
+    Application& app,
+    ApplyView& view,
+    AccountID const&,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const& sleDel,
+    beast::Journal j)
+{
+    return SponsorSet::deleteSponsorship(view, sleDel, j);
+}
+
 // Return nullptr if the LedgerEntryType represents an obligation that can't
 // be deleted.  Otherwise return the pointer to the function that can delete
 // the non-obligation
@@ -220,6 +233,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeCredentialFromLedger;
         case ltDELEGATE:
             return removeDelegateFromLedger;
+        case ltSPONSORSHIP:
+            return removeSponsorshipFromLedger;
         default:
             return nullptr;
     }

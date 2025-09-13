@@ -149,6 +149,8 @@ enum LedgerSpecificFlags {
         0x40000000,               // True, enable trustline locking
     lsfAllowTrustLineClawback =
         0x80000000,               // True, enable clawback
+    lsfDisallowIncomingSponsor =
+        0x00004000,               // True, reject new sponsor
 
     // ltOFFER
     lsfPassive = 0x00010000,
@@ -196,6 +198,10 @@ enum LedgerSpecificFlags {
 
     // ltVAULT
     lsfVaultPrivate = 0x00010000,
+
+    // ltSPONSORSHIP
+    lsfSponsorshipRequireSignForFee     = 0x00010000,
+    lsfSponsorshipRequireSignForReserve = 0x00020000,
 };
 
 //------------------------------------------------------------------------------

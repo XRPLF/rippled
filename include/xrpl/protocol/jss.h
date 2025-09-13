@@ -540,7 +540,7 @@ JSS(reserve_inc_xrp);         // out: NetworkOPs
 JSS(response);                // websocket
 JSS(result);                  // RPC
 JSS(ripple_lines);            // out: NetworkOPs
-JSS(ripple_state);            // in: LedgerEntr
+JSS(ripple_state);            // in: LedgerEntry
 JSS(ripplerpc);               // ripple RPC version
 JSS(role);                    // out: Ping.cpp
 JSS(rpc);
@@ -580,6 +580,7 @@ JSS(source_account);          // in: PathRequest, RipplePathFind
 JSS(source_amount);           // in: PathRequest, RipplePathFind
 JSS(source_currencies);       // in: PathRequest, RipplePathFind
 JSS(source_tag);              // out: AccountChannels
+JSS(sponsee);                 // in: LedgerEntry
 JSS(stand_alone);             // out: NetworkOPs
 JSS(standard_deviation);      // out: get_aggregate_price
 JSS(start);                   // in: TxHistory

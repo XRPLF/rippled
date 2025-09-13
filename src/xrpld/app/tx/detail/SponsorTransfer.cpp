@@ -79,8 +79,8 @@ getLedgerEntryOwner(
             auto const signerList = view.read(keylet::signers(account));
             if (!signerList)
                 return std::nullopt;
-            if (signerList->getFieldH256(sfLedgerIndex) ==
-                sle->getFieldH256(sfLedgerIndex))
+            if (signerList->getFieldH256(sfObjectID) ==
+                sle->getFieldH256(sfObjectID))
                 return account;
             return std::nullopt;
         }
@@ -110,7 +110,7 @@ getLedgerEntryOwner(
 TER
 SponsorTransfer::preclaim(PreclaimContext const& ctx)
 {
-    auto const index = ctx.tx[~sfLedgerIndex];
+    auto const index = ctx.tx[~sfObjectID];
     auto const newSponsor = getTxReserveSponsor(ctx.view, ctx.tx);
 
     bool const isObjectSponsor = index != std::nullopt;
@@ -198,7 +198,7 @@ SponsorTransfer::doApply()
 {
     auto const& tx = ctx_.tx;
 
-    auto const index = tx[~sfLedgerIndex];
+    auto const index = tx[~sfObjectID];
     bool const isObjectSponsor = index != std::nullopt;
 
     auto const accSle = view().peek(keylet::account(account_));
