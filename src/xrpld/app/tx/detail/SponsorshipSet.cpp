@@ -169,7 +169,7 @@ SponsorshipSet::doApply()
 
         ctx_.view().dirRemove(
             keylet::ownerDir(sponsorAcc),
-            (*sponsorObjSle)[sfSponsorNode],
+            (*sponsorObjSle)[sfOwnerNode],
             sponsorObjSle->key(),
             false);
         ctx_.view().dirRemove(
@@ -206,7 +206,7 @@ SponsorshipSet::doApply()
             !isTesSuccess(ret))
             return tecUNFUNDED;
 
-        (*newSle)[sfAccount] = sponsorAcc;
+        (*newSle)[sfOwner] = sponsorAcc;
         (*newSle)[sfSponsee] = sponseeAcc;
         (*newSle)[sfFlags] = ctx_.tx.getFlags();
         if (feeAmount)
@@ -221,7 +221,7 @@ SponsorshipSet::doApply()
 
         auto const sponsorPage = view().dirInsert(
             keylet::ownerDir(sponsorAcc), keylet, describeOwnerDir(sponsorAcc));
-        (*newSle)[sfSponsorNode] = *sponsorPage;
+        (*newSle)[sfOwnerNode] = *sponsorPage;
 
         auto const sponseePage = view().dirInsert(
             keylet::ownerDir(sponseeAcc), keylet, describeOwnerDir(sponseeAcc));
@@ -239,7 +239,7 @@ SponsorshipSet::doApply()
     // Update
     if (feeAmount)
     {
-        // TODO: transfer feeAmount to ledger entry
+        // transfer feeAmount to ledger entry
         (*sponsorAccSle)[sfBalance] -= *feeAmount;
         (*sponsorObjSle)[sfFeeAmount] += *feeAmount;
     }
@@ -276,7 +276,7 @@ SponsorshipSet::deleteSponsorship(
     std::shared_ptr<SLE> const& sle,
     beast::Journal j)
 {
-    auto const sponsor = sle->getAccountID(sfAccount);
+    auto const sponsor = sle->getAccountID(sfOwner);
     auto const sponsee = sle->getAccountID(sfSponsee);
 
     // adjust balance
@@ -294,7 +294,7 @@ SponsorshipSet::deleteSponsorship(
 
     // delete sponsor node
     view.dirRemove(
-        keylet::ownerDir(sponsor), (*sle)[sfSponsorNode], sle->key(), false);
+        keylet::ownerDir(sponsor), (*sle)[sfOwnerNode], sle->key(), false);
     // delete sponsee node
     view.dirRemove(
         keylet::ownerDir(sponsee), (*sle)[sfSponseeNode], sle->key(), false);
