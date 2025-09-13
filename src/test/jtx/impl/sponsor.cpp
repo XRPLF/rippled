@@ -39,7 +39,7 @@ set(jtx::Account const& account,
     std::optional<STAmount> feeAmount)
 {
     Json::Value jv;
-    jv[jss::TransactionType] = jss::SponsorSet;
+    jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
     jv[sfSponsee.jsonName] = sponsee.human();
     jv[sfFlags.jsonName] = flags;
@@ -54,7 +54,7 @@ Json::Value
 del(jtx::Account const& account, jtx::Account const& sponsee)
 {
     Json::Value jv;
-    jv[jss::TransactionType] = jss::SponsorSet;
+    jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
     jv[sfSponsee.jsonName] = sponsee.human();
     jv[sfFlags.jsonName] = tfDeleteObject;
@@ -65,7 +65,7 @@ Json::Value
 transfer(jtx::Account const& account, std::optional<uint256> const& index)
 {
     Json::Value jv;
-    jv[jss::TransactionType] = jss::SponsorTransfer;
+    jv[jss::TransactionType] = jss::SponsorshipTransfer;
     jv[jss::Account] = account.human();
     if (index)
         jv[sfObjectID.jsonName] = to_string(*index);

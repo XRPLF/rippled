@@ -62,8 +62,8 @@
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
-#include <xrpld/app/tx/detail/SponsorSet.h>
-#include <xrpld/app/tx/detail/SponsorTransfer.h>
+#include <xrpld/app/tx/detail/SponsorshipSet.h>
+#include <xrpld/app/tx/detail/SponsorshipTransfer.h>
 #include <xrpld/app/tx/detail/VaultClawback.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
 #include <xrpld/app/tx/detail/VaultDelete.h>

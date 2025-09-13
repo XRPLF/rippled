@@ -527,12 +527,12 @@ TRANSACTION(ttBATCH, 71, Batch, Delegation::notDelegatable, ({
 }))
 
 /** This transaction transfer sponsorship */
-TRANSACTION(ttSPONSORSHIP_TRANSFER, 72, SponsorTransfer, Delegation::notDelegatable, ({
+TRANSACTION(ttSPONSORSHIP_TRANSFER, 72, SponsorshipTransfer, Delegation::notDelegatable, ({
     {sfObjectID, soeOPTIONAL},
 }))
 
 /** This transaction create sponsorship object */
-TRANSACTION(ttSPONSORSHIP_SET, 73, SponsorSet, Delegation::notDelegatable, ({
+TRANSACTION(ttSPONSORSHIP_SET, 73, SponsorshipSet, Delegation::notDelegatable, ({
     {sfSponsorAccount, soeOPTIONAL},
     {sfSponsee, soeREQUIRED},
     {sfFeeAmount, soeOPTIONAL},

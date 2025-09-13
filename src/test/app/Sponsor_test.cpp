@@ -53,9 +53,9 @@ public:
     }
 
     void
-    testInvalidSponsorSet()
+    testInvalidSponsorshipSet()
     {
-        testcase("Invalid SponsorSet");
+        testcase("Invalid SponsorshipSet");
         using namespace test::jtx;
         Env env{*this, testable_amendments()};
         Account const alice("alice");
@@ -75,7 +75,7 @@ public:
         // Invalid flags
         {
             env(sponsor::set(
-                    sponsor, alice, ~tfSponsorSetMask - tfInnerBatchTxn),
+                    sponsor, alice, ~tfSponsorshipSetMask - tfInnerBatchTxn),
                 ter(temINVALID_FLAG));
 
             env(sponsor::set(
@@ -974,7 +974,7 @@ public:
     run() override
     {
         testDisabled();
-        testInvalidSponsorSet();
+        testInvalidSponsorshipSet();
 
         testSingleSigning();
         testMultiSigning();

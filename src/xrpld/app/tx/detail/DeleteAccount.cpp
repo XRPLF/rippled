@@ -25,7 +25,7 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
-#include <xrpld/app/tx/detail/SponsorSet.h>
+#include <xrpld/app/tx/detail/SponsorshipSet.h>
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
@@ -204,7 +204,7 @@ removeSponsorshipFromLedger(
     std::shared_ptr<SLE> const& sleDel,
     beast::Journal j)
 {
-    return SponsorSet::deleteSponsorship(view, sleDel, j);
+    return SponsorshipSet::deleteSponsorship(view, sleDel, j);
 }
 
 // Return nullptr if the LedgerEntryType represents an obligation that can't

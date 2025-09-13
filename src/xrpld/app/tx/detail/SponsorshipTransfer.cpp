@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/SponsorTransfer.h>
+#include <xrpld/app/tx/detail/SponsorshipTransfer.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 
@@ -32,7 +32,7 @@
 namespace ripple {
 
 NotTEC
-SponsorTransfer::preflight(PreflightContext const& ctx)
+SponsorshipTransfer::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureSponsor))
         return temDISABLED;
@@ -108,7 +108,7 @@ getLedgerEntryOwner(
 }
 
 TER
-SponsorTransfer::preclaim(PreclaimContext const& ctx)
+SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 {
     auto const index = ctx.tx[~sfObjectID];
     auto const newSponsor = getTxReserveSponsor(ctx.view, ctx.tx);
@@ -194,7 +194,7 @@ SponsorTransfer::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-SponsorTransfer::doApply()
+SponsorshipTransfer::doApply()
 {
     auto const& tx = ctx_.tx;
 

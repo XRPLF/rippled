@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/SponsorSet.h>
+#include <xrpld/app/tx/detail/SponsorshipSet.h>
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/protocol/TxFlags.h>
@@ -25,7 +25,7 @@
 namespace ripple {
 
 NotTEC
-SponsorSet::preflight(PreflightContext const& ctx)
+SponsorshipSet::preflight(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureSponsor))
         return temDISABLED;
@@ -35,7 +35,7 @@ SponsorSet::preflight(PreflightContext const& ctx)
 
     // check Flags
     {
-        if (ctx.tx.getFlags() & tfSponsorSetMask)
+        if (ctx.tx.getFlags() & tfSponsorshipSetMask)
             return temINVALID_FLAG;
 
         if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForFee) &&
@@ -116,7 +116,7 @@ SponsorSet::preflight(PreflightContext const& ctx)
 }
 
 TER
-SponsorSet::preclaim(PreclaimContext const& ctx)
+SponsorshipSet::preclaim(PreclaimContext const& ctx)
 {
     auto const sponsor = ctx.tx.isFieldPresent(sfSponsorAccount)
         ? ctx.tx.getAccountID(sfSponsorAccount)
@@ -142,7 +142,7 @@ SponsorSet::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-SponsorSet::doApply()
+SponsorshipSet::doApply()
 {
     auto const sponseeAcc = ctx_.tx[sfSponsee];
     auto const keylet = keylet::sponsor(account_, sponseeAcc);
@@ -266,6 +266,36 @@ SponsorSet::doApply()
         (*sponsorObjSle)[sfFlags] = flags;
 
     ctx_.view().update(sponsorObjSle);
+
+    return tesSUCCESS;
+}
+
+TER
+SponsorshipSet::deleteSponsorship(
+    ApplyView& view,
+    std::shared_ptr<SLE> const& sle,
+    beast::Journal j)
+{
+    auto const sponsor = sle->getAccountID(sfSponsorAccount);
+    auto const sponsee = sle->getAccountID(sfSponsee);
+
+    // adjust balance
+    auto const sponsorAccSle = view.peek(keylet::account(sponsor));
+    if (!sponsorAccSle)
+        return tecINTERNAL;
+
+    auto const feeAmount = sle->getFieldAmount(sfFeeAmount);
+
+    (*sponsorAccSle)[sfBalance] += feeAmount;
+
+    // delete sponsor node
+    view.dirRemove(
+        keylet::ownerDir(sponsor), (*sle)[sfSponsorNode], sle->key(), false);
+    // delete sponsee node
+    view.dirRemove(
+        keylet::ownerDir(sponsee), (*sle)[sfSponseeNode], sle->key(), false);
+
+    view.erase(sle);
 
     return tesSUCCESS;
 }

@@ -255,13 +255,13 @@ constexpr std::uint32_t tfIndependent                  = 0x00080000;
 constexpr std::uint32_t const tfBatchMask =
     ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
 
-// SponsorSet flags:
+// SponsorshipSet flags:
 constexpr std::uint32_t tfSponsorshipSetRequireSignForFee                    = 0x00010000;
 constexpr std::uint32_t tfSponsorshipClearRequireSignForFee                  = 0x00020000;
 constexpr std::uint32_t tfSponsorshipSetRequireSignForReserve                = 0x00040000;
 constexpr std::uint32_t tfSponsorshipClearRequireSignForReserve              = 0x00080000;
 constexpr std::uint32_t tfDeleteObject                                       = 0x00100000;
-constexpr std::uint32_t tfSponsorSetMask = ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee | tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve | tfDeleteObject);
+constexpr std::uint32_t tfSponsorshipSetMask = ~(tfUniversal | tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee | tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve | tfDeleteObject);
 
 // clang-format on
 

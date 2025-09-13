@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SPONSORTRANSFER_H_INCLUDED
-#define RIPPLE_TX_SPONSORTRANSFER_H_INCLUDED
+#ifndef RIPPLE_TX_SponsorshipTransfer_H_INCLUDED
+#define RIPPLE_TX_SponsorshipTransfer_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-class SponsorTransfer : public Transactor
+class SponsorshipTransfer : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit SponsorTransfer(ApplyContext& ctx) : Transactor(ctx)
+    explicit SponsorshipTransfer(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 

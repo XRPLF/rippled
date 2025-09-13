@@ -17,19 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SPONSORSET_H_INCLUDED
-#define RIPPLE_TX_SPONSORSET_H_INCLUDED
+#ifndef RIPPLE_TX_SPONSORSHIPSET_H_INCLUDED
+#define RIPPLE_TX_SPONSORSHIPSET_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-class SponsorSet : public Transactor
+class SponsorshipSet : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit SponsorSet(ApplyContext& ctx) : Transactor(ctx)
+    explicit SponsorshipSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -41,6 +41,13 @@ public:
 
     TER
     doApply() override;
+
+    // Interface used by DeleteAccount
+    static TER
+    deleteSponsorship(
+        ApplyView& view,
+        std::shared_ptr<SLE> const& sle,
+        beast::Journal j);
 };
 
 }  // namespace ripple
