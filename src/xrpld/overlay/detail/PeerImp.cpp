@@ -993,7 +993,7 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 
     if (auto stream = journal_.trace())
     {
-        stream << "onReadMessage: "
+        std::move(stream) << "onReadMessage: "
                << (bytes_transferred > 0
                        ? to_string(bytes_transferred) + " bytes"
                        : "");
@@ -1075,7 +1075,7 @@ PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 
     if (auto stream = journal_.trace())
     {
-        stream << "onWriteMessage: "
+        std::move(stream) << "onWriteMessage: "
                << (bytes_transferred > 0
                        ? to_string(bytes_transferred) + " bytes"
                        : "");

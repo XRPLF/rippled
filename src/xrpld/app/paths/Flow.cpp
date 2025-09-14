@@ -111,17 +111,17 @@ flow(
 
     ammContext.setMultiPath(strands.size() > 1);
 
-    if (j.trace())
+    if (auto stream = j.trace())
     {
-        j.trace() << "\nsrc: " << src << "\ndst: " << dst
+        stream << "\nsrc: " << src << "\ndst: " << dst
                   << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
-        j.trace() << "\nNumStrands: " << strands.size();
+        stream << "\nNumStrands: " << strands.size();
         for (auto const& curStrand : strands)
         {
-            j.trace() << "NumSteps: " << curStrand.size();
+            stream << "NumSteps: " << curStrand.size();
             for (auto const& step : curStrand)
             {
-                j.trace() << '\n' << *step << '\n';
+                stream << '\n' << *step << '\n';
             }
         }
     }
