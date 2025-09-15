@@ -220,8 +220,10 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // sfMutableFlags is soeDEFAULT, defaulting to 0 if not specified on
+    // the ledger.
     auto const currentMutableFlags =
-        (*sleMptIssuance)[~sfMutableFlags].value_or(0);
+        sleMptIssuance->getFieldU32(sfMutableFlags);
 
     auto isMutableFlag = [&](std::uint32_t mutableFlag) -> bool {
         return currentMutableFlags & mutableFlag;
