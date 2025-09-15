@@ -2878,6 +2878,9 @@ PeerImp::checkTransaction(
             (stx->getFieldU32(sfLastLedgerSequence) <
              app_.getLedgerMaster().getValidLedgerIndex()))
         {
+            JLOG(p_journal_.info())
+                << "Marking transaction " << stx->getTransactionID()
+                << "as BAD because it's expired";
             app_.getHashRouter().setFlags(
                 stx->getTransactionID(), HashRouterFlags::BAD);
             charge(Resource::feeUselessData, "expired tx");
@@ -2934,7 +2937,7 @@ PeerImp::checkTransaction(
             {
                 if (!validReason.empty())
                 {
-                    JLOG(p_journal_.trace())
+                    JLOG(p_journal_.debug())
                         << "Exception checking transaction: " << validReason;
                 }
 
@@ -2961,7 +2964,7 @@ PeerImp::checkTransaction(
         {
             if (!reason.empty())
             {
-                JLOG(p_journal_.trace())
+                JLOG(p_journal_.debug())
                     << "Exception checking transaction: " << reason;
             }
             app_.getHashRouter().setFlags(
