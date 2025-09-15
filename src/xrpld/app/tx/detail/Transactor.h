@@ -134,6 +134,20 @@ public:
 class TxConsequences;
 struct PreflightResult;
 
+enum class FeePayerType {
+    Account,
+    Delegate,
+    SponsorCoSigned,
+    SponsorPreFunded,
+};
+
+struct FeePayer
+{
+    Keylet keylet;
+    TypedField<STAmount> const& field;
+    FeePayerType type;
+};
+
 class Transactor
 {
 protected:
@@ -253,6 +267,9 @@ protected:
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
+
+    static FeePayer
+    getFeePayer(STTx const& tx);
 
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);

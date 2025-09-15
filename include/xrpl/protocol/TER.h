@@ -227,6 +227,7 @@ enum TERcodes : TERUnderlyingType {
     terNO_AMM,       // AMM doesn't exist for the asset pair
     terADDRESS_COLLISION,  // Failed to allocate AccountID when trying to
                            // create a pseudo-account
+    terNO_SPONSORSHIP,     // No sponsorship found
 };
 
 //------------------------------------------------------------------------------

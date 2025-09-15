@@ -245,25 +245,6 @@ STTx::getSeqValue() const
     return getSeqProxy().value();
 }
 
-AccountID
-STTx::getFeePayer() const
-{
-    if (isFieldPresent(sfSponsor))
-    {
-        if (getFieldObject(sfSponsor).isFlag(tfSponsorFee))
-        {
-            return getFieldObject(sfSponsor)[sfAccount];
-        }
-    }
-
-    if (isFieldPresent(sfDelegate))
-    {
-        return getAccountID(sfDelegate);
-    }
-
-    return getAccountID(sfAccount);
-}
-
 void
 STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 {
