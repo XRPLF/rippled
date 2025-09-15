@@ -36,6 +36,10 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
           ctx.rules.enabled(featureSingleAssetVault)))
         return temDISABLED;
 
+    if (ctx.tx.getFlags() & tfMPTNoConfidentialTransfer &&
+        !ctx.rules.enabled(featureConfidentialTransfer))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
