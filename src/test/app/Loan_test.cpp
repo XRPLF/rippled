@@ -2506,10 +2506,11 @@ class Loan_test : public beast::unit_test::suite
             // To get far enough to return tecNO_ENTRY means that the
             // signatures all validated. Of course the transaction won't
             // succeed because no Vault or Broker were created.
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 jSubmitBlobResult.isMember(jss::engine_result) &&
-                jSubmitBlobResult[jss::engine_result].asString() ==
-                    "tecNO_ENTRY");
+                    jSubmitBlobResult[jss::engine_result].asString() ==
+                        "tecNO_ENTRY",
+                to_string(jSubmitBlobResult));
 
             BEAST_EXPECT(
                 !jSubmitBlob.isMember(jss::error) &&
@@ -2527,10 +2528,11 @@ class Loan_test : public beast::unit_test::suite
             auto const jSubmitJsonTx = jSubmitJsonResult[jss::tx_json];
             // Since the previous tx claimed a fee, this duplicate is not
             // going anywhere
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 jSubmitJsonResult.isMember(jss::engine_result) &&
-                jSubmitJsonResult[jss::engine_result].asString() ==
-                    "tefPAST_SEQ");
+                    jSubmitJsonResult[jss::engine_result].asString() ==
+                        "tefPAST_SEQ",
+                to_string(jSubmitJsonResult));
 
             BEAST_EXPECT(
                 !jSubmitJson.isMember(jss::error) &&
@@ -2618,10 +2620,11 @@ class Loan_test : public beast::unit_test::suite
             // To get far enough to return tecNO_ENTRY means that the
             // signatures all validated. Of course the transaction won't
             // succeed because no Vault or Broker were created.
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 jSubmitBlobResult.isMember(jss::engine_result) &&
-                jSubmitBlobResult[jss::engine_result].asString() ==
-                    "tecNO_ENTRY");
+                    jSubmitBlobResult[jss::engine_result].asString() ==
+                        "tecNO_ENTRY",
+                to_string(jSubmitBlobResult));
 
             BEAST_EXPECT(
                 !jSubmitBlob.isMember(jss::error) &&
@@ -2639,10 +2642,11 @@ class Loan_test : public beast::unit_test::suite
             auto const jSubmitJsonTx = jSubmitJsonResult[jss::tx_json];
             // Since the previous tx claimed a fee, this duplicate is not
             // going anywhere
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 jSubmitJsonResult.isMember(jss::engine_result) &&
-                jSubmitJsonResult[jss::engine_result].asString() ==
-                    "tefPAST_SEQ");
+                    jSubmitJsonResult[jss::engine_result].asString() ==
+                        "tefPAST_SEQ",
+                to_string(jSubmitJsonResult));
 
             BEAST_EXPECT(
                 !jSubmitJson.isMember(jss::error) &&
