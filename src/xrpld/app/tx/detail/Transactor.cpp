@@ -259,35 +259,26 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     auto const sponsorAcc = txSponsor.getAccountID(sfAccount);
     auto const sponseeAcc = tx.getAccountID(sfAccount);
 
-    auto const hasSignature = txSponsor.isFieldPresent(sfTxnSignature) ||
+    auto const hasSponsorSignature = txSponsor.isFieldPresent(sfTxnSignature) ||
         !txSponsor.getFieldVL(sfSigningPubKey).empty() ||
         txSponsor.isFieldPresent(sfSigners);
 
-    auto const sponsorSle = view.read(keylet::sponsor(sponsorAcc, sponseeAcc));
-    if (!hasSignature)
+    if (!hasSponsorSignature)
     {
+        auto const sponsorSle =
+            view.read(keylet::sponsor(sponsorAcc, sponseeAcc));
+
         // pre funded
         if (!sponsorSle)
-            return tecNO_SPONSOR_PERMISSION;
-    }
-    else
-    {
-        // co-signed
-        if (!sponsorSle)
-            return tesSUCCESS;
+            return terNO_SPONSORSHIP;
 
         if (txSponsor.isFlag(tfSponsorFee) &&
             sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
-        {
-            if (!hasSignature)
-                return tecNO_SPONSOR_PERMISSION;
-        }
+            return terNO_SPONSORSHIP;
+
         if (txSponsor.isFlag(tfSponsorReserve) &&
             sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
-        {
-            if (!hasSignature)
-                return tecNO_SPONSOR_PERMISSION;
-        }
+            return terNO_SPONSORSHIP;
     }
 
     return tesSUCCESS;

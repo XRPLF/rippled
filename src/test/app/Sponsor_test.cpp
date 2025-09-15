@@ -118,19 +118,12 @@ public:
         env(sponsor::set(sponsor, sponsor, 0), ter(temMALFORMED));
 
         // Invalid feeAmount
-        env(sponsor::set_fee(
-                sponsor, alice, tfSponsorshipClearRequireSignForFee, XRP(1)),
-            ter(temMALFORMED));
-
         for (auto amt : {XRP(-1), XRP(0), USD(1)})
         {
             env(sponsor::set_fee(sponsor, alice, 0, amt), ter(temBAD_AMOUNT));
         }
 
         // Invalid reserveCount
-        env(sponsor::set_reserve(
-                sponsor, alice, tfSponsorshipClearRequireSignForReserve, 1),
-            ter(temMALFORMED));
         env(sponsor::set_reserve(sponsor, alice, 0, 0), ter(temMALFORMED));
 
         // Invalid Delete operation
@@ -686,6 +679,38 @@ public:
                     sponsorFeeBalance(sponsor, alice) == sponsorFee - feeAmt);
             }
         }
+
+        // test lsfSponsorshipRequireSignForFee
+        {
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const bob("bob");
+            Account const sponsor("sponsor");
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
+            // set flag
+            env(sponsor::set_fee(
+                sponsor, alice, tfSponsorshipSetRequireSignForFee, XRP(10)));
+            env.close();
+
+            env(pay(alice, bob, XRP(100)),
+                fee(XRP(10)),
+                sponsor::as(sponsor, tfSponsorFee),
+                ter(terNO_SPONSORSHIP));
+            env.close();
+
+            // clear flag
+            env(sponsor::set_fee(
+                sponsor, alice, tfSponsorshipClearRequireSignForFee, XRP(10)));
+            env.close();
+
+            env(pay(alice, bob, XRP(100)),
+                fee(XRP(10)),
+                sponsor::as(sponsor, tfSponsorFee),
+                ter(tesSUCCESS));
+            env.close();
+        }
     }
 
     void
@@ -739,6 +764,42 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, charlie) == 0);
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor) == 1);
         }
+    }
+
+    void
+    testRequireFlag()
+    {
+        testcase("SponsorshipRequireSignForReserve");
+        using namespace test::jtx;
+
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, bob, sponsor);
+        env.close();
+
+        // set flag
+        env(sponsor::set_reserve(
+            sponsor, alice, tfSponsorshipSetRequireSignForReserve, 10));
+        env.close();
+
+        env(check::create(alice, bob, XRP(100)),
+            fee(XRP(10)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            ter(terNO_SPONSORSHIP));
+        env.close();
+
+        // clear flag
+        env(sponsor::set_reserve(
+            sponsor, alice, tfSponsorshipClearRequireSignForReserve, 1));
+        env.close();
+
+        env(check::create(alice, bob, XRP(100)),
+            fee(XRP(10)),
+            sponsor::as(sponsor, tfSponsorReserve),
+            ter(tesSUCCESS));
+        env.close();
     }
 
     void
@@ -1269,6 +1330,7 @@ public:
     void
     testSponsorReserve()
     {
+        testRequireFlag();
         testCheck();
         testOfffer();
         testTicket();

@@ -82,9 +82,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfFeeAmount))
     {
-        if (ctx.tx.getFlags() & tfSponsorshipClearRequireSignForFee)
-            return temMALFORMED;
-
         auto const feeAmount = ctx.tx.getFieldAmount(sfFeeAmount);
 
         if (!isXRP(feeAmount))
@@ -108,9 +105,6 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfReserveCount))
     {
-        if (ctx.tx.getFlags() & tfSponsorshipClearRequireSignForReserve)
-            return temMALFORMED;
-
         auto const reserveCount = ctx.tx.getFieldU32(sfReserveCount);
         // TODO: max reserveCount?
         if (reserveCount < 1)
@@ -158,11 +152,12 @@ TER
 SponsorshipSet::doApply()
 {
     auto const sponseeAcc = ctx_.tx[sfSponsee];
-    auto const keylet = keylet::sponsor(account_, sponseeAcc);
 
     auto const sponsorAcc = ctx_.tx.isFieldPresent(sfSponsorAccount)
         ? ctx_.tx.getAccountID(sfSponsorAccount)
         : account_;
+
+    auto const keylet = keylet::sponsor(sponsorAcc, sponseeAcc);
 
     auto const sponsorAccSle = ctx_.view().peek(keylet::account(sponsorAcc));
     if (!sponsorAccSle)
@@ -222,7 +217,6 @@ SponsorshipSet::doApply()
 
         (*newSle)[sfOwner] = sponsorAcc;
         (*newSle)[sfSponsee] = sponseeAcc;
-        (*newSle)[sfFlags] = ctx_.tx.getFlags();
         if (feeAmount)
         {
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
@@ -236,6 +230,15 @@ SponsorshipSet::doApply()
         {
             (*newSle)[sfReserveCount] = *reserveCount;
         }
+
+        auto flags = 0;
+        if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
+            flags |= lsfSponsorshipRequireSignForFee;
+
+        if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForReserve))
+            flags |= lsfSponsorshipRequireSignForReserve;
+
+        (*newSle)[sfFlags] = flags;
 
         auto const sponsorPage = view().dirInsert(
             keylet::ownerDir(sponsorAcc), keylet, describeOwnerDir(sponsorAcc));
