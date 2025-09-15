@@ -2397,10 +2397,8 @@ class Loan_test : public beast::unit_test::suite
                 jSubmit[jss::result].isMember(jss::engine_result) &&
                 jSubmit[jss::result][jss::engine_result].asString() ==
                     "tesSUCCESS");
-            env.close();
 
             env(jtx.jv, sig(none), seq(none), fee(none), ter(tefPAST_SEQ));
-            env.close();
         }
 
         {
@@ -2477,7 +2475,6 @@ class Loan_test : public beast::unit_test::suite
                     jSubmitBlobResult.isMember(jss::engine_result) &&
                     jSubmitBlobResult[jss::engine_result].asString() ==
                         "temBAD_SIGNER");
-                env.close();
             }
 
             // 3. Borrower sends the signed transaction to the lender
@@ -2536,15 +2533,12 @@ class Loan_test : public beast::unit_test::suite
                     jSubmitJsonResult[jss::engine_result].asString() ==
                         "tefPAST_SEQ",
                 to_string(jSubmitJsonResult));
-            env.close();
 
             BEAST_EXPECT(
                 !jSubmitJson.isMember(jss::error) &&
                 !jSubmitJsonResult.isMember(jss::error));
 
-            BEAST_EXPECTS(
-                jSubmitBlobTx == jSubmitJsonTx,
-                to_string(jSubmitBlobResult) + to_string(jSubmitJsonResult));
+            BEAST_EXPECT(jSubmitBlobTx == jSubmitJsonTx);
         }
 
         {
@@ -2595,7 +2589,6 @@ class Loan_test : public beast::unit_test::suite
                     jSubmitBlobResult.isMember(jss::engine_result) &&
                     jSubmitBlobResult[jss::engine_result].asString() ==
                         "temBAD_SIGNER");
-                env.close();
             }
 
             // 3. Lender sends the signed transaction to the Borrower
@@ -2654,7 +2647,6 @@ class Loan_test : public beast::unit_test::suite
                     jSubmitJsonResult[jss::engine_result].asString() ==
                         "tefPAST_SEQ",
                 to_string(jSubmitJsonResult));
-            env.close();
 
             BEAST_EXPECT(
                 !jSubmitJson.isMember(jss::error) &&
