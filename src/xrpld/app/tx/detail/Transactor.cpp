@@ -259,25 +259,35 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
     auto const sponsorAcc = txSponsor.getAccountID(sfAccount);
     auto const sponseeAcc = tx.getAccountID(sfAccount);
 
-    auto const sponsorSle = view.read(keylet::sponsor(sponsorAcc, sponseeAcc));
-    if (!sponsorSle)
-        return tesSUCCESS;
-
     auto const hasSignature = txSponsor.isFieldPresent(sfTxnSignature) ||
         !txSponsor.getFieldVL(sfSigningPubKey).empty() ||
         txSponsor.isFieldPresent(sfSigners);
 
-    if (txSponsor.isFlag(tfSponsorFee) &&
-        sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
+    auto const sponsorSle = view.read(keylet::sponsor(sponsorAcc, sponseeAcc));
+    if (!hasSignature)
     {
-        if (!hasSignature)
+        // pre funded
+        if (!sponsorSle)
             return tecNO_SPONSOR_PERMISSION;
     }
-    if (txSponsor.isFlag(tfSponsorReserve) &&
-        sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    else
     {
-        if (!hasSignature)
-            return tecNO_SPONSOR_PERMISSION;
+        // co-signed
+        if (!sponsorSle)
+            return tesSUCCESS;
+
+        if (txSponsor.isFlag(tfSponsorFee) &&
+            sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
+        {
+            if (!hasSignature)
+                return tecNO_SPONSOR_PERMISSION;
+        }
+        if (txSponsor.isFlag(tfSponsorReserve) &&
+            sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
+        {
+            if (!hasSignature)
+                return tecNO_SPONSOR_PERMISSION;
+        }
     }
 
     return tesSUCCESS;
@@ -359,21 +369,68 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::zero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.getFeePayer();
-    JLOG(ctx.j.trace()) << "Fee payer: " + to_string(id);
-    auto const sle = ctx.view.read(keylet::account(id));
-    if (!sle)
-        return terNO_ACCOUNT;
+    std::optional<XRPAmount> availableBalance;
 
-    auto const balance = (*sle)[sfBalance].xrp();
+    if (ctx.tx.isFieldPresent(sfSponsor))
+    {
+        auto const txSponsor = ctx.tx.getFieldObject(sfSponsor);
+        if (txSponsor.isFlag(tfSponsorFee) &&
+            (!txSponsor.isFieldPresent(sfTxnSignature) &&
+             !txSponsor.isFieldPresent(sfSigners)))
+        {
+            // use prefunded fee sponsor
+            auto const keylet = keylet::sponsor(
+                txSponsor.getAccountID(sfAccount), ctx.tx[sfAccount]);
+            auto const sponsorSle = ctx.view.read(keylet);
+            if (!sponsorSle)
+                return tecNO_SPONSOR_PERMISSION;
 
-    if (balance < feePaid)
+            XRPAmount const maxFee = sponsorSle->isFieldPresent(sfMaxFee)
+                ? sponsorSle->getFieldAmount(sfMaxFee).xrp()
+                : INITIAL_XRP;
+
+            XRPAmount const feeAmount = sponsorSle->isFieldPresent(sfFeeAmount)
+                ? sponsorSle->getFieldAmount(sfFeeAmount).xrp()
+                : XRPAmount(0);
+
+            // feePaid should <= maxFee
+            if (feePaid > maxFee)
+                return tecNO_SPONSOR_PERMISSION;
+
+            // feePaid should <= feeAmount
+            if (feePaid > feeAmount)
+                return tecNO_SPONSOR_PERMISSION;
+
+            availableBalance = feeAmount;
+        }
+        else
+        {
+            // proceed to use fee payer
+        }
+    }
+
+    if (!availableBalance)
+    {
+        auto const id = ctx.tx.getFeePayer();
+        JLOG(ctx.j.trace()) << "Fee payer: " + to_string(id);
+        auto const sle = ctx.view.read(keylet::account(id));
+        if (!sle)
+            return terNO_ACCOUNT;
+
+        availableBalance = (*sle)[sfBalance].xrp();
+    }
+
+    XRPL_ASSERT(
+        availableBalance,
+        "ripple::Transactor::checkFee : could not get balance for fee");
+
+    if (*availableBalance < feePaid)
     {
         JLOG(ctx.j.trace())
-            << "Insufficient balance:" << " balance=" << to_string(balance)
-            << " paid=" << to_string(feePaid);
+            << "Insufficient balance:" << " balance="
+            << to_string(*availableBalance) << " paid=" << to_string(feePaid);
 
-        if ((balance > beast::zero) && !ctx.view.open())
+        if ((*availableBalance > beast::zero) && !ctx.view.open())
         {
             // Closed ledger, non-zero balance, less than fee
             return tecINSUFF_FEE;

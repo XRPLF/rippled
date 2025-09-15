@@ -94,6 +94,18 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             return temBAD_AMOUNT;
     }
 
+    if (ctx.tx.isFieldPresent(sfMaxFee))
+    {
+        auto const maxFee = ctx.tx.getFieldAmount(sfMaxFee);
+        if (!isXRP(maxFee))
+            return temBAD_AMOUNT;
+
+        if (maxFee.xrp().drops() <= 0)
+            return temBAD_AMOUNT;
+
+        // TODO: check maxFee > basefee
+    }
+
     if (ctx.tx.isFieldPresent(sfReserveCount))
     {
         if (ctx.tx.getFlags() & tfSponsorshipClearRequireSignForReserve)
@@ -108,7 +120,8 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFlag(tfDeleteObject))
     {
         if (ctx.tx.isFieldPresent(sfFeeAmount) ||
-            ctx.tx.isFieldPresent(sfReserveCount))
+            ctx.tx.isFieldPresent(sfReserveCount) ||
+            ctx.tx.isFieldPresent(sfMaxFee))
             return temMALFORMED;
     }
 
@@ -188,6 +201,7 @@ SponsorshipSet::doApply()
     }
 
     auto const feeAmount = ctx_.tx[~sfFeeAmount];
+    auto const maxFee = ctx_.tx[~sfMaxFee];
     auto const reserveCount = ctx_.tx[~sfReserveCount];
 
     auto reserveSponsorAccSle = getTxReserveSponsor(view(), ctx_.tx);
@@ -213,6 +227,10 @@ SponsorshipSet::doApply()
         {
             (*sponsorAccSle)[sfBalance] -= *feeAmount;
             (*newSle)[sfFeeAmount] = *feeAmount;
+        }
+        if (maxFee)
+        {
+            (*newSle)[sfMaxFee] = *maxFee;
         }
         if (reserveCount)
         {
@@ -244,11 +262,16 @@ SponsorshipSet::doApply()
         (*sponsorObjSle)[sfFeeAmount] += *feeAmount;
     }
 
+    if (maxFee)
+    {
+        (*sponsorObjSle)[sfMaxFee] = *maxFee;
+    }
+
     if (reserveCount)
         (*sponsorObjSle)[sfReserveCount] =
             (*sponsorObjSle)[sfReserveCount] + *reserveCount;
 
-    // TODO: update Flags?
+    // update Flags
     auto flags = sponsorObjSle->getFieldU32(sfFlags);
     if (ctx_.tx.isFlag(tfSponsorshipSetRequireSignForFee))
         flags |= lsfSponsorshipRequireSignForFee;

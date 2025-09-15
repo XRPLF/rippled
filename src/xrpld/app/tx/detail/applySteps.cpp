@@ -200,17 +200,17 @@ invoke_preclaim(PreclaimContext const& ctx)
                 if (result != tesSUCCESS)
                     return result;
 
+                result = T::checkSponsor(ctx.view, ctx.tx);
+
+                if (result != tesSUCCESS)
+                    return result;
+
                 result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
 
                 if (result != tesSUCCESS)
                     return result;
 
                 result = T::checkPermission(ctx.view, ctx.tx);
-
-                if (result != tesSUCCESS)
-                    return result;
-
-                result = T::checkSponsor(ctx.view, ctx.tx);
 
                 if (result != tesSUCCESS)
                     return result;

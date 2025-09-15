@@ -536,6 +536,7 @@ TRANSACTION(ttSPONSORSHIP_SET, 73, SponsorshipSet, Delegation::notDelegatable, (
     {sfSponsorAccount, soeOPTIONAL},
     {sfSponsee, soeREQUIRED},
     {sfFeeAmount, soeOPTIONAL},
+    {sfMaxFee, soeOPTIONAL},
     {sfReserveCount, soeOPTIONAL},
 }))
 

@@ -137,6 +137,7 @@ public:
         env(sponsor::set(sponsor, alice, tfDeleteObject, 1), ter(temMALFORMED));
         env(sponsor::set(sponsor, alice, tfDeleteObject, std::nullopt, XRP(1)),
             ter(temMALFORMED));
+        // TODO: test MaxFee with tfDeleteObject
 
         //
         // preclaim
@@ -492,6 +493,13 @@ public:
             env.fund(XRP(10000), alice, sponsor);
             env.close();
 
+            // not yet funded
+            env(noop(alice),
+                fee(drops(500)),
+                sponsor::as(sponsor, tfSponsorFee),
+                ter(tecNO_SPONSOR_PERMISSION));
+
+            // set sponsorship
             env(sponsor::set(sponsor, alice, 0, std::nullopt, XRP(1)),
                 ter(tesSUCCESS));
             env.close();
