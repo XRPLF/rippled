@@ -81,11 +81,13 @@ private:
      * Each step has its own timeout value defined in StepTimeouts.
      */
     enum class ConnectionStep {
-        TcpConnect,    // Establishing TCP connection to remote peer
-        TlsHandshake,  // Performing SSL/TLS handshake
-        HttpWrite,     // Sending HTTP upgrade request
-        HttpRead,      // Reading HTTP upgrade response
-        Complete       // Connection successfully established
+        Init,            // Initial state, nothing started
+        TcpConnect,      // Establishing TCP connection to remote peer
+        TlsHandshake,    // Performing SSL/TLS handshake
+        HttpWrite,       // Sending HTTP upgrade request
+        HttpRead,        // Reading HTTP upgrade response
+        Complete,        // Connection successfully established
+        ShutdownStarted  // Connection shutdown has started
     };
 
     // A timeout for connection process, greater than all step timeouts
@@ -100,13 +102,16 @@ private:
      */
     struct StepTimeouts
     {
-        static constexpr std::chrono::seconds tcpConnect{
-            8};  // TCP connection timeout
-        static constexpr std::chrono::seconds tlsHandshake{
-            8};  // SSL handshake timeout
-        static constexpr std::chrono::seconds httpWrite{
-            3};  // HTTP write timeout
-        static constexpr std::chrono::seconds httpRead{3};  // HTTP read timeout
+        // TCP connection timeout
+        static constexpr std::chrono::seconds tcpConnect{8};
+        // SSL handshake timeout
+        static constexpr std::chrono::seconds tlsHandshake{8};
+        // HTTP write timeout
+        static constexpr std::chrono::seconds httpWrite{3};
+        // HTTP read timeout
+        static constexpr std::chrono::seconds httpRead{3};
+        // SSL shutdown timeout
+        static constexpr std::chrono::seconds tlsShutdown{2};
     };
 
     // Core application and networking components
@@ -130,12 +135,9 @@ private:
     std::shared_ptr<PeerFinder::Slot> slot_;
     request_type req_;
 
-    bool shutdown_ = false;           // Shutdown has been initiated
-    bool ioPending_ = false;          // Async I/O operation in progress
-    bool shutdownStarted_ = false;    // SSL shutdown in progress
-    bool handshakeComplete_ = false;  // SSL handshake completed successfully
-    ConnectionStep currentStep_ =
-        ConnectionStep::TcpConnect;  // Current connection phase
+    bool shutdown_ = false;   // Shutdown has been initiated
+    bool ioPending_ = false;  // Async I/O operation in progress
+    ConnectionStep currentStep_ = ConnectionStep::Init;
 
 public:
     /**
@@ -254,16 +256,20 @@ private:
     {
         switch (step)
         {
-            case ConnectAttempt::ConnectionStep::TcpConnect:
+            case ConnectionStep::Init:
+                return "Init";
+            case ConnectionStep::TcpConnect:
                 return "TcpConnect";
-            case ConnectAttempt::ConnectionStep::TlsHandshake:
+            case ConnectionStep::TlsHandshake:
                 return "TlsHandshake";
-            case ConnectAttempt::ConnectionStep::HttpWrite:
+            case ConnectionStep::HttpWrite:
                 return "HttpWrite";
-            case ConnectAttempt::ConnectionStep::HttpRead:
+            case ConnectionStep::HttpRead:
                 return "HttpRead";
-            case ConnectAttempt::ConnectionStep::Complete:
+            case ConnectionStep::Complete:
                 return "Complete";
+            case ConnectionStep::ShutdownStarted:
+                return "ShutdownStarted";
         }
         return "Unknown";
     };

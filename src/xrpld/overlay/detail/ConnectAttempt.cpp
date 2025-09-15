@@ -117,7 +117,6 @@ ConnectAttempt::shutdown()
         return;
 
     shutdown_ = true;
-
     boost::beast::get_lowest_layer(stream_).cancel();
 
     tryAsyncShutdown();
@@ -130,21 +129,24 @@ ConnectAttempt::tryAsyncShutdown()
         strand_.running_in_this_thread(),
         "ripple::ConnectAttempt::tryAsyncShutdown : strand in this thread");
 
-    if (!shutdown_ || shutdownStarted_)
+    if (!shutdown_ || currentStep_ == ConnectionStep::ShutdownStarted)
         return;
 
     if (ioPending_)
         return;
 
-    shutdownStarted_ = true;
     // gracefully shutdown the SSL socket, performing a shutdown handshake
-    if (handshakeComplete_)
+    if (currentStep_ != ConnectionStep::TcpConnect &&
+        currentStep_ != ConnectionStep::TlsHandshake)
+    {
+        setTimer(ConnectionStep::ShutdownStarted);
         return stream_.async_shutdown(bind_executor(
             strand_,
             std::bind(
                 &ConnectAttempt::onShutdown,
                 shared_from_this(),
                 std::placeholders::_1)));
+    }
 
     close();
 }
@@ -249,8 +251,12 @@ ConnectAttempt::setTimer(ConnectionStep step)
             case ConnectionStep::HttpRead:
                 stepTimeout = StepTimeouts::httpRead;
                 break;
+            case ConnectionStep::ShutdownStarted:
+                stepTimeout = StepTimeouts::tlsShutdown;
+                break;
             case ConnectionStep::Complete:
-                return;  // No timer needed for complete step
+            case ConnectionStep::Init:
+                return;  // No timer needed for init or complete step
         }
 
         // call to expires_after cancels previous timer
@@ -383,7 +389,7 @@ ConnectAttempt::onHandshake(error_code ec)
     if (ec)
         return fail("onHandshake", ec);
 
-    handshakeComplete_ = true;
+    setTimer(ConnectionStep::HttpWrite);
 
     // check if we connected to ourselves
     if (!overlay_.peerFinder().onConnected(
@@ -413,8 +419,6 @@ ConnectAttempt::onHandshake(error_code ec)
         return tryAsyncShutdown();
 
     ioPending_ = true;
-
-    setTimer(ConnectionStep::HttpWrite);
 
     boost::beast::http::async_write(
         stream_,
