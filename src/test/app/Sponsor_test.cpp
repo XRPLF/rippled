@@ -749,64 +749,133 @@ public:
         Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const bob("bob");
+        Account const gw("gw");
         Account const sponsor("sponsor");
+
+        auto const USD = gw["USD"];
 
         auto const reserve = env.current()->fees().reserve;
         auto const increment = env.current()->fees().increment;
 
-        env.fund(XRP(10000), alice, bob);
+        env.fund(XRP(10000), alice, bob, gw);
         env.fund(drops(reserve) + drops(increment) - drops(1), sponsor);
         env.close();
 
-        // check sponsor balance
-        env(check::create(alice, bob, XRP(1)),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor),
-            ter(tecINSUFFICIENT_RESERVE));
-
-        env(pay(alice, sponsor, drops(1)));
+        env.trust(USD(100), alice);
+        env.close();
+        env(pay(gw, alice, USD(100)));
         env.close();
 
-        // CheckCreate
-        auto const seq = env.seq(alice);
-        env(check::create(alice, bob, XRP(1)),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
+        {
+            BEAST_EXPECT(
+                env.balance(sponsor) < drops(reserve) + drops(increment));
+
+            // check sponsor balance
+            env(check::create(alice, bob, XRP(1)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+        }
+
+        env(pay(env.master, sponsor, drops(1)));
         env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        {
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
-        // CheckCancel
-        auto const checkId = keylet::check(alice, seq).key;
-        env(check::cancel(alice, checkId));
+            // CheckCreate -> CheckCancel
+            auto const seq = env.seq(alice);
+            env(check::create(alice, bob, XRP(1)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);  // RippleState + Check
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            auto const keylet = keylet::check(alice, seq);
+            BEAST_EXPECT(
+                env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
+
+            env(check::cancel(alice, keylet.key),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+
+        {
+            // CheckCreate -> CheckCash
+            auto const seq2 = env.seq(alice);
+            env(check::create(alice, bob, XRP(1)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);  // RippleState + Check
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // CheckCash
+            auto const checkId2 = keylet::check(alice, seq2).key;
+            env(check::cash(bob, checkId2, XRP(1)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
+            BEAST_EXPECT(ownerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+
+        env(pay(env.master, sponsor, drops(env.current()->fees().increment)));
         env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        // TODO: RippleState sponsor
+        // {
+        //     // CheckCreate -> CheckCash(CheckCashMakesTrustLine)
+        //     auto const seq2 = env.seq(alice);
+        //     env(check::create(alice, bob, USD(1)),
+        //         sponsor::as(sponsor, tfSponsorReserve),
+        //         sponsor::sig(sponsor));
+        //     env.close();
 
-        auto const seq2 = env.seq(alice);
-        env(check::create(alice, bob, XRP(1)),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+        //     BEAST_EXPECT(ownerCount(env, alice) == 2);  // RippleState +
+        //     Check BEAST_EXPECT(ownerCount(env, bob) == 0);
+        //     BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        //     BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+        //     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        //     auto const keylet = keylet::check(alice, seq2);
+        //     BEAST_EXPECT(
+        //         env.le(keylet)->getAccountID(sfSponsorAccount) ==
+        //         sponsor.id());
 
-        // CheckCash
-        auto const checkId2 = keylet::check(alice, seq2).key;
-        env(check::cash(bob, checkId2, XRP(1)));
-        env.close();
+        //     // CheckCash
+        //     env(check::cash(bob, keylet.key, USD(1)),
+        //         sponsor::as(sponsor, tfSponsorReserve),
+        //         sponsor::sig(sponsor));
+        //     env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        //     BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
+        //     BEAST_EXPECT(ownerCount(env, bob) == 1);    // RippleState
+        //     BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        //     BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+        //     BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        // }
     }
 
     void

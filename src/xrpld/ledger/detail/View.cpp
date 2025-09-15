@@ -1133,13 +1133,16 @@ adjustOwnerCount(
         {
             // modify sponsor's SponsoringOwnerCount
             std::uint32_t const current{
-                sponsorSle.value()->getFieldU32(sfSponsoringOwnerCount)};
-            AccountID const id = sponsorSle.value()->getAccountID(sfAccount);
+                (*sponsorSle)->getFieldU32(sfSponsoringOwnerCount)};
+            AccountID const id = (*sponsorSle)->getAccountID(sfAccount);
             std::uint32_t const adjusted =
                 confineOwnerCount(current, amount, id, j);
             view.adjustOwnerCountHook(id, current, adjusted);
-            sponsorSle.value()->setFieldU32(sfSponsoringOwnerCount, adjusted);
-            view.update(sponsorSle.value());
+            if (adjusted == 0)
+                (*sponsorSle)->makeFieldAbsent(sfSponsoringOwnerCount);
+            else
+                (*sponsorSle)->setFieldU32(sfSponsoringOwnerCount, adjusted);
+            view.update(*sponsorSle);
         }
         {
             // modify account's SponsoredOwnerCount
@@ -1150,7 +1153,10 @@ adjustOwnerCount(
             std::uint32_t const adjusted =
                 confineOwnerCount(current, amount, id, j);
             view.adjustOwnerCountHook(id, current, adjusted);
-            accountSle->setFieldU32(sfSponsoredOwnerCount, adjusted);
+            if (adjusted == 0)
+                accountSle->makeFieldAbsent(sfSponsoredOwnerCount);
+            else
+                accountSle->setFieldU32(sfSponsoredOwnerCount, adjusted);
             view.update(accountSle);
         }
     }
