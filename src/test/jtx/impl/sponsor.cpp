@@ -36,7 +36,8 @@ set(jtx::Account const& account,
     jtx::Account const& sponsee,
     uint32_t flags,
     std::optional<uint32_t> reserveCount,
-    std::optional<STAmount> feeAmount)
+    std::optional<STAmount> feeAmount,
+    std::optional<STAmount> maxFee)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipSet;
@@ -47,6 +48,43 @@ set(jtx::Account const& account,
         jv[sfReserveCount.jsonName] = *reserveCount;
     if (feeAmount)
         jv[sfFeeAmount.jsonName] = feeAmount->getJson(JsonOptions::none);
+    if (maxFee)
+        jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::none);
+    return jv;
+}
+
+Json::Value
+set_fee(
+    jtx::Account const& account,
+    jtx::Account const& sponsee,
+    uint32_t flags,
+    STAmount feeAmount,
+    std::optional<STAmount> maxFee)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::SponsorshipSet;
+    jv[jss::Account] = account.human();
+    jv[sfSponsee.jsonName] = sponsee.human();
+    jv[sfFlags.jsonName] = flags;
+    jv[sfFeeAmount.jsonName] = feeAmount.getJson(JsonOptions::none);
+    if (maxFee)
+        jv[sfMaxFee.jsonName] = maxFee->getJson(JsonOptions::none);
+    return jv;
+}
+
+Json::Value
+set_reserve(
+    jtx::Account const& account,
+    jtx::Account const& sponsee,
+    uint32_t flags,
+    uint32_t reserveCount)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::SponsorshipSet;
+    jv[jss::Account] = account.human();
+    jv[sfSponsee.jsonName] = sponsee.human();
+    jv[sfFlags.jsonName] = flags;
+    jv[sfReserveCount.jsonName] = reserveCount;
     return jv;
 }
 

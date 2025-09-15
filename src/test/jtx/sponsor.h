@@ -34,7 +34,23 @@ set(jtx::Account const& account,
     jtx::Account const& sponsee,
     std::uint32_t flags,
     std::optional<std::uint32_t> reserveCount = std::nullopt,
-    std::optional<STAmount> feeAmount = std::nullopt);
+    std::optional<STAmount> feeAmount = std::nullopt,
+    std::optional<STAmount> maxFee = std::nullopt);
+
+Json::Value
+set_fee(
+    jtx::Account const& account,
+    jtx::Account const& sponsee,
+    std::uint32_t flags,
+    STAmount feeAmount,
+    std::optional<STAmount> maxFee = std::nullopt);
+
+Json::Value
+set_reserve(
+    jtx::Account const& account,
+    jtx::Account const& sponsee,
+    std::uint32_t flags,
+    std::uint32_t reserveCount);
 
 Json::Value
 del(jtx::Account const& account, jtx::Account const& sponsee);

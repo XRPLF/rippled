@@ -118,24 +118,25 @@ public:
         env(sponsor::set(sponsor, sponsor, 0), ter(temMALFORMED));
 
         // Invalid feeAmount
-        env(sponsor::set(
-                sponsor, alice, tfSponsorshipClearRequireSignForFee, 0, XRP(1)),
+        env(sponsor::set_fee(
+                sponsor, alice, tfSponsorshipClearRequireSignForFee, XRP(1)),
             ter(temMALFORMED));
 
         for (auto amt : {XRP(-1), XRP(0), USD(1)})
         {
-            env(sponsor::set(sponsor, alice, 0, 1, amt), ter(temBAD_AMOUNT));
+            env(sponsor::set_fee(sponsor, alice, 0, amt), ter(temBAD_AMOUNT));
         }
 
         // Invalid reserveCount
-        env(sponsor::set(
+        env(sponsor::set_reserve(
                 sponsor, alice, tfSponsorshipClearRequireSignForReserve, 1),
             ter(temMALFORMED));
-        env(sponsor::set(sponsor, alice, 0, 0), ter(temMALFORMED));
+        env(sponsor::set_reserve(sponsor, alice, 0, 0), ter(temMALFORMED));
 
         // Invalid Delete operation
-        env(sponsor::set(sponsor, alice, tfDeleteObject, 1), ter(temMALFORMED));
-        env(sponsor::set(sponsor, alice, tfDeleteObject, std::nullopt, XRP(1)),
+        env(sponsor::set_reserve(sponsor, alice, tfDeleteObject, 1),
+            ter(temMALFORMED));
+        env(sponsor::set_fee(sponsor, alice, tfDeleteObject, XRP(1)),
             ter(temMALFORMED));
         // TODO: test MaxFee with tfDeleteObject
 
@@ -590,7 +591,7 @@ public:
                 BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
             }
 
-            env(sponsor::set(sponsor, alice, 0, std::nullopt, XRP(100)));
+            env(sponsor::set_fee(sponsor, alice, 0, XRP(100)));
             env.close();
 
             {
@@ -616,21 +617,51 @@ public:
 
             {
                 // insufficient balance to pay fee
-                auto aliceBalance = env.balance(alice);
-                auto bobBalance = env.balance(bob);
-                auto sponsorBalance = env.balance(sponsor);
-                auto sponsorFee = sponsorFeeBalance(sponsor, alice);
+                {
+                    // > FeeAmount
+                    auto aliceBalance = env.balance(alice);
+                    auto bobBalance = env.balance(bob);
+                    auto sponsorBalance = env.balance(sponsor);
+                    auto sponsorFee = sponsorFeeBalance(sponsor, alice);
 
-                env(pay(alice, bob, XRP(100)),
-                    fee(XRP(2000)),
-                    sponsor::as(sponsor, tfSponsorFee),
-                    ter(terINSUF_FEE_B));
+                    env(pay(alice, bob, XRP(100)),
+                        fee(XRP(100) + drops(1)),
+                        sponsor::as(sponsor, tfSponsorFee),
+                        ter(terINSUF_FEE_B));
+                    env.close();
+
+                    BEAST_EXPECT(env.balance(alice) == aliceBalance);
+                    BEAST_EXPECT(env.balance(bob) == bobBalance);
+                    BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
+                    BEAST_EXPECT(
+                        sponsorFeeBalance(sponsor, alice) == sponsorFee);
+                }
+
+                // reset FeeAmount and MaxFee
+                env(sponsor::del(sponsor, alice));
+                env.close();
+                env(sponsor::set_fee(sponsor, alice, 0, XRP(10), XRP(1)));
                 env.close();
 
-                BEAST_EXPECT(env.balance(alice) == aliceBalance);
-                BEAST_EXPECT(env.balance(bob) == bobBalance);
-                BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
-                BEAST_EXPECT(sponsorFeeBalance(sponsor, alice) == sponsorFee);
+                {
+                    // > MaxFee
+                    auto aliceBalance = env.balance(alice);
+                    auto bobBalance = env.balance(bob);
+                    auto sponsorBalance = env.balance(sponsor);
+                    auto sponsorFee = sponsorFeeBalance(sponsor, alice);
+
+                    env(pay(alice, bob, XRP(100)),
+                        fee(XRP(1) + drops(1)),
+                        sponsor::as(sponsor, tfSponsorFee),
+                        ter(terINSUF_FEE_B));
+                    env.close();
+
+                    BEAST_EXPECT(env.balance(alice) == aliceBalance);
+                    BEAST_EXPECT(env.balance(bob) == bobBalance);
+                    BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
+                    BEAST_EXPECT(
+                        sponsorFeeBalance(sponsor, alice) == sponsorFee);
+                }
             }
 
             {
@@ -640,7 +671,7 @@ public:
                 auto bobBalance = env.balance(bob);
                 auto sponsorBalance = env.balance(sponsor);
                 auto sponsorFee = sponsorFeeBalance(sponsor, alice);
-                auto const feeAmt = XRP(10);
+                auto const feeAmt = XRP(1);
 
                 env(pay(alice, bob, XRP(20000)),
                     fee(feeAmt),
