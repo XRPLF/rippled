@@ -92,12 +92,12 @@ jobs:
 
   check-levelization:
     needs: should-run
-    if: ${{ needs.should-run.outputs.go == 'true' }}
+    if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/check-levelization.yml
 
   build-test:
     needs: should-run
-    if: ${{ needs.should-run.outputs.go == 'true' }}
+    if: needs.should-run.outputs.go == 'true'
     uses: ./.github/workflows/build-test.yml
     strategy:
       matrix:
