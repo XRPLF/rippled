@@ -2060,22 +2060,18 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
-            {"assets outstanding must not exceed assets maximum"},
+            {"set assets outstanding must not exceed assets maximum"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
                 return adjust(
                     ac.view(),
                     keylet,
-                    args(A2.id(), -200, [&](Adjustements& sample) {
+                    args(A2.id(), 0, [&](Adjustements& sample) {
                         sample.assetsMaximum = 1;
                     }));
             },
             XRPAmount{},
-            STTx{
-                ttVAULT_WITHDRAW,
-                [](STObject& tx) {
-                    tx.setFieldAmount(sfAmount, XRPAmount(200));
-                }},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp,
             TxAccount::A2);
@@ -2126,6 +2122,7 @@ class Invariants_test : public beast::unit_test::suite
             {
                 "created vault must be empty",
                 "assets maximum must be positive",
+                "create operation must not have updated a vault",
                 "shares issuer must be vault pseudo-account",
             },
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
@@ -2170,6 +2167,27 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseXrp);
+
+        doInvariantCheck(
+            {"deposit assets outstanding must not exceed assets maximum"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                return adjust(
+                    ac.view(),
+                    keylet,
+                    args(A2.id(), 200, [&](Adjustements& sample) {
+                        sample.assetsMaximum = 1;
+                    }));
+            },
+            XRPAmount{},
+            STTx{
+                ttVAULT_DEPOSIT,
+                [](STObject& tx) {
+                    tx.setFieldAmount(sfAmount, XRPAmount(200));
+                }},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
 
         // This really convoluted unit tests makes the zero balance on the
         // depositor, by sending them the same amount as the transaction fee.

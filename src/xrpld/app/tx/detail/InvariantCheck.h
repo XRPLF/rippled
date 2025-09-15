@@ -707,7 +707,7 @@ private:
 };
 
 /**
- * @brief Invariants: Vault object and MPTokenIssuance for vaultshares
+ * @brief Invariants: Vault object and MPTokenIssuance for vault shares
  *
  * - vault deleted and vault created is empty
  * - vault must have MPTokenIssuance for shares

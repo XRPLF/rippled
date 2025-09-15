@@ -2197,7 +2197,7 @@ ValidVault::finalize(
         // At this moment we only know a vault is being deleted and there
         // might be some MPTokenIssuance objects which are deleted in the
         // same transaction. Find the one matching this vault.
-        auto deletedShares = [&]() -> std::optional<Shares> {
+        auto const deletedShares = [&]() -> std::optional<Shares> {
             for (auto const& e : beforeMPTs_)
             {
                 if (e.share.getMptID() == beforeVault_->shareMPTID)
@@ -2270,7 +2270,7 @@ ValidVault::finalize(
             return false;  // That's all we can do here
         }
 
-        if (updatedShares && updatedShares->sharesTotal == 0)
+        if (updatedShares->sharesTotal == 0)
         {
             if (afterVault_->assetsTotal != zero)
             {
@@ -2322,15 +2322,6 @@ ValidVault::finalize(
                 << "Invariant failed: assets maximum must be positive";
             result = false;
         }
-        else if (
-            afterVault_->assetsMaximum > zero &&
-            afterVault_->assetsTotal > afterVault_->assetsMaximum)
-        {
-            JLOG(j.fatal())
-                << "Invariant failed: assets outstanding must not exceed "
-                   "assets maximum";
-            result = false;
-        }
     }
 
     if (tx.getTxnType() == ttVAULT_CREATE ||    //
@@ -2373,7 +2364,7 @@ ValidVault::finalize(
         }
 
         auto const beforeShares = [&]() -> std::optional<Shares> {
-            for (auto& e : beforeMPTs_)
+            for (auto const& e : beforeMPTs_)
             {
                 if (e.share.getMptID() == beforeVault_->shareMPTID)
                     return std::move(e);
@@ -2393,7 +2384,7 @@ ValidVault::finalize(
 
         auto const& vaultAsset = afterVault_->asset;
         auto const balanceAssets = [&](AccountID id) -> std::optional<Number> {
-            auto const it = [&] {
+            auto const it = [&]() {
                 if (vaultAsset.native())
                     return balances_.find(keylet::account(id).key);
                 else if (vaultAsset.holds<Issue>())
@@ -2439,19 +2430,27 @@ ValidVault::finalize(
                 case ttVAULT_CREATE: {
                     bool result = true;
 
+                    if (beforeVault_)
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: create operation must not "
+                               "have updated a vault";
+                        result = false;
+                    }
+
                     if (afterVault_->assetsAvailable != zero ||
                         afterVault_->assetsTotal != zero ||
                         afterVault_->lossUnrealized != zero ||
                         updatedShares->sharesTotal != 0)
                     {
-                        JLOG(j.fatal()) << "Invariant failed: created "
-                                           "vault must be empty";
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: created vault must be empty";
                         result = false;
                     }
 
                     if (afterVault_->pseudoId != updatedShares->issuer)
                     {
-                        JLOG(j.fatal())
+                        JLOG(j.fatal())  //
                             << "Invariant failed: shares issuer must be "
                                "vault pseudo-account";
                         result = false;
@@ -2478,6 +2477,15 @@ ValidVault::finalize(
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: set must not change assets "
                             "outstanding";
+                        result = false;
+                    }
+
+                    if (afterVault_->assetsMaximum > zero &&
+                        afterVault_->assetsTotal > afterVault_->assetsMaximum)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: set assets outstanding must not "
+                            "exceed assets maximum";
                         result = false;
                     }
 
@@ -2577,6 +2585,15 @@ ValidVault::finalize(
                                 "and depositor balance by equal amount";
                             result = false;
                         }
+                    }
+
+                    if (afterVault_->assetsMaximum > zero &&
+                        afterVault_->assetsTotal > afterVault_->assetsMaximum)
+                    {
+                        JLOG(j.fatal()) <<  //
+                            "Invariant failed: deposit assets outstanding must "
+                            "not exceed assets maximum";
+                        result = false;
                     }
 
                     auto const accountShares = balanceShares(tx[sfAccount]);
