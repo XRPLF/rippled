@@ -111,7 +111,7 @@ jobs:
     needs:
       - should-run
       - build-test
-    if: ${{ needs.should-run.outputs.go == 'true' }}
+    if: ${{ needs.should-run.outputs.go == 'true' && contains(fromJSON('["release", "master"]'), github.ref_name) }}
     uses: ./.github/workflows/notify-clio.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
