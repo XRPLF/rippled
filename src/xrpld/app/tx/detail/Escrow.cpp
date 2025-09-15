@@ -1013,8 +1013,13 @@ escrowUnlockApplyHelper<MPTIssue>(
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
-
-    return rippleUnlockEscrowMPT(view, sender, receiver, finalAmt, journal);
+    return rippleUnlockEscrowMPT(
+        view,
+        sender,
+        receiver,
+        finalAmt,
+        view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
+        journal);
 }
 
 TER
