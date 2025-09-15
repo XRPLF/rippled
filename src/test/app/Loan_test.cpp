@@ -34,6 +34,7 @@
 #include <test/jtx/vault.h>
 
 #include <xrpld/app/misc/LendingHelpers.h>
+#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/detail/LoanSet.h>
 
 #include <xrpl/basics/base_uint.h>
