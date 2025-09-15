@@ -2437,7 +2437,6 @@ class Loan_test : public beast::unit_test::suite
                 "FF924CD18A236C2B49CF8E80A351CEAC6A10171DC9F110025646894FECF83F"
                 "5C";
             txJson[sfPrincipalRequested] = "100000000";
-            txJson[sfStartDate] = 807730340;
             txJson[sfPaymentTotal] = 10000;
             txJson[sfPaymentInterval] = 3600;
             txJson[sfGracePeriod] = 300;
@@ -2454,9 +2453,10 @@ class Loan_test : public beast::unit_test::suite
             }();
             auto const jSignBorrower =
                 env.rpc("json", "sign", to_string(borrowerSignParams));
-            BEAST_EXPECT(
+            BEAST_EXPECTS(
                 jSignBorrower.isMember(jss::result) &&
-                jSignBorrower[jss::result].isMember(jss::tx_json));
+                    jSignBorrower[jss::result].isMember(jss::tx_json),
+                to_string(jSignBorrower));
             auto const txBorrowerSignResult =
                 jSignBorrower[jss::result][jss::tx_json];
             auto const txBorrowerSignBlob =
@@ -2550,7 +2550,6 @@ class Loan_test : public beast::unit_test::suite
                 "FF924CD18A236C2B49CF8E80A351CEAC6A10171DC9F110025646894FECF83F"
                 "5C";
             txJson[sfPrincipalRequested] = "100000000";
-            txJson[sfStartDate] = 807730340;
             txJson[sfPaymentTotal] = 10000;
             txJson[sfPaymentInterval] = 3600;
             txJson[sfGracePeriod] = 300;
