@@ -1153,6 +1153,13 @@ public:
             auto const requiredFee = drops(env.current()->fees().increment);
             env(acctdelete(alice, bob), fee(requiredFee), ter(tesSUCCESS));
             env.close();
+
+            BEAST_EXPECT(!env.le(keylet));
+            auto const jv = sponsor::ledgerEntry(env, sponsor, alice);
+            BEAST_EXPECT(
+                jv.isObject() && jv.isMember(jss::result) &&
+                jv[jss::result].isMember(jss::error) &&
+                jv[jss::result][jss::error] == "entryNotFound");
         }
 
         {
@@ -1229,7 +1236,7 @@ public:
         testSponsorReserve();
         testDisallowIncoming();
 
-        // testAccountDelete();
+        testAccountDelete();
     }
 };
 

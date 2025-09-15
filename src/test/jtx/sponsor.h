@@ -118,6 +118,12 @@ public:
     operator()(jtx::Env&, jtx::JTx& jtx) const;
 };
 
+Json::Value
+ledgerEntry(
+    jtx::Env& env,
+    jtx::Account const& sponsor,
+    jtx::Account const& sponsee);
+
 }  // namespace sponsor
 }  // namespace jtx
 }  // namespace test

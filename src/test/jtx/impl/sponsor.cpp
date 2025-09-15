@@ -193,6 +193,19 @@ msig::operator()(Env& env, JTx& jt) const
     };
 }
 
+Json::Value
+ledgerEntry(
+    jtx::Env& env,
+    jtx::Account const& sponsor,
+    jtx::Account const& sponsee)
+{
+    Json::Value jvParams;
+    jvParams[jss::ledger_index] = jss::validated;
+    jvParams[jss::sponsorship][jss::sponsor] = sponsor.human();
+    jvParams[jss::sponsorship][jss::sponsee] = sponsee.human();
+    return env.rpc("json", "ledger_entry", to_string(jvParams));
+}
+
 }  // namespace sponsor
 }  // namespace jtx
 }  // namespace test

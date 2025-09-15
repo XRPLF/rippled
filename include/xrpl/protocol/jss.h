@@ -581,6 +581,7 @@ JSS(source_amount);           // in: PathRequest, RipplePathFind
 JSS(source_currencies);       // in: PathRequest, RipplePathFind
 JSS(source_tag);              // out: AccountChannels
 JSS(sponsee);                 // in: LedgerEntry
+JSS(sponsor);                 // in: LedgerEntry
 JSS(stand_alone);             // out: NetworkOPs
 JSS(standard_deviation);      // out: get_aggregate_price
 JSS(start);                   // in: TxHistory
