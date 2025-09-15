@@ -273,11 +273,11 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
+    auto const& amountAsset = dstAmount.asset();
     // post-amendment: disallow cross currency payments for PaymentMint and
     // PaymentBurn
     if (view.rules().enabled(fixDelegateV1_1))
     {
-        auto const& amountAsset = dstAmount.asset();
         if (tx.isFieldPresent(sfSendMax) &&
             tx[sfSendMax].asset() != amountAsset)
             return tecNO_DELEGATE_PERMISSION;
@@ -299,9 +299,8 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     if (dstAmount.holds<MPTIssue>())
         return tefEXCEPTION;
 
-    auto const& amountIssue = dstAmount.issue();
-    if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
-        amountIssue.account == tx[sfAccount])
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfAccount])
         return tesSUCCESS;
 
     if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
