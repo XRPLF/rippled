@@ -110,7 +110,7 @@ public:
     getMentionedAccounts() const;
 
     static Blob
-    getSigningData(STTx const& that);
+    getSigningData(STObject const& that);
 
     static Blob
     getSponsorSigningData(STTx const& that);

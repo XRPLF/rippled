@@ -186,7 +186,7 @@ STTx::getMentionedAccounts() const
 }
 
 Blob
-STTx::getSigningData(STTx const& that)
+STTx::getSigningData(STObject const& that)
 {
     Serializer s;
     s.add32(HashPrefix::txSign);
@@ -507,7 +507,7 @@ multiSignHelper(
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad Signers.
     if (!signerObj.isFieldPresent(sfSigners))
-        return Unexpected("Empty Signers.");
+        return Unexpected("Empty SigningPubKey.");
 
     // We don't allow both an sfSigners and an sfTxnSignature.  Both fields
     // being present would indicate that the transaction is signed both ways.

@@ -47,7 +47,7 @@ void
 sign(Json::Value& jv, Account const& account)
 {
     jv[jss::SigningPubKey] = strHex(account.pk().slice());
-    auto const blob = STTx::getSigningData(STTx{parse(jv)});
+    auto const blob = STTx::getSigningData(parse(jv));
     auto const sig = ripple::sign(account.pk(), account.sk(), makeSlice(blob));
     jv[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
 }

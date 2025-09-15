@@ -2313,6 +2313,15 @@ class MPToken_test : public beast::unit_test::suite
                 reward = STAmount{sfSignatureReward, USD(10)};
                 minAmount = STAmount{sfMinAccountCreateAmount, mpt};
             }
+            // SponsorshipSet
+            {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::SponsorshipSet;
+                jv[jss::Account] = alice.human();
+                jv[sfSponsee.fieldName] = carol.human();
+                jv[sfFeeAmount.fieldName] = mpt.getJson(JsonOptions::none);
+                test(jv, sfFeeAmount.fieldName.c_str());
+            }
         }
         BEAST_EXPECT(txWithAmounts.empty());
     }
