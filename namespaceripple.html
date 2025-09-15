@@ -739,6 +739,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1MPTIssue.html">MPTIssue</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1MPTMutabilityFlags.html">MPTMutabilityFlags</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1MPTokenAuthorize.html">MPTokenAuthorize</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1MPTokenIssuanceCreate.html">MPTokenIssuanceCreate</a></td></tr>
@@ -2048,6 +2050,16 @@ Enumerations</h2></td></tr>
 , <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a19d7c0a35af977d3e224121eeea81c20">lsfMPTCanTrade</a> = 0x00000010
 , <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a17ad00a34e73590b1c0d5f453eeba72f">lsfMPTCanTransfer</a> = 0x00000020
 , <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a6397c1fa03da2239610cb4d1a45153bd">lsfMPTCanClawback</a> = 0x00000040
+, <br />
+&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a073b5c697d3c8d6c84ab6cc8afd58bed">lsfMPTCanMutateCanLock</a> = 0x00000002
+, <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ad8f9859f31f2b082934bb9ba24410473">lsfMPTCanMutateRequireAuth</a> = 0x00000004
+, <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac89091dead679e074296d38bf4e6fd0d">lsfMPTCanMutateCanEscrow</a> = 0x00000008
+, <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac9cdfbf9e5979497af330370815f2030">lsfMPTCanMutateCanTrade</a> = 0x00000010
+, <br />
+&#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a80fc52a9532095c4ca193b8d1ff70278">lsfMPTCanMutateCanTransfer</a> = 0x00000020
+, <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a386afabbd304e8af1ad7156d395db7e3">lsfMPTCanMutateCanClawback</a> = 0x00000040
+, <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a114bf31fdac3bf102d46ea1f03cdf1a5">lsfMPTCanMutateMetadata</a> = 0x00010000
+, <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af9834661dbedbea057c38f998bf60b5e">lsfMPTCanMutateTransferFee</a> = 0x00020000
 , <br />
 &#160;&#160;<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5aaccd1c78b740e4c3ecc68cfe260bfeff">lsfMPTAuthorized</a> = 0x00000002
 , <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ad1b50e764d4f9df1a41eb52dcefb9b6f">lsfAccepted</a> = 0x00010000
@@ -5889,6 +5901,24 @@ Variables</h2></td></tr>
 <tr class="separator:af034d4499b815c6e3ae25cf6d03ae2f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4b6ea030ccea3c675a0cf60bff27fa37" id="r_a4b6ea030ccea3c675a0cf60bff27fa37"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a4b6ea030ccea3c675a0cf60bff27fa37">tfMPTokenIssuanceCreateMask</a></td></tr>
 <tr class="separator:a4b6ea030ccea3c675a0cf60bff27fa37"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5aff9a97e0075f9069ed5ebfc7d73955" id="r_a5aff9a97e0075f9069ed5ebfc7d73955"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5aff9a97e0075f9069ed5ebfc7d73955">tfMPTCanMutateCanLock</a> = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a073b5c697d3c8d6c84ab6cc8afd58bed">lsfMPTCanMutateCanLock</a></td></tr>
+<tr class="separator:a5aff9a97e0075f9069ed5ebfc7d73955"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5dae4b0dfb02285c8d23d0ae92a5aee" id="r_ae5dae4b0dfb02285c8d23d0ae92a5aee"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae5dae4b0dfb02285c8d23d0ae92a5aee">tfMPTCanMutateRequireAuth</a> = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ad8f9859f31f2b082934bb9ba24410473">lsfMPTCanMutateRequireAuth</a></td></tr>
+<tr class="separator:ae5dae4b0dfb02285c8d23d0ae92a5aee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a489e2c39b614b124735dfce6d695ce90" id="r_a489e2c39b614b124735dfce6d695ce90"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a489e2c39b614b124735dfce6d695ce90">tfMPTCanMutateCanEscrow</a> = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac89091dead679e074296d38bf4e6fd0d">lsfMPTCanMutateCanEscrow</a></td></tr>
+<tr class="separator:a489e2c39b614b124735dfce6d695ce90"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7bd0dadefc098a7eb7c5b2648b251ce4" id="r_a7bd0dadefc098a7eb7c5b2648b251ce4"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a7bd0dadefc098a7eb7c5b2648b251ce4">tfMPTCanMutateCanTrade</a> = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac9cdfbf9e5979497af330370815f2030">lsfMPTCanMutateCanTrade</a></td></tr>
+<tr class="separator:a7bd0dadefc098a7eb7c5b2648b251ce4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a38e4ea77cc58ca81787cb0508b0016" id="r_a6a38e4ea77cc58ca81787cb0508b0016"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6a38e4ea77cc58ca81787cb0508b0016">tfMPTCanMutateCanTransfer</a> = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a80fc52a9532095c4ca193b8d1ff70278">lsfMPTCanMutateCanTransfer</a></td></tr>
+<tr class="separator:a6a38e4ea77cc58ca81787cb0508b0016"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc9fbbaf5c5160a4c6bad3d6b3ff8290" id="r_abc9fbbaf5c5160a4c6bad3d6b3ff8290"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abc9fbbaf5c5160a4c6bad3d6b3ff8290">tfMPTCanMutateCanClawback</a> = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a386afabbd304e8af1ad7156d395db7e3">lsfMPTCanMutateCanClawback</a></td></tr>
+<tr class="separator:abc9fbbaf5c5160a4c6bad3d6b3ff8290"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36bcbae653647b1e7e58f7bcbe959cfa" id="r_a36bcbae653647b1e7e58f7bcbe959cfa"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a36bcbae653647b1e7e58f7bcbe959cfa">tfMPTCanMutateMetadata</a> = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a114bf31fdac3bf102d46ea1f03cdf1a5">lsfMPTCanMutateMetadata</a></td></tr>
+<tr class="separator:a36bcbae653647b1e7e58f7bcbe959cfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6bed8d81652828f81f82ce80c9e2c680" id="r_a6bed8d81652828f81f82ce80c9e2c680"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6bed8d81652828f81f82ce80c9e2c680">tfMPTCanMutateTransferFee</a> = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af9834661dbedbea057c38f998bf60b5e">lsfMPTCanMutateTransferFee</a></td></tr>
+<tr class="separator:a6bed8d81652828f81f82ce80c9e2c680"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae96530894a453f4d04775b43991e7873" id="r_ae96530894a453f4d04775b43991e7873"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae96530894a453f4d04775b43991e7873">tfMPTokenIssuanceCreateMutableMask</a></td></tr>
+<tr class="separator:ae96530894a453f4d04775b43991e7873"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a879ff786afc09842952c6cbca93d46a8" id="r_a879ff786afc09842952c6cbca93d46a8"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a879ff786afc09842952c6cbca93d46a8">tfMPTUnauthorize</a> = 0x00000001</td></tr>
 <tr class="separator:a879ff786afc09842952c6cbca93d46a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5542d12503e037a16ead08a51dc41aab" id="r_a5542d12503e037a16ead08a51dc41aab"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5542d12503e037a16ead08a51dc41aab">tfMPTokenAuthorizeMask</a> = ~(<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="el" href="namespaceripple.html#a879ff786afc09842952c6cbca93d46a8">tfMPTUnauthorize</a>)</td></tr>
@@ -5901,6 +5931,32 @@ Variables</h2></td></tr>
 <tr class="separator:a038ff05525ff9886aa2a38ee41c65028"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a12b6820cfa4e831196498f11f10982b8" id="r_a12b6820cfa4e831196498f11f10982b8"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a12b6820cfa4e831196498f11f10982b8">tfMPTokenIssuanceSetPermissionMask</a> = ~(<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="el" href="namespaceripple.html#aa361223d1f07f3e0838be875704f25c2">tfMPTLock</a> | <a class="el" href="namespaceripple.html#a421521e70103cd22aad879633cc92ecd">tfMPTUnlock</a>)</td></tr>
 <tr class="separator:a12b6820cfa4e831196498f11f10982b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae71b999784c2bbe91c70db4799844eca" id="r_ae71b999784c2bbe91c70db4799844eca"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae71b999784c2bbe91c70db4799844eca">tfMPTSetCanLock</a> = 0x00000001</td></tr>
+<tr class="separator:ae71b999784c2bbe91c70db4799844eca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2563c3c82aa6c03f131cf15815377e84" id="r_a2563c3c82aa6c03f131cf15815377e84"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2563c3c82aa6c03f131cf15815377e84">tfMPTClearCanLock</a> = 0x00000002</td></tr>
+<tr class="separator:a2563c3c82aa6c03f131cf15815377e84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3269812abb7bd6867b32842c867add06" id="r_a3269812abb7bd6867b32842c867add06"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3269812abb7bd6867b32842c867add06">tfMPTSetRequireAuth</a> = 0x00000004</td></tr>
+<tr class="separator:a3269812abb7bd6867b32842c867add06"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae9a3c380fc6364d134d7c2ad7953f87f" id="r_ae9a3c380fc6364d134d7c2ad7953f87f"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae9a3c380fc6364d134d7c2ad7953f87f">tfMPTClearRequireAuth</a> = 0x00000008</td></tr>
+<tr class="separator:ae9a3c380fc6364d134d7c2ad7953f87f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a630363d55fd819a98fcf9d147612b428" id="r_a630363d55fd819a98fcf9d147612b428"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a630363d55fd819a98fcf9d147612b428">tfMPTSetCanEscrow</a> = 0x00000010</td></tr>
+<tr class="separator:a630363d55fd819a98fcf9d147612b428"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2df85fe24f8e480b4975f7cec50c978b" id="r_a2df85fe24f8e480b4975f7cec50c978b"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2df85fe24f8e480b4975f7cec50c978b">tfMPTClearCanEscrow</a> = 0x00000020</td></tr>
+<tr class="separator:a2df85fe24f8e480b4975f7cec50c978b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a839c6009af9312226b8d6a1b4008a0a6" id="r_a839c6009af9312226b8d6a1b4008a0a6"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a839c6009af9312226b8d6a1b4008a0a6">tfMPTSetCanTrade</a> = 0x00000040</td></tr>
+<tr class="separator:a839c6009af9312226b8d6a1b4008a0a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48504de6ae7dab7d19d92fe58c3ccb00" id="r_a48504de6ae7dab7d19d92fe58c3ccb00"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a48504de6ae7dab7d19d92fe58c3ccb00">tfMPTClearCanTrade</a> = 0x00000080</td></tr>
+<tr class="separator:a48504de6ae7dab7d19d92fe58c3ccb00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f34a25e3e353b41c2ef5bb4c9dce905" id="r_a5f34a25e3e353b41c2ef5bb4c9dce905"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5f34a25e3e353b41c2ef5bb4c9dce905">tfMPTSetCanTransfer</a> = 0x00000100</td></tr>
+<tr class="separator:a5f34a25e3e353b41c2ef5bb4c9dce905"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a377f2f2601d6836244c3e34d553c9d3e" id="r_a377f2f2601d6836244c3e34d553c9d3e"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a377f2f2601d6836244c3e34d553c9d3e">tfMPTClearCanTransfer</a> = 0x00000200</td></tr>
+<tr class="separator:a377f2f2601d6836244c3e34d553c9d3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8b5791667a67b49363f4ab6ee7d7763f" id="r_a8b5791667a67b49363f4ab6ee7d7763f"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8b5791667a67b49363f4ab6ee7d7763f">tfMPTSetCanClawback</a> = 0x00000400</td></tr>
+<tr class="separator:a8b5791667a67b49363f4ab6ee7d7763f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9abef6e30f65ccb1cef8778a5619b99c" id="r_a9abef6e30f65ccb1cef8778a5619b99c"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9abef6e30f65ccb1cef8778a5619b99c">tfMPTClearCanClawback</a> = 0x00000800</td></tr>
+<tr class="separator:a9abef6e30f65ccb1cef8778a5619b99c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe5d58b0652dcfdabc161d5cea015569" id="r_abe5d58b0652dcfdabc161d5cea015569"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abe5d58b0652dcfdabc161d5cea015569">tfMPTokenIssuanceSetMutableMask</a></td></tr>
+<tr class="separator:abe5d58b0652dcfdabc161d5cea015569"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc96fabc7c508df54955759791f31067" id="r_afc96fabc7c508df54955759791f31067"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afc96fabc7c508df54955759791f31067">tfMPTokenIssuanceDestroyMask</a> = ~<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a></td></tr>
 <tr class="separator:afc96fabc7c508df54955759791f31067"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af8ea957ca07e1efe06565b5417f385ea" id="r_af8ea957ca07e1efe06565b5417f385ea"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af8ea957ca07e1efe06565b5417f385ea">tfNFTokenMintMask</a></td></tr>
@@ -6066,6 +6122,8 @@ Variables</h2></td></tr>
 <tr class="separator:ab2711b68b31e3391ad2e8203abf716b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74fe9492132be2c47b97e7bb4de18cb8" id="r_a74fe9492132be2c47b97e7bb4de18cb8"><td class="memItemLeft" align="right" valign="top">constexpr <a class="el" href="namespaceripple.html#a79683ec651b1658886d9c9ce8434f972">HashRouterFlags</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a74fe9492132be2c47b97e7bb4de18cb8">SF_CF_VALID</a> = <a class="el" href="namespaceripple.html#a79683ec651b1658886d9c9ce8434f972a1492bf6d7fc2ce461a9399ecbca58717">HashRouterFlags::PRIVATE6</a></td></tr>
 <tr class="separator:a74fe9492132be2c47b97e7bb4de18cb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6613339b5f0c46cdf4b2523adf564de" id="r_af6613339b5f0c46cdf4b2523adf564de"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="el" href="structripple_1_1MPTMutabilityFlags.html">MPTMutabilityFlags</a>, 6 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af6613339b5f0c46cdf4b2523adf564de">mptMutabilityFlags</a></td></tr>
+<tr class="separator:af6613339b5f0c46cdf4b2523adf564de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af57f046893fb23af18bd13e423714a17" id="r_af57f046893fb23af18bd13e423714a17"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af57f046893fb23af18bd13e423714a17">defaultSignerListID_</a> = 0</td></tr>
 <tr class="separator:af57f046893fb23af18bd13e423714a17"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25c9defcdfda1f87e16cd9b20563f37d" id="r_a25c9defcdfda1f87e16cd9b20563f37d"><td class="memItemLeft" align="right" valign="top">constexpr size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a25c9defcdfda1f87e16cd9b20563f37d">xbridgeMaxAccountCreateClaims</a> = 128</td></tr>
@@ -8732,6 +8790,14 @@ ledger.
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a19d7c0a35af977d3e224121eeea81c20" name="a4a9c7b33fef9015d6406302ef80b63c5a19d7c0a35af977d3e224121eeea81c20"></a>lsfMPTCanTrade&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a17ad00a34e73590b1c0d5f453eeba72f" name="a4a9c7b33fef9015d6406302ef80b63c5a17ad00a34e73590b1c0d5f453eeba72f"></a>lsfMPTCanTransfer&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a6397c1fa03da2239610cb4d1a45153bd" name="a4a9c7b33fef9015d6406302ef80b63c5a6397c1fa03da2239610cb4d1a45153bd"></a>lsfMPTCanClawback&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a073b5c697d3c8d6c84ab6cc8afd58bed" name="a4a9c7b33fef9015d6406302ef80b63c5a073b5c697d3c8d6c84ab6cc8afd58bed"></a>lsfMPTCanMutateCanLock&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ad8f9859f31f2b082934bb9ba24410473" name="a4a9c7b33fef9015d6406302ef80b63c5ad8f9859f31f2b082934bb9ba24410473"></a>lsfMPTCanMutateRequireAuth&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ac89091dead679e074296d38bf4e6fd0d" name="a4a9c7b33fef9015d6406302ef80b63c5ac89091dead679e074296d38bf4e6fd0d"></a>lsfMPTCanMutateCanEscrow&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ac9cdfbf9e5979497af330370815f2030" name="a4a9c7b33fef9015d6406302ef80b63c5ac9cdfbf9e5979497af330370815f2030"></a>lsfMPTCanMutateCanTrade&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a80fc52a9532095c4ca193b8d1ff70278" name="a4a9c7b33fef9015d6406302ef80b63c5a80fc52a9532095c4ca193b8d1ff70278"></a>lsfMPTCanMutateCanTransfer&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a386afabbd304e8af1ad7156d395db7e3" name="a4a9c7b33fef9015d6406302ef80b63c5a386afabbd304e8af1ad7156d395db7e3"></a>lsfMPTCanMutateCanClawback&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a114bf31fdac3bf102d46ea1f03cdf1a5" name="a4a9c7b33fef9015d6406302ef80b63c5a114bf31fdac3bf102d46ea1f03cdf1a5"></a>lsfMPTCanMutateMetadata&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5af9834661dbedbea057c38f998bf60b5e" name="a4a9c7b33fef9015d6406302ef80b63c5af9834661dbedbea057c38f998bf60b5e"></a>lsfMPTCanMutateTransferFee&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5aaccd1c78b740e4c3ecc68cfe260bfeff" name="a4a9c7b33fef9015d6406302ef80b63c5aaccd1c78b740e4c3ecc68cfe260bfeff"></a>lsfMPTAuthorized&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5ad1b50e764d4f9df1a41eb52dcefb9b6f" name="a4a9c7b33fef9015d6406302ef80b63c5ad1b50e764d4f9df1a41eb52dcefb9b6f"></a>lsfAccepted&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a4a9c7b33fef9015d6406302ef80b63c5a7d4b13007c5996dfc0fac212a15cdf22" name="a4a9c7b33fef9015d6406302ef80b63c5a7d4b13007c5996dfc0fac212a15cdf22"></a>lsfVaultPrivate&#160;</td><td class="fielddoc"></td></tr>
@@ -53506,6 +53572,233 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
+<a id="a5aff9a97e0075f9069ed5ebfc7d73955" name="a5aff9a97e0075f9069ed5ebfc7d73955"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5aff9a97e0075f9069ed5ebfc7d73955">&#9670;&#160;</a></span>tfMPTCanMutateCanLock</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTCanMutateCanLock = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a073b5c697d3c8d6c84ab6cc8afd58bed">lsfMPTCanMutateCanLock</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00156">156</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="ae5dae4b0dfb02285c8d23d0ae92a5aee" name="ae5dae4b0dfb02285c8d23d0ae92a5aee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5dae4b0dfb02285c8d23d0ae92a5aee">&#9670;&#160;</a></span>tfMPTCanMutateRequireAuth</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTCanMutateRequireAuth = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ad8f9859f31f2b082934bb9ba24410473">lsfMPTCanMutateRequireAuth</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00157">157</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a489e2c39b614b124735dfce6d695ce90" name="a489e2c39b614b124735dfce6d695ce90"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a489e2c39b614b124735dfce6d695ce90">&#9670;&#160;</a></span>tfMPTCanMutateCanEscrow</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTCanMutateCanEscrow = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac89091dead679e074296d38bf4e6fd0d">lsfMPTCanMutateCanEscrow</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00158">158</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a7bd0dadefc098a7eb7c5b2648b251ce4" name="a7bd0dadefc098a7eb7c5b2648b251ce4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7bd0dadefc098a7eb7c5b2648b251ce4">&#9670;&#160;</a></span>tfMPTCanMutateCanTrade</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTCanMutateCanTrade = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac9cdfbf9e5979497af330370815f2030">lsfMPTCanMutateCanTrade</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00159">159</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a6a38e4ea77cc58ca81787cb0508b0016" name="a6a38e4ea77cc58ca81787cb0508b0016"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a38e4ea77cc58ca81787cb0508b0016">&#9670;&#160;</a></span>tfMPTCanMutateCanTransfer</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTCanMutateCanTransfer = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a80fc52a9532095c4ca193b8d1ff70278">lsfMPTCanMutateCanTransfer</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00160">160</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="abc9fbbaf5c5160a4c6bad3d6b3ff8290" name="abc9fbbaf5c5160a4c6bad3d6b3ff8290"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abc9fbbaf5c5160a4c6bad3d6b3ff8290">&#9670;&#160;</a></span>tfMPTCanMutateCanClawback</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTCanMutateCanClawback = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a386afabbd304e8af1ad7156d395db7e3">lsfMPTCanMutateCanClawback</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00161">161</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a36bcbae653647b1e7e58f7bcbe959cfa" name="a36bcbae653647b1e7e58f7bcbe959cfa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36bcbae653647b1e7e58f7bcbe959cfa">&#9670;&#160;</a></span>tfMPTCanMutateMetadata</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTCanMutateMetadata = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a114bf31fdac3bf102d46ea1f03cdf1a5">lsfMPTCanMutateMetadata</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00162">162</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a6bed8d81652828f81f82ce80c9e2c680" name="a6bed8d81652828f81f82ce80c9e2c680"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6bed8d81652828f81f82ce80c9e2c680">&#9670;&#160;</a></span>tfMPTCanMutateTransferFee</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTCanMutateTransferFee = <a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af9834661dbedbea057c38f998bf60b5e">lsfMPTCanMutateTransferFee</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00163">163</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="ae96530894a453f4d04775b43991e7873" name="ae96530894a453f4d04775b43991e7873"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae96530894a453f4d04775b43991e7873">&#9670;&#160;</a></span>tfMPTokenIssuanceCreateMutableMask</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTokenIssuanceCreateMutableMask</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">  ~(<a class="code hl_variable" href="namespaceripple.html#a5aff9a97e0075f9069ed5ebfc7d73955">tfMPTCanMutateCanLock</a> | <a class="code hl_variable" href="namespaceripple.html#ae5dae4b0dfb02285c8d23d0ae92a5aee">tfMPTCanMutateRequireAuth</a> | <a class="code hl_variable" href="namespaceripple.html#a489e2c39b614b124735dfce6d695ce90">tfMPTCanMutateCanEscrow</a> | <a class="code hl_variable" href="namespaceripple.html#a7bd0dadefc098a7eb7c5b2648b251ce4">tfMPTCanMutateCanTrade</a></div>
+<div class="line">    | <a class="code hl_variable" href="namespaceripple.html#a6a38e4ea77cc58ca81787cb0508b0016">tfMPTCanMutateCanTransfer</a> | <a class="code hl_variable" href="namespaceripple.html#abc9fbbaf5c5160a4c6bad3d6b3ff8290">tfMPTCanMutateCanClawback</a> | <a class="code hl_variable" href="namespaceripple.html#a36bcbae653647b1e7e58f7bcbe959cfa">tfMPTCanMutateMetadata</a> | <a class="code hl_variable" href="namespaceripple.html#a6bed8d81652828f81f82ce80c9e2c680">tfMPTCanMutateTransferFee</a>)</div>
+<div class="ttc" id="anamespaceripple_html_a36bcbae653647b1e7e58f7bcbe959cfa"><div class="ttname"><a href="namespaceripple.html#a36bcbae653647b1e7e58f7bcbe959cfa">ripple::tfMPTCanMutateMetadata</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanMutateMetadata</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00162">TxFlags.h:162</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a489e2c39b614b124735dfce6d695ce90"><div class="ttname"><a href="namespaceripple.html#a489e2c39b614b124735dfce6d695ce90">ripple::tfMPTCanMutateCanEscrow</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanMutateCanEscrow</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00158">TxFlags.h:158</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5aff9a97e0075f9069ed5ebfc7d73955"><div class="ttname"><a href="namespaceripple.html#a5aff9a97e0075f9069ed5ebfc7d73955">ripple::tfMPTCanMutateCanLock</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanMutateCanLock</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00156">TxFlags.h:156</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a6a38e4ea77cc58ca81787cb0508b0016"><div class="ttname"><a href="namespaceripple.html#a6a38e4ea77cc58ca81787cb0508b0016">ripple::tfMPTCanMutateCanTransfer</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanMutateCanTransfer</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00160">TxFlags.h:160</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a6bed8d81652828f81f82ce80c9e2c680"><div class="ttname"><a href="namespaceripple.html#a6bed8d81652828f81f82ce80c9e2c680">ripple::tfMPTCanMutateTransferFee</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanMutateTransferFee</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00163">TxFlags.h:163</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7bd0dadefc098a7eb7c5b2648b251ce4"><div class="ttname"><a href="namespaceripple.html#a7bd0dadefc098a7eb7c5b2648b251ce4">ripple::tfMPTCanMutateCanTrade</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanMutateCanTrade</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00159">TxFlags.h:159</a></div></div>
+<div class="ttc" id="anamespaceripple_html_abc9fbbaf5c5160a4c6bad3d6b3ff8290"><div class="ttname"><a href="namespaceripple.html#abc9fbbaf5c5160a4c6bad3d6b3ff8290">ripple::tfMPTCanMutateCanClawback</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanMutateCanClawback</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00161">TxFlags.h:161</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae5dae4b0dfb02285c8d23d0ae92a5aee"><div class="ttname"><a href="namespaceripple.html#ae5dae4b0dfb02285c8d23d0ae92a5aee">ripple::tfMPTCanMutateRequireAuth</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanMutateRequireAuth</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00157">TxFlags.h:157</a></div></div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00164">164</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
 <a id="a879ff786afc09842952c6cbca93d46a8" name="a879ff786afc09842952c6cbca93d46a8"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a879ff786afc09842952c6cbca93d46a8">&#9670;&#160;</a></span>tfMPTUnauthorize</h2>
 
@@ -53526,7 +53819,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00155">155</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00169">169</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53550,7 +53843,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00156">156</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00170">170</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53574,7 +53867,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00159">159</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00173">173</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53598,7 +53891,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00160">160</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00174">174</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53622,7 +53915,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00161">161</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00175">175</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53646,7 +53939,335 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00162">162</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00176">176</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="ae71b999784c2bbe91c70db4799844eca" name="ae71b999784c2bbe91c70db4799844eca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae71b999784c2bbe91c70db4799844eca">&#9670;&#160;</a></span>tfMPTSetCanLock</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTSetCanLock = 0x00000001</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00180">180</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a2563c3c82aa6c03f131cf15815377e84" name="a2563c3c82aa6c03f131cf15815377e84"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2563c3c82aa6c03f131cf15815377e84">&#9670;&#160;</a></span>tfMPTClearCanLock</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTClearCanLock = 0x00000002</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00181">181</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a3269812abb7bd6867b32842c867add06" name="a3269812abb7bd6867b32842c867add06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3269812abb7bd6867b32842c867add06">&#9670;&#160;</a></span>tfMPTSetRequireAuth</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTSetRequireAuth = 0x00000004</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00182">182</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="ae9a3c380fc6364d134d7c2ad7953f87f" name="ae9a3c380fc6364d134d7c2ad7953f87f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9a3c380fc6364d134d7c2ad7953f87f">&#9670;&#160;</a></span>tfMPTClearRequireAuth</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTClearRequireAuth = 0x00000008</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00183">183</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a630363d55fd819a98fcf9d147612b428" name="a630363d55fd819a98fcf9d147612b428"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a630363d55fd819a98fcf9d147612b428">&#9670;&#160;</a></span>tfMPTSetCanEscrow</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTSetCanEscrow = 0x00000010</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00184">184</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a2df85fe24f8e480b4975f7cec50c978b" name="a2df85fe24f8e480b4975f7cec50c978b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2df85fe24f8e480b4975f7cec50c978b">&#9670;&#160;</a></span>tfMPTClearCanEscrow</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTClearCanEscrow = 0x00000020</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00185">185</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a839c6009af9312226b8d6a1b4008a0a6" name="a839c6009af9312226b8d6a1b4008a0a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a839c6009af9312226b8d6a1b4008a0a6">&#9670;&#160;</a></span>tfMPTSetCanTrade</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTSetCanTrade = 0x00000040</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00186">186</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a48504de6ae7dab7d19d92fe58c3ccb00" name="a48504de6ae7dab7d19d92fe58c3ccb00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48504de6ae7dab7d19d92fe58c3ccb00">&#9670;&#160;</a></span>tfMPTClearCanTrade</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTClearCanTrade = 0x00000080</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00187">187</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a5f34a25e3e353b41c2ef5bb4c9dce905" name="a5f34a25e3e353b41c2ef5bb4c9dce905"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f34a25e3e353b41c2ef5bb4c9dce905">&#9670;&#160;</a></span>tfMPTSetCanTransfer</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTSetCanTransfer = 0x00000100</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00188">188</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a377f2f2601d6836244c3e34d553c9d3e" name="a377f2f2601d6836244c3e34d553c9d3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a377f2f2601d6836244c3e34d553c9d3e">&#9670;&#160;</a></span>tfMPTClearCanTransfer</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTClearCanTransfer = 0x00000200</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00189">189</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a8b5791667a67b49363f4ab6ee7d7763f" name="a8b5791667a67b49363f4ab6ee7d7763f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b5791667a67b49363f4ab6ee7d7763f">&#9670;&#160;</a></span>tfMPTSetCanClawback</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTSetCanClawback = 0x00000400</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00190">190</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="a9abef6e30f65ccb1cef8778a5619b99c" name="a9abef6e30f65ccb1cef8778a5619b99c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9abef6e30f65ccb1cef8778a5619b99c">&#9670;&#160;</a></span>tfMPTClearCanClawback</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTClearCanClawback = 0x00000800</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00191">191</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+
+</div>
+</div>
+<a id="abe5d58b0652dcfdabc161d5cea015569" name="abe5d58b0652dcfdabc161d5cea015569"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abe5d58b0652dcfdabc161d5cea015569">&#9670;&#160;</a></span>tfMPTokenIssuanceSetMutableMask</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTokenIssuanceSetMutableMask</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">= ~(<a class="code hl_variable" href="namespaceripple.html#ae71b999784c2bbe91c70db4799844eca">tfMPTSetCanLock</a> | <a class="code hl_variable" href="namespaceripple.html#a2563c3c82aa6c03f131cf15815377e84">tfMPTClearCanLock</a> |</div>
+<div class="line">    <a class="code hl_variable" href="namespaceripple.html#a3269812abb7bd6867b32842c867add06">tfMPTSetRequireAuth</a> | <a class="code hl_variable" href="namespaceripple.html#ae9a3c380fc6364d134d7c2ad7953f87f">tfMPTClearRequireAuth</a> | <a class="code hl_variable" href="namespaceripple.html#a630363d55fd819a98fcf9d147612b428">tfMPTSetCanEscrow</a> | <a class="code hl_variable" href="namespaceripple.html#a2df85fe24f8e480b4975f7cec50c978b">tfMPTClearCanEscrow</a> |</div>
+<div class="line">    <a class="code hl_variable" href="namespaceripple.html#a839c6009af9312226b8d6a1b4008a0a6">tfMPTSetCanTrade</a> | <a class="code hl_variable" href="namespaceripple.html#a48504de6ae7dab7d19d92fe58c3ccb00">tfMPTClearCanTrade</a> | <a class="code hl_variable" href="namespaceripple.html#a5f34a25e3e353b41c2ef5bb4c9dce905">tfMPTSetCanTransfer</a> | <a class="code hl_variable" href="namespaceripple.html#a377f2f2601d6836244c3e34d553c9d3e">tfMPTClearCanTransfer</a> |</div>
+<div class="line">    <a class="code hl_variable" href="namespaceripple.html#a8b5791667a67b49363f4ab6ee7d7763f">tfMPTSetCanClawback</a> | <a class="code hl_variable" href="namespaceripple.html#a9abef6e30f65ccb1cef8778a5619b99c">tfMPTClearCanClawback</a>)</div>
+<div class="ttc" id="anamespaceripple_html_a2563c3c82aa6c03f131cf15815377e84"><div class="ttname"><a href="namespaceripple.html#a2563c3c82aa6c03f131cf15815377e84">ripple::tfMPTClearCanLock</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTClearCanLock</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00181">TxFlags.h:181</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2df85fe24f8e480b4975f7cec50c978b"><div class="ttname"><a href="namespaceripple.html#a2df85fe24f8e480b4975f7cec50c978b">ripple::tfMPTClearCanEscrow</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTClearCanEscrow</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00185">TxFlags.h:185</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a3269812abb7bd6867b32842c867add06"><div class="ttname"><a href="namespaceripple.html#a3269812abb7bd6867b32842c867add06">ripple::tfMPTSetRequireAuth</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTSetRequireAuth</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00182">TxFlags.h:182</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a377f2f2601d6836244c3e34d553c9d3e"><div class="ttname"><a href="namespaceripple.html#a377f2f2601d6836244c3e34d553c9d3e">ripple::tfMPTClearCanTransfer</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTClearCanTransfer</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00189">TxFlags.h:189</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a48504de6ae7dab7d19d92fe58c3ccb00"><div class="ttname"><a href="namespaceripple.html#a48504de6ae7dab7d19d92fe58c3ccb00">ripple::tfMPTClearCanTrade</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTClearCanTrade</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00187">TxFlags.h:187</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5f34a25e3e353b41c2ef5bb4c9dce905"><div class="ttname"><a href="namespaceripple.html#a5f34a25e3e353b41c2ef5bb4c9dce905">ripple::tfMPTSetCanTransfer</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTSetCanTransfer</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00188">TxFlags.h:188</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a630363d55fd819a98fcf9d147612b428"><div class="ttname"><a href="namespaceripple.html#a630363d55fd819a98fcf9d147612b428">ripple::tfMPTSetCanEscrow</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTSetCanEscrow</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00184">TxFlags.h:184</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a839c6009af9312226b8d6a1b4008a0a6"><div class="ttname"><a href="namespaceripple.html#a839c6009af9312226b8d6a1b4008a0a6">ripple::tfMPTSetCanTrade</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTSetCanTrade</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00186">TxFlags.h:186</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8b5791667a67b49363f4ab6ee7d7763f"><div class="ttname"><a href="namespaceripple.html#a8b5791667a67b49363f4ab6ee7d7763f">ripple::tfMPTSetCanClawback</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTSetCanClawback</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00190">TxFlags.h:190</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a9abef6e30f65ccb1cef8778a5619b99c"><div class="ttname"><a href="namespaceripple.html#a9abef6e30f65ccb1cef8778a5619b99c">ripple::tfMPTClearCanClawback</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTClearCanClawback</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00191">TxFlags.h:191</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae71b999784c2bbe91c70db4799844eca"><div class="ttname"><a href="namespaceripple.html#ae71b999784c2bbe91c70db4799844eca">ripple::tfMPTSetCanLock</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTSetCanLock</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00180">TxFlags.h:180</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae9a3c380fc6364d134d7c2ad7953f87f"><div class="ttname"><a href="namespaceripple.html#ae9a3c380fc6364d134d7c2ad7953f87f">ripple::tfMPTClearRequireAuth</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTClearRequireAuth</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00183">TxFlags.h:183</a></div></div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00192">192</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53670,7 +54291,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00165">165</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00198">198</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53699,7 +54320,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="ttc" id="anamespaceripple_html_a5a8925be9e066ce9570511e5161a73bb"><div class="ttname"><a href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">ripple::tfBurnable</a></div><div class="ttdeci">constexpr std::uint32_t const tfBurnable</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00137">TxFlags.h:137</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af6dbd01af49aa6a39b96cee44add0df1"><div class="ttname"><a href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">ripple::tfTransferable</a></div><div class="ttdeci">constexpr std::uint32_t const tfTransferable</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00140">TxFlags.h:140</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00180">180</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00213">213</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53726,7 +54347,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="line">    ~( ~tfNFTokenMintMask | <a class="code hl_variable" href="namespaceripple.html#a7f38e8fe552f095e70c098197324f6f9">tfTrustLine</a>)</div>
 <div class="ttc" id="anamespaceripple_html_a7f38e8fe552f095e70c098197324f6f9"><div class="ttname"><a href="namespaceripple.html#a7f38e8fe552f095e70c098197324f6f9">ripple::tfTrustLine</a></div><div class="ttdeci">constexpr std::uint32_t const tfTrustLine</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00139">TxFlags.h:139</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00183">183</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00216">216</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53753,7 +54374,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="line">    ~( ~tfNFTokenMintOldMask | <a class="code hl_variable" href="namespaceripple.html#ae7b2566d88d4ab6fbad390bc3a890395">tfMutable</a>)</div>
 <div class="ttc" id="anamespaceripple_html_ae7b2566d88d4ab6fbad390bc3a890395"><div class="ttname"><a href="namespaceripple.html#ae7b2566d88d4ab6fbad390bc3a890395">ripple::tfMutable</a></div><div class="ttdeci">constexpr std::uint32_t const tfMutable</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00141">TxFlags.h:141</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00187">187</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00220">220</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53779,7 +54400,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~( ~tfNFTokenMintMask | <a class="code hl_variable" href="namespaceripple.html#ae7b2566d88d4ab6fbad390bc3a890395">tfMutable</a>)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00190">190</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00223">223</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53803,7 +54424,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00194">194</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00227">227</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53828,9 +54449,9 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code hl_variable" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>)</div>
-<div class="ttc" id="anamespaceripple_html_a449cf5cfc4fd3f6c2a3577a57374bda5"><div class="ttname"><a href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">ripple::tfSellNFToken</a></div><div class="ttdeci">constexpr std::uint32_t const tfSellNFToken</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00194">TxFlags.h:194</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a449cf5cfc4fd3f6c2a3577a57374bda5"><div class="ttname"><a href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">ripple::tfSellNFToken</a></div><div class="ttdeci">constexpr std::uint32_t const tfSellNFToken</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00227">TxFlags.h:227</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00195">195</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00228">228</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53854,7 +54475,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00199">199</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00232">232</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53878,7 +54499,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00202">202</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00235">235</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53902,7 +54523,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00205">205</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00238">238</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53926,7 +54547,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00208">208</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00241">241</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53950,7 +54571,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00209">209</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00242">242</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53974,7 +54595,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00210">210</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00243">243</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53998,7 +54619,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00211">211</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00244">244</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54022,7 +54643,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00212">212</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00245">245</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54046,7 +54667,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00213">213</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00246">246</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54070,7 +54691,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00214">214</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00247">247</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54094,7 +54715,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00215">215</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00248">248</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54120,15 +54741,15 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    <a class="code hl_variable" href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">tfLPToken</a> | <a class="code hl_variable" href="namespaceripple.html#a098e0eaa259f9927096b3b4edd77c71a">tfSingleAsset</a> | <a class="code hl_variable" href="namespaceripple.html#a7ac113783ec3f596fe69ab6d1daabbac">tfTwoAsset</a> | <a class="code hl_variable" href="namespaceripple.html#a620f1516447f54ef50ac790f5f0720a3">tfOneAssetLPToken</a> |</div>
 <div class="line">    <a class="code hl_variable" href="namespaceripple.html#a5401fd4c42f637dc456a79af094a960d">tfLimitLPToken</a> | <a class="code hl_variable" href="namespaceripple.html#a8383eb169324b23c0b4b49d6c2d2c877">tfWithdrawAll</a> | <a class="code hl_variable" href="namespaceripple.html#a0cebcc733182bb6794d2d4067a29fb2a">tfOneAssetWithdrawAll</a></div>
-<div class="ttc" id="anamespaceripple_html_a098e0eaa259f9927096b3b4edd77c71a"><div class="ttname"><a href="namespaceripple.html#a098e0eaa259f9927096b3b4edd77c71a">ripple::tfSingleAsset</a></div><div class="ttdeci">constexpr std::uint32_t tfSingleAsset</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00211">TxFlags.h:211</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a0cebcc733182bb6794d2d4067a29fb2a"><div class="ttname"><a href="namespaceripple.html#a0cebcc733182bb6794d2d4067a29fb2a">ripple::tfOneAssetWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetWithdrawAll</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00210">TxFlags.h:210</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a5401fd4c42f637dc456a79af094a960d"><div class="ttname"><a href="namespaceripple.html#a5401fd4c42f637dc456a79af094a960d">ripple::tfLimitLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLimitLPToken</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00214">TxFlags.h:214</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a620f1516447f54ef50ac790f5f0720a3"><div class="ttname"><a href="namespaceripple.html#a620f1516447f54ef50ac790f5f0720a3">ripple::tfOneAssetLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetLPToken</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00213">TxFlags.h:213</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7ac113783ec3f596fe69ab6d1daabbac"><div class="ttname"><a href="namespaceripple.html#a7ac113783ec3f596fe69ab6d1daabbac">ripple::tfTwoAsset</a></div><div class="ttdeci">constexpr std::uint32_t tfTwoAsset</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00212">TxFlags.h:212</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a8383eb169324b23c0b4b49d6c2d2c877"><div class="ttname"><a href="namespaceripple.html#a8383eb169324b23c0b4b49d6c2d2c877">ripple::tfWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfWithdrawAll</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00209">TxFlags.h:209</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aa3f065b75d23f712be19a1a953fe5b4a"><div class="ttname"><a href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">ripple::tfLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLPToken</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00208">TxFlags.h:208</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a098e0eaa259f9927096b3b4edd77c71a"><div class="ttname"><a href="namespaceripple.html#a098e0eaa259f9927096b3b4edd77c71a">ripple::tfSingleAsset</a></div><div class="ttdeci">constexpr std::uint32_t tfSingleAsset</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00244">TxFlags.h:244</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a0cebcc733182bb6794d2d4067a29fb2a"><div class="ttname"><a href="namespaceripple.html#a0cebcc733182bb6794d2d4067a29fb2a">ripple::tfOneAssetWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetWithdrawAll</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00243">TxFlags.h:243</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5401fd4c42f637dc456a79af094a960d"><div class="ttname"><a href="namespaceripple.html#a5401fd4c42f637dc456a79af094a960d">ripple::tfLimitLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLimitLPToken</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00247">TxFlags.h:247</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a620f1516447f54ef50ac790f5f0720a3"><div class="ttname"><a href="namespaceripple.html#a620f1516447f54ef50ac790f5f0720a3">ripple::tfOneAssetLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetLPToken</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00246">TxFlags.h:246</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7ac113783ec3f596fe69ab6d1daabbac"><div class="ttname"><a href="namespaceripple.html#a7ac113783ec3f596fe69ab6d1daabbac">ripple::tfTwoAsset</a></div><div class="ttdeci">constexpr std::uint32_t tfTwoAsset</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00245">TxFlags.h:245</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8383eb169324b23c0b4b49d6c2d2c877"><div class="ttname"><a href="namespaceripple.html#a8383eb169324b23c0b4b49d6c2d2c877">ripple::tfWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfWithdrawAll</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00242">TxFlags.h:242</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aa3f065b75d23f712be19a1a953fe5b4a"><div class="ttname"><a href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">ripple::tfLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLPToken</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00241">TxFlags.h:241</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00216">216</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00249">249</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54154,9 +54775,9 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    <a class="code hl_variable" href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">tfLPToken</a> | <a class="code hl_variable" href="namespaceripple.html#a098e0eaa259f9927096b3b4edd77c71a">tfSingleAsset</a> | <a class="code hl_variable" href="namespaceripple.html#a7ac113783ec3f596fe69ab6d1daabbac">tfTwoAsset</a> | <a class="code hl_variable" href="namespaceripple.html#a620f1516447f54ef50ac790f5f0720a3">tfOneAssetLPToken</a> |</div>
 <div class="line">    <a class="code hl_variable" href="namespaceripple.html#a5401fd4c42f637dc456a79af094a960d">tfLimitLPToken</a> | <a class="code hl_variable" href="namespaceripple.html#ac709d6b754ddb5505dcd8494a5dce959">tfTwoAssetIfEmpty</a></div>
-<div class="ttc" id="anamespaceripple_html_ac709d6b754ddb5505dcd8494a5dce959"><div class="ttname"><a href="namespaceripple.html#ac709d6b754ddb5505dcd8494a5dce959">ripple::tfTwoAssetIfEmpty</a></div><div class="ttdeci">constexpr std::uint32_t tfTwoAssetIfEmpty</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00215">TxFlags.h:215</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac709d6b754ddb5505dcd8494a5dce959"><div class="ttname"><a href="namespaceripple.html#ac709d6b754ddb5505dcd8494a5dce959">ripple::tfTwoAssetIfEmpty</a></div><div class="ttdeci">constexpr std::uint32_t tfTwoAssetIfEmpty</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00248">TxFlags.h:248</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00219">219</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00252">252</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54180,7 +54801,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00222">222</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00255">255</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54204,7 +54825,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00223">223</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00256">256</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54228,7 +54849,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00226">226</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00259">259</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54252,7 +54873,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00227">227</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00260">260</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54276,7 +54897,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00230">230</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00263">263</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54300,7 +54921,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00231">231</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00264">264</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54324,7 +54945,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00234">234</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00267">267</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54348,7 +54969,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00236">236</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00269">269</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54372,7 +54993,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00237">237</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00270">270</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54396,7 +55017,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00240">240</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00273">273</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54420,7 +55041,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00241">241</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00274">274</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54444,7 +55065,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00242">242</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00275">275</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54468,7 +55089,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00243">243</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00276">276</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -54493,13 +55114,13 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code hl_variable" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code hl_variable" href="namespaceripple.html#a072775d6c8c5af1783ca0153457a9db7">tfAllOrNothing</a> | <a class="code hl_variable" href="namespaceripple.html#a2c495b41d0b7daa3c2121bf583062265">tfOnlyOne</a> | <a class="code hl_variable" href="namespaceripple.html#a7ca20421c3a0f4d9962ec95f53c83b31">tfUntilFailure</a> | <a class="code hl_variable" href="namespaceripple.html#a3ad81b34ed8f81399fcc087a7f0f41aa">tfIndependent</a>) | tfInnerBatchTxn</div>
-<div class="ttc" id="anamespaceripple_html_a072775d6c8c5af1783ca0153457a9db7"><div class="ttname"><a href="namespaceripple.html#a072775d6c8c5af1783ca0153457a9db7">ripple::tfAllOrNothing</a></div><div class="ttdeci">constexpr std::uint32_t tfAllOrNothing</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00240">TxFlags.h:240</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a2c495b41d0b7daa3c2121bf583062265"><div class="ttname"><a href="namespaceripple.html#a2c495b41d0b7daa3c2121bf583062265">ripple::tfOnlyOne</a></div><div class="ttdeci">constexpr std::uint32_t tfOnlyOne</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00241">TxFlags.h:241</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a3ad81b34ed8f81399fcc087a7f0f41aa"><div class="ttname"><a href="namespaceripple.html#a3ad81b34ed8f81399fcc087a7f0f41aa">ripple::tfIndependent</a></div><div class="ttdeci">constexpr std::uint32_t tfIndependent</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00243">TxFlags.h:243</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7ca20421c3a0f4d9962ec95f53c83b31"><div class="ttname"><a href="namespaceripple.html#a7ca20421c3a0f4d9962ec95f53c83b31">ripple::tfUntilFailure</a></div><div class="ttdeci">constexpr std::uint32_t tfUntilFailure</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00242">TxFlags.h:242</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a072775d6c8c5af1783ca0153457a9db7"><div class="ttname"><a href="namespaceripple.html#a072775d6c8c5af1783ca0153457a9db7">ripple::tfAllOrNothing</a></div><div class="ttdeci">constexpr std::uint32_t tfAllOrNothing</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00273">TxFlags.h:273</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2c495b41d0b7daa3c2121bf583062265"><div class="ttname"><a href="namespaceripple.html#a2c495b41d0b7daa3c2121bf583062265">ripple::tfOnlyOne</a></div><div class="ttdeci">constexpr std::uint32_t tfOnlyOne</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00274">TxFlags.h:274</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a3ad81b34ed8f81399fcc087a7f0f41aa"><div class="ttname"><a href="namespaceripple.html#a3ad81b34ed8f81399fcc087a7f0f41aa">ripple::tfIndependent</a></div><div class="ttdeci">constexpr std::uint32_t tfIndependent</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00276">TxFlags.h:276</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7ca20421c3a0f4d9962ec95f53c83b31"><div class="ttname"><a href="namespaceripple.html#a7ca20421c3a0f4d9962ec95f53c83b31">ripple::tfUntilFailure</a></div><div class="ttdeci">constexpr std::uint32_t tfUntilFailure</div><div class="ttdef"><b>Definition</b> <a href="TxFlags_8h_source.html#l00275">TxFlags.h:275</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>If nested <a class="el" href="classripple_1_1Batch.html">Batch</a> transactions are supported in the future, the tfInnerBatchTxn flag will need to be removed from this mask to allow <a class="el" href="classripple_1_1Batch.html">Batch</a> transaction to be inside the sfRawTransactions array. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00249">249</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00282">282</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -55789,6 +56410,42 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="Escrow_8cpp_source.html#l00043">43</a> of file <a class="el" href="Escrow_8cpp_source.html">Escrow.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af6613339b5f0c46cdf4b2523adf564de" name="af6613339b5f0c46cdf4b2523adf564de"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6613339b5f0c46cdf4b2523adf564de">&#9670;&#160;</a></span>mptMutabilityFlags</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="el" href="structripple_1_1MPTMutabilityFlags.html">MPTMutabilityFlags</a>, 6&gt; ripple::mptMutabilityFlags</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">= {</div>
+<div class="line">    {{<a class="code hl_variable" href="namespaceripple.html#ae71b999784c2bbe91c70db4799844eca">tfMPTSetCanLock</a>, <a class="code hl_variable" href="namespaceripple.html#a2563c3c82aa6c03f131cf15815377e84">tfMPTClearCanLock</a>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a073b5c697d3c8d6c84ab6cc8afd58bed">lsfMPTCanMutateCanLock</a>},</div>
+<div class="line">     {<a class="code hl_variable" href="namespaceripple.html#a3269812abb7bd6867b32842c867add06">tfMPTSetRequireAuth</a>, <a class="code hl_variable" href="namespaceripple.html#ae9a3c380fc6364d134d7c2ad7953f87f">tfMPTClearRequireAuth</a>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ad8f9859f31f2b082934bb9ba24410473">lsfMPTCanMutateRequireAuth</a>},</div>
+<div class="line">     {tfMPTSetCanEscrow, tfMPTClearCanEscrow, lsfMPTCanMutateCanEscrow},</div>
+<div class="line">     {<a class="code hl_variable" href="namespaceripple.html#a839c6009af9312226b8d6a1b4008a0a6">tfMPTSetCanTrade</a>, <a class="code hl_variable" href="namespaceripple.html#a48504de6ae7dab7d19d92fe58c3ccb00">tfMPTClearCanTrade</a>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac9cdfbf9e5979497af330370815f2030">lsfMPTCanMutateCanTrade</a>},</div>
+<div class="line">     {<a class="code hl_variable" href="namespaceripple.html#a5f34a25e3e353b41c2ef5bb4c9dce905">tfMPTSetCanTransfer</a>, <a class="code hl_variable" href="namespaceripple.html#a377f2f2601d6836244c3e34d553c9d3e">tfMPTClearCanTransfer</a>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a80fc52a9532095c4ca193b8d1ff70278">lsfMPTCanMutateCanTransfer</a>},</div>
+<div class="line">     {<a class="code hl_variable" href="namespaceripple.html#a8b5791667a67b49363f4ab6ee7d7763f">tfMPTSetCanClawback</a>, <a class="code hl_variable" href="namespaceripple.html#a9abef6e30f65ccb1cef8778a5619b99c">tfMPTClearCanClawback</a>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a386afabbd304e8af1ad7156d395db7e3">lsfMPTCanMutateCanClawback</a>}}}</div>
+<div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5a073b5c697d3c8d6c84ab6cc8afd58bed"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a073b5c697d3c8d6c84ab6cc8afd58bed">ripple::lsfMPTCanMutateCanLock</a></div><div class="ttdeci">@ lsfMPTCanMutateCanLock</div><div class="ttdef"><b>Definition</b> <a href="LedgerFormats_8h_source.html#l00191">LedgerFormats.h:191</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5a386afabbd304e8af1ad7156d395db7e3"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a386afabbd304e8af1ad7156d395db7e3">ripple::lsfMPTCanMutateCanClawback</a></div><div class="ttdeci">@ lsfMPTCanMutateCanClawback</div><div class="ttdef"><b>Definition</b> <a href="LedgerFormats_8h_source.html#l00196">LedgerFormats.h:196</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5a80fc52a9532095c4ca193b8d1ff70278"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a80fc52a9532095c4ca193b8d1ff70278">ripple::lsfMPTCanMutateCanTransfer</a></div><div class="ttdeci">@ lsfMPTCanMutateCanTransfer</div><div class="ttdef"><b>Definition</b> <a href="LedgerFormats_8h_source.html#l00195">LedgerFormats.h:195</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5ac9cdfbf9e5979497af330370815f2030"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ac9cdfbf9e5979497af330370815f2030">ripple::lsfMPTCanMutateCanTrade</a></div><div class="ttdeci">@ lsfMPTCanMutateCanTrade</div><div class="ttdef"><b>Definition</b> <a href="LedgerFormats_8h_source.html#l00194">LedgerFormats.h:194</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5ad8f9859f31f2b082934bb9ba24410473"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5ad8f9859f31f2b082934bb9ba24410473">ripple::lsfMPTCanMutateRequireAuth</a></div><div class="ttdeci">@ lsfMPTCanMutateRequireAuth</div><div class="ttdef"><b>Definition</b> <a href="LedgerFormats_8h_source.html#l00192">LedgerFormats.h:192</a></div></div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="MPTokenIssuanceSet_8cpp_source.html#l00039">39</a> of file <a class="el" href="MPTokenIssuanceSet_8cpp_source.html">MPTokenIssuanceSet.cpp</a>.</p>
 
 </div>
 </div>
