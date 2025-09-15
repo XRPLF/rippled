@@ -2350,6 +2350,12 @@ class Loan_test : public beast::unit_test::suite
 
         Env env(*this, all);
 
+        auto lowerFee = [&]() {
+            // Run the local fee back down.
+            while (env.app().getFeeTrack().lowerLocalFee())
+                ;
+        };
+
         Account const alice{"alice"};
         std::string const borrowerPass = "borrower";
         std::string const borrowerSeed = "ssBRAsLpH4778sLNYC4ik1JBJsBVf";
@@ -2391,6 +2397,7 @@ class Loan_test : public beast::unit_test::suite
             auto const jtx = env.jt(txJson, sig(borrower));
             BEAST_EXPECT(txSignResult == jtx.jv);
 
+            lowerFee();
             auto const jSubmit = env.rpc("submit", txSignBlob);
             BEAST_EXPECT(
                 jSubmit.isMember(jss::result) &&
@@ -2398,6 +2405,7 @@ class Loan_test : public beast::unit_test::suite
                 jSubmit[jss::result][jss::engine_result].asString() ==
                     "tesSUCCESS");
 
+            lowerFee();
             env(jtx.jv, sig(none), seq(none), fee(none), ter(tefPAST_SEQ));
         }
 
@@ -2465,6 +2473,7 @@ class Loan_test : public beast::unit_test::suite
             // 2a. Borrower attempts to submit the transaction. It doesn't
             // work
             {
+                lowerFee();
                 auto const jSubmitBlob = env.rpc("submit", txBorrowerSignBlob);
                 BEAST_EXPECT(jSubmitBlob.isMember(jss::result));
                 auto const jSubmitBlobResult = jSubmitBlob[jss::result];
@@ -2498,6 +2507,7 @@ class Loan_test : public beast::unit_test::suite
                 jSignLender[jss::result][jss::tx_blob].asString();
 
             // 5. Lender submits the signed transaction blob
+            lowerFee();
             auto const jSubmitBlob = env.rpc("submit", txLenderSignBlob);
             BEAST_EXPECT(jSubmitBlob.isMember(jss::result));
             auto const jSubmitBlobResult = jSubmitBlob[jss::result];
@@ -2520,6 +2530,7 @@ class Loan_test : public beast::unit_test::suite
             // received from the Borrower. It gets signed, but is now a
             // duplicate, so fails. Borrower could done this instead of
             // steps 4 and 5.
+            lowerFee();
             auto const jSubmitJson =
                 env.rpc("json", "submit", to_string(lenderSignParams));
             BEAST_EXPECT(jSubmitJson.isMember(jss::result));
@@ -2579,6 +2590,7 @@ class Loan_test : public beast::unit_test::suite
             // 2a. Lender attempts to submit the transaction. It doesn't
             // work
             {
+                lowerFee();
                 auto const jSubmitBlob = env.rpc("submit", txLenderSignBlob);
                 BEAST_EXPECT(jSubmitBlob.isMember(jss::result));
                 auto const jSubmitBlobResult = jSubmitBlob[jss::result];
@@ -2612,6 +2624,7 @@ class Loan_test : public beast::unit_test::suite
                 jSignBorrower[jss::result][jss::tx_blob].asString();
 
             // 5. Borrower submits the signed transaction blob
+            lowerFee();
             auto const jSubmitBlob = env.rpc("submit", txBorrowerSignBlob);
             BEAST_EXPECT(jSubmitBlob.isMember(jss::result));
             auto const jSubmitBlobResult = jSubmitBlob[jss::result];
@@ -2634,6 +2647,7 @@ class Loan_test : public beast::unit_test::suite
             // received from the Lender. It gets signed, but is now a
             // duplicate, so fails. Lender could done this instead of steps
             // 4 and 5.
+            lowerFee();
             auto const jSubmitJson =
                 env.rpc("json", "submit", to_string(borrowerSignParams));
             BEAST_EXPECT(jSubmitJson.isMember(jss::result));
