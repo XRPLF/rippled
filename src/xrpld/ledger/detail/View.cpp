@@ -3073,11 +3073,17 @@ rippleUnlockEscrowMPT(
     ApplyView& view,
     AccountID const& sender,
     AccountID const& receiver,
-    STAmount const& amount,
+    STAmount const& netAmount,
+    STAmount const& grossAmount,
     beast::Journal j)
 {
-    auto const issuer = amount.getIssuer();
-    auto const mptIssue = amount.get<MPTIssue>();
+    if (!view.rules().enabled(fixTokenEscrowV1))
+        XRPL_ASSERT(
+            netAmount == grossAmount,
+            "ripple::rippleUnlockEscrowMPT : netAmount == grossAmount");
+
+    auto const& issuer = netAmount.getIssuer();
+    auto const& mptIssue = netAmount.get<MPTIssue>();
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
@@ -3098,7 +3104,7 @@ rippleUnlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         auto const locked = sleIssuance->getFieldU64(sfLockedAmount);
-        auto const redeem = amount.mpt().value();
+        auto const redeem = grossAmount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(
@@ -3131,7 +3137,7 @@ rippleUnlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         auto current = sle->getFieldU64(sfMPTAmount);
-        auto delta = amount.mpt().value();
+        auto delta = netAmount.mpt().value();
 
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
@@ -3149,7 +3155,7 @@ rippleUnlockEscrowMPT(
     {
         // Decrease the Issuance OutstandingAmount
         auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
-        auto const redeem = amount.mpt().value();
+        auto const redeem = netAmount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(
@@ -3193,7 +3199,7 @@ rippleUnlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         auto const locked = sle->getFieldU64(sfLockedAmount);
-        auto const delta = amount.mpt().value();
+        auto const delta = grossAmount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
@@ -3210,6 +3216,28 @@ rippleUnlockEscrowMPT(
         else
             sle->setFieldU64(sfLockedAmount, newLocked);
         view.update(sle);
+    }
+
+    // Note: The gross amount is the amount that was locked, the net
+    // amount is the amount that is being unlocked. The difference is the fee
+    // that was charged for the transfer. If this difference is greater than
+    // zero, we need to update the outstanding amount.
+    auto const diff = grossAmount.mpt().value() - netAmount.mpt().value();
+    if (diff != 0)
+    {
+        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
+        // Underflow check for subtraction
+        if (!canSubtract(
+                STAmount(mptIssue, outstanding), STAmount(mptIssue, diff)))
+        {  // LCOV_EXCL_START
+            JLOG(j.error())
+                << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
+                << mptIssue.getMptID() << ": " << outstanding << " < " << diff;
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
+
+        sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - diff);
+        view.update(sleIssuance);
     }
     return tesSUCCESS;
 }
