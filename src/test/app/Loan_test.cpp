@@ -2357,6 +2357,8 @@ class Loan_test : public beast::unit_test::suite
                 ;
         };
 
+        auto const baseFee = env.current()->fees().base;
+
         Account const alice{"alice"};
         std::string const borrowerPass = "borrower";
         std::string const borrowerSeed = "ssBRAsLpH4778sLNYC4ik1JBJsBVf";
@@ -2450,7 +2452,7 @@ class Loan_test : public beast::unit_test::suite
             txJson[sfPaymentInterval] = 3600;
             txJson[sfGracePeriod] = 300;
             txJson[sfFlags] = 65536;  // tfLoanOverpayment
-            txJson[sfFee] = "24";
+            txJson[sfFee] = to_string(24 * baseFee / 10);
 
             // 2. Borrower signs the transaction
             auto const borrowerSignParams = [&]() {
@@ -2517,8 +2519,6 @@ class Loan_test : public beast::unit_test::suite
             // To get far enough to return tecNO_ENTRY means that the
             // signatures all validated. Of course the transaction won't
             // succeed because no Vault or Broker were created.
-            log << env.rpc("fee");
-            log << env.rpc("server_state");
             BEAST_EXPECTS(
                 jSubmitBlobResult.isMember(jss::engine_result) &&
                     jSubmitBlobResult[jss::engine_result].asString() ==
@@ -2570,7 +2570,7 @@ class Loan_test : public beast::unit_test::suite
             txJson[sfPaymentInterval] = 3600;
             txJson[sfGracePeriod] = 300;
             txJson[sfFlags] = 65536;  // tfLoanOverpayment
-            txJson[sfFee] = "24";
+            txJson[sfFee] = to_string(24 * baseFee / 10);
 
             // 2. Lender signs the transaction
             auto const lenderSignParams = [&]() {
