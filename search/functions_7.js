@@ -562,7 +562,7 @@ var searchData=
   ['gettxfee_559',['getTxFee',['../namespaceripple_1_1RPC.html#a8bcdcd479ba5ba7f8975e344393ec03a',1,'ripple::RPC']]],
   ['gettxformat_560',['getTxFormat',['../namespaceripple.html#a6381519cb9d7608cf89fdee87c667afa',1,'ripple']]],
   ['gettxhistory_561',['gettxhistory',['../namespaceripple_1_1detail.html#a85ce1135aee0b32318ef92bac4c8e523',1,'ripple::detail::getTxHistory()'],['../classripple_1_1SQLiteDatabaseImp.html#a95e09f3d9aad4bddd230a858ebc523f0',1,'ripple::SQLiteDatabaseImp::getTxHistory()'],['../classripple_1_1RelationalDatabase.html#a488a2779ee9aa65c2e349df6a99bad58',1,'ripple::RelationalDatabase::getTxHistory()']]],
-  ['gettxid_562',['gettxid',['../classripple_1_1TxMeta.html#ac2893ac35c63a3c89377e8fdf67ddb13',1,'ripple::TxMeta::getTxID()'],['../classripple_1_1CanonicalTXSet_1_1Key.html#ae39d7967e1adaa8021dcf96d1bb28bec',1,'ripple::CanonicalTXSet::Key::getTXID()']]],
+  ['gettxid_562',['gettxid',['../classripple_1_1CanonicalTXSet_1_1Key.html#ae39d7967e1adaa8021dcf96d1bb28bec',1,'ripple::CanonicalTXSet::Key::getTXID()'],['../classripple_1_1TxMeta.html#ac2893ac35c63a3c89377e8fdf67ddb13',1,'ripple::TxMeta::getTxID()']]],
   ['gettxjsonfromparams_563',['getTxJsonFromParams',['../namespaceripple.html#a62dc8b501f06e097d9140863ea0ea9ba',1,'ripple']]],
   ['gettxn_564',['gettxn',['../classripple_1_1test_1_1jtx_1_1batch_1_1inner.html#ab20225ce354ca619131a8b10970a6759',1,'ripple::test::jtx::batch::inner::getTxn()'],['../classripple_1_1AcceptedLedgerTx.html#a9f0e3f69f46a1fe5cea5a82cda9c9dab',1,'ripple::AcceptedLedgerTx::getTxn()']]],
   ['gettxncount_565',['getTxnCount',['../classripple_1_1TxQ_1_1TxQAccount.html#a339265353ad9dd97360c6fd8af1ceae9',1,'ripple::TxQ::TxQAccount']]],

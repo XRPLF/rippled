@@ -426,7 +426,7 @@ var searchData=
   ['countoffers_423',['countoffers',['../namespaceripple_1_1test.html#abcfd61cab6d24e0d266d63e45e27abb7',1,'ripple::test::countOffers(jtx::Env &amp;env, jtx::Account const &amp;account, STAmount const &amp;takerPays, STAmount const &amp;takerGets)'],['../namespaceripple_1_1test.html#a8f9cf01750a5ff18a2f2fe004246f4f0',1,'ripple::test::countOffers(jtx::Env &amp;env, jtx::Account const &amp;account, Issue const &amp;takerPays, Issue const &amp;takerGets)']]],
   ['countr_5fone_424',['countr_one',['http://en.cppreference.com/w/cpp/numeric/countr_one.html',1,'std']]],
   ['countr_5fzero_425',['countr_zero',['http://en.cppreference.com/w/cpp/numeric/countr_zero.html',1,'std']]],
-  ['counts_426',['counts',['../classripple_1_1PeerFinder_1_1Counts.html#ac8bf93d3b877fda613bffb71a1e4e13a',1,'ripple::PeerFinder::Counts::Counts()'],['../classripple_1_1PeerFinder_1_1Logic.html#ab136cfb823761af1b0d8e9b1bf7d9ba3',1,'ripple::PeerFinder::Logic::counts()']]],
+  ['counts_426',['counts',['../classripple_1_1PeerFinder_1_1Logic.html#ab136cfb823761af1b0d8e9b1bf7d9ba3',1,'ripple::PeerFinder::Logic::counts()'],['../classripple_1_1PeerFinder_1_1Counts.html#ac8bf93d3b877fda613bffb71a1e4e13a',1,'ripple::PeerFinder::Counts::Counts()']]],
   ['countsasexpected_427',['countsAsExpected',['../classripple_1_1test_1_1LedgerReplayClient.html#a56298334026de896c3768c2560270c0b',1,'ripple::test::LedgerReplayClient']]],
   ['countskiplists_428',['countSkipLists',['../classripple_1_1test_1_1LedgerReplayClient.html#a9dac1636623a9feb03cb6a631c411f3f',1,'ripple::test::LedgerReplayClient']]],
   ['counttx_429',['countTx',['../namespaceripple_1_1test.html#a030973c3e1d43073e29320c6f07c40b7',1,'ripple::test']]],
