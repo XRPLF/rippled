@@ -2082,8 +2082,8 @@ ValidVault::visitEntry(
     // If `after` is empty, this means an object is being deleted
     // Otherwise it's a modification of an object.
     //
-    // `Number balance` will capture the difference between "before" state
-    // (zero if created) and "after" state (zero if destroyed), so the
+    // `Number balance` will capture the difference (delta) between "before"
+    // state (zero if created) and "after" state (zero if destroyed), so the
     // invariants can validate that the change in account balances matches
     // the change in vault balances.
     Number balance{};
@@ -2119,12 +2119,12 @@ ValidVault::visitEntry(
         switch (after->getType())
         {
             case ltMPTOKEN_ISSUANCE:
-                balances_[before->key()] = balance;
+                deltas_[before->key()] = balance;
                 break;
             case ltMPTOKEN:
             case ltACCOUNT_ROOT:
             case ltRIPPLE_STATE:
-                balances_[after->key()] = balance * -1;
+                deltas_[after->key()] = balance * -1;
                 break;
             default:;
         }
@@ -2147,7 +2147,7 @@ ValidVault::visitEntry(
                 // Increase of the outstanding amount means increased
                 // liabilities, so we keep the sign here.
                 if (balance != zero)
-                    balances_[after->key()] = balance;
+                    deltas_[after->key()] = balance;
                 break;
             case ltMPTOKEN:
             case ltACCOUNT_ROOT:
@@ -2161,7 +2161,7 @@ ValidVault::visitEntry(
                 // Increase of the balance will give negative value so we
                 // need to reverse the sign here.
                 if (balance != zero)
-                    balances_[after->key()] = balance * -1;
+                    deltas_[after->key()] = balance * -1;
                 break;
             default:;
         }
@@ -2383,20 +2383,20 @@ ValidVault::finalize(
         }
 
         auto const& vaultAsset = afterVault_->asset;
-        auto const balanceAssets = [&](AccountID id) -> std::optional<Number> {
+        auto const deltaAssets = [&](AccountID id) -> std::optional<Number> {
             auto const it = [&]() {
                 if (vaultAsset.native())
-                    return balances_.find(keylet::account(id).key);
+                    return deltas_.find(keylet::account(id).key);
                 else if (vaultAsset.holds<Issue>())
-                    return balances_.find(
+                    return deltas_.find(
                         keylet::line(id, vaultAsset.get<Issue>()).key);
                 else
-                    return balances_.find(
+                    return deltas_.find(
                         keylet::mptoken(
                             vaultAsset.get<MPTIssue>().getMptID(), id)
                             .key);
             }();
-            if (it == balances_.end())
+            if (it == deltas_.end())
                 return std::nullopt;
             else if (vaultAsset.native() || vaultAsset.holds<MPTIssue>())
                 return it->second;
@@ -2407,17 +2407,17 @@ ValidVault::finalize(
             return it->second;
         };
 
-        auto const balanceShares = [&](AccountID id) -> std::optional<Number> {
+        auto const deltaShares = [&](AccountID id) -> std::optional<Number> {
             auto const it = [&]() {
                 if (id == afterVault_->pseudoId)
-                    return balances_.find(
+                    return deltas_.find(
                         keylet::mptIssuance(afterVault_->shareMPTID).key);
-                return balances_.find(
+                return deltas_.find(
                     keylet::mptoken(afterVault_->shareMPTID, id).key);
             }();
 
-            return it != balances_.end() ? std::optional<Number>(it->second)
-                                         : std::nullopt;
+            return it != deltas_.end() ? std::optional<Number>(it->second)
+                                       : std::nullopt;
         };
 
         // Technically this does not need to be a lambda, but it's more
@@ -2461,9 +2461,9 @@ ValidVault::finalize(
                 case ttVAULT_SET: {
                     bool result = true;
 
-                    auto const vaultBalance =
-                        balanceAssets(afterVault_->pseudoId);
-                    if (vaultBalance)
+                    auto const vaultDeltaAssets =
+                        deltaAssets(afterVault_->pseudoId);
+                    if (vaultDeltaAssets)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: set must not change vault "
@@ -2513,10 +2513,10 @@ ValidVault::finalize(
                 case ttVAULT_DEPOSIT: {
                     bool result = true;
 
-                    auto const vaultBalance =
-                        balanceAssets(afterVault_->pseudoId);
+                    auto const vaultDeltaAssets =
+                        deltaAssets(afterVault_->pseudoId);
 
-                    if (!vaultBalance)
+                    if (!vaultDeltaAssets)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: deposit must change vault "
@@ -2524,7 +2524,7 @@ ValidVault::finalize(
                         return false;  // That's all we can do
                     }
 
-                    if (*vaultBalance > tx[sfAmount])
+                    if (*vaultDeltaAssets > tx[sfAmount])
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: deposit must not change "
@@ -2532,7 +2532,7 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (*vaultBalance <= zero)
+                    if (*vaultDeltaAssets <= zero)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: deposit must increase "
@@ -2550,9 +2550,9 @@ ValidVault::finalize(
 
                     if (!issuerDeposit)
                     {
-                        auto const accountBalance =
+                        auto const accountDeltaAssets =
                             [&]() -> std::optional<Number> {
-                            auto ret = balanceAssets(tx[sfAccount]);
+                            auto ret = deltaAssets(tx[sfAccount]);
                             // Compensate for transaction fee deduced from
                             // sfAccount
                             if (ret && vaultAsset.native())
@@ -2562,7 +2562,7 @@ ValidVault::finalize(
                             return ret;
                         }();
 
-                        if (!accountBalance)
+                        if (!accountDeltaAssets)
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: deposit must change "
@@ -2570,7 +2570,7 @@ ValidVault::finalize(
                             return false;
                         }
 
-                        if (*accountBalance >= zero)
+                        if (*accountDeltaAssets >= zero)
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: deposit must decrease "
@@ -2578,7 +2578,7 @@ ValidVault::finalize(
                             result = false;
                         }
 
-                        if (*accountBalance * -1 != *vaultBalance)
+                        if (*accountDeltaAssets * -1 != *vaultDeltaAssets)
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: deposit must change vault "
@@ -2596,8 +2596,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    auto const accountShares = balanceShares(tx[sfAccount]);
-                    if (!accountShares)
+                    auto const accountDeltaShares = deltaShares(tx[sfAccount]);
+                    if (!accountDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: deposit must change depositor "
@@ -2605,7 +2605,7 @@ ValidVault::finalize(
                         return false;  // That's all we can do
                     }
 
-                    if (*accountShares <= zero)
+                    if (*accountDeltaShares <= zero)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: deposit must increase depositor "
@@ -2613,9 +2613,9 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    auto const vaultShares =
-                        balanceShares(afterVault_->pseudoId);
-                    if (!vaultShares)
+                    auto const vaultDeltaShares =
+                        deltaShares(afterVault_->pseudoId);
+                    if (!vaultDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: deposit must change vault "
@@ -2623,7 +2623,7 @@ ValidVault::finalize(
                         return false;  // That's all we can do
                     }
 
-                    if (*vaultShares * -1 != *accountShares)
+                    if (*vaultDeltaShares * -1 != *accountDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: deposit must change depositor "
@@ -2631,14 +2631,14 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_->assetsTotal + *vaultBalance !=
+                    if (beforeVault_->assetsTotal + *vaultDeltaAssets !=
                         afterVault_->assetsTotal)
                     {
                         JLOG(j.fatal()) << "Invariant failed: deposit and "
                                            "assets outstanding must add up";
                         result = false;
                     }
-                    if (beforeVault_->assetsAvailable + *vaultBalance !=
+                    if (beforeVault_->assetsAvailable + *vaultDeltaAssets !=
                         afterVault_->assetsAvailable)
                     {
                         JLOG(j.fatal()) << "Invariant failed: deposit and "
@@ -2651,17 +2651,17 @@ ValidVault::finalize(
                 case ttVAULT_WITHDRAW: {
                     bool result = true;
 
-                    auto const vaultBalance =
-                        balanceAssets(afterVault_->pseudoId);
+                    auto const vaultDeltaAssets =
+                        deltaAssets(afterVault_->pseudoId);
 
-                    if (!vaultBalance)
+                    if (!vaultDeltaAssets)
                     {
                         JLOG(j.fatal()) << "Invariant failed: withdrawal must "
                                            "change vault balance";
                         return false;  // That's all we can do
                     }
 
-                    if (*vaultBalance >= zero)
+                    if (*vaultDeltaAssets >= zero)
                     {
                         JLOG(j.fatal()) << "Invariant failed: withdrawal must "
                                            "decrease vault balance";
@@ -2680,9 +2680,9 @@ ValidVault::finalize(
 
                     if (!issuerWithdrawal)
                     {
-                        auto const accountBalance =
+                        auto const accountDeltaAssets =
                             [&]() -> std::optional<Number> {
-                            auto ret = balanceAssets(tx[sfAccount]);
+                            auto ret = deltaAssets(tx[sfAccount]);
                             // Compensate for transaction fee deduced from
                             // sfAccount
                             if (ret && vaultAsset.native())
@@ -2692,16 +2692,16 @@ ValidVault::finalize(
                             return ret;
                         }();
 
-                        auto const otherAccountBalance =
+                        auto const otherAccountDelta =
                             [&]() -> std::optional<Number> {
                             if (auto const destination = tx[~sfDestination];
                                 destination && *destination != tx[sfAccount])
-                                return balanceAssets(*destination);
+                                return deltaAssets(*destination);
                             return std::nullopt;
                         }();
 
-                        if (accountBalance.has_value() ==
-                            otherAccountBalance.has_value())
+                        if (accountDeltaAssets.has_value() ==
+                            otherAccountDelta.has_value())
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: withdrawal must change one "
@@ -2709,11 +2709,11 @@ ValidVault::finalize(
                             return false;
                         }
 
-                        auto const destinationBalance =  //
-                            accountBalance ? *accountBalance
-                                           : *otherAccountBalance;
+                        auto const destinationDelta =  //
+                            accountDeltaAssets ? *accountDeltaAssets
+                                               : *otherAccountDelta;
 
-                        if (destinationBalance <= zero)
+                        if (destinationDelta <= zero)
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: withdrawal must increase "
@@ -2721,7 +2721,7 @@ ValidVault::finalize(
                             result = false;
                         }
 
-                        if (*vaultBalance * -1 != destinationBalance)
+                        if (*vaultDeltaAssets * -1 != destinationDelta)
                         {
                             JLOG(j.fatal()) <<  //
                                 "Invariant failed: withdrawal must change vault"
@@ -2730,8 +2730,8 @@ ValidVault::finalize(
                         }
                     }
 
-                    auto const accountShares = balanceShares(tx[sfAccount]);
-                    if (!accountShares)
+                    auto const accountDeltaShares = deltaShares(tx[sfAccount]);
+                    if (!accountDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must change "
@@ -2739,7 +2739,7 @@ ValidVault::finalize(
                         return false;
                     }
 
-                    if (*accountShares >= zero)
+                    if (*accountDeltaShares >= zero)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must decrease "
@@ -2747,9 +2747,9 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    auto const vaultShares =
-                        balanceShares(afterVault_->pseudoId);
-                    if (!vaultShares)
+                    auto const vaultDeltaShares =
+                        deltaShares(afterVault_->pseudoId);
+                    if (!vaultDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must change vault "
@@ -2757,7 +2757,7 @@ ValidVault::finalize(
                         return false;  // That's all we can do
                     }
 
-                    if (*vaultShares * -1 != *accountShares)
+                    if (*vaultDeltaShares * -1 != *accountDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: withdrawal must change "
@@ -2766,7 +2766,7 @@ ValidVault::finalize(
                     }
 
                     // Note, vaultBalance is negative (see check above)
-                    if (beforeVault_->assetsTotal + *vaultBalance !=
+                    if (beforeVault_->assetsTotal + *vaultDeltaAssets !=
                         afterVault_->assetsTotal)
                     {
                         JLOG(j.fatal())
@@ -2775,7 +2775,7 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_->assetsAvailable + *vaultBalance !=
+                    if (beforeVault_->assetsAvailable + *vaultDeltaAssets !=
                         afterVault_->assetsAvailable)
                     {
                         JLOG(j.fatal())
@@ -2798,10 +2798,10 @@ ValidVault::finalize(
                         return false;  // That's all we can do
                     }
 
-                    auto const vaultBalance =
-                        balanceAssets(afterVault_->pseudoId);
+                    auto const vaultDeltaAssets =
+                        deltaAssets(afterVault_->pseudoId);
 
-                    if (!vaultBalance)
+                    if (!vaultDeltaAssets)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback must change vault "
@@ -2809,7 +2809,7 @@ ValidVault::finalize(
                         return false;  // That's all we can do
                     }
 
-                    if (*vaultBalance >= zero)
+                    if (*vaultDeltaAssets >= zero)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback must decrease vault "
@@ -2817,8 +2817,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    auto const accountShares = balanceShares(tx[sfHolder]);
-                    if (!accountShares)
+                    auto const accountDeltaShares = deltaShares(tx[sfHolder]);
+                    if (!accountDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback must change "
@@ -2826,7 +2826,7 @@ ValidVault::finalize(
                         return false;  // That's all we can do
                     }
 
-                    if (*accountShares >= zero)
+                    if (*accountDeltaShares >= zero)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback must decrease "
@@ -2834,9 +2834,9 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    auto const vaultShares =
-                        balanceShares(afterVault_->pseudoId);
-                    if (!vaultShares)
+                    auto const vaultDeltaShares =
+                        deltaShares(afterVault_->pseudoId);
+                    if (!vaultDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback must change vault "
@@ -2844,7 +2844,7 @@ ValidVault::finalize(
                         return false;  // That's all we can do
                     }
 
-                    if (*vaultShares * -1 != *accountShares)
+                    if (*vaultDeltaShares * -1 != *accountDeltaShares)
                     {
                         JLOG(j.fatal()) <<  //
                             "Invariant failed: clawback must change "
@@ -2852,7 +2852,7 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_->assetsTotal + *vaultBalance !=
+                    if (beforeVault_->assetsTotal + *vaultDeltaAssets !=
                         afterVault_->assetsTotal)
                     {
                         JLOG(j.fatal()) <<  //
@@ -2861,7 +2861,7 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (beforeVault_->assetsAvailable + *vaultBalance !=
+                    if (beforeVault_->assetsAvailable + *vaultDeltaAssets !=
                         afterVault_->assetsAvailable)
                     {
                         JLOG(j.fatal()) <<  //

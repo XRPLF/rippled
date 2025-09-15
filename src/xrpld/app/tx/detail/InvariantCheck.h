@@ -754,7 +754,7 @@ class ValidVault
     std::vector<Shares> afterMPTs_ = {};
     std::optional<Vault> beforeVault_ = {};
     std::vector<Shares> beforeMPTs_ = {};
-    std::unordered_map<uint256, Number> balances_ = {};
+    std::unordered_map<uint256, Number> deltas_ = {};
 
 public:
     void
