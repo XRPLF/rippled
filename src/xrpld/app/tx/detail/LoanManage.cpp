@@ -64,7 +64,7 @@ LoanManage::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     // Flags are mutually exclusive
-    auto const flags = ctx.tx[sfFlags] & tfUniversalMask;
+    auto const flags = ctx.tx[~sfFlags].value_or(0) & tfUniversalMask;
     if ((flags & (flags - 1)) != 0)
     {
         JLOG(ctx.j.warn())

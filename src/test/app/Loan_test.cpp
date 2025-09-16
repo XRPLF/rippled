@@ -658,6 +658,12 @@ class Loan_test : public beast::unit_test::suite
         // Manage the loan
         // no-op
         env(manage(lender, keylet.key, 0));
+        {
+            // no flags
+            auto jt = manage(lender, keylet.key, 0);
+            jt.removeMember(sfFlags.getName());
+            env(jt);
+        }
         // Only the lender can manage
         env(manage(evan, keylet.key, 0), ter(tecNO_PERMISSION));
         // unknown flags
