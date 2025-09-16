@@ -39,6 +39,8 @@ namespace perf {
 
 class PerfLogTest : public PerfLog
 {
+    Peer peer;
+
     void
     rpcStart(std::string const& method, std::uint64_t requestId) override
     {
@@ -94,6 +96,12 @@ class PerfLogTest : public PerfLog
     void
     rotate() override
     {
+    }
+
+    Peer&
+    getPeerCounters() override
+    {
+        return peer;
     }
 };
 
