@@ -3457,7 +3457,19 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(mptAlice.isTransferFeePresent());
 
             // Bob can pay carol
-            mptAlice.pay(bob, carol, 50);
+            MPT const MPTC = mptAlice;
+            if (!features[featureMPTokensV2])
+            {
+                mptAlice.pay(bob, carol, 50);
+                BEAST_EXPECT(env.balance(carol, MPTC) == MPTC(50));
+            }
+            else
+            {
+                // The difference is due to the rounding in MPT/DEX.
+                // 1 MPTC is the transfer fee paid by bob to the issuer.
+                env(pay(bob, carol, mptAlice(50)), txflags(tfPartialPayment));
+                BEAST_EXPECT(env.balance(carol, MPTC) == MPTC(49));
+            }
 
             // Alice clears MPTCanTransfer
             mptAlice.set(
@@ -6268,6 +6280,7 @@ public:
         testMutateRequireAuth(all);
         testMutateCanEscrow(all);
         testMutateCanTransfer(all);
+        testMutateCanTransfer(all - featureMPTokensV2);
         testMutateCanClawback(all);
 
         // Test offer crossing
