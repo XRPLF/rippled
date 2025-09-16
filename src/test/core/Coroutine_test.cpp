@@ -213,12 +213,37 @@ public:
     }
 
     void
+    coroutineGetsDestroyedBeforeExecuting()
+    {
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        testcase("Coroutine gets destroyed before executing");
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FORCE_MULTI_THREAD = true;
+            return cfg;
+        }));
+
+        {
+            auto coro = std::make_shared<JobQueue::Coro>(
+                Coro_create_t{}, env.app().getJobQueue(), JobType::jtCLIENT, "test", [](auto coro) {
+
+                });
+        }
+
+        pass();
+
+    }
+
+    void
     run() override
     {
         correct_order();
         incorrect_order();
         thread_specific_storage();
         stopJobQueueWhenCoroutineSuspended();
+        coroutineGetsDestroyedBeforeExecuting();
     }
 };
 

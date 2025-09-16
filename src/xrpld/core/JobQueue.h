@@ -63,19 +63,26 @@ public:
         friend class JobQueue;
 
     private:
+        enum class CoroState
+        {
+            None,
+            Suspended,
+            Running,
+            Finished
+        };
+
         detail::LocalValues lvs_;
         JobQueue& jq_;
         JobType type_;
         std::string name_;
-        bool running_;
+        std::atomic<CoroState> state_ = CoroState::None;
         std::mutex mutex_;
         std::mutex mutex_run_;
         std::condition_variable cv_;
         boost::coroutines::asymmetric_coroutine<void>::pull_type coro_;
         boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
-#ifndef NDEBUG
-        bool finished_ = false;
-#endif
+
+        std::atomic_bool exiting_ = false;
 
     public:
         // Private: Used in the implementation

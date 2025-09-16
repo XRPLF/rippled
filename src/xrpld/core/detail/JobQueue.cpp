@@ -29,7 +29,7 @@ namespace ripple {
 bool
 JobQueue::Coro::shouldStop() const
 {
-    return jq_.stopping_ || jq_.stopped_ || !jq_.accepting_;
+    return jq_.stopping_ || jq_.stopped_ || !jq_.accepting_ || exiting_;
 }
 
 JobQueue::JobQueue(

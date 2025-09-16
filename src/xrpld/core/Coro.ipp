@@ -34,20 +34,21 @@ JobQueue::Coro::Coro(
     : jq_(jq)
     , type_(type)
     , name_(name)
-    , running_(false)
     , coro_(
           [this, fn = std::forward<F>(f)](
               boost::coroutines::asymmetric_coroutine<void>::push_type&
                   do_yield) {
               yield_ = &do_yield;
               yield();
+              // self makes Coro alive until this function returns
+              std::shared_ptr<Coro> self;
               if (!shouldStop())
               {
-                  fn(shared_from_this());
+                  self = shared_from_this();
+                  fn(self);
               }
-#ifndef NDEBUG
-              finished_ = true;
-#endif
+              state_ = CoroState::Finished;
+              cv_.notify_all();
           },
           boost::coroutines::attributes(megabytes(1)))
 {
@@ -55,8 +56,16 @@ JobQueue::Coro::Coro(
 
 inline JobQueue::Coro::~Coro()
 {
+    XRPL_ASSERT(state_ != CoroState::Running, "ripple::JobQueue::Coro::~Coro : is not running");
+    exiting_ = true;
+    // Resume the coroutine so that it has a chance to clean things up
+    if (state_ == CoroState::Suspended)
+    {
+        resume();
+    }
+
 #ifndef NDEBUG
-    XRPL_ASSERT(finished_, "ripple::JobQueue::Coro::~Coro : is finished");
+    XRPL_ASSERT(state_ == CoroState::Finished, "ripple::JobQueue::Coro::~Coro : is finished");
 #endif
 }
 
@@ -69,6 +78,7 @@ JobQueue::Coro::yield()
         {
             return;
         }
+        state_ = CoroState::Suspended;
         ++jq_.nSuspend_;
         jq_.m_suspendedCoros[this] = weak_from_this();
         jq_.cv_.notify_all();
@@ -79,11 +89,6 @@ JobQueue::Coro::yield()
 inline bool
 JobQueue::Coro::post()
 {
-    {
-        std::lock_guard lk(mutex_run_);
-        running_ = true;
-    }
-
     // sp keeps 'this' alive
     if (jq_.addJob(
             type_, name_, [this, sp = shared_from_this()]() { resume(); }))
@@ -91,9 +96,6 @@ JobQueue::Coro::post()
         return true;
     }
 
-    // The coroutine will not run.  Clean up running_.
-    std::lock_guard lk(mutex_run_);
-    running_ = false;
     cv_.notify_all();
     return false;
 }
@@ -103,12 +105,16 @@ JobQueue::Coro::resume()
 {
     {
         std::lock_guard lk(mutex_run_);
-        running_ = true;
+        if (state_ != CoroState::Suspended)
+        {
+            return;
+        }
+        state_ = CoroState::Running;
     }
     {
         std::lock_guard lock(jq_.m_mutex);
-        --jq_.nSuspend_;
         jq_.m_suspendedCoros.erase(this);
+        --jq_.nSuspend_;
         jq_.cv_.notify_all();
     }
     auto saved = detail::getLocalValues().release();
@@ -120,9 +126,6 @@ JobQueue::Coro::resume()
     coro_();
     detail::getLocalValues().release();
     detail::getLocalValues().reset(saved);
-    std::lock_guard lk(mutex_run_);
-    running_ = false;
-    cv_.notify_all();
 }
 
 inline bool
@@ -135,7 +138,7 @@ inline void
 JobQueue::Coro::join()
 {
     std::unique_lock<std::mutex> lk(mutex_run_);
-    cv_.wait(lk, [this]() { return running_ == false; });
+    cv_.wait(lk, [this]() { return state_ != CoroState::Running; });
 }
 
 }  // namespace ripple
