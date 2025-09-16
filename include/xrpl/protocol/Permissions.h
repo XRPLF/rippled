@@ -75,7 +75,7 @@ public:
     operator=(Permission const&) = delete;
 
     std::optional<std::string>
-    getPermissionName(std::uint32_t const& value) const;
+    getPermissionName(std::uint32_t const value) const;
 
     std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;

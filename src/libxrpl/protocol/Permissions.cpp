@@ -102,7 +102,7 @@ Permission::getInstance()
 }
 
 std::optional<std::string>
-Permission::getPermissionName(std::uint32_t const& value) const
+Permission::getPermissionName(std::uint32_t const value) const
 {
     auto const permissionValue = static_cast<GranularPermissionType>(value);
     auto const granular =
@@ -115,7 +115,7 @@ Permission::getPermissionName(std::uint32_t const& value) const
     else
     {
         auto const txType = Permission::getInstance().permissionToTxType(value);
-        auto item = TxFormats::getInstance().findByType(txType);
+        auto* item = TxFormats::getInstance().findByType(txType);
         if (item != nullptr)
             return item->getName();
     }
