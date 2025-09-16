@@ -33,12 +33,6 @@
 
 namespace ripple {
 
-bool
-AMMClawback::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureAMMClawback);
-}
-
 std::uint32_t
 AMMClawback::getFlagsMask(PreflightContext const& ctx)
 {

@@ -33,12 +33,6 @@ CreateTicket::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
 }
 
-bool
-CreateTicket::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureTicketBatch);
-}
-
 NotTEC
 CreateTicket::preflight(PreflightContext const& ctx)
 {

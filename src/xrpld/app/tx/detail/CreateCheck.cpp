@@ -28,12 +28,6 @@
 
 namespace ripple {
 
-bool
-CreateCheck::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureChecks);
-}
-
 NotTEC
 CreateCheck::preflight(PreflightContext const& ctx)
 {

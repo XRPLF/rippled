@@ -26,12 +26,6 @@
 
 namespace ripple {
 
-bool
-NFTokenBurn::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureNonFungibleTokensV1);
-}
-
 NotTEC
 NFTokenBurn::preflight(PreflightContext const& ctx)
 {

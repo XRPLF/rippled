@@ -26,12 +26,6 @@
 
 namespace ripple {
 
-bool
-MPTokenAuthorize::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureMPTokensV1);
-}
-
 std::uint32_t
 MPTokenAuthorize::getFlagsMask(PreflightContext const& ctx)
 {

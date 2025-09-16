@@ -42,12 +42,6 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
-bool
-DIDSet::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureDID);
-}
-
 NotTEC
 DIDSet::preflight(PreflightContext const& ctx)
 {
@@ -166,12 +160,6 @@ DIDSet::doApply()
     }
 
     return addSLE(ctx_, sleDID, account_);
-}
-
-bool
-DIDDelete::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureDID);
 }
 
 NotTEC

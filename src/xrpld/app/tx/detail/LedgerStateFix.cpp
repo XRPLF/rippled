@@ -27,12 +27,6 @@
 
 namespace ripple {
 
-bool
-LedgerStateFix::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(fixNFTokenPageLinks);
-}
-
 NotTEC
 LedgerStateFix::preflight(PreflightContext const& ctx)
 {

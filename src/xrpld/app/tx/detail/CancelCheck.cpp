@@ -29,12 +29,6 @@
 
 namespace ripple {
 
-bool
-CancelCheck::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureChecks);
-}
-
 NotTEC
 CancelCheck::preflight(PreflightContext const& ctx)
 {
