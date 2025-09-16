@@ -41,7 +41,7 @@ namespace ripple {
 assert(enforce)
 
 There are several asserts (or XRPL_ASSERTs) in this file that check a variable
-named `enforce` when an invariant fails. At first glace, those asserts may look
+named `enforce` when an invariant fails. At first glance, those asserts may look
 incorrect, but they are not.
 
 Those asserts take advantage of two facts:
@@ -49,11 +49,11 @@ Those asserts take advantage of two facts:
 2. Invariants should *never* fail, except in tests that specifically modify
    the open ledger to break them.
 
-To make it sort of a second-layer of invariant enforcement aimed at
-_developers_. It's designed to fire if a developer writes code that violates an
-invariant, and runs it in unit tests or a develop build that _does not have the
-relevant amendments enabled_. It's intentionally a pain in the neck so that bad
-code gets caught and fixed as early as possible.
+This makes `assert(enforce)` sort of a second-layer of invariant enforcement
+aimed at _developers_. It's designed to fire if a developer writes code that
+violates an invariant, and runs it in unit tests or a develop build that _does
+not have the relevant amendments enabled_. It's intentionally a pain in the neck
+so that bad code gets caught and fixed as early as possible.
 */
 
 enum Privilege {

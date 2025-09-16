@@ -175,7 +175,7 @@ TYPED_SFIELD(sfEmitParentTxnID,          UINT256,   11)
 TYPED_SFIELD(sfEmitNonce,                UINT256,   12)
 TYPED_SFIELD(sfEmitHookHash,             UINT256,   13)
 TYPED_SFIELD(sfAMMID,                    UINT256,   14,
-    SField::sMD_PseudoAccount |SField::sMD_Default)
+    SField::sMD_PseudoAccount | SField::sMD_Default)
 
 // 256-bit (uncommon)
 TYPED_SFIELD(sfBookDirectory,            UINT256,   16)
