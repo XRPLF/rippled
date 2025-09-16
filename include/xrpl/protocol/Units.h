@@ -77,6 +77,16 @@ concept Compatible = Valid<VU> && std::is_arithmetic_v<Other> &&
     std::is_arithmetic_v<typename VU::value_type> &&
     std::is_convertible_v<Other, typename VU::value_type>;
 
+template <class T>
+concept Integral = std::is_integral_v<T>;
+
+template <class VU>
+concept IntegralValue = Integral<typename VU::value_type>;
+
+template <class VU1, class VU2>
+concept CastableValue = IntegralValue<VU1> && IntegralValue<VU2> &&
+    std::is_same_v<typename VU1::unit_type, typename VU2::unit_type>;
+
 template <class UnitTag, class T>
 class ValueUnit : private boost::totally_ordered<ValueUnit<UnitTag, T>>,
                   private boost::additive<ValueUnit<UnitTag, T>>,
@@ -218,8 +228,8 @@ public:
         return *this;
     }
 
-    template <class transparent = value_type>
-    std::enable_if_t<std::is_integral_v<transparent>, ValueUnit&>
+    template <Integral transparent = value_type>
+    ValueUnit&
     operator%=(value_type const& rhs)
     {
         value_ %= rhs;
@@ -358,48 +368,26 @@ to_string(ValueUnit<UnitTag, T> const& amount)
     return std::to_string(amount.value());
 }
 
-template <Valid Source>
-constexpr bool can_muldiv_source_v =
+template <class Source>
+concept muldivSource = Valid<Source> &&
     std::is_convertible_v<typename Source::value_type, std::uint64_t>;
 
-template <Valid Dest>
-constexpr bool can_muldiv_dest_v =
-    can_muldiv_source_v<Dest> &&  // Dest is also a source
+template <class Dest>
+concept muldivDest = muldivSource<Dest> &&  // Dest is also a source
     std::is_convertible_v<std::uint64_t, typename Dest::value_type> &&
     sizeof(typename Dest::value_type) >= sizeof(std::uint64_t);
 
-template <Valid Source1, Valid Source2>
-constexpr bool can_muldiv_sources_v =
-    can_muldiv_source_v<Source1> && can_muldiv_source_v<Source2> &&
+template <class Source2, class Source1>
+concept muldivSources = muldivSource<Source1> && muldivSource<Source2> &&
     std::is_same_v<typename Source1::unit_type, typename Source2::unit_type>;
 
-template <Valid Source1, Valid Source2, Valid Dest>
-constexpr bool can_muldiv_v =
-    can_muldiv_sources_v<Source1, Source2> && can_muldiv_dest_v<Dest>;
+template <class Dest, class Source1, class Source2>
+concept muldivable = muldivSources<Source1, Source2> && muldivDest<Dest>;
 // Source and Dest can be the same by default
 
-template <Valid Source1, Valid Source2, Valid Dest>
-constexpr bool can_muldiv_commute_v = can_muldiv_v<Source1, Source2, Dest> &&
+template <class Dest, class Source1, class Source2>
+concept muldivCommutable = muldivable<Dest, Source1, Source2> &&
     !std::is_same_v<typename Source1::unit_type, typename Dest::unit_type>;
-
-template <class T>
-using enable_muldiv_source_t =
-    typename std::enable_if_t<can_muldiv_source_v<T>>;
-
-template <class T>
-using enable_muldiv_dest_t = typename std::enable_if_t<can_muldiv_dest_v<T>>;
-
-template <class Source1, class Source2>
-using enable_muldiv_sources_t =
-    typename std::enable_if_t<can_muldiv_sources_v<Source1, Source2>>;
-
-template <class Source1, class Source2, class Dest>
-using enable_muldiv_t =
-    typename std::enable_if_t<can_muldiv_v<Source1, Source2, Dest>>;
-
-template <class Source1, class Source2, class Dest>
-using enable_muldiv_commute_t =
-    typename std::enable_if_t<can_muldiv_commute_v<Source1, Source2, Dest>>;
 
 template <class T>
 ValueUnit<unitlessTag, T>
@@ -408,11 +396,7 @@ scalar(T value)
     return ValueUnit<unitlessTag, T>{value};
 }
 
-template <
-    class Source1,
-    class Source2,
-    class Dest,
-    class = enable_muldiv_t<Source1, Source2, Dest>>
+template <class Source1, class Source2, unit::muldivable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDivU(Source1 value, Dest mul, Source2 div)
 {
@@ -426,7 +410,7 @@ mulDivU(Source1 value, Dest mul, Source2 div)
         XRPL_ASSERT(
             mul.value() >= 0, "ripple::unit::mulDivU : minimum mul input");
         XRPL_ASSERT(
-            div.value() >= 0, "ripple::unit::mulDivU : minimum div input");
+            div.value() > 0, "ripple::unit::mulDivU : minimum div input");
         return std::nullopt;
     }
 
@@ -477,11 +461,7 @@ using TenthBips = unit::ValueUnit<unit::TenthBipsTag, T>;
 using TenthBips16 = TenthBips<std::uint16_t>;
 using TenthBips32 = TenthBips<std::uint32_t>;
 
-template <
-    class Source1,
-    class Source2,
-    class Dest,
-    class = unit::enable_muldiv_t<Source1, Source2, Dest>>
+template <class Source1, class Source2, unit::muldivable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDiv(Source1 value, Dest mul, Source2 div)
 {
@@ -491,8 +471,7 @@ mulDiv(Source1 value, Dest mul, Source2 div)
 template <
     class Source1,
     class Source2,
-    class Dest,
-    class = unit::enable_muldiv_commute_t<Source1, Source2, Dest>>
+    unit::muldivCommutable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDiv(Dest value, Source1 mul, Source2 div)
 {
@@ -500,7 +479,7 @@ mulDiv(Dest value, Source1 mul, Source2 div)
     return unit::mulDivU(mul, value, div);
 }
 
-template <class Dest, class = unit::enable_muldiv_dest_t<Dest>>
+template <unit::muldivDest Dest>
 std::optional<Dest>
 mulDiv(std::uint64_t value, Dest mul, std::uint64_t div)
 {
@@ -509,7 +488,7 @@ mulDiv(std::uint64_t value, Dest mul, std::uint64_t div)
     return unit::mulDivU(unit::scalar(value), mul, unit::scalar(div));
 }
 
-template <class Dest, class = unit::enable_muldiv_dest_t<Dest>>
+template <unit::muldivDest Dest>
 std::optional<Dest>
 mulDiv(Dest value, std::uint64_t mul, std::uint64_t div)
 {
@@ -517,10 +496,7 @@ mulDiv(Dest value, std::uint64_t mul, std::uint64_t div)
     return mulDiv(mul, value, div);
 }
 
-template <
-    class Source1,
-    class Source2,
-    class = unit::enable_muldiv_sources_t<Source1, Source2>>
+template <unit::muldivSource Source1, unit::muldivSources<Source1> Source2>
 std::optional<std::uint64_t>
 mulDiv(Source1 value, std::uint64_t mul, Source2 div)
 {
@@ -534,10 +510,7 @@ mulDiv(Source1 value, std::uint64_t mul, Source2 div)
     return unitresult->value();
 }
 
-template <
-    class Source1,
-    class Source2,
-    class = unit::enable_muldiv_sources_t<Source1, Source2>>
+template <unit::muldivSource Source1, unit::muldivSources<Source1> Source2>
 std::optional<std::uint64_t>
 mulDiv(std::uint64_t value, Source1 mul, Source2 div)
 {
@@ -545,44 +518,32 @@ mulDiv(std::uint64_t value, Source1 mul, Source2 div)
     return mulDiv(mul, value, div);
 }
 
-template <class Dest, class Src>
-constexpr std::enable_if_t<
-    std::is_same_v<typename Dest::unit_type, typename Src::unit_type> &&
-        std::is_integral_v<typename Dest::value_type> &&
-        std::is_integral_v<typename Src::value_type>,
-    Dest>
+template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
+constexpr Dest
 safe_cast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
     return Dest{safe_cast<typename Dest::value_type>(s.value())};
 }
 
-template <class Dest, class Src>
-constexpr std::enable_if_t<
-    std::is_integral_v<typename Dest::value_type> && std::is_integral_v<Src>,
-    Dest>
+template <unit::IntegralValue Dest, unit::Integral Src>
+constexpr Dest
 safe_cast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
     return Dest{safe_cast<typename Dest::value_type>(s)};
 }
 
-template <class Dest, class Src>
-constexpr std::enable_if_t<
-    std::is_same_v<typename Dest::unit_type, typename Src::unit_type> &&
-        std::is_integral_v<typename Dest::value_type> &&
-        std::is_integral_v<typename Src::value_type>,
-    Dest>
+template <unit::IntegralValue Dest, unit::CastableValue<Dest> Src>
+constexpr Dest
 unsafe_cast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
     return Dest{unsafe_cast<typename Dest::value_type>(s.value())};
 }
 
-template <class Dest, class Src>
-constexpr std::enable_if_t<
-    std::is_integral_v<typename Dest::value_type> && std::is_integral_v<Src>,
-    Dest>
+template <unit::IntegralValue Dest, unit::Integral Src>
+constexpr Dest
 unsafe_cast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
