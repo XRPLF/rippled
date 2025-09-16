@@ -48,12 +48,6 @@ using namespace credentials;
 
 // ------- CREATE --------------------------
 
-bool
-CredentialCreate::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureCredentials);
-}
-
 std::uint32_t
 CredentialCreate::getFlagsMask(PreflightContext const& ctx)
 {
@@ -199,11 +193,6 @@ CredentialCreate::doApply()
 }
 
 // ------- DELETE --------------------------
-bool
-CredentialDelete::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureCredentials);
-}
 
 std::uint32_t
 CredentialDelete::getFlagsMask(PreflightContext const& ctx)
@@ -282,12 +271,6 @@ CredentialDelete::doApply()
 }
 
 // ------- APPLY --------------------------
-
-bool
-CredentialAccept::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureCredentials);
-}
 
 std::uint32_t
 CredentialAccept::getFlagsMask(PreflightContext const& ctx)

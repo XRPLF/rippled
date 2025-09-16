@@ -75,12 +75,6 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-bool
-Clawback::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureClawback);
-}
-
 std::uint32_t
 Clawback::getFlagsMask(PreflightContext const& ctx)
 {

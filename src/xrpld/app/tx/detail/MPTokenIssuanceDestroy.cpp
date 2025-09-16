@@ -25,12 +25,6 @@
 
 namespace ripple {
 
-bool
-MPTokenIssuanceDestroy::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureMPTokensV1);
-}
-
 std::uint32_t
 MPTokenIssuanceDestroy::getFlagsMask(PreflightContext const& ctx)
 {

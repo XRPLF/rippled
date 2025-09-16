@@ -33,9 +33,6 @@ public:
     {
     }
 
-    static bool
-    isEnabled(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -53,9 +50,6 @@ public:
     explicit DIDDelete(ApplyContext& ctx) : Transactor(ctx)
     {
     }
-
-    static bool
-    isEnabled(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

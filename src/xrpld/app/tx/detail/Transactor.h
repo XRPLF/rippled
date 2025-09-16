@@ -203,7 +203,8 @@ public:
     /* Do NOT define an invokePreflight function in a derived class.
        Instead, define:
 
-        // Optional if the transaction is gated on an amendment
+        // Optional if the transaction is gated on an amendment that
+        // isn't specified in transactions.macro
         static bool
         isEnabled(PreflightContext const& ctx);
 
@@ -392,10 +393,6 @@ template <class T>
 NotTEC
 Transactor::invokePreflight(PreflightContext const& ctx)
 {
-    // TODO: If #5650 is merged, use its transaction -> amendment lookup here to
-    // do a first-pass check. Rewrite or remove any `isEnabled` overloads that
-    // check those default amendments.
-
     // Using this lookup does NOT require checking the fixDelegateV1_1. The data
     // exists regardless of whether it is enabled.
     auto const feature =

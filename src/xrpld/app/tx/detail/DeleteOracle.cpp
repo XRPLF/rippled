@@ -26,12 +26,6 @@
 
 namespace ripple {
 
-bool
-DeleteOracle::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featurePriceOracle);
-}
-
 NotTEC
 DeleteOracle::preflight(PreflightContext const& ctx)
 {
