@@ -509,7 +509,10 @@ RCLConsensus::Adaptor::doAccept(
     // we use the hash of the set.
     //
     // FIXME: Use a std::vector and a custom sorter instead of CanonicalTXSet?
-    CanonicalTXSet retriableTxs{result.txns.map_->getHash().as_uint256()};
+    bool useCanonicalTxSet =
+        ledgerMaster_.getValidatedRules().enabled(fixCanonicalTxSet);
+    CanonicalTXSet retriableTxs{
+        result.txns.map_->getHash().as_uint256(), useCanonicalTxSet};
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 

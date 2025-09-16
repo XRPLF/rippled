@@ -61,6 +61,7 @@ target_link_libraries(xrpl.imports.main
     absl::random_random
     date::date
     ed25519::ed25519
+    BLAKE3::blake3
     secp256k1::secp256k1
     xrpl.libpb
     xxHash::xxhash

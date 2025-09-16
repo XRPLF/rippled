@@ -19,6 +19,8 @@
 
 #include <xrpld/app/misc/CanonicalTXSet.h>
 
+#include <blake3.h>
+
 namespace ripple {
 
 bool
@@ -42,20 +44,35 @@ operator<(CanonicalTXSet::Key const& lhs, CanonicalTXSet::Key const& rhs)
 uint256
 CanonicalTXSet::accountKey(AccountID const& account)
 {
-    uint256 ret = beast::zero;
-    memcpy(ret.begin(), account.begin(), account.size());
-    ret ^= salt_;
-    return ret;
+    if (canonicalFix_)
+    {
+        blake3_hasher hasher;
+        blake3_hasher_init(&hasher);
+        blake3_hasher_update(&hasher, account.data(), account.size());
+        blake3_hasher_update(&hasher, salt_.data(), salt_.size());
+
+        uint256 result;
+        blake3_hasher_finalize(&hasher, result.data(), 32);
+        return result;
+    }
+    else
+    {
+        uint256 ret = beast::zero;
+        memcpy(ret.begin(), account.begin(), account.size());
+        ret ^= salt_;
+        return ret;
+    }
 }
 
 void
 CanonicalTXSet::insert(std::shared_ptr<STTx const> const& txn)
 {
-    map_.insert(std::make_pair(
-        Key(accountKey(txn->getAccountID(sfAccount)),
-            txn->getSeqProxy(),
-            txn->getTransactionID()),
-        txn));
+    map_.insert(
+        std::make_pair(
+            Key(accountKey(txn->getAccountID(sfAccount)),
+                txn->getSeqProxy(),
+                txn->getTransactionID()),
+            txn));
 }
 
 std::shared_ptr<STTx const>

@@ -113,6 +113,11 @@ public:
     {
     }
 
+    explicit CanonicalTXSet(LedgerHash const& saltHash, bool canonicalFix)
+        : salt_(saltHash), canonicalFix_(canonicalFix)
+    {
+    }
+
     void
     insert(std::shared_ptr<STTx const> const& txn);
 
@@ -173,6 +178,7 @@ private:
 
     // Used to salt the accounts so people can't mine for low account numbers
     uint256 salt_;
+    bool canonicalFix_ = false;
 };
 
 }  // namespace ripple
