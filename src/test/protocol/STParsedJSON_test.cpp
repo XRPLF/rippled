@@ -1114,7 +1114,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
                 auto const& issueField = (*obj.object)[sfAsset];
-                auto const& issue = issueField.value().get<Issue>();
+                auto const issue = issueField.value().get<Issue>();
                 BEAST_EXPECT(issue.currency.size() == 20);
                 BEAST_EXPECT(issue.account.size() == 20);
             }
@@ -1132,7 +1132,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
                 auto const& issueField = (*obj.object)[sfAsset];
-                auto const& issue = issueField.value().get<Issue>();
+                auto const issue = issueField.value().get<Issue>();
                 BEAST_EXPECT(issue.currency.size() == 20);
                 BEAST_EXPECT(issue.account.size() == 20);
             }
@@ -1150,7 +1150,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
                 auto const& issueField = (*obj.object)[sfAsset];
-                auto const& issue = issueField.value().get<MPTIssue>();
+                auto const issue = issueField.value().get<MPTIssue>();
                 BEAST_EXPECT(issue.getMptID().size() == 24);
             }
         }
