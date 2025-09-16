@@ -304,7 +304,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         // string is interpreted as hex
         {
             Json::Value j;
-            j[sfIndexNext] = "10000000000000000";
+            j[sfIndexNext] = "10000000000000000";  // uint64 max + 1 (in hex)
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
