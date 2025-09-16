@@ -3503,7 +3503,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 125);
             BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 125);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(20'000));
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-20'000));
 
             // bob can finish escrow
             env(escrow::finish(bob, alice, seq1),
@@ -3522,7 +3522,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                                                                  : MPT(20'000);
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == escrowedWithFix);
             BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == escrowedWithFix);
-            BEAST_EXPECT(env.balance(gw, MPT) == outstandingWithFix);
+            BEAST_EXPECT(env.balance(gw, MPT) == -outstandingWithFix);
         }
 
         // test locked rate: cancel
@@ -3567,7 +3567,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.balance(alice, MPT) == preAlice);
             BEAST_EXPECT(env.balance(bob, MPT) == preBob);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(20'000));
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-20'000));
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
             BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
         }
@@ -3608,7 +3608,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 125);
             BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 125);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(20'000));
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-20'000));
 
             // bob can finish escrow
             env(escrow::finish(gw, alice, seq1),
@@ -3620,7 +3620,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(alice, MPT) == preAlice - delta);
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
             BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
-            BEAST_EXPECT(env.balance(gw, MPT) == MPT(19'875));
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(-19'875));
         }
     }
 
