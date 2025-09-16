@@ -84,7 +84,7 @@ constexpr std::
 }
 
 // LCOV_EXCL_START
-static std::string
+static inline std::string
 make_name(std::string const& object, std::string const& field)
 {
     if (field.empty())
@@ -93,7 +93,7 @@ make_name(std::string const& object, std::string const& field)
     return object + "." + field;
 }
 
-static Json::Value
+static inline Json::Value
 not_an_object(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -101,20 +101,20 @@ not_an_object(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' is not a JSON object.");
 }
 
-static Json::Value
+static inline Json::Value
 not_an_object(std::string const& object)
 {
     return not_an_object(object, "");
 }
 
-static Json::Value
+static inline Json::Value
 not_an_array(std::string const& object)
 {
     return RPC::make_error(
         rpcINVALID_PARAMS, "Field '" + object + "' is not a JSON array.");
 }
 
-static Json::Value
+static inline Json::Value
 unknown_field(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -122,7 +122,7 @@ unknown_field(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' is unknown.");
 }
 
-static Json::Value
+static inline Json::Value
 out_of_range(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -130,7 +130,7 @@ out_of_range(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' is out of range.");
 }
 
-static Json::Value
+static inline Json::Value
 bad_type(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -138,7 +138,7 @@ bad_type(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' has bad type.");
 }
 
-static Json::Value
+static inline Json::Value
 invalid_data(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -146,13 +146,13 @@ invalid_data(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' has invalid data.");
 }
 
-static Json::Value
+static inline Json::Value
 invalid_data(std::string const& object)
 {
     return invalid_data(object, "");
 }
 
-static Json::Value
+static inline Json::Value
 array_expected(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -160,7 +160,7 @@ array_expected(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' must be a JSON array.");
 }
 
-static Json::Value
+static inline Json::Value
 string_expected(std::string const& object, std::string const& field)
 {
     return RPC::make_error(
@@ -168,7 +168,7 @@ string_expected(std::string const& object, std::string const& field)
         "Field '" + make_name(object, field) + "' must be a string.");
 }
 
-static Json::Value
+static inline Json::Value
 too_deep(std::string const& object)
 {
     return RPC::make_error(
@@ -176,7 +176,7 @@ too_deep(std::string const& object)
         "Field '" + object + "' exceeds nesting depth limit.");
 }
 
-static Json::Value
+static inline Json::Value
 singleton_expected(std::string const& object, unsigned int index)
 {
     return RPC::make_error(
@@ -185,7 +185,7 @@ singleton_expected(std::string const& object, unsigned int index)
             "]' must be an object with a single key/object value.");
 }
 
-static Json::Value
+static inline Json::Value
 template_mismatch(SField const& sField)
 {
     return RPC::make_error(
@@ -194,7 +194,7 @@ template_mismatch(SField const& sField)
             "' contents did not meet requirements for that type.");
 }
 
-static Json::Value
+static inline Json::Value
 non_object_in_array(std::string const& item, Json::UInt index)
 {
     return RPC::make_error(
