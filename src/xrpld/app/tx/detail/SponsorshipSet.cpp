@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SponsorshipSet.h>
 #include <xrpld/ledger/View.h>
 
@@ -120,6 +121,42 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
     }
 
     return preflight2(ctx);
+}
+
+TER
+SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
+
+    auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) ||
+        tx.isFieldPresent(sfMaxFee) ||
+        tx.isFlag(tfSponsorshipSetRequireSignForFee);
+    auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
+        tx.isFlag(tfSponsorshipSetRequireSignForReserve);
+
+    if (granularPermissions.contains(SponsorFee) && sponsoringFee)
+        return tesSUCCESS;
+
+    if (granularPermissions.contains(SponsorReserve) && sponsoringReserve)
+        return tesSUCCESS;
+
+    // TODO: needs to check permission to delete sponsorship?
+
+    return tecNO_DELEGATE_PERMISSION;
 }
 
 TER

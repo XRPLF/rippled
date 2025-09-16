@@ -66,3 +66,9 @@ PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547)
 
 /** This permission grants the delegated account the ability to unlock MPToken. */
 PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)
+
+/** This permission grants the delegated account the ability to set SponsorFee. */
+PERMISSION(SponsorFee, ttSPONSORSHIP_SET, 65549)
+
+/** This permission grants the delegated account the ability to set SponsorReserve. */
+PERMISSION(SponsorReserve, ttSPONSORSHIP_SET, 65550)
