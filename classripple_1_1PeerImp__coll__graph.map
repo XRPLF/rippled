@@ -1,5 +1,5 @@
 <map id="ripple::PeerImp" name="ripple::PeerImp">
-<area shape="rect" id="Node000001" title=" " alt="" coords="2380,1805,2501,1831"/>
+<area shape="rect" id="Node000001" title="This class manages established peer&#45;to&#45;peer connections, handles message exchange,..." alt="" coords="2380,1805,2501,1831"/>
 <area shape="rect" id="Node000002" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="2018,5,2114,31"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="2128,6,2184,4,2246,10,2278,18,2307,29,2334,45,2358,67,2370,97,2380,156,2397,347,2411,607,2422,904,2437,1477,2442,1805,2437,1805,2431,1478,2417,904,2406,607,2392,347,2374,157,2364,99,2354,70,2331,50,2305,34,2276,23,2245,15,2184,9,2128,12"/>
 <area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="1979,55,2153,95"/>

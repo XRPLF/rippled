@@ -12,5 +12,7 @@ var searchData=
   ['hotdummy_9',['hotDUMMY',['../namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3aeb18fdb4f02b0dd4e85b203a75477bce',1,'ripple']]],
   ['hotledger_10',['hotLEDGER',['../namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ae32ab8a0b50eee52b61ca3c8e5a56da1',1,'ripple']]],
   ['hottransaction_5fnode_11',['hotTRANSACTION_NODE',['../namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3aad6a443f1fefba026adfb0c5a2d9a671',1,'ripple']]],
-  ['hotunknown_12',['hotUNKNOWN',['../namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b',1,'ripple']]]
+  ['hotunknown_12',['hotUNKNOWN',['../namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ac9d2b0df1bd24ef0d09db1040dceac6b',1,'ripple']]],
+  ['httpread_13',['HttpRead',['../classripple_1_1ConnectAttempt.html#afb1f4f2f566ea89049b4ff534ea4e236a980454cc92082e9bfdef8a54ebd79af4',1,'ripple::ConnectAttempt']]],
+  ['httpwrite_14',['HttpWrite',['../classripple_1_1ConnectAttempt.html#afb1f4f2f566ea89049b4ff534ea4e236a85592b64c275ebaa18344ec3b9fdc590',1,'ripple::ConnectAttempt']]]
 ];

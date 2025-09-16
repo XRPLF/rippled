@@ -1,0 +1,5 @@
+<map id="ripple::ConnectAttempt::StepTimeouts" name="ripple::ConnectAttempt::StepTimeouts">
+<area shape="rect" id="Node000001" title="Defines timeout values for each connection step." alt="" coords="5,152,179,192"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="15,5,169,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="95,44,95,152,89,152,89,44"/>
+</map>

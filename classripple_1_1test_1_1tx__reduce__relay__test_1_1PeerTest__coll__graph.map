@@ -1,6 +1,6 @@
 <map id="ripple::test::tx_reduce_relay_test::PeerTest" name="ripple::test::tx_reduce_relay_test::PeerTest">
 <area shape="rect" id="Node000001" title=" " alt="" coords="2551,2456,2715,2496"/>
-<area shape="rect" id="Node000002" href="$classripple_1_1PeerImp.html" title=" " alt="" coords="2380,1672,2501,1698"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1PeerImp.html" title="This class manages established peer&#45;to&#45;peer connections, handles message exchange,..." alt="" coords="2380,1672,2501,1698"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="2451,1711,2629,2455,2624,2456,2446,1712"/>
 <area shape="rect" id="Node000003" href="$classripple_1_1Peer.html" title="Represents a peer connection in the overlay." alt="" coords="2018,115,2114,140"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="2128,116,2184,114,2246,120,2277,127,2307,139,2334,155,2358,177,2368,203,2377,253,2393,416,2407,639,2419,893,2435,1386,2442,1672,2436,1672,2430,1386,2413,894,2402,639,2388,417,2372,254,2363,204,2354,180,2331,159,2305,144,2276,133,2245,125,2184,119,2128,121"/>
