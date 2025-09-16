@@ -710,16 +710,17 @@ private:
  * @brief Invariants: Vault object and MPTokenIssuance for vault shares
  *
  * - vault deleted and vault created is empty
+ * - vault created must be linked to pseudo-account for shares and assets
  * - vault must have MPTokenIssuance for shares
  * - vault without shares outstanding must have no shares
  * - loss unrealized does not exceed the difference between assets total and
  *   assets available
- * - assets available does not exceed assets total
- * - vault deposit increases assets and share issuance, and adds to
- *   total assets, assets available and shares outstanding
+ * - assets available do not exceed assets total
+ * - vault deposit increases assets and share issuance, and adds to:
+ *   total assets, assets available, shares outstanding
  * - vault withdrawal and clawback reduce assets and share issuance, and
- *   subtracts from total assets, assets available and shares outstanding
- * - set must not alter the vault assets or shares balance
+ *   subtracts from: total assets, assets available, shares outstanding
+ * - vault set must not alter the vault assets or shares balance
  * - no vault transaction can change loss unrealized (it's updated by loan
  *   transactions)
  *
@@ -730,6 +731,7 @@ class ValidVault
 
     struct Vault final
     {
+        uint256 key = beast::zero;
         Asset asset = {};
         AccountID pseudoId = {};
         uint192 shareMPTID = beast::zero;

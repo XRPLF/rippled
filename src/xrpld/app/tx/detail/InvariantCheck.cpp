@@ -2047,6 +2047,7 @@ ValidVault::Vault::make(SLE const& from)
         "ValidVault::Vault::make : from Vault object");
 
     ValidVault::Vault self;
+    self.key = from.key();
     self.asset = from.at(sfAsset);
     self.pseudoId = from.getAccountID(sfAccount);
     self.shareMPTID = from.getFieldH192(sfShareMPTID);
@@ -2451,8 +2452,34 @@ ValidVault::finalize(
                     if (afterVault_->pseudoId != updatedShares->issuer)
                     {
                         JLOG(j.fatal())  //
+                            << "Invariant failed: shares issuer and vault "
+                               "pseudo-account must be the same";
+                        result = false;
+                    }
+
+                    auto const sleSharesIssuer =
+                        view.read(keylet::account(updatedShares->issuer));
+                    if (!sleSharesIssuer)
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: shares issuer must exist";
+                        return false;
+                    }
+
+                    if (!isPseudoAccount(sleSharesIssuer))
+                    {
+                        JLOG(j.fatal())  //
                             << "Invariant failed: shares issuer must be "
-                               "vault pseudo-account";
+                               "a pseudo-account";
+                        result = false;
+                    }
+
+                    if (auto const vaultId = (*sleSharesIssuer)[~sfVaultID];
+                        !vaultId || *vaultId != afterVault_->key)
+                    {
+                        JLOG(j.fatal())  //
+                            << "Invariant failed: shares issuer pseudo-account "
+                               "must point back to the vault";
                         result = false;
                     }
 

@@ -26,6 +26,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -2121,9 +2122,88 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {
                 "created vault must be empty",
-                "assets maximum must be positive",
+                "updated zero sized vault must have no assets outstanding",
                 "create operation must not have updated a vault",
-                "shares issuer must be vault pseudo-account",
+            },
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsTotal] = 9;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {
+                "created vault must be empty",
+                "updated zero sized vault must have no assets available",
+                "assets available must not be greater than assets outstanding",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsAvailable] = 9;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {
+                "created vault must be empty",
+                "loss unrealized must not exceed the difference between assets "
+                "outstanding and available",
+                "vault transaction must not change loss unrealized",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfLossUnrealized] = 1;
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {
+                "created vault must be empty",
+                "create operation must not have updated a vault",
             },
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 auto const keylet = keylet::vault(A1.id(), ac.view().seq());
@@ -2134,10 +2214,62 @@ class Invariants_test : public beast::unit_test::suite
                     keylet::mptIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
-                (*sleVault)[sfAssetsTotal] = 9;
-                (*sleVault)[sfAssetsMaximum] = Number(-1);
                 ac.view().update(sleVault);
                 (*sleShares)[sfOutstandingAmount] = 9;
+                ac.view().update(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {
+                "assets maximum must be positive",
+                "create operation must not have updated a vault",
+            },
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfAssetsMaximum] = Number(-1);
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            [&](Account const& A1, Account const& A2, Env& env) {
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = A1, .asset = xrpIssue()});
+                env(tx);
+                return true;
+            });
+
+        doInvariantCheck(
+            {"create operation must not have updated a vault",
+             "shares issuer and vault pseudo-account must be the same",
+             "shares issuer must be a pseudo-account",
+             "shares issuer pseudo-account must point back to the vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                ac.view().update(sleVault);
                 (*sleShares)[sfIssuer] = A1.id();
                 ac.view().update(sleShares);
                 return true;
@@ -2152,6 +2284,121 @@ class Invariants_test : public beast::unit_test::suite
                 env(tx);
                 return true;
             });
+
+        doInvariantCheck(
+            {"shares issuer and vault pseudo-account must be the same",
+             "shares issuer pseudo-account must point back to the vault"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sequence = ac.view().seq();
+                auto const vaultKeylet = keylet::vault(A1.id(), sequence);
+                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const vaultPage = ac.view().dirInsert(
+                    keylet::ownerDir(A1.id()),
+                    sleVault->key(),
+                    describeOwnerDir(A1.id()));
+                sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+
+                auto pseudoId =
+                    pseudoAccountAddress(ac.view(), vaultKeylet.key);
+                // Create pseudo-account.
+                auto sleAccount =
+                    std::make_shared<SLE>(keylet::account(pseudoId));
+                sleAccount->setAccountID(sfAccount, pseudoId);
+                sleAccount->setFieldAmount(sfBalance, STAmount{});
+                std::uint32_t const seqno =                             //
+                    ac.view().rules().enabled(featureSingleAssetVault)  //
+                    ? 0                                                 //
+                    : sequence;
+                sleAccount->setFieldU32(sfSequence, seqno);
+                sleAccount->setFieldU32(
+                    sfFlags,
+                    lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+                // sleAccount->setFieldH256(sfVaultID, vaultKeylet.key);
+                // Setting wrong vault key
+                sleAccount->setFieldH256(sfVaultID, uint256(42));
+                ac.view().insert(sleAccount);
+
+                auto const sharesMptId = makeMptID(sequence, pseudoId);
+                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto sleShares = std::make_shared<SLE>(sharesKeylet);
+                auto const sharesPage = ac.view().dirInsert(
+                    keylet::ownerDir(pseudoId),
+                    sharesKeylet,
+                    describeOwnerDir(pseudoId));
+                sleShares->setFieldU64(sfOwnerNode, *sharesPage);
+
+                sleShares->at(sfFlags) = 0;
+                sleShares->at(sfIssuer) = pseudoId;
+                sleShares->at(sfOutstandingAmount) = 0;
+                sleShares->at(sfSequence) = sequence;
+
+                // sleVault->at(sfAccount) = pseudoId;
+                // Setting wrong pseudo acocunt ID
+                sleVault->at(sfAccount) = A2.id();
+                sleVault->at(sfFlags) = 0;
+                sleVault->at(sfSequence) = sequence;
+                sleVault->at(sfOwner) = A1.id();
+                sleVault->at(sfAssetsTotal) = Number(0);
+                sleVault->at(sfAssetsAvailable) = Number(0);
+                sleVault->at(sfLossUnrealized) = Number(0);
+                sleVault->at(sfShareMPTID) = sharesMptId;
+                sleVault->at(sfWithdrawalPolicy) =
+                    vaultStrategyFirstComeFirstServe;
+
+                ac.view().insert(sleVault);
+                ac.view().insert(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
+
+        doInvariantCheck(
+            {"shares issuer and vault pseudo-account must be the same",
+             "shares issuer must exist"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sequence = ac.view().seq();
+                auto const vaultKeylet = keylet::vault(A1.id(), sequence);
+                auto sleVault = std::make_shared<SLE>(vaultKeylet);
+                auto const vaultPage = ac.view().dirInsert(
+                    keylet::ownerDir(A1.id()),
+                    sleVault->key(),
+                    describeOwnerDir(A1.id()));
+                sleVault->setFieldU64(sfOwnerNode, *vaultPage);
+
+                auto const sharesMptId = makeMptID(sequence, A2.id());
+                auto const sharesKeylet = keylet::mptIssuance(sharesMptId);
+                auto sleShares = std::make_shared<SLE>(sharesKeylet);
+                auto const sharesPage = ac.view().dirInsert(
+                    keylet::ownerDir(A2.id()),
+                    sharesKeylet,
+                    describeOwnerDir(A2.id()));
+                sleShares->setFieldU64(sfOwnerNode, *sharesPage);
+
+                sleShares->at(sfFlags) = 0;
+                // Setting wrong pseudo acocunt ID
+                sleShares->at(sfIssuer) = AccountID(uint160(42));
+                sleShares->at(sfOutstandingAmount) = 0;
+                sleShares->at(sfSequence) = sequence;
+
+                sleVault->at(sfAccount) = A2.id();
+                sleVault->at(sfFlags) = 0;
+                sleVault->at(sfSequence) = sequence;
+                sleVault->at(sfOwner) = A1.id();
+                sleVault->at(sfAssetsTotal) = Number(0);
+                sleVault->at(sfAssetsAvailable) = Number(0);
+                sleVault->at(sfLossUnrealized) = Number(0);
+                sleVault->at(sfShareMPTID) = sharesMptId;
+                sleVault->at(sfWithdrawalPolicy) =
+                    vaultStrategyFirstComeFirstServe;
+
+                ac.view().insert(sleVault);
+                ac.view().insert(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_CREATE, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED});
 
         testcase << "Vault deposit";
         doInvariantCheck(
