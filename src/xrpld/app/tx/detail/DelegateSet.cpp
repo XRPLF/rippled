@@ -27,12 +27,6 @@
 
 namespace ripple {
 
-bool
-DelegateSet::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featurePermissionDelegation);
-}
-
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {

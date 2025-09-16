@@ -28,8 +28,7 @@ namespace ripple {
 bool
 NFTokenModify::isEnabled(PreflightContext const& ctx)
 {
-    return ctx.rules.enabled(featureNonFungibleTokensV1_1) &&
-        ctx.rules.enabled(featureDynamicNFT);
+    return ctx.rules.enabled(featureNonFungibleTokensV1_1);
 }
 
 NotTEC

@@ -164,12 +164,6 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     return signerFees + txnFees + batchBase;
 }
 
-bool
-Batch::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureBatch);
-}
-
 std::uint32_t
 Batch::getFlagsMask(PreflightContext const& ctx)
 {

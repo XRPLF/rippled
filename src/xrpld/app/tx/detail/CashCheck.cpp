@@ -32,12 +32,6 @@
 
 namespace ripple {
 
-bool
-CashCheck::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureChecks);
-}
-
 NotTEC
 CashCheck::preflight(PreflightContext const& ctx)
 {

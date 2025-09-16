@@ -24,12 +24,6 @@
 
 namespace ripple {
 
-bool
-PermissionedDomainDelete::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featurePermissionedDomains);
-}
-
 NotTEC
 PermissionedDomainDelete::preflight(PreflightContext const& ctx)
 {

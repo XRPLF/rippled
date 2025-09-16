@@ -36,12 +36,6 @@ tokenPairKey(STObject const& pair)
         pair.getFieldCurrency(sfQuoteAsset).currency());
 }
 
-bool
-SetOracle::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featurePriceOracle);
-}
-
 NotTEC
 SetOracle::preflight(PreflightContext const& ctx)
 {

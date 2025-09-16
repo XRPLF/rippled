@@ -29,9 +29,6 @@ namespace ripple {
 bool
 MPTokenIssuanceSet::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return false;
-
     return !ctx.tx.isFieldPresent(sfDomainID) ||
         (ctx.rules.enabled(featurePermissionedDomains) &&
          ctx.rules.enabled(featureSingleAssetVault));
@@ -64,7 +61,6 @@ static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
-
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
     auto const metadata = ctx.tx[~sfMPTokenMetadata];
     auto const transferFee = ctx.tx[~sfTransferFee];

@@ -28,12 +28,6 @@
 
 namespace ripple {
 
-bool
-NFTokenCancelOffer::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureNonFungibleTokensV1);
-}
-
 std::uint32_t
 NFTokenCancelOffer::getFlagsMask(PreflightContext const& ctx)
 {

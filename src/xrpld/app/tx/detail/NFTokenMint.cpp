@@ -49,9 +49,6 @@ hasOfferFields(PreflightContext const& ctx)
 bool
 NFTokenMint::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
-        return false;
-
     return ctx.rules.enabled(featureNFTokenMintOffer) || !hasOfferFields(ctx);
 }
 

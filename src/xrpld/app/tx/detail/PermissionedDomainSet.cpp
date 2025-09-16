@@ -31,8 +31,7 @@ namespace ripple {
 bool
 PermissionedDomainSet::isEnabled(PreflightContext const& ctx)
 {
-    return ctx.rules.enabled(featurePermissionedDomains) &&
-        ctx.rules.enabled(featureCredentials);
+    return ctx.rules.enabled(featureCredentials);
 }
 
 NotTEC

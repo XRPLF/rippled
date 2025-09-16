@@ -28,9 +28,6 @@ namespace ripple {
 bool
 MPTokenIssuanceCreate::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return false;
-
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !(ctx.rules.enabled(featurePermissionedDomains) &&
           ctx.rules.enabled(featureSingleAssetVault)))

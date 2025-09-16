@@ -42,9 +42,6 @@ public:
     {
     }
 
-    static bool
-    isEnabled(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
