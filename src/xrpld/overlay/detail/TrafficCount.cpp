@@ -46,7 +46,7 @@ std::unordered_map<protocol::MessageType, TrafficCount::category> const
         {protocol::mtTRANSACTIONS,
          TrafficCount::category::requested_transactions},
         {protocol::mtSQUELCH, TrafficCount::category::squelch},
-};
+        {protocol::mtCLOSE, TrafficCount::category::close}};
 
 TrafficCount::category
 TrafficCount::categorize(

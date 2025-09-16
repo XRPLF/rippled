@@ -95,7 +95,7 @@ private:
 
     std::atomic<Tracking> tracking_;
     clock_type::time_point trackingTime_;
-    bool detaching_ = false;
+    bool shutdown_ = false;
     // Node public key of peer.
     PublicKey const publicKey_;
     std::string name_;
@@ -175,7 +175,6 @@ private:
     http_response_type response_;
     boost::beast::http::fields const& headers_;
     std::queue<std::shared_ptr<Message>> send_queue_;
-    bool gracefulClose_ = false;
     int large_sendq_ = 0;
     std::unique_ptr<LoadEvent> load_event_;
     // The highest sequence of each PublisherList that has
@@ -426,7 +425,7 @@ public:
     isHighLatency() const override;
 
     void
-    fail(std::string const& reason);
+    fail(protocol::TMCloseReason reason);
 
     bool
     compressionEnabled() const override
@@ -445,10 +444,10 @@ private:
     close();
 
     void
-    fail(std::string const& name, error_code ec);
+    sendAndClose(protocol::TMCloseReason reason);
 
     void
-    gracefulClose();
+    fail(std::string const& name, error_code ec);
 
     void
     setTimer();
@@ -462,10 +461,6 @@ private:
     // Called when the timer wait completes
     void
     onTimer(boost::system::error_code const& ec);
-
-    // Called when SSL shutdown completes
-    void
-    onShutdown(error_code ec);
 
     void
     doAccept();
@@ -584,6 +579,8 @@ public:
     onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m);
     void
     onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m);
+    void
+    onMessage(std::shared_ptr<protocol::TMClose> const& m);
 
 private:
     //--------------------------------------------------------------------------
