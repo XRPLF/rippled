@@ -31,20 +31,34 @@ MPTokenIssuanceCreate::isEnabled(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return false;
 
-    return !ctx.tx.isFieldPresent(sfDomainID) ||
-        (ctx.rules.enabled(featurePermissionedDomains) &&
-         ctx.rules.enabled(featureSingleAssetVault));
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !(ctx.rules.enabled(featurePermissionedDomains) &&
+          ctx.rules.enabled(featureSingleAssetVault)))
+        return false;
+
+    if (ctx.tx.isFieldPresent(sfMutableFlags) &&
+        !ctx.rules.enabled(featureDynamicMPT))
+        return false;
+
+    return true;
 }
 
 std::uint32_t
 MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
 {
+    // This mask is only compared against sfFlags
     return tfMPTokenIssuanceCreateMask;
 }
 
 NotTEC
 MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
+    // If the mutable flags field is included, at least one flag must be
+    // specified.
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
+        (!*mutableFlags || *mutableFlags & tfMPTokenIssuanceCreateMutableMask))
+        return temINVALID_FLAG;
+
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
         if (fee > maxTransferFee)
@@ -135,6 +149,9 @@ MPTokenIssuanceCreate::create(
         if (args.domainId)
             (*mptIssuance)[sfDomainID] = *args.domainId;
 
+        if (args.mutableFlags)
+            (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
+
         view.insert(mptIssuance);
     }
 
@@ -161,6 +178,7 @@ MPTokenIssuanceCreate::doApply()
             .transferFee = tx[~sfTransferFee],
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
+            .mutableFlags = tx[~sfMutableFlags],
         });
     return result ? tesSUCCESS : result.error();
 }
