@@ -187,12 +187,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
 
-    if (auto const startDate(tx[sfStartDate]); hasExpired(ctx.view, startDate))
-    {
-        JLOG(ctx.j.warn()) << "Start date is in the past.";
-        return tecEXPIRED;
-    }
-
     auto const account = tx[sfAccount];
     auto const brokerID = tx[sfLoanBrokerID];
 
@@ -223,7 +217,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
     }
 
-    auto const brokerPseudo = brokerSle->at(sfAccount);
     auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
     if (!vault)
         // Should be impossible
@@ -247,16 +240,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (auto const ret = checkFrozen(ctx.view, borrower, asset))
     {
         JLOG(ctx.j.warn()) << "Borrower account is frozen.";
-        return ret;
-    }
-    // TODO: Remove when LoanDraw is combined with LoanSet
-    // brokerPseudo is eventually going to send funds to the borrower, so it
-    // can't be frozen now. It is also going to receive funds, so it can't be
-    // deep frozen, but being frozen is a prerequisite for being deep frozen, so
-    // checking the one is sufficient.
-    if (auto const ret = checkFrozen(ctx.view, brokerPseudo, asset))
-    {
-        JLOG(ctx.j.warn()) << "Broker pseudo-account account is frozen.";
         return ret;
     }
     // brokerOwner is going to receive funds if there's an origination fee, so
@@ -360,16 +343,26 @@ LoanSet::doApply()
     if (mPriorBalance < view.fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
 
-    // Create a holding for the borrower if one does not already exist.
-
     // Account for the origination fee using two payments
     //
     // 1. Transfer loanAssetsAvailable (principalRequested - originationFee)
-    // from vault pseudo-account to LoanBroker pseudo-account.
+    // from vault pseudo-account to the borrower.
+    // Create a holding for the borrower if one does not already exist.
+    if (auto const ter = addEmptyHolding(
+            view,
+            borrower,
+            borrowerSle->at(sfBalance).value().xrp(),
+            vaultAsset,
+            j_);
+        ter && ter != tecDUPLICATE)
+        // ignore tecDUPLICATE. That means the holding already exists, and
+        // is fine here
+        return ter;
+
     if (auto const ter = accountSend(
             view,
             vaultPseudo,
-            brokerPseudo,
+            borrower,
             STAmount{vaultAsset, loanAssetsAvailable},
             j_,
             WaiveTransferFee::Yes))
@@ -414,7 +407,7 @@ LoanSet::doApply()
         paymentInterval,
         paymentTotal,
         managementFeeRate);
-    auto const startDate = tx[sfStartDate];
+    auto const startDate = view.info().closeTime.time_since_epoch().count();
     auto loanSequence = brokerSle->at(sfLoanSequence);
 
     // Create the loan
@@ -453,7 +446,6 @@ LoanSet::doApply()
     loan->at(sfPreviousPaymentDate) = 0;
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
-    loan->at(sfAssetsAvailable) = loanAssetsAvailable;
     view.insert(loan);
 
     // Update the balances in the vault

@@ -1,3 +1,4 @@
+#if LOANDRAW
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
@@ -50,4 +51,5 @@ public:
 
 }  // namespace ripple
 
+#endif
 #endif

@@ -793,7 +793,6 @@ Json::Value
 set(AccountID const& account,
     uint256 const& loanBrokerID,
     Number principalRequested,
-    NetClock::time_point const& startDate,
     std::uint32_t flags = 0);
 
 auto const counterparty = JTxFieldWrapper<accountIDField>(sfCounterparty);
@@ -835,12 +834,14 @@ manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
 Json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
 
+#if loandraw
 Json::Value
 draw(
     AccountID const& account,
     uint256 const& loanID,
     STAmount const& amount,
     std::uint32_t flags = 0);
+#endif
 
 Json::Value
 pay(AccountID const& account,
