@@ -44,6 +44,13 @@ struct STInteger_test : public beast::unit_test::suite
             "The transaction was applied. Only final in a validated ledger.");
         BEAST_EXPECT(tr.getSType() == STI_UINT8);
         BEAST_EXPECT(tr.getJson(JsonOptions::none) == "tesSUCCESS");
+
+        // invalid transaction result
+        STUInt8 tr2(sfTransactionResult, 255);
+        BEAST_EXPECT(tr2.value() == 255);
+        BEAST_EXPECT(tr2.getText() == "255");
+        BEAST_EXPECT(tr2.getSType() == STI_UINT8);
+        BEAST_EXPECT(tr2.getJson(JsonOptions::none) == 255);
     }
 
     void
@@ -104,6 +111,13 @@ struct STInteger_test : public beast::unit_test::suite
         auto jsonVal = u64.getJson(JsonOptions::none);
         BEAST_EXPECT(jsonVal.isString());
         BEAST_EXPECT(jsonVal.asString() == "ffffffffffffffff");
+
+        STUInt64 u64_2(sfMaximumAmount, 0xFFFFFFFFFFFFFFFFull);
+        BEAST_EXPECT(u64_2.value() == 0xFFFFFFFFFFFFFFFFull);
+        BEAST_EXPECT(u64_2.getText() == "18446744073709551615");
+        BEAST_EXPECT(u64_2.getSType() == STI_UINT64);
+        BEAST_EXPECT(
+            u64_2.getJson(JsonOptions::none) == "18446744073709551615");
     }
 
     void
