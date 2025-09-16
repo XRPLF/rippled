@@ -34,7 +34,6 @@
 #include <type_traits>
 
 namespace ripple {
-
 namespace detail {
 
 struct epsilon_multiple
