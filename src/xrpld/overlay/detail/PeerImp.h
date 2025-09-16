@@ -35,6 +35,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/detail/StreamInterface.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
@@ -49,6 +50,37 @@ namespace ripple {
 struct ValidatorBlobInfo;
 class SHAMap;
 
+/** Attributes extracted from peer HTTP headers */
+struct PeerAttributes
+{
+    // Feature flags
+    bool compressionEnabled = false;
+    bool txReduceRelayEnabled = false;
+    bool ledgerReplayEnabled = false;
+    bool vpReduceRelayEnabled = false;
+
+    // Connection information
+    bool crawlEnabled = false;
+    std::optional<std::string> userAgent;
+    std::optional<std::string> serverInfo;
+    std::optional<std::string> networkId;
+    std::optional<std::string> serverDomain;
+
+    // Ledger information
+    std::optional<uint256> closedLedgerHash;
+    std::optional<uint256> previousLedgerHash;
+
+    // Validation state
+    bool hasValidLedgerHashes = false;
+};
+
+/** Extract peer attributes from HTTP headers and application configuration */
+PeerAttributes
+extractPeerAttributes(
+    boost::beast::http::fields const& headers,
+    Config const& config,
+    bool inbound);
+
 class PeerImp : public Peer,
                 public std::enable_shared_from_this<PeerImp>,
                 public OverlayImpl::Child
@@ -60,7 +92,6 @@ public:
 private:
     using clock_type = std::chrono::steady_clock;
     using error_code = boost::system::error_code;
-    using socket_type = boost::asio::ip::tcp::socket;
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream<middle_type>;
     using address_type = boost::asio::ip::address;
@@ -68,55 +99,6 @@ private:
     using waitable_timer =
         boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
     using Compressed = compression::Compressed;
-
-    Application& app_;
-    id_t const id_;
-    beast::WrappedSink sink_;
-    beast::WrappedSink p_sink_;
-    beast::Journal const journal_;
-    beast::Journal const p_journal_;
-    std::unique_ptr<stream_type> stream_ptr_;
-    socket_type& socket_;
-    stream_type& stream_;
-    boost::asio::strand<boost::asio::executor> strand_;
-    waitable_timer timer_;
-
-    // Updated at each stage of the connection process to reflect
-    // the current conditions as closely as possible.
-    beast::IP::Endpoint const remote_address_;
-
-    // These are up here to prevent warnings about order of initializations
-    //
-    OverlayImpl& overlay_;
-    bool const inbound_;
-
-    // Protocol version to use for this link
-    ProtocolVersion protocol_;
-
-    std::atomic<Tracking> tracking_;
-    clock_type::time_point trackingTime_;
-    bool detaching_ = false;
-    // Node public key of peer.
-    PublicKey const publicKey_;
-    std::string name_;
-    std::shared_mutex mutable nameMutex_;
-
-    // The indices of the smallest and largest ledgers this peer has available
-    //
-    LedgerIndex minLedger_ = 0;
-    LedgerIndex maxLedger_ = 0;
-    uint256 closedLedgerHash_;
-    uint256 previousLedgerHash_;
-
-    boost::circular_buffer<uint256> recentLedgers_{128};
-    boost::circular_buffer<uint256> recentTxSets_{128};
-
-    std::optional<std::chrono::milliseconds> latency_;
-    std::optional<std::uint32_t> lastPingSeq_;
-    clock_type::time_point lastPingTime_;
-    clock_type::time_point const creationTime_;
-
-    reduce_relay::Squelch<UptimeClock> squelch_;
 
     // Notes on thread locking:
     //
@@ -165,37 +147,6 @@ private:
         }
     };
 
-    std::mutex mutable recentLock_;
-    protocol::TMStatusChange last_status_;
-    Resource::Consumer usage_;
-    ChargeWithContext fee_;
-    std::shared_ptr<PeerFinder::Slot> const slot_;
-    boost::beast::multi_buffer read_buffer_;
-    http_request_type request_;
-    http_response_type response_;
-    boost::beast::http::fields const& headers_;
-    std::queue<std::shared_ptr<Message>> send_queue_;
-    bool gracefulClose_ = false;
-    int large_sendq_ = 0;
-    std::unique_ptr<LoadEvent> load_event_;
-    // The highest sequence of each PublisherList that has
-    // been sent to or received from this peer.
-    hash_map<PublicKey, std::size_t> publisherListSequences_;
-
-    Compressed compressionEnabled_ = Compressed::Off;
-
-    // Queue of transactions' hashes that have not been
-    // relayed. The hashes are sent once a second to a peer
-    // and the peer requests missing transactions from the node.
-    hash_set<uint256> txQueue_;
-    // true if tx reduce-relay feature is enabled on the peer.
-    bool txReduceRelayEnabled_ = false;
-
-    bool ledgerReplayEnabled_ = false;
-    LedgerReplayMsgHandler ledgerReplayMsgHandler_;
-
-    friend class OverlayImpl;
-
     class Metrics
     {
     public:
@@ -229,6 +180,78 @@ private:
         Metrics recv;
     } metrics_;
 
+    Application& app_;
+    id_t const id_;
+
+    beast::WrappedSink sink_;
+    beast::WrappedSink p_sink_;
+    beast::Journal const journal_;
+    beast::Journal const p_journal_;
+
+    std::unique_ptr<StreamInterface> stream_ptr_;
+    boost::asio::strand<boost::asio::executor> strand_;
+    waitable_timer timer_;
+
+    // Updated at each stage of the connection process to reflect
+    // the current conditions as closely as possible.
+    beast::IP::Endpoint const remote_address_;
+
+    // These are up here to prevent warnings about order of initializations
+    //
+    OverlayImpl& overlay_;
+    bool const inbound_;
+
+    // Protocol version to use for this link
+    ProtocolVersion protocol_;
+
+    std::atomic<Tracking> tracking_;
+    clock_type::time_point trackingTime_;
+    bool detaching_ = false;
+    // Node public key of peer.
+    PublicKey const publicKey_;
+    std::string name_;
+
+    // The indices of the smallest and largest ledgers this peer has available
+    //
+    LedgerIndex minLedger_ = 0;
+    LedgerIndex maxLedger_ = 0;
+    uint256 closedLedgerHash_;
+    uint256 previousLedgerHash_;
+
+    boost::circular_buffer<uint256> recentLedgers_{128};
+    boost::circular_buffer<uint256> recentTxSets_{128};
+
+    std::optional<std::chrono::milliseconds> latency_;
+    std::optional<std::uint32_t> lastPingSeq_;
+    clock_type::time_point lastPingTime_;
+    clock_type::time_point const creationTime_;
+
+    reduce_relay::Squelch<UptimeClock> squelch_;
+
+    std::mutex mutable recentLock_;
+    protocol::TMStatusChange last_status_;
+    Resource::Consumer usage_;
+    ChargeWithContext fee_;
+    std::shared_ptr<PeerFinder::Slot> const slot_;
+    boost::beast::multi_buffer read_buffer_;
+    PeerAttributes const attributes_;
+    std::queue<std::shared_ptr<Message>> send_queue_;
+    bool gracefulClose_ = false;
+    int large_sendq_ = 0;
+    std::unique_ptr<LoadEvent> load_event_;
+    // The highest sequence of each PublisherList that has
+    // been sent to or received from this peer.
+    hash_map<PublicKey, std::size_t> publisherListSequences_;
+
+    // Queue of transactions' hashes that have not been
+    // relayed. The hashes are sent once a second to a peer
+    // and the peer requests missing transactions from the node.
+    hash_set<uint256> txQueue_;
+
+    LedgerReplayMsgHandler ledgerReplayMsgHandler_;
+
+    friend class OverlayImpl;
+
 public:
     PeerImp(PeerImp const&) = delete;
     PeerImp&
@@ -237,29 +260,30 @@ public:
     /** Create an active incoming peer from an established ssl connection. */
     PeerImp(
         Application& app,
-        id_t id,
+        OverlayImpl& overlay,
         std::shared_ptr<PeerFinder::Slot> const& slot,
-        http_request_type&& request,
-        PublicKey const& publicKey,
-        ProtocolVersion protocol,
+        std::unique_ptr<StreamInterface>&& stream_ptr,
         Resource::Consumer consumer,
-        std::unique_ptr<stream_type>&& stream_ptr,
-        OverlayImpl& overlay);
+        ProtocolVersion protocol,
+        PeerAttributes const& attributes,
+        PublicKey const& publicKey,
+        id_t id,
+        std::string const& name);
 
     /** Create outgoing, handshaked peer. */
-    // VFALCO legacyPublicKey should be implied by the Slot
     template <class Buffers>
     PeerImp(
         Application& app,
-        std::unique_ptr<stream_type>&& stream_ptr,
+        std::unique_ptr<StreamInterface>&& stream_ptr,
         Buffers const& buffers,
         std::shared_ptr<PeerFinder::Slot>&& slot,
-        http_response_type&& response,
-        Resource::Consumer usage,
+        Resource::Consumer consumer,
         PublicKey const& publicKey,
         ProtocolVersion protocol,
         id_t id,
-        OverlayImpl& overlay);
+        PeerAttributes const& attributes,
+        OverlayImpl& overlay,
+        std::string const& name);
 
     virtual ~PeerImp();
 
@@ -431,13 +455,13 @@ public:
     bool
     compressionEnabled() const override
     {
-        return compressionEnabled_ == Compressed::On;
+        return attributes_.compressionEnabled;
     }
 
     bool
     txReduceRelayEnabled() const override
     {
-        return txReduceRelayEnabled_;
+        return attributes_.txReduceRelayEnabled;
     }
 
 private:
@@ -518,6 +542,9 @@ private:
     void
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
+
+    bool
+    socketOpen() const;
 
 public:
     //--------------------------------------------------------------------------
@@ -650,15 +677,16 @@ private:
 template <class Buffers>
 PeerImp::PeerImp(
     Application& app,
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<StreamInterface>&& stream_ptr,
     Buffers const& buffers,
     std::shared_ptr<PeerFinder::Slot>&& slot,
-    http_response_type&& response,
     Resource::Consumer usage,
     PublicKey const& publicKey,
     ProtocolVersion protocol,
     id_t id,
-    OverlayImpl& overlay)
+    PeerAttributes const& attributes,
+    OverlayImpl& overlay,
+    std::string const& name)
     : Child(overlay)
     , app_(app)
     , id_(id)
@@ -667,10 +695,8 @@ PeerImp::PeerImp(
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
-    , socket_(stream_ptr_->next_layer().socket())
-    , stream_(*stream_ptr_)
-    , strand_(boost::asio::make_strand(socket_.get_executor()))
-    , timer_(waitable_timer{socket_.get_executor()})
+    , strand_(boost::asio::make_strand(stream_ptr_->get_executor()))
+    , timer_(waitable_timer{stream_ptr_->get_executor()})
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(false)
@@ -678,43 +704,25 @@ PeerImp::PeerImp(
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
+    , name_(name)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
     , squelch_(app_.journal("Squelch"))
     , usage_(usage)
     , fee_{Resource::feeTrivialPeer}
     , slot_(std::move(slot))
-    , response_(std::move(response))
-    , headers_(response_)
-    , compressionEnabled_(
-          peerFeatureEnabled(
-              headers_,
-              FEATURE_COMPR,
-              "lz4",
-              app_.config().COMPRESSION)
-              ? Compressed::On
-              : Compressed::Off)
-    , txReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_TXRR,
-          app_.config().TX_REDUCE_RELAY_ENABLE))
-    , ledgerReplayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_LEDGER_REPLAY,
-          app_.config().LEDGER_REPLAY))
+    , attributes_(attributes)
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.info())
-        << "compression enabled " << (compressionEnabled_ == Compressed::On)
-        << " vp reduce-relay base squelch enabled "
-        << peerFeatureEnabled(
-               headers_,
-               FEATURE_VPRR,
-               app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
-        << remote_address_ << " " << id_;
+    JLOG(journal_.info()) << "compression enabled "
+                          << attributes_.compressionEnabled
+                          << " vp reduce-relay base squelch enabled "
+                          << attributes_.vpReduceRelayEnabled
+                          << " tx reduce-relay enabled "
+                          << attributes_.txReduceRelayEnabled << " on "
+                          << remote_address_ << " " << id_;
 }
 
 template <class FwdIt, class>

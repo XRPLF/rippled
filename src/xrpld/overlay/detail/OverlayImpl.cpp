@@ -25,6 +25,7 @@
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
+#include <xrpld/overlay/detail/InboundHandshake.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
@@ -39,6 +40,7 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/server/SimpleWriter.h>
+#include <xrpl/server/detail/StreamInterface.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/executor_work_guard.hpp>
@@ -163,7 +165,7 @@ OverlayImpl::OverlayImpl(
 
 Handoff
 OverlayImpl::onHandoff(
-    std::unique_ptr<stream_type>&& stream_ptr,
+    std::unique_ptr<stream_type>&& ssl_stream_ptr,
     http_request_type&& request,
     endpoint_type remote_endpoint)
 {
@@ -172,9 +174,7 @@ OverlayImpl::onHandoff(
     beast::Journal journal(sink);
 
     Handoff handoff;
-    if (processRequest(request, handoff))
-        return handoff;
-    if (!isPeerUpgrade(request))
+    if (processRequest(request, handoff) || !isPeerUpgrade(request))
         return handoff;
 
     handoff.moved = true;
@@ -183,7 +183,7 @@ OverlayImpl::onHandoff(
 
     error_code ec;
     auto const local_endpoint(
-        stream_ptr->next_layer().socket().local_endpoint(ec));
+        ssl_stream_ptr->next_layer().socket().local_endpoint(ec));
     if (ec)
     {
         JLOG(journal.debug()) << remote_endpoint << " failed: " << ec.message();
@@ -195,16 +195,27 @@ OverlayImpl::onHandoff(
     if (consumer.disconnect(journal))
         return handoff;
 
-    auto const [slot, result] = m_peerFinder->new_inbound_slot(
-        beast::IPAddressConversion::from_asio(local_endpoint),
-        beast::IPAddressConversion::from_asio(remote_endpoint));
-
-    if (slot == nullptr)
+    auto const negotiatedVersion = negotiateProtocolVersion(request["Upgrade"]);
+    if (!negotiatedVersion)
     {
-        // connection refused either IP limit exceeded or self-connect
         handoff.moved = false;
-        JLOG(journal.debug())
-            << "Peer " << remote_endpoint << " refused, " << to_string(result);
+        handoff.response = makeErrorResponse(
+            request,
+            remote_endpoint.address(),
+            "Unable to agree on a protocol version");
+        handoff.keep_alive = false;
+        return handoff;
+    }
+
+    auto stream_ptr =
+        std::make_unique<ProductionStream>(std::move(ssl_stream_ptr));
+    auto const sharedValue = stream_ptr->makeSharedValue(journal);
+    if (!sharedValue)
+    {
+        handoff.moved = false;
+        handoff.response = makeErrorResponse(
+            request, remote_endpoint.address(), "Incorrect security cookie");
+        handoff.keep_alive = false;
         return handoff;
     }
 
@@ -217,38 +228,23 @@ OverlayImpl::onHandoff(
             }) == types.end())
         {
             handoff.moved = false;
-            handoff.response =
-                makeRedirectResponse(slot, request, remote_endpoint.address());
+            handoff.response = makeErrorResponse(
+                request, remote_endpoint.address(), "Invalid Peer Type");
             handoff.keep_alive = beast::rfc2616::is_keep_alive(request);
             return handoff;
         }
     }
 
-    auto const negotiatedVersion = negotiateProtocolVersion(request["Upgrade"]);
-    if (!negotiatedVersion)
-    {
-        m_peerFinder->on_closed(slot);
-        handoff.moved = false;
-        handoff.response = makeErrorResponse(
-            slot,
-            request,
-            remote_endpoint.address(),
-            "Unable to agree on a protocol version");
-        handoff.keep_alive = false;
-        return handoff;
-    }
+    auto const [slot, result] = m_peerFinder->new_inbound_slot(
+        beast::IPAddressConversion::from_asio(local_endpoint),
+        beast::IPAddressConversion::from_asio(remote_endpoint));
 
-    auto const sharedValue = makeSharedValue(*stream_ptr, journal);
-    if (!sharedValue)
+    if (slot == nullptr)
     {
-        m_peerFinder->on_closed(slot);
+        // connection refused either IP limit exceeded or self-connect
         handoff.moved = false;
-        handoff.response = makeErrorResponse(
-            slot,
-            request,
-            remote_endpoint.address(),
-            "Incorrect security cookie");
-        handoff.keep_alive = false;
+        JLOG(journal.debug())
+            << "Peer " << remote_endpoint << " refused, " << to_string(result);
         return handoff;
     }
 
@@ -266,10 +262,12 @@ OverlayImpl::onHandoff(
             // The node gets a reserved slot if it is in our cluster
             // or if it has a reservation.
             bool const reserved =
-                static_cast<bool>(app_.cluster().member(publicKey)) ||
+                app_.cluster().member(publicKey).has_value() ||
                 app_.peerReservations().contains(publicKey);
+
             auto const result =
                 m_peerFinder->activate(slot, publicKey, reserved);
+
             if (result != PeerFinder::Result::success)
             {
                 m_peerFinder->on_closed(slot);
@@ -283,7 +281,11 @@ OverlayImpl::onHandoff(
             }
         }
 
-        auto const peer = std::make_shared<PeerImp>(
+        // Extract peer attributes from the request before creating PeerImp
+        auto const attributes =
+            extractPeerAttributes(request, app_.config(), true);
+
+        auto const p = std::make_shared<InboundHandshake>(
             app_,
             id,
             slot,
@@ -292,23 +294,14 @@ OverlayImpl::onHandoff(
             *negotiatedVersion,
             consumer,
             std::move(stream_ptr),
+            attributes,
+            remote_endpoint,
             *this);
-        {
-            // As we are not on the strand, run() must be called
-            // while holding the lock, otherwise new I/O can be
-            // queued after a call to stop().
-            std::lock_guard<decltype(mutex_)> lock(mutex_);
-            {
-                auto const result = m_peers.emplace(peer->slot(), peer);
-                XRPL_ASSERT(
-                    result.second,
-                    "ripple::OverlayImpl::onHandoff : peer is inserted");
-                (void)result.second;
-            }
-            list_.emplace(peer.get(), peer);
 
-            peer->run();
-        }
+        std::lock_guard lock(mutex_);
+        list_.emplace(p.get(), p);
+        p->run();
+
         handoff.moved = true;
         return handoff;
     }
@@ -319,8 +312,8 @@ OverlayImpl::onHandoff(
 
         m_peerFinder->on_closed(slot);
         handoff.moved = false;
-        handoff.response = makeErrorResponse(
-            slot, request, remote_endpoint.address(), e.what());
+        handoff.response =
+            makeErrorResponse(request, remote_endpoint.address(), e.what());
         handoff.keep_alive = false;
         return handoff;
     }
@@ -374,7 +367,6 @@ OverlayImpl::makeRedirectResponse(
 
 std::shared_ptr<Writer>
 OverlayImpl::makeErrorResponse(
-    std::shared_ptr<PeerFinder::Slot> const& slot,
     http_request_type const& request,
     address_type remote_address,
     std::string text)
