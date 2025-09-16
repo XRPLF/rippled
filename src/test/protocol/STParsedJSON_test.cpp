@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STXChainBridge.h>
 
@@ -1547,6 +1548,127 @@ class STParsedJSON_test : public beast::unit_test::suite
     }
 
     void
+    testNumber()
+    {
+        // Valid integer value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = 12345;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            BEAST_EXPECT(
+                obj.object->getFieldNumber(sfNumber).value() ==
+                Number(12345, 0));
+        }
+
+        // Valid uint value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = 12345u;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            BEAST_EXPECT(
+                obj.object->getFieldNumber(sfNumber).value() ==
+                Number(12345, 0));
+        }
+
+        // Valid string integer value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = "67890";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            BEAST_EXPECT(
+                obj.object->getFieldNumber(sfNumber).value() ==
+                Number(67890, 0));
+        }
+
+        // Valid negative integer value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = -42;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            BEAST_EXPECT(
+                obj.object->getFieldNumber(sfNumber).value() == Number(-42, 0));
+        }
+
+        // Valid string negative integer value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = "-123";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            BEAST_EXPECT(
+                obj.object->getFieldNumber(sfNumber).value() ==
+                Number(-123, 0));
+        }
+
+        // Valid floating point value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = "3.14159";
+            STParsedJSONObject obj("Test", j);
+            if (BEAST_EXPECT(obj.object.has_value()))
+            {
+                BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+                BEAST_EXPECT(
+                    obj.object->getFieldNumber(sfNumber).value() ==
+                    Number(314159, -5));
+            }
+        }
+
+        // Valid string floating point value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = "2.71828";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            BEAST_EXPECT(
+                obj.object->getFieldNumber(sfNumber).value() ==
+                Number(271828, -5));
+        }
+
+        // Invalid string value for STNumber (not a number)
+        {
+            Json::Value j;
+            j[sfNumber] = "notanumber";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid array value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = Json::Value(Json::arrayValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Invalid object value for STNumber
+        {
+            Json::Value j;
+            j[sfNumber] = Json::Value(Json::objectValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Empty string for STNumber (should fail)
+        {
+            Json::Value j;
+            j[sfNumber] = "";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+    }
+
+    void
     run() override
     {
         testUInt8();
@@ -1566,6 +1688,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         testXChainBridge();
         testObject();
         testArray();
+        testNumber();
     }
 };
 
