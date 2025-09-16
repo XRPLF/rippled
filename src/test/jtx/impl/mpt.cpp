@@ -102,6 +102,8 @@ MPTTester::create(MPTCreate const& arg)
         jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
     if (arg.domainID)
         jv[sfDomainID] = to_string(*arg.domainID);
+    if (arg.mutableFlags)
+        jv[sfMutableFlags] = *arg.mutableFlags;
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
@@ -240,19 +242,59 @@ MPTTester::set(MPTSet const& arg)
         jv[sfDelegate] = arg.delegate->human();
     if (arg.domainID)
         jv[sfDomainID] = to_string(*arg.domainID);
-    if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
+    if (arg.mutableFlags)
+        jv[sfMutableFlags] = *arg.mutableFlags;
+    if (arg.transferFee)
+        jv[sfTransferFee] = *arg.transferFee;
+    if (arg.metadata)
+        jv[sfMPTokenMetadata] = strHex(*arg.metadata);
+    if (submit(arg, jv) == tesSUCCESS && (arg.flags || arg.mutableFlags))
     {
         auto require = [&](std::optional<Account> const& holder,
                            bool unchanged) {
             auto flags = getFlags(holder);
             if (!unchanged)
             {
-                if (*arg.flags & tfMPTLock)
-                    flags |= lsfMPTLocked;
-                else if (*arg.flags & tfMPTUnlock)
-                    flags &= ~lsfMPTLocked;
-                else
-                    Throw<std::runtime_error>("Invalid flags");
+                if (arg.flags)
+                {
+                    if (*arg.flags & tfMPTLock)
+                        flags |= lsfMPTLocked;
+                    else if (*arg.flags & tfMPTUnlock)
+                        flags &= ~lsfMPTLocked;
+                }
+
+                if (arg.mutableFlags)
+                {
+                    if (*arg.mutableFlags & tfMPTSetCanLock)
+                        flags |= lsfMPTCanLock;
+                    else if (*arg.mutableFlags & tfMPTClearCanLock)
+                        flags &= ~lsfMPTCanLock;
+
+                    if (*arg.mutableFlags & tfMPTSetRequireAuth)
+                        flags |= lsfMPTRequireAuth;
+                    else if (*arg.mutableFlags & tfMPTClearRequireAuth)
+                        flags &= ~lsfMPTRequireAuth;
+
+                    if (*arg.mutableFlags & tfMPTSetCanEscrow)
+                        flags |= lsfMPTCanEscrow;
+                    else if (*arg.mutableFlags & tfMPTClearCanEscrow)
+                        flags &= ~lsfMPTCanEscrow;
+
+                    if (*arg.mutableFlags & tfMPTSetCanClawback)
+                        flags |= lsfMPTCanClawback;
+                    else if (*arg.mutableFlags & tfMPTClearCanClawback)
+                        flags &= ~lsfMPTCanClawback;
+
+                    if (*arg.mutableFlags & tfMPTSetCanTrade)
+                        flags |= lsfMPTCanTrade;
+                    else if (*arg.mutableFlags & tfMPTClearCanTrade)
+                        flags &= ~lsfMPTCanTrade;
+
+                    if (*arg.mutableFlags & tfMPTSetCanTransfer)
+                        flags |= lsfMPTCanTransfer;
+                    else if (*arg.mutableFlags & tfMPTClearCanTransfer)
+                        flags &= ~lsfMPTCanTransfer;
+                }
             }
             env_.require(mptflags(*this, flags, holder));
         };
@@ -311,6 +353,43 @@ MPTTester::checkFlags(
     std::optional<Account> const& holder) const
 {
     return expectedFlags == getFlags(holder);
+}
+
+[[nodiscard]] bool
+MPTTester::checkMetadata(std::string const& metadata) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        if (sle->isFieldPresent(sfMPTokenMetadata))
+            return strHex(sle->getFieldVL(sfMPTokenMetadata)) ==
+                strHex(metadata);
+        return false;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::isMetadataPresent() const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return sle->isFieldPresent(sfMPTokenMetadata);
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkTransferFee(std::uint16_t transferFee) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        if (sle->isFieldPresent(sfTransferFee))
+            return sle->getFieldU16(sfTransferFee) == transferFee;
+        return false;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::isTransferFeePresent() const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return sle->isFieldPresent(sfTransferFee);
+    });
 }
 
 void
