@@ -29,6 +29,7 @@ class STParsedJSON_test : public beast::unit_test::suite
     void
     testUInt8()
     {
+        testcase("UInt8");
         {
             Json::Value j;
             j[sfCloseResolution] = 255;
@@ -111,6 +112,7 @@ class STParsedJSON_test : public beast::unit_test::suite
     void
     testUInt16()
     {
+        testcase("UInt16");
         // Test with int value
         {
             Json::Value j;
@@ -189,11 +191,20 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
+
+        // Invalid input for other field
+        {
+            Json::Value j;
+            j[sfTransferFee] = "Payment";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
     }
 
     void
     testUInt32()
     {
+        testcase("UInt32");
         {
             Json::Value j;
             j[sfNetworkID] = 4294967295u;
@@ -258,6 +269,7 @@ class STParsedJSON_test : public beast::unit_test::suite
     void
     testUInt64()
     {
+        testcase("UInt64");
         {
             Json::Value j;
             j[sfIndexNext] = "ffffffffffffffff";
@@ -339,8 +351,388 @@ class STParsedJSON_test : public beast::unit_test::suite
     }
 
     void
+    testUInt128()
+    {
+        testcase("UInt128");
+        {
+            Json::Value j;
+            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDEF";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
+            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
+        }
+
+        // Valid lowercase hex string for UInt128
+        {
+            Json::Value j;
+            j[sfEmailHash] = "0123456789abcdef0123456789abcdef";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
+            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
+        }
+
+        // Empty string for UInt128 (should be valid, all zero)
+        {
+            Json::Value j;
+            j[sfEmailHash] = "";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
+            auto const& h128 = obj.object->getFieldH128(sfEmailHash);
+            BEAST_EXPECT(h128.size() == 16);
+            bool allZero = std::all_of(
+                h128.begin(), h128.end(), [](auto b) { return b == 0; });
+            BEAST_EXPECT(allZero);
+        }
+
+        // Odd-length hex string for UInt128 (should fail)
+        {
+            Json::Value j;
+            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDE";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Non-hex string for UInt128 (should fail)
+        {
+            Json::Value j;
+            j[sfEmailHash] = "nothexstring";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string too short for UInt128 (should fail)
+        {
+            Json::Value j;
+            j[sfEmailHash] = "01234567";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string too long for UInt128 (should fail)
+        {
+            Json::Value j;
+            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDEF00";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Array value for UInt128 (should fail)
+        {
+            Json::Value j;
+            j[sfEmailHash] = Json::Value(Json::arrayValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Object value for UInt128 (should fail)
+        {
+            Json::Value j;
+            j[sfEmailHash] = Json::Value(Json::objectValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+    }
+
+    void
+    testUInt160()
+    {
+        testcase("UInt160");
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF01234567";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
+            BEAST_EXPECT(
+                obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
+        }
+        // Valid lowercase hex string for UInt160
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = "0123456789abcdef0123456789abcdef01234567";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
+            BEAST_EXPECT(
+                obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
+        }
+
+        // Empty string for UInt160 (should be valid, all zero)
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = "";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
+            auto const& h160 = obj.object->getFieldH160(sfTakerPaysCurrency);
+            BEAST_EXPECT(h160.size() == 20);
+            bool allZero = std::all_of(
+                h160.begin(), h160.end(), [](auto b) { return b == 0; });
+            BEAST_EXPECT(allZero);
+        }
+
+        // Odd-length hex string for UInt160 (should fail)
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF0123456";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Non-hex string for UInt160 (should fail)
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = "nothexstring";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string too short for UInt160 (should fail)
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = "01234567";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string too long for UInt160 (should fail)
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] =
+                "0123456789ABCDEF0123456789ABCDEF0123456789";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string with invalid characters for UInt160 (should fail)
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = "0123456789ABCDEG0123456789ABCDEF01234567";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Array value for UInt160 (should fail)
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = Json::Value(Json::arrayValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Object value for UInt160 (should fail)
+        {
+            Json::Value j;
+            j[sfTakerPaysCurrency] = Json::Value(Json::objectValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+    }
+
+    void
+    testUInt192()
+    {
+        testcase("UInt192");
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] =
+                "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
+            BEAST_EXPECT(
+                obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
+        }
+
+        // Valid lowercase hex string for UInt192
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] =
+                "ffffffffffffffffffffffffffffffffffffffffffffffff";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
+            BEAST_EXPECT(
+                obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
+        }
+
+        // Empty string for UInt192 (should be valid, all zero)
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] = "";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
+            auto const& h192 = obj.object->getFieldH192(sfMPTokenIssuanceID);
+            BEAST_EXPECT(h192.size() == 24);
+            bool allZero = std::all_of(
+                h192.begin(), h192.end(), [](auto b) { return b == 0; });
+            BEAST_EXPECT(allZero);
+        }
+
+        // Odd-length hex string for UInt192 (should fail)
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] =
+                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDE";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Non-hex string for UInt192 (should fail)
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] = "nothexstring";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string too short for UInt192 (should fail)
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] = "01234567";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string too long for UInt192 (should fail)
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] =
+                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF00";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Array value for UInt192 (should fail)
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] = Json::Value(Json::arrayValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Object value for UInt192 (should fail)
+        {
+            Json::Value j;
+            j[sfMPTokenIssuanceID] = Json::Value(Json::objectValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+    }
+
+    void
+    testUInt256()
+    {
+        testcase("UInt256");
+        // Test with valid hex string for UInt256
+        {
+            Json::Value j;
+            j[sfLedgerHash] =
+                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
+                "EF";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
+            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
+        }
+        // Valid lowercase hex string for UInt256
+        {
+            Json::Value j;
+            j[sfLedgerHash] =
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd"
+                "ef";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
+            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
+        }
+
+        // Empty string for UInt256 (should be valid, all zero)
+        {
+            Json::Value j;
+            j[sfLedgerHash] = "";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
+            auto const& h256 = obj.object->getFieldH256(sfLedgerHash);
+            BEAST_EXPECT(h256.size() == 32);
+            bool allZero = std::all_of(
+                h256.begin(), h256.end(), [](auto b) { return b == 0; });
+            BEAST_EXPECT(allZero);
+        }
+
+        // Odd-length hex string for UInt256 (should fail)
+        {
+            Json::Value j;
+            j[sfLedgerHash] =
+                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
+                "E";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Non-hex string for UInt256 (should fail)
+        {
+            Json::Value j;
+            j[sfLedgerHash] = "nothexstring";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string too short for UInt256 (should fail)
+        {
+            Json::Value j;
+            j[sfLedgerHash] = "01234567";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string too long for UInt256 (should fail)
+        {
+            Json::Value j;
+            j[sfLedgerHash] =
+                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
+                "EF00";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Hex string with invalid characters for UInt256 (should fail)
+        {
+            Json::Value j;
+            j[sfLedgerHash] =
+                "0123456789ABCDEG0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
+                "EF";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Array value for UInt256 (should fail)
+        {
+            Json::Value j;
+            j[sfLedgerHash] = Json::Value(Json::arrayValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Object value for UInt256 (should fail)
+        {
+            Json::Value j;
+            j[sfLedgerHash] = Json::Value(Json::objectValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+    }
+
+    void
     testBlob()
     {
+        testcase("Blob");
+        // Test with valid hex string for blob
         {
             Json::Value j;
             j[sfPublicKey] = "DEADBEEF";
@@ -409,6 +801,8 @@ class STParsedJSON_test : public beast::unit_test::suite
     void
     testVector256()
     {
+        testcase("Vector256");
+        // Test with valid array of hex strings for Vector256
         {
             Json::Value j;
             Json::Value arr(Json::arrayValue);
@@ -493,6 +887,8 @@ class STParsedJSON_test : public beast::unit_test::suite
     void
     testAccount()
     {
+        testcase("Account");
+        // Test with valid base58 string for AccountID
         {
             Json::Value j;
             j[sfAccount] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
@@ -574,6 +970,8 @@ class STParsedJSON_test : public beast::unit_test::suite
     void
     testCurrency()
     {
+        testcase("Currency");
+        // Test with valid ISO code for currency
         {
             Json::Value j;
             j[sfBaseAsset] = "USD";
@@ -680,290 +1078,10 @@ class STParsedJSON_test : public beast::unit_test::suite
     }
 
     void
-    testUInt128()
-    {
-        {
-            Json::Value j;
-            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDEF";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
-        }
-
-        // Valid lowercase hex string for UInt128
-        {
-            Json::Value j;
-            j[sfEmailHash] = "0123456789abcdef0123456789abcdef";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
-            BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
-        }
-
-        // Empty string for UInt128 (should be valid, all zero)
-        {
-            Json::Value j;
-            j[sfEmailHash] = "";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
-            auto const& h128 = obj.object->getFieldH128(sfEmailHash);
-            BEAST_EXPECT(h128.size() == 16);
-            bool allZero = std::all_of(
-                h128.begin(), h128.end(), [](auto b) { return b == 0; });
-            BEAST_EXPECT(allZero);
-        }
-
-        // Odd-length hex string for UInt128 (should fail)
-        {
-            Json::Value j;
-            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDE";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Non-hex string for UInt128 (should fail)
-        {
-            Json::Value j;
-            j[sfEmailHash] = "nothexstring";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too short for UInt128 (should fail)
-        {
-            Json::Value j;
-            j[sfEmailHash] = "01234567";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too long for UInt128 (should fail)
-        {
-            Json::Value j;
-            j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDEF00";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Array value for UInt128 (should fail)
-        {
-            Json::Value j;
-            j[sfEmailHash] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Object value for UInt128 (should fail)
-        {
-            Json::Value j;
-            j[sfEmailHash] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-    }
-
-    void
-    testUInt160()
-    {
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF01234567";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
-            BEAST_EXPECT(
-                obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-        }
-        // Valid lowercase hex string for UInt160
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = "0123456789abcdef0123456789abcdef01234567";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
-            BEAST_EXPECT(
-                obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-        }
-
-        // Empty string for UInt160 (should be valid, all zero)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = "";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
-            auto const& h160 = obj.object->getFieldH160(sfTakerPaysCurrency);
-            BEAST_EXPECT(h160.size() == 20);
-            bool allZero = std::all_of(
-                h160.begin(), h160.end(), [](auto b) { return b == 0; });
-            BEAST_EXPECT(allZero);
-        }
-
-        // Odd-length hex string for UInt160 (should fail)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF0123456";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Non-hex string for UInt160 (should fail)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = "nothexstring";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too short for UInt160 (should fail)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = "01234567";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too long for UInt160 (should fail)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string with invalid characters for UInt160 (should fail)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = "0123456789ABCDEG0123456789ABCDEF01234567";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Array value for UInt160 (should fail)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Object value for UInt160 (should fail)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-    }
-
-    void
-    testUInt256()
-    {
-        {
-            Json::Value j;
-            j[sfLedgerHash] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
-                "EF";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
-        }
-        // Valid lowercase hex string for UInt256
-        {
-            Json::Value j;
-            j[sfLedgerHash] =
-                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcd"
-                "ef";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
-            BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
-        }
-
-        // Empty string for UInt256 (should be valid, all zero)
-        {
-            Json::Value j;
-            j[sfLedgerHash] = "";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
-            auto const& h256 = obj.object->getFieldH256(sfLedgerHash);
-            BEAST_EXPECT(h256.size() == 32);
-            bool allZero = std::all_of(
-                h256.begin(), h256.end(), [](auto b) { return b == 0; });
-            BEAST_EXPECT(allZero);
-        }
-
-        // Odd-length hex string for UInt256 (should fail)
-        {
-            Json::Value j;
-            j[sfLedgerHash] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
-                "E";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Non-hex string for UInt256 (should fail)
-        {
-            Json::Value j;
-            j[sfLedgerHash] = "nothexstring";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too short for UInt256 (should fail)
-        {
-            Json::Value j;
-            j[sfLedgerHash] = "01234567";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string too long for UInt256 (should fail)
-        {
-            Json::Value j;
-            j[sfLedgerHash] =
-                "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
-                "EF00";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Hex string with invalid characters for UInt256 (should fail)
-        {
-            Json::Value j;
-            j[sfLedgerHash] =
-                "0123456789ABCDEG0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
-                "EF";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Array value for UInt256 (should fail)
-        {
-            Json::Value j;
-            j[sfLedgerHash] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Object value for UInt256 (should fail)
-        {
-            Json::Value j;
-            j[sfLedgerHash] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-    }
-
-    void
     testAmount()
     {
+        testcase("Amount");
+        // Test with string value for Amount
         {
             Json::Value j;
             j[sfAmount] = "1000000";
@@ -1021,11 +1139,34 @@ class STParsedJSON_test : public beast::unit_test::suite
     void
     testPathSet()
     {
+        testcase("PathSet");
+        // Valid test: single path with single element
         {
             Json::Value j;
             Json::Value path(Json::arrayValue);
             Json::Value elem(Json::objectValue);
             elem["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            elem["currency"] = "USD";
+            elem["issuer"] = "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe";
+            path.append(elem);
+            Json::Value pathset(Json::arrayValue);
+            pathset.append(path);
+            j[sfPaths] = pathset;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfPaths));
+            auto const& ps = obj.object->getFieldPathSet(sfPaths);
+            BEAST_EXPECT(!ps.empty());
+        }
+
+        // Valid test: non-standard currency code
+        {
+            Json::Value j;
+            Json::Value path(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem["account"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            elem["currency"] = "0123456789ABCDEF01230123456789ABCDEF0123";
+            elem["issuer"] = "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe";
             path.append(elem);
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
@@ -1097,11 +1238,82 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
+
+        // Test with account not string (should fail)
+        {
+            Json::Value j;
+            Json::Value path(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem["account"] = 12345;
+            path.append(elem);
+            Json::Value pathset(Json::arrayValue);
+            pathset.append(path);
+            j[sfPaths] = pathset;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with currency not string (should fail)
+        {
+            Json::Value j;
+            Json::Value path(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem["currency"] = 12345;
+            path.append(elem);
+            Json::Value pathset(Json::arrayValue);
+            pathset.append(path);
+            j[sfPaths] = pathset;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with non-standard currency not hex (should fail)
+        {
+            Json::Value j;
+            Json::Value path(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem["currency"] = "notAValidCurrency";
+            path.append(elem);
+            Json::Value pathset(Json::arrayValue);
+            pathset.append(path);
+            j[sfPaths] = pathset;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with issuer not string (should fail)
+        {
+            Json::Value j;
+            Json::Value path(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem["issuer"] = 12345;
+            path.append(elem);
+            Json::Value pathset(Json::arrayValue);
+            pathset.append(path);
+            j[sfPaths] = pathset;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with issuer not base58 (should fail)
+        {
+            Json::Value j;
+            Json::Value path(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem["issuer"] = "notAValidBase58Account";
+            path.append(elem);
+            Json::Value pathset(Json::arrayValue);
+            pathset.append(path);
+            j[sfPaths] = pathset;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
     }
 
     void
     testIssue()
     {
+        testcase("Issue");
         // Valid Issue: currency and issuer as base58
         {
             Json::Value j;
@@ -1232,6 +1444,7 @@ class STParsedJSON_test : public beast::unit_test::suite
     void
     testXChainBridge()
     {
+        testcase("XChainBridge");
         // Valid XChainBridge
         {
             Json::Value j;
@@ -1424,132 +1637,9 @@ class STParsedJSON_test : public beast::unit_test::suite
     }
 
     void
-    testObject()
-    {
-        {
-            Json::Value j;
-            Json::Value objVal(Json::objectValue);
-            objVal[sfTransactionResult] = 1;
-            j[sfTransactionMetaData] = objVal;
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfTransactionMetaData));
-        }
-
-        // Test with non-object value for Object (should fail)
-        {
-            Json::Value j;
-            j[sfTransactionMetaData] = "notanobject";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Test with array value for Object (should fail)
-        {
-            Json::Value j;
-            Json::Value arr(Json::arrayValue);
-            arr.append(1);
-            j[sfTransactionMetaData] = arr;
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Test with null value for Object (should fail)
-        {
-            Json::Value j;
-            j[sfTransactionMetaData] = Json::Value(Json::nullValue);
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-    }
-
-    void
-    testArray()
-    {
-        {
-            Json::Value j;
-            Json::Value arr(Json::arrayValue);
-            Json::Value elem(Json::objectValue);
-            elem[sfTransactionResult] = 2;
-            Json::Value elem2(Json::objectValue);
-            elem2[sfTransactionMetaData] = elem;
-            arr.append(elem2);
-            j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfSignerEntries));
-        }
-
-        // Test with array containing non-object element (should fail)
-        {
-            Json::Value j;
-            Json::Value arr(Json::arrayValue);
-            arr.append("notanobject");
-            j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Test with array containing object with invalid field (should fail)
-        {
-            Json::Value j;
-            Json::Value arr(Json::arrayValue);
-            Json::Value elem(Json::objectValue);
-            elem["invalidField"] = 1;
-            arr.append(elem);
-            j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Test with array containing object with multiple keys (should fail)
-        {
-            Json::Value j;
-            Json::Value arr(Json::arrayValue);
-            Json::Value elem(Json::objectValue);
-            elem[sfTransactionResult] = 2;
-            elem[sfNetworkID] = 3;
-            arr.append(elem);
-            j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Test with non-array value for Array (should fail)
-        {
-            Json::Value j;
-            j[sfSignerEntries] = "notanarray";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Test with array containing object with valid field but invalid value
-        // (should fail)
-        {
-            Json::Value j;
-            Json::Value arr(Json::arrayValue);
-            Json::Value elem(Json::objectValue);
-            elem[sfTransactionResult] = "notanint";
-            arr.append(elem);
-            j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
-        // Test with empty array for Array (should be valid)
-        {
-            Json::Value j;
-            Json::Value arr(Json::arrayValue);
-            j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfSignerEntries));
-        }
-    }
-
-    void
     testNumber()
     {
+        testcase("Number");
         // Valid integer value for STNumber
         {
             Json::Value j;
@@ -1669,26 +1759,210 @@ class STParsedJSON_test : public beast::unit_test::suite
     }
 
     void
+    testObject()
+    {
+        testcase("Object");
+        // Test with valid object for Object
+        {
+            Json::Value j;
+            Json::Value objVal(Json::objectValue);
+            objVal[sfTransactionResult] = 1;
+            j[sfTransactionMetaData] = objVal;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfTransactionMetaData));
+        }
+
+        // Test with non-object value for Object (should fail)
+        {
+            Json::Value j;
+            j[sfTransactionMetaData] = "notanobject";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with array value for Object (should fail)
+        {
+            Json::Value j;
+            Json::Value arr(Json::arrayValue);
+            arr.append(1);
+            j[sfTransactionMetaData] = arr;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with null value for Object (should fail)
+        {
+            Json::Value j;
+            j[sfTransactionMetaData] = Json::Value(Json::nullValue);
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with max depth (should succeed)
+        // max depth is 64
+        {
+            Json::Value j;
+            Json::Value obj(Json::objectValue);
+            Json::Value* current = &obj;
+            for (int i = 0; i < 63; ++i)
+            {
+                Json::Value next(Json::objectValue);
+                (*current)[sfTransactionMetaData] = next;
+                current = &((*current)[sfTransactionMetaData]);
+            }
+            (*current)[sfTransactionResult.getJsonName()] = 1;
+            j[sfTransactionMetaData] = obj;
+            STParsedJSONObject parsed("Test", j);
+            BEAST_EXPECT(parsed.object.has_value());
+            BEAST_EXPECT(parsed.object->isFieldPresent(sfTransactionMetaData));
+        }
+
+        // Test with depth exceeding maxDepth (should fail)
+        {
+            Json::Value j;
+            Json::Value obj(Json::objectValue);
+            Json::Value* current = &obj;
+            for (int i = 0; i < 64; ++i)
+            {
+                Json::Value next(Json::objectValue);
+                (*current)[sfTransactionMetaData] = next;
+                current = &((*current)[sfTransactionMetaData]);
+            }
+            (*current)[sfTransactionResult.getJsonName()] = 1;
+            j[sfTransactionMetaData] = obj;
+            STParsedJSONObject parsed("Test", j);
+            BEAST_EXPECT(!parsed.object.has_value());
+        }
+    }
+
+    void
+    testArray()
+    {
+        testcase("Array");
+        // Test with valid array for Array
+        {
+            Json::Value j;
+            Json::Value arr(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem[sfTransactionResult] = 2;
+            Json::Value elem2(Json::objectValue);
+            elem2[sfTransactionMetaData] = elem;
+            arr.append(elem2);
+            j[sfSignerEntries] = arr;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfSignerEntries));
+        }
+
+        // Test with array containing non-object element (should fail)
+        {
+            Json::Value j;
+            Json::Value arr(Json::arrayValue);
+            arr.append("notanobject");
+            j[sfSignerEntries] = arr;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with array containing object with invalid field (should fail)
+        {
+            Json::Value j;
+            Json::Value arr(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem["invalidField"] = 1;
+            arr.append(elem);
+            j[sfSignerEntries] = arr;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with array containing object with multiple keys (should fail)
+        {
+            Json::Value j;
+            Json::Value arr(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem[sfTransactionResult] = 2;
+            elem[sfNetworkID] = 3;
+            arr.append(elem);
+            j[sfSignerEntries] = arr;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with non-array value for Array (should fail)
+        {
+            Json::Value j;
+            j[sfSignerEntries] = "notanarray";
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with array containing object with valid field but invalid value
+        // (should fail)
+        {
+            Json::Value j;
+            Json::Value arr(Json::arrayValue);
+            Json::Value elem(Json::objectValue);
+            elem[sfTransactionResult] = "notanint";
+            arr.append(elem);
+            j[sfSignerEntries] = arr;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(!obj.object.has_value());
+        }
+
+        // Test with empty array for Array (should be valid)
+        {
+            Json::Value j;
+            Json::Value arr(Json::arrayValue);
+            j[sfSignerEntries] = arr;
+            STParsedJSONObject obj("Test", j);
+            BEAST_EXPECT(obj.object.has_value());
+            BEAST_EXPECT(obj.object->isFieldPresent(sfSignerEntries));
+        }
+
+        // Test with object provided but not object SField
+        {
+            Json::Value j;
+            Json::Value obj(Json::arrayValue);
+            obj.append(Json::Value(Json::objectValue));
+            obj[0u][sfTransactionResult] = 1;
+            j[sfSignerEntries] = obj;
+            STParsedJSONObject parsed("Test", j);
+            BEAST_EXPECT(!parsed.object.has_value());
+        }
+    }
+
+    void
+    testGeneralInvalid()
+    {
+        testcase("General Invalid Cases");
+        Json::Value j;
+        j[sfLedgerEntry] = 1;  // not a valid SField for STParsedJSON
+    }
+
+    void
     run() override
     {
         testUInt8();
         testUInt16();
         testUInt32();
         testUInt64();
+        testUInt128();
+        testUInt160();
+        testUInt192();
+        testUInt256();
         testBlob();
         testVector256();
         testAccount();
         testCurrency();
-        testUInt128();
-        testUInt160();
-        testUInt256();
         testAmount();
         testPathSet();
         testIssue();
         testXChainBridge();
+        testNumber();
         testObject();
         testArray();
-        testNumber();
     }
 };
 
