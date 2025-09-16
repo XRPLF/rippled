@@ -64,7 +64,6 @@ static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 {
-
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
     auto const metadata = ctx.tx[~sfMPTokenMetadata];
     auto const transferFee = ctx.tx[~sfTransferFee];
