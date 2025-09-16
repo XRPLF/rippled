@@ -227,13 +227,16 @@ public:
 
         {
             auto coro = std::make_shared<JobQueue::Coro>(
-                Coro_create_t{}, env.app().getJobQueue(), JobType::jtCLIENT, "test", [](auto coro) {
+                Coro_create_t{},
+                env.app().getJobQueue(),
+                JobType::jtCLIENT,
+                "test",
+                [](auto coro) {
 
                 });
         }
 
         pass();
-
     }
 
     void

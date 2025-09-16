@@ -56,7 +56,9 @@ JobQueue::Coro::Coro(
 
 inline JobQueue::Coro::~Coro()
 {
-    XRPL_ASSERT(state_ != CoroState::Running, "ripple::JobQueue::Coro::~Coro : is not running");
+    XRPL_ASSERT(
+        state_ != CoroState::Running,
+        "ripple::JobQueue::Coro::~Coro : is not running");
     exiting_ = true;
     // Resume the coroutine so that it has a chance to clean things up
     if (state_ == CoroState::Suspended)
@@ -65,7 +67,9 @@ inline JobQueue::Coro::~Coro()
     }
 
 #ifndef NDEBUG
-    XRPL_ASSERT(state_ == CoroState::Finished, "ripple::JobQueue::Coro::~Coro : is finished");
+    XRPL_ASSERT(
+        state_ == CoroState::Finished,
+        "ripple::JobQueue::Coro::~Coro : is finished");
 #endif
 }
 

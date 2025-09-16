@@ -63,13 +63,7 @@ public:
         friend class JobQueue;
 
     private:
-        enum class CoroState
-        {
-            None,
-            Suspended,
-            Running,
-            Finished
-        };
+        enum class CoroState { None, Suspended, Running, Finished };
 
         detail::LocalValues lvs_;
         JobQueue& jq_;
