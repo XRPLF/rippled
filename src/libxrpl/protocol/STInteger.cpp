@@ -82,8 +82,10 @@ STUInt8::getJson(JsonOptions) const
         if (transResultInfo(TER::fromInt(value_), token, human))
             return token;
 
+        // LCOV_EXCL_START
         JLOG(debugLog().error())
             << "Unknown result code in metadata: " << value_;
+        // LCOV_EXCL_STOP
     }
 
     return value_;
