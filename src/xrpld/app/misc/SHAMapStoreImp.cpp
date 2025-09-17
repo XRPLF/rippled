@@ -552,6 +552,7 @@ SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 void
 SHAMapStoreImp::freshenCaches()
 {
+    freshenCache(*app_.getNodeFamily().getTreeNodeCache());
     freshenCache(app_.getMasterTransaction().getCache());
 }
 
