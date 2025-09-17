@@ -384,10 +384,10 @@ MPTTester::set(MPTSet const& arg)
         {.account = arg.account ? arg.account : issuer_,
          .holder = arg.holder,
          .id = arg.id ? arg.id : id_,
-         .delegate = arg.delegate,
          .mutableFlags = arg.mutableFlags,
          .transferFee = arg.transferFee,
          .metadata = arg.metadata,
+         .delegate = arg.delegate,
          .domainID = arg.domainID});
     if (submit(arg, jv) == tesSUCCESS &&
         (arg.flags.value_or(0) || arg.mutableFlags))
