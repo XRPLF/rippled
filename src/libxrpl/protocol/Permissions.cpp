@@ -112,13 +112,12 @@ Permission::getPermissionName(std::uint32_t const value) const
     {
         return *granular;
     }
-    else
-    {
-        auto const txType = Permission::getInstance().permissionToTxType(value);
-        auto* item = TxFormats::getInstance().findByType(txType);
-        if (item != nullptr)
-            return item->getName();
-    }
+
+    // not a granular permission, check if it maps to a transaction type
+    auto const txType = Permission::getInstance().permissionToTxType(value);
+    auto* item = TxFormats::getInstance().findByType(txType);
+    if (item != nullptr)
+        return item->getName();
 
     return std::nullopt;
 }
