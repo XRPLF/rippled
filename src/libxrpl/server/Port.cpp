@@ -36,6 +36,7 @@
 #include <exception>
 #include <ostream>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -219,7 +220,7 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
         {
             try
             {
-                port.ip = boost::asio::ip::address::from_string(*optResult);
+                port.ip = boost::asio::ip::make_address(*optResult);
             }
             catch (std::exception const&)
             {

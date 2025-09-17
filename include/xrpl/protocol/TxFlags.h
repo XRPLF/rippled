@@ -141,7 +141,7 @@ constexpr std::uint32_t const tfTransferable               = 0x00000008;
 constexpr std::uint32_t const tfMutable                    = 0x00000010;
 
 // MPTokenIssuanceCreate flags:
-// NOTE - there is intentionally no flag here for lsfMPTLocked, which this transaction cannot mutate. 
+// NOTE - there is intentionally no flag here for lsfMPTLocked, which this transaction cannot mutate.
 constexpr std::uint32_t const tfMPTCanLock                 = lsfMPTCanLock;
 constexpr std::uint32_t const tfMPTRequireAuth             = lsfMPTRequireAuth;
 constexpr std::uint32_t const tfMPTCanEscrow               = lsfMPTCanEscrow;
@@ -150,6 +150,20 @@ constexpr std::uint32_t const tfMPTCanTransfer             = lsfMPTCanTransfer;
 constexpr std::uint32_t const tfMPTCanClawback             = lsfMPTCanClawback;
 constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
   ~(tfUniversal | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback);
+
+// MPTokenIssuanceCreate MutableFlags:
+// Indicating specific fields or flags may be changed after issuance.
+constexpr std::uint32_t const tfMPTCanMutateCanLock = lsfMPTCanMutateCanLock;
+constexpr std::uint32_t const tfMPTCanMutateRequireAuth = lsfMPTCanMutateRequireAuth;
+constexpr std::uint32_t const tfMPTCanMutateCanEscrow = lsfMPTCanMutateCanEscrow;
+constexpr std::uint32_t const tfMPTCanMutateCanTrade = lsfMPTCanMutateCanTrade;
+constexpr std::uint32_t const tfMPTCanMutateCanTransfer = lsfMPTCanMutateCanTransfer;
+constexpr std::uint32_t const tfMPTCanMutateCanClawback = lsfMPTCanMutateCanClawback;
+constexpr std::uint32_t const tfMPTCanMutateMetadata = lsfMPTCanMutateMetadata;
+constexpr std::uint32_t const tfMPTCanMutateTransferFee = lsfMPTCanMutateTransferFee;
+constexpr std::uint32_t const tfMPTokenIssuanceCreateMutableMask =
+  ~(tfMPTCanMutateCanLock | tfMPTCanMutateRequireAuth | tfMPTCanMutateCanEscrow | tfMPTCanMutateCanTrade
+    | tfMPTCanMutateCanTransfer | tfMPTCanMutateCanClawback | tfMPTCanMutateMetadata | tfMPTCanMutateTransferFee);
 
 // MPTokenAuthorize flags:
 constexpr std::uint32_t const tfMPTUnauthorize             = 0x00000001;
@@ -160,6 +174,25 @@ constexpr std::uint32_t const tfMPTLock                   = 0x00000001;
 constexpr std::uint32_t const tfMPTUnlock                 = 0x00000002;
 constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
 constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
+
+// MPTokenIssuanceSet MutableFlags:
+// Set or Clear flags.
+constexpr std::uint32_t const tfMPTSetCanLock             = 0x00000001;
+constexpr std::uint32_t const tfMPTClearCanLock           = 0x00000002;
+constexpr std::uint32_t const tfMPTSetRequireAuth         = 0x00000004;
+constexpr std::uint32_t const tfMPTClearRequireAuth       = 0x00000008;
+constexpr std::uint32_t const tfMPTSetCanEscrow           = 0x00000010;
+constexpr std::uint32_t const tfMPTClearCanEscrow         = 0x00000020;
+constexpr std::uint32_t const tfMPTSetCanTrade            = 0x00000040;
+constexpr std::uint32_t const tfMPTClearCanTrade          = 0x00000080;
+constexpr std::uint32_t const tfMPTSetCanTransfer         = 0x00000100;
+constexpr std::uint32_t const tfMPTClearCanTransfer       = 0x00000200;
+constexpr std::uint32_t const tfMPTSetCanClawback         = 0x00000400;
+constexpr std::uint32_t const tfMPTClearCanClawback       = 0x00000800;
+constexpr std::uint32_t const tfMPTokenIssuanceSetMutableMask = ~(tfMPTSetCanLock | tfMPTClearCanLock |
+    tfMPTSetRequireAuth | tfMPTClearRequireAuth | tfMPTSetCanEscrow | tfMPTClearCanEscrow |
+    tfMPTSetCanTrade | tfMPTClearCanTrade | tfMPTSetCanTransfer | tfMPTClearCanTransfer |
+    tfMPTSetCanClawback | tfMPTClearCanClawback);
 
 // MPTokenIssuanceDestroy flags:
 constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;
@@ -243,7 +276,7 @@ constexpr std::uint32_t tfUntilFailure                 = 0x00040000;
 constexpr std::uint32_t tfIndependent                  = 0x00080000;
 /**
  * @note If nested Batch transactions are supported in the future, the tfInnerBatchTxn flag
- *  will need to be removed from this mask to allow Batch transaction to be inside 
+ *  will need to be removed from this mask to allow Batch transaction to be inside
  *  the sfRawTransactions array.
  */
 constexpr std::uint32_t const tfBatchMask =

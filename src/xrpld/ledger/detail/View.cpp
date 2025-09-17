@@ -2793,58 +2793,113 @@ rippleCredit(
         saAmount.asset().value());
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesDeposit(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets)
 {
     XRPL_ASSERT(
+        !assets.negative(),
+        "ripple::assetsToSharesDeposit : non-negative assets");
+    XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesDeposit : assets and vault match");
-    Number assetTotal = vault->at(sfAssetsTotal);
-    STAmount shares{vault->at(sfShareMPTID), static_cast<Number>(assets)};
+    if (assets.negative() || assets.asset() != vault->at(sfAsset))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Number const assetTotal = vault->at(sfAssetsTotal);
+    STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
-        return shares;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+        return STAmount{
+            shares.asset(),
+            Number(assets.mantissa(), assets.exponent() + vault->at(sfScale))
+                .truncate()};
+
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    shares = (shareTotal * (assets / assetTotal)).truncate();
     return shares;
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
+sharesToAssetsDeposit(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares)
+{
+    XRPL_ASSERT(
+        !shares.negative(),
+        "ripple::sharesToAssetsDeposit : non-negative shares");
+    XRPL_ASSERT(
+        shares.asset() == vault->at(sfShareMPTID),
+        "ripple::sharesToAssetsDeposit : shares and vault match");
+    if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    Number const assetTotal = vault->at(sfAssetsTotal);
+    STAmount assets{vault->at(sfAsset)};
+    if (assetTotal == 0)
+        return STAmount{
+            assets.asset(),
+            shares.mantissa(),
+            shares.exponent() - vault->at(sfScale),
+            false};
+
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    assets = assetTotal * (shares / shareTotal);
+    return assets;
+}
+
+[[nodiscard]] std::optional<STAmount>
 assetsToSharesWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
-    STAmount const& assets)
+    STAmount const& assets,
+    TruncateShares truncate)
 {
+    XRPL_ASSERT(
+        !assets.negative(),
+        "ripple::assetsToSharesDeposit : non-negative assets");
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesWithdraw : assets and vault match");
+    if (assets.negative() || assets.asset() != vault->at(sfAsset))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
-    shares = shareTotal * (assets / assetTotal);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
+    Number result = shareTotal * (assets / assetTotal);
+    if (truncate == TruncateShares::yes)
+        result = result.truncate();
+    shares = result;
     return shares;
 }
 
-[[nodiscard]] STAmount
+[[nodiscard]] std::optional<STAmount>
 sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
     XRPL_ASSERT(
+        !shares.negative(),
+        "ripple::sharesToAssetsDeposit : non-negative shares");
+    XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
         "ripple::sharesToAssetsWithdraw : shares and vault match");
+    if (shares.negative() || shares.asset() != vault->at(sfShareMPTID))
+        return std::nullopt;  // LCOV_EXCL_LINE
+
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
-    Number shareTotal = issuance->at(sfOutstandingAmount);
+    Number const shareTotal = issuance->at(sfOutstandingAmount);
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }
@@ -2951,11 +3006,17 @@ rippleUnlockEscrowMPT(
     ApplyView& view,
     AccountID const& sender,
     AccountID const& receiver,
-    STAmount const& amount,
+    STAmount const& netAmount,
+    STAmount const& grossAmount,
     beast::Journal j)
 {
-    auto const issuer = amount.getIssuer();
-    auto const mptIssue = amount.get<MPTIssue>();
+    if (!view.rules().enabled(fixTokenEscrowV1))
+        XRPL_ASSERT(
+            netAmount == grossAmount,
+            "ripple::rippleUnlockEscrowMPT : netAmount == grossAmount");
+
+    auto const& issuer = netAmount.getIssuer();
+    auto const& mptIssue = netAmount.get<MPTIssue>();
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
@@ -2976,7 +3037,7 @@ rippleUnlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         auto const locked = sleIssuance->getFieldU64(sfLockedAmount);
-        auto const redeem = amount.mpt().value();
+        auto const redeem = grossAmount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(
@@ -3009,7 +3070,7 @@ rippleUnlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         auto current = sle->getFieldU64(sfMPTAmount);
-        auto delta = amount.mpt().value();
+        auto delta = netAmount.mpt().value();
 
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
@@ -3027,7 +3088,7 @@ rippleUnlockEscrowMPT(
     {
         // Decrease the Issuance OutstandingAmount
         auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
-        auto const redeem = amount.mpt().value();
+        auto const redeem = netAmount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(
@@ -3071,10 +3132,9 @@ rippleUnlockEscrowMPT(
         }  // LCOV_EXCL_STOP
 
         auto const locked = sle->getFieldU64(sfLockedAmount);
-        auto const delta = amount.mpt().value();
+        auto const delta = grossAmount.mpt().value();
 
         // Underflow check for subtraction
-        // LCOV_EXCL_START
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
         {  // LCOV_EXCL_START
             JLOG(j.error())
@@ -3089,6 +3149,28 @@ rippleUnlockEscrowMPT(
         else
             sle->setFieldU64(sfLockedAmount, newLocked);
         view.update(sle);
+    }
+
+    // Note: The gross amount is the amount that was locked, the net
+    // amount is the amount that is being unlocked. The difference is the fee
+    // that was charged for the transfer. If this difference is greater than
+    // zero, we need to update the outstanding amount.
+    auto const diff = grossAmount.mpt().value() - netAmount.mpt().value();
+    if (diff != 0)
+    {
+        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
+        // Underflow check for subtraction
+        if (!canSubtract(
+                STAmount(mptIssue, outstanding), STAmount(mptIssue, diff)))
+        {  // LCOV_EXCL_START
+            JLOG(j.error())
+                << "rippleUnlockEscrowMPT: insufficient outstanding amount for "
+                << mptIssue.getMptID() << ": " << outstanding << " < " << diff;
+            return tecINTERNAL;
+        }  // LCOV_EXCL_STOP
+
+        sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - diff);
+        view.update(sleIssuance);
     }
     return tesSUCCESS;
 }

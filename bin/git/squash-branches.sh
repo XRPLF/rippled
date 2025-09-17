@@ -5,7 +5,7 @@ then
   name=$( basename $0 )
   cat <<- USAGE
   Usage: $name workbranch base/branch user/branch [user/branch [...]]
-  
+
   * workbranch will be created locally from base/branch
   * base/branch and user/branch may be specified as user:branch to allow
     easy copying from Github PRs
@@ -66,4 +66,3 @@ git push $push HEAD:$b
 git fetch $repo
 -------------------------------------------------------------------
 PUSH
-
