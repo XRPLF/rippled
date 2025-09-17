@@ -419,10 +419,10 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span> </div>
 <div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>    <span class="keywordflow">if</span> (jr.isObject())</div>
 <div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>    {</div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>        <span class="keywordflow">if</span> (jr.isMember(jss::result) &amp;&amp; jr[jss::result].isMember(jss::status))</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>            <span class="keywordflow">return</span> jr[jss::result];</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (jr.isMember(jss::error))</div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>            <span class="keywordflow">return</span> jr;</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>        <span class="keywordflow">if</span> (jr.isMember(jss::error))</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>            <span class="keywordflow">return</span> jr;</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>        <span class="keywordflow">if</span> (jr.isMember(jss::result) &amp;&amp; jr[jss::result].isMember(jss::status))</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>            <span class="keywordflow">return</span> jr[jss::result];</div>
 <div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>    }</div>
 <div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>    <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>;</div>
 <div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>}</div>
