@@ -316,6 +316,72 @@ struct LoanPaymentParts
     Number feePaid;
 };
 
+struct LatePaymentParams
+{
+};
+
+template <AssetType A>
+Expected<LoanPaymentParts, TER>
+handleLatePayment(
+    A const& asset,
+    ApplyView& view,
+    STObject::ValueProxy<STNumber>& principalOutstandingField,
+    STObject::ValueProxy<STUInt32>& paymentRemainingField,
+    STObject::ValueProxy<STUInt32>& prevPaymentDateField,
+    STObject::ValueProxy<STUInt32>& nextDueDateField,
+    PeriodicPaymentParts const& periodic,
+    std::uint32_t const startDate,
+    std::uint32_t const paymentInterval,
+    TenthBips32 const lateInterestRate,
+    Number const& originalPrincipalRequested,
+    Number const& periodicPaymentAmount,
+    Number const& latePaymentFee,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (!hasExpired(view, nextDueDateField))
+        return Unexpected(tesSUCCESS);
+
+    // the payment is late
+    auto const latePaymentInterest = loanLatePaymentInterest(
+        asset,
+        principalOutstandingField,
+        lateInterestRate,
+        view.parentCloseTime(),
+        startDate,
+        prevPaymentDateField,
+        originalPrincipalRequested);
+    XRPL_ASSERT(
+        latePaymentInterest >= 0,
+        "ripple::loanComputePaymentParts : valid late interest");
+    auto const latePaymentAmount =
+        periodicPaymentAmount + latePaymentInterest + latePaymentFee;
+
+    if (amount < latePaymentAmount)
+    {
+        JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: "
+                       << latePaymentAmount << ", paid: " << amount;
+        return Unexpected(tecINSUFFICIENT_PAYMENT);
+    }
+
+    paymentRemainingField -= 1;
+    // A single payment always pays the same amount of principal. Only the
+    // interest and fees are extra for a late payment
+    principalOutstandingField -= periodic.principal;
+
+    // Make sure this does an assignment
+    prevPaymentDateField = nextDueDateField;
+    nextDueDateField += paymentInterval;
+
+    // A late payment increases the value of the loan by the difference
+    // between periodic and late payment interest
+    return LoanPaymentParts{
+        periodic.principal,
+        latePaymentInterest + periodic.interest,
+        latePaymentInterest,
+        latePaymentFee};
+}
+
 template <AssetType A>
 Expected<LoanPaymentParts, TER>
 loanComputePaymentParts(
@@ -408,47 +474,25 @@ loanComputePaymentParts(
 
     // -------------------------------------------------------------
     // late payment handling
-    if (hasExpired(view, nextDueDateField))
-    {
-        // the payment is late
-        auto const latePaymentInterest = loanLatePaymentInterest(
+    if (auto const latePaymentParts = handleLatePayment(
             asset,
+            view,
             principalOutstandingField,
-            lateInterestRate,
-            view.parentCloseTime(),
-            startDate,
+            paymentRemainingField,
             prevPaymentDateField,
-            originalPrincipalRequested);
-        XRPL_ASSERT(
-            latePaymentInterest >= 0,
-            "ripple::loanComputePaymentParts : valid late interest");
-        auto const latePaymentAmount =
-            periodicPaymentAmount + latePaymentInterest + latePaymentFee;
-
-        if (amount < latePaymentAmount)
-        {
-            JLOG(j.warn()) << "Late loan payment amount is insufficient. Due: "
-                           << latePaymentAmount << ", paid: " << amount;
-            return Unexpected(tecINSUFFICIENT_PAYMENT);
-        }
-
-        paymentRemainingField -= 1;
-        // A single payment always pays the same amount of principal. Only the
-        // interest and fees are extra for a late payment
-        principalOutstandingField -= periodic.principal;
-
-        // Make sure this does an assignment
-        prevPaymentDateField = nextDueDateField;
-        nextDueDateField += paymentInterval;
-
-        // A late payment increases the value of the loan by the difference
-        // between periodic and late payment interest
-        return LoanPaymentParts{
-            periodic.principal,
-            latePaymentInterest + periodic.interest,
-            latePaymentInterest,
-            latePaymentFee};
-    }
+            nextDueDateField,
+            periodic,
+            startDate,
+            paymentInterval,
+            lateInterestRate,
+            originalPrincipalRequested,
+            periodicPaymentAmount,
+            latePaymentFee,
+            amount,
+            j))
+        return *latePaymentParts;
+    else if (latePaymentParts.error())
+        return latePaymentParts;
 
     // -------------------------------------------------------------
     // full payment handling
@@ -505,7 +549,7 @@ loanComputePaymentParts(
     }
 
     // -------------------------------------------------------------
-    // normal payment handling
+    // regular periodic payment handling
 
     // if the payment is not late nor if it's a full payment, then it must be a
     // periodic one, with possible overpayments
@@ -582,6 +626,8 @@ loanComputePaymentParts(
                                    paymentRemainingField) +
         totalInterestPaid;
 
+    // -------------------------------------------------------------
+    // overpayment handling
     Number overpaymentInterestPortion = 0;
     if (allowOverpayment)
     {

@@ -1515,20 +1515,25 @@ roundToReference(
     STAmount referenceValue,
     Number::rounding_mode rounding)
 {
+    // Nothing to do for intgral types.
     if (value.asset().native() || !value.asset().holds<Issue>())
         return value;
 
-    NumberRoundModeGuard mg(rounding);
-    if (referenceValue.negative() != value.negative())
-        referenceValue.negate();
-
-    if (value.exponent() > referenceValue.exponent() &&
+    // If the value is greater than or equal to the referenceValue (ignoring
+    // sign), then rounding will do nothing, so just return the value.
+    if (value.exponent() > referenceValue.exponent() ||
         (value.exponent() == referenceValue.exponent() &&
          value.mantissa() >= referenceValue.mantissa()))
         return value;
+
+    if (referenceValue.negative() != value.negative())
+        referenceValue.negate();
+
+    NumberRoundModeGuard mg(rounding);
     // With an IOU, the total will be truncated to the precision of the
     // larger value: referenceValue
     STAmount const total = referenceValue + value;
+    // Remove the reference value, and we're left with the rounded value.
     STAmount const result = total - referenceValue;
     return result;
 }

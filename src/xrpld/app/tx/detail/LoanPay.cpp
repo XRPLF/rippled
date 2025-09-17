@@ -187,6 +187,13 @@ LoanPay::doApply()
 
     auto const totalPaidToBroker = paymentParts->feePaid + managementFee;
 
+    XRPL_ASSERT_PARTS(
+        (totalPaidToVault + totalPaidToBroker) ==
+            (paymentParts->principalPaid + paymentParts->interestPaid +
+             paymentParts->feePaid),
+        "ripple::LoanPay::doApply",
+        "payments add up");
+
     // If there is not enough first-loss capital
     auto coverAvailableField = brokerSle->at(sfCoverAvailable);
     auto debtTotalField = brokerSle->at(sfDebtTotal);
@@ -201,6 +208,8 @@ LoanPay::doApply()
         // Add the fee to to First Loss Cover Pool
         coverAvailableField += totalPaidToBroker;
     }
+    auto const brokerPayee =
+        sufficientCover ? brokerOwner : brokerPseudoAccount;
 
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change,
     // and subtract the change in the management fee
@@ -241,6 +250,13 @@ LoanPay::doApply()
         "ripple::LoanPay::doApply",
         "payment agreement");
 
+    auto const accountBalanceBefore =
+        accountHolds(view, account_, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const vaultBalanceBefore = accountHolds(
+        view, vaultPseudoAccount, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+    auto const brokerBalanceBefore = accountHolds(
+        view, brokerPayee, asset, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+
     if (auto const ter = accountSend(
             view,
             account_,
@@ -252,7 +268,7 @@ LoanPay::doApply()
     if (auto const ter = accountSend(
             view,
             account_,
-            sufficientCover ? brokerOwner : brokerPseudoAccount,
+            brokerPayee,
             paidToBroker,
             j_,
             WaiveTransferFee::Yes))
