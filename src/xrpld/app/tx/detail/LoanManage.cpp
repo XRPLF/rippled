@@ -399,7 +399,7 @@ LoanManage::doApply()
                 j_))
             return ter;
     }
-    if (tx.isFlag(tfLoanImpair))
+    else if (tx.isFlag(tfLoanImpair))
     {
         if (auto const ter = impairLoan(
                 view,
@@ -413,7 +413,7 @@ LoanManage::doApply()
                 j_))
             return ter;
     }
-    if (tx.isFlag(tfLoanUnimpair))
+    else if (tx.isFlag(tfLoanUnimpair))
     {
         if (auto const ter = unimpairLoan(
                 view,

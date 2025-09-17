@@ -37,6 +37,11 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 {
     // Need floating point math for this one, since we're dividing by some
     // large numbers
+    /*
+     * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
+     * Payment), specifically "periodicRate = ...", though it is duplicated in
+     * other places.
+     */
     return tenthBipsOfValue(Number(paymentInterval), interestRate) /
         (365 * 24 * 60 * 60);
 }
@@ -54,6 +59,11 @@ loanPeriodicPayment(
     if (periodicRate == beast::zero)
         return principalOutstanding / paymentsRemaining;
 
+    /*
+     * This formula is from the XLS-66 spec, section 3.2.4.1.1 (Regular
+     * Payment), though the awkwardly-named "timeFactor" is computed only once
+     * and used twice.
+     */
     // TODO: Need a better name
     Number const timeFactor = power(1 + periodicRate, paymentsRemaining);
 
@@ -69,6 +79,10 @@ loanPeriodicPayment(
 {
     if (principalOutstanding == 0 || paymentsRemaining == 0)
         return 0;
+    /*
+     * This function is derived from the XLS-66 spec, section 3.2.4.1.1 (Regular
+     * payment), though it is duplicated in other places.
+     */
     Number const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
 
     return loanPeriodicPayment(
@@ -83,6 +97,10 @@ loanLatePaymentInterest(
     std::uint32_t startDate,
     std::uint32_t prevPaymentDate)
 {
+    /*
+     * This formula is from the XLS-66 spec, section 3.2.4.1.2 (Late payment),
+     * specifically "latePaymentInterest = ..."
+     */
     auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
 
     auto const secondsSinceLastPayment =
@@ -103,6 +121,10 @@ loanAccruedInterest(
     std::uint32_t prevPaymentDate,
     std::uint32_t paymentInterval)
 {
+    /*
+     * This formula is from the XLS-66 spec, section 3.2.4.1.4 (Early Full
+     * Repayment), specifically "accruedInterest = ...".
+     */
     auto const lastPaymentDate = std::max(prevPaymentDate, startDate);
 
     auto const secondsSinceLastPayment =

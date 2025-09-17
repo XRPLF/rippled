@@ -36,14 +36,6 @@ namespace detail {
 // These functions should rarely be used directly. More often, the ultimate
 // result needs to be roundToAsset'd.
 
-struct LoanPaymentParts
-{
-    Number principalPaid;
-    Number interestPaid;
-    Number valueChange;
-    Number feePaid;
-};
-
 Number
 loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
@@ -70,6 +62,10 @@ loanTotalValueOutstanding(
 {
     return roundToAsset(
         asset,
+        /*
+         * This formula is from the XLS-66 spec, section 3.2.4.2 (Total Loan
+         * Value Calculation), specifically "totalValueOutstanding = ..."
+         */
         periodicPayment * paymentsRemaining,
         originalPrincipal,
         Number::upward);
@@ -85,6 +81,10 @@ loanTotalValueOutstanding(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining)
 {
+    /*
+     * This function is derived from the XLS-66 spec, section 3.2.4.2 (Total
+     * Loan Value Calculation)
+     */
     return loanTotalValueOutstanding(
         asset,
         originalPrincipal,
@@ -101,6 +101,10 @@ loanTotalInterestOutstanding(
     Number principalOutstanding,
     Number totalValueOutstanding)
 {
+    /*
+     * This formula is from the XLS-66 spec, section 3.2.4.2 (Total Loan
+     * Value Calculation), specifically "totalInterestOutstanding = ..."
+     */
     return totalValueOutstanding - principalOutstanding;
 }
 
@@ -114,6 +118,10 @@ loanTotalInterestOutstanding(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining)
 {
+    /*
+     * This formula is derived from the XLS-66 spec, section 3.2.4.2 (Total Loan
+     * Value Calculation)
+     */
     return loanTotalInterestOutstanding(
         principalOutstanding,
         loanTotalValueOutstanding(
@@ -246,6 +254,10 @@ computePeriodicPaymentParts(
     Number const& periodicRate,
     std::uint32_t paymentRemaining)
 {
+    /*
+     * This function is derived from the XLS-66 spec, section 3.2.4.1.1 (Regular
+     * Payment)
+     */
     if (paymentRemaining == 1)
     {
         // If there's only one payment left, we need to pay off the principal.
@@ -313,6 +325,10 @@ loanComputePaymentParts(
     STAmount const& amount,
     beast::Journal j)
 {
+    /*
+     * This function is an implementation of the XLS-66 spec, section 3.2.4.3
+     * (Transaction Pseudo-code)
+     */
     Number const originalPrincipalRequested = loan->at(sfPrincipalRequested);
     auto principalOutstandingField = loan->at(sfPrincipalOutstanding);
     bool const allowOverpayment = loan->isFlag(lsfLoanOverpayment);
