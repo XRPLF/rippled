@@ -19,7 +19,6 @@
 
 #include <xrpld/app/misc/LendingHelpers.h>
 //
-#include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
 
 namespace ripple {

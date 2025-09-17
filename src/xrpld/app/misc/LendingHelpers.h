@@ -20,20 +20,9 @@
 #ifndef RIPPLE_APP_MISC_LENDINGHELPERS_H_INCLUDED
 #define RIPPLE_APP_MISC_LENDINGHELPERS_H_INCLUDED
 
-#include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 
-#include <xrpl/basics/Expected.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/st.h>
-
-#include <algorithm>
 
 namespace ripple {
 

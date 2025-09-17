@@ -20,14 +20,6 @@
 #include <xrpld/app/tx/detail/LoanBrokerSet.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 
 namespace ripple {
 

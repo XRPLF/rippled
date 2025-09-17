@@ -20,18 +20,8 @@
 #include <xrpld/app/tx/detail/LoanSet.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
 
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
 

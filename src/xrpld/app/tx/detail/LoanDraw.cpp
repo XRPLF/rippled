@@ -21,27 +21,6 @@
 #include <xrpld/app/tx/detail/LoanDraw.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
 

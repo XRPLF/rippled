@@ -17,38 +17,13 @@
 */
 //==============================================================================
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/batch.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/jtx_json.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/noop.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/seq.h>
-#include <test/jtx/sig.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/utility.h>
-#include <test/jtx/vault.h>
+#include <test/jtx.h>
 
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/detail/LoanSet.h>
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_forwards.h>
-#include <xrpl/json/json_reader.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {
