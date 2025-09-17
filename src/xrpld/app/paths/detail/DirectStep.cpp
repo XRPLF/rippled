@@ -913,7 +913,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     {
         // pure issue/redeem can't be frozen
         if (TER const ter = checkFreeze(ctx.view, src_, dst_, currency_);
-            ter != tesSUCCESS)
+            !isTesSuccess(ter))
             return ter;
 
         // not possible for an AMM account to be part of pure issue/redeem
@@ -947,12 +947,10 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
     {
         // only fail if the error code is tecNO_AUTH. In some cases, it is still
         // allowed for the account to not own a trustline.
-        if (TER const ter = requireAuth(ctx.view, Issue{currency_, src_}, dst_);
-            ter == tecNO_AUTH)
-            return ter;
-        if (TER const ter = requireAuth(ctx.view, Issue{currency_, dst_}, src_);
-            ter == tecNO_AUTH)
-            return ter;
+        if (requireAuth(ctx.view, Issue{currency_, src_}, dst_) == tecNO_AUTH)
+            return tecNO_AUTH;
+        if (requireAuth(ctx.view, Issue{currency_, dst_}, src_) == tecNO_AUTH)
+            return tecNO_AUTH;
     }
 
     // If previous step was a direct step then we need to check

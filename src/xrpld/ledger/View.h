@@ -250,6 +250,13 @@ isLPTokenFrozen(
     Issue const& asset,
     Issue const& asset2);
 
+[[nodiscard]] bool
+isAuthorized(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer);
+
 // Returns the amount an account can spend without going into debt.
 //
 // <-- saAmount: amount of currency held by account. May be negative.

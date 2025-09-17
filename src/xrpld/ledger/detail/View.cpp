@@ -382,6 +382,39 @@ isLPTokenFrozen(
         isFrozen(view, account, asset2.currency, asset2.account);
 }
 
+bool
+isAuthorized(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
+{
+    auto const sleIssuer = view.read(keylet::account(issuer));
+    auto const sleAccount = view.read(keylet::account(account));
+
+    if (!sleIssuer || !sleAccount)
+        return false;  // LCOV_EXCL_LINE
+
+    // For LP tokens, check if the account is authorized to hold both
+    // underlying assets.
+    if (sleIssuer->isFieldPresent(sfAMMID) &&
+        checkLPTokenAuthorization(
+            view, account, sleIssuer->getFieldH256(sfAMMID)) != tesSUCCESS)
+    {
+        return false;
+    }
+
+    // Pseudo accounts don't have authorization requirements.
+    if (isPseudoAccount(sleAccount) || isPseudoAccount(sleIssuer))
+        return true;
+
+    // Check standard trustline authorization.
+    if (requireAuth(view, Issue{currency, issuer}, account) != tesSUCCESS)
+        return false;
+
+    return true;
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -444,26 +477,7 @@ accountHolds(
         if (view.rules().enabled(fixEnforceTrustlineAuth) &&
             zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
         {
-            auto const sleIssuer = view.read(keylet::account(issuer));
-            auto const sleAccount = view.read(keylet::account(account));
-            if (!sleIssuer || !sleAccount)
-                return false;  // LCOV_EXCL_LINE
-            else if (sleIssuer->isFieldPresent(sfAMMID))
-            {
-                // check if the account is authorized to own both assets for
-                // the lptoken
-                if (checkLPTokenAuthorization(
-                        view, account, sleIssuer->getFieldH256(sfAMMID)) !=
-                    tesSUCCESS)
-                    return false;
-            }
-
-            // skip pseudo accounts
-            if (isPseudoAccount(sleAccount) || isPseudoAccount(sleIssuer))
-                return true;
-
-            if (requireAuth(view, Issue{currency, issuer}, account) !=
-                tesSUCCESS)
+            if (!isAuthorized(view, account, currency, issuer))
                 return false;
         }
 

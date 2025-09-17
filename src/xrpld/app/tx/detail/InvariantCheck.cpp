@@ -2069,7 +2069,7 @@ ValidAuth::finalize(
 
     if (bad_)
     {
-        JLOG(j.fatal()) << "Invariant failed: account trustline to itself";
+        JLOG(j.error()) << "Invariant failed: account trustline to itself";
         return false;
     }
 
@@ -2083,13 +2083,13 @@ ValidAuth::finalize(
 
         if (requireAuth(view, Issue{cur, low}, high) != tesSUCCESS)
         {
-            JLOG(j.fatal()) << "Invariant failed: high account has no auth";
+            JLOG(j.error()) << "Invariant failed: high account has no auth";
             return false;
         }
 
         if (requireAuth(view, Issue{cur, high}, low) != tesSUCCESS)
         {
-            JLOG(j.fatal()) << "Invariant failed: low account has no auth";
+            JLOG(j.error()) << "Invariant failed: low account has no auth";
             return false;
         }
     }
