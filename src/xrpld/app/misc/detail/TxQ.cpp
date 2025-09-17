@@ -726,12 +726,27 @@ TxQ::tryClearAccountQueueUpThruTx(
 //    b. The entire queue also has a (dynamic) maximum size.  Transactions
 //       beyond that limit are rejected.
 //
+PreApplyResult
+TxQ::preApply(
+    Application& app,
+    OpenView const& view,
+    std::shared_ptr<STTx const> const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
+{
+    PreflightResult const pfresult =
+        preflight(app, view.rules(), *tx, flags, j);
+    PreclaimResult const& pcresult = preclaim(pfresult, app, view);
+    return {pfresult, pcresult};
+}
+
 ApplyResult
-TxQ::apply(
+TxQ::queueApply(
     Application& app,
     OpenView& view,
     std::shared_ptr<STTx const> const& tx,
     ApplyFlags flags,
+    PreflightResult const& pfresult,
     beast::Journal j)
 {
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
@@ -740,9 +755,6 @@ TxQ::apply(
     // See if the transaction is valid, properly formed,
     // etc. before doing potentially expensive queue
     // replace and multi-transaction operations.
-    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
-    if (pfresult.ter != tesSUCCESS)
-        return {pfresult.ter, false};
 
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
@@ -1348,6 +1360,24 @@ TxQ::apply(
                      << " Flags: " << flags;
 
     return {terQUEUED, false};
+}
+
+ApplyResult
+TxQ::apply(
+    Application& app,
+    OpenView& view,
+    std::shared_ptr<STTx const> const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
+{
+    // See if the transaction is valid, properly formed,
+    // etc. before doing potentially expensive queue
+    // replace and multi-transaction operations.
+    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
+    if (pfresult.ter != tesSUCCESS)
+        return {pfresult.ter, false};
+
+    return queueApply(app, view, tx, flags, pfresult, j);
 }
 
 /*

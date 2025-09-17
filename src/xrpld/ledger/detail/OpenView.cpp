@@ -21,6 +21,8 @@
 
 #include <xrpl/basics/contract.h>
 
+#include <iostream>
+
 namespace ripple {
 
 class OpenView::txs_iter_impl : public txs_type::iter_base
@@ -77,15 +79,32 @@ public:
 OpenView::OpenView(OpenView const& rhs)
     : ReadView(rhs)
     , TxsRawView(rhs)
-    , monotonic_resource_{std::make_unique<
-          boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
-    , txs_{rhs.txs_, monotonic_resource_.get()}
     , rules_{rhs.rules_}
     , info_{rhs.info_}
     , base_{rhs.base_}
     , items_{rhs.items_}
     , hold_{rhs.hold_}
-    , open_{rhs.open_} {};
+    , baseTxCount_{rhs.baseTxCount_}
+    , open_{rhs.open_}
+    , mock_{rhs.mock_}
+{
+    // Calculate optimal buffer size based on source data
+    size_t estimatedNeeds =
+        rhs.txs_.size() * 300;  // rough estimate: 300 bytes per tx entry
+    size_t bufferSize =
+        std::max(initialBufferSize, estimatedNeeds * 3 / 2);  // 50% headroom
+
+    // std::cout << "[OpenView Memory] Copy constructor - Source has "
+    //           << rhs.txs_.size() << " txs"
+    //           << ", estimated needs: " << estimatedNeeds / 1024 << "KB"
+    //           << ", allocating: " << bufferSize / 1024 << "KB" << std::endl;
+
+    monotonic_resource_ =
+        std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
+            bufferSize);
+
+    txs_ = txs_map{rhs.txs_, monotonic_resource_.get()};
+}
 
 OpenView::OpenView(
     open_ledger_t,
