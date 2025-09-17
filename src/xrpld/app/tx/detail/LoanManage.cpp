@@ -44,13 +44,16 @@ LoanManage::preflight(PreflightContext const& ctx)
         return temINVALID;
 
     // Flags are mutually exclusive
-    auto const flags = ctx.tx[~sfFlags].value_or(0) & tfUniversalMask;
-    if ((flags & (flags - 1)) != 0)
+    if (auto const flagField = ctx.tx[~sfFlags]; flagField && *flagField)
     {
-        JLOG(ctx.j.warn())
-            << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or "
-               "tfLoanUnimpair can be set.";
-        return temINVALID_FLAG;
+        auto const flags = *flagField & tfUniversalMask;
+        if ((flags & (flags - 1)) != 0)
+        {
+            JLOG(ctx.j.warn())
+                << "LoanManage: Only one of tfLoanDefault, tfLoanImpair, or "
+                   "tfLoanUnimpair can be set.";
+            return temINVALID_FLAG;
+        }
     }
 
     return tesSUCCESS;
