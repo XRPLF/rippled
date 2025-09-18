@@ -23,7 +23,6 @@
 #include <xrpld/app/ledger/Ledger.h>
 
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/TxMeta.h>
 
 #include <boost/container/flat_set.hpp>
 

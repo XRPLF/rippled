@@ -23,6 +23,7 @@
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <array>
 #include <cstdint>
 #include <optional>
 

@@ -23,6 +23,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <iosfwd>
 #include <stdexcept>
 #include <string>
 #include <type_traits>

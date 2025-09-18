@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/contract.h>
 #include <xrpl/shamap/SHAMap.h>
 
