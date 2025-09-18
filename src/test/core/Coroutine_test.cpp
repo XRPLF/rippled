@@ -101,12 +101,21 @@ public:
         }));
 
         gate g;
-        env.app().getJobQueue().postCoro(
+        gate gStart;
+        auto coro = env.app().getJobQueue().postCoro(
             jtCLIENT, "Coroutine-Test", [&](auto const& c) {
-                c->post();
+                gStart.signal();
                 c->yield();
                 g.signal();
             });
+
+        // Wait for the coroutine to start.
+        BEAST_EXPECT(gStart.wait_for(5s));
+
+        BEAST_EXPECT(coro->state() == JobQueue::Coro::CoroState::Suspended);
+        // Post the coroutine.
+        coro->post();
+
         BEAST_EXPECT(g.wait_for(5s));
     }
 

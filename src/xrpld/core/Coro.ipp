@@ -48,7 +48,6 @@ JobQueue::Coro::Coro(
                   fn(self);
               }
               {
-                  std::lock_guard stateLock{mutex_run_};
                   state_ = CoroState::Finished;
                   cv_.notify_all();
               }
@@ -59,7 +58,6 @@ JobQueue::Coro::Coro(
 
 inline JobQueue::Coro::~Coro()
 {
-    std::unique_lock stateLock{mutex_run_};
     XRPL_ASSERT(
         state_ != CoroState::Running,
         "ripple::JobQueue::Coro::~Coro : is not running");
@@ -67,9 +65,7 @@ inline JobQueue::Coro::~Coro()
     // Resume the coroutine so that it has a chance to clean things up
     if (state_ == CoroState::Suspended)
     {
-        stateLock.unlock();
         resume();
-        stateLock.lock();
     }
 
 #ifndef NDEBUG
@@ -102,12 +98,7 @@ JobQueue::Coro::yield()
 inline bool
 JobQueue::Coro::post()
 {
-#if !defined(NDEBUG)
-    {
-        std::lock_guard lk(mutex_run_);
-        XRPL_ASSERT(state_ == CoroState::Suspended, "JobQueue::Coro::post: coroutine should be suspended!");
-    }
-#endif
+    XRPL_ASSERT(state_ == CoroState::Suspended, "JobQueue::Coro::post: coroutine should be suspended!");
 
     // sp keeps 'this' alive
     if (jq_.addJob(
@@ -124,7 +115,6 @@ inline void
 JobQueue::Coro::resume()
 {
     {
-        std::lock_guard lk(mutex_run_);
         if (state_ != CoroState::Suspended)
         {
             return;
@@ -152,7 +142,6 @@ JobQueue::Coro::resume()
 inline bool
 JobQueue::Coro::runnable() const
 {
-    std::unique_lock<std::mutex> lk(mutex_run_);
     // There's an edge case where the coroutine has updated the status
     // to Finished but the function hasn't exited and therefore, coro_ is
     // still valid. However, the coroutine is not technically runnable in this

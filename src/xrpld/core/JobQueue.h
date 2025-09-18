@@ -62,17 +62,18 @@ public:
     {
         friend class JobQueue;
 
-    private:
+    public:
         enum class CoroState { None, Suspended, Running, Finished };
+    private:
 
         std::atomic_bool exiting_ = false;
         detail::LocalValues lvs_;
         JobQueue& jq_;
         JobType type_;
         std::string name_;
-        CoroState state_ = CoroState::None;
+        std::atomic<CoroState> state_ = CoroState::None;
         std::mutex mutex_;
-        mutable std::mutex mutex_run_;
+        std::mutex mutex_run_;
         std::condition_variable cv_;
         boost::coroutines::asymmetric_coroutine<void>::pull_type coro_;
         boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
@@ -128,6 +129,9 @@ public:
         */
         void
         resume();
+
+        CoroState
+        state() const { return state_; }
 
         /** Returns true if the Coro is still runnable (has not returned). */
         bool
