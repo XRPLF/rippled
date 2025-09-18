@@ -65,6 +65,7 @@ public:
     private:
         enum class CoroState { None, Suspended, Running, Finished };
 
+        std::atomic_bool exiting_ = false;
         detail::LocalValues lvs_;
         JobQueue& jq_;
         JobType type_;
@@ -75,8 +76,6 @@ public:
         std::condition_variable cv_;
         boost::coroutines::asymmetric_coroutine<void>::pull_type coro_;
         boost::coroutines::asymmetric_coroutine<void>::push_type* yield_;
-
-        std::atomic_bool exiting_ = false;
 
     public:
         // Private: Used in the implementation
