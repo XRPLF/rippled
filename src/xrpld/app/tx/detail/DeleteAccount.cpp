@@ -453,6 +453,8 @@ DeleteAccount::doApply()
             sponsorSle->setFieldU32(
                 sfSponsoringAccountCount, sponsoringAccountCount - 1);
         view().update(sponsorSle);
+
+        (*src).makeFieldAbsent(sfSponsorAccount);
     }
 
     XRPL_ASSERT(

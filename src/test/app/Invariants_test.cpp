@@ -112,6 +112,11 @@ class Invariants_test : public beast::unit_test::suite
         {
             terActual = ac.checkInvariants(terActual, fee);
             BEAST_EXPECT(terExpect == terActual);
+            if (terExpect != terActual)
+            {
+                printf("terActual: %s\n", transHuman(terActual).c_str());
+                printf("terExpect: %s\n", transHuman(terExpect).c_str());
+            }
             BEAST_EXPECT(
                 sink.messages().str().starts_with("Invariant failed:") ||
                 sink.messages().str().starts_with(
@@ -1604,6 +1609,69 @@ class Invariants_test : public beast::unit_test::suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
     }
 
+    void
+    testSponsorship()
+    {
+        using namespace test::jtx;
+        using namespace std::string_literals;
+        testcase << "Sponsorship";
+        {
+            auto const expect_message =
+                "SponsoredOwnerCount does not equal "
+                "SponsoringOwnerCount delta.";
+
+            doInvariantCheck(
+                {{expect_message}},
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setFieldU32(sfSponsoredOwnerCount, 1);
+                    ac.view().update(sle);
+                    return true;
+                });
+
+            doInvariantCheck(
+                {{expect_message}},
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setFieldU32(sfSponsoringOwnerCount, 1);
+                    ac.view().update(sle);
+                    return true;
+                });
+        }
+
+        {
+            auto const expect_message =
+                "Invariant failed: Net delta of SponsoringAccountCount does "
+                "not match net delta of sfSponsorAccount presence.";
+
+            doInvariantCheck(
+                {{expect_message}},
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setFieldU32(sfSponsoringAccountCount, 1);
+                    ac.view().update(sle);
+                    return true;
+                });
+
+            doInvariantCheck(
+                {{expect_message}},
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                    if (!sle)
+                        return false;
+                    sle->setAccountID(sfSponsorAccount, A2.id());
+                    ac.view().update(sle);
+                    return true;
+                });
+        }
+    }
+
 public:
     void
     run() override
@@ -1623,6 +1691,7 @@ public:
         testNFTokenPageInvariants();
         testPermissionedDomainInvariants();
         testPermissionedDEX();
+        testSponsorship();
     }
 };
 
