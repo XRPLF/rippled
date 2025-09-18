@@ -1,0 +1,9 @@
+<map id="ripple::detail::DirGuard" name="ripple::detail::DirGuard">
+<area shape="rect" id="Node000001" title="Create a directory and remove it when it&#39;s done." alt="" coords="113,5,283,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1detail_1_1FileDirGuard.html" title="Write a file in a directory and remove when done." alt="" coords="101,79,295,104"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="201,44,201,79,195,79,195,44"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1detail_1_1RippledCfgGuard.html" title="Write a rippled config file and remove when done." alt="" coords="5,152,188,192"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="174,114,123,154,119,150,171,110"/>
+<area shape="rect" id="Node000004" href="$classripple_1_1detail_1_1ValidatorsTxtGuard.html" title="Write a validators.txt file and remove when done." alt="" coords="212,152,389,192"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="225,110,278,150,274,154,222,114"/>
+</map>

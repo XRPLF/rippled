@@ -76,7 +76,7 @@ var searchData=
   ['directstepi_3c_20directioffercrossingstep_20_3e_73',['DirectStepI&lt; DirectIOfferCrossingStep &gt;',['../classripple_1_1DirectStepI.html',1,'ripple']]],
   ['directstepi_3c_20directipaymentstep_20_3e_74',['DirectStepI&lt; DirectIPaymentStep &gt;',['../classripple_1_1DirectStepI.html',1,'ripple']]],
   ['directstepinfo_75',['DirectStepInfo',['../structripple_1_1test_1_1DirectStepInfo.html',1,'ripple::test']]],
-  ['dirguard_76',['DirGuard',['../classripple_1_1test_1_1detail_1_1DirGuard.html',1,'ripple::test::detail']]],
+  ['dirguard_76',['DirGuard',['../classripple_1_1detail_1_1DirGuard.html',1,'ripple::detail']]],
   ['disabled_5ft_77',['disabled_t',['../structripple_1_1test_1_1jtx_1_1disabled__t.html',1,'ripple::test::jtx']]],
   ['discard_5fblock_5fengine_78',['discard_block_engine',['http://en.cppreference.com/w/cpp/numeric/random/discard_block_engine.html',1,'std']]],
   ['discrepancy_5ftest_79',['Discrepancy_test',['../classripple_1_1Discrepancy__test.html',1,'ripple']]],

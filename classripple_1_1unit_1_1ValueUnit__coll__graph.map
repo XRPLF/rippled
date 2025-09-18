@@ -1,0 +1,17 @@
+<map id="ripple::unit::ValueUnit&lt; UnitTag, T &gt;" name="ripple::unit::ValueUnit&lt; UnitTag, T &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="328,197,491,237"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="13,5,224,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="220,48,233,55,283,88,328,127,393,195,389,199,324,130,280,92,231,60,217,53"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="20,69,217,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="212,111,233,119,312,157,377,195,375,199,309,162,231,124,210,116"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="5,133,232,173"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="224,174,328,197,327,202,223,179"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="17,197,221,237"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="234,215,328,215,328,220,234,220"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="18,261,219,301"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="223,256,327,233,328,238,224,261"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="35,326,203,381"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="213,319,231,311,309,272,374,235,376,240,311,277,233,316,215,323"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="99,405,138,430"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="151,413,190,406,231,391,283,356,329,313,366,270,392,236,396,239,370,274,332,316,286,360,233,396,192,411,152,418"/>
+</map>

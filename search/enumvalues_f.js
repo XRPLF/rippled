@@ -21,6 +21,7 @@ var searchData=
   ['outputtoosmall_18',['outputTooSmall',['../namespaceripple.html#a8f71b86b6529e14eaa595d90bc74ae52afad9310fafa56ee8ea813d9c6843d06d',1,'ripple']]],
   ['overflowadd_19',['overflowAdd',['../namespaceripple.html#a8f71b86b6529e14eaa595d90bc74ae52a0d1bed8214edf223c0ec5305c02b85c8',1,'ripple']]],
   ['overlay_20',['overlay',['../namespaceripple_1_1CrawlOptions.html#a88da1dd344ca0dc87a10a49f34fa38daa1271a017d6478a90750e5b2141279eac',1,'ripple::CrawlOptions::Overlay'],['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a53b8a74c2b773d10759ccf8738b6bd3c',1,'ripple::TrafficCount::overlay']]],
-  ['owner_5fdir_21',['OWNER_DIR',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307baade6e4ef934ffe83be3eeb5207ac5f1c',1,'ripple']]],
-  ['ownerfunds_22',['ownerFunds',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4d567fe1eb1b4268e9ef85e4d2993ff6',1,'ripple::LedgerFill']]]
+  ['overridefreeze_21',['overrideFreeze',['../namespaceripple.html#a56626079606ddd359a5c40cbe9e9761ba97e21cc12caa2e0e16c343adddf4d15c',1,'ripple']]],
+  ['owner_5fdir_22',['OWNER_DIR',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307baade6e4ef934ffe83be3eeb5207ac5f1c',1,'ripple']]],
+  ['ownerfunds_23',['ownerFunds',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a4d567fe1eb1b4268e9ef85e4d2993ff6',1,'ripple::LedgerFill']]]
 ];

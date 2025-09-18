@@ -26,6 +26,15 @@ var searchData=
   ['jsonwriter_5ftest_23',['JsonWriter_test',['../classJson_1_1JsonWriter__test.html',1,'Json']]],
   ['jthread_24',['jthread',['http://en.cppreference.com/w/cpp/thread/jthread.html',1,'std']]],
   ['jtx_25',['JTx',['../structripple_1_1test_1_1jtx_1_1JTx.html',1,'ripple::test::jtx']]],
-  ['jump_26',['Jump',['../structripple_1_1test_1_1csf_1_1JumpCollector_1_1Jump.html',1,'ripple::test::csf::JumpCollector']]],
-  ['jumpcollector_27',['JumpCollector',['../structripple_1_1test_1_1csf_1_1JumpCollector.html',1,'ripple::test::csf']]]
+  ['jtxfield_26',['JTxField',['../structripple_1_1test_1_1jtx_1_1JTxField.html',1,'ripple::test::jtx']]],
+  ['jtxfield_3c_20sf_5faccount_2c_20accountid_2c_20std_3a_3astring_20_3e_27',['JTxField&lt; SF_ACCOUNT, AccountID, std::string &gt;',['../structripple_1_1test_1_1jtx_1_1JTxField.html',1,'ripple::test::jtx']]],
+  ['jtxfield_3c_20sf_5fuint256_2c_20uint256_2c_20std_3a_3astring_20_3e_28',['JTxField&lt; SF_UINT256, uint256, std::string &gt;',['../structripple_1_1test_1_1jtx_1_1JTxField.html',1,'ripple::test::jtx']]],
+  ['jtxfield_3c_20sf_5fuint32_2c_20netclock_3a_3atime_5fpoint_2c_20netclock_3a_3arep_20_3e_29',['JTxField&lt; SF_UINT32, NetClock::time_point, NetClock::rep &gt;',['../structripple_1_1test_1_1jtx_1_1JTxField.html',1,'ripple::test::jtx']]],
+  ['jtxfield_3c_20sf_5fvl_2c_20std_3a_3astring_20_3e_30',['JTxField&lt; SF_VL, std::string &gt;',['../structripple_1_1test_1_1jtx_1_1JTxField.html',1,'ripple::test::jtx']]],
+  ['jtxfield_3c_20sfield_2c_20storedvalue_2c_20storedvalue_20_3e_31',['JTxField&lt; SField, StoredValue, StoredValue &gt;',['../structripple_1_1test_1_1jtx_1_1JTxField_3_01SField_00_01StoredValue_00_01StoredValue_01_4.html',1,'ripple::test::jtx']]],
+  ['jtxfield_3c_20sfield_2c_20unit_3a_3avalueunit_3c_20unittag_2c_20valuetype_20_3e_2c_20valuetype_20_3e_32',['JTxField&lt; SField, unit::ValueUnit&lt; UnitTag, ValueType &gt;, ValueType &gt;',['../structripple_1_1test_1_1jtx_1_1JTxField.html',1,'ripple::test::jtx']]],
+  ['jtxfieldwrapper_33',['JTxFieldWrapper',['../structripple_1_1test_1_1jtx_1_1JTxFieldWrapper.html',1,'ripple::test::jtx']]],
+  ['jtxfieldwrapper_3c_20blobfield_20_3e_34',['JTxFieldWrapper&lt; blobField &gt;',['../structripple_1_1test_1_1jtx_1_1JTxFieldWrapper_3_01blobField_01_4.html',1,'ripple::test::jtx']]],
+  ['jump_35',['Jump',['../structripple_1_1test_1_1csf_1_1JumpCollector_1_1Jump.html',1,'ripple::test::csf::JumpCollector']]],
+  ['jumpcollector_36',['JumpCollector',['../structripple_1_1test_1_1csf_1_1JumpCollector.html',1,'ripple::test::csf']]]
 ];

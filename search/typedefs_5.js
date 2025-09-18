@@ -1,7 +1,7 @@
 var searchData=
 [
   ['feehook_0',['FeeHook',['../classripple_1_1TxQ.html#a6bb6f93b4d95b63dfc55fae4246b38b8',1,'ripple::TxQ']]],
-  ['feelevel_1',['FeeLevel',['../namespaceripple.html#af7cd3bd457b9e1ddcb7b0a8f6546ae0b',1,'ripple']]],
+  ['feelevel_1',['FeeLevel',['../namespaceripple.html#a02dadfa7f2185734c493763a0469b4f9',1,'ripple']]],
   ['feelevel64_2',['FeeLevel64',['../namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c',1,'ripple']]],
   ['feeleveldouble_3',['FeeLevelDouble',['../namespaceripple.html#ac4352c3b1e73b13f9c19a0eb062cdb7b',1,'ripple']]],
   ['feemultiset_4',['FeeMultiSet',['../classripple_1_1TxQ.html#a0ce340269d77d8ef2d85513d9545c815',1,'ripple::TxQ']]],

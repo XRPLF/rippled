@@ -1,0 +1,20 @@
+<map id="ripple::test::jtx::JTxFieldWrapper&lt; blobField &gt;" name="ripple::test::jtx::JTxFieldWrapper&lt; blobField &gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="1001,5,1219,45"/>
+<area shape="rect" id="Node000002" href="$structripple_1_1TypedField.html" title="A field with a type known at compile time." alt="" coords="732,13,907,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="920,23,1001,23,1001,28,920,28"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="445,105,552,130"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="523,93,547,75,575,60,614,47,654,37,732,26,732,31,655,42,615,52,577,65,550,80,526,98"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="743,70,895,125"/>
+<area shape="poly" id="edge7_Node000007_Node000003" title=" " alt="" coords="539,97,575,87,619,81,662,80,743,84,743,90,662,85,619,87,577,92,541,102"/>
+<area shape="rect" id="Node000008" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="743,169,895,223"/>
+<area shape="poly" id="edge10_Node000008_Node000003" title=" " alt="" coords="519,139,545,165,577,186,618,198,661,204,743,204,743,209,661,210,617,203,575,190,541,169,516,143"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="216,174,303,199"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="315,168,453,128,455,133,317,173"/>
+<area shape="poly" id="edge9_Node000008_Node000004" title=" " alt="" coords="317,192,492,210,599,214,708,211,743,207,743,212,708,216,599,219,491,215,316,198"/>
+<area shape="rect" id="Node000005" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,167,144,207"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="158,184,216,184,216,189,158,189"/>
+<area shape="rect" id="Node000006" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="193,105,325,130"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="339,115,445,115,445,120,339,120"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="730,106,552,117,552,111,730,100"/>
+<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="729,177,551,133,552,127,730,172"/>
+</map>

@@ -5,6 +5,18 @@ var searchData=
   ['ripple_3a_3adetail_3a_3asome_5fintegral_5fconstant_2',['some_integral_constant',['../conceptripple_1_1detail_1_1some__integral__constant.html',1,'ripple::detail']]],
   ['ripple_3a_3adetail_3a_3avalidconstructstargs_3',['ValidConstructSTArgs',['../conceptripple_1_1detail_1_1ValidConstructSTArgs.html',1,'ripple::detail']]],
   ['ripple_3a_3aisarithmetic_4',['IsArithmetic',['../conceptripple_1_1IsArithmetic.html',1,'ripple']]],
-  ['ripple_3a_3autil_3a_3aimpl_3a_3aisstrand_5',['IsStrand',['../conceptripple_1_1util_1_1impl_1_1IsStrand.html',1,'ripple::util::impl']]],
-  ['ripple_3a_3avalidissuetype_6',['ValidIssueType',['../conceptripple_1_1ValidIssueType.html',1,'ripple']]]
+  ['ripple_3a_3asafetocast_5',['SafeToCast',['../conceptripple_1_1SafeToCast.html',1,'ripple']]],
+  ['ripple_3a_3aunit_3a_3acastablevalue_6',['CastableValue',['../conceptripple_1_1unit_1_1CastableValue.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3acompatible_7',['Compatible',['../conceptripple_1_1unit_1_1Compatible.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3aintegral_8',['Integral',['../conceptripple_1_1unit_1_1Integral.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3aintegralvalue_9',['IntegralValue',['../conceptripple_1_1unit_1_1IntegralValue.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3amuldivable_10',['muldivable',['../conceptripple_1_1unit_1_1muldivable.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3amuldivcommutable_11',['muldivCommutable',['../conceptripple_1_1unit_1_1muldivCommutable.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3amuldivdest_12',['muldivDest',['../conceptripple_1_1unit_1_1muldivDest.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3amuldivsource_13',['muldivSource',['../conceptripple_1_1unit_1_1muldivSource.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3amuldivsources_14',['muldivSources',['../conceptripple_1_1unit_1_1muldivSources.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3ausable_15',['Usable',['../conceptripple_1_1unit_1_1Usable.html',1,'ripple::unit']]],
+  ['ripple_3a_3aunit_3a_3avalid_16',['Valid',['../conceptripple_1_1unit_1_1Valid.html',1,'ripple::unit']]],
+  ['ripple_3a_3autil_3a_3aimpl_3a_3aisstrand_17',['IsStrand',['../conceptripple_1_1util_1_1impl_1_1IsStrand.html',1,'ripple::util::impl']]],
+  ['ripple_3a_3avalidissuetype_18',['ValidIssueType',['../conceptripple_1_1ValidIssueType.html',1,'ripple']]]
 ];

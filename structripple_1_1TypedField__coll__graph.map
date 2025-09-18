@@ -1,14 +1,18 @@
 <map id="ripple::TypedField&lt; T &gt;" name="ripple::TypedField&lt; T &gt;">
-<area shape="rect" id="Node000001" title="A field with a type known at compile time." alt="" coords="5,278,180,303"/>
-<area shape="rect" id="Node000002" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="133,183,239,208"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="167,219,106,280,102,276,163,216"/>
-<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="204,271,360,311"/>
-<area shape="poly" id="edge6_Node000006_Node000002" title=" " alt="" coords="181,222,180,234,184,245,196,258,211,268,208,273,192,262,180,248,175,235,175,222"/>
-<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="61,95,148,120"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="117,131,133,157,164,180,161,185,129,160,112,134"/>
-<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="35,5,174,45"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="107,59,107,94,102,94,102,59"/>
-<area shape="rect" id="Node000005" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="172,95,304,120"/>
-<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="226,133,196,184,191,181,222,131"/>
-<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="268,259,251,234,234,221,215,210,218,206,237,216,255,230,272,256"/>
+<area shape="rect" id="Node000001" title="A field with a type known at compile time." alt="" coords="732,5,907,31"/>
+<area shape="rect" id="Node000002" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="445,97,552,123"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="523,86,547,68,575,53,614,40,654,30,732,19,732,24,655,35,615,45,577,58,550,73,526,90"/>
+<area shape="rect" id="Node000006" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="743,63,895,117"/>
+<area shape="poly" id="edge6_Node000006_Node000002" title=" " alt="" coords="539,90,575,79,619,74,662,73,743,77,743,82,662,78,619,79,577,85,541,95"/>
+<area shape="rect" id="Node000007" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="743,161,895,216"/>
+<area shape="poly" id="edge9_Node000007_Node000002" title=" " alt="" coords="519,132,545,157,577,178,618,191,661,197,743,197,743,202,661,202,617,196,575,183,541,162,516,135"/>
+<area shape="rect" id="Node000003" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="216,167,303,192"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="315,161,453,120,455,125,317,166"/>
+<area shape="poly" id="edge8_Node000007_Node000003" title=" " alt="" coords="317,185,492,203,599,207,708,203,743,199,743,205,708,209,599,212,491,208,316,190"/>
+<area shape="rect" id="Node000004" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,159,144,199"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="158,177,216,177,216,182,158,182"/>
+<area shape="rect" id="Node000005" href="$classJson_1_1StaticString.html" title="Lightweight wrapper to tag static string." alt="" coords="193,97,325,123"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="339,107,445,107,445,113,339,113"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="730,98,552,109,552,104,730,93"/>
+<area shape="poly" id="edge7_Node000002_Node000007" title=" " alt="" coords="729,169,551,125,552,120,730,164"/>
 </map>

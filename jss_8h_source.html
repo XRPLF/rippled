@@ -806,11 +806,11 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00722" name="l00722"></a><span class="lineno">  722</span><span class="preprocessor">#pragma push_macro(&quot;LEDGER_ENTRY_DUPLICATE&quot;)</span></div>
 <div class="line"><a id="l00723" name="l00723"></a><span class="lineno">  723</span><span class="preprocessor">#undef LEDGER_ENTRY_DUPLICATE</span></div>
 <div class="line"><a id="l00724" name="l00724"></a><span class="lineno">  724</span> </div>
-<div class="line"><a id="l00725" name="l00725"></a><span class="lineno">  725</span><span class="preprocessor">#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \</span></div>
-<div class="line"><a id="l00726" name="l00726"></a><span class="lineno">  726</span><span class="preprocessor">    JSS(name);                                          \</span></div>
+<div class="line"><a id="l00725" name="l00725"></a><span class="lineno">  725</span><span class="preprocessor">#define LEDGER_ENTRY(tag, value, name, rpcName, ...) \</span></div>
+<div class="line"><a id="l00726" name="l00726"></a><span class="lineno">  726</span><span class="preprocessor">    JSS(name);                                       \</span></div>
 <div class="line"><a id="l00727" name="l00727"></a><span class="lineno">  727</span><span class="preprocessor">    JSS(rpcName);</span></div>
 <div class="line"><a id="l00728" name="l00728"></a><span class="lineno">  728</span> </div>
-<div class="line"><a id="l00729" name="l00729"></a><span class="lineno">  729</span><span class="preprocessor">#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, fields) JSS(rpcName);</span></div>
+<div class="line"><a id="l00729" name="l00729"></a><span class="lineno">  729</span><span class="preprocessor">#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, ...) JSS(rpcName);</span></div>
 <div class="line"><a id="l00730" name="l00730"></a><span class="lineno">  730</span> </div>
 <div class="line"><a id="l00731" name="l00731"></a><span class="lineno">  731</span><span class="preprocessor">#include &lt;xrpl/protocol/detail/ledger_entries.macro&gt;</span></div>
 <div class="line"><a id="l00732" name="l00732"></a><span class="lineno">  732</span> </div>

@@ -16,7 +16,7 @@ var searchData=
   ['batchwritepreallocationsize_13',['batchWritePreallocationSize',['../namespaceripple_1_1NodeStore.html#aa58826ecc5365c32e57504172cc6c827a3e7cbb590a2149da2328925f4ac5978a',1,'ripple::NodeStore']]],
   ['binary_14',['binary',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826a38cf0d49202caf3c5941757512d9c8fb',1,'ripple::LedgerFill']]],
   ['blobfield_15',['BlobField',['../namespaceripple_1_1test.html#a33d206712667192f356d3283738a0411a0f74255f45960a71eed96f283d91fb37',1,'ripple::test']]],
-  ['blocker_16',['blocker',['../classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938a55caa0901cae976168bf23f19bc3e8f4',1,'ripple::Transactor::Blocker'],['../classripple_1_1TxConsequences.html#af40159818c89963a904c9c4c0848cae9aea7777d0faf53e7b154d9239bb1ee1c8',1,'ripple::TxConsequences::blocker']]],
+  ['blocker_16',['blocker',['../classripple_1_1TxConsequences.html#af40159818c89963a904c9c4c0848cae9aea7777d0faf53e7b154d9239bb1ee1c8',1,'ripple::TxConsequences::blocker'],['../classripple_1_1Transactor.html#a5c6d16e9402d182a835f50b37ce9a938a55caa0901cae976168bf23f19bc3e8f4',1,'ripple::Transactor::Blocker']]],
   ['book_5fdir_17',['BOOK_DIR',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307bab6a8833f2e59902cc71ae3f8c0643edb',1,'ripple']]],
   ['booleanvalue_18',['booleanValue',['../namespaceJson.html#a7d654b75c16a57007925868e38212b4ea14c30dbf4da86f7b809be299f671f7fd',1,'Json']]],
   ['bootcacheprunepercent_19',['bootcachePrunePercent',['../namespaceripple_1_1PeerFinder_1_1Tuning.html#a94fae08d783ea8acf6109df396f2be62a812b763d40e801379f710816646374fc',1,'ripple::PeerFinder::Tuning']]],

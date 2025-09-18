@@ -53,7 +53,7 @@ var searchData=
   ['env_50',['Env',['../classripple_1_1test_1_1jtx_1_1Env.html',1,'ripple::test::jtx']]],
   ['env_5fss_51',['Env_ss',['../classripple_1_1test_1_1jtx_1_1Env__ss.html',1,'ripple::test::jtx']]],
   ['env_5ftest_52',['Env_test',['../classripple_1_1test_1_1Env__test.html',1,'ripple::test']]],
-  ['epsilon_5fmultiple_53',['epsilon_multiple',['../structripple_1_1test_1_1jtx_1_1detail_1_1epsilon__multiple.html',1,'ripple::test::jtx::detail']]],
+  ['epsilon_5fmultiple_53',['epsilon_multiple',['../structripple_1_1detail_1_1epsilon__multiple.html',1,'ripple::detail']]],
   ['epsilon_5ft_54',['epsilon_t',['../structripple_1_1test_1_1jtx_1_1epsilon__t.html',1,'ripple::test::jtx']]],
   ['equal_5fto_55',['equal_to',['http://en.cppreference.com/w/cpp/utility/functional/equal_to.html',1,'std::equal_to'],['http://en.cppreference.com/w/cpp/utility/functional/ranges/equal_to.html',1,'std::ranges::equal_to'],['../structripple_1_1equal__to.html',1,'ripple::equal_to&lt; T &gt;']]],
   ['equal_5fto_3c_20t_20_3e_56',['equal_to&lt; T &gt;',['http://en.cppreference.com/w/cpp/utility/functional/equal_to.html',1,'std']]],

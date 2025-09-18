@@ -100,6 +100,8 @@ Collaboration diagram for ripple::test::jtx::fee:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ae9eb0262ed5a0aa4fc897cd28711267f" id="r_ae9eb0262ed5a0aa4fc897cd28711267f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html#ae9eb0262ed5a0aa4fc897cd28711267f">fee</a> (<a class="el" href="structripple_1_1test_1_1jtx_1_1autofill__t.html">autofill_t</a>)</td></tr>
 <tr class="separator:ae9eb0262ed5a0aa4fc897cd28711267f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f949c19b710ed8148919b166161626e" id="r_a5f949c19b710ed8148919b166161626e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html#a5f949c19b710ed8148919b166161626e">fee</a> (<a class="el" href="structripple_1_1test_1_1jtx_1_1increment__t.html">increment_t</a>)</td></tr>
+<tr class="separator:a5f949c19b710ed8148919b166161626e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6ae062ae09ecf2b6fa1fe496e1d989c7" id="r_a6ae062ae09ecf2b6fa1fe496e1d989c7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html#a6ae062ae09ecf2b6fa1fe496e1d989c7">fee</a> (<a class="el" href="structripple_1_1test_1_1jtx_1_1none__t.html">none_t</a>)</td></tr>
 <tr class="separator:a6ae062ae09ecf2b6fa1fe496e1d989c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adedd9b4ed283c4d7f19ff4c240a7ec93" id="r_adedd9b4ed283c4d7f19ff4c240a7ec93"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html#adedd9b4ed283c4d7f19ff4c240a7ec93">fee</a> (<a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;amount)</td></tr>
@@ -113,6 +115,8 @@ Public Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a942d31864e207cc6a2851b5a3a426ab3" id="r_a942d31864e207cc6a2851b5a3a426ab3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html#a942d31864e207cc6a2851b5a3a426ab3">manual_</a> = true</td></tr>
 <tr class="separator:a942d31864e207cc6a2851b5a3a426ab3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae8e281cb6145f2f614968239248e0faf" id="r_ae8e281cb6145f2f614968239248e0faf"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html#ae8e281cb6145f2f614968239248e0faf">increment_</a> = false</td></tr>
+<tr class="separator:ae8e281cb6145f2f614968239248e0faf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a040776ad1565248c2571b3154575c5bf" id="r_a040776ad1565248c2571b3154575c5bf"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html#a040776ad1565248c2571b3154575c5bf">amount_</a></td></tr>
 <tr class="separator:a040776ad1565248c2571b3154575c5bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -122,7 +126,7 @@ Private Attributes</h2></td></tr>
 <p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00036">36</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae9eb0262ed5a0aa4fc897cd28711267f" name="ae9eb0262ed5a0aa4fc897cd28711267f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9eb0262ed5a0aa4fc897cd28711267f">&#9670;&#160;</a></span>fee() <span class="overload">[1/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9eb0262ed5a0aa4fc897cd28711267f">&#9670;&#160;</a></span>fee() <span class="overload">[1/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -145,12 +149,40 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00043">43</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00044">44</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
+
+</div>
+</div>
+<a id="a5f949c19b710ed8148919b166161626e" name="a5f949c19b710ed8148919b166161626e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f949c19b710ed8148919b166161626e">&#9670;&#160;</a></span>fee() <span class="overload">[2/5]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">ripple::test::jtx::fee::fee </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1jtx_1_1increment__t.html">increment_t</a>&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00048">48</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
 
 </div>
 </div>
 <a id="a6ae062ae09ecf2b6fa1fe496e1d989c7" name="a6ae062ae09ecf2b6fa1fe496e1d989c7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ae062ae09ecf2b6fa1fe496e1d989c7">&#9670;&#160;</a></span>fee() <span class="overload">[2/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ae062ae09ecf2b6fa1fe496e1d989c7">&#9670;&#160;</a></span>fee() <span class="overload">[3/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -173,12 +205,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00047">47</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00052">52</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
 
 </div>
 </div>
 <a id="adedd9b4ed283c4d7f19ff4c240a7ec93" name="adedd9b4ed283c4d7f19ff4c240a7ec93"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adedd9b4ed283c4d7f19ff4c240a7ec93">&#9670;&#160;</a></span>fee() <span class="overload">[3/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adedd9b4ed283c4d7f19ff4c240a7ec93">&#9670;&#160;</a></span>fee() <span class="overload">[4/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -201,12 +233,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00051">51</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00056">56</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
 
 </div>
 </div>
 <a id="a1b2c8338d963ecb711d08dc52f6f93ef" name="a1b2c8338d963ecb711d08dc52f6f93ef"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1b2c8338d963ecb711d08dc52f6f93ef">&#9670;&#160;</a></span>fee() <span class="overload">[4/4]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b2c8338d963ecb711d08dc52f6f93ef">&#9670;&#160;</a></span>fee() <span class="overload">[5/5]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -239,7 +271,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00057">57</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00062">62</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
 
 </div>
 </div>
@@ -254,7 +286,7 @@ Private Attributes</h2></td></tr>
           <td class="memname">void ripple::test::jtx::fee::operator() </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> &amp;&#160;</td>
-          <td class="paramname">, </td>
+          <td class="paramname"><em>env</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -299,6 +331,30 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="ae8e281cb6145f2f614968239248e0faf" name="ae8e281cb6145f2f614968239248e0faf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8e281cb6145f2f614968239248e0faf">&#9670;&#160;</a></span>increment_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::test::jtx::fee::increment_ = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00040">40</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
+
+</div>
+</div>
 <a id="a040776ad1565248c2571b3154575c5bf" name="a040776ad1565248c2571b3154575c5bf"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a040776ad1565248c2571b3154575c5bf">&#9670;&#160;</a></span>amount_</h2>
 
@@ -319,7 +375,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00040">40</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="fee_8h_source.html#l00041">41</a> of file <a class="el" href="fee_8h_source.html">fee.h</a>.</p>
 
 </div>
 </div>

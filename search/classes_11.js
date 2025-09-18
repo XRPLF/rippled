@@ -106,7 +106,7 @@ var searchData=
   ['resourcemanager_5ftest_103',['ResourceManager_test',['../classripple_1_1Resource_1_1ResourceManager__test.html',1,'ripple::Resource']]],
   ['result_5fof_104',['result_of',['http://en.cppreference.com/w/cpp/types/result_of.html',1,'std']]],
   ['result_5fof_5ft_105',['result_of_t',['http://en.cppreference.com/w/cpp/types/result_of.html',1,'std']]],
-  ['results_106',['results',['../structbeast_1_1unit__test_1_1detail_1_1reporter_1_1results.html',1,'beast::unit_test::detail::reporter&lt; class &gt;::results'],['../classbeast_1_1unit__test_1_1results.html',1,'beast::unit_test::results'],['../structripple_1_1PeerFinder_1_1Source_1_1Results.html',1,'ripple::PeerFinder::Source::Results'],['../structripple_1_1test_1_1detail_1_1results.html',1,'ripple::test::detail::results']]],
+  ['results_106',['results',['../structbeast_1_1unit__test_1_1detail_1_1reporter_1_1results.html',1,'beast::unit_test::detail::reporter&lt; class &gt;::results'],['../classbeast_1_1unit__test_1_1results.html',1,'beast::unit_test::results'],['../structripple_1_1detail_1_1results.html',1,'ripple::detail::results'],['../structripple_1_1PeerFinder_1_1Source_1_1Results.html',1,'ripple::PeerFinder::Source::Results']]],
   ['reverse_5fiterator_107',['reverse_iterator',['http://en.cppreference.com/w/cpp/iterator/reverse_iterator.html',1,'std']]],
   ['rfc1751_108',['RFC1751',['../classripple_1_1RFC1751.html',1,'ripple']]],
   ['ripesha_5fhasher_109',['ripesha_hasher',['../structripple_1_1ripesha__hasher.html',1,'ripple']]],

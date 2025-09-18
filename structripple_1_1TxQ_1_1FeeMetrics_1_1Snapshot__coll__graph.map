@@ -1,19 +1,21 @@
 <map id="ripple::TxQ::FeeMetrics::Snapshot" name="ripple::TxQ::FeeMetrics::Snapshot">
-<area shape="rect" id="Node000001" title="Snapshot of the externally relevant FeeMetrics fields at any given time." alt="" coords="659,136,831,176"/>
-<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="338,115,426,141"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="440,130,659,147,658,152,439,135"/>
-<area shape="rect" id="Node000003" href="$classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="287,165,477,205"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="491,176,634,165,658,163,659,168,635,171,491,182"/>
-<area shape="rect" id="Node000004" title=" " alt="" coords="13,5,229,45"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="232,50,239,55,258,79,265,103,271,127,289,150,308,163,305,167,285,154,267,129,260,105,253,82,235,59,229,55"/>
-<area shape="rect" id="Node000005" title=" " alt="" coords="20,69,223,109"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="220,111,239,119,264,134,288,150,319,163,317,168,285,154,261,139,236,124,218,116"/>
-<area shape="rect" id="Node000006" title=" " alt="" coords="5,133,237,173"/>
-<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="251,167,287,171,286,176,251,172"/>
-<area shape="rect" id="Node000007" title=" " alt="" coords="28,197,215,237"/>
-<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="228,202,286,194,287,200,228,207"/>
-<area shape="rect" id="Node000008" title=" " alt="" coords="18,261,225,301"/>
-<area shape="poly" id="edge7_Node000003_Node000008" title=" " alt="" coords="213,255,236,247,339,203,341,208,238,252,215,260"/>
-<area shape="rect" id="Node000009" title=" " alt="" coords="34,326,209,381"/>
-<area shape="poly" id="edge8_Node000003_Node000009" title=" " alt="" coords="220,320,236,311,273,286,308,256,361,203,365,207,312,260,277,290,239,316,222,324"/>
+<area shape="rect" id="Node000001" title="Snapshot of the externally relevant FeeMetrics fields at any given time." alt="" coords="672,168,844,208"/>
+<area shape="rect" id="Node000002" href="/__w/rippled/rippled/.build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="365,147,453,173"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="467,162,672,178,671,184,467,167"/>
+<area shape="rect" id="Node000003" href="$classripple_1_1unit_1_1ValueUnit.html" title=" " alt="" coords="328,197,491,237"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="505,209,648,197,672,195,672,200,648,203,505,214"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="13,5,224,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="222,49,233,55,258,72,275,88,306,132,314,147,317,159,321,170,330,182,348,195,345,199,326,186,316,173,312,161,309,148,302,135,271,92,255,76,231,60,219,53"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="20,69,217,109"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="215,111,233,119,262,134,282,150,302,165,329,182,357,195,355,200,327,186,299,169,279,154,259,139,231,124,213,116"/>
+<area shape="rect" id="Node000006" title=" " alt="" coords="5,133,232,173"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="224,174,328,197,327,202,223,179"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="17,197,221,237"/>
+<area shape="poly" id="edge6_Node000003_Node000007" title=" " alt="" coords="234,215,328,215,328,220,234,220"/>
+<area shape="rect" id="Node000008" title=" " alt="" coords="18,261,219,301"/>
+<area shape="poly" id="edge7_Node000003_Node000008" title=" " alt="" coords="223,256,327,233,328,238,224,261"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="35,326,203,381"/>
+<area shape="poly" id="edge8_Node000003_Node000009" title=" " alt="" coords="213,319,231,311,309,272,374,235,376,240,311,277,233,316,215,323"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="99,405,138,430"/>
+<area shape="poly" id="edge9_Node000003_Node000010" title=" " alt="" coords="151,413,190,406,231,391,283,356,329,313,366,270,392,236,396,239,370,274,332,316,286,360,233,396,192,411,152,418"/>
 </map>

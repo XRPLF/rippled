@@ -2,7 +2,7 @@ var searchData=
 [
   ['sample_5fop_0',['sample_op',['../structbeast_1_1io__latency__probe_1_1sample__op.html',1,'beast::io_latency_probe']]],
   ['sandbox_1',['Sandbox',['../classripple_1_1Sandbox.html',1,'ripple']]],
-  ['save_5fstream_5fstate_2',['save_stream_state',['../classripple_1_1NodeStore_1_1detail_1_1save__stream__state.html',1,'ripple::NodeStore::detail']]],
+  ['save_5fstream_5fstate_2',['save_stream_state',['../classripple_1_1detail_1_1save__stream__state.html',1,'ripple::detail']]],
   ['savedstate_3',['SavedState',['../structripple_1_1SavedState.html',1,'ripple']]],
   ['savedstatedb_4',['SavedStateDB',['../classripple_1_1SHAMapStoreImp_1_1SavedStateDB.html',1,'ripple::SHAMapStoreImp']]],
   ['savenumberroundmode_5',['saveNumberRoundMode',['../classripple_1_1saveNumberRoundMode.html',1,'ripple']]],
@@ -348,7 +348,7 @@ var searchData=
   ['suite_345',['suite',['../classbeast_1_1unit__test_1_1suite.html',1,'beast::unit_test']]],
   ['suite_5finfo_346',['suite_info',['../classbeast_1_1unit__test_1_1suite__info.html',1,'beast::unit_test']]],
   ['suite_5flist_347',['suite_list',['../classbeast_1_1unit__test_1_1suite__list.html',1,'beast::unit_test']]],
-  ['suite_5fresults_348',['suite_results',['../structbeast_1_1unit__test_1_1detail_1_1reporter_1_1suite__results.html',1,'beast::unit_test::detail::reporter&lt; class &gt;::suite_results'],['../classbeast_1_1unit__test_1_1suite__results.html',1,'beast::unit_test::suite_results'],['../structripple_1_1test_1_1detail_1_1suite__results.html',1,'ripple::test::detail::suite_results']]],
+  ['suite_5fresults_348',['suite_results',['../structbeast_1_1unit__test_1_1detail_1_1reporter_1_1suite__results.html',1,'beast::unit_test::detail::reporter&lt; class &gt;::suite_results'],['../classbeast_1_1unit__test_1_1suite__results.html',1,'beast::unit_test::suite_results'],['../structripple_1_1detail_1_1suite__results.html',1,'ripple::detail::suite_results']]],
   ['suitejournal_349',['SuiteJournal',['../classripple_1_1test_1_1SuiteJournal.html',1,'ripple::test']]],
   ['suitejournalsink_350',['SuiteJournalSink',['../classripple_1_1test_1_1SuiteJournalSink.html',1,'ripple::test']]],
   ['suitelogs_351',['SuiteLogs',['../classripple_1_1test_1_1jtx_1_1SuiteLogs.html',1,'ripple::test::jtx']]],

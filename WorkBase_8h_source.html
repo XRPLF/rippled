@@ -187,7 +187,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span> </div>
 <div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <span class="keywordtype">void</span></div>
 <div class="foldopen" id="foldopen00098" data-start="{" data-end="}">
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">   98</a></span>    <a class="code hl_function" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">onResolve</a>(<a class="code hl_typedef" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> <span class="keyword">const</span>&amp; ec, <a class="code hl_typedef" href="classripple_1_1detail_1_1WorkBase.html#a224d1b571e77f9870356a608c2fa3b09">results_type</a> results);</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">   98</a></span>    <a class="code hl_function" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">onResolve</a>(<a class="code hl_typedef" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> <span class="keyword">const</span>&amp; ec, <a class="code hl_typedef" href="classripple_1_1detail_1_1WorkBase.html#a224d1b571e77f9870356a608c2fa3b09">results_type</a> <a class="code hl_struct" href="structripple_1_1detail_1_1results.html">results</a>);</div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    <span class="keywordtype">void</span></div>
 <div class="foldopen" id="foldopen00101" data-start="{" data-end="}">
@@ -310,14 +310,14 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Impl&gt;</div>
 <div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span><span class="keywordtype">void</span></div>
 <div class="foldopen" id="foldopen00205" data-start="{" data-end="}">
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">  205</a></span><a class="code hl_function" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">WorkBase&lt;Impl&gt;::onResolve</a>(<a class="code hl_typedef" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> <span class="keyword">const</span>&amp; ec, <a class="code hl_typedef" href="classripple_1_1detail_1_1WorkBase.html#a224d1b571e77f9870356a608c2fa3b09">results_type</a> results)</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno"><a class="line" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">  205</a></span><a class="code hl_function" href="classripple_1_1detail_1_1WorkBase.html#a5b25cec56d8c64f4b579e9f595f98b14">WorkBase&lt;Impl&gt;::onResolve</a>(<a class="code hl_typedef" href="classripple_1_1detail_1_1WorkBase.html#ab71e779cbf5260362f0e72b88e060449">error_code</a> <span class="keyword">const</span>&amp; ec, <a class="code hl_typedef" href="classripple_1_1detail_1_1WorkBase.html#a224d1b571e77f9870356a608c2fa3b09">results_type</a> <a class="code hl_struct" href="structripple_1_1detail_1_1results.html">results</a>)</div>
 <div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>{</div>
 <div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>    <span class="keywordflow">if</span> (ec)</div>
 <div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        <span class="keywordflow">return</span> fail(ec);</div>
 <div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span> </div>
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    boost::asio::async_connect(</div>
 <div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>        socket_,</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>        results,</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>        <a class="code hl_struct" href="structripple_1_1detail_1_1results.html">results</a>,</div>
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        boost::asio::bind_executor(</div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>            strand_,</div>
 <div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
@@ -476,6 +476,7 @@ $(document).ready(function() { init_codefold(0); });
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition</b> <a href="algorithm_8h_source.html#l00025">algorithm.h:25</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a70e53b89eb57ac8fdc4625ce28455eb4"><div class="ttname"><a href="namespaceripple.html#a70e53b89eb57ac8fdc4625ce28455eb4">ripple::make_error_code</a></div><div class="ttdeci">std::error_code make_error_code(ripple::TokenCodecErrc e)</div><div class="ttdef"><b>Definition</b> <a href="token__errors_8h_source.html#l00097">token_errors.h:97</a></div></div>
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
+<div class="ttc" id="astructripple_1_1detail_1_1results_html"><div class="ttname"><a href="structripple_1_1detail_1_1results.html">ripple::detail::results</a></div><div class="ttdef"><b>Definition</b> <a href="multi__runner_8h_source.html#l00075">multi_runner.h:76</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

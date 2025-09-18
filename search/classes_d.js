@@ -59,7 +59,7 @@ var searchData=
   ['nodesanity_56',['NodeSanity',['../structripple_1_1test_1_1AccountTx__test_1_1NodeSanity.html',1,'ripple::test::AccountTx_test']]],
   ['nodestorebasic_5ftest_57',['NodeStoreBasic_test',['../classripple_1_1NodeStore_1_1NodeStoreBasic__test.html',1,'ripple::NodeStore']]],
   ['nodestorescheduler_58',['NodeStoreScheduler',['../classripple_1_1NodeStoreScheduler.html',1,'ripple']]],
-  ['noedgedata_59',['NoEdgeData',['../structripple_1_1test_1_1csf_1_1detail_1_1NoEdgeData.html',1,'ripple::test::csf::detail']]],
+  ['noedgedata_59',['NoEdgeData',['../structripple_1_1detail_1_1NoEdgeData.html',1,'ripple::detail']]],
   ['none_60',['None',['../structripple_1_1test_1_1jtx_1_1None.html',1,'ripple::test::jtx']]],
   ['none_5ft_61',['none_t',['../structripple_1_1test_1_1jtx_1_1none__t.html',1,'ripple::test::jtx']]],
   ['nonesuch_62',['nonesuch',['http://en.cppreference.com/w/cpp/experimental/nonesuch.html',1,'std::experimental']]],
