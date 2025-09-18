@@ -79,17 +79,22 @@ getLedgerEntryOwner(
             auto const signerList = view.read(keylet::signers(account));
             if (!signerList)
                 return std::nullopt;
-            if (signerList->getFieldH256(sfObjectID) ==
-                sle->getFieldH256(sfObjectID))
+            if (signerList->getFieldH256(sfLedgerIndex) ==
+                sle->getFieldH256(sfLedgerIndex))
                 return account;
             return std::nullopt;
         }
         case ltCREDENTIAL: {
-            if (sle->getFlags() & lsfAccepted)
+            if (sle->isFlag(lsfAccepted))
                 return sle->getAccountID(sfSubject);
             return sle->getAccountID(sfIssuer);
         }
-            // case ltNFTOKEN_PAGE:
+        case ltNFTOKEN_PAGE: {
+            // the upper 20 bytes of the index of ltNFTokenPage are the Owner's
+            // AccountID
+            uint256 const& key = sle->key();
+            return AccountID::fromVoid(key.data());
+        }
             // case ltRIPPLE_STATE:
         case ltACCOUNT_ROOT: {
             // AccountRoot is not supported for object sponsorship
@@ -229,9 +234,14 @@ SponsorshipTransfer::doApply()
             if (auto const oldSponsorSle =
                     view().peek(keylet::account(oldSponsor)))
             {
-                oldSponsorSle->setFieldU32(
-                    sfSponsoringOwnerCount,
-                    oldSponsorSle->getFieldU32(sfSponsoringOwnerCount) - 1);
+                auto const newCount =
+                    oldSponsorSle->getFieldU32(sfSponsoringOwnerCount) - 1;
+                if (newCount == 0)
+                    oldSponsorSle->makeFieldAbsent(sfSponsoringOwnerCount);
+                else
+                    oldSponsorSle->setFieldU32(
+                        sfSponsoringOwnerCount, newCount);
+
                 view().update(oldSponsorSle);
             }
             else
@@ -257,9 +267,13 @@ SponsorshipTransfer::doApply()
             // dissolve object sponsor
             auto const oldSponsor = objSle->getAccountID(sfSponsorAccount);
             // decrement sponsored count
-            accSle->setFieldU32(
-                sfSponsoredOwnerCount,
-                accSle->getFieldU32(sfSponsoredOwnerCount) - 1);
+            auto const newCount =
+                accSle->getFieldU32(sfSponsoredOwnerCount) - 1;
+            if (newCount == 0)
+                accSle->makeFieldAbsent(sfSponsoredOwnerCount);
+            else
+                accSle->setFieldU32(sfSponsoredOwnerCount, newCount);
+
             view().update(accSle);
             // decrement old sponsoring count
             if (auto const oldSponsorSle =

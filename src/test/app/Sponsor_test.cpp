@@ -807,13 +807,14 @@ public:
         Account const bob("bob");
         Account const gw("gw");
         Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
 
         auto const USD = gw["USD"];
 
         auto const reserve = env.current()->fees().reserve;
         auto const increment = env.current()->fees().increment;
 
-        env.fund(XRP(10000), alice, bob, gw);
+        env.fund(XRP(10000), alice, bob, gw, sponsor2);
         env.fund(drops(reserve) + drops(increment) - drops(1), sponsor);
         env.close();
 
@@ -859,14 +860,30 @@ public:
             BEAST_EXPECT(
                 env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
 
-            env(check::cancel(alice, keylet.key),
-                sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+            // transfer sponsor
+            env(sponsor::transfer(alice, keylet.key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);  // RippleState + Check
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            BEAST_EXPECT(
+                env.le(keylet)->getAccountID(sfSponsorAccount) ==
+                sponsor2.id());
+
+            // CheckCancel
+            env(check::cancel(alice, keylet.key));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
 
         {
@@ -900,9 +917,9 @@ public:
         env(pay(env.master, sponsor, drops(env.current()->fees().increment)));
         env.close();
 
-        // RippleState sponsor
+        // RippleState sponsor (CheckCashMakesTrustLine)
         {
-            // CheckCreate -> CheckCash(CheckCashMakesTrustLine)
+            // CheckCreate -> CheckCash
             auto const seq2 = env.seq(alice);
             env(check::create(alice, bob, USD(1)),
                 sponsor::as(sponsor, tfSponsorReserve),
@@ -950,7 +967,7 @@ public:
         {
             Env env{*this, testable_amendments()};
 
-            env.fund(XRP(10000), alice, gw, sponsor1);
+            env.fund(XRP(10000), alice, gw, sponsor1, sponsor2);
             env.close();
 
             // OfferCreate
@@ -965,6 +982,22 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 1);
 
+            // transfer sponsor
+            auto const keylet = keylet::offer(alice, seq);
+            env(sponsor::transfer(alice, keylet.key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            BEAST_EXPECT(
+                env.le(keylet)->getAccountID(sfSponsorAccount) ==
+                sponsor2.id());
+
             // OfferCancel
             env(offer_cancel(alice, seq));
             env.close();
@@ -973,6 +1006,7 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
 
         // test Offer Execution doesn't sponsor new trustline
@@ -1035,8 +1069,9 @@ public:
         Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const sponsor("master");
+        Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, sponsor);
+        env.fund(XRP(1000000), alice, sponsor, sponsor2);
         env.close();
 
         // TicketCreate
@@ -1051,13 +1086,32 @@ public:
         BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 250);
 
+        auto const keylet = keylet::ticket(alice, ticketSeq);
+        BEAST_EXPECT(
+            env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
+
+        // transfer sponsor
+        env(sponsor::transfer(alice, keylet.key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 250);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 250);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+        BEAST_EXPECT(
+            env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor2.id());
+
         // use a Ticket
-        env(noop(alice), ticket::use(ticketSeq + 1));
+        env(noop(alice), ticket::use(ticketSeq));
         env.close();
 
         BEAST_EXPECT(ownerCount(env, alice) == 249);
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 249);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
     void
@@ -1069,12 +1123,15 @@ public:
         Account const issuer("issuer");
         Account const subject("subject");
         Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), issuer, subject, sponsor);
+        env.fund(XRP(1000000), issuer, subject, sponsor, sponsor2);
         env.close();
 
+        auto const credType = std::string("credType");
+
         // CredentialsCreate
-        env(credentials::create(subject, issuer, "credType"),
+        env(credentials::create(subject, issuer, credType),
             credentials::uri("uri"),
             sponsor::as(sponsor, tfSponsorReserve),
             sponsor::sig(sponsor));
@@ -1086,8 +1143,23 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
+        // transfer sponsor
+        auto const keylet = keylet::credential(
+            subject, issuer, Slice(credType.data(), credType.size()));
+        env(sponsor::transfer(issuer, keylet.key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, issuer) == 1);
+        BEAST_EXPECT(ownerCount(env, subject) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
         // CredentialsAccept
-        env(credentials::accept(subject, issuer, "credType"),
+        env(credentials::accept(subject, issuer, credType),
             sponsor::as(sponsor, tfSponsorReserve),
             sponsor::sig(sponsor));
         env.close();
@@ -1097,9 +1169,10 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
         BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 1);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
 
         // CredentialsDelete
-        env(credentials::deleteCred(subject, subject, issuer, "credType"));
+        env(credentials::deleteCred(subject, subject, issuer, credType));
         env.close();
 
         BEAST_EXPECT(ownerCount(env, issuer) == 0);
@@ -1107,6 +1180,10 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
         BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+
+        // TODO: Accept Sponsored Credentials without sponsoring
+        // TODO: Self Accept Sponsored Credentials
     }
 
     void
@@ -1118,8 +1195,9 @@ public:
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, bob, sponsor);
+        env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
         env.close();
 
         // DelegateSet
@@ -1131,6 +1209,18 @@ public:
         BEAST_EXPECT(ownerCount(env, alice) == 1);
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // transfer sponsor
+        auto const keylet = keylet::delegate(alice, bob);
+        env(sponsor::transfer(alice, keylet.key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
         // delete
         env(delegate::set(alice, bob, {}));
@@ -1144,6 +1234,46 @@ public:
     void
     testDepositPreauth()
     {
+        testcase("DepositPreauth");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+
+        env.fund(XRP(1000000), alice, sponsor, sponsor2);
+        env.close();
+
+        // DepositPreauthSet
+        env(deposit::auth(alice, sponsor),
+            sponsor::as(sponsor, tfSponsorReserve),
+            sponsor::sig(sponsor));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // transfer sponsor
+        auto const keylet = keylet::depositPreauth(alice, sponsor);
+        env(sponsor::transfer(alice, keylet.key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+        // DepositPreauthDelete
+        env(deposit::unauth(alice, sponsor));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
     void
@@ -1154,8 +1284,9 @@ public:
         Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, sponsor);
+        env.fund(XRP(1000000), alice, sponsor, sponsor2);
         env.close();
 
         // DIDSet
@@ -1169,6 +1300,18 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
+        // transfer sponsor
+        auto const keylet = keylet::did(alice);
+        env(sponsor::transfer(alice, keylet.key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
         // DIDDelete
         env(did::del(alice));
         env.close();
@@ -1176,6 +1319,7 @@ public:
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
     void
@@ -1196,14 +1340,14 @@ public:
             Env env{*this, testable_amendments()};
             auto const baseFee = env.current()->fees().base;
 
-            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
             env.close();
 
             // EscrowCreate
             auto const seq = env.seq(alice);
             env(escrow::create(alice, bob, XRP(100)),
                 escrow::condition(escrow::cb1),
-                escrow::cancel_time(env.now() + 10s),
+                escrow::cancel_time(env.now() + 100s),
                 sponsor::as(sponsor, tfSponsorReserve),
                 sponsor::sig(sponsor));
             env.close();
@@ -1216,6 +1360,21 @@ public:
                 env.le(keylet::escrow(alice, seq))
                     ->getAccountID(sfSponsorAccount) == sponsor.id());
 
+            // transfer sponsor
+            env(sponsor::transfer(alice, keylet::escrow(alice, seq).key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            BEAST_EXPECT(
+                env.le(keylet::escrow(alice, seq))
+                    ->getAccountID(sfSponsorAccount) == sponsor2.id());
+
             // EscrowFinish
             env(escrow::finish(bob, alice, seq),
                 escrow::condition(escrow::cb1),
@@ -1226,6 +1385,7 @@ public:
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
 
         {
@@ -1289,26 +1449,413 @@ public:
     void
     testMPToken()
     {
+        testcase("MPToken");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+
+        env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+        env.close();
+
+        // MPTokenIssuanceCreate
+        Json::Value jv = {};
+        jv[sfAccount] = alice.human();
+        jv[sfTransactionType] = jss::MPTokenIssuanceCreate;
+        auto const mptid = makeMptID(env.seq(alice), alice.id());
+        env(jv, sponsor::as(sponsor, tfSponsorReserve), sponsor::sig(sponsor));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // transfer sponsor
+        auto const mptIssuanceKeylet = keylet::mptIssuance(mptid);
+        env(sponsor::transfer(alice, mptIssuanceKeylet.key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+        // MPTokenAuthorize
+        jv = {};
+        jv[sfTransactionType] = jss::MPTokenAuthorize;
+        jv[sfAccount] = bob.human();
+        jv[sfMPTokenIssuanceID] = to_string(mptid);
+        env(jv, sponsor::as(sponsor, tfSponsorReserve), sponsor::sig(sponsor));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(ownerCount(env, bob) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // transfer sponsor
+        auto const mptTokenKeylet = keylet::mptoken(mptid, bob);
+        env(sponsor::transfer(alice, mptTokenKeylet.key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(ownerCount(env, bob) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 2);
+
+        // MPTokenAuthorize Unauthorize
+        jv = {};
+        jv[sfTransactionType] = jss::MPTokenAuthorize;
+        jv[sfAccount] = bob.human();
+        jv[sfMPTokenIssuanceID] = to_string(mptid);
+        jv[sfFlags] = tfMPTUnauthorize;
+        env(jv);
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(ownerCount(env, bob) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+        // MPTokenIssuanceDestroy
+        jv = {};
+        jv[sfTransactionType] = jss::MPTokenIssuanceDestroy;
+        jv[sfAccount] = alice.human();
+        jv[sfMPTokenIssuanceID] = to_string(mptid);
+        env(jv);
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
     void
     testNFToken()
     {
+        // testcase("NFToken");
+        // using namespace test::jtx;
+        // Env env{*this, testable_amendments()};
+        // Account const alice("alice");
+        // Account const bob("bob");
+        // Account const sponsor("sponsor");
+        // Account const sponsor2("sponsor2");
+
+        // env.fund(XRP(1000000), alice, bob, sponsor);
+        // env.close();
+
+        // // NFTokenMint
+        // env(token::mint(alice),
+        //     sponsor::as(sponsor, tfSponsorReserve),
+        //     sponsor::sig(sponsor));
+        // env.close();
+
+        // BEAST_EXPECT(ownerCount(env, alice) == 1);
+        // BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        // BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
     }
 
     void
     testNFTokenOffer()
     {
+        testcase("NFTokenOffer");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const broker("broker");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+
+        auto const taxon = 0u;
+
+        {
+            // Mint + CreateOffer + CancelOffer
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+            env.close();
+
+            // Mint
+            uint256 const nftId{
+                token::getNextID(env, alice, taxon, tfTransferable)};
+            env(token::mint(alice, taxon), txflags(tfTransferable));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // NFTokenOfferCreate
+            uint256 const offerIndex =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, XRP(1)),
+                token::destination(bob),
+                txflags(tfSellNFToken),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // transfer sponsor
+            env(sponsor::transfer(alice, offerIndex),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            // NFTokenOfferCancel
+            env(token::cancelOffer(alice, {offerIndex}));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        {
+            // Mint + CreateSellOffer + AcceptSellOffer
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            // Mint
+            uint256 const nftId{
+                token::getNextID(env, alice, taxon, tfTransferable)};
+            env(token::mint(alice, taxon), txflags(tfTransferable));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // NFTokenOfferCreate
+            uint256 const offerIndex =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, XRP(1)),
+                token::destination(bob),
+                txflags(tfSellNFToken),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // NFTokenOfferAccept
+            env(token::acceptSellOffer(bob, offerIndex));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+
+        {
+            // Mint + CreateBuyOffer + AcceptBuyOffer
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            // Mint
+            uint256 const nftId{
+                token::getNextID(env, alice, taxon, tfTransferable)};
+            env(token::mint(alice, taxon), txflags(tfTransferable));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // NFTokenOfferCreate
+            uint256 const offerIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId, XRP(1)),
+                token::owner(alice),
+                token::destination(alice),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // NFTokenOfferAccept
+            env(token::acceptBuyOffer(alice, offerIndex));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+        {
+            // Broker
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, broker, sponsor, sponsor2);
+            env.close();
+
+            // Mint
+            uint256 const nftId{
+                token::getNextID(env, alice, taxon, tfTransferable)};
+            env(token::mint(alice, taxon), txflags(tfTransferable));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+            // NFTokenOfferCreate (BuyOffer)
+            uint256 const buyOfferIndex =
+                keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftId, XRP(1)),
+                token::owner(alice),
+                token::destination(broker),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // NFTokenOfferCreate (SellOffer)
+            uint256 const sellOfferIndex =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, XRP(1)),
+                txflags(tfSellNFToken),
+                token::destination(broker),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            // NFTokenOfferAccept
+            env(token::brokerOffers(broker, buyOfferIndex, sellOfferIndex));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(ownerCount(env, bob) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
     }
 
     void
     testPayChan()
     {
+        testcase("PayChan");
+        using namespace test::jtx;
+        using namespace std::literals::chrono_literals;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+
+        env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+        env.close();
+
+        // PayChanCreate
+        auto const pk = alice.pk();
+        auto const settleDelay = 10s;
+        auto const chan = paychan::channel(alice, bob, env.seq(alice));
+        env(paychan::create(alice, bob, XRP(100), settleDelay, pk),
+            sponsor::as(sponsor, tfSponsorReserve),
+            sponsor::sig(sponsor));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // transfer sponsor
+        env(sponsor::transfer(alice, chan),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+        env.close(env.now() + settleDelay);
+        // PayChanClaim (delete PayChan)
+        env(paychan::claim(bob, chan), txflags(tfClose));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
     void
     testPermissionedDomain()
     {
+        testcase("PermissionedDomain");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+
+        env.fund(XRP(1000000), alice, sponsor, sponsor2);
+        env.close();
+
+        // PermissionedDomainSet
+        auto const seq = env.seq(alice);
+        pdomain::Credentials credentials{{alice, "first credential"}};
+        env(pdomain::setTx(alice, credentials),
+            sponsor::as(sponsor, tfSponsorReserve),
+            sponsor::sig(sponsor));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+        // transfer sponsor
+        env(sponsor::transfer(
+                alice, keylet::permissionedDomain(alice, seq).key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+        // PermissionedDomainDelete
+        auto objects = pdomain::getObjects(alice, env);
+        auto const domain = objects.begin()->first;
+        env(pdomain::deleteTx(alice, domain));
+        env.close();
+
+        BEAST_EXPECT(ownerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
     void
@@ -1324,8 +1871,9 @@ public:
         Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, sponsor);
+        env.fund(XRP(1000000), alice, sponsor, sponsor2);
         env.close();
 
         Account const bob("bob");
@@ -1340,6 +1888,17 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
+        // // transfer sponsor
+        // env(sponsor::transfer(alice, keylet::signers(alice).key),
+        //     sponsor::as(sponsor2, tfSponsorReserve),
+        //     sponsor::sig(sponsor2));
+        // env.close();
+
+        // BEAST_EXPECT(ownerCount(env, alice) == 1);
+        // BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        // BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        // BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
         // Delete
         env(signers(alice, none));
         env.close();
@@ -1347,6 +1906,7 @@ public:
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
     }
 
     void
@@ -1397,6 +1957,7 @@ public:
 
             BEAST_EXPECT(!env.le(keylet::line(user, issuer, USD.currency)));
         }
+        // TODO: transfer sponsor
     }
 
     void
@@ -1620,14 +2181,14 @@ public:
         testTicket();
         testCredentials();
         testDelegate();
-        // testDepositPreauth();
+        testDepositPreauth();
         testDID();
         testEscrow();
-        // testMPToken();
+        testMPToken();
         // testNFToken();
-        // testNFTokenOffer();
-        // testPayChan();
-        // testPermissionedDomain();
+        testNFTokenOffer();
+        testPayChan();
+        testPermissionedDomain();
         // testOracle();
         testSignerList();
         testTrustSet();

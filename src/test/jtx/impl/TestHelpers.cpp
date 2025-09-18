@@ -231,6 +231,8 @@ expectLedgerEntryRoot(
 
 /* Payment Channel */
 /******************************************************************************/
+namespace paychan {
+
 Json::Value
 create(
     AccountID const& account,
@@ -321,6 +323,8 @@ channelExists(ReadView const& view, uint256 const& chan)
     auto const slep = view.read({ltPAYCHAN, chan});
     return bool(slep);
 }
+
+}  // namespace paychan
 
 /* Crossing Limits */
 /******************************************************************************/

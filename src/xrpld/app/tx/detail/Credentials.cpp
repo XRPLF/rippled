@@ -370,15 +370,16 @@ CredentialAccept::doApply()
     if (!sleSubject || !sleIssuer)
         return tefINTERNAL;
 
-    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
     if (auto const ret = checkInsufficientReserve(
-            view(), sleSubject, mPriorBalance, sponsor, 1);
+            view(), sleSubject, mPriorBalance, newSponsor, 1);
         !isTesSuccess(ret))
         return ret;
 
     auto const credType(ctx_.tx[sfCredentialType]);
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
+    auto const currentSponsor = getLedgerEntryReserveSponsor(view(), sleCred);
 
     if (checkExpired(sleCred, view().info().parentCloseTime))
     {
@@ -391,8 +392,8 @@ CredentialAccept::doApply()
     sleCred->setFieldU32(sfFlags, lsfAccepted);
     view().update(sleCred);
 
-    adjustOwnerCount(view(), sleIssuer, sponsor, -1, j_);
-    auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
+    adjustOwnerCount(view(), sleIssuer, currentSponsor, -1, j_);
+    removeSponsorFromLedgerEntry(sleCred);
     adjustOwnerCount(view(), sleSubject, newSponsor, 1, j_);
     addSponsorToLedgerEntry(sleCred, newSponsor);
 
