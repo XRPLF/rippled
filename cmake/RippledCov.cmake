@@ -33,7 +33,7 @@ setup_target_for_coverage_gcovr(
   FORMAT ${coverage_format}
   EXECUTABLE rippled
   EXECUTABLE_ARGS --unittest$<$<BOOL:${coverage_test}>:=${coverage_test}> --unittest-jobs ${coverage_test_parallelism} --quiet --unittest-log
-  EXCLUDE "src/test" "include/xrpl/beast/test" "include/xrpl/beast/unit_test" "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
+  EXCLUDE "src/test" "src/tests" "include/xrpl/beast/test" "include/xrpl/beast/unit_test" "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
   DEPENDENCIES rippled
 )
 
