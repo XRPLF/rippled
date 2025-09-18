@@ -67,8 +67,6 @@ test.json > xrpl.json
 test.jtx > xrpl.basics
 test.jtx > xrpld.app
 test.jtx > xrpld.core
-test.jtx > xrpld.ledger
-test.jtx > xrpld.net
 test.jtx > xrpld.rpc
 test.jtx > xrpl.json
 test.jtx > xrpl.ledger
@@ -172,13 +170,6 @@ xrpld.core > xrpl.basics
 xrpld.core > xrpl.json
 xrpld.core > xrpl.net
 xrpld.core > xrpl.protocol
-xrpld.net > xrpl.basics
-xrpld.net > xrpl.json
-xrpld.net > xrpl.protocol
-xrpld.net > xrpl.resource
-xrpld.ledger > xrpl.basics
-xrpld.ledger > xrpl.json
-xrpld.ledger > xrpl.protocol
 xrpld.nodestore > xrpl.basics
 xrpld.nodestore > xrpld.core
 xrpld.nodestore > xrpld.unity
@@ -201,8 +192,8 @@ xrpld.rpc > xrpl.basics
 xrpld.rpc > xrpld.core
 xrpld.rpc > xrpld.nodestore
 xrpld.rpc > xrpl.json
-xrpld.rpc > xrpl.net
 xrpld.rpc > xrpl.ledger
+xrpld.rpc > xrpl.net
 xrpld.rpc > xrpl.protocol
 xrpld.rpc > xrpl.resource
 xrpld.rpc > xrpl.server
