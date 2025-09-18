@@ -80,6 +80,6 @@ jobs:
         os: [linux, macos, windows]
     with:
       os: ${{ matrix.os }}
-      strategy_matrix: "minimal"
+      strategy_matrix: ${{ github.event_name == 'schedule' && 'all' || 'minimal' }}
     secrets:
       codecov_token: ${{ secrets.CODECOV_TOKEN }}
