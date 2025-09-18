@@ -24,11 +24,11 @@
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/ledger/View.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>

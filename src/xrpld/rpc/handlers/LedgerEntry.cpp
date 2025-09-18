@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
-#include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -28,6 +26,8 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>

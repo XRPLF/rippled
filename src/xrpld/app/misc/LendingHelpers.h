@@ -20,8 +20,7 @@
 #ifndef RIPPLE_APP_MISC_LENDINGHELPERS_H_INCLUDED
 #define RIPPLE_APP_MISC_LENDINGHELPERS_H_INCLUDED
 
-#include <xrpld/ledger/View.h>
-
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/st.h>
 
 namespace ripple {
