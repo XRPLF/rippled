@@ -39,53 +39,96 @@ namespace RPC {
 // The Concise Transaction ID provides a way to identify a transaction
 // that includes which network the transaction was submitted to.
 
+/**
+ * @brief Encodes ledger sequence, transaction index, and network ID into a CTID
+ * string.
+ *
+ * @param ledgerSeq  Ledger sequence number (max 0x0FFF'FFFF).
+ * @param txnIndex   Transaction index within the ledger (max 0xFFFF).
+ * @param networkID  Network identifier (max 0xFFFF).
+ * @return Optional CTID string in uppercase hexadecimal, or std::nullopt if
+ * inputs are out of range.
+ */
 inline std::optional<std::string>
 encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
 {
-    if (ledgerSeq > 0x0FFF'FFFF || txnIndex > 0xFFFF || networkID > 0xFFFF)
-        return {};
+    constexpr uint32_t maxLedgerSeq = 0x0FFF'FFFF;
+    constexpr uint32_t maxTxnIndex = 0xFFFF;
+    constexpr uint32_t maxNetworkID = 0xFFFF;
+
+    if (ledgerSeq > maxLedgerSeq || txnIndex > maxTxnIndex ||
+        networkID > maxNetworkID)
+        return std::nullopt;
 
     uint64_t ctidValue =
-        ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) +
-        (static_cast<uint64_t>(txnIndex) << 16) + networkID;
+        ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) |
+        ((static_cast<uint64_t>(txnIndex) << 16) | networkID);
 
     std::stringstream buffer;
     buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16)
            << ctidValue;
-    return {buffer.str()};
+    return buffer.str();
 }
 
+/**
+ * @brief Decodes a CTID string or integer into its component parts.
+ *
+ * @tparam T  Type of the CTID input (string, string_view, char*, integral).
+ * @param ctid  CTID value to decode.
+ * @return Optional tuple of (ledgerSeq, txnIndex, networkID), or std::nullopt
+ * if invalid.
+ */
 template <typename T>
 inline std::optional<std::tuple<uint32_t, uint16_t, uint16_t>>
 decodeCTID(T const ctid) noexcept
 {
-    uint64_t ctidValue{0};
+    uint64_t ctidValue = 0;
+
     if constexpr (
-        std::is_same_v<T, std::string> || std::is_same_v<T, char*> ||
-        std::is_same_v<T, char const*> || std::is_same_v<T, std::string_view>)
+        std::is_same_v<T, std::string> || std::is_same_v<T, std::string_view> ||
+        std::is_same_v<T, char*> || std::is_same_v<T, char const*>)
     {
         std::string const ctidString(ctid);
 
-        if (ctidString.length() != 16)
-            return {};
+        if (ctidString.size() != 16)
+            return std::nullopt;
 
-        if (!boost::regex_match(ctidString, boost::regex("^[0-9A-Fa-f]+$")))
-            return {};
+        static boost::regex const hexRegex("^[0-9A-Fa-f]{16}$");
+        if (!boost::regex_match(ctidString, hexRegex))
+            return std::nullopt;
 
-        ctidValue = std::stoull(ctidString, nullptr, 16);
+        try
+        {
+            ctidValue = std::stoull(ctidString, nullptr, 16);
+        }
+        // LCOV_EXCL_START
+        catch (...)
+        {
+            // should be impossible to hit given the length/regex check
+            return std::nullopt;
+        }
+        // LCOV_EXCL_STOP
     }
     else if constexpr (std::is_integral_v<T>)
-        ctidValue = ctid;
+    {
+        ctidValue = static_cast<uint64_t>(ctid);
+    }
     else
-        return {};
+    {
+        return std::nullopt;
+    }
 
-    if ((ctidValue & 0xF000'0000'0000'0000ULL) != 0xC000'0000'0000'0000ULL)
-        return {};
+    // Validate CTID prefix.
+    constexpr uint64_t ctidPrefixMask = 0xF000'0000'0000'0000ULL;
+    constexpr uint64_t ctidPrefix = 0xC000'0000'0000'0000ULL;
+    if ((ctidValue & ctidPrefixMask) != ctidPrefix)
+        return std::nullopt;
 
-    uint32_t ledger_seq = (ctidValue >> 32) & 0xFFFF'FFFUL;
-    uint16_t txn_index = (ctidValue >> 16) & 0xFFFFU;
-    uint16_t network_id = ctidValue & 0xFFFFU;
-    return {{ledger_seq, txn_index, network_id}};
+    uint32_t ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);
+    uint16_t txnIndex = static_cast<uint16_t>((ctidValue >> 16) & 0xFFFF);
+    uint16_t networkID = static_cast<uint16_t>(ctidValue & 0xFFFF);
+
+    return std::make_tuple(ledgerSeq, txnIndex, networkID);
 }
 
 }  // namespace RPC

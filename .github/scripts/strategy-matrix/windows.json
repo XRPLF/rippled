@@ -2,7 +2,7 @@
   "architecture": [
     {
       "platform": "windows/amd64",
-      "runner": ["windows-latest"]
+      "runner": ["self-hosted", "Windows", "devbox"]
     }
   ],
   "os": [

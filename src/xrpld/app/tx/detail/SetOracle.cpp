@@ -271,6 +271,11 @@ SetOracle::doApply()
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);
         sle->setFieldU32(sfLastUpdateTime, ctx_.tx[sfLastUpdateTime]);
+        if (!sle->isFieldPresent(sfOracleDocumentID) &&
+            ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+        }
 
         auto const newCount = pairs.size() > 5 ? 2 : 1;
         auto const adjust = newCount - oldCount;
@@ -285,6 +290,10 @@ SetOracle::doApply()
 
         sle = std::make_shared<SLE>(oracleID);
         sle->setAccountID(sfOwner, ctx_.tx.getAccountID(sfAccount));
+        if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+        {
+            (*sle)[sfOracleDocumentID] = ctx_.tx[sfOracleDocumentID];
+        }
         sle->setFieldVL(sfProvider, ctx_.tx[sfProvider]);
         if (ctx_.tx.isFieldPresent(sfURI))
             sle->setFieldVL(sfURI, ctx_.tx[sfURI]);

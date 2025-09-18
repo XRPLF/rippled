@@ -188,6 +188,15 @@ enum LedgerSpecificFlags {
     lsfMPTCanTransfer = 0x00000020,
     lsfMPTCanClawback = 0x00000040,
 
+    lmfMPTCanMutateCanLock = 0x00000002,
+    lmfMPTCanMutateRequireAuth = 0x00000004,
+    lmfMPTCanMutateCanEscrow = 0x00000008,
+    lmfMPTCanMutateCanTrade = 0x00000010,
+    lmfMPTCanMutateCanTransfer = 0x00000020,
+    lmfMPTCanMutateCanClawback = 0x00000040,
+    lmfMPTCanMutateMetadata = 0x00010000,
+    lmfMPTCanMutateTransferFee = 0x00020000,
+
     // ltMPTOKEN
     lsfMPTAuthorized = 0x00000002,
 
