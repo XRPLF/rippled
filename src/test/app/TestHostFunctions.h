@@ -605,13 +605,17 @@ public:
 struct PerfHostFunctions : public TestHostFunctions
 {
     Keylet leKey;
+    std::shared_ptr<SLE const> currentLedgerObj = nullptr;
+    bool isLedgerObjCached = false;
+
     static int constexpr MAX_CACHE = 256;
     std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
+    // std::optional<Bytes> data_; // deferred data update, not used in
+    // performance
     std::shared_ptr<STTx const> tx_;
 
     void const* rt_ = nullptr;
 
-public:
     PerfHostFunctions(
         test::jtx::Env& env,
         Keylet const& k,
@@ -620,9 +624,113 @@ public:
     {
     }
 
+    Expected<std::int32_t, HostFunctionError>
+    getLedgerSqn() override
+    {
+        auto seq = env_.current()->seq();
+        if (seq > std::numeric_limits<int32_t>::max())
+            return Unexpected(HostFunctionError::INTERNAL);  // LCOV_EXCL_LINE
+        return static_cast<int32_t>(seq);
+    }
+
+    Expected<std::int32_t, HostFunctionError>
+    getParentLedgerTime() override
+    {
+        auto time =
+            env_.current()->parentCloseTime().time_since_epoch().count();
+        if (time > std::numeric_limits<int32_t>::max())
+            return Unexpected(HostFunctionError::INTERNAL);
+        return static_cast<int32_t>(time);
+    }
+
+    Expected<Hash, HostFunctionError>
+    getParentLedgerHash() override
+    {
+        return env_.current()->info().parentHash;
+    }
+
+    Expected<Hash, HostFunctionError>
+    getLedgerAccountHash() override
+    {
+        return env_.current()->info().accountHash;
+    }
+
+    Expected<Hash, HostFunctionError>
+    getLedgerTransactionHash() override
+    {
+        return env_.current()->info().txHash;
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getBaseFee() override
+    {
+        auto fee = env_.current()->fees().base.drops();
+        if (fee > std::numeric_limits<int32_t>::max())
+            return Unexpected(HostFunctionError::INTERNAL);
+        return static_cast<int32_t>(fee);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(uint256 const& amendmentId) override
+    {
+        return env_.current()->rules().enabled(amendmentId);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    isAmendmentEnabled(std::string_view const& amendmentName) override
+    {
+        auto const& table = env_.app().getAmendmentTable();
+        auto const amendment = table.find(std::string(amendmentName));
+        return env_.current()->rules().enabled(amendment);
+    }
+
+    Expected<std::shared_ptr<SLE const>, HostFunctionError>
+    getCurrentLedgerObj()
+    {
+        if (!isLedgerObjCached)
+        {
+            isLedgerObjCached = true;
+            currentLedgerObj = env_.le(leKey);
+        }
+        if (currentLedgerObj)
+            return currentLedgerObj;
+        return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+    }
+
+    Expected<std::shared_ptr<SLE const>, HostFunctionError>
+    peekCurrentLedgerObj(int32_t cacheIdx)
+    {
+        --cacheIdx;
+        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+
+        if (!cache[cacheIdx])
+        {  // return Unexpected(HostFunctionError::INVALID_SLOT);
+            auto const r = getCurrentLedgerObj();
+            if (!r)
+                return Unexpected(r.error());
+            cache[cacheIdx] = *r;
+        }
+
+        return cache[cacheIdx];
+    }
+
+    Expected<int32_t, HostFunctionError>
+    normalizeCacheIndex(int32_t cacheIdx)
+    {
+        --cacheIdx;
+        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+        if (!cache[cacheIdx])
+            return Unexpected(HostFunctionError::EMPTY_SLOT);
+        return cacheIdx;
+    }
+
     virtual Expected<int32_t, HostFunctionError>
     cacheLedgerObj(uint256 const&, int32_t cacheIdx) override
     {
+        // auto const& keylet = keylet::unchecked(objId);
+
         static int32_t intIdx = 0;
 
         if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
@@ -648,158 +756,157 @@ public:
         return cacheIdx + 1;
     }
 
-    static Bytes
-    getAnyFieldData(STBase const& obj)
+    static Expected<Bytes, HostFunctionError>
+    getAnyFieldData(STBase const* obj)
     {
         // auto const& fname = obj.getFName();
-        auto const stype = obj.getSType();
+        if (!obj)
+            return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+
+        auto const stype = obj->getSType();
         switch (stype)
         {
+            // LCOV_EXCL_START
             case STI_UNKNOWN:
             case STI_NOTPRESENT:
-                return {};
+                return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+                break;
+            // LCOV_EXCL_STOP
+            case STI_OBJECT:
+            case STI_ARRAY:
+                return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
                 break;
             case STI_ACCOUNT: {
-                auto const& super(static_cast<STAccount const&>(obj));
-                auto const& data = super.value();
-                return {data.begin(), data.end()};
+                auto const* account(static_cast<STAccount const*>(obj));
+                auto const& data = account->value();
+                return Bytes{data.begin(), data.end()};
             }
             break;
-            case STI_AMOUNT: {
-                auto const& super(static_cast<STAmount const&>(obj));
-                int64_t const data = super.xrp().drops();
-                auto const* b = reinterpret_cast<uint8_t const*>(&data);
-                auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-                return {b, e};
+            case STI_AMOUNT:
+                // will be processed by serializer
+                break;
+            case STI_ISSUE: {
+                auto const* issue(static_cast<STIssue const*>(obj));
+                Asset const& asset(issue->value());
+                // XRP and IOU will be processed by serializer
+                if (asset.holds<MPTIssue>())
+                {
+                    // MPT
+                    auto const& mptIssue = asset.get<MPTIssue>();
+                    auto const& mptID = mptIssue.getMptID();
+                    return Bytes{mptID.cbegin(), mptID.cend()};
+                }
             }
             break;
             case STI_VL: {
-                auto const& super(static_cast<STBlob const&>(obj));
-                auto const& data = super.value();
-                return {data.begin(), data.end()};
+                auto const* vl(static_cast<STBlob const*>(obj));
+                auto const& data = vl->value();
+                return Bytes{data.begin(), data.end()};
             }
             break;
-            case STI_UINT256: {
-                auto const& super(static_cast<STBitString<256> const&>(obj));
-                auto const& data = super.value();
-                return {data.begin(), data.end()};
-            }
-            break;
-            case STI_UINT32: {
-                auto const& super(
-                    static_cast<STInteger<std::uint32_t> const&>(obj));
-                std::uint32_t const data = super.value();
+            case STI_UINT16: {
+                auto const& num(
+                    static_cast<STInteger<std::uint16_t> const*>(obj));
+                std::uint16_t const data = num->value();
                 auto const* b = reinterpret_cast<uint8_t const*>(&data);
                 auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-                return {b, e};
+                return Bytes{b, e};
+            }
+            case STI_UINT32: {
+                auto const* num(
+                    static_cast<STInteger<std::uint32_t> const*>(obj));
+                std::uint32_t const data = num->value();
+                auto const* b = reinterpret_cast<uint8_t const*>(&data);
+                auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+                return Bytes{b, e};
             }
             break;
             default:
-                break;
+                break;  // default to serializer
         }
 
         Serializer msg;
-        obj.add(msg);
+        obj->add(msg);
+        auto const data = msg.getData();
 
-        return msg.getData();
+        return data;
     }
 
     Expected<Bytes, HostFunctionError>
     getTxField(SField const& fname) override
     {
-        auto const* field = tx_->peekAtPField(fname);
-        if (!field)
-            return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
+        return getAnyFieldData(tx_->peekAtPField(fname));
     }
 
     Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjField(SField const& fname) override
     {
-        auto const sle = env_.le(leKey);
+        auto const sle = getCurrentLedgerObj();
         if (!sle)
-            return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-
-        auto const* field = sle->peekAtPField(fname);
-        if (!field)
-            return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
+            return Unexpected(sle.error());
+        return getAnyFieldData((*sle)->peekAtPField(fname));
     }
 
     Expected<Bytes, HostFunctionError>
     getLedgerObjField(int32_t cacheIdx, SField const& fname) override
     {
-        --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+        auto const sle = peekCurrentLedgerObj(cacheIdx);
+        if (!sle)
+            return Unexpected(sle.error());
+        return getAnyFieldData((*sle)->peekAtPField(fname));
+    }
 
-        if (!cache[cacheIdx])
-        {
-            // return Unexpected(HostFunctionError::INVALID_SLOT);
-            cache[cacheIdx] = env_.le(leKey);
-        }
-
-        auto const* field = cache[cacheIdx]->peekAtPField(fname);
-        if (!field)
-            return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
+    static inline bool
+    noField(STBase const* field)
+    {
+        return !field || (STI_NOTPRESENT == field->getSType()) ||
+            (STI_UNKNOWN == field->getSType());
     }
 
     static Expected<STBase const*, HostFunctionError>
-    locateField(STObject const& obj, Slice const& loc)
+    locateField(STObject const& obj, Slice const& locator)
     {
-        if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
+        if (locator.empty() || (locator.size() & 3))  // must be multiple of 4
             return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
-        int32_t const* l = reinterpret_cast<int32_t const*>(loc.data());
-        int32_t const sz = loc.size() / 4;
+        int32_t const* locPtr =
+            reinterpret_cast<int32_t const*>(locator.data());
+        int32_t const locSize = locator.size() / 4;
         STBase const* field = nullptr;
-        auto const& m = SField::getKnownCodeToField();
+        auto const& knownSFields = SField::getKnownCodeToField();
 
         {
-            int32_t const c = l[0];
-            auto const it = m.find(c);
-            if (it == m.end())
-                return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
-            auto const& fname(*it->second);
+            int32_t const sfieldCode = locPtr[0];
+            auto const it = knownSFields.find(sfieldCode);
+            if (it == knownSFields.end())
+                return Unexpected(HostFunctionError::INVALID_FIELD);
 
+            auto const& fname(*it->second);
             field = obj.peekAtPField(fname);
-            if (!field || (STI_NOTPRESENT == field->getSType()))
+            if (noField(field))
                 return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
         }
 
-        for (int i = 1; i < sz; ++i)
+        for (int i = 1; i < locSize; ++i)
         {
-            int32_t const c = l[i];
+            int32_t const sfieldCode = locPtr[i];
 
             if (STI_ARRAY == field->getSType())
             {
                 auto const* arr = static_cast<STArray const*>(field);
-                if (c >= arr->size())
-                    return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
-                field = &(arr->operator[](c));
+                if (sfieldCode >= arr->size())
+                    return Unexpected(HostFunctionError::INDEX_OUT_OF_BOUNDS);
+                field = &(arr->operator[](sfieldCode));
             }
             else if (STI_OBJECT == field->getSType())
             {
                 auto const* o = static_cast<STObject const*>(field);
 
-                auto const it = m.find(c);
-                if (it == m.end())
-                    return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
-                auto const& fname(*it->second);
+                auto const it = knownSFields.find(sfieldCode);
+                if (it == knownSFields.end())
+                    return Unexpected(HostFunctionError::INVALID_FIELD);
 
+                auto const& fname(*it->second);
                 field = o->peekAtPField(fname);
             }
             else  // simple field must be the last one
@@ -807,7 +914,7 @@ public:
                 return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
             }
 
-            if (!field || (STI_NOTPRESENT == field->getSType()))
+            if (noField(field))
                 return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
         }
 
@@ -822,57 +929,35 @@ public:
         auto const r = locateField(*tx_, locator);
         if (!r)
             return Unexpected(r.error());
-
-        auto const* field = r.value();
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
+        return getAnyFieldData(*r);
     }
 
     Expected<Bytes, HostFunctionError>
     getCurrentLedgerObjNestedField(Slice const& locator) override
     {
-        auto const sle = env_.le(leKey);
+        auto const sle = getCurrentLedgerObj();
         if (!sle)
-            return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+            return Unexpected(sle.error());
 
-        auto const r = locateField(*sle, locator);
+        auto const r = locateField(**sle, locator);
         if (!r)
             return Unexpected(r.error());
 
-        auto const* field = r.value();
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
+        return getAnyFieldData(*r);
     }
 
     Expected<Bytes, HostFunctionError>
     getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
     {
-        --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+        auto const sle = peekCurrentLedgerObj(cacheIdx);
+        if (!sle)
+            return Unexpected(sle.error());
 
-        if (!cache[cacheIdx])
-        {
-            // return Unexpected(HostFunctionError::INVALID_SLOT);
-            cache[cacheIdx] = env_.le(leKey);
-        }
-
-        auto const r = locateField(*cache[cacheIdx], locator);
+        auto const r = locateField(**sle, locator);
         if (!r)
             return Unexpected(r.error());
 
-        auto const* field = r.value();
-        if ((STI_OBJECT == field->getSType()) ||
-            (STI_ARRAY == field->getSType()))
-            return Unexpected(HostFunctionError::NOT_LEAF_FIELD);
-
-        return getAnyFieldData(*field);
+        return getAnyFieldData(*r);
     }
 
     Expected<int32_t, HostFunctionError>
@@ -882,7 +967,7 @@ public:
             return Unexpected(HostFunctionError::NO_ARRAY);
 
         auto const* field = tx_->peekAtPField(fname);
-        if (!field)
+        if (noField(field))
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
         if (field->getSType() != STI_ARRAY)
@@ -898,12 +983,12 @@ public:
         if (fname.fieldType != STI_ARRAY)
             return Unexpected(HostFunctionError::NO_ARRAY);
 
-        auto const sle = env_.le(leKey);
+        auto const sle = getCurrentLedgerObj();
         if (!sle)
-            return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
+            return Unexpected(sle.error());
 
-        auto const* field = sle->peekAtPField(fname);
-        if (!field)
+        auto const* field = (*sle)->peekAtPField(fname);
+        if (noField(field))
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
         if (field->getSType() != STI_ARRAY)
@@ -919,17 +1004,12 @@ public:
         if (fname.fieldType != STI_ARRAY)
             return Unexpected(HostFunctionError::NO_ARRAY);
 
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+        auto const sle = peekCurrentLedgerObj(cacheIdx);
+        if (!sle)
+            return Unexpected(sle.error());
 
-        if (!cache[cacheIdx])
-        {
-            // return Unexpected(HostFunctionError::INVALID_SLOT);
-            cache[cacheIdx] = env_.le(leKey);
-        }
-
-        auto const* field = cache[cacheIdx]->peekAtPField(fname);
-        if (!field)
+        auto const* field = (*sle)->peekAtPField(fname);
+        if (noField(field))
             return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
 
         if (field->getSType() != STI_ARRAY)
@@ -957,10 +1037,11 @@ public:
     Expected<int32_t, HostFunctionError>
     getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
     {
-        auto const sle = env_.le(leKey);
+        auto const sle = getCurrentLedgerObj();
         if (!sle)
-            return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
-        auto const r = locateField(*sle, locator);
+            return Unexpected(sle.error());
+
+        auto const r = locateField(**sle, locator);
         if (!r)
             return Unexpected(r.error());
         auto const* field = r.value();
@@ -975,17 +1056,11 @@ public:
     Expected<int32_t, HostFunctionError>
     getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
     {
-        --cacheIdx;
-        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+        auto const sle = peekCurrentLedgerObj(cacheIdx);
+        if (!sle)
+            return Unexpected(sle.error());
 
-        if (!cache[cacheIdx])
-        {
-            // return Unexpected(HostFunctionError::INVALID_SLOT);
-            cache[cacheIdx] = env_.le(leKey);
-        }
-
-        auto const r = locateField(*cache[cacheIdx], locator);
+        auto const r = locateField(**sle, locator);
         if (!r)
             return Unexpected(r.error());
 
@@ -1001,6 +1076,9 @@ public:
     Expected<int32_t, HostFunctionError>
     updateData(Slice const& data) override
     {
+        if (data.size() > maxWasmDataLength)
+            return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
+
         ripple::detail::ApplyViewBase v(
             env_.app().openLedger().current().get(), tapNONE);
 
@@ -1014,11 +1092,233 @@ public:
         return data.size();
     }
 
+    Expected<int32_t, HostFunctionError>
+    checkSignature(
+        Slice const& message,
+        Slice const& signature,
+        Slice const& pubkey) override
+    {
+        if (!publicKeyType(pubkey))
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+        PublicKey const pk(pubkey);
+        return verify(pk, message, signature, /*canonical*/ true);
+    }
+
     Expected<Hash, HostFunctionError>
     computeSha512HalfHash(Slice const& data) override
     {
         auto const hash = sha512Half(data);
         return hash;
+    }
+
+    Expected<Bytes, HostFunctionError>
+    accountKeylet(AccountID const& account) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::account(account);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    ammKeylet(Asset const& issue1, Asset const& issue2) override
+    {
+        if (issue1 == issue2)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+        // note: this should be removed with the MPT DEX amendment
+        if (issue1.holds<MPTIssue>() || issue2.holds<MPTIssue>())
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+        auto const keylet = keylet::amm(issue1, issue2);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    checkKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::check(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    credentialKeylet(
+        AccountID const& subject,
+        AccountID const& issuer,
+        Slice const& credentialType) override
+    {
+        if (!subject || !issuer)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+        if (credentialType.empty() ||
+            credentialType.size() > maxCredentialTypeLength)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+        auto const keylet = keylet::credential(subject, issuer, credentialType);
+
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    didKeylet(AccountID const& account) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::did(account);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    delegateKeylet(AccountID const& account, AccountID const& authorize)
+        override
+    {
+        if (!account || !authorize)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        if (account == authorize)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        auto const keylet = keylet::delegate(account, authorize);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    depositPreauthKeylet(AccountID const& account, AccountID const& authorize)
+        override
+    {
+        if (!account || !authorize)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        if (account == authorize)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        auto const keylet = keylet::depositPreauth(account, authorize);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    escrowKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::escrow(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    lineKeylet(
+        AccountID const& account1,
+        AccountID const& account2,
+        Currency const& currency) override
+    {
+        if (!account1 || !account2)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        if (account1 == account2)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        if (currency.isZero())
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+        auto const keylet = keylet::line(account1, account2, currency);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    mptIssuanceKeylet(AccountID const& issuer, std::uint32_t seq) override
+    {
+        if (!issuer)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+        auto const keylet = keylet::mptIssuance(seq, issuer);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    mptokenKeylet(MPTID const& mptid, AccountID const& holder) override
+    {
+        if (!mptid)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        if (!holder)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+
+        auto const keylet = keylet::mptoken(mptid, holder);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    nftOfferKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::nftoffer(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    offerKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::offer(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    oracleKeylet(AccountID const& account, std::uint32_t documentId) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::oracle(account, documentId);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    paychanKeylet(
+        AccountID const& account,
+        AccountID const& destination,
+        std::uint32_t seq) override
+    {
+        if (!account || !destination)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        if (account == destination)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+        auto const keylet = keylet::payChan(account, destination, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    permissionedDomainKeylet(AccountID const& account, std::uint32_t seq)
+        override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::permissionedDomain(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    signersKeylet(AccountID const& account) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::signers(account);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    ticketKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::ticket(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, HostFunctionError>
+    vaultKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HostFunctionError::INVALID_ACCOUNT);
+        auto const keylet = keylet::vault(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
     }
 
     Expected<Bytes, HostFunctionError>
@@ -1043,6 +1343,40 @@ public:
 
         Slice const s = ouri->value();
         return Bytes(s.begin(), s.end());
+    }
+
+    Expected<Bytes, HostFunctionError>
+    getNFTIssuer(uint256 const& nftId) override
+    {
+        auto const issuer = nft::getIssuer(nftId);
+        if (!issuer)
+            return Unexpected(HostFunctionError::INVALID_PARAMS);
+
+        return Bytes{issuer.begin(), issuer.end()};
+    }
+
+    Expected<std::uint32_t, HostFunctionError>
+    getNFTTaxon(uint256 const& nftId) override
+    {
+        return nft::toUInt32(nft::getTaxon(nftId));
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getNFTFlags(uint256 const& nftId) override
+    {
+        return nft::getFlags(nftId);
+    }
+
+    Expected<int32_t, HostFunctionError>
+    getNFTTransferFee(uint256 const& nftId) override
+    {
+        return nft::getTransferFee(nftId);
+    }
+
+    Expected<std::uint32_t, HostFunctionError>
+    getNFTSerial(uint256 const& nftId) override
+    {
+        return nft::getSerial(nftId);
     }
 };
 

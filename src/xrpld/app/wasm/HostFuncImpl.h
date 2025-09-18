@@ -50,7 +50,15 @@ class WasmHostFunctionsImpl : public HostFunctions
     }
 
     Expected<int32_t, HostFunctionError>
-    normalizeCacheIndex(int32_t cacheIdx);
+    normalizeCacheIndex(int32_t cacheIdx)
+    {
+        --cacheIdx;
+        if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+            return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
+        if (!cache[cacheIdx])
+            return Unexpected(HostFunctionError::EMPTY_SLOT);
+        return cacheIdx;
+    }
 
 public:
     WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
