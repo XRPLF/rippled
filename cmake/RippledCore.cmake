@@ -53,18 +53,18 @@ add_library(xrpl.imports.main INTERFACE)
 
 target_link_libraries(xrpl.imports.main
   INTERFACE
-    LibArchive::LibArchive
-    OpenSSL::Crypto
-    Ripple::boost
-    Ripple::opts
-    Ripple::syslibs
     absl::random_random
     date::date
     ed25519::ed25519
+    LibArchive::LibArchive
+    OpenSSL::Crypto
+    Ripple::boost
+    Ripple::libs
+    Ripple::opts
+    Ripple::syslibs
     secp256k1::secp256k1
     xrpl.libpb
     xxHash::xxhash
-    Ripple::libs
     $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 

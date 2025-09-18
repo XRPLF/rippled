@@ -22,6 +22,8 @@
 
 #include <xrpl/nodestore/Types.h>
 
+#include <cstdint>
+
 namespace ripple {
 namespace NodeStore {
 
