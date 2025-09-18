@@ -60,7 +60,6 @@ multi(32gb):
 */
 
 namespace ripple {
-namespace NodeStore {
 
 namespace detail {
 
@@ -189,6 +188,8 @@ fmtdur(std::chrono::duration<Period, Rep> const& d)
 }
 
 }  // namespace detail
+
+namespace NodeStore {
 
 //------------------------------------------------------------------------------
 
