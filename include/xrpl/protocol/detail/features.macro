@@ -32,9 +32,7 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
-XRPL_FIX    (IncludeKeyletFields,        Supported::no,  VoteBehavior::DefaultNo)
-XRPL_FEATURE(DynamicMPT,                 Supported::no,  VoteBehavior::DefaultNo)
-XRPL_FIX    (TokenEscrowV1,              Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(SmartEscrow,                Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (DelegateV1_1,               Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PriceOracleOrder,           Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FIX    (MPTDeliveredAmount,         Supported::no,  VoteBehavior::DefaultNo)
@@ -47,7 +45,6 @@ XRPL_FEATURE(Batch,                      Supported::yes, VoteBehavior::DefaultNo
 XRPL_FEATURE(SingleAssetVault,           Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegation,       Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
-// Check flags in Credential transactions
 XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DeepFreeze,                 Supported::yes, VoteBehavior::DefaultNo)

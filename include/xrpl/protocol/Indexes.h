@@ -231,6 +231,12 @@ page(Keylet const& root, std::uint64_t index = 0) noexcept
 Keylet
 escrow(AccountID const& src, std::uint32_t seq) noexcept;
 
+inline Keylet
+escrow(uint256 const& key) noexcept
+{
+    return {ltESCROW, key};
+}
+
 /** A PaymentChannel */
 Keylet
 payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept;
@@ -287,11 +293,9 @@ delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
 Keylet
 bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
 
-// `seq` is stored as `sfXChainClaimID` in the object
 Keylet
 xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
-// `seq` is stored as `sfXChainAccountCreateCount` in the object
 Keylet
 xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 

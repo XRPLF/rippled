@@ -17,147 +17,98 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_APPLYSTATETABLE_H_INCLUDED
-#define RIPPLE_LEDGER_APPLYSTATETABLE_H_INCLUDED
+#ifndef RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
+#define RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
 
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/RawView.h>
-#include <xrpl/ledger/ReadView.h>
+#include <xrpld/ledger/OpenView.h>
+#include <xrpld/ledger/detail/ApplyViewBase.h>
+
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxMeta.h>
-#include <xrpl/protocol/XRPAmount.h>
-
-#include <memory>
 
 namespace ripple {
-namespace detail {
 
-// Helper class that buffers modifications
-class ApplyStateTable
+/** Editable, discardable view that can build metadata for one tx.
+
+    Iteration of the tx map is delegated to the base.
+
+    @note Presented as ApplyView to clients.
+*/
+class ApplyViewImpl final : public detail::ApplyViewBase
 {
 public:
-    using key_type = ReadView::key_type;
+    ApplyViewImpl() = delete;
+    ApplyViewImpl(ApplyViewImpl const&) = delete;
+    ApplyViewImpl&
+    operator=(ApplyViewImpl&&) = delete;
+    ApplyViewImpl&
+    operator=(ApplyViewImpl const&) = delete;
 
-private:
-    enum class Action {
-        cache,
-        erase,
-        insert,
-        modify,
-    };
+    ApplyViewImpl(ApplyViewImpl&&) = default;
+    ApplyViewImpl(ReadView const* base, ApplyFlags flags);
 
-    using items_t = std::map<key_type, std::pair<Action, std::shared_ptr<SLE>>>;
+    /** Apply the transaction.
 
-    items_t items_;
-    XRPAmount dropsDestroyed_{0};
-
-public:
-    ApplyStateTable() = default;
-    ApplyStateTable(ApplyStateTable&&) = default;
-
-    ApplyStateTable(ApplyStateTable const&) = delete;
-    ApplyStateTable&
-    operator=(ApplyStateTable&&) = delete;
-    ApplyStateTable&
-    operator=(ApplyStateTable const&) = delete;
-
-    void
-    apply(RawView& to) const;
-
+        After a call to `apply`, the only valid
+        operation on this object is to call the
+        destructor.
+    */
     std::optional<TxMeta>
     apply(
         OpenView& to,
         STTx const& tx,
         TER ter,
-        std::optional<STAmount> const& deliver,
-        std::optional<uint256 const> const& parentBatchId,
+        std::optional<uint256> parentBatchId,
         bool isDryRun,
         beast::Journal j);
 
-    bool
-    exists(ReadView const& base, Keylet const& k) const;
+    /** Set the amount of currency delivered.
 
-    std::optional<key_type>
-    succ(
-        ReadView const& base,
-        key_type const& key,
-        std::optional<key_type> const& last) const;
-
-    std::shared_ptr<SLE const>
-    read(ReadView const& base, Keylet const& k) const;
-
-    std::shared_ptr<SLE>
-    peek(ReadView const& base, Keylet const& k);
-
-    std::size_t
-    size() const;
+        This value is used when generating metadata
+        for payments, to set the DeliveredAmount field.
+        If the amount is not specified, the field is
+        excluded from the resulting metadata.
+    */
+    void
+    deliver(STAmount const& amount)
+    {
+        deliver_ = amount;
+    }
 
     void
+    setGasUsed(std::optional<std::uint32_t> const gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    void
+    setWasmReturnCode(std::int32_t const wasmReturnCode)
+    {
+        wasmReturnCode_ = wasmReturnCode;
+    }
+
+    /** Get the number of modified entries
+     */
+    std::size_t
+    size();
+
+    /** Visit modified entries
+     */
+    void
     visit(
-        ReadView const& base,
+        OpenView& target,
         std::function<void(
             uint256 const& key,
             bool isDelete,
             std::shared_ptr<SLE const> const& before,
-            std::shared_ptr<SLE const> const& after)> const& func) const;
-
-    void
-    erase(ReadView const& base, std::shared_ptr<SLE> const& sle);
-
-    void
-    rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle);
-
-    void
-    insert(ReadView const& base, std::shared_ptr<SLE> const& sle);
-
-    void
-    update(ReadView const& base, std::shared_ptr<SLE> const& sle);
-
-    void
-    replace(ReadView const& base, std::shared_ptr<SLE> const& sle);
-
-    void
-    destroyXRP(XRPAmount const& fee);
-
-    // For debugging
-    XRPAmount const&
-    dropsDestroyed() const
-    {
-        return dropsDestroyed_;
-    }
+            std::shared_ptr<SLE const> const& after)> const& func);
 
 private:
-    using Mods = hash_map<key_type, std::shared_ptr<SLE>>;
-
-    static void
-    threadItem(TxMeta& meta, std::shared_ptr<SLE> const& to);
-
-    std::shared_ptr<SLE>
-    getForMod(
-        ReadView const& base,
-        key_type const& key,
-        Mods& mods,
-        beast::Journal j);
-
-    void
-    threadTx(
-        ReadView const& base,
-        TxMeta& meta,
-        AccountID const& to,
-        Mods& mods,
-        beast::Journal j);
-
-    void
-    threadOwners(
-        ReadView const& base,
-        TxMeta& meta,
-        std::shared_ptr<SLE const> const& sle,
-        Mods& mods,
-        beast::Journal j);
+    std::optional<STAmount> deliver_;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<std::int32_t> wasmReturnCode_;
 };
 
-}  // namespace detail
 }  // namespace ripple
 
 #endif

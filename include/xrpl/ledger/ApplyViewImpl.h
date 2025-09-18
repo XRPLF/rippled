@@ -20,8 +20,9 @@
 #ifndef RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
 #define RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
 
-#include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/detail/ApplyViewBase.h>
+#include <xrpld/ledger/OpenView.h>
+#include <xrpld/ledger/detail/ApplyViewBase.h>
+
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
@@ -74,6 +75,18 @@ public:
         deliver_ = amount;
     }
 
+    void
+    setGasUsed(std::optional<std::uint32_t> const gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    void
+    setWasmReturnCode(std::int32_t const wasmReturnCode)
+    {
+        wasmReturnCode_ = wasmReturnCode;
+    }
+
     /** Get the number of modified entries
      */
     std::size_t
@@ -92,6 +105,8 @@ public:
 
 private:
     std::optional<STAmount> deliver_;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<std::int32_t> wasmReturnCode_;
 };
 
 }  // namespace ripple
