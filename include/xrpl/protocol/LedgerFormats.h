@@ -56,7 +56,7 @@ enum LedgerEntryType : std::uint16_t
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) tag = value,
+#define LEDGER_ENTRY(tag, value, ...) tag = value,
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
