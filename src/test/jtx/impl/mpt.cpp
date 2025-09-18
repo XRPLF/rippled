@@ -314,7 +314,7 @@ MPTTester::forObject(
         Throw<std::runtime_error>("MPT has not been created");
     auto const key = holder_ ? keylet::mptoken(*id_, holder_->id())
                              : keylet::mptIssuance(*id_);
-    if (auto const sle = env_.le(key))
+    if (auto const sle = env_.le(key.untyped()))
         return cb(sle);
     return false;
 }
