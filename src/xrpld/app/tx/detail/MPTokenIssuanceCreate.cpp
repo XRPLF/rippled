@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -44,7 +44,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         return ret;
 
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
-        (!*mutableFlags || *mutableFlags & tfMPTokenIssuanceCreateMutableMask))
+        (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
         return temINVALID_FLAG;
 
     if (ctx.tx.getFlags() & tfMPTokenIssuanceCreateMask)
