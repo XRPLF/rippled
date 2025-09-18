@@ -272,6 +272,11 @@ CashCheck::doApply()
         return tecFAILED_PROCESSING;
     }
 
+    auto const sponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
+    std::optional<std::shared_ptr<SLE>> sponsorSle = std::nullopt;
+    if (sponsorAcc)
+        sponsorSle = psb.peek(keylet::account(*sponsorAcc));
+
     // Preclaim already checked that source has at least the requested
     // funds.
     //
@@ -368,9 +373,8 @@ CashCheck::doApply()
                 auto const sleDst = psb.peek(keylet::account(account_));
 
                 // Can the account cover the trust line's reserve?
-                auto const sponsor = getTxReserveSponsor(psb, ctx_.tx);
                 if (auto const ret = checkInsufficientReserve(
-                        psb, sleDst, mPriorBalance, sponsor, 1);
+                        psb, sleDst, mPriorBalance, sponsorSle, 1);
                     !isTesSuccess(ret))
                 {
                     JLOG(j_.trace()) << "Trust line does not exist. "
@@ -399,6 +403,7 @@ CashCheck::doApply()
                         Issue(currency, account_),      // limit of zero
                         0,                              // quality in
                         0,                              // quality out
+                        sponsorAcc,                        // sponsor
                         viewJ);                         // journal
                     !isTesSuccess(ter))
                 {
@@ -510,8 +515,8 @@ CashCheck::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
-    auto const sponsor = getLedgerEntryReserveSponsor(psb, sleCheck);
-    adjustOwnerCount(psb, psb.peek(keylet::account(srcId)), sponsor, -1, viewJ);
+    adjustOwnerCount(
+        psb, psb.peek(keylet::account(srcId)), sponsorSle, -1, viewJ);
 
     // Remove check from ledger.
     psb.erase(sleCheck);

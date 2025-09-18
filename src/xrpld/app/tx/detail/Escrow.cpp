@@ -845,9 +845,12 @@ escrowUnlockApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
     {
         // Can the account cover the trust line's reserve?
-        auto const sponsor = getTxReserveSponsor(view, tx);
-        if (auto const ret =
-                checkInsufficientReserve(view, sleDest, xrpBalance, sponsor, 1);
+        auto const sponeorAcc = getTxReserveSponsorAccountID(tx);
+        std::optional<std::shared_ptr<SLE>> sponsorSle = std::nullopt;
+        if (sponeorAcc)
+            sponsorSle = view.peek(keylet::account(*sponeorAcc));
+        if (auto const ret = checkInsufficientReserve(
+                view, sleDest, xrpBalance, sponsorSle, 1);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -876,6 +879,7 @@ escrowUnlockApplyHelper<Issue>(
                 Issue(currency, receiver),      // limit of zero
                 0,                              // quality in
                 0,                              // quality out
+                sponeorAcc,                     // sponsor
                 journal);                       // journal
             !isTesSuccess(ter))
         {

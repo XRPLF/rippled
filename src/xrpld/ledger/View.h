@@ -461,6 +461,9 @@ checkInsufficientReserve(
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta = 0);
 
+std::optional<AccountID>
+getTxReserveSponsorAccountID(STTx const& tx);
+
 std::optional<std::shared_ptr<SLE>>
 getTxReserveSponsor(ApplyView& view, STTx const& tx);
 
@@ -468,12 +471,21 @@ std::optional<std::shared_ptr<SLE const>>
 getTxReserveSponsor(ReadView const& view, STTx const& tx);
 
 std::optional<std::shared_ptr<SLE>>
-getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> sle);
+getLedgerEntryReserveSponsor(
+    ApplyView& view,
+    std::shared_ptr<SLE> sle,
+    SF_ACCOUNT const& field = sfSponsorAccount);
 
 void
 addSponsorToLedgerEntry(
     std::shared_ptr<SLE> const& sle,
-    std::optional<std::shared_ptr<SLE>> const& sponsorSle);
+    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    SF_ACCOUNT const& field = sfSponsorAccount);
+
+void
+removeSponsorFromLedgerEntry(
+    std::shared_ptr<SLE> const& sle,
+    SF_ACCOUNT const& field = sfSponsorAccount);
 
 //------------------------------------------------------------------------------
 //
@@ -501,8 +513,8 @@ adjustOwnerCount(
     return adjustOwnerCount(
         view,
         view.peek(keylet::account(account)),
-        sponsor.has_value() ? view.peek(keylet::account(*sponsor))
-                            : std::optional<std::shared_ptr<SLE>>(),
+        sponsor ? view.peek(keylet::account(*sponsor))
+                : std::optional<std::shared_ptr<SLE>>(),
         amount,
         j);
 }
@@ -680,6 +692,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uSrcQualityIn,
     std::uint32_t uSrcQualityOut,
+    std::optional<AccountID> const& sponsorAccountID,
     beast::Journal j);
 
 [[nodiscard]] TER

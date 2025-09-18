@@ -638,8 +638,19 @@ Payment::doApply()
     auto const ownerCount = sleSrc->getFieldU32(sfOwnerCount);
 
     // This is the total reserve in drops.
-    // TODO: TEQU
-    auto const reserve = view().fees().accountReserve(ownerCount);
+    std::size_t sponsoredOwnerCount =
+        sleSrc->getFieldU32(sfSponsoredOwnerCount);
+    std::size_t sponsoringOwnerCount =
+        sleSrc->getFieldU32(sfSponsoringOwnerCount);
+    bool isAccountSponsored = sleSrc->isFieldPresent(sfSponsorAccount);
+    std::size_t sponsoringAccountCount =
+        sleSrc->getFieldU32(sfSponsoringAccountCount);
+    auto const reserve = view().fees().accountReserve(
+        ownerCount,
+        sponsoredOwnerCount,
+        sponsoringOwnerCount,
+        isAccountSponsored,
+        sponsoringAccountCount);
 
     // mPriorBalance is the balance on the sending account BEFORE the
     // fees were charged. We want to make sure we have enough reserve

@@ -453,7 +453,10 @@ SetTrust::doApply()
     SLE::pointer sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));
 
-    auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
+    auto const txSponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
+    std::optional<std::shared_ptr<SLE>> txSponsorSle = std::nullopt;
+    if (txSponsorAcc)
+        txSponsorSle = view().peek(keylet::account(*txSponsorAcc));
 
     if (sleRippleState)
     {
@@ -628,6 +631,11 @@ SetTrust::doApply()
 
         bool bReserveIncrease = false;
 
+        auto const currentHighSponsor = getLedgerEntryReserveSponsor(
+            view(), sleRippleState, sfHighSponsorAccount);
+        auto const currentLowSponsor = getLedgerEntryReserveSponsor(
+            view(), sleRippleState, sfLowSponsorAccount);
+
         if (bSetAuth)
         {
             uFlagsOut |= (bHigh ? lsfHighAuth : lsfLowAuth);
@@ -636,8 +644,11 @@ SetTrust::doApply()
         if (bLowReserveSet && !bLowReserved)
         {
             // Set reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, std::nullopt, 1, viewJ);
+            adjustOwnerCount(view(), sleLowAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfLowReserve;
+
+            addSponsorToLedgerEntry(
+                sleRippleState, txSponsorSle, sfLowSponsorAccount);
 
             if (!bHigh)
                 bReserveIncrease = true;
@@ -646,15 +657,21 @@ SetTrust::doApply()
         if (bLowReserveClear && bLowReserved)
         {
             // Clear reserve for low account.
-            adjustOwnerCount(view(), sleLowAccount, std::nullopt, -1, viewJ);
+            adjustOwnerCount(
+                view(), sleLowAccount, currentLowSponsor, -1, viewJ);
             uFlagsOut &= ~lsfLowReserve;
+
+            removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsorAccount);
         }
 
         if (bHighReserveSet && !bHighReserved)
         {
             // Set reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, std::nullopt, 1, viewJ);
+            adjustOwnerCount(view(), sleHighAccount, txSponsorSle, 1, viewJ);
             uFlagsOut |= lsfHighReserve;
+
+            addSponsorToLedgerEntry(
+                sleRippleState, txSponsorSle, sfHighSponsorAccount);
 
             if (bHigh)
                 bReserveIncrease = true;
@@ -663,8 +680,11 @@ SetTrust::doApply()
         if (bHighReserveClear && bHighReserved)
         {
             // Clear reserve for high account.
-            adjustOwnerCount(view(), sleHighAccount, std::nullopt, -1, viewJ);
+            adjustOwnerCount(
+                view(), sleHighAccount, currentHighSponsor, -1, viewJ);
             uFlagsOut &= ~lsfHighReserve;
+
+            removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsorAccount);
         }
 
         if (uFlagsIn != uFlagsOut)
@@ -679,7 +699,7 @@ SetTrust::doApply()
         }
         // Reserve is not scaled by load.
         else if (auto const ret = checkInsufficientReserve(
-                     view(), sle, mPriorBalance, sponsor, 0);
+                     view(), sle, mPriorBalance, txSponsorSle, 0);
                  !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
@@ -713,7 +733,7 @@ SetTrust::doApply()
                  ctx_.view(),
                  sle,
                  mPriorBalance,
-                 sponsor,
+                 txSponsorSle,
                  1);
              !freeTrustLine &&
              !isTesSuccess(ret))  // Reserve is not scaled by load.
@@ -751,6 +771,7 @@ SetTrust::doApply()
             saLimitAllow,  // Limit for who is being charged.
             uQualityIn,
             uQualityOut,
+            txSponsorAcc,
             viewJ);
     }
 

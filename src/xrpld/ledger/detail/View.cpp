@@ -627,10 +627,21 @@ xrpLiquid(
     std::uint32_t const ownerCount = confineOwnerCount(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    // AMMs have no reserve requirement
+    std::size_t sponsoredOwnerCount = sle->getFieldU32(sfSponsoredOwnerCount);
+    std::size_t sponsoringOwnerCount = sle->getFieldU32(sfSponsoringOwnerCount);
+    bool isAccountSponsored = sle->isFieldPresent(sfSponsorAccount);
+    std::size_t sponsoringAccountCount =
+        sle->getFieldU32(sfSponsoringAccountCount);
+
     auto const reserve = sle->isFieldPresent(sfAMMID)
-        ? XRPAmount{0}  // TODO: TEQU
-        : view.fees().accountReserve(ownerCount);
+        // AMMs have no reserve requirement
+        ? XRPAmount{0}
+        : view.fees().accountReserve(
+              ownerCount,
+              sponsoredOwnerCount,
+              sponsoringOwnerCount,
+              isAccountSponsored,
+              sponsoringAccountCount);
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
@@ -1025,20 +1036,20 @@ checkInsufficientReserve(
     ReadView const& view,
     std::shared_ptr<SLE const> accSle,
     STAmount const& accBalance,
-    std::optional<std::shared_ptr<SLE const>> const& _sponsorSle,
+    std::optional<std::shared_ptr<SLE const>> const& sponsorSle,
     std::int32_t ownerCountDelta,
     std::int32_t accountCountDelta)
 {
-    if (_sponsorSle.has_value())
+    if (sponsorSle)
     {
-        auto const sponsorSle = _sponsorSle.value();
-        auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
+        auto const sponsorBalance = (*sponsorSle)->getFieldAmount(sfBalance);
         STAmount const sponsorReserve{view.fees().accountReserve(
-            sponsorSle->getFieldU32(sfOwnerCount),
-            sponsorSle->getFieldU32(sfSponsoredOwnerCount),
-            sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ownerCountDelta,
-            sponsorSle->isFieldPresent(sfSponsorAccount),
-            sponsorSle->getFieldU32(sfSponsoringAccountCount) +
+            (*sponsorSle)->getFieldU32(sfOwnerCount),
+            (*sponsorSle)->getFieldU32(sfSponsoredOwnerCount),
+            (*sponsorSle)->getFieldU32(sfSponsoringOwnerCount) +
+                ownerCountDelta,
+            (*sponsorSle)->isFieldPresent(sfSponsorAccount),
+            (*sponsorSle)->getFieldU32(sfSponsoringAccountCount) +
                 accountCountDelta)};
 
         if (sponsorBalance < sponsorReserve)
@@ -1059,54 +1070,64 @@ checkInsufficientReserve(
     return tesSUCCESS;
 }
 
-std::optional<std::shared_ptr<SLE>>
-getTxReserveSponsor(ApplyView& view, STTx const& tx)
+std::optional<AccountID>
+getTxReserveSponsorAccountID(STTx const& tx)
 {
     if (tx.isFieldPresent(sfSponsor))
     {
         auto const sponsorObj = tx.getFieldObject(sfSponsor);
-        auto const flags = sponsorObj.getFlags();
-        auto const sponsorID = sponsorObj.getAccountID(sfAccount);
-        if (flags & tfSponsorReserve)
-        {
-            return view.peek(keylet::account(sponsorID));
-        }
+        if (sponsorObj.isFlag(tfSponsorReserve))
+            return sponsorObj.getAccountID(sfAccount);
     }
+    return std::nullopt;
+}
+
+std::optional<std::shared_ptr<SLE>>
+getTxReserveSponsor(ApplyView& view, STTx const& tx)
+{
+    auto const sponsorID = getTxReserveSponsorAccountID(tx);
+    if (sponsorID)
+        return view.peek(keylet::account(*sponsorID));
     return std::nullopt;
 }
 
 std::optional<std::shared_ptr<SLE const>>
 getTxReserveSponsor(ReadView const& view, STTx const& tx)
 {
-    if (tx.isFieldPresent(sfSponsor))
-    {
-        auto const sponsorObj = tx.getFieldObject(sfSponsor);
-        auto const flags = sponsorObj.getFlags();
-        auto const sponsorID = sponsorObj.getAccountID(sfAccount);
-        if (flags & tfSponsorReserve)
-        {
-            return view.read(keylet::account(sponsorID));
-        }
-    }
+    auto const sponsorID = getTxReserveSponsorAccountID(tx);
+    if (sponsorID)
+        return view.read(keylet::account(*sponsorID));
     return std::nullopt;
 }
 
 std::optional<std::shared_ptr<SLE>>
-getLedgerEntryReserveSponsor(ApplyView& view, std::shared_ptr<SLE> sle)
+getLedgerEntryReserveSponsor(
+    ApplyView& view,
+    std::shared_ptr<SLE> sle,
+    SF_ACCOUNT const& field)
 {
-    if (sle->isFieldPresent(sfSponsorAccount))
-        return view.peek(keylet::account(sle->getAccountID(sfSponsorAccount)));
+    if (sle->isFieldPresent(field))
+        return view.peek(keylet::account(sle->getAccountID(field)));
     return std::nullopt;
 }
 
 void
 addSponsorToLedgerEntry(
     std::shared_ptr<SLE> const& sle,
-    std::optional<std::shared_ptr<SLE>> const& sponsorSle)
+    std::optional<std::shared_ptr<SLE>> const& sponsorSle,
+    SF_ACCOUNT const& field)
 {
     if (sponsorSle)
-        sle->setAccountID(
-            sfSponsorAccount, sponsorSle.value()->getAccountID(sfAccount));
+        sle->setAccountID(field, (*sponsorSle)->getAccountID(sfAccount));
+}
+
+void
+removeSponsorFromLedgerEntry(
+    std::shared_ptr<SLE> const& sle,
+    SF_ACCOUNT const& field)
+{
+    if (sle->isFieldPresent(field))
+        sle->makeFieldAbsent(field);
 }
 
 //------------------------------------------------------------------------------
@@ -1146,7 +1167,6 @@ adjustOwnerCount(
         }
         {
             // modify account's SponsoredOwnerCount
-
             std::uint32_t const current{
                 accountSle->getFieldU32(sfSponsoredOwnerCount)};
             AccountID const id = (*accountSle)[sfAccount];
@@ -1304,6 +1324,7 @@ addEmptyHolding(
     // If the line already exists, don't create it again.
     if (view.read(index))
         return tecDUPLICATE;
+    auto const& sponsorAccountID = getTxReserveSponsorAccountID(tx);
     return trustCreate(
         view,
         high,
@@ -1319,6 +1340,7 @@ addEmptyHolding(
         /*limit=*/STAmount{Issue{currency, dstId}},
         /*qualityIn=*/0,
         /*qualityOut=*/0,
+        sponsorAccountID,
         journal);
 }
 
@@ -1391,12 +1413,13 @@ authorizeMPToken(
         //      - add the new mptokenKey to the owner directory
         //      - create the MPToken object for the holder
 
+        auto const sponsor = getTxReserveSponsor(view, tx);
+
         // The reserve that is required to create the MPToken. Note
         // that although the reserve increases with every item
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        auto const sponsor = getTxReserveSponsor(view, tx);
         if (sleAcct->getFieldU32(sfOwnerCount) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
@@ -1473,6 +1496,7 @@ trustCreate(
                                 // Issuer should be the account being set.
     std::uint32_t uQualityIn,
     std::uint32_t uQualityOut,
+    std::optional<AccountID> const& sponsorAccountID,
     beast::Journal j)
 {
     JLOG(j.trace()) << "trustCreate: " << to_string(uSrcAccountID) << ", "
@@ -1561,8 +1585,17 @@ trustCreate(
         uFlags |= (bSetHigh ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
+    std::optional<std::shared_ptr<SLE>> sponsorSle = std::nullopt;
+    if (sponsorAccountID)
+        sponsorSle = view.peek(keylet::account(*sponsorAccountID));
+
     sleRippleState->setFieldU32(sfFlags, uFlags);
-    adjustOwnerCount(view, sleAccount, std::nullopt, 1, j);
+    adjustOwnerCount(view, sleAccount, sponsorSle, 1, j);
+
+    addSponsorToLedgerEntry(
+        sleRippleState,
+        sponsorSle,
+        bSetHigh ? sfHighSponsorAccount : sfLowSponsorAccount);
 
     // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(
@@ -1847,12 +1880,20 @@ rippleCreditIOU(
         // Sender quality out is 0.
         {
             // Clear the reserve of the sender, possibly delete the line!
+            auto const currentSponsor = getLedgerEntryReserveSponsor(
+                view,
+                sleRippleState,
+                !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(uSenderID)),
-                std::nullopt,
+                currentSponsor,
                 -1,
                 j);
+
+            removeSponsorFromLedgerEntry(
+                sleRippleState,
+                !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
 
             // Clear reserve flag.
             sleRippleState->setFieldU32(
@@ -1917,6 +1958,7 @@ rippleCreditIOU(
         saReceiverLimit,
         0,
         0,
+        std::nullopt,
         j);
 }
 
@@ -2308,11 +2350,18 @@ updateTrustLine(
     {
         // VFALCO Where is the line being deleted?
         // Clear the reserve of the sender, possibly delete the line!
-        adjustOwnerCount(view, sle, std::nullopt, -1, j);
+        auto const currentSponsor = getLedgerEntryReserveSponsor(
+            view,
+            sle,
+            !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
+        adjustOwnerCount(view, sle, currentSponsor, -1, j);
 
         // Clear reserve flag.
         state->setFieldU32(
             sfFlags, flags & (!bSenderHigh ? ~lsfLowReserve : ~lsfHighReserve));
+
+        removeSponsorFromLedgerEntry(
+            sle, !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
 
         // Balance is zero, receiver reserve is clear.
         if (!after  // Balance is zero.
@@ -2419,6 +2468,7 @@ issueIOU(
         limit,
         0,
         0,
+        std::nullopt,
         j);
 }
 

@@ -144,7 +144,7 @@ enum class FeePayerType {
 struct FeePayer
 {
     Keylet keylet;
-    TypedField<STAmount> const& field;
+    SF_AMOUNT const& field;
     FeePayerType type;
 };
 
