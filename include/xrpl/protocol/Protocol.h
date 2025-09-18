@@ -22,7 +22,6 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/partitioned_unordered_map.h>
 
 #include <cstdint>
 
@@ -133,13 +132,6 @@ std::uint8_t constexpr vaultMaximumIOUScale = 18;
  * another vault; counted from 0 */
 std::uint8_t constexpr maxAssetCheckDepth = 5;
 
-/** The maximum length of a Data field in Escrow object that can be updated by
- * Wasm code */
-std::size_t constexpr maxWasmDataLength = 4 * 1024;
-
-/** The maximum length of a parameters passed from Wasm code*/
-std::size_t constexpr maxWasmParamLength = 1024;
-
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 
@@ -185,6 +177,13 @@ std::size_t constexpr permissionMaxSize = 10;
 
 /** The maximum number of transactions that can be in a batch. */
 std::size_t constexpr maxBatchTxCount = 8;
+
+/** The maximum length of a Data field in Escrow object that can be updated by
+ * Wasm code */
+std::size_t constexpr maxWasmDataLength = 4 * 1024;
+
+/** The maximum length of a parameters passed from Wasm code*/
+std::size_t constexpr maxWasmParamLength = 1024;
 
 }  // namespace ripple
 

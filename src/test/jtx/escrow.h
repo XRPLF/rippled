@@ -22,6 +22,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/rate.h>
 
@@ -93,140 +94,12 @@ std::array<std::uint8_t, 39> const cb3 = {
      0x26, 0x4A, 0x2D, 0x85, 0x7B, 0xE8, 0xA0, 0x9C, 0x1D, 0xFD,
      0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4, 0x81, 0x01, 0x04}};
 
-/** Set the "FinishAfter" time tag on a JTx */
-struct finish_time
-{
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit finish_time(NetClock::time_point const& value) : value_(value)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
-    }
-};
-
-/** Set the "CancelAfter" time tag on a JTx */
-struct cancel_time
-{
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit cancel_time(NetClock::time_point const& value) : value_(value)
-    {
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jt) const
-    {
-        jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
-    }
-};
-
-struct condition
-{
-private:
-    std::string value_;
-
-public:
-    explicit condition(Slice const& cond) : value_(strHex(cond))
-    {
-    }
-
-    template <size_t N>
-    explicit condition(std::array<std::uint8_t, N> const& c)
-        : condition(makeSlice(c))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfCondition.jsonName] = value_;
-    }
-};
-
-struct fulfillment
-{
-private:
-    std::string value_;
-
-public:
-    explicit fulfillment(Slice condition) : value_(strHex(condition))
-    {
-    }
-
-    template <size_t N>
-    explicit fulfillment(std::array<std::uint8_t, N> f)
-        : fulfillment(makeSlice(f))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFulfillment.jsonName] = value_;
-    }
-};
-
-struct finish_function
-{
-private:
-    std::string value_;
-
-public:
-    explicit finish_function(std::string func) : value_(func)
-    {
-    }
-
-    explicit finish_function(Slice const& func) : value_(strHex(func))
-    {
-    }
-
-    template <size_t N>
-    explicit finish_function(std::array<std::uint8_t, N> const& f)
-        : finish_function(makeSlice(f))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFinishFunction.jsonName] = value_;
-    }
-};
-
-struct data
-{
-private:
-    std::string value_;
-
-public:
-    explicit data(std::string func) : value_(func)
-    {
-    }
-
-    explicit data(Slice const& func) : value_(strHex(func))
-    {
-    }
-
-    template <size_t N>
-    explicit data(std::array<std::uint8_t, N> const& f) : data(makeSlice(f))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfData.jsonName] = value_;
-    }
-};
+auto const finish_time = JTxFieldWrapper<timePointField>(sfFinishAfter);
+auto const cancel_time = JTxFieldWrapper<timePointField>(sfCancelAfter);
+auto const condition = JTxFieldWrapper<blobField>(sfCondition);
+auto const fulfillment = JTxFieldWrapper<blobField>(sfFulfillment);
+auto const finish_function = JTxFieldWrapper<blobField>(sfFinishFunction);
+auto const data = JTxFieldWrapper<blobField>(sfData);
 
 struct comp_allowance
 {
