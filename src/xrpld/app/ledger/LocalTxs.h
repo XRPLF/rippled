@@ -21,7 +21,8 @@
 #define RIPPLE_APP_LEDGER_LOCALTXS_H_INCLUDED
 
 #include <xrpld/app/misc/CanonicalTXSet.h>
-#include <xrpld/ledger/ReadView.h>
+
+#include <xrpl/ledger/ReadView.h>
 
 #include <memory>
 

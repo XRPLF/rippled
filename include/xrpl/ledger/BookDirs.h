@@ -20,9 +20,8 @@
 #ifndef RIPPLE_LEDGER_BOOK_DIRS_H_INCLUDED
 #define RIPPLE_LEDGER_BOOK_DIRS_H_INCLUDED
 
-#include <xrpld/ledger/ReadView.h>
-
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
 
 namespace ripple {
 

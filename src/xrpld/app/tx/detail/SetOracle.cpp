@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/SetOracle.h>
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/TxFlags.h>
