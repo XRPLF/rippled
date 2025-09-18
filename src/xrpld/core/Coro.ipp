@@ -47,8 +47,11 @@ JobQueue::Coro::Coro(
                   self = shared_from_this();
                   fn(self);
               }
-              state_ = CoroState::Finished;
-              cv_.notify_all();
+              {
+                  std::lock_guard stateLock{mutex_run_};
+                  state_ = CoroState::Finished;
+                  cv_.notify_all();
+              }
           },
           boost::coroutines::attributes(megabytes(1)))
 {
@@ -56,6 +59,7 @@ JobQueue::Coro::Coro(
 
 inline JobQueue::Coro::~Coro()
 {
+    std::unique_lock stateLock{mutex_run_};
     XRPL_ASSERT(
         state_ != CoroState::Running,
         "ripple::JobQueue::Coro::~Coro : is not running");
@@ -63,7 +67,9 @@ inline JobQueue::Coro::~Coro()
     // Resume the coroutine so that it has a chance to clean things up
     if (state_ == CoroState::Suspended)
     {
+        stateLock.unlock();
         resume();
+        stateLock.lock();
     }
 
 #ifndef NDEBUG
@@ -79,10 +85,13 @@ JobQueue::Coro::yield()
     {
         std::lock_guard lock(jq_.m_mutex);
         if (shouldStop())
-        {
             return;
+
+        {
+            std::lock_guard stateLock{mutex_run_};
+            state_ = CoroState::Suspended;
+            cv_.notify_all();
         }
-        state_ = CoroState::Suspended;
         ++jq_.nSuspend_;
         jq_.m_suspendedCoros[this] = weak_from_this();
         jq_.cv_.notify_all();
@@ -93,6 +102,13 @@ JobQueue::Coro::yield()
 inline bool
 JobQueue::Coro::post()
 {
+#if !defined(NDEBUG)
+    {
+        std::lock_guard lk(mutex_run_);
+        XRPL_ASSERT(state_ == CoroState::Suspended, "JobQueue::Coro::post: coroutine should be suspended!");
+    }
+#endif
+
     // sp keeps 'this' alive
     if (jq_.addJob(
             type_, name_, [this, sp = shared_from_this()]() { resume(); }))
@@ -114,6 +130,7 @@ JobQueue::Coro::resume()
             return;
         }
         state_ = CoroState::Running;
+        cv_.notify_all();
     }
     {
         std::lock_guard lock(jq_.m_mutex);
@@ -135,7 +152,13 @@ JobQueue::Coro::resume()
 inline bool
 JobQueue::Coro::runnable() const
 {
-    return static_cast<bool>(coro_);
+    std::unique_lock<std::mutex> lk(mutex_run_);
+    // There's an edge case where the coroutine has updated the status
+    // to Finished but the function hasn't exited and therefore, coro_ is
+    // still valid. However, the coroutine is not technically runnable in this
+    // case, because the coroutine is about to exit and static_cast<bool>(coro_)
+    // is going to be false.
+    return static_cast<bool>(coro_) && state_ != CoroState::Finished;
 }
 
 inline void
