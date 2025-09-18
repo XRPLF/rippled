@@ -80,7 +80,7 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testUInt32()
     {
-        STUInt32 u32(4'294'967'295);
+        STUInt32 u32(4'294'967'295u);
         BEAST_EXPECT(u32.value() == 4'294'967'295u);
         BEAST_EXPECT(u32.getText() == "4294967295");
         BEAST_EXPECT(u32.getSType() == STI_UINT32);
