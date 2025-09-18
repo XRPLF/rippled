@@ -20,8 +20,8 @@
 #include <xrpld/app/tx/detail/VaultClawback.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
