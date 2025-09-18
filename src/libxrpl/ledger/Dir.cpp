@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/ledger/Dir.h>
+#include <xrpl/ledger/Dir.h>
 
 namespace ripple {
 
