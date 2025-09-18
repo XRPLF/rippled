@@ -83,11 +83,9 @@ JobQueue::Coro::yield()
         if (shouldStop())
             return;
 
-        {
-            std::lock_guard stateLock{mutex_run_};
-            state_ = CoroState::Suspended;
-            cv_.notify_all();
-        }
+        state_ = CoroState::Suspended;
+        cv_.notify_all();
+
         ++jq_.nSuspend_;
         jq_.m_suspendedCoros[this] = weak_from_this();
         jq_.cv_.notify_all();
@@ -115,11 +113,11 @@ inline void
 JobQueue::Coro::resume()
 {
     {
-        if (state_ != CoroState::Suspended)
+        auto suspended = CoroState::Suspended;
+        if (!state_.compare_exchange_strong(suspended, CoroState::Running))
         {
             return;
         }
-        state_ = CoroState::Running;
         cv_.notify_all();
     }
     {
