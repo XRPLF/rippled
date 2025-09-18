@@ -319,6 +319,13 @@ struct LatePaymentParams
 {
 };
 
+/* Handle possible late payments.
+ *
+ * If this function processed a late payment, the return value will be
+ * a LoanPaymentParts object. If the loan is not late, the return will be an
+ * Unexpected(tesSUCCESS). Otherwise, it'll be an Unexpected with the error code
+ * the caller is expected to return.
+ */
 template <AssetType A, class NumberProxy, class Int32Proxy>
 Expected<LoanPaymentParts, TER>
 handleLatePayment(
@@ -381,6 +388,83 @@ handleLatePayment(
         latePaymentFee};
 }
 
+/* Handle possible full payments.
+ *
+ * If this function processed a full payment, the return value will be
+ * a LoanPaymentParts object. If the payment should not be considered as a full
+ * payment, the return will be an Unexpected(tesSUCCESS). Otherwise, it'll be an
+ * Unexpected with the error code the caller is expected to return.
+ */
+template <AssetType A, class NumberProxy, class Int32Proxy>
+Expected<LoanPaymentParts, TER>
+handleFullPayment(
+    A const& asset,
+    ApplyView& view,
+    NumberProxy& principalOutstandingField,
+    Int32Proxy& paymentRemainingField,
+    Int32Proxy& prevPaymentDateField,
+    std::uint32_t const startDate,
+    std::uint32_t const paymentInterval,
+    TenthBips32 const closeInterestRate,
+    Number const& originalPrincipalRequested,
+    Number const& totalInterestOutstanding,
+    Number const& periodicRate,
+    Number const& closePaymentFee,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    if (paymentRemainingField <= 1)
+        // If this is the last payment, it has to be a regular payment
+        return Unexpected(tesSUCCESS);
+
+    // If there is more than one payment remaining, see if enough was
+    // paid for a full payment
+    auto const accruedInterest = roundToAsset(
+        asset,
+        detail::loanAccruedInterest(
+            principalOutstandingField,
+            periodicRate,
+            view.parentCloseTime(),
+            startDate,
+            prevPaymentDateField,
+            paymentInterval),
+        originalPrincipalRequested);
+    XRPL_ASSERT(
+        accruedInterest >= 0,
+        "ripple::loanComputePaymentParts : valid accrued interest");
+    auto const closePrepaymentInterest = roundToAsset(
+        asset,
+        tenthBipsOfValue(principalOutstandingField.value(), closeInterestRate),
+        originalPrincipalRequested);
+    XRPL_ASSERT(
+        closePrepaymentInterest >= 0,
+        "ripple::loanComputePaymentParts : valid prepayment "
+        "interest");
+    auto const totalInterest = accruedInterest + closePrepaymentInterest;
+    auto const closeFullPayment =
+        principalOutstandingField + totalInterest + closePaymentFee;
+
+    if (amount < closeFullPayment)
+        // If the payment is less than the full payment amount, it's not
+        // sufficient to be a full payment.
+        return Unexpected(tesSUCCESS);
+
+    // Make a full payment
+
+    // A full payment decreases the value of the loan by the
+    // difference between the interest paid and the expected
+    // outstanding interest return
+    auto const valueChange = totalInterest - totalInterestOutstanding;
+
+    LoanPaymentParts const result{
+        principalOutstandingField, totalInterest, valueChange, closePaymentFee};
+
+    paymentRemainingField = 0;
+    principalOutstandingField = 0;
+
+    return result;
+}
+
 template <AssetType A>
 Expected<LoanPaymentParts, TER>
 loanComputePaymentParts(
@@ -391,8 +475,8 @@ loanComputePaymentParts(
     beast::Journal j)
 {
     /*
-     * This function is an implementation of the XLS-66 spec, section 3.2.4.3
-     * (Transaction Pseudo-code)
+     * This function is an implementation of the XLS-66 spec,
+     * section 3.2.4.3 (Transaction Pseudo-code)
      */
     Number const originalPrincipalRequested = loan->at(sfPrincipalRequested);
     auto principalOutstandingField = loan->at(sfPrincipalOutstanding);
@@ -432,8 +516,8 @@ loanComputePaymentParts(
         interestRate == 0 || periodicRate > 0,
         "ripple::loanComputePaymentParts : valid rate");
 
-    // Don't round the payment amount. Only round the final computations using
-    // it.
+    // Don't round the payment amount. Only round the final computations
+    // using it.
     Number const periodicPaymentAmount = detail::loanPeriodicPayment(
         principalOutstandingField, periodicRate, paymentRemainingField);
     XRPL_ASSERT(
@@ -495,63 +579,30 @@ loanComputePaymentParts(
 
     // -------------------------------------------------------------
     // full payment handling
-    if (paymentRemainingField > 1)
-    {
-        // If there is more than one payment remaining, see if enough was paid
-        // for a full payment
-        auto const accruedInterest = roundToAsset(
+    if (auto const fullPaymentParts = handleFullPayment(
             asset,
-            detail::loanAccruedInterest(
-                principalOutstandingField,
-                periodicRate,
-                view.parentCloseTime(),
-                startDate,
-                prevPaymentDateField,
-                paymentInterval),
-            originalPrincipalRequested);
-        XRPL_ASSERT(
-            accruedInterest >= 0,
-            "ripple::loanComputePaymentParts : valid accrued interest");
-        auto const closePrepaymentInterest = roundToAsset(
-            asset,
-            tenthBipsOfValue(
-                principalOutstandingField.value(), closeInterestRate),
-            originalPrincipalRequested);
-        XRPL_ASSERT(
-            closePrepaymentInterest >= 0,
-            "ripple::loanComputePaymentParts : valid prepayment "
-            "interest");
-        auto const totalInterest = accruedInterest + closePrepaymentInterest;
-        auto const closeFullPayment =
-            principalOutstandingField + totalInterest + closePaymentFee;
-
-        // if the payment is equal or higher than full payment amount, make a
-        // full payment
-        if (amount >= closeFullPayment)
-        {
-            // A full payment decreases the value of the loan by the
-            // difference between the interest paid and the expected
-            // outstanding interest return
-            auto const valueChange = totalInterest - totalInterestOutstanding;
-
-            LoanPaymentParts const result{
-                principalOutstandingField,
-                totalInterest,
-                valueChange,
-                closePaymentFee};
-
-            paymentRemainingField = 0;
-            principalOutstandingField = 0;
-
-            return result;
-        }
-    }
+            view,
+            principalOutstandingField,
+            paymentRemainingField,
+            prevPaymentDateField,
+            startDate,
+            paymentInterval,
+            closeInterestRate,
+            originalPrincipalRequested,
+            totalInterestOutstanding,
+            periodicRate,
+            closePaymentFee,
+            amount,
+            j))
+        return *fullPaymentParts;
+    else if (fullPaymentParts.error())
+        return fullPaymentParts;
 
     // -------------------------------------------------------------
     // regular periodic payment handling
 
-    // if the payment is not late nor if it's a full payment, then it must be a
-    // periodic one, with possible overpayments
+    // if the payment is not late nor if it's a full payment, then it must
+    // be a periodic one, with possible overpayments
 
     auto const totalDue = roundToAsset(
         asset,
@@ -649,8 +700,8 @@ loanComputePaymentParts(
                 overpayment - interestPortion - feePortion,
                 originalPrincipalRequested);
 
-            // Don't process an overpayment if the whole amount (or more!) gets
-            // eaten by fees
+            // Don't process an overpayment if the whole amount (or more!)
+            // gets eaten by fees
             if (remainder > 0)
             {
                 overpaymentInterestPortion = interestPortion;
