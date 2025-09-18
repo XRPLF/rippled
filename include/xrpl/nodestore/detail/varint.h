@@ -22,6 +22,7 @@
 
 #include <nudb/detail/stream.hpp>
 
+#include <cstdint>
 #include <type_traits>
 
 namespace ripple {

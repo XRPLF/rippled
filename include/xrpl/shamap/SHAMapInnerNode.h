@@ -25,6 +25,7 @@
 #include <xrpl/shamap/detail/TaggedPointer.h>
 
 #include <atomic>
+#include <cstdint>
 #include <optional>
 #include <string>
 

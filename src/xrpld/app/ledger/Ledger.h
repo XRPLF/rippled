@@ -30,6 +30,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
 #include <xrpl/shamap/SHAMap.h>
 
 namespace ripple {
