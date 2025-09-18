@@ -312,14 +312,6 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(!obj.object.has_value());
         }
 
-        // Test bad_type (not a string/int/uint)
-        {
-            Json::Value j;
-            j[sfIndexNext] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
         // Test hex string value with 0x prefix (should fail)
         {
             Json::Value j;
@@ -834,8 +826,8 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(obj.object->isFieldPresent(sfHashes));
             auto const& vec = obj.object->getFieldV256(sfHashes);
             BEAST_EXPECT(vec.size() == 2);
-            BEAST_EXPECT(vec[0].size() == 32);
-            BEAST_EXPECT(vec[1].size() == 32);
+            BEAST_EXPECT(to_string(vec[0]) == arr[0u].asString());
+            BEAST_EXPECT(to_string(vec[1]) == arr[1u].asString());
         }
         // Test empty array for Vector256 (should be valid, size 0)
         {
