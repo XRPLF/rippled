@@ -1153,14 +1153,14 @@ ValidatorList::applyList(
 
     if (!pubKeyOpt)
     {
-        JLOG(j_.info()) << "ValidatorList::applyList unable to retrieve the "
+        JLOG(j_.warn()) << "ValidatorList::applyList unable to retrieve the "
                            "master public key from the verify function\n";
         return PublisherListStats{result};
     }
 
     if (!publicKeyType(*pubKeyOpt))
     {
-        JLOG(j_.info()) << "ValidatorList::applyList Invalid Public Key type"
+        JLOG(j_.warn()) << "ValidatorList::applyList Invalid Public Key type"
                            " retrieved from the verify function\n ";
         return PublisherListStats{result};
     }
@@ -1796,7 +1796,7 @@ ValidatorList::getAvailable(
 
     if (!keyBlob || !publicKeyType(makeSlice(*keyBlob)))
     {
-        JLOG(j_.info()) << "Invalid requested validator list publisher key: "
+        JLOG(j_.warn()) << "Invalid requested validator list publisher key: "
                         << pubKey;
         return {};
     }
