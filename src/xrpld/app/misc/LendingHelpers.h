@@ -319,15 +319,15 @@ struct LatePaymentParams
 {
 };
 
-template <AssetType A>
+template <AssetType A, class NumberProxy, class Int32Proxy>
 Expected<LoanPaymentParts, TER>
 handleLatePayment(
     A const& asset,
     ApplyView& view,
-    STObject::ValueProxy<STNumber>& principalOutstandingField,
-    STObject::ValueProxy<STUInt32>& paymentRemainingField,
-    STObject::ValueProxy<STUInt32>& prevPaymentDateField,
-    STObject::ValueProxy<STUInt32>& nextDueDateField,
+    NumberProxy& principalOutstandingField,
+    Int32Proxy& paymentRemainingField,
+    Int32Proxy& prevPaymentDateField,
+    Int32Proxy& nextDueDateField,
     PeriodicPaymentParts const& periodic,
     std::uint32_t const startDate,
     std::uint32_t const paymentInterval,
