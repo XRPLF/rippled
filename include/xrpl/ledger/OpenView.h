@@ -20,10 +20,9 @@
 #ifndef RIPPLE_LEDGER_OPENVIEW_H_INCLUDED
 #define RIPPLE_LEDGER_OPENVIEW_H_INCLUDED
 
-#include <xrpld/ledger/RawView.h>
-#include <xrpld/ledger/ReadView.h>
-#include <xrpld/ledger/detail/RawStateTable.h>
-
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/detail/RawStateTable.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/XRPAmount.h>
 

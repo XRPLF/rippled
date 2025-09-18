@@ -22,8 +22,7 @@
 
 #include <test/jtx/Env.h>
 
-#include <xrpld/ledger/View.h>
-
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 
