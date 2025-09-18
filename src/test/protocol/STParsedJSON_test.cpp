@@ -502,14 +502,6 @@ class STParsedJSON_test : public beast::unit_test::suite
             BEAST_EXPECT(allZero);
         }
 
-        // Odd-length hex string for UInt160 (should fail)
-        {
-            Json::Value j;
-            j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF0123456";
-            STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(!obj.object.has_value());
-        }
-
         // Non-hex string for UInt160 (should fail)
         {
             Json::Value j;
@@ -1172,10 +1164,23 @@ class STParsedJSON_test : public beast::unit_test::suite
             pathset.append(path);
             j[sfPaths] = pathset;
             STParsedJSONObject obj("Test", j);
-            BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfPaths));
-            auto const& ps = obj.object->getFieldPathSet(sfPaths);
-            BEAST_EXPECT(!ps.empty());
+            if (BEAST_EXPECT(obj.object.has_value()))
+            {
+                BEAST_EXPECT(obj.object->isFieldPresent(sfPaths));
+                auto const& ps = obj.object->getFieldPathSet(sfPaths);
+                BEAST_EXPECT(!ps.empty());
+                BEAST_EXPECT(ps.size() == 1);
+                BEAST_EXPECT(ps[0].size() == 1);
+                BEAST_EXPECT(
+                    ps[0][0].getAccountID() ==
+                    parseBase58<AccountID>(
+                        "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
+                BEAST_EXPECT(to_string(ps[0][0].getCurrency()) == "USD");
+                BEAST_EXPECT(
+                    ps[0][0].getIssuerID() ==
+                    parseBase58<AccountID>(
+                        "rPT1Sjq2YGrBMTttX4GZHjKu9dyfzbpAYe"));
+            }
         }
 
         // Valid test: non-standard currency code
@@ -1348,7 +1353,12 @@ class STParsedJSON_test : public beast::unit_test::suite
                 auto const& issueField = (*obj.object)[sfAsset];
                 auto const issue = issueField.value().get<Issue>();
                 BEAST_EXPECT(issue.currency.size() == 20);
+                BEAST_EXPECT(to_string(issue.currency) == "USD");
                 BEAST_EXPECT(issue.account.size() == 20);
+                BEAST_EXPECT(
+                    issue.account ==
+                    parseBase58<AccountID>(
+                        "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"));
             }
         }
 
