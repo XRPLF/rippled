@@ -24,7 +24,8 @@
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/wasm/HostFunc.h>
 #include <xrpld/app/wasm/WasmVM.h>
-#include <xrpld/ledger/detail/ApplyViewBase.h>
+
+#include <xrpl/ledger/detail/ApplyViewBase.h>
 
 namespace ripple {
 

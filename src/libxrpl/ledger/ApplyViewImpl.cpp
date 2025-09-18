@@ -17,98 +17,52 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
-#define RIPPLE_LEDGER_APPLYVIEWIMPL_H_INCLUDED
-
-#include <xrpld/ledger/OpenView.h>
-#include <xrpld/ledger/detail/ApplyViewBase.h>
-
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/TER.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
 
 namespace ripple {
 
-/** Editable, discardable view that can build metadata for one tx.
-
-    Iteration of the tx map is delegated to the base.
-
-    @note Presented as ApplyView to clients.
-*/
-class ApplyViewImpl final : public detail::ApplyViewBase
+ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags)
+    : ApplyViewBase(base, flags)
 {
-public:
-    ApplyViewImpl() = delete;
-    ApplyViewImpl(ApplyViewImpl const&) = delete;
-    ApplyViewImpl&
-    operator=(ApplyViewImpl&&) = delete;
-    ApplyViewImpl&
-    operator=(ApplyViewImpl const&) = delete;
+}
 
-    ApplyViewImpl(ApplyViewImpl&&) = default;
-    ApplyViewImpl(ReadView const* base, ApplyFlags flags);
+std::optional<TxMeta>
+ApplyViewImpl::apply(
+    OpenView& to,
+    STTx const& tx,
+    TER ter,
+    std::optional<uint256> parentBatchId,
+    bool isDryRun,
+    beast::Journal j)
+{
+    return items_.apply(
+        to,
+        tx,
+        ter,
+        deliver_,
+        parentBatchId,
+        gasUsed_,
+        wasmReturnCode_,
+        isDryRun,
+        j);
+}
 
-    /** Apply the transaction.
+std::size_t
+ApplyViewImpl::size()
+{
+    return items_.size();
+}
 
-        After a call to `apply`, the only valid
-        operation on this object is to call the
-        destructor.
-    */
-    std::optional<TxMeta>
-    apply(
-        OpenView& to,
-        STTx const& tx,
-        TER ter,
-        std::optional<uint256> parentBatchId,
-        bool isDryRun,
-        beast::Journal j);
-
-    /** Set the amount of currency delivered.
-
-        This value is used when generating metadata
-        for payments, to set the DeliveredAmount field.
-        If the amount is not specified, the field is
-        excluded from the resulting metadata.
-    */
-    void
-    deliver(STAmount const& amount)
-    {
-        deliver_ = amount;
-    }
-
-    void
-    setGasUsed(std::optional<std::uint32_t> const gasUsed)
-    {
-        gasUsed_ = gasUsed;
-    }
-
-    void
-    setWasmReturnCode(std::int32_t const wasmReturnCode)
-    {
-        wasmReturnCode_ = wasmReturnCode;
-    }
-
-    /** Get the number of modified entries
-     */
-    std::size_t
-    size();
-
-    /** Visit modified entries
-     */
-    void
-    visit(
-        OpenView& target,
-        std::function<void(
-            uint256 const& key,
-            bool isDelete,
-            std::shared_ptr<SLE const> const& before,
-            std::shared_ptr<SLE const> const& after)> const& func);
-
-private:
-    std::optional<STAmount> deliver_;
-    std::optional<std::uint32_t> gasUsed_;
-    std::optional<std::int32_t> wasmReturnCode_;
-};
+void
+ApplyViewImpl::visit(
+    OpenView& to,
+    std::function<void(
+        uint256 const& key,
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after)> const& func)
+{
+    items_.visit(to, func);
+}
 
 }  // namespace ripple
-
-#endif

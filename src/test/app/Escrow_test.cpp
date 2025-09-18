@@ -22,8 +22,8 @@
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/app/wasm/WasmVM.h>
-#include <xrpld/ledger/Dir.h>
 
+#include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
