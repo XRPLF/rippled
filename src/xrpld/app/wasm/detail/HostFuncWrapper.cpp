@@ -107,7 +107,11 @@ getDataSField(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 Expected<Slice, HostFunctionError>
-getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataSlice(
+    IW const* runtime,
+    wasm_val_vec_t const* params,
+    int32_t& i,
+    bool isUpdate = false)
 {
     auto const ptr = params->data[i].of.i32;
     auto const size = params->data[i + 1].of.i32;
@@ -117,7 +121,7 @@ getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     if (!size)
         return Slice();
 
-    if (size > maxWasmDataLength)
+    if (size > (isUpdate ? maxWasmDataLength : maxWasmParamLength))
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     auto memory = runtime ? runtime->getMem() : wmem();
@@ -751,7 +755,7 @@ updateData_wrap(
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getDataSlice(runtime, params, index);
+    auto const bytes = getDataSlice(runtime, params, index, true);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -1491,7 +1495,7 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    if (params->data[1].of.i32 + params->data[3].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 + params->data[3].of.i32 > maxWasmParamLength)
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1524,7 +1528,7 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
-    if (params->data[1].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 > maxWasmParamLength)
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1554,7 +1558,7 @@ traceAccount_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 > maxWasmParamLength)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     int i = 0;
@@ -1579,7 +1583,7 @@ traceFloat_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 > maxWasmParamLength)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     int i = 0;
@@ -1604,7 +1608,7 @@ traceAmount_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 > maxWasmParamLength)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     int i = 0;

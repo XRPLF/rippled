@@ -519,7 +519,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 91'412, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 96'942, std::to_string(re->cost));
             }
             env.close();
         }
@@ -534,7 +534,7 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
-                BEAST_EXPECTS(re->cost == 6'533, std::to_string(re->cost));
+                BEAST_EXPECTS(re->cost == 2'053, std::to_string(re->cost));
             }
             env.close();
         }
@@ -550,13 +550,12 @@ struct Wasm_test : public beast::unit_test::suite
 
         // std::string const funcName("test");
         auto const& wasmHex = hfPerfTest;
-        // auto const& wasmHex = opcCallPerfTest;
         std::string const wasmStr = boost::algorithm::unhex(wasmHex);
         std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
 
-        std::string const credType = "abcde";
-        std::string const credType2 = "fghijk";
-        std::string const credType3 = "0123456";
+        // std::string const credType = "abcde";
+        // std::string const credType2 = "fghijk";
+        // std::string const credType3 = "0123456";
         // char const uri[] = "uri";
 
         Account const alan{"alan"};
@@ -597,7 +596,7 @@ struct Wasm_test : public beast::unit_test::suite
             //      {issuer, credType2},
             //      {issuer, credType3}}));
 
-            // cREATE nft
+            // create nft
             [[maybe_unused]] uint256 const nft0{
                 token::getNextID(env, alan, 0u)};
             env(token::mint(alan, 0u));
@@ -649,7 +648,7 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(wasmStr.begin(), wasmStr.end());
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 148'406;
+        auto const allowance = 153'296;
         auto re = runEscrowWasm(
             wasm, ESCROW_FUNCTION_NAME, {}, &hfs, allowance, env.journal);
 
