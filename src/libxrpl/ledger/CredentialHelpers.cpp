@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
-#include <xrpld/ledger/View.h>
-
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
