@@ -237,6 +237,12 @@ Functions</h2></td></tr>
 <tr class="separator:a48573a366f17fd2a6294905c3cb4a29e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3266bff106a961696ef3397134178cac" id="r_a3266bff106a961696ef3397134178cac"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a3266bff106a961696ef3397134178cac">make_hash_prefix</a> (char a, char b, char c)</td></tr>
 <tr class="separator:a3266bff106a961696ef3397134178cac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf8f617d9c78f2f67a40ba69e833b7d1" id="r_aaf8f617d9c78f2f67a40ba69e833b7d1"><td class="memTemplParams" colspan="2">template&lt;class V , class N , class  = std::enable_if_t&lt;        std::is_same_v&lt;std::remove_cv_t&lt;N&gt;, SLE&gt; &amp;&amp;        std::is_base_of_v&lt;ReadView, V&gt;&gt;&gt; </td></tr>
+<tr class="memitem:aaf8f617d9c78f2f67a40ba69e833b7d1"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aaf8f617d9c78f2f67a40ba69e833b7d1">internalDirNext</a> (V &amp;view, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;<a class="el" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; N &gt; &amp;page, unsigned int &amp;index, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;entry)</td></tr>
+<tr class="separator:aaf8f617d9c78f2f67a40ba69e833b7d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1e1dc66b9b23e22fac4c3a2591358f7e" id="r_a1e1dc66b9b23e22fac4c3a2591358f7e"><td class="memTemplParams" colspan="2">template&lt;class V , class N , class  = std::enable_if_t&lt;        std::is_same_v&lt;std::remove_cv_t&lt;N&gt;, SLE&gt; &amp;&amp;        std::is_base_of_v&lt;ReadView, V&gt;&gt;&gt; </td></tr>
+<tr class="memitem:a1e1dc66b9b23e22fac4c3a2591358f7e"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a1e1dc66b9b23e22fac4c3a2591358f7e">internalDirFirst</a> (V &amp;view, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;<a class="el" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; N &gt; &amp;page, unsigned int &amp;index, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;entry)</td></tr>
+<tr class="separator:a1e1dc66b9b23e22fac4c3a2591358f7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a367989857fb62d21d0d9d5f1b2c91e87" id="r_a367989857fb62d21d0d9d5f1b2c91e87"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a367989857fb62d21d0d9d5f1b2c91e87">as_amount</a> (<a class="el" href="structripple_1_1Rate.html">Rate</a> const &amp;rate)</td></tr>
 <tr class="separator:a367989857fb62d21d0d9d5f1b2c91e87"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68243c57c7d8b97e81f46e46bc9d1823" id="r_a68243c57c7d8b97e81f46e46bc9d1823"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a68243c57c7d8b97e81f46e46bc9d1823">copy_uint32</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> *<a class="el" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> v)</td></tr>
@@ -355,12 +361,6 @@ Functions</h2></td></tr>
 <tr class="separator:af55810910292bce584eb1aa14e55fae1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2fc6c0177558ca5d07f884e0efcb1c3d" id="r_a2fc6c0177558ca5d07f884e0efcb1c3d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a2fc6c0177558ca5d07f884e0efcb1c3d">getSociInit</a> (<a class="el" href="classripple_1_1BasicConfig.html">BasicConfig</a> const &amp;config, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;dbName)</td></tr>
 <tr class="separator:a2fc6c0177558ca5d07f884e0efcb1c3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf8f617d9c78f2f67a40ba69e833b7d1" id="r_aaf8f617d9c78f2f67a40ba69e833b7d1"><td class="memTemplParams" colspan="2">template&lt;class V , class N , class  = std::enable_if_t&lt;        std::is_same_v&lt;std::remove_cv_t&lt;N&gt;, SLE&gt; &amp;&amp;        std::is_base_of_v&lt;ReadView, V&gt;&gt;&gt; </td></tr>
-<tr class="memitem:aaf8f617d9c78f2f67a40ba69e833b7d1"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#aaf8f617d9c78f2f67a40ba69e833b7d1">internalDirNext</a> (V &amp;view, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;<a class="el" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; N &gt; &amp;page, unsigned int &amp;index, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;entry)</td></tr>
-<tr class="separator:aaf8f617d9c78f2f67a40ba69e833b7d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e1dc66b9b23e22fac4c3a2591358f7e" id="r_a1e1dc66b9b23e22fac4c3a2591358f7e"><td class="memTemplParams" colspan="2">template&lt;class V , class N , class  = std::enable_if_t&lt;        std::is_same_v&lt;std::remove_cv_t&lt;N&gt;, SLE&gt; &amp;&amp;        std::is_base_of_v&lt;ReadView, V&gt;&gt;&gt; </td></tr>
-<tr class="memitem:a1e1dc66b9b23e22fac4c3a2591358f7e"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a1e1dc66b9b23e22fac4c3a2591358f7e">internalDirFirst</a> (V &amp;view, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;<a class="el" href="namespaceripple.html#acdc87ea9c4ad1742d4aeebac963e8570">root</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; N &gt; &amp;page, unsigned int &amp;index, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;entry)</td></tr>
-<tr class="separator:a1e1dc66b9b23e22fac4c3a2591358f7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a61680b1ed5b8dceb049aa254e85d1cc0" id="r_a61680b1ed5b8dceb049aa254e85d1cc0"><td class="memTemplParams" colspan="2">template&lt;typename BufferSequence &gt; </td></tr>
 <tr class="memitem:a61680b1ed5b8dceb049aa254e85d1cc0"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1detail.html#a61680b1ed5b8dceb049aa254e85d1cc0">buffersBegin</a> (BufferSequence const &amp;bufs)</td></tr>
 <tr class="separator:a61680b1ed5b8dceb049aa254e85d1cc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -825,6 +825,106 @@ template&lt;class T , class... Args&gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="HashPrefix_8h_source.html#l00032">32</a> of file <a class="el" href="HashPrefix_8h_source.html">HashPrefix.h</a>.</p>
+
+</div>
+</div>
+<a id="aaf8f617d9c78f2f67a40ba69e833b7d1" name="aaf8f617d9c78f2f67a40ba69e833b7d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf8f617d9c78f2f67a40ba69e833b7d1">&#9670;&#160;</a></span>internalDirNext()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class V , class N , class  = std::enable_if_t&lt;        std::is_same_v&lt;std::remove_cv_t&lt;N&gt;, SLE&gt; &amp;&amp;        std::is_base_of_v&lt;ReadView, V&gt;&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::detail::internalDirNext </td>
+          <td>(</td>
+          <td class="paramtype">V &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>root</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; N &gt; &amp;&#160;</td>
+          <td class="paramname"><em>page</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned int &amp;&#160;</td>
+          <td class="paramname"><em>index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;&#160;</td>
+          <td class="paramname"><em>entry</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00052">52</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a1e1dc66b9b23e22fac4c3a2591358f7e" name="a1e1dc66b9b23e22fac4c3a2591358f7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e1dc66b9b23e22fac4c3a2591358f7e">&#9670;&#160;</a></span>internalDirFirst()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class V , class N , class  = std::enable_if_t&lt;        std::is_same_v&lt;std::remove_cv_t&lt;N&gt;, SLE&gt; &amp;&amp;        std::is_base_of_v&lt;ReadView, V&gt;&gt;&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::detail::internalDirFirst </td>
+          <td>(</td>
+          <td class="paramtype">V &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>root</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; N &gt; &amp;&#160;</td>
+          <td class="paramname"><em>page</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">unsigned int &amp;&#160;</td>
+          <td class="paramname"><em>index</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;&#160;</td>
+          <td class="paramname"><em>entry</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00100">100</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
@@ -2782,106 +2882,6 @@ template&lt;class T &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="SociDB_8cpp_source.html#l00063">63</a> of file <a class="el" href="SociDB_8cpp_source.html">SociDB.cpp</a>.</p>
-
-</div>
-</div>
-<a id="aaf8f617d9c78f2f67a40ba69e833b7d1" name="aaf8f617d9c78f2f67a40ba69e833b7d1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf8f617d9c78f2f67a40ba69e833b7d1">&#9670;&#160;</a></span>internalDirNext()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class V , class N , class  = std::enable_if_t&lt;        std::is_same_v&lt;std::remove_cv_t&lt;N&gt;, SLE&gt; &amp;&amp;        std::is_base_of_v&lt;ReadView, V&gt;&gt;&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::detail::internalDirNext </td>
-          <td>(</td>
-          <td class="paramtype">V &amp;&#160;</td>
-          <td class="paramname"><em>view</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>root</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>page</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned int &amp;&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;&#160;</td>
-          <td class="paramname"><em>entry</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00053">53</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a1e1dc66b9b23e22fac4c3a2591358f7e" name="a1e1dc66b9b23e22fac4c3a2591358f7e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1e1dc66b9b23e22fac4c3a2591358f7e">&#9670;&#160;</a></span>internalDirFirst()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class V , class N , class  = std::enable_if_t&lt;        std::is_same_v&lt;std::remove_cv_t&lt;N&gt;, SLE&gt; &amp;&amp;        std::is_base_of_v&lt;ReadView, V&gt;&gt;&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">bool ripple::detail::internalDirFirst </td>
-          <td>(</td>
-          <td class="paramtype">V &amp;&#160;</td>
-          <td class="paramname"><em>view</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>root</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; N &gt; &amp;&#160;</td>
-          <td class="paramname"><em>page</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">unsigned int &amp;&#160;</td>
-          <td class="paramname"><em>index</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &amp;&#160;</td>
-          <td class="paramname"><em>entry</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="View_8cpp_source.html#l00101">101</a> of file <a class="el" href="View_8cpp_source.html">View.cpp</a>.</p>
 
 </div>
 </div>
