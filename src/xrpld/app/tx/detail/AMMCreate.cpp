@@ -198,12 +198,12 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
             return terADDRESS_COLLISION;
     }
 
-    if (auto const ter =
-            isMPTTxAllowed(ctx.view, ttAMM_CREATE, amount.asset(), accountID);
+    if (auto const ter = checkMPTTxAllowed(
+            ctx.view, ttAMM_CREATE, amount.asset(), accountID);
         ter != tesSUCCESS)
         return ter;
-    if (auto const ter =
-            isMPTTxAllowed(ctx.view, ttAMM_CREATE, amount2.asset(), accountID);
+    if (auto const ter = checkMPTTxAllowed(
+            ctx.view, ttAMM_CREATE, amount2.asset(), accountID);
         ter != tesSUCCESS)
         return ter;
 

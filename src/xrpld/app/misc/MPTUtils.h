@@ -39,7 +39,7 @@ class Asset;
  * transaction is allowed.
  */
 TER
-isMPTTxAllowed(
+checkMPTTxAllowed(
     ReadView const& v,
     TxType tx,
     Asset const& asset,
@@ -47,7 +47,7 @@ isMPTTxAllowed(
     std::optional<AccountID> const& destAccount = std::nullopt);
 
 TER
-isMPTDEXAllowed(
+checkMPTDEXAllowed(
     ReadView const& view,
     Asset const& issuanceID,
     AccountID const& srcAccount,

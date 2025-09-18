@@ -369,7 +369,7 @@ MPTEndpointPaymentStep::check(
         if (ctx.isFirst && src_ != mptIssue_.getIssuer())
         {
             if (auto const ter =
-                    isMPTDEXAllowed(ctx.view, mptIssue_, src_, std::nullopt);
+                    checkMPTDEXAllowed(ctx.view, mptIssue_, src_, std::nullopt);
                 ter != tesSUCCESS)
                 return ter;
         }
@@ -378,7 +378,7 @@ MPTEndpointPaymentStep::check(
             dst_ != mptIssue_.getIssuer())
         {
             if (auto const ter =
-                    isMPTDEXAllowed(ctx.view, mptIssue_, dst_, std::nullopt);
+                    checkMPTDEXAllowed(ctx.view, mptIssue_, dst_, std::nullopt);
                 ter != tesSUCCESS)
                 return ter;
         }
@@ -411,7 +411,7 @@ MPTEndpointOfferCrossingStep::check(
     if (holder != issuer)
     {
         if (auto const ter =
-                isMPTDEXAllowed(ctx.view, mptIssue_, holder, issuer);
+                checkMPTDEXAllowed(ctx.view, mptIssue_, holder, issuer);
             ter != tesSUCCESS)
             return ter;
     }

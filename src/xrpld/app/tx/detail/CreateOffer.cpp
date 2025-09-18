@@ -172,12 +172,12 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
         return tecFROZEN;
     }
 
-    if (auto const ter =
-            isMPTTxAllowed(ctx.view, ttOFFER_CREATE, saTakerPays.asset(), id);
+    if (auto const ter = checkMPTTxAllowed(
+            ctx.view, ttOFFER_CREATE, saTakerPays.asset(), id);
         ter != tesSUCCESS)
         return ter;
-    if (auto const ter =
-            isMPTTxAllowed(ctx.view, ttOFFER_CREATE, saTakerGets.asset(), id);
+    if (auto const ter = checkMPTTxAllowed(
+            ctx.view, ttOFFER_CREATE, saTakerGets.asset(), id);
         ter != tesSUCCESS)
         return ter;
 

@@ -527,10 +527,8 @@ bool
 checkNear(IOUAmount const& expected, IOUAmount const& actual);
 bool
 checkNear(MPTAmount const& expected, MPTAmount const& actual);
-template <typename T>
-    requires(std::is_same_v<T, XRPAmount>)
-bool
-checkNear(T const& expected, T const& actual)
+inline bool
+checkNear(XRPAmount const& expected, XRPAmount const& actual)
 {
     return expected == actual;
 }

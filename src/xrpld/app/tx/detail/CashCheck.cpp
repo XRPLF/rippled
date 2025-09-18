@@ -278,8 +278,8 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                     return tecFROZEN;
                 }
 
-                if (auto const err =
-                        isMPTDEXAllowed(ctx.view, value.asset(), srcId, dstId);
+                if (auto const err = checkMPTDEXAllowed(
+                        ctx.view, value.asset(), srcId, dstId);
                     err != tesSUCCESS)
                 {
                     JLOG(ctx.j.warn()) << "MPT DEX is not allowed.";

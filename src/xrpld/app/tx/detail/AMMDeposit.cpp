@@ -380,11 +380,11 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const ter =
-            isMPTTxAllowed(ctx.view, ttAMM_DEPOSIT, ctx.tx[sfAsset], accountID);
+    if (auto const ter = checkMPTTxAllowed(
+            ctx.view, ttAMM_DEPOSIT, ctx.tx[sfAsset], accountID);
         ter != tesSUCCESS)
         return ter;
-    if (auto const ter = isMPTTxAllowed(
+    if (auto const ter = checkMPTTxAllowed(
             ctx.view, ttAMM_DEPOSIT, ctx.tx[sfAsset2], accountID);
         ter != tesSUCCESS)
         return ter;

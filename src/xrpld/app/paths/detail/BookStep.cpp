@@ -772,10 +772,10 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
         // If MPT then MPTDEX should be allowed.
         if (requireAuth(applyView, assetIn, owner) != tesSUCCESS ||
             (isAssetInMPT &&
-             isMPTDEXAllowed(applyView, assetIn, owner, std::nullopt) !=
+             checkMPTDEXAllowed(applyView, assetIn, owner, std::nullopt) !=
                  tesSUCCESS) ||
             (isAssetOutMPT &&
-             isMPTDEXAllowed(applyView, assetOut, owner, std::nullopt) !=
+             checkMPTDEXAllowed(applyView, assetOut, owner, std::nullopt) !=
                  tesSUCCESS))
         {
             // Offer owner not authorized to hold IOU/MPT from issuer.
@@ -1420,7 +1420,7 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
                 if (!view.exists(issuanceID))
                     return tecOBJECT_NOT_FOUND;
 
-                if (auto const ter = isMPTDEXAllowed(
+                if (auto const ter = checkMPTDEXAllowed(
                         view,
                         book_.in,
                         book_.in.getIssuer(),

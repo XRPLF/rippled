@@ -184,7 +184,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
         return tecEXPIRED;
     }
 
-    if (auto const ter = isMPTTxAllowed(
+    if (auto const ter = checkMPTTxAllowed(
             ctx.view, ttCHECK_CREATE, ctx.tx[sfSendMax].asset(), srcId, dstId);
         ter != tesSUCCESS)
         return ter;

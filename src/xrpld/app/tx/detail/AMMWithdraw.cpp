@@ -251,7 +251,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                 return tecFROZEN;
             }
 
-            if (auto const ter = isMPTTxAllowed(
+            if (auto const ter = checkMPTTxAllowed(
                     ctx.view, ttAMM_WITHDRAW, amount->asset(), accountID);
                 ter != tesSUCCESS)
                 return ter;

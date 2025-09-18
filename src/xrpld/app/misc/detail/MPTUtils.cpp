@@ -85,7 +85,7 @@ isMPTAllowed(
 }
 
 TER
-isMPTTxAllowed(
+checkMPTTxAllowed(
     ReadView const& view,
     TxType txType,
     Asset const& asset,
@@ -93,12 +93,12 @@ isMPTTxAllowed(
     std::optional<AccountID> const& destAccount)
 {
     // use isDEXAllowed for payment/offer crossing
-    XRPL_ASSERT(txType != ttPAYMENT, "ripple::isMPTTxAllowed : not payment");
+    XRPL_ASSERT(txType != ttPAYMENT, "ripple::checkMPTTxAllowed : not payment");
     return isMPTAllowed(view, txType, asset, accountID, destAccount);
 }
 
 TER
-isMPTDEXAllowed(
+checkMPTDEXAllowed(
     ReadView const& view,
     Asset const& asset,
     AccountID const& accountID,
