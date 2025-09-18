@@ -20,9 +20,9 @@
 #include <test/jtx.h>
 
 #include <xrpld/app/tx/applySteps.h>
-#include <xrpld/ledger/Dir.h>
-#include <xrpld/ledger/Sandbox.h>
 
+#include <xrpl/ledger/Dir.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STAmount.h>
