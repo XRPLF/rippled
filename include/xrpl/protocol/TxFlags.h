@@ -151,6 +151,20 @@ constexpr std::uint32_t const tfMPTCanClawback             = lsfMPTCanClawback;
 constexpr std::uint32_t const tfMPTokenIssuanceCreateMask  =
   ~(tfUniversal | tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow | tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback);
 
+// MPTokenIssuanceCreate MutableFlags:
+// Indicating specific fields or flags may be changed after issuance.
+constexpr std::uint32_t const tmfMPTCanMutateCanLock = lmfMPTCanMutateCanLock;
+constexpr std::uint32_t const tmfMPTCanMutateRequireAuth = lmfMPTCanMutateRequireAuth;
+constexpr std::uint32_t const tmfMPTCanMutateCanEscrow = lmfMPTCanMutateCanEscrow;
+constexpr std::uint32_t const tmfMPTCanMutateCanTrade = lmfMPTCanMutateCanTrade;
+constexpr std::uint32_t const tmfMPTCanMutateCanTransfer = lmfMPTCanMutateCanTransfer;
+constexpr std::uint32_t const tmfMPTCanMutateCanClawback = lmfMPTCanMutateCanClawback;
+constexpr std::uint32_t const tmfMPTCanMutateMetadata = lmfMPTCanMutateMetadata;
+constexpr std::uint32_t const tmfMPTCanMutateTransferFee = lmfMPTCanMutateTransferFee;
+constexpr std::uint32_t const tmfMPTokenIssuanceCreateMutableMask =
+  ~(tmfMPTCanMutateCanLock | tmfMPTCanMutateRequireAuth | tmfMPTCanMutateCanEscrow | tmfMPTCanMutateCanTrade
+    | tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanClawback | tmfMPTCanMutateMetadata | tmfMPTCanMutateTransferFee);
+
 // MPTokenAuthorize flags:
 constexpr std::uint32_t const tfMPTUnauthorize             = 0x00000001;
 constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfUniversal | tfMPTUnauthorize);
@@ -160,6 +174,25 @@ constexpr std::uint32_t const tfMPTLock                   = 0x00000001;
 constexpr std::uint32_t const tfMPTUnlock                 = 0x00000002;
 constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
 constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
+
+// MPTokenIssuanceSet MutableFlags:
+// Set or Clear flags.
+constexpr std::uint32_t const tmfMPTSetCanLock             = 0x00000001;
+constexpr std::uint32_t const tmfMPTClearCanLock           = 0x00000002;
+constexpr std::uint32_t const tmfMPTSetRequireAuth         = 0x00000004;
+constexpr std::uint32_t const tmfMPTClearRequireAuth       = 0x00000008;
+constexpr std::uint32_t const tmfMPTSetCanEscrow           = 0x00000010;
+constexpr std::uint32_t const tmfMPTClearCanEscrow         = 0x00000020;
+constexpr std::uint32_t const tmfMPTSetCanTrade            = 0x00000040;
+constexpr std::uint32_t const tmfMPTClearCanTrade          = 0x00000080;
+constexpr std::uint32_t const tmfMPTSetCanTransfer         = 0x00000100;
+constexpr std::uint32_t const tmfMPTClearCanTransfer       = 0x00000200;
+constexpr std::uint32_t const tmfMPTSetCanClawback         = 0x00000400;
+constexpr std::uint32_t const tmfMPTClearCanClawback       = 0x00000800;
+constexpr std::uint32_t const tmfMPTokenIssuanceSetMutableMask = ~(tmfMPTSetCanLock | tmfMPTClearCanLock |
+    tmfMPTSetRequireAuth | tmfMPTClearRequireAuth | tmfMPTSetCanEscrow | tmfMPTClearCanEscrow |
+    tmfMPTSetCanTrade | tmfMPTClearCanTrade | tmfMPTSetCanTransfer | tmfMPTClearCanTransfer |
+    tmfMPTSetCanClawback | tmfMPTClearCanClawback);
 
 // MPTokenIssuanceDestroy flags:
 constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;
