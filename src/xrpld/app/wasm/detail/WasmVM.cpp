@@ -44,9 +44,9 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, getLedgerAccountHash, "get_ledger_account_hash", hfs,                                  60);
     WASM_IMPORT_FUNC2(i, getLedgerTransactionHash, "get_ledger_tx_hash", hfs,                                   60);
     WASM_IMPORT_FUNC2(i, getBaseFee, "get_base_fee", hfs,                                                       60);
-    WASM_IMPORT_FUNC2(i, isAmendmentEnabled, "amendment_enabled", hfs,                                          60);
+    WASM_IMPORT_FUNC2(i, isAmendmentEnabled, "amendment_enabled", hfs,                                         100);
 
-    WASM_IMPORT_FUNC2(i, cacheLedgerObj, "cache_ledger_obj", hfs,                                             5000);
+    WASM_IMPORT_FUNC2(i, cacheLedgerObj, "cache_ledger_obj", hfs,                                            5'000);
     WASM_IMPORT_FUNC2(i, getTxField, "get_tx_field", hfs,                                                       70);
     WASM_IMPORT_FUNC2(i, getCurrentLedgerObjField, "get_current_ledger_obj_field", hfs,                         70);
     WASM_IMPORT_FUNC2(i, getLedgerObjField, "get_ledger_obj_field", hfs,                                        70);
@@ -60,20 +60,20 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, getCurrentLedgerObjNestedArrayLen, "get_current_ledger_obj_nested_array_len",  hfs,    70);
     WASM_IMPORT_FUNC2(i, getLedgerObjNestedArrayLen, "get_ledger_obj_nested_array_len", hfs,                    70);
 
-    WASM_IMPORT_FUNC2(i, checkSignature, "check_sig", hfs,                                                    2000);
+    WASM_IMPORT_FUNC2(i, checkSignature, "check_sig", hfs,                                                     300);
     WASM_IMPORT_FUNC2(i, computeSha512HalfHash, "compute_sha512_half", hfs,                                   2000);
 
     WASM_IMPORT_FUNC2(i, accountKeylet, "account_keylet", hfs,                                                 350);
-    WASM_IMPORT_FUNC2(i, ammKeylet, "amm_keylet", hfs,                                                         350);
+    WASM_IMPORT_FUNC2(i, ammKeylet, "amm_keylet", hfs,                                                         450);
     WASM_IMPORT_FUNC2(i, checkKeylet, "check_keylet", hfs,                                                     350);
     WASM_IMPORT_FUNC2(i, credentialKeylet, "credential_keylet", hfs,                                           350);
     WASM_IMPORT_FUNC2(i, delegateKeylet, "delegate_keylet", hfs,                                               350);
     WASM_IMPORT_FUNC2(i, depositPreauthKeylet, "deposit_preauth_keylet", hfs,                                  350);
     WASM_IMPORT_FUNC2(i, didKeylet, "did_keylet", hfs,                                                         350);
     WASM_IMPORT_FUNC2(i, escrowKeylet, "escrow_keylet", hfs,                                                   350);
-    WASM_IMPORT_FUNC2(i, lineKeylet, "line_keylet", hfs,                                                       350);
+    WASM_IMPORT_FUNC2(i, lineKeylet, "line_keylet", hfs,                                                       400);
     WASM_IMPORT_FUNC2(i, mptIssuanceKeylet, "mpt_issuance_keylet", hfs,                                        350);
-    WASM_IMPORT_FUNC2(i, mptokenKeylet, "mptoken_keylet", hfs,                                                 350);
+    WASM_IMPORT_FUNC2(i, mptokenKeylet, "mptoken_keylet", hfs,                                                 500);
     WASM_IMPORT_FUNC2(i, nftOfferKeylet, "nft_offer_keylet", hfs,                                              350);
     WASM_IMPORT_FUNC2(i, offerKeylet, "offer_keylet", hfs,                                                     350);
     WASM_IMPORT_FUNC2(i, oracleKeylet, "oracle_keylet", hfs,                                                   350);
@@ -84,7 +84,7 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, vaultKeylet, "vault_keylet", hfs,                                                     350);
 
     WASM_IMPORT_FUNC2(i, getNFT, "get_nft", hfs,                                                              1000);
-    WASM_IMPORT_FUNC2(i, getNFTIssuer, "get_nft_issuer", hfs,                                                   60);
+    WASM_IMPORT_FUNC2(i, getNFTIssuer, "get_nft_issuer", hfs,                                                   70);
     WASM_IMPORT_FUNC2(i, getNFTTaxon, "get_nft_taxon", hfs,                                                     60);
     WASM_IMPORT_FUNC2(i, getNFTFlags, "get_nft_flags", hfs,                                                     60);
     WASM_IMPORT_FUNC2(i, getNFTTransferFee, "get_nft_transfer_fee", hfs,                                        60);
@@ -96,17 +96,17 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, traceFloat, "trace_opaque_float", hfs,                                                500);
     WASM_IMPORT_FUNC2(i, traceAmount, "trace_amount", hfs,                                                     500);
 
-    WASM_IMPORT_FUNC2(i, floatFromInt, "float_from_int", hfs,                                                 1000);
-    WASM_IMPORT_FUNC2(i, floatFromUint, "float_from_uint", hfs,                                               1000);
-    WASM_IMPORT_FUNC2(i, floatSet, "float_set", hfs,                                                          1000);
-    WASM_IMPORT_FUNC2(i, floatCompare, "float_compare", hfs,                                                  1000);
-    WASM_IMPORT_FUNC2(i, floatAdd, "float_add", hfs,                                                          1000);
-    WASM_IMPORT_FUNC2(i, floatSubtract, "float_subtract", hfs,                                                1000);
-    WASM_IMPORT_FUNC2(i, floatMultiply, "float_multiply", hfs,                                                1000);
-    WASM_IMPORT_FUNC2(i, floatDivide, "float_divide", hfs,                                                    1000);
-    WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                        1000);
-    WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                        1000);
-    WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                          1000);
+    WASM_IMPORT_FUNC2(i, floatFromInt, "float_from_int", hfs,                                                  100);
+    WASM_IMPORT_FUNC2(i, floatFromUint, "float_from_uint", hfs,                                                130);
+    WASM_IMPORT_FUNC2(i, floatSet, "float_set", hfs,                                                           100);
+    WASM_IMPORT_FUNC2(i, floatCompare, "float_compare", hfs,                                                    80);
+    WASM_IMPORT_FUNC2(i, floatAdd, "float_add", hfs,                                                           160);
+    WASM_IMPORT_FUNC2(i, floatSubtract, "float_subtract", hfs,                                                 160);
+    WASM_IMPORT_FUNC2(i, floatMultiply, "float_multiply", hfs,                                                 300);
+    WASM_IMPORT_FUNC2(i, floatDivide, "float_divide", hfs,                                                     300);
+    WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                       5'500);
+    WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                       5'500);
+    WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                        12'000);
     // clang-format on
 }
 
