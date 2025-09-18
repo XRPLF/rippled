@@ -64,8 +64,8 @@ public:
 
     public:
         enum class CoroState { None, Suspended, Running, Finished };
-    private:
 
+    private:
         std::atomic_bool exiting_ = false;
         detail::LocalValues lvs_;
         JobQueue& jq_;
@@ -131,7 +131,10 @@ public:
         resume();
 
         CoroState
-        state() const { return state_; }
+        state() const
+        {
+            return state_;
+        }
 
         /** Returns true if the Coro is still runnable (has not returned). */
         bool

@@ -121,7 +121,7 @@ class JobQueue_test : public beast::unit_test::suite
             }
 
             while (yieldCount == 0)
-                ; // We should wait for the job to start and yield
+                ;  // We should wait for the job to start and yield
 
             // Wait for the Job to run and yield.
             coro->join();
