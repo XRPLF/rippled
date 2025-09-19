@@ -183,13 +183,15 @@ SetOracle::preclaim(PreclaimContext const& ctx)
 }
 
 static bool
-adjustOwnerCount(ApplyContext& ctx, int count)
+adjustOwnerCount(
+    ApplyContext& ctx,
+    std::optional<std::shared_ptr<SLE>> const& sponsor,
+    int count)
 {
     if (auto const sleAccount =
             ctx.view().peek(keylet::account(ctx.tx[sfAccount])))
     {
-        adjustOwnerCount(
-            ctx.view(), sleAccount, std::nullopt, count, ctx.journal);
+        adjustOwnerCount(ctx.view(), sleAccount, sponsor, count, ctx.journal);
         return true;
     }
 
@@ -275,8 +277,34 @@ SetOracle::doApply()
 
         auto const newCount = pairs.size() > 5 ? 2 : 1;
         auto const adjust = newCount - oldCount;
-        if (adjust != 0 && !adjustOwnerCount(ctx_, adjust))
-            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        if (adjust > 0)
+        {
+            // To continue receiving sponsorship from the same account after the
+            // OwnerCount increases from 1 to 2, it is necessary to sign with
+            // the sponsor decrease current sponsored owner count.
+            // Otherwise, the sponsorship will be deleted.
+
+            auto const currentsponsor =
+                getLedgerEntryReserveSponsor(ctx_.view(), sle);
+            auto const newSponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+
+            // decrease current sponsored owner count
+            if (!adjustOwnerCount(ctx_, currentsponsor, -oldCount))
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+            removeSponsorFromLedgerEntry(sle);
+            // increase new owner count
+            if (!adjustOwnerCount(ctx_, newSponsor, newCount))
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+            addSponsorToLedgerEntry(sle, newSponsor);
+        }
+        else if (adjust < 0)
+        {
+            // decrease owner count
+            auto const sponsor = getLedgerEntryReserveSponsor(ctx_.view(), sle);
+            if (!adjustOwnerCount(ctx_, sponsor, adjust))
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+        }
 
         ctx_.view().update(sle);
     }
@@ -321,8 +349,11 @@ SetOracle::doApply()
         (*sle)[sfOwnerNode] = *page;
 
         auto const count = series.size() > 5 ? 2 : 1;
-        if (!adjustOwnerCount(ctx_, count))
+        auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
+        if (!adjustOwnerCount(ctx_, sponsor, count))
             return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        addSponsorToLedgerEntry(sle, sponsor);
 
         ctx_.view().insert(sle);
     }
