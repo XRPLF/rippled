@@ -20,10 +20,9 @@
 #ifndef RIPPLE_APP_BOOK_OFFER_H_INCLUDED
 #define RIPPLE_APP_BOOK_OFFER_H_INCLUDED
 
-#include <xrpld/ledger/View.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>

@@ -20,9 +20,7 @@
 #ifndef RIPPLE_APP_AMMOFFER_H_INCLUDED
 #define RIPPLE_APP_AMMOFFER_H_INCLUDED
 
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
-
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>

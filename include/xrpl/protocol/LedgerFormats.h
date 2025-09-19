@@ -56,7 +56,7 @@ enum LedgerEntryType : std::uint16_t
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) tag = value,
+#define LEDGER_ENTRY(tag, value, ...) tag = value,
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
@@ -188,14 +188,14 @@ enum LedgerSpecificFlags {
     lsfMPTCanTransfer = 0x00000020,
     lsfMPTCanClawback = 0x00000040,
 
-    lsfMPTCanMutateCanLock = 0x00000002,
-    lsfMPTCanMutateRequireAuth = 0x00000004,
-    lsfMPTCanMutateCanEscrow = 0x00000008,
-    lsfMPTCanMutateCanTrade = 0x00000010,
-    lsfMPTCanMutateCanTransfer = 0x00000020,
-    lsfMPTCanMutateCanClawback = 0x00000040,
-    lsfMPTCanMutateMetadata = 0x00010000,
-    lsfMPTCanMutateTransferFee = 0x00020000,
+    lmfMPTCanMutateCanLock = 0x00000002,
+    lmfMPTCanMutateRequireAuth = 0x00000004,
+    lmfMPTCanMutateCanEscrow = 0x00000008,
+    lmfMPTCanMutateCanTrade = 0x00000010,
+    lmfMPTCanMutateCanTransfer = 0x00000020,
+    lmfMPTCanMutateCanClawback = 0x00000040,
+    lmfMPTCanMutateMetadata = 0x00010000,
+    lmfMPTCanMutateTransferFee = 0x00020000,
 
     // ltMPTOKEN
     lsfMPTAuthorized = 0x00000002,

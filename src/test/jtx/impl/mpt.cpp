@@ -407,34 +407,34 @@ MPTTester::set(MPTSet const& arg)
 
                 if (arg.mutableFlags)
                 {
-                    if (*arg.mutableFlags & tfMPTSetCanLock)
+                    if (*arg.mutableFlags & tmfMPTSetCanLock)
                         flags |= lsfMPTCanLock;
-                    else if (*arg.mutableFlags & tfMPTClearCanLock)
+                    else if (*arg.mutableFlags & tmfMPTClearCanLock)
                         flags &= ~lsfMPTCanLock;
 
-                    if (*arg.mutableFlags & tfMPTSetRequireAuth)
+                    if (*arg.mutableFlags & tmfMPTSetRequireAuth)
                         flags |= lsfMPTRequireAuth;
-                    else if (*arg.mutableFlags & tfMPTClearRequireAuth)
+                    else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
                         flags &= ~lsfMPTRequireAuth;
 
-                    if (*arg.mutableFlags & tfMPTSetCanEscrow)
+                    if (*arg.mutableFlags & tmfMPTSetCanEscrow)
                         flags |= lsfMPTCanEscrow;
-                    else if (*arg.mutableFlags & tfMPTClearCanEscrow)
+                    else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
                         flags &= ~lsfMPTCanEscrow;
 
-                    if (*arg.mutableFlags & tfMPTSetCanClawback)
+                    if (*arg.mutableFlags & tmfMPTSetCanClawback)
                         flags |= lsfMPTCanClawback;
-                    else if (*arg.mutableFlags & tfMPTClearCanClawback)
+                    else if (*arg.mutableFlags & tmfMPTClearCanClawback)
                         flags &= ~lsfMPTCanClawback;
 
-                    if (*arg.mutableFlags & tfMPTSetCanTrade)
+                    if (*arg.mutableFlags & tmfMPTSetCanTrade)
                         flags |= lsfMPTCanTrade;
-                    else if (*arg.mutableFlags & tfMPTClearCanTrade)
+                    else if (*arg.mutableFlags & tmfMPTClearCanTrade)
                         flags &= ~lsfMPTCanTrade;
 
-                    if (*arg.mutableFlags & tfMPTSetCanTransfer)
+                    if (*arg.mutableFlags & tmfMPTSetCanTransfer)
                         flags |= lsfMPTCanTransfer;
-                    else if (*arg.mutableFlags & tfMPTClearCanTransfer)
+                    else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
                         flags &= ~lsfMPTCanTransfer;
                 }
             }

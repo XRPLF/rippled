@@ -24,18 +24,23 @@ namespace test {
 namespace jtx {
 
 void
-balance::operator()(Env& env) const
+doBalance(
+    Env& env,
+    AccountID const& account,
+    bool none,
+    STAmount const& value,
+    Issue const& issue)
 {
     if (isXRP(value_.asset()))
     {
-        auto const sle = env.le(account_);
-        if (none_)
+        auto const sle = env.le(keylet::account(account));
+        if (none)
         {
             env.test.expect(!sle);
         }
         else if (env.test.expect(sle))
         {
-            env.test.expect(sle->getFieldAmount(sfBalance) == value_);
+            env.test.expect(sle->getFieldAmount(sfBalance) == value);
         }
     }
     else if (value_.holds<Issue>())
@@ -52,7 +57,7 @@ balance::operator()(Env& env) const
             amount.get<Issue>().account = value_.getIssuer();
             if (account_.id() > value_.getIssuer())
                 amount.negate();
-            env.test.expect(amount == value_);
+            env.test.expect(amount == value);
         }
     }
     else
@@ -71,6 +76,36 @@ balance::operator()(Env& env) const
             env.test.expect(amount == value_.mpt().value());
         }
     }
+}
+
+void
+doBalance(
+    Env& env,
+    AccountID const& account,
+    bool none,
+    STAmount const& value,
+    MPTIssue const& mptIssue)
+{
+    auto const sle = env.le(keylet::mptoken(mptIssue.getMptID(), account));
+    if (none)
+    {
+        env.test.expect(!sle);
+    }
+    else if (env.test.expect(sle))
+    {
+        STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+        env.test.expect(amount == value);
+    }
+}
+
+void
+balance::operator()(Env& env) const
+{
+    return std::visit(
+        [&](auto const& issue) {
+            doBalance(env, account_.id(), none_, value_, issue);
+        },
+        value_.asset().value());
 }
 
 }  // namespace jtx

@@ -320,7 +320,7 @@ xrpMinusFee(Env const& env, std::int64_t xrpAmount)
 };
 
 [[nodiscard]] bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     STAmount const& value,
@@ -354,8 +354,33 @@ expectLine(
 }
 
 [[nodiscard]] bool
-expectLine(Env& env, AccountID const& account, None const& value)
+expectHolding(
+    Env& env,
+    AccountID const& account,
+    None const&,
+    Issue const& issue)
 {
+    return !env.le(keylet::line(account, issue));
+}
+
+[[nodiscard]] bool
+expectHolding(
+    Env& env,
+    AccountID const& account,
+    None const&,
+    MPTIssue const& mptIssue)
+{
+    return !env.le(keylet::mptoken(mptIssue.getMptID(), account));
+}
+
+[[nodiscard]] bool
+expectHolding(Env& env, AccountID const& account, None const& value)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return expectHolding(env, account, value, issue);
+        },
+        value.asset.value());
     return !env.le(keylet::line(account, value.issue.get<Issue>()));
 }
 
