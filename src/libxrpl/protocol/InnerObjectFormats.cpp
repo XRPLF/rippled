@@ -172,6 +172,14 @@ InnerObjectFormats::InnerObjectFormats()
             {sfBookDirectory, soeREQUIRED},
             {sfBookNode, soeREQUIRED},
         });
+
+    add(sfFirewallSigner.jsonName.c_str(),
+        sfFirewallSigner.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfSigningPubKey, soeREQUIRED},
+            {sfTxnSignature, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

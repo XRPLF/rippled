@@ -75,6 +75,7 @@ JSS(LastUpdateTime);       // field.
 JSS(LimitAmount);          // field.
 JSS(LockingChainDoor);     // field.
 JSS(LockingChainIssue);    // field.
+JSS(MaxFee);               // field.
 JSS(NetworkID);            // field.
 JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens

@@ -2170,4 +2170,37 @@ ValidAMM::finalize(
     return true;
 }
 
+void
+ValidFirewall::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltFIREWALL)
+    {
+        firewalls_.emplace_back(before, after);
+    }
+}
+
+bool
+ValidFirewall::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Firewalls will not exist on ledger if the Firewall amendment
+    // is not enabled, so there's no need to check it.
+    for (auto const& [before, after] : firewalls_)
+    {
+        // sfCounterParty must always be present
+        if (!after->at(sfCounterParty))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 }  // namespace ripple

@@ -24,6 +24,7 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
+#include <xrpld/app/tx/detail/WithdrawPreauth.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
@@ -132,6 +133,18 @@ removeDepositPreauthFromLedger(
 }
 
 TER
+removeWithdrawPreauthFromLedger(
+    Application&,
+    ApplyView& view,
+    AccountID const&,
+    uint256 const& delIndex,
+    std::shared_ptr<SLE> const&,
+    beast::Journal j)
+{
+    return WithdrawPreauth::removeFromLedger(view, delIndex, j);
+}
+
+TER
 removeNFTokenOfferFromLedger(
     Application& app,
     ApplyView& view,
@@ -210,6 +223,8 @@ nonObligationDeleter(LedgerEntryType t)
             return removeTicketFromLedger;
         case ltDEPOSIT_PREAUTH:
             return removeDepositPreauthFromLedger;
+        case ltWITHDRAW_PREAUTH:
+            return removeWithdrawPreauthFromLedger;
         case ltNFTOKEN_OFFER:
             return removeNFTokenOfferFromLedger;
         case ltDID:

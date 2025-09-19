@@ -175,6 +175,11 @@ invoke_preclaim(PreclaimContext const& ctx)
 
                 if (result != tesSUCCESS)
                     return result;
+
+                result = T::checkFirewall(ctx);
+
+                if (result != tesSUCCESS)
+                    return result;
             }
 
             return T::preclaim(ctx);

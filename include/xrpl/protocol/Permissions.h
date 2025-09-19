@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_PERMISSION_H_INCLUDED
 #define RIPPLE_PROTOCOL_PERMISSION_H_INCLUDED
 
+#include <xrpl/protocol/Firewall.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>

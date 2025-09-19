@@ -159,7 +159,6 @@ xrpld.app > xrpld.perflog
 xrpld.app > xrpl.json
 xrpld.app > xrpl.ledger
 xrpld.app > xrpl.net
-xrpld.app > xrpl.protocol
 xrpld.app > xrpl.resource
 xrpld.conditions > xrpl.basics
 xrpld.conditions > xrpl.protocol
