@@ -90,7 +90,7 @@ private:
             AMM ammAlice(env, alice, USD(20'000), BTC(20'000));
             BEAST_EXPECT(ammAlice.expectBalances(
                 USD(20'000), BTC(20'000), IOUAmount{20'000, 0}));
-            BEAST_EXPECT(expectLine(env, alice, USD(0)));
+            BEAST_EXPECT(expectHolding(env, alice, USD(0)));
             // alice initially had 30'000
             BEAST_EXPECT(expectMPT(env, alice, BTC(10'000)));
         }
@@ -4417,7 +4417,7 @@ private:
             // Alice doesn't have anymore lp tokens
             env(amm.bid({.account = alice, .bidMin = 500}));
             BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{500}));
-            BEAST_EXPECT(expectLine(env, alice, STAmount{lpIssue, 0}));
+            BEAST_EXPECT(expectHolding(env, alice, STAmount{lpIssue, 0}));
             // But trades with the discounted fee since she still owns the slot.
             // Alice pays ~10011 MPT in fees
             env(pay(alice, bob, USD(10)), path(~USD), sendmax(BTC(11'000'000)));
@@ -6123,11 +6123,11 @@ private:
                 env(offer(carol, STAmount{token2, 100}, STAmount{token1, 100}));
                 env.close();
                 BEAST_EXPECT(
-                    expectLine(env, alice, STAmount{token1, 10'000'100}) &&
-                    expectLine(env, alice, STAmount{token2, 9'999'900}));
+                    expectHolding(env, alice, STAmount{token1, 10'000'100}) &&
+                    expectHolding(env, alice, STAmount{token2, 9'999'900}));
                 BEAST_EXPECT(
-                    expectLine(env, carol, STAmount{token2, 1'000'100}) &&
-                    expectLine(env, carol, STAmount{token1, 999'900}));
+                    expectHolding(env, carol, STAmount{token2, 1'000'100}) &&
+                    expectHolding(env, carol, STAmount{token1, 999'900}));
                 BEAST_EXPECT(
                     expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
             },

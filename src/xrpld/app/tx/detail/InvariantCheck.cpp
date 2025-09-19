@@ -78,6 +78,8 @@ enum Privilege {
                                 // object (except by issuer)
     mayDeleteMPT =
         0x0400,  // The transaction MAY delete an MPT object. May not create.
+    mayCreateMPT = 0x0800,  // The transaction MAY create an MPT object
+                            // (except by issuer)
 };
 constexpr Privilege
 operator|(Privilege lhs, Privilege rhs)
@@ -1528,6 +1530,8 @@ ValidMPTIssuance::finalize(
             enforceEscrowFinish)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
+            bool const ammWithdrawOrClawback =
+                txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK;
 
             if (mptIssuancesCreated_ > 0)
             {
@@ -1540,6 +1544,24 @@ ValidMPTIssuance::finalize(
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize "
                                    "succeeded but deleted issuances";
                 return false;
+            }
+            else if (hasPrivilege(tx, mayAuthorizeMPT) && ammWithdrawOrClawback)
+            {
+                if (submittedByIssuer && txnType == ttAMM_WITHDRAW &&
+                    mptokensCreated_ > 0)
+                {
+                    JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                       "submitted by issuer succeeded "
+                                       "but created bad number of mptokens";
+                    return false;
+                }
+                else if (mptokensCreated_ > 1 || mptokensDeleted_ > 2)
+                {
+                    JLOG(j.fatal())
+                        << "Invariant failed: MPT authorize  succeeded "
+                           "but created/deleted bad number of mptokens";
+                    return false;
+                }
             }
             else if (
                 submittedByIssuer &&
@@ -1565,103 +1587,50 @@ ValidMPTIssuance::finalize(
             return true;
         }
 
-        if (txnType == ttMPTOKEN_ISSUANCE_SET)
+        if (hasPrivilege(tx, mayCreateMPT))
         {
-            if (mptIssuancesDeleted_ > 0)
+            bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
+
+            if (mptIssuancesCreated_ > 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPT issuances";
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but created MPT issuances";
+                return false;
             }
-            else if (mptIssuancesCreated_ > 0)
+            else if (mptIssuancesDeleted_ > 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPT issuances";
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but deleted issuances";
+                return false;
             }
             else if (mptokensDeleted_ > 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPTokens";
-            }
-            else if (mptokensCreated_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPTokens";
-            }
-
-            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
-                mptokensCreated_ == 0 && mptokensDeleted_ == 0;
-        }
-
-        if (txnType == ttAMM_CREATE || txnType == ttCHECK_CASH ||
-            txnType == ttOFFER_CREATE || txnType == ttPAYMENT)
-        {
-            if (mptIssuancesDeleted_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPT issuances";
-            }
-            else if (mptIssuancesCreated_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPT issuances";
-            }
-            else if (mptokensDeleted_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPTokens";
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize "
+                                   "succeeded but deleted MPTokens";
+                return false;
             }
             // AMM can be created with IOU/MPT or MPT/MPT
             else if (
                 (txnType == ttAMM_CREATE && mptokensCreated_ > 2) ||
                 (txnType == ttCHECK_CASH && mptokensCreated_ > 1))
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPTokens";
+                JLOG(j.fatal())
+                    << "Invariant failed: MPT authorize "
+                       "succeeded but created bad number of mptokens";
+                return false;
+            }
+            else if (submittedByIssuer)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: MPT authorize submitted by issuer "
+                       "succeeded but created mptokens";
+                return false;
             }
 
             // Offer crossing or payment may consume multiple offers
             // where takerPays is MPT amount. If the offer owner doesn't
             // own MPT then MPT is created automatically.
-            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
-                ((txnType == ttAMM_CREATE && mptokensCreated_ <= 2) ||
-                 (txnType == ttCHECK_CASH && mptokensCreated_ <= 1) ||
-                 txnType == ttOFFER_CREATE || txnType == ttPAYMENT) &&
-                mptokensDeleted_ == 0;
-        }
-
-        if (txnType == ttAMM_DELETE || txnType == ttAMM_WITHDRAW ||
-            txnType == ttAMM_CLAWBACK)
-        {
-            if (mptIssuancesDeleted_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPT issuances";
-            }
-            else if (mptIssuancesCreated_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPT issuances";
-            }
-            else if (mptokensDeleted_ > 2)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPTokens";
-            }
-            // MPToken can be created if LP withdraws from MPT pool,
-            // and doesn't own MPToken object for this MPT
-            else if (
-                (txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK) &&
-                mptokensCreated_ > 1)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPTokens";
-            }
-
-            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
-                ((txnType == ttAMM_DELETE && mptokensCreated_ == 0) ||
-                 ((txnType == ttAMM_WITHDRAW || txnType == ttAMM_CLAWBACK) &&
-                  mptokensCreated_ <= 1)) &&
-                mptokensDeleted_ <= 2;
+            return true;
         }
 
         if (txnType == ttESCROW_FINISH)

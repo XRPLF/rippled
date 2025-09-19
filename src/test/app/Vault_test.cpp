@@ -3546,7 +3546,7 @@ class Vault_test : public beast::unit_test::suite
                 STAmount(d.asset, Number(100, 0)));
             BEAST_EXPECT(
                 env.balance(d.vaultAccount, d.shares) ==
-                STAmount(d.share, Number(-1000, 0)));
+                STAmount(d.share, Number(1000, 0)));
 
             {
                 testcase("Scale redeem exact");
@@ -3571,7 +3571,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(90, 0)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(-900, 0)));
+                    STAmount(d.share, Number(900, 0)));
             }
 
             {
@@ -3606,7 +3606,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(900 - 25, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(900 - 25, 0)));
+                    STAmount(d.share, Number(900 - 25, 0)));
             }
 
             {
@@ -3633,7 +3633,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(875 - 21, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(875 - 21, 0)));
+                    STAmount(d.share, Number(875 - 21, 0)));
             }
 
             {
@@ -3694,7 +3694,7 @@ class Vault_test : public beast::unit_test::suite
                 STAmount(d.asset, Number(100, 0)));
             BEAST_EXPECT(
                 env.balance(d.vaultAccount, d.shares) ==
-                STAmount(d.share, Number(-1000, 0)));
+                STAmount(d.share, Number(1000, 0)));
 
             {
                 testcase("Scale withdraw exact");
@@ -3722,7 +3722,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(90, 0)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, Number(-900, 0)));
+                    STAmount(d.share, Number(900, 0)));
             }
 
             {
@@ -3769,7 +3769,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(900 - 25, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(900 - 25, 0)));
+                    STAmount(d.share, Number(900 - 25, 0)));
             }
 
             {
@@ -3798,7 +3798,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(875 - 38, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(875 - 38, 0)));
+                    STAmount(d.share, Number(875 - 38, 0)));
             }
 
             {
@@ -3827,7 +3827,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(837 - 37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(837 - 37, 0)));
+                    STAmount(d.share, Number(837 - 37, 0)));
             }
 
             {
@@ -3850,7 +3850,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(800 - 1, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(800 - 1, 0)));
+                    STAmount(d.share, Number(800 - 1, 0)));
             }
 
             {
@@ -3913,7 +3913,7 @@ class Vault_test : public beast::unit_test::suite
                 STAmount(d.asset, Number(100, 0)));
             BEAST_EXPECT(
                 env.balance(d.vaultAccount, d.shares) ==
-                STAmount(d.share, -Number(1000, 0)));
+                STAmount(d.share, Number(1000, 0)));
             {
                 testcase("Scale clawback exact");
                 // assetsToSharesWithdraw:
@@ -3941,7 +3941,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(90, 0)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(900, 0)));
+                    STAmount(d.share, Number(900, 0)));
             }
 
             {
@@ -3981,7 +3981,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(900 - 25, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(900 - 25, 0)));
+                    STAmount(d.share, Number(900 - 25, 0)));
             }
 
             {
@@ -4011,7 +4011,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(875 - 38, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(875 - 38, 0)));
+                    STAmount(d.share, Number(875 - 38, 0)));
             }
 
             {
@@ -4041,7 +4041,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(837 - 37, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(837 - 37, 0)));
+                    STAmount(d.share, Number(837 - 37, 0)));
             }
 
             {
@@ -4065,7 +4065,7 @@ class Vault_test : public beast::unit_test::suite
                     STAmount(d.asset, Number(800 - 1, -1)));
                 BEAST_EXPECT(
                     env.balance(d.vaultAccount, d.shares) ==
-                    STAmount(d.share, -Number(800 - 1, 0)));
+                    STAmount(d.share, Number(800 - 1, 0)));
             }
 
             {

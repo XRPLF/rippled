@@ -27,8 +27,8 @@
 #include <xrpld/app/paths/AMMOffer.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/paths/detail/StrandFlow.h>
-#include <xrpld/ledger/PaymentSandbox.h>
 
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 
 namespace ripple {

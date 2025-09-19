@@ -462,6 +462,32 @@ accountHolds(
     return view.balanceHookIOU(account, issuer, amount);
 }
 
+// MaximumAmount doesn't exceed 2**63-1
+static std::int64_t
+maxMPTAmount(SLE const& sleIssuance)
+{
+    return sleIssuance[~sfMaximumAmount].value_or(maxMPTokenAmount);
+}
+
+// OutstandingAmount may overflow and available amount might be negative.
+// But available amount is always <= |MaximumAmount - OutstandingAmount|.
+static std::int64_t
+availableMPTAmount(SLE const& sleIssuance)
+{
+    auto const max = maxMPTAmount(sleIssuance);
+    auto const outstanding = sleIssuance[sfOutstandingAmount];
+    return max - outstanding;
+}
+
+static std::int64_t
+availableMPTAmount(ReadView const& view, MPTID const& mptID)
+{
+    auto const sle = view.read(keylet::mptIssuance(mptID));
+    if (!sle)
+        Throw<std::runtime_error>(transHuman(tecINTERNAL));
+    return availableMPTAmount(*sle);
+}
+
 STAmount
 accountHolds(
     ReadView const& view,

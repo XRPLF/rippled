@@ -98,7 +98,7 @@ IOU::operator()(epsilon_t) const
 }
 
 PrettyAmount
-IOU::operator()(detail::epsilon_multiple m) const
+IOU::operator()(ripple::detail::epsilon_multiple m) const
 {
     return {
         STAmount(issue(), safe_cast<std::uint64_t>(m.n), -81), account.name()};

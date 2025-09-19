@@ -36,12 +36,9 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 
-#include <chrono>
-#include <condition_variable>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <thread>
 
 namespace ripple {
 namespace test {

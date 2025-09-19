@@ -381,7 +381,6 @@ expectHolding(Env& env, AccountID const& account, None const& value)
             return expectHolding(env, account, value, issue);
         },
         value.asset.value());
-    return !env.le(keylet::line(account, value.issue.get<Issue>()));
 }
 
 [[nodiscard]] bool

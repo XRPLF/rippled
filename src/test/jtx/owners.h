@@ -64,7 +64,7 @@ public:
     void
     operator()(Env& env) const
     {
-        detail::owned_count_helper(env, account_.id(), Type, value_);
+        ripple::detail::owned_count_helper(env, account_.id(), Type, value_);
     }
 };
 

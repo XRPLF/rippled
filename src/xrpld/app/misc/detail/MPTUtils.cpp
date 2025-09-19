@@ -18,15 +18,15 @@
 //==============================================================================
 
 #include <xrpld/app/misc/MPTUtils.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 
 static TER
-isMPTAllowed(
+checkMPTAllowed(
     ReadView const& view,
     TxType txType,
     Asset const& asset,
@@ -42,7 +42,7 @@ isMPTAllowed(
         txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE ||
         txType == ttCHECK_CREATE || txType == ttCHECK_CASH ||
         txType == ttPAYMENT || isDEX;
-    XRPL_ASSERT(validTx, "ripple::isMPTAllowed : all MPT tx or DEX");
+    XRPL_ASSERT(validTx, "ripple::checkMPTAllowed : all MPT tx or DEX");
     if (!validTx)
         return tefINTERNAL;
 
@@ -94,7 +94,7 @@ checkMPTTxAllowed(
 {
     // use isDEXAllowed for payment/offer crossing
     XRPL_ASSERT(txType != ttPAYMENT, "ripple::checkMPTTxAllowed : not payment");
-    return isMPTAllowed(view, txType, asset, accountID, destAccount);
+    return checkMPTAllowed(view, txType, asset, accountID, destAccount);
 }
 
 TER
@@ -105,7 +105,7 @@ checkMPTDEXAllowed(
     std::optional<AccountID> const& dest)
 {
     // use ttPAYMENT for any DEX transaction
-    return isMPTAllowed(view, ttPAYMENT, asset, accountID, dest);
+    return checkMPTAllowed(view, ttPAYMENT, asset, accountID, dest);
 }
 
 }  // namespace ripple

@@ -206,11 +206,11 @@ Env::balance(Account const& account, Issue const& issue) const
 PrettyAmount
 Env::balance(Account const& account, MPTIssue const& mptIssue) const
 {
-    MPTID const id = mptIssue.getMptID();
+    MPTID const& id = mptIssue.getMptID();
     if (!id)
         return {STAmount(mptIssue, 0), account.name()};
 
-    AccountID const issuer = mptIssue.getIssuer();
+    AccountID const& issuer = mptIssue.getIssuer();
     if (account.id() == issuer)
     {
         // Issuer balance
@@ -218,9 +218,7 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
         if (!sle)
             return {STAmount(mptIssue, 0), account.name()};
 
-        // Make it negative
-        STAmount const amount{
-            mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
+        STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount)};
         return {amount, lookup(issuer).name()};
     }
     else
@@ -233,14 +231,6 @@ Env::balance(Account const& account, MPTIssue const& mptIssue) const
         STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
         return {amount, lookup(issuer).name()};
     }
-}
-
-PrettyAmount
-Env::balance(Account const& account, Asset const& asset) const
-{
-    return std::visit(
-        [&](auto const& issue) { return balance(account, issue); },
-        asset.value());
 }
 
 PrettyAmount

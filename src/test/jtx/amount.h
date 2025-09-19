@@ -396,6 +396,10 @@ public:
     {
         return issue();
     }
+    operator Asset() const
+    {
+        return asset();
+    }
     operator PrettyAsset() const
     {
         return asset();

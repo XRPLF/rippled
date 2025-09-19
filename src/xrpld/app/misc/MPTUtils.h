@@ -20,8 +20,6 @@
 #ifndef RIPPLE_APP_MISC_MPTUTILS_H_INLCUDED
 #define RIPPLE_APP_MISC_MPTUTILS_H_INLCUDED
 
-#include <xrpld/ledger/ReadView.h>
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -33,6 +31,7 @@
 namespace ripple {
 
 class Asset;
+class ReadView;
 
 /* Return true if a transaction is allowed for the specified MPT/account. The
  * function checks MPTokenIssuance and MPToken objects flags to determine if the
@@ -57,32 +56,6 @@ inline std::int64_t
 maxMPTAmount(SLE const& sleIssuance)
 {
     return sleIssuance[~sfMaximumAmount].value_or(maxMPTokenAmount);
-}
-
-inline std::int64_t
-maxMPTAmount(ReadView const& view, MPTID const& mptID)
-{
-    auto const sle = view.read(keylet::mptIssuance(mptID));
-    if (!sle)
-        Throw<std::runtime_error>(transHuman(tecINTERNAL));
-    return maxMPTAmount(*sle);
-}
-
-inline std::int64_t
-availableMPTAmount(SLE const& sleIssuance)
-{
-    auto const max = maxMPTAmount(sleIssuance);
-    auto const outstanding = sleIssuance[sfOutstandingAmount];
-    return max - outstanding;
-}
-
-inline std::int64_t
-availableMPTAmount(ReadView const& view, MPTID const& mptID)
-{
-    auto const sle = view.read(keylet::mptIssuance(mptID));
-    if (!sle)
-        Throw<std::runtime_error>(transHuman(tecINTERNAL));
-    return availableMPTAmount(*sle);
 }
 
 }  // namespace ripple
