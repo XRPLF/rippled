@@ -1130,61 +1130,89 @@ public:
         env.close();
 
         auto const credType = std::string("credType");
+        auto const credTypeSlice = Slice(credType.data(), credType.size());
 
         // CredentialsCreate
-        env(credentials::create(subject, issuer, credType),
-            credentials::uri("uri"),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+        {
+            env(credentials::create(subject, issuer, credType),
+                credentials::uri("uri"),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, issuer) == 1);
-        BEAST_EXPECT(ownerCount(env, subject) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(ownerCount(env, issuer) == 1);
+            BEAST_EXPECT(ownerCount(env, subject) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-        // transfer sponsor
-        auto const keylet = keylet::credential(
-            subject, issuer, Slice(credType.data(), credType.size()));
-        env(sponsor::transfer(issuer, keylet.key),
-            sponsor::as(sponsor2, tfSponsorReserve),
-            sponsor::sig(sponsor2));
-        env.close();
+            // transfer sponsor
+            auto const keylet =
+                keylet::credential(subject, issuer, credTypeSlice);
+            env(sponsor::transfer(issuer, keylet.key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, issuer) == 1);
-        BEAST_EXPECT(ownerCount(env, subject) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(ownerCount(env, issuer) == 1);
+            BEAST_EXPECT(ownerCount(env, subject) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-        // CredentialsAccept
-        env(credentials::accept(subject, issuer, credType),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+            // CredentialsAccept
+            env(credentials::accept(subject, issuer, credType),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, issuer) == 0);
-        BEAST_EXPECT(ownerCount(env, subject) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, subject) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
 
-        // CredentialsDelete
-        env(credentials::deleteCred(subject, subject, issuer, credType));
-        env.close();
+            // CredentialsDelete
+            env(credentials::deleteCred(subject, subject, issuer, credType));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, issuer) == 0);
-        BEAST_EXPECT(ownerCount(env, subject) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, subject) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
 
-        // TODO: Accept Sponsored Credentials without sponsoring
-        // TODO: Self Accept Sponsored Credentials
+        {
+            // Accept Sponsored Credentials without sponsoring
+            env(credentials::create(subject, issuer, credType),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, issuer) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            env(credentials::accept(subject, issuer, credType));
+            env.close();
+
+            // sponsorship is removed
+            BEAST_EXPECT(ownerCount(env, issuer) == 0);
+            BEAST_EXPECT(ownerCount(env, subject) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, issuer) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, subject) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(
+                !env.le(keylet::credential(subject, issuer, credTypeSlice))
+                     ->isFieldPresent(sfSponsorAccount));
+
+            env(credentials::deleteCred(subject, subject, issuer, credType));
+            env.close();
+        }
     }
 
     void
