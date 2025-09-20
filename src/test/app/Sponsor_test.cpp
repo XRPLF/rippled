@@ -374,6 +374,14 @@ public:
             env(pay(alice, sponsor1, drops(1)));
             env.close();
 
+            // Invalid Owner
+            env(sponsor::transfer(bob, checkId),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sponsor::sig(sponsor1),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // Valid Owner
             env(sponsor::transfer(alice, checkId),
                 sponsor::as(sponsor1, tfSponsorReserve),
                 sponsor::sig(sponsor1));
@@ -1530,7 +1538,7 @@ public:
 
         // transfer sponsor
         auto const mptTokenKeylet = keylet::mptoken(mptid, bob);
-        env(sponsor::transfer(alice, mptTokenKeylet.key),
+        env(sponsor::transfer(bob, mptTokenKeylet.key),
             sponsor::as(sponsor2, tfSponsorReserve),
             sponsor::sig(sponsor2));
         env.close();

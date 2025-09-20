@@ -144,9 +144,11 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (!sle)
             return tecNO_ENTRY;
 
+        auto const ownerCountDelta = getLedgerEntryOwnerCount(sle);
+
         auto const owner =
             getLedgerEntryOwner(ctx.view, sle, ctx.tx[sfAccount]);
-        if (!owner)
+        if (!owner || owner != ctx.tx[sfAccount])
             return tecNO_PERMISSION;
 
         if (newSponsor)
@@ -166,14 +168,13 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 return tecNO_PERMISSION;
         }
 
-        // check account have sufficient balance
+        // check new sponsor have sufficient balance
         if (auto const ter = checkInsufficientReserve(
                 ctx.view,
                 accSle,
                 accSle->getFieldAmount(sfBalance),
                 newSponsor,
-                // TODO: address variable ownerCount like PriceOracle
-                1);
+                ownerCountDelta);
             !isTesSuccess(ter))
             return ter;
     }
