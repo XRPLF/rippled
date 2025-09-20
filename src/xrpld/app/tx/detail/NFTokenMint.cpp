@@ -319,8 +319,9 @@ NFTokenMint::doApply()
                 object.setFieldVL(sfURI, *uri);
         });
 
-    if (TER const ret =
-            nft::insertToken(ctx_.view(), account_, std::move(newToken));
+    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    if (TER const ret = nft::insertToken(
+            ctx_.view(), account_, sponsor, std::move(newToken));
         ret != tesSUCCESS)
         return ret;
 

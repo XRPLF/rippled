@@ -66,8 +66,13 @@ static std::shared_ptr<SLE>
 getPageForToken(
     ApplyView& view,
     AccountID const& owner,
+    std::optional<AccountID> const& sponsor,
     uint256 const& id,
-    std::function<void(ApplyView&, AccountID const&)> const& createCallback)
+    std::function<void(
+        ApplyView&,
+        std::shared_ptr<SLE> const&,
+        AccountID const&,
+        std::optional<AccountID> const&)> const& createCallback)
 {
     auto const base = keylet::nftpage_min(owner);
     auto const first = keylet::nftpage(base, id);
@@ -87,7 +92,7 @@ getPageForToken(
         cp = std::make_shared<SLE>(last);
         cp->setFieldArray(sfNFTokens, arr);
         view.insert(cp);
-        createCallback(view, owner);
+        createCallback(view, cp, owner, sponsor);
         return cp;
     }
 
@@ -215,7 +220,7 @@ getPageForToken(
     cp->setFieldH256(sfPreviousPageMin, np->key());
     view.update(cp);
 
-    createCallback(view, owner);
+    createCallback(view, np, owner, sponsor);
 
     // fixNFTokenDirV1 corrects a bug in the initial implementation that
     // would put an NFT in the wrong page.  The problem was caused by an
@@ -277,7 +282,11 @@ changeTokenURI(
 
 /** Insert the token in the owner's token directory. */
 TER
-insertToken(ApplyView& view, AccountID owner, STObject&& nft)
+insertToken(
+    ApplyView& view,
+    AccountID owner,
+    std::optional<AccountID> const& sponsor,
+    STObject&& nft)
 {
     XRPL_ASSERT(
         nft.isFieldPresent(sfNFTokenID),
@@ -289,14 +298,22 @@ insertToken(ApplyView& view, AccountID owner, STObject&& nft)
     std::shared_ptr<SLE> page = getPageForToken(
         view,
         owner,
+        sponsor,
         nft[sfNFTokenID],
-        [](ApplyView& view, AccountID const& owner) {
+        [](ApplyView& view,
+           std::shared_ptr<SLE> const& newPage,
+           AccountID const& owner,
+           std::optional<AccountID> const& sponsor) {
+            std::optional<std::shared_ptr<SLE>> const sponsorSle = sponsor
+                ? view.peek(keylet::account(*sponsor))
+                : std::optional<std::shared_ptr<SLE>>{std::nullopt};
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
-                std::nullopt,
+                sponsorSle,
                 1,
                 beast::Journal{beast::Journal::getNullSink()});
+            addSponsorToLedgerEntry(newPage, sponsorSle);
         });
 
     if (!page)
@@ -450,22 +467,25 @@ removeToken(
         curr->setFieldArray(sfNFTokens, arr);
         view.update(curr);
 
-        int cnt = 0;
-
         if (prev && mergePages(view, prev, curr))
-            cnt--;
+        {
+            auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
+            adjustOwnerCount(
+                view,
+                view.peek(keylet::account(owner)),
+                sponsor,
+                -1,
+                beast::Journal{beast::Journal::getNullSink()});
+        }
 
         if (next && mergePages(view, curr, next))
-            cnt--;
-
-        if (cnt != 0)
         {
             auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
                 sponsor,
-                cnt,
+                -1,
                 beast::Journal{beast::Journal::getNullSink()});
         }
 
@@ -501,7 +521,7 @@ removeToken(
                 curr->makeFieldAbsent(sfPreviousPageMin);
             }
 
-            auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
+            auto const sponsor = getLedgerEntryReserveSponsor(view, prev);
             adjustOwnerCount(
                 view,
                 view.peek(keylet::account(owner)),
@@ -535,9 +555,15 @@ removeToken(
         view.update(next);
     }
 
-    view.erase(curr);
+    auto const sponsor = getLedgerEntryReserveSponsor(view, curr);
+    adjustOwnerCount(
+        view,
+        view.peek(keylet::account(owner)),
+        getLedgerEntryReserveSponsor(view, curr),
+        -1,
+        beast::Journal{beast::Journal::getNullSink()});
 
-    int cnt = 1;
+    view.erase(curr);
 
     // Since we're here, try to consolidate the previous and current pages
     // of the page we removed (if any) into one.  mergePages() _should_
@@ -552,14 +578,14 @@ removeToken(
             view,
             view.peek(Keylet(ltNFTOKEN_PAGE, prev->key())),
             view.peek(Keylet(ltNFTOKEN_PAGE, next->key()))))
-        cnt++;
-
-    adjustOwnerCount(
-        view,
-        view.peek(keylet::account(owner)),
-        std::nullopt,
-        -1 * cnt,
-        beast::Journal{beast::Journal::getNullSink()});
+    {
+        adjustOwnerCount(
+            view,
+            view.peek(keylet::account(owner)),
+            getLedgerEntryReserveSponsor(view, prev),
+            -1,
+            beast::Journal{beast::Journal::getNullSink()});
+    }
 
     return tesSUCCESS;
 }

@@ -1644,26 +1644,75 @@ public:
     void
     testNFToken()
     {
-        // testcase("NFToken");
-        // using namespace test::jtx;
-        // Env env{*this, testable_amendments()};
-        // Account const alice("alice");
-        // Account const bob("bob");
-        // Account const sponsor("sponsor");
-        // Account const sponsor2("sponsor2");
+        testcase("NFToken");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
 
-        // env.fund(XRP(1000000), alice, bob, sponsor);
-        // env.close();
+        {
+            Env env{*this, testable_amendments()};
 
-        // // NFTokenMint
-        // env(token::mint(alice),
-        //     sponsor::as(sponsor, tfSponsorReserve),
-        //     sponsor::sig(sponsor));
-        // env.close();
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
 
-        // BEAST_EXPECT(ownerCount(env, alice) == 1);
-        // BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        // BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            // NFTokenMint
+            uint256 const nftId{token::getNextID(env, alice, 0)};
+            env(token::mint(alice),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // NFTokenBurn
+            env(token::burn(alice, nftId));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+
+        {
+            // multiple nft page process
+            Env env{*this, testable_amendments()};
+
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            auto const nftCount = 200;
+
+            // NFTokenMint
+            for (auto i = 0; i < nftCount; i++)
+            {
+                env(token::mint(alice),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+            }
+            env.close();
+
+            BEAST_EXPECT(
+                ownerCount(env, alice) == sponsoredOwnerCount(env, alice));
+            BEAST_EXPECT(
+                sponsoredOwnerCount(env, alice) ==
+                sponsoringOwnerCount(env, sponsor));
+
+            // NFTokenBurn
+            for (auto i = 0; i < nftCount; i++)
+            {
+                auto const nftId = token::getID(env, alice, 0, i, 0, 0);
+                env(token::burn(alice, nftId));
+            }
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
     }
 
     void
@@ -1694,7 +1743,7 @@ public:
             BEAST_EXPECT(ownerCount(env, alice) == 1);
 
             // NFTokenOfferCreate
-            uint256 const offerIndex =
+            uint256 const offerIndex1 =
                 keylet::nftoffer(alice, env.seq(alice)).key;
             env(token::createOffer(alice, nftId, XRP(1)),
                 token::destination(bob),
@@ -1707,19 +1756,32 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
+            uint256 const offerIndex2 =
+                keylet::nftoffer(alice, env.seq(alice)).key;
+            env(token::createOffer(alice, nftId, XRP(1)),
+                token::destination(bob),
+                txflags(tfSellNFToken),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+
             // transfer sponsor
-            env(sponsor::transfer(alice, offerIndex),
+            env(sponsor::transfer(alice, offerIndex1),
                 sponsor::as(sponsor2, tfSponsorReserve),
                 sponsor::sig(sponsor2));
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 3);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
             // NFTokenOfferCancel
-            env(token::cancelOffer(alice, {offerIndex}));
+            env(token::cancelOffer(alice, {offerIndex1, offerIndex2}));
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -2546,7 +2608,7 @@ public:
         testDID();
         testEscrow();
         testMPToken();
-        // testNFToken();
+        testNFToken();
         testNFTokenOffer();
         testPayChan();
         testPermissionedDomain();
