@@ -22,11 +22,11 @@
 
 #include <xrpld/app/tx/detail/BookTip.h>
 #include <xrpld/app/tx/detail/Offer.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/View.h>
 
 #include <boost/container/flat_set.hpp>
 

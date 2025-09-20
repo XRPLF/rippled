@@ -166,7 +166,7 @@ private:
         int addFlags,
         std::function<bool(void)> const& continueCallback);
 
-    // Compute the liquidity for a path.  Return tesSUCCESS if it has has enough
+    // Compute the liquidity for a path.  Return tesSUCCESS if it has enough
     // liquidity to be worth keeping, otherwise an error.
     TER
     getPathLiquidity(

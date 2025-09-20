@@ -1,6 +1,7 @@
 # This action build and tests the binary. The Conan dependencies must have
 # already been installed (see the build-deps action).
 name: Build and Test
+description: "Build and test the binary."
 
 # Note that actions do not support 'type' and all inputs are strings, see
 # https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.

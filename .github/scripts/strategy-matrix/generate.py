@@ -2,7 +2,17 @@
 import argparse
 import itertools
 import json
-import re
+from pathlib import Path
+from dataclasses import dataclass
+
+THIS_DIR = Path(__file__).parent.resolve()
+
+@dataclass
+class Config:
+    architecture: list[dict]
+    os: list[dict]
+    build_type: list[str]
+    cmake_args: list[str]
 
 '''
 Generate a strategy matrix for GitHub Actions CI.
@@ -18,9 +28,9 @@ We will further set additional CMake arguments as follows:
 - Certain Debian Bookworm configurations will change the reference fee, enable
   codecov, and enable voidstar in PRs.
 '''
-def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict], build_type: list[str], cmake_args: list[str]) -> dict:
+def generate_strategy_matrix(all: bool, config: Config) -> list:
     configurations = []
-    for architecture, os, build_type, cmake_args in itertools.product(architecture, os, build_type, cmake_args):
+    for architecture, os, build_type, cmake_args in itertools.product(config.architecture, config.os, config.build_type, config.cmake_args):
         # The default CMake target is 'all' for Linux and MacOS and 'install'
         # for Windows, but it can get overridden for certain configurations.
         cmake_target = 'install' if os["distro_name"] == 'windows' else 'all'
@@ -35,7 +45,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
         # Only generate a subset of configurations in PRs.
         if not all:
             # Debian:
-            # - Bookworm using GCC 13: Release and Unity on linux/arm64, set
+            # - Bookworm using GCC 13: Release and Unity on linux/amd64, set
             #   the reference fee to 500.
             # - Bookworm using GCC 15: Debug and no Unity on linux/amd64, enable
             #   code coverage (which will be done below).
@@ -47,7 +57,7 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
             if os['distro_name'] == 'debian':
                 skip = True
                 if os['distro_version'] == 'bookworm':
-                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/arm64':
+                    if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-13' and build_type == 'Release' and '-Dunity=ON' in cmake_args and architecture['platform'] == 'linux/amd64':
                         cmake_args = f'-DUNIT_TEST_REFERENCE_FEE=500 {cmake_args}'
                         skip = False
                     if f'{os['compiler_name']}-{os['compiler_version']}' == 'gcc-15' and build_type == 'Debug' and '-Dunity=OFF' in cmake_args and architecture['platform'] == 'linux/amd64':
@@ -158,21 +168,30 @@ def generate_strategy_matrix(all: bool, architecture: list[dict], os: list[dict]
             'architecture': architecture,
         })
 
-    return {'include': configurations}
+    return configurations
+
+
+def read_config(file: Path) -> Config:
+    config = json.loads(file.read_text())
+    if config['architecture'] is None or config['os'] is None or config['build_type'] is None or config['cmake_args'] is None:
+        raise Exception('Invalid configuration file.')
+
+    return Config(**config)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--all', help='Set to generate all configurations (generally used when merging a PR) or leave unset to generate a subset of configurations (generally used when committing to a PR).', action="store_true")
-    parser.add_argument('-c', '--config', help='Path to the JSON file containing the strategy matrix configurations.', required=True, type=str)
+    parser.add_argument('-c', '--config', help='Path to the JSON file containing the strategy matrix configurations.', required=False, type=Path)
     args = parser.parse_args()
 
-    # Load the JSON configuration file.
-    config = None
-    with open(args.config, 'r') as f:
-        config = json.load(f)
-    if config['architecture'] is None or config['os'] is None or config['build_type'] is None or config['cmake_args'] is None:
-        raise Exception('Invalid configuration file.')
+    matrix = []
+    if args.config is None or args.config == '':
+        matrix += generate_strategy_matrix(args.all, read_config(THIS_DIR / "linux.json"))
+        matrix += generate_strategy_matrix(args.all, read_config(THIS_DIR / "macos.json"))
+        matrix += generate_strategy_matrix(args.all, read_config(THIS_DIR / "windows.json"))
+    else:
+        matrix += generate_strategy_matrix(args.all, read_config(args.config))
 
     # Generate the strategy matrix.
-    print(f'matrix={json.dumps(generate_strategy_matrix(args.all, config['architecture'], config['os'], config['build_type'], config['cmake_args']))}')
+    print(f'matrix={json.dumps({"include": matrix})}')

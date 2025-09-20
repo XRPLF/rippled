@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -36,8 +36,16 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
           ctx.rules.enabled(featureSingleAssetVault)))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfMutableFlags) &&
+        !ctx.rules.enabled(featureDynamicMPT))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
+
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
+        (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
+        return temINVALID_FLAG;
 
     if (ctx.tx.getFlags() & tfMPTokenIssuanceCreateMask)
         return temINVALID_FLAG;
@@ -137,6 +145,9 @@ MPTokenIssuanceCreate::create(
         if (args.domainId)
             (*mptIssuance)[sfDomainID] = *args.domainId;
 
+        if (args.mutableFlags)
+            (*mptIssuance)[sfMutableFlags] = *args.mutableFlags;
+
         addSponsorToLedgerEntry(mptIssuance, sponsor);
 
         view.insert(mptIssuance);
@@ -166,6 +177,7 @@ MPTokenIssuanceCreate::doApply()
             .transferFee = tx[~sfTransferFee],
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
+            .mutableFlags = tx[~sfMutableFlags],
         });
     return result ? tesSUCCESS : result.error();
 }

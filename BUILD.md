@@ -132,7 +132,7 @@ higher index than the default Conan Center remote, so it is consulted first. You
 can do this by running:
 
 ```bash
-conan remote add --index 0 xrplf "https://conan.ripplex.io"
+conan remote add --index 0 xrplf https://conan.ripplex.io
 ```
 
 Alternatively, you can pull the patched recipes into the repository and use them
@@ -479,11 +479,23 @@ It is implicitly used when running `conan` commands, you don't need to specify i
 
 You have to update this file every time you add a new dependency or change a revision or version of an existing dependency.
 
-To do that, run the following command in the repository root:
+> [!NOTE]
+> Conan uses local cache by default when creating a lockfile.
+>
+> To ensure, that lockfile creation works the same way on all developer machines, you should clear the local cache before creating a new lockfile.
+
+To create a new lockfile, run the following commands in the repository root:
 
 ```bash
+conan remove '*' --confirm
+rm conan.lock
+# This ensure that xrplf remote is the first to be consulted
+conan remote add --force --index 0 xrplf https://conan.ripplex.io
 conan lock create . -o '&:jemalloc=True' -o '&:rocksdb=True'
 ```
+
+> [!NOTE]
+> If some dependencies are exclusive for some OS, you may need to run the last command for them adding `--profile:all <PROFILE>`.
 
 ## Coverage report
 
@@ -585,6 +597,11 @@ After any updates or changes to dependencies, you may need to do the following:
 3. Re-run [conan export](#patched-recipes) if needed.
 4. [Regenerate lockfile](#conan-lockfile).
 5. Re-run [conan install](#build-and-test).
+
+#### ERROR: Package not resolved
+
+If you're seeing an error like `ERROR: Package 'snappy/1.1.10' not resolved: Unable to find 'snappy/1.1.10#968fef506ff261592ec30c574d4a7809%1756234314.246' in remotes.`,
+please add `xrplf` remote or re-run `conan export` for [patched recipes](#patched-recipes).
 
 ### `protobuf/port_def.inc` file not found
 

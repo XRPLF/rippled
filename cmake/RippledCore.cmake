@@ -111,6 +111,12 @@ target_link_libraries(xrpl.libxrpl.net PUBLIC
 add_module(xrpl server)
 target_link_libraries(xrpl.libxrpl.server PUBLIC xrpl.libxrpl.protocol)
 
+add_module(xrpl ledger)
+target_link_libraries(xrpl.libxrpl.ledger PUBLIC
+  xrpl.libxrpl.basics
+  xrpl.libxrpl.json
+  xrpl.libxrpl.protocol
+)
 
 add_library(xrpl.libxrpl)
 set_target_properties(xrpl.libxrpl PROPERTIES OUTPUT_NAME xrpl)
@@ -131,6 +137,7 @@ target_link_modules(xrpl PUBLIC
   resource
   server
   net
+  ledger
 )
 
 # All headers in libxrpl are in modules.

@@ -19,10 +19,9 @@
 
 #include <test/jtx/PathSet.h>
 
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpld/ledger/PaymentSandbox.h>
-#include <xrpld/ledger/View.h>
-
+#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 

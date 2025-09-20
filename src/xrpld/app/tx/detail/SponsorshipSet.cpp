@@ -19,8 +19,8 @@
 
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SponsorshipSet.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {

@@ -26,7 +26,9 @@
 namespace ripple {
 
 class Rules;
+namespace test {
 class Invariants_test;
+}
 
 class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 {
@@ -36,6 +38,8 @@ class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 public:
     using pointer = std::shared_ptr<STLedgerEntry>;
     using ref = std::shared_ptr<STLedgerEntry> const&;
+    using const_pointer = std::shared_ptr<STLedgerEntry const>;
+    using const_ref = std::shared_ptr<STLedgerEntry const> const&;
 
     /** Create an empty object with the given key and type. */
     explicit STLedgerEntry(Keylet const& k);
@@ -54,7 +58,7 @@ public:
     getText() const override;
 
     Json::Value
-    getJson(JsonOptions options) const override;
+    getJson(JsonOptions options = JsonOptions::none) const override;
 
     /** Returns the 'key' (or 'index') of this item.
         The key identifies this entry's position in
@@ -84,7 +88,8 @@ private:
     void
     setSLEType();
 
-    friend Invariants_test;  // this test wants access to the private type_
+    friend test::Invariants_test;  // this test wants access to the private
+                                   // type_
 
     STBase*
     copy(std::size_t n, void* buf) const override;
