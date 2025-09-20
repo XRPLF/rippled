@@ -157,6 +157,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
+    std::optional<bool> const sponsored,
     Json::Value& jvResult)
 {
     // check if dirIndex is valid
@@ -167,6 +168,13 @@ getAccountObjects(
                                 LedgerEntryType ledgerType) {
         auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
         return it != typeFilter.end();
+    };
+
+    auto sponsoredMatchesFilter = [](bool const sponsored,
+                                     std::optional<AccountID> const& sponsor) {
+        if (sponsored)
+            return sponsor.has_value();
+        return !sponsor.has_value();
     };
 
     // if dirIndex != 0, then all NFTs have already been returned.  only
@@ -297,11 +305,23 @@ getAccountObjects(
         {
             auto const sleNode = ledger.read(keylet::child(*iter));
 
-            if (!typeFilter.has_value() ||
-                typeMatchesFilter(typeFilter.value(), sleNode->getType()))
-            {
+            bool canAppend = true;
+
+            if (typeFilter.has_value() &&
+                !typeMatchesFilter(typeFilter.value(), sleNode->getType()))
+                canAppend = false;
+
+            std::optional<AccountID> const sponsor =
+                sleNode->isFieldPresent(sfSponsorAccount)
+                ? sleNode->getAccountID(sfSponsorAccount)
+                : std::optional<AccountID>(std::nullopt);
+
+            if (sponsored.has_value() &&
+                !sponsoredMatchesFilter(sponsored.value(), sponsor))
+                canAppend = false;
+
+            if (canAppend)
                 jvObjects.append(sleNode->getJson(JsonOptions::none));
-            }
 
             if (++i == mlimit)
             {

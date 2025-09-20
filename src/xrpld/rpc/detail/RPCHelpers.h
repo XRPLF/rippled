@@ -109,6 +109,7 @@ getAccountObjects(
     uint256 dirIndex,
     uint256 entryIndex,
     std::uint32_t const limit,
+    std::optional<bool> const sponsored,
     Json::Value& jvResult);
 
 /** Get ledger by hash

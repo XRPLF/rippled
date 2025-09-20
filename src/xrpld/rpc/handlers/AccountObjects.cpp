@@ -43,6 +43,7 @@ namespace ripple {
       type: <string> // optional, defaults to all account objects types
       limit: <integer> // optional
       marker: <opaque> // optional, resume previous query
+      sponsored: <boolean> // optional, defaults to null
     }
 */
 
@@ -226,6 +227,7 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::mptoken, ltMPTOKEN},
             {jss::permissioned_domain, ltPERMISSIONED_DOMAIN},
             {jss::vault, ltVAULT},
+            {jss::sponsorship, ltSPONSORSHIP},
         };
 
         typeFilter.emplace();
@@ -284,6 +286,16 @@ doAccountObjects(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::marker);
     }
 
+    std::optional<bool> sponsored;
+    if (params.isMember(jss::sponsored))
+    {
+        auto const& sponsoredJv = params[jss::sponsored];
+        if (!sponsoredJv.isBool())
+            return RPC::expected_field_error(jss::sponsored, "boolean");
+
+        sponsored = sponsoredJv.asBool();
+    }
+
     if (!RPC::getAccountObjects(
             *ledger,
             accountID,
@@ -291,6 +303,7 @@ doAccountObjects(RPC::JsonContext& context)
             dirIndex,
             entryIndex,
             limit,
+            sponsored,
             result))
         return RPC::invalid_field_error(jss::marker);
 

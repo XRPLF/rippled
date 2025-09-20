@@ -630,6 +630,7 @@ public:
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::amm), 0));
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::did), 0));
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::permissioned_domain), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::sponsorship), 0));
 
         // we expect invalid field type reported for the following types
         BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::amendments)));
@@ -984,6 +985,39 @@ public:
         }
 
         {
+            // Create a sponsorship
+            env(sponsor::set(
+                alice,
+                gw,
+                tfSponsorshipSetRequireSignForFee,
+                200,
+                XRP(100),
+                drops(10)));
+            env.close();
+
+            // Find the sponsorship.
+            for (auto acct : {alice, gw})
+            {
+                Json::Value const resp = acctObjs(acct, jss::sponsorship);
+                BEAST_EXPECT(acctObjsIsSize(resp, 1));
+
+                auto const& sponsorship =
+                    resp[jss::result][jss::account_objects][0u];
+
+                BEAST_EXPECT(sponsorship[sfOwner.jsonName] == alice.human());
+                BEAST_EXPECT(sponsorship[sfSponsee.jsonName] == gw.human());
+                BEAST_EXPECT(
+                    sponsorship[sfFlags.jsonName].asUInt() ==
+                    tfSponsorshipSetRequireSignForFee);
+                BEAST_EXPECT(
+                    sponsorship[sfReserveCount.jsonName].asUInt() == 200);
+                BEAST_EXPECT(
+                    sponsorship[sfFeeAmount.jsonName].asUInt() == 100000000);
+                BEAST_EXPECT(sponsorship[sfMaxFee.jsonName].asUInt() == 10);
+            }
+        }
+
+        {
             // See how "deletion_blockers_only" handles gw's directory.
             Json::Value params;
             params[jss::account] = gw.human();
@@ -997,7 +1031,8 @@ public:
                     jss::NFTokenPage.c_str(),
                     jss::RippleState.c_str(),
                     jss::PayChannel.c_str(),
-                    jss::PermissionedDomain.c_str()};
+                    jss::PermissionedDomain.c_str(),
+                    jss::Sponsorship.c_str()};
                 std::sort(v.begin(), v.end());
                 return v;
             }();
