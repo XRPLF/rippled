@@ -29,7 +29,7 @@
 namespace ripple {
 
 bool
-PermissionedDomainSet::isEnabled(PreflightContext const& ctx)
+PermissionedDomainSet::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ctx.rules.enabled(featureCredentials);
 }

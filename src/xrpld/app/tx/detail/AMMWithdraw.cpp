@@ -29,7 +29,7 @@
 namespace ripple {
 
 bool
-AMMWithdraw::isEnabled(PreflightContext const& ctx)
+AMMWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ammEnabled(ctx.rules);
 }

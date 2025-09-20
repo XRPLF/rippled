@@ -33,12 +33,6 @@
 
 namespace ripple {
 
-bool
-VaultDeposit::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
-
 NotTEC
 VaultDeposit::preflight(PreflightContext const& ctx)
 {

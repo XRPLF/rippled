@@ -28,7 +28,7 @@
 namespace ripple {
 
 bool
-AMMDelete::isEnabled(PreflightContext const& ctx)
+AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ammEnabled(ctx.rules);
 }

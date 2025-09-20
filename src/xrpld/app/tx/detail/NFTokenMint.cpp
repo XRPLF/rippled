@@ -47,7 +47,7 @@ hasOfferFields(PreflightContext const& ctx)
 }
 
 bool
-NFTokenMint::isEnabled(PreflightContext const& ctx)
+NFTokenMint::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ctx.rules.enabled(featureNFTokenMintOffer) || !hasOfferFields(ctx);
 }

@@ -30,12 +30,6 @@
 
 namespace ripple {
 
-bool
-VaultWithdraw::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
-
 NotTEC
 VaultWithdraw::preflight(PreflightContext const& ctx)
 {

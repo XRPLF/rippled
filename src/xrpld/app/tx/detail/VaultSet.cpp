@@ -31,11 +31,8 @@
 namespace ripple {
 
 bool
-VaultSet::isEnabled(PreflightContext const& ctx)
+VaultSet::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return false;
-
     return !ctx.tx.isFieldPresent(sfDomainID) ||
         ctx.rules.enabled(featurePermissionedDomains);
 }

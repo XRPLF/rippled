@@ -28,7 +28,7 @@
 namespace ripple {
 
 bool
-AMMVote::isEnabled(PreflightContext const& ctx)
+AMMVote::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ammEnabled(ctx.rules);
 }

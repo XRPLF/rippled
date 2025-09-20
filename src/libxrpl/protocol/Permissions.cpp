@@ -137,7 +137,7 @@ Permission::getTxFeature(TxType txType) const
     auto const txFeaturesIt = txFeatureMap_.find(txType);
     XRPL_ASSERT(
         txFeaturesIt != txFeatureMap_.end(),
-        "ripple::Permissions::isDelegatable : tx exists in txFeatureMap_");
+        "ripple::Permissions::getTxFeature : tx exists in txFeatureMap_");
 
     if (txFeaturesIt->second == uint256{})
         return std::nullopt;
