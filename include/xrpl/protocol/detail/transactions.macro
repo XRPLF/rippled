@@ -534,7 +534,7 @@ TRANSACTION(ttSPONSORSHIP_TRANSFER, 72, SponsorshipTransfer, Delegation::notDele
 /** This transaction create sponsorship object */
 TRANSACTION(ttSPONSORSHIP_SET, 73, SponsorshipSet, Delegation::notDelegatable, ({
     {sfSponsorAccount, soeOPTIONAL},
-    {sfSponsee, soeREQUIRED},
+    {sfSponsee, soeOPTIONAL},
     {sfFeeAmount, soeOPTIONAL},
     {sfMaxFee, soeOPTIONAL},
     {sfReserveCount, soeOPTIONAL},

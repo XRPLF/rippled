@@ -31,7 +31,6 @@ namespace sponsor {
 
 Json::Value
 set(jtx::Account const& account,
-    jtx::Account const& sponsee,
     std::uint32_t flags,
     std::optional<std::uint32_t> reserveCount = std::nullopt,
     std::optional<STAmount> feeAmount = std::nullopt,
@@ -40,7 +39,6 @@ set(jtx::Account const& account,
 Json::Value
 set_fee(
     jtx::Account const& account,
-    jtx::Account const& sponsee,
     std::uint32_t flags,
     STAmount feeAmount,
     std::optional<STAmount> maxFee = std::nullopt);
@@ -48,12 +46,11 @@ set_fee(
 Json::Value
 set_reserve(
     jtx::Account const& account,
-    jtx::Account const& sponsee,
     std::uint32_t flags,
     std::uint32_t reserveCount);
 
 Json::Value
-del(jtx::Account const& account, jtx::Account const& sponsee);
+del(jtx::Account const& account);
 
 Json::Value
 transfer(
@@ -73,6 +70,21 @@ public:
     void
     operator()(jtx::Env&, jtx::JTx& jtx) const;
 };
+
+struct sponseeAcc
+{
+private:
+    jtx::Account sponsee_;
+
+public:
+    sponseeAcc(jtx::Account const& account) : sponsee_(account)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const;
+};
+
 struct as
 {
 private:

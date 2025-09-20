@@ -876,7 +876,9 @@ class AccountTx_test : public beast::unit_test::suite
         checkTx(sponsor, jss::AccountSet);
 
         // set sponsor
-        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
+        env(sponsor::set(sponsor, 0, 100, XRP(100)),
+            sponsor::sponseeAcc(alice),
+            ter(tesSUCCESS));
         env.close();
         checkTx(alice, jss::SponsorshipSet);
         checkTx(sponsor, jss::SponsorshipSet);

@@ -45,7 +45,7 @@ public:
             ter(temDISABLED));
 
         env(sponsor::transfer(alice), ter(temDISABLED));
-        env(sponsor::set(sponsor, alice, 0), ter(temDISABLED));
+        env(sponsor::set(sponsor, 0), ter(temDISABLED));
     }
 
     void
@@ -70,22 +70,22 @@ public:
 
         // Invalid flags
         {
-            env(sponsor::set(
-                    sponsor, alice, ~tfSponsorshipSetMask - tfInnerBatchTxn),
+            env(sponsor::set(sponsor, ~tfSponsorshipSetMask - tfInnerBatchTxn),
+                sponsor::sponseeAcc(alice),
                 ter(temINVALID_FLAG));
 
             env(sponsor::set(
                     sponsor,
-                    alice,
                     tfSponsorshipSetRequireSignForFee |
                         tfSponsorshipClearRequireSignForFee),
+                sponsor::sponseeAcc(alice),
                 ter(temINVALID_FLAG));
 
             env(sponsor::set(
                     sponsor,
-                    alice,
                     tfSponsorshipSetRequireSignForReserve |
                         tfSponsorshipClearRequireSignForReserve),
+                sponsor::sponseeAcc(alice),
                 ter(temINVALID_FLAG));
 
             for (auto flag :
@@ -94,38 +94,46 @@ public:
                   tfSponsorshipSetRequireSignForReserve,
                   tfSponsorshipClearRequireSignForReserve})
             {
-                env(sponsor::set(sponsor, alice, tfDeleteObject | flag),
+                env(sponsor::set(sponsor, tfDeleteObject | flag),
+                    sponsor::sponseeAcc(alice),
                     ter(temINVALID_FLAG));
             }
         }
 
-        // invalid SponsorAccount
-        env(sponsor::set(alice, sponsor, tfDeleteObject),
+        // invalid SponsorAccount / Sponsee
+        // Account = Sponsor
+        env(sponsor::set(alice, tfDeleteObject),
             sponsor::sponsorAcc(alice),
             ter(temMALFORMED));
-        env(sponsor::set(alice, sponsor, tfDeleteObject),
-            sponsor::sponsorAcc(bob),
+        // Account = Sponsee
+        env(sponsor::set(alice, tfDeleteObject),
+            sponsor::sponseeAcc(alice),
             ter(temMALFORMED));
-        env(sponsor::set(alice, alice, 0),
+        // Both Sponsor and Sponsee are specified
+        env(sponsor::set(alice, 0),
             sponsor::sponsorAcc(sponsor),
+            sponsor::sponseeAcc(alice),
             ter(temMALFORMED));
-
-        // Invalid Sponsee
-        env(sponsor::set(sponsor, sponsor, 0), ter(temMALFORMED));
 
         // Invalid feeAmount
         for (auto amt : {XRP(-1), XRP(0), USD(1)})
         {
-            env(sponsor::set_fee(sponsor, alice, 0, amt), ter(temBAD_AMOUNT));
+            env(sponsor::set_fee(sponsor, 0, amt),
+                sponsor::sponseeAcc(alice),
+                ter(temBAD_AMOUNT));
         }
 
         // Invalid reserveCount
-        env(sponsor::set_reserve(sponsor, alice, 0, 0), ter(temMALFORMED));
+        env(sponsor::set_reserve(sponsor, 0, 0),
+            sponsor::sponseeAcc(alice),
+            ter(temMALFORMED));
 
         // Invalid Delete operation
-        env(sponsor::set_reserve(sponsor, alice, tfDeleteObject, 1),
+        env(sponsor::set_reserve(sponsor, tfDeleteObject, 1),
+            sponsor::sponseeAcc(alice),
             ter(temMALFORMED));
-        env(sponsor::set_fee(sponsor, alice, tfDeleteObject, XRP(1)),
+        env(sponsor::set_fee(sponsor, tfDeleteObject, XRP(1)),
+            sponsor::sponseeAcc(alice),
             ter(temMALFORMED));
         // TODO: test MaxFee with tfDeleteObject
 
@@ -134,15 +142,21 @@ public:
         //
 
         // Invalid Sponsee
-        env(sponsor::set(sponsor, noFunded, 0), ter(tecNO_DST));
+        env(sponsor::set(sponsor, 0),
+            sponsor::sponseeAcc(noFunded),
+            ter(tecNO_DST));
 
         // Invalid Delete operation (not found)
-        env(sponsor::set(sponsor, alice, tfDeleteObject), ter(tecNO_ENTRY));
+        env(sponsor::set(sponsor, tfDeleteObject),
+            sponsor::sponseeAcc(alice),
+            ter(tecNO_ENTRY));
 
         // DisallowIncomingSponsor: tested in other testcase
 
         // create sponsor to use above tests
-        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
+        env(sponsor::set(sponsor, 0, 100, XRP(100)),
+            sponsor::sponseeAcc(alice),
+            ter(tesSUCCESS));
         env.close();
     }
 
@@ -244,6 +258,49 @@ public:
             sponsor::as(sponsor, tfSponsorReserve),
             sponsor::msig({signer1, signer2}),
             ter(tesSUCCESS));
+    }
+
+    void
+    testSimpleSponsorshipSet()
+    {
+        testcase("Simple SponsorshipSet");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        //
+        env(sponsor::set(
+                sponsor,
+                tfSponsorshipSetRequireSignForFee |
+                    tfSponsorshipSetRequireSignForReserve,
+                100,
+                XRP(100),
+                XRP(1)),
+            sponsor::sponseeAcc(alice),
+            ter(tesSUCCESS));
+        env.close();
+
+        // delete from sponsor
+        env(sponsor::del(sponsor), sponsor::sponseeAcc(alice), ter(tesSUCCESS));
+        env.close();
+
+        env(sponsor::set(
+                sponsor,
+                tfSponsorshipSetRequireSignForFee |
+                    tfSponsorshipSetRequireSignForReserve,
+                100,
+                XRP(100),
+                XRP(1)),
+            sponsor::sponseeAcc(alice),
+            ter(tesSUCCESS));
+        env.close();
+
+        // delete from sponsee
+        env(sponsor::del(alice), sponsor::sponsorAcc(sponsor), ter(tesSUCCESS));
+        env.close();
     }
 
     void
@@ -588,7 +645,8 @@ public:
                 BEAST_EXPECT(env.balance(sponsor) == sponsorBalance);
             }
 
-            env(sponsor::set_fee(sponsor, alice, 0, XRP(100)));
+            env(sponsor::set_fee(sponsor, 0, XRP(100)),
+                sponsor::sponseeAcc(alice));
             env.close();
 
             {
@@ -635,9 +693,10 @@ public:
                 }
 
                 // reset FeeAmount and MaxFee
-                env(sponsor::del(sponsor, alice));
+                env(sponsor::del(sponsor), sponsor::sponseeAcc(alice));
                 env.close();
-                env(sponsor::set_fee(sponsor, alice, 0, XRP(10), XRP(1)));
+                env(sponsor::set_fee(sponsor, 0, XRP(10), XRP(1)),
+                    sponsor::sponseeAcc(alice));
                 env.close();
 
                 {
@@ -695,7 +754,8 @@ public:
 
             // set flag
             env(sponsor::set_fee(
-                sponsor, alice, tfSponsorshipSetRequireSignForFee, XRP(10)));
+                    sponsor, tfSponsorshipSetRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
             env.close();
 
             env(pay(alice, bob, XRP(100)),
@@ -706,7 +766,8 @@ public:
 
             // clear flag
             env(sponsor::set_fee(
-                sponsor, alice, tfSponsorshipClearRequireSignForFee, XRP(10)));
+                    sponsor, tfSponsorshipClearRequireSignForFee, XRP(10)),
+                sponsor::sponseeAcc(alice));
             env.close();
 
             env(pay(alice, bob, XRP(100)),
@@ -785,7 +846,8 @@ public:
 
         // set flag
         env(sponsor::set_reserve(
-            sponsor, alice, tfSponsorshipSetRequireSignForReserve, 10));
+                sponsor, tfSponsorshipSetRequireSignForReserve, 10),
+            sponsor::sponseeAcc(alice));
         env.close();
 
         env(check::create(alice, bob, XRP(100)),
@@ -796,7 +858,8 @@ public:
 
         // clear flag
         env(sponsor::set_reserve(
-            sponsor, alice, tfSponsorshipClearRequireSignForReserve, 1));
+                sponsor, tfSponsorshipClearRequireSignForReserve, 1),
+            sponsor::sponseeAcc(alice));
         env.close();
 
         env(check::create(alice, bob, XRP(100)),
@@ -2273,7 +2336,8 @@ public:
         env.close();
 
         // Create sponsor should fail
-        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)),
+        env(sponsor::set(sponsor, 0, 100, XRP(100)),
+            sponsor::sponseeAcc(alice),
             ter(tecNO_PERMISSION));
         env.close();
 
@@ -2282,7 +2346,9 @@ public:
         env.close();
 
         // Create sponsor
-        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
+        env(sponsor::set(sponsor, 0, 100, XRP(100)),
+            sponsor::sponseeAcc(alice),
+            ter(tesSUCCESS));
         env.close();
 
         // set flag
@@ -2290,11 +2356,15 @@ public:
         env.close();
 
         // Update sponsor should success
-        env(sponsor::set(sponsor, alice, 0, 100, XRP(100)), ter(tesSUCCESS));
+        env(sponsor::set(sponsor, 0, 100, XRP(100)),
+            sponsor::sponseeAcc(alice),
+            ter(tesSUCCESS));
         env.close();
 
-        // Delete sponsor shoud success
-        env(sponsor::set(sponsor, alice, tfDeleteObject), ter(tesSUCCESS));
+        // Delete sponsor should success
+        env(sponsor::set(sponsor, tfDeleteObject),
+            sponsor::sponseeAcc(alice),
+            ter(tesSUCCESS));
         env.close();
     }
     void
@@ -2313,7 +2383,8 @@ public:
             env.close();
 
             // set sponsor
-            env(sponsor::set(sponsor, alice, 0, 100, XRP(100)),
+            env(sponsor::set(sponsor, 0, 100, XRP(100)),
+                sponsor::sponseeAcc(alice),
                 ter(tesSUCCESS));
             env.close();
 
@@ -2389,16 +2460,19 @@ public:
             env.close();
             auto const testFeePermission = [&](TER result) {
                 // FeeAmount
-                env(sponsor::set(alice, bob, 0, std::nullopt, XRP(100)),
+                env(sponsor::set(alice, 0, std::nullopt, XRP(100)),
+                    sponsor::sponseeAcc(bob),
                     delegate::as(carol),
                     ter(result));
                 // MaxFee
                 env(sponsor::set(
-                        alice, bob, 0, std::nullopt, std::nullopt, XRP(100)),
+                        alice, 0, std::nullopt, std::nullopt, XRP(100)),
+                    sponsor::sponseeAcc(bob),
                     delegate::as(carol),
                     ter(result));
                 // SetRequireSignForFee flag
-                env(sponsor::set(alice, bob, tfSponsorshipSetRequireSignForFee),
+                env(sponsor::set(alice, tfSponsorshipSetRequireSignForFee),
+                    sponsor::sponseeAcc(bob),
                     delegate::as(carol),
                     ter(result));
                 env.close();
@@ -2430,12 +2504,13 @@ public:
 
             auto const testReservePermission = [&](TER result) {
                 // ReserveCount
-                env(sponsor::set(alice, bob, 0, 100),
+                env(sponsor::set(alice, 0, 100),
+                    sponsor::sponseeAcc(bob),
                     delegate::as(carol),
                     ter(result));
                 // SetRequireSignForReserve flag
-                env(sponsor::set(
-                        alice, bob, tfSponsorshipSetRequireSignForReserve),
+                env(sponsor::set(alice, tfSponsorshipSetRequireSignForReserve),
+                    sponsor::sponseeAcc(bob),
                     delegate::as(carol),
                     ter(result));
                 env.close();
@@ -2492,6 +2567,8 @@ public:
         testMultiSigning();
         // testInvalidSigninig(); // borh TxnSignature and Signers are present
         // -> error
+        testSimpleSponsorshipSet();
+
         testTransferSponsor();
         testSponsorFee();
         testSponsorAccount();

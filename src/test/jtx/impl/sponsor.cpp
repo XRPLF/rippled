@@ -33,7 +33,6 @@ namespace sponsor {
 
 Json::Value
 set(jtx::Account const& account,
-    jtx::Account const& sponsee,
     uint32_t flags,
     std::optional<uint32_t> reserveCount,
     std::optional<STAmount> feeAmount,
@@ -42,7 +41,6 @@ set(jtx::Account const& account,
     Json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
-    jv[sfSponsee.jsonName] = sponsee.human();
     jv[sfFlags.jsonName] = flags;
     if (reserveCount)
         jv[sfReserveCount.jsonName] = *reserveCount;
@@ -56,7 +54,6 @@ set(jtx::Account const& account,
 Json::Value
 set_fee(
     jtx::Account const& account,
-    jtx::Account const& sponsee,
     uint32_t flags,
     STAmount feeAmount,
     std::optional<STAmount> maxFee)
@@ -64,7 +61,6 @@ set_fee(
     Json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
-    jv[sfSponsee.jsonName] = sponsee.human();
     jv[sfFlags.jsonName] = flags;
     jv[sfFeeAmount.jsonName] = feeAmount.getJson(JsonOptions::none);
     if (maxFee)
@@ -73,28 +69,22 @@ set_fee(
 }
 
 Json::Value
-set_reserve(
-    jtx::Account const& account,
-    jtx::Account const& sponsee,
-    uint32_t flags,
-    uint32_t reserveCount)
+set_reserve(jtx::Account const& account, uint32_t flags, uint32_t reserveCount)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
-    jv[sfSponsee.jsonName] = sponsee.human();
     jv[sfFlags.jsonName] = flags;
     jv[sfReserveCount.jsonName] = reserveCount;
     return jv;
 }
 
 Json::Value
-del(jtx::Account const& account, jtx::Account const& sponsee)
+del(jtx::Account const& account)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::SponsorshipSet;
     jv[jss::Account] = account.human();
-    jv[sfSponsee.jsonName] = sponsee.human();
     jv[sfFlags.jsonName] = tfDeleteObject;
     return jv;
 }
@@ -114,6 +104,12 @@ void
 sponsorAcc::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfSponsorAccount.jsonName] = sponsor_.human();
+}
+
+void
+sponseeAcc::operator()(Env& env, JTx& jt) const
+{
+    jt.jv[sfSponsee.jsonName] = sponsee_.human();
 }
 
 void

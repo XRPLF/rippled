@@ -987,12 +987,12 @@ public:
         {
             // Create a sponsorship
             env(sponsor::set(
-                alice,
-                gw,
-                tfSponsorshipSetRequireSignForFee,
-                200,
-                XRP(100),
-                drops(10)));
+                    alice,
+                    tfSponsorshipSetRequireSignForFee,
+                    200,
+                    XRP(100),
+                    drops(10)),
+                sponsor::sponseeAcc(gw));
             env.close();
 
             // Find the sponsorship.

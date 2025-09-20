@@ -36,7 +36,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 
     // check Flags
     {
-        if (ctx.tx.getFlags() & tfSponsorshipSetMask)
+        if (ctx.tx.isFlag(tfSponsorshipSetMask))
             return temINVALID_FLAG;
 
         if (ctx.tx.isFlag(tfSponsorshipSetRequireSignForFee) &&
@@ -59,24 +59,22 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (ctx.tx.isFieldPresent(sfSponsorAccount))
-    {
-        // SponsorAccount is used when sponsee Deleting ltSponsorship
-        // Account        => Sponsee of Sponsorshop
-        // SponsorAccount => Sponsor of Sponsorshop
-        // Sponsee        => Sponsee of Sponsorshop
-        if (ctx.tx.getAccountID(sfAccount) ==
-                ctx.tx.getAccountID(sfSponsorAccount) ||
-            ctx.tx.getAccountID(sfSponsee) !=
-                ctx.tx.getAccountID(sfSponsorAccount) ||
-            !ctx.tx.isFlag(tfDeleteObject))
-            return temMALFORMED;
-    }
+    if ((ctx.tx.isFieldPresent(sfSponsorAccount) &&
+         ctx.tx.isFieldPresent(sfSponsee)) ||
+        (!ctx.tx.isFieldPresent(sfSponsorAccount) &&
+         !ctx.tx.isFieldPresent(sfSponsee)))
+        return temMALFORMED;
+
+    // if (ctx.tx.isFieldPresent(sfSponsorAccount) &&
+    //     !ctx.tx.isFlag(tfDeleteObject))
+    //     return temMALFORMED;
 
     auto const sponsor = ctx.tx.isFieldPresent(sfSponsorAccount)
         ? ctx.tx.getAccountID(sfSponsorAccount)
         : ctx.tx.getAccountID(sfAccount);
-    auto const sponsee = ctx.tx.getAccountID(sfSponsee);
+    auto const sponsee = ctx.tx.isFieldPresent(sfSponsee)
+        ? ctx.tx.getAccountID(sfSponsee)
+        : ctx.tx.getAccountID(sfAccount);
 
     if (sponsee == sponsor)
         return temMALFORMED;
@@ -117,6 +115,11 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
         if (ctx.tx.isFieldPresent(sfFeeAmount) ||
             ctx.tx.isFieldPresent(sfReserveCount) ||
             ctx.tx.isFieldPresent(sfMaxFee))
+            return temMALFORMED;
+    }
+    else
+    {
+        if (!ctx.tx.isFieldPresent(sfSponsee))
             return temMALFORMED;
     }
 
@@ -165,7 +168,12 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
     auto const sponsor = ctx.tx.isFieldPresent(sfSponsorAccount)
         ? ctx.tx.getAccountID(sfSponsorAccount)
         : ctx.tx.getAccountID(sfAccount);
-    auto const sponsee = ctx.tx[sfSponsee];
+    auto const sponsee = ctx.tx.isFieldPresent(sfSponsee)
+        ? ctx.tx.getAccountID(sfSponsee)
+        : ctx.tx.getAccountID(sfAccount);
+
+    if (sponsee == sponsor)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // check Sponsee
     auto const sponseeSle = ctx.view.read(keylet::account(sponsee));
@@ -188,11 +196,16 @@ SponsorshipSet::preclaim(PreclaimContext const& ctx)
 TER
 SponsorshipSet::doApply()
 {
-    auto const sponseeAcc = ctx_.tx[sfSponsee];
+    auto const sponseeAcc = ctx_.tx.isFieldPresent(sfSponsee)
+        ? ctx_.tx.getAccountID(sfSponsee)
+        : ctx_.tx.getAccountID(sfAccount);
 
     auto const sponsorAcc = ctx_.tx.isFieldPresent(sfSponsorAccount)
         ? ctx_.tx.getAccountID(sfSponsorAccount)
         : account_;
+
+    if (sponseeAcc == sponsorAcc)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const keylet = keylet::sponsor(sponsorAcc, sponseeAcc);
 
