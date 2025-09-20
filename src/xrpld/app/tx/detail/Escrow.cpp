@@ -631,7 +631,7 @@ checkCondition(Slice f, Slice c)
 }
 
 bool
-EscrowFinish::isEnabled(PreflightContext const& ctx)
+EscrowFinish::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
         ctx.rules.enabled(featureCredentials);

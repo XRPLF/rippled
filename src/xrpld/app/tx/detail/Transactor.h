@@ -206,7 +206,7 @@ public:
         // Optional if the transaction is gated on an amendment that
         // isn't specified in transactions.macro
         static bool
-        isEnabled(PreflightContext const& ctx);
+        checkExtraFeatures(PreflightContext const& ctx);
 
         // Optional if the transaction uses any flags other than tfUniversal
         static std::uint32_t
@@ -222,7 +222,7 @@ public:
 
        * Do not try to call preflight1 or preflight2 directly.
        * Do not check whether relevant amendments are enabled in preflight.
-         Instead, define isEnabled.
+         Instead, define checkExtraFeatures.
        * Do not check flags in preflight. Instead, define getFlagsMask.
     */
     template <class T>
@@ -289,7 +289,7 @@ protected:
 
     // Base class always returns true
     static bool
-    isEnabled(PreflightContext const& ctx);
+    checkExtraFeatures(PreflightContext const& ctx);
 
     // Base class always returns tfUniversalMask
     static std::uint32_t
@@ -355,7 +355,7 @@ private:
 };
 
 inline bool
-Transactor::isEnabled(PreflightContext const& ctx)
+Transactor::checkExtraFeatures(PreflightContext const& ctx)
 {
     return true;
 }
@@ -401,7 +401,7 @@ Transactor::invokePreflight(PreflightContext const& ctx)
     if (feature && !ctx.rules.enabled(*feature))
         return temDISABLED;
 
-    if (!T::isEnabled(ctx))
+    if (!T::checkExtraFeatures(ctx))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx, T::getFlagsMask(ctx)))

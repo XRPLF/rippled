@@ -31,7 +31,7 @@
 namespace ripple {
 
 bool
-DepositPreauth::isEnabled(PreflightContext const& ctx)
+DepositPreauth::checkExtraFeatures(PreflightContext const& ctx)
 {
     bool const authArrPresent = ctx.tx.isFieldPresent(sfAuthorizeCredentials);
     bool const unauthArrPresent =

@@ -26,7 +26,7 @@
 namespace ripple {
 
 bool
-NFTokenModify::isEnabled(PreflightContext const& ctx)
+NFTokenModify::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ctx.rules.enabled(featureNonFungibleTokensV1_1);
 }

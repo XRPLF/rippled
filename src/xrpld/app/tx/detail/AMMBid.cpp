@@ -31,7 +31,7 @@
 namespace ripple {
 
 bool
-AMMBid::isEnabled(PreflightContext const& ctx)
+AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ammEnabled(ctx.rules);
 }
