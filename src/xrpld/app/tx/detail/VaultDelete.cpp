@@ -28,12 +28,6 @@
 
 namespace ripple {
 
-bool
-VaultDelete::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
-
 NotTEC
 VaultDelete::preflight(PreflightContext const& ctx)
 {

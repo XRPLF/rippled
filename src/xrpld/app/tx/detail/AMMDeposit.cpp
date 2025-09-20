@@ -30,7 +30,7 @@
 namespace ripple {
 
 bool
-AMMDeposit::isEnabled(PreflightContext const& ctx)
+AMMDeposit::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ammEnabled(ctx.rules);
 }

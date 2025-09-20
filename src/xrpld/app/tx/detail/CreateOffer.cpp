@@ -44,7 +44,7 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 }
 
 bool
-CreateOffer::isEnabled(PreflightContext const& ctx)
+CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.rules.enabled(featurePermissionedDEX))

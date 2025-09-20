@@ -69,7 +69,7 @@ public:
     }
 
     static bool
-    isEnabled(PreflightContext const& ctx);
+    checkExtraFeatures(PreflightContext const& ctx);
 
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);

@@ -32,7 +32,7 @@
 namespace ripple {
 
 bool
-AMMCreate::isEnabled(PreflightContext const& ctx)
+AMMCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
     return ammEnabled(ctx.rules);
 }

@@ -27,7 +27,7 @@
 namespace ripple {
 
 bool
-MPTokenIssuanceSet::isEnabled(PreflightContext const& ctx)
+MPTokenIssuanceSet::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfDomainID) ||
         (ctx.rules.enabled(featurePermissionedDomains) &&

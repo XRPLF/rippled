@@ -423,7 +423,7 @@ PayChanFund::doApply()
 //------------------------------------------------------------------------------
 
 bool
-PayChanClaim::isEnabled(PreflightContext const& ctx)
+PayChanClaim::checkExtraFeatures(PreflightContext const& ctx)
 {
     return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
         ctx.rules.enabled(featureCredentials);

@@ -39,9 +39,6 @@ public:
     {
     }
 
-    static bool
-    isEnabled(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -60,9 +57,6 @@ public:
     explicit BridgeModify(ApplyContext& ctx) : Transactor(ctx)
     {
     }
-
-    static bool
-    isEnabled(PreflightContext const& ctx);
 
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
@@ -100,9 +94,6 @@ public:
     {
     }
 
-    static bool
-    isEnabled(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -129,9 +120,6 @@ public:
     explicit XChainCommit(ApplyContext& ctx) : Transactor(ctx)
     {
     }
-
-    static bool
-    isEnabled(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
@@ -162,9 +150,6 @@ public:
     {
     }
 
-    static bool
-    isEnabled(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -194,9 +179,6 @@ public:
     {
     }
 
-    static bool
-    isEnabled(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
 
@@ -217,9 +199,6 @@ public:
         : Transactor(ctx)
     {
     }
-
-    static bool
-    isEnabled(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);
@@ -264,9 +243,6 @@ public:
     explicit XChainCreateAccountCommit(ApplyContext& ctx) : Transactor(ctx)
     {
     }
-
-    static bool
-    isEnabled(PreflightContext const& ctx);
 
     static NotTEC
     preflight(PreflightContext const& ctx);

@@ -1367,12 +1367,6 @@ attestationDoApply(ApplyContext& ctx)
 }  // namespace
 //------------------------------------------------------------------------------
 
-bool
-XChainCreateBridge::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureXChainBridge);
-}
-
 NotTEC
 XChainCreateBridge::preflight(PreflightContext const& ctx)
 {
@@ -1545,12 +1539,6 @@ XChainCreateBridge::doApply()
 
 //------------------------------------------------------------------------------
 
-bool
-BridgeModify::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureXChainBridge);
-}
-
 std::uint32_t
 BridgeModify::getFlagsMask(PreflightContext const& ctx)
 {
@@ -1657,12 +1645,6 @@ BridgeModify::doApply()
 }
 
 //------------------------------------------------------------------------------
-
-bool
-XChainClaim::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureXChainBridge);
-}
 
 NotTEC
 XChainClaim::preflight(PreflightContext const& ctx)
@@ -1893,12 +1875,6 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, maxSpend};
 }
 
-bool
-XChainCommit::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureXChainBridge);
-}
-
 NotTEC
 XChainCommit::preflight(PreflightContext const& ctx)
 {
@@ -2003,12 +1979,6 @@ XChainCommit::doApply()
 }
 
 //------------------------------------------------------------------------------
-
-bool
-XChainCreateClaimID::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureXChainBridge);
-}
 
 NotTEC
 XChainCreateClaimID::preflight(PreflightContext const& ctx)
@@ -2116,12 +2086,6 @@ XChainCreateClaimID::doApply()
 
 //------------------------------------------------------------------------------
 
-bool
-XChainAddClaimAttestation::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureXChainBridge);
-}
-
 NotTEC
 XChainAddClaimAttestation::preflight(PreflightContext const& ctx)
 {
@@ -2142,12 +2106,6 @@ XChainAddClaimAttestation::doApply()
 
 //------------------------------------------------------------------------------
 
-bool
-XChainAddAccountCreateAttestation::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureXChainBridge);
-}
-
 NotTEC
 XChainAddAccountCreateAttestation::preflight(PreflightContext const& ctx)
 {
@@ -2167,12 +2125,6 @@ XChainAddAccountCreateAttestation::doApply()
 }
 
 //------------------------------------------------------------------------------
-
-bool
-XChainCreateAccountCommit::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureXChainBridge);
-}
 
 NotTEC
 XChainCreateAccountCommit::preflight(PreflightContext const& ctx)

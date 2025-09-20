@@ -36,10 +36,9 @@
 namespace ripple {
 
 bool
-VaultCreate::isEnabled(PreflightContext const& ctx)
+VaultCreate::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault) ||
-        !ctx.rules.enabled(featureMPTokensV1))
+    if (!ctx.rules.enabled(featureMPTokensV1))
         return false;
 
     return !ctx.tx.isFieldPresent(sfDomainID) ||

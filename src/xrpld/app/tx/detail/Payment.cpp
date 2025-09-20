@@ -66,7 +66,7 @@ getMaxSourceAmount(
 }
 
 bool
-Payment::isEnabled(PreflightContext const& ctx)
+Payment::checkExtraFeatures(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))

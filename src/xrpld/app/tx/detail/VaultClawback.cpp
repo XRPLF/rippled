@@ -32,12 +32,6 @@
 
 namespace ripple {
 
-bool
-VaultClawback::isEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureSingleAssetVault);
-}
-
 NotTEC
 VaultClawback::preflight(PreflightContext const& ctx)
 {
