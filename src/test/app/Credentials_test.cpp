@@ -604,7 +604,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             {
                 // test flag doesn't set unless amendment enabled
-                Env env{*this, features - fixDisallowIncomingCredential};
+                Env env{*this, features - featureDisallowIncomingCredential};
                 env.fund(XRP(5000), subject, issuer);
                 env.close();
 
@@ -617,7 +617,7 @@ struct Credentials_test : public beast::unit_test::suite
 
             testcase("Credentials fail, disallow incoming credential.");
             {
-                Env env{*this, features | fixDisallowIncomingCredential};
+                Env env{*this, features | featureDisallowIncomingCredential};
                 env.fund(XRP(5000), subject, issuer);
                 env.close();
 

@@ -649,7 +649,7 @@ SetAccount::doApply()
         else if (uClearFlag == asfDisallowIncomingTrustline)
             uFlagsOut &= ~lsfDisallowIncomingTrustline;
 
-        if (ctx_.view().rules().enabled(fixDisallowIncomingCredential))
+        if (ctx_.view().rules().enabled(featureDisallowIncomingCredential))
         {
             if (uSetFlag == asfDisallowIncomingCredential)
                 uFlagsOut |= lsfDisallowIncomingCredential;

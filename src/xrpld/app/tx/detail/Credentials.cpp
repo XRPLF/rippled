@@ -116,7 +116,7 @@ CredentialCreate::preclaim(PreclaimContext const& ctx)
     }
 
     if (ctx.view.rules().enabled(featureDisallowIncoming) &&
-        ctx.view.rules().enabled(fixDisallowIncomingCredential))
+        ctx.view.rules().enabled(featureDisallowIncomingCredential))
     {
         auto const id = ctx.tx[sfAccount];
         if (id != subject && sleSubject->isFlag(lsfDisallowIncomingCredential))
