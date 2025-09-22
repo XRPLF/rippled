@@ -56,9 +56,12 @@ CreateOffer::checkExtraFeatures(PreflightContext const& ctx)
 std::uint32_t
 CreateOffer::getFlagsMask(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(featurePermissionedDEX) &&
-        ctx.tx.isFieldPresent(sfDomainID))
+    // The tfOfferCreateMask is built assuming that PermissionedDEX is
+    // enabled
+    if (ctx.rules.enabled(featurePermissionedDEX))
         return tfOfferCreateMask;
+    // If PermissionedDEX is not enabled, add tfHybrid to the mask,
+    // indicating it is not allowed.
     return tfOfferCreateMask | tfHybrid;
 }
 
@@ -69,6 +72,9 @@ CreateOffer::preflight(PreflightContext const& ctx)
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
+
+    if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
+        return temINVALID_FLAG;
 
     bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
