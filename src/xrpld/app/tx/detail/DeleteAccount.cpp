@@ -44,8 +44,11 @@ DeleteAccount::checkExtraFeatures(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureDeletableAccounts))
         return false;
 
-    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
-        ctx.rules.enabled(featureCredentials);
+    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
+        !ctx.rules.enabled(featureCredentials))
+        return false;
+
+    return true;
 }
 
 NotTEC
