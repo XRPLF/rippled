@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <map>
@@ -148,8 +149,10 @@ public:
         sMD_ChangeNew = 0x02,    // new value when it changes
         sMD_DeleteFinal = 0x04,  // final value when it is deleted
         sMD_Create = 0x08,       // value when it's created
-        sMD_Always = 0x10,  // value when node containing it is affected at all
-        sMD_BaseTen = 0x20,
+        sMD_Always = 0x10,   // value when node containing it is affected at all
+        sMD_BaseTen = 0x20,  // value is treated as base 10, overriding behavior
+        sMD_PseudoAccount = 0x40,  // if this field is set in an ACCOUNT_ROOT
+        // _only_, then it is a pseudo-account
         sMD_Default =
             sMD_ChangeOrig | sMD_ChangeNew | sMD_DeleteFinal | sMD_Create
     };
@@ -184,7 +187,7 @@ public:
         char const* fn,
         int meta = sMD_Default,
         IsSigning signing = IsSigning::yes);
-    explicit SField(private_access_tag_t, int fc);
+    explicit SField(private_access_tag_t, int fc, char const* fn);
 
     static SField const&
     getField(int fieldCode);
@@ -297,7 +300,7 @@ public:
     static int
     compare(SField const& f1, SField const& f2);
 
-    static std::map<int, SField const*> const&
+    static std::unordered_map<int, SField const*> const&
     getKnownCodeToField()
     {
         return knownCodeToField;
@@ -305,7 +308,8 @@ public:
 
 private:
     static int num;
-    static std::map<int, SField const*> knownCodeToField;
+    static std::unordered_map<int, SField const*> knownCodeToField;
+    static std::unordered_map<std::string, SField const*> knownNameToField;
 };
 
 /** A field with a type known at compile time. */
