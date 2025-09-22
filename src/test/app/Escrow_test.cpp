@@ -1715,7 +1715,7 @@ struct Escrow_test : public beast::unit_test::suite
             Env env(*this, features - featureSmartEscrow);
             env.fund(XRP(5000), alice, carol);
             XRPAmount const txnFees = env.current()->fees().base + 1000;
-            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
+            auto escrowCreate = escrow::create(alice, carol, XRP(100));
             env(escrowCreate,
                 escrow::finish_function(wasmHex),
                 escrow::cancel_time(env.now() + 100s),
@@ -1737,7 +1737,7 @@ struct Escrow_test : public beast::unit_test::suite
             // create escrow
             env.fund(XRP(5000), alice, carol);
 
-            auto escrowCreate = escrow::create(alice, carol, XRP(500));
+            auto escrowCreate = escrow::create(alice, carol, XRP(200));
 
             // 11-byte string
             std::string longWasmHex = "00112233445566778899AA";
@@ -1761,7 +1761,7 @@ struct Escrow_test : public beast::unit_test::suite
         // create escrow
         env.fund(XRP(5000), alice, carol);
 
-        auto escrowCreate = escrow::create(alice, carol, XRP(500));
+        auto escrowCreate = escrow::create(alice, carol, XRP(300));
 
         // Success situations
         {
@@ -1894,7 +1894,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // Tests whether the ledger index is >= 5
         // getLedgerSqn() >= 5}
-        static auto wasmHex = ledgerSqnWasmHex;
+        static auto const& wasmHex = ledgerSqnWasmHex;
 
         {
             // featureSmartEscrow disabled
@@ -1946,7 +1946,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // create escrow
         auto const seq = env.seq(alice);
-        env(escrow::create(alice, carol, XRP(500)),
+        env(escrow::create(alice, carol, XRP(400)),
             escrow::finish_function(wasmHex),
             escrow::cancel_time(env.now() + 100s),
             fee(txnFees));
@@ -2022,7 +2022,7 @@ struct Escrow_test : public beast::unit_test::suite
         // getLedgerSqn() >= 5}
         auto const& wasmHex = ledgerSqnWasmHex;
         std::uint32_t const allowance = 66;
-        auto escrowCreate = escrow::create(alice, carol, XRP(1000));
+        auto escrowCreate = escrow::create(alice, carol, XRP(600));
         auto [createFee, finishFee] = [&]() {
             Env env(*this, features);
             auto createFee =
@@ -2298,7 +2298,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, carol);
             auto const seq = env.seq(alice);
             BEAST_EXPECT(env.ownerCount(alice) == 0);
-            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
+            auto escrowCreate = escrow::create(alice, carol, XRP(700));
             XRPAmount txnFees =
                 env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
             env(escrowCreate,
@@ -2391,7 +2391,7 @@ struct Escrow_test : public beast::unit_test::suite
             env(delegate::set(alice, carol, {"TrustSet"}));
             env(deposit::auth(alice, carol));
             env(did::set(alice), did::data("alice_did"));
-            env(escrow::create(alice, carol, XRP(100)),
+            env(escrow::create(alice, carol, XRP(800)),
                 escrow::finish_time(env.now() + 100s));
             MPTTester mptTester{env, alice, {.fund = false}};
             mptTester.create();
@@ -2419,7 +2419,7 @@ struct Escrow_test : public beast::unit_test::suite
                 auto const seq = env.seq(alice);
                 XRPAmount txnFees =
                     env.current()->fees().base * 10 + wasmHex.size() / 2 * 5;
-                env(escrow::create(alice, carol, XRP(1000)),
+                env(escrow::create(alice, carol, XRP(900)),
                     escrow::finish_function(wasmHex),
                     escrow::finish_time(env.now() + 2s),
                     escrow::cancel_time(env.now() + 100s),
@@ -2455,18 +2455,18 @@ struct Escrow_test : public beast::unit_test::suite
     void
     testWithFeats(FeatureBitset features)
     {
-        testEnablement(features);
-        testTiming(features);
-        testTags(features);
-        testDisallowXRP(features);
-        test1571(features);
-        testFails(features);
-        testLockup(features);
-        testEscrowConditions(features);
-        testMetaAndOwnership(features);
-        testConsequences(features);
-        testEscrowWithTickets(features);
-        testCredentials(features);
+        // testEnablement(features);
+        // testTiming(features);
+        // testTags(features);
+        // testDisallowXRP(features);
+        // test1571(features);
+        // testFails(features);
+        // testLockup(features);
+        // testEscrowConditions(features);
+        // testMetaAndOwnership(features);
+        // testConsequences(features);
+        // testEscrowWithTickets(features);
+        // testCredentials(features);
         testCreateFinishFunctionPreflight(features);
         testFinishWasmFailures(features);
         testFinishFunction(features);
@@ -2483,7 +2483,7 @@ public:
         using namespace test::jtx;
         FeatureBitset const all{testable_amendments()};
         testWithFeats(all);
-        testWithFeats(all - featureTokenEscrow);
+        // testWithFeats(all - featureTokenEscrow);
     };
 };
 

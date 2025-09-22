@@ -98,8 +98,59 @@ auto const finish_time = JTxFieldWrapper<timePointField>(sfFinishAfter);
 auto const cancel_time = JTxFieldWrapper<timePointField>(sfCancelAfter);
 auto const condition = JTxFieldWrapper<blobField>(sfCondition);
 auto const fulfillment = JTxFieldWrapper<blobField>(sfFulfillment);
-auto const finish_function = JTxFieldWrapper<blobField>(sfFinishFunction);
-auto const data = JTxFieldWrapper<blobField>(sfData);
+
+struct finish_function
+{
+private:
+    std::string value_;
+
+public:
+    explicit finish_function(std::string func) : value_(func)
+    {
+    }
+
+    explicit finish_function(Slice const& func) : value_(strHex(func))
+    {
+    }
+
+    template <size_t N>
+    explicit finish_function(std::array<std::uint8_t, N> const& f)
+        : finish_function(makeSlice(f))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfFinishFunction.jsonName] = value_;
+    }
+};
+
+struct data
+{
+private:
+    std::string value_;
+
+public:
+    explicit data(std::string func) : value_(func)
+    {
+    }
+
+    explicit data(Slice const& func) : value_(strHex(func))
+    {
+    }
+
+    template <size_t N>
+    explicit data(std::array<std::uint8_t, N> const& f) : data(makeSlice(f))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfData.jsonName] = value_;
+    }
+};
 
 struct comp_allowance
 {
