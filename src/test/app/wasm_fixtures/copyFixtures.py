@@ -85,8 +85,8 @@ def process_c(project_name):
         os.path.join(os.path.dirname(__file__), f"{project_name}.wasm")
     )
     build_cmd = (
-        f"$CC --sysroot=$SYSROOT -I$SYSROOT/include/wasm32-wasi "
-        f"-O3 -ffast-math --target=wasm32      -fno-exceptions -fno-threadsafe-statics -fvisibility=default -Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -DNDEBUG --no-standard-libraries -fno-builtin-memset "
+        f"$CC --sysroot=$SYSROOT "
+        f"-O3 -ffast-math --target=wasm32 -fno-exceptions -fno-threadsafe-statics -fvisibility=default -Wl,--export-all -Wl,--no-entry -Wl,--allow-undefined -DNDEBUG --no-standard-libraries -fno-builtin-memset "
         f"-o {wasm_path} {project_path}"
         f"&& wasm-opt {wasm_path} {OPT} -o {wasm_path}"
     )

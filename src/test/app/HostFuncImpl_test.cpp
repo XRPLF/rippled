@@ -360,7 +360,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
             obj.setAccountID(sfAccount, env.master.id());
             obj.setAccountID(sfOwner, env.master.id());
             obj.setFieldU32(sfOfferSequence, env.seq(env.master));
-            obj.setFieldU32(sfComputationAllowance, 1000);
             obj.setFieldArray(sfMemos, STArray{});
         });
         ApplyContext ac = createApplyContext(env, ov, stx);
@@ -381,11 +380,6 @@ struct HostFuncImpl_test : public beast::unit_test::suite
 
             auto const offerSeq = hfs.getTxField(sfOfferSequence);
             BEAST_EXPECT(offerSeq && *offerSeq == toBytes(env.seq(env.master)));
-
-            auto const compAllowance = hfs.getTxField(sfComputationAllowance);
-            std::uint32_t const expectedAllowance = 1000;
-            BEAST_EXPECT(
-                compAllowance && *compAllowance == toBytes(expectedAllowance));
 
             auto const notPresent = hfs.getTxField(sfDestination);
             if (BEAST_EXPECT(!notPresent.has_value()))
@@ -2108,6 +2102,7 @@ struct HostFuncImpl_test : public beast::unit_test::suite
     Bytes const float2             =  {0xD4, 0x87, 0x1A, 0xFD, 0x49, 0x8D, 0x00, 0x00};  // 2
     Bytes const float10            =  {0xD4, 0xC3, 0x8D, 0x7E, 0xA4, 0xC6, 0x80, 0x00};  // 10
     Bytes const floatInvalidZero   =  {0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};  // INVALID
+    Bytes const floatPi            =  {0xD4, 0x8B, 0x29, 0x43, 0x0A, 0x25, 0x6D, 0x21};  // 3.141592653589793
 
     std::string const invalid = "invalid_data";
 
@@ -2750,8 +2745,14 @@ struct HostFuncImpl_test : public beast::unit_test::suite
         }
 
         {
-            auto const result =
-                hfs.floatPower(makeSlice(floatMaxIOU), 40000, 0);
+            auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 81, 0);
+            BEAST_EXPECT(!result) &&
+                BEAST_EXPECT(
+                    result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
+        }
+
+        {
+            auto const result = hfs.floatPower(makeSlice(floatMaxIOU), 2, 0);
             BEAST_EXPECT(!result) &&
                 BEAST_EXPECT(
                     result.error() ==
@@ -2814,6 +2815,46 @@ struct HostFuncImpl_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     result.error() == HostFunctionError::FLOAT_INPUT_MALFORMED);
         }
+
+        // perf test logs
+        // {
+        //     auto const result = hfs.floatLog(makeSlice(floatPi), 0);
+        //     if (BEAST_EXPECT(result))
+        //     {
+        //         std::cout << "lg(" << floatToString(makeSlice(floatPi))
+        //                   << ") = " << floatToString(makeSlice(*result))
+        //                   << std::endl;
+        //     }
+        // }
+        // {
+        //     auto const result = hfs.floatLog(makeSlice(floatIntMax), 0);
+        //     if (BEAST_EXPECT(result))
+        //     {
+        //         std::cout << "lg(" << floatToString(makeSlice(floatIntMax))
+        //                   << ") = " << floatToString(makeSlice(*result))
+        //                   << std::endl;
+        //     }
+        // }
+
+        // {
+        //     auto const result = hfs.floatLog(makeSlice(floatMaxExp), 0);
+        //     if (BEAST_EXPECT(result))
+        //     {
+        //         std::cout << "lg(" << floatToString(makeSlice(floatMaxExp))
+        //                   << ") = " << floatToString(makeSlice(*result))
+        //                   << std::endl;
+        //     }
+        // }
+
+        // {
+        //     auto const result = hfs.floatLog(makeSlice(floatMaxIOU), 0);
+        //     if (BEAST_EXPECT(result))
+        //     {
+        //         std::cout << "lg(" << floatToString(makeSlice(floatMaxIOU))
+        //                   << ") = " << floatToString(makeSlice(*result))
+        //                   << std::endl;
+        //     }
+        // }
 
         {
             auto const x =

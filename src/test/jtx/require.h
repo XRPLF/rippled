@@ -26,14 +26,12 @@
 #include <vector>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
 namespace detail {
 
 template <class Cond, class... Args>
 inline void
-require_args(requires_t& vec, Cond const& cond, Args const&... args)
+require_args(test::jtx::requires_t& vec, Cond const& cond, Args const&... args)
 {
     vec.push_back(cond);
     if constexpr (sizeof...(args) > 0)
@@ -41,6 +39,9 @@ require_args(requires_t& vec, Cond const& cond, Args const&... args)
 }
 
 }  // namespace detail
+
+namespace test {
+namespace jtx {
 
 /** Compose many condition functors into one */
 template <class... Args>

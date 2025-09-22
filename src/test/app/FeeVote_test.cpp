@@ -29,6 +29,7 @@ class FeeVote_test : public beast::unit_test::suite
     void
     testSetup()
     {
+        testcase("FeeVote setup");
         FeeSetup const defaultSetup;
         {
             // defaults

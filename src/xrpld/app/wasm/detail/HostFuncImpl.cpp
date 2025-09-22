@@ -91,17 +91,6 @@ WasmHostFunctionsImpl::isAmendmentEnabled(std::string_view const& amendmentName)
 }
 
 Expected<int32_t, HostFunctionError>
-WasmHostFunctionsImpl::normalizeCacheIndex(int32_t cacheIdx)
-{
-    --cacheIdx;
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
-        return Unexpected(HostFunctionError::SLOT_OUT_RANGE);
-    if (!cache[cacheIdx])
-        return Unexpected(HostFunctionError::EMPTY_SLOT);
-    return cacheIdx;
-}
-
-Expected<int32_t, HostFunctionError>
 WasmHostFunctionsImpl::cacheLedgerObj(uint256 const& objId, int32_t cacheIdx)
 {
     auto const& keylet = keylet::unchecked(objId);
@@ -1296,7 +1285,7 @@ floatPowerImpl(Slice const& x, int32_t n, int32_t mode)
 {
     try
     {
-        if (n < 0)
+        if ((n < 0) || (n > IOUAmount::maxExponent))
             return Unexpected(HostFunctionError::FLOAT_INPUT_MALFORMED);
 
         SetRound rm(mode);

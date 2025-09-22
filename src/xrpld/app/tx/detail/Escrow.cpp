@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
@@ -25,11 +24,12 @@
 #include <xrpld/app/wasm/WasmVM.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
@@ -84,8 +84,8 @@ constexpr HashRouterFlags SF_CF_VALID = HashRouterFlags::PRIVATE6;
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{
-        ctx.tx, isXRP(ctx.tx[sfAmount]) ? ctx.tx[sfAmount].xrp() : beast::zero};
+    auto const amount = ctx.tx[sfAmount];
+    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::zero};
 }
 
 template <ValidIssueType T>
@@ -605,6 +605,11 @@ EscrowCreate::doApply()
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
     (*slep)[~sfFinishFunction] = ctx_.tx[~sfFinishFunction];
     (*slep)[~sfData] = ctx_.tx[~sfData];
+
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
+    }
 
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
@@ -1134,8 +1139,13 @@ escrowUnlockApplyHelper<MPTIssue>(
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
-
-    return rippleUnlockEscrowMPT(view, sender, receiver, finalAmt, journal);
+    return rippleUnlockEscrowMPT(
+        view,
+        sender,
+        receiver,
+        finalAmt,
+        view.rules().enabled(fixTokenEscrowV1) ? amount : finalAmt,
+        journal);
 }
 
 TER

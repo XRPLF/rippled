@@ -52,7 +52,7 @@ typedef WasmResult<int32_t> EscrowResult;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum WasmTypes { WT_I32, WT_I64, WT_F32, WT_F64, WT_U8V };
+enum WasmTypes { WT_I32, WT_I64, WT_U8V };
 
 struct WasmImportFunc
 {
@@ -86,10 +86,6 @@ WasmImpArgs(WasmImportFunc& e)
             e.params.push_back(WT_I32);
         else if constexpr (std::is_same_v<at, std::int64_t>)
             e.params.push_back(WT_I64);
-        else if constexpr (std::is_same_v<at, float>)
-            e.params.push_back(WT_F32);
-        else if constexpr (std::is_same_v<at, double>)
-            e.params.push_back(WT_F64);
         else
             static_assert(std::is_pointer_v<at>, "Unsupported argument type");
 
@@ -108,10 +104,6 @@ WasmImpRet(WasmImportFunc& e)
         e.result = WT_I32;
     else if constexpr (std::is_same_v<rt, std::int64_t>)
         e.result = WT_I64;
-    else if constexpr (std::is_same_v<rt, float>)
-        e.result = WT_F32;
-    else if constexpr (std::is_same_v<rt, double>)
-        e.result = WT_F64;
     else if constexpr (std::is_void_v<rt>)
         e.result.reset();
 #if (defined(__GNUC__) && (__GNUC__ >= 14)) || \
@@ -189,21 +181,23 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
     wasmParamsHlp(v, std::forward<Types>(args)...);
 }
 
-template <class... Types>
-inline void
-wasmParamsHlp(std::vector<WasmParam>& v, float p, Types&&... args)
-{
-    v.push_back({.type = WT_F32, .of = {.f32 = p}});
-    wasmParamsHlp(v, std::forward<Types>(args)...);
-}
+// We are not supporting float/double for now
+// Leaving this code here so that it is easier to add later if needed
+// template <class... Types>
+// inline void
+// wasmParamsHlp(std::vector<WasmParam>& v, float p, Types&&... args)
+// {
+//     v.push_back({.type = WT_F32, .of = {.f32 = p}});
+//     wasmParamsHlp(v, std::forward<Types>(args)...);
+// }
 
-template <class... Types>
-inline void
-wasmParamsHlp(std::vector<WasmParam>& v, double p, Types&&... args)
-{
-    v.push_back({.type = WT_F64, .of = {.f64 = p}});
-    wasmParamsHlp(v, std::forward<Types>(args)...);
-}
+// template <class... Types>
+// inline void
+// wasmParamsHlp(std::vector<WasmParam>& v, double p, Types&&... args)
+// {
+//     v.push_back({.type = WT_F64, .of = {.f64 = p}});
+//     wasmParamsHlp(v, std::forward<Types>(args)...);
+// }
 
 template <class... Types>
 inline void

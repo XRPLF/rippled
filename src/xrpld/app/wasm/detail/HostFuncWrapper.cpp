@@ -107,7 +107,11 @@ getDataSField(IW const* _runtime, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 Expected<Slice, HostFunctionError>
-getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
+getDataSlice(
+    IW const* runtime,
+    wasm_val_vec_t const* params,
+    int32_t& i,
+    bool isUpdate = false)
 {
     auto const ptr = params->data[i].of.i32;
     auto const size = params->data[i + 1].of.i32;
@@ -117,7 +121,7 @@ getDataSlice(IW const* runtime, wasm_val_vec_t const* params, int32_t& i)
     if (!size)
         return Slice();
 
-    if (size > maxWasmDataLength)
+    if (size > (isUpdate ? maxWasmDataLength : maxWasmParamLength))
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     auto memory = runtime ? runtime->getMem() : wmem();
@@ -751,7 +755,7 @@ updateData_wrap(
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getDataSlice(runtime, params, index);
+    auto const bytes = getDataSlice(runtime, params, index, true);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -1491,7 +1495,7 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
 
-    if (params->data[1].of.i32 + params->data[3].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 + params->data[3].of.i32 > maxWasmParamLength)
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1524,7 +1528,7 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int index = 0;
-    if (params->data[1].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 > maxWasmParamLength)
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1554,7 +1558,7 @@ traceAccount_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 > maxWasmParamLength)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     int i = 0;
@@ -1579,7 +1583,7 @@ traceFloat_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 > maxWasmParamLength)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     int i = 0;
@@ -1604,7 +1608,7 @@ traceAmount_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* runtime = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    if (params->data[1].of.i32 > maxWasmDataLength)
+    if (params->data[1].of.i32 > maxWasmParamLength)
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     int i = 0;
@@ -1647,12 +1651,12 @@ floatFromInt_wrap(
     int i = 0;
     auto const x = getDataInt64(runtime, params, i);
     if (!x)
-        return hfResult(results, x.error());
+        return hfResult(results, x.error());  // LCOV_EXCL_LINE
 
     i = 3;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 1;
     return returnResult(
@@ -1676,7 +1680,7 @@ floatFromUint_wrap(
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
     return returnResult(
@@ -1692,16 +1696,16 @@ floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     int i = 0;
     auto const exp = getDataInt32(runtime, params, i);
     if (!exp)
-        return hfResult(results, exp.error());
+        return hfResult(results, exp.error());  // LCOV_EXCL_LINE
 
     auto const mant = getDataInt64(runtime, params, i);
     if (!mant)
-        return hfResult(results, mant.error());
+        return hfResult(results, mant.error());  // LCOV_EXCL_LINE
 
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
     return returnResult(
@@ -1747,7 +1751,7 @@ floatAdd_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     i = 6;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
     return returnResult(
@@ -1775,7 +1779,7 @@ floatSubtract_wrap(
     i = 6;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
     return returnResult(
@@ -1803,7 +1807,7 @@ floatMultiply_wrap(
     i = 6;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
     return returnResult(
@@ -1831,7 +1835,7 @@ floatDivide_wrap(
     i = 6;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 4;
     return returnResult(
@@ -1851,12 +1855,12 @@ floatRoot_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
     auto const n = getDataInt32(runtime, params, i);
     if (!n)
-        return hfResult(results, n.error());
+        return hfResult(results, n.error());  // LCOV_EXCL_LINE
 
     i = 5;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 3;
     return returnResult(
@@ -1879,12 +1883,12 @@ floatPower_wrap(
 
     auto const n = getDataInt32(runtime, params, i);
     if (!n)
-        return hfResult(results, n.error());
+        return hfResult(results, n.error());  // LCOV_EXCL_LINE
 
     i = 5;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 3;
     return returnResult(
@@ -1905,7 +1909,7 @@ floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     i = 4;
     auto const rounding = getDataInt32(runtime, params, i);
     if (!rounding)
-        return hfResult(results, rounding.error());
+        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
     return returnResult(
