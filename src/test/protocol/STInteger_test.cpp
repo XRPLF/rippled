@@ -30,6 +30,7 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testUInt8()
     {
+        testcase("UInt8");
         STUInt8 u8(255);
         BEAST_EXPECT(u8.value() == 255);
         BEAST_EXPECT(u8.getText() == "255");
@@ -56,6 +57,7 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testUInt16()
     {
+        testcase("UInt16");
         STUInt16 u16(65535);
         BEAST_EXPECT(u16.value() == 65535);
         BEAST_EXPECT(u16.getText() == "65535");
@@ -80,6 +82,7 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testUInt32()
     {
+        testcase("UInt32");
         STUInt32 u32(4'294'967'295u);
         BEAST_EXPECT(u32.value() == 4'294'967'295u);
         BEAST_EXPECT(u32.getText() == "4294967295");
@@ -102,6 +105,7 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testUInt64()
     {
+        testcase("UInt64");
         STUInt64 u64(0xFFFFFFFFFFFFFFFFull);
         BEAST_EXPECT(u64.value() == 0xFFFFFFFFFFFFFFFFull);
         BEAST_EXPECT(u64.getText() == "18446744073709551615");
@@ -123,12 +127,22 @@ struct STInteger_test : public beast::unit_test::suite
     void
     testInt32()
     {
+        testcase("Int32");
         {
-            STInt32 i32(-2147483648);
-            BEAST_EXPECT(i32.value() == -2147483648);
+            int minInt32 = -2147483648;
+            STInt32 i32(minInt32);
+            BEAST_EXPECT(i32.value() == minInt32);
             BEAST_EXPECT(i32.getText() == "-2147483648");
             BEAST_EXPECT(i32.getSType() == STI_INT32);
-            BEAST_EXPECT(i32.getJson(JsonOptions::none) == -2147483648);
+            BEAST_EXPECT(i32.getJson(JsonOptions::none) == minInt32);
+        }
+
+        {
+            STInt32 i32(2147483647);
+            BEAST_EXPECT(i32.value() == 2147483647);
+            BEAST_EXPECT(i32.getText() == "2147483647");
+            BEAST_EXPECT(i32.getSType() == STI_INT32);
+            BEAST_EXPECT(i32.getJson(JsonOptions::none) == 2147483647);
         }
     }
 

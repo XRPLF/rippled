@@ -647,11 +647,20 @@ parseLeaf(
                 }
                 else if (value.isInt())
                 {
+                    if (value.asInt() <
+                            std::numeric_limits<std::int32_t>::min() ||
+                        value.asInt() >
+                            std::numeric_limits<std::int32_t>::max())
+                    {
+                        error = out_of_range(json_name, fieldName);
+                        return ret;
+                    }
                     ret = detail::make_stvar<STInt32>(field, value.asInt());
                 }
                 else if (value.isUInt())
                 {
-                    if (value.asUInt() >
+                    auto const uintValue = value.asUInt();
+                    if (uintValue >
                         static_cast<std::uint32_t>(
                             std::numeric_limits<std::int32_t>::max()))
                     {
@@ -659,7 +668,7 @@ parseLeaf(
                         return ret;
                     }
                     ret = detail::make_stvar<STInt32>(
-                        field, safe_cast<std::int32_t>(value.asInt()));
+                        field, static_cast<std::int32_t>(uintValue));
                 }
                 else
                 {
