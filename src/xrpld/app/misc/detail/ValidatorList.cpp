@@ -1149,16 +1149,15 @@ ValidatorList::applyList(
 
     Json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
+    auto m = deserializeManifest(base64_decode(manifest));
+    if (!m)
+    {
+        JLOG(j_.warn()) << "UNL manifest cannot be deserialized";
+        return PublisherListStats{ListDisposition::invalid};
+    }
+
     auto [result, pubKeyOpt] =
-        [&, this]() -> std::pair<ListDisposition, std::optional<PublicKey>> {
-        auto m = deserializeManifest(base64_decode(manifest));
-        if (!m)
-        {
-            JLOG(j_.warn()) << "UNL manifest cannot be deserialized";
-            return {ListDisposition::invalid, {}};
-        }
-        return verify(lock, list, std::move(*m), blob, signature);
-    }();
+        verify(lock, list, std::move(*m), blob, signature);
 
     if (!pubKeyOpt)
     {
