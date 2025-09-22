@@ -1149,19 +1149,28 @@ ValidatorList::applyList(
 
     Json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
-    auto [result, pubKeyOpt] = verify(lock, list, manifest, blob, signature);
+    auto [result, pubKeyOpt] =
+        [&, this]() -> std::pair<ListDisposition, std::optional<PublicKey>> {
+        auto m = deserializeManifest(base64_decode(manifest));
+        if (!m)
+        {
+            JLOG(j_.warn()) << "UNL manifest cannot be deserialized";
+            return {ListDisposition::invalid, {}};
+        }
+        return verify(lock, list, std::move(*m), blob, signature);
+    }();
 
     if (!pubKeyOpt)
     {
-        JLOG(j_.warn()) << "ValidatorList::applyList unable to retrieve the "
-                           "master public key from the verify function\n";
+        JLOG(j_.warn())
+            << "UNL manifest is signed with an unrecognized master public key";
         return PublisherListStats{result};
     }
 
     if (!publicKeyType(*pubKeyOpt))
     {
-        JLOG(j_.warn()) << "ValidatorList::applyList Invalid Public Key type"
-                           " retrieved from the verify function\n ";
+        JLOG(j_.warn())
+            << "UNL manifest is signed with an invalid public key type";
         return PublisherListStats{result};
     }
 
@@ -1356,19 +1365,17 @@ std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
     ValidatorList::lock_guard const& lock,
     Json::Value& list,
-    std::string const& manifest,
+    Manifest manifest,
     std::string const& blob,
     std::string const& signature)
 {
-    auto m = deserializeManifest(base64_decode(manifest));
-
-    if (!m || !publisherLists_.count(m->masterKey))
+    if (!publisherLists_.count(manifest.masterKey))
         return {ListDisposition::untrusted, {}};
 
-    PublicKey masterPubKey = m->masterKey;
-    auto const revoked = m->revoked();
+    PublicKey masterPubKey = manifest.masterKey;
+    auto const revoked = manifest.revoked();
 
-    auto const result = publisherManifests_.applyManifest(std::move(*m));
+    auto const result = publisherManifests_.applyManifest(std::move(manifest));
 
     if (revoked && result == ManifestDisposition::accepted)
     {
