@@ -37,12 +37,14 @@ struct MPTMutabilityFlags
 };
 
 static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
-    {{tfMPTSetCanLock, tfMPTClearCanLock, lsfMPTCanMutateCanLock},
-     {tfMPTSetRequireAuth, tfMPTClearRequireAuth, lsfMPTCanMutateRequireAuth},
-     {tfMPTSetCanEscrow, tfMPTClearCanEscrow, lsfMPTCanMutateCanEscrow},
-     {tfMPTSetCanTrade, tfMPTClearCanTrade, lsfMPTCanMutateCanTrade},
-     {tfMPTSetCanTransfer, tfMPTClearCanTransfer, lsfMPTCanMutateCanTransfer},
-     {tfMPTSetCanClawback, tfMPTClearCanClawback, lsfMPTCanMutateCanClawback}}};
+    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lmfMPTCanMutateCanLock},
+     {tmfMPTSetRequireAuth, tmfMPTClearRequireAuth, lmfMPTCanMutateRequireAuth},
+     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lmfMPTCanMutateCanEscrow},
+     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lmfMPTCanMutateCanTrade},
+     {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lmfMPTCanMutateCanTransfer},
+     {tmfMPTSetCanClawback,
+      tmfMPTClearCanClawback,
+      lmfMPTCanMutateCanClawback}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -110,7 +112,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         if (mutableFlags)
         {
             if (!*mutableFlags ||
-                (*mutableFlags & tfMPTokenIssuanceSetMutableMask))
+                (*mutableFlags & tmfMPTokenIssuanceSetMutableMask))
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
@@ -126,7 +128,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
             // in the same transaction is not allowed.
             if (transferFee.value_or(0) &&
-                (*mutableFlags & tfMPTClearCanTransfer))
+                (*mutableFlags & tmfMPTClearCanTransfer))
                 return temMALFORMED;
         }
     }
@@ -241,7 +243,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
     }
 
-    if (!isMutableFlag(lsfMPTCanMutateMetadata) &&
+    if (!isMutableFlag(lmfMPTCanMutateMetadata) &&
         ctx.tx.isFieldPresent(sfMPTokenMetadata))
         return tecNO_PERMISSION;
 
@@ -249,12 +251,12 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     {
         // A non-zero TransferFee is only valid if the lsfMPTCanTransfer flag
         // was previously enabled (at issuance or via a prior mutation). Setting
-        // it by tfMPTSetCanTransfer in the current transaction does not meet
+        // it by tmfMPTSetCanTransfer in the current transaction does not meet
         // this requirement.
         if (fee > 0u && !sleMptIssuance->isFlag(lsfMPTCanTransfer))
             return tecNO_PERMISSION;
 
-        if (!isMutableFlag(lsfMPTCanMutateTransferFee))
+        if (!isMutableFlag(lmfMPTCanMutateTransferFee))
             return tecNO_PERMISSION;
     }
 
@@ -296,7 +298,7 @@ MPTokenIssuanceSet::doApply()
                 flagsOut &= ~f.canMutateFlag;
         }
 
-        if (mutableFlags & tfMPTClearCanTransfer)
+        if (mutableFlags & tmfMPTClearCanTransfer)
         {
             // If the lsfMPTCanTransfer flag is being cleared, then also clear
             // the TransferFee field.

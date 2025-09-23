@@ -28,9 +28,8 @@ namespace ripple {
 // the destination can hold all values of the source.  This is particularly
 // handy when the source or destination is an enumeration type.
 
-template <class Dest, class Src>
-static constexpr bool is_safetocasttovalue_v =
-    (std::is_integral_v<Src> && std::is_integral_v<Dest>) &&
+template <class Src, class Dest>
+concept SafeToCast = (std::is_integral_v<Src> && std::is_integral_v<Dest>) &&
     (std::is_signed<Src>::value || std::is_unsigned<Dest>::value) &&
     (std::is_signed<Src>::value != std::is_signed<Dest>::value
          ? sizeof(Dest) > sizeof(Src)
@@ -78,7 +77,7 @@ inline constexpr std::
     unsafe_cast(Src s) noexcept
 {
     static_assert(
-        !is_safetocasttovalue_v<Dest, Src>,
+        !SafeToCast<Src, Dest>,
         "Only unsafe if casting signed to unsigned or "
         "destination is too small");
     return static_cast<Dest>(s);
