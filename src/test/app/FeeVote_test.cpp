@@ -22,9 +22,9 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/tx/apply.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PublicKey.h>
