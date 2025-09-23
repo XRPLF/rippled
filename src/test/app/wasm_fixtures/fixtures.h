@@ -50,3 +50,11 @@ extern std::string const floatTestsWasmHex;
 extern std::string const float0Hex;
 
 extern std::string const disabledFloatHex;
+
+extern std::string const parametersWasmHex;
+
+extern std::string const contractDataWasmHex;
+
+extern std::string const eventsWasmHex;
+
+extern std::string const emitTxWasmHex;

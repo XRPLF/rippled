@@ -275,6 +275,9 @@ public:
     pubValidation(std::shared_ptr<STValidation> const& val) = 0;
 
     virtual void
+    pubContractEvent(std::string const& name, STJson const& event) = 0;
+
+    virtual void
     stateAccounting(Json::Value& obj) = 0;
 };
 

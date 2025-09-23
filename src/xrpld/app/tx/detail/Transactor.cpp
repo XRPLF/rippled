@@ -531,6 +531,32 @@ Transactor::ticketDelete(
     return tesSUCCESS;
 }
 
+std::pair<TER, XRPAmount>
+Transactor::checkInvariants(TER result, XRPAmount fee)
+{
+    // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
+    // proceed to apply the tx
+    result = ctx_.checkInvariants(result, fee);
+
+    if (result == tecINVARIANT_FAILED)
+    {
+        // if invariants checking failed again, reset the context and
+        // attempt to only claim a fee.
+        auto const resetResult = reset(fee);
+        if (!isTesSuccess(resetResult.first))
+            result = resetResult.first;
+
+        fee = resetResult.second;
+
+        // Check invariants again to ensure the fee claiming doesn't
+        // violate invariants.
+        if (isTesSuccess(result) || isTecClaim(result))
+            result = ctx_.checkInvariants(result, fee);
+    }
+
+    return {result, fee};
+}
+
 // check stuff before you bother to lock the ledger
 void
 Transactor::preCompute()
@@ -1253,26 +1279,9 @@ Transactor::operator()()
 
     if (applied)
     {
-        // Check invariants: if `tecINVARIANT_FAILED` is not returned, we can
-        // proceed to apply the tx
-        result = ctx_.checkInvariants(result, fee);
-
-        if (result == tecINVARIANT_FAILED)
-        {
-            // if invariants checking failed again, reset the context and
-            // attempt to only claim a fee.
-            auto const resetResult = reset(fee);
-            if (!isTesSuccess(resetResult.first))
-                result = resetResult.first;
-
-            fee = resetResult.second;
-
-            // Check invariants again to ensure the fee claiming doesn't
-            // violate invariants.
-            if (isTesSuccess(result) || isTecClaim(result))
-                result = ctx_.checkInvariants(result, fee);
-        }
-
+        auto const invariantsResult = checkInvariants(result, fee);
+        result = invariantsResult.first;
+        fee = invariantsResult.second;
         // We ran through the invariant checker, which can, in some cases,
         // return a tef error code. Don't apply the transaction in that case.
         if (!isTecClaim(result) && !isTesSuccess(result))
@@ -1306,6 +1315,78 @@ Transactor::operator()()
     {
         applied = false;
     }
+
+    if (metadata && ctx_.getEmittedTxns().size() > 0)
+    {
+        OpenView emittedTxnsView(batch_view, ctx_.openView());
+        auto const parentBatchId = ctx_.tx.getTransactionID();
+
+        auto applyOneTransaction = [this, &parentBatchId, &emittedTxnsView](
+                                       STTx const& tx) {
+            OpenView perTxBatchView(batch_view, emittedTxnsView);
+
+            auto const ret = ripple::apply(
+                ctx_.app,
+                perTxBatchView,
+                parentBatchId,
+                tx,
+                tapBATCH,
+                ctx_.journal);
+            XRPL_ASSERT(
+                ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+                "Inner transaction should not be applied");
+
+            JLOG(ctx_.journal.debug()) << "BatchTrace[" << parentBatchId
+                                       << "]: " << tx.getTransactionID() << " "
+                                       << (ret.applied ? "applied" : "failure")
+                                       << ": " << transToken(ret.ter);
+
+            // If the transaction should be applied push its changes to the
+            // whole-batch view.
+            if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+                perTxBatchView.apply(emittedTxnsView);
+
+            return ret;
+        };
+
+        bool emitResult = true;
+        auto emittedTxns = ctx_.getEmittedTxns();
+        while (!emittedTxns.empty())
+        {
+            auto txn = emittedTxns.front();
+            emittedTxns.pop();
+            auto const result = applyOneTransaction(*txn->getSTransaction());
+            XRPL_ASSERT(
+                result.applied ==
+                    (isTesSuccess(result.ter) || isTecClaim(result.ter)),
+                "Outer Batch failure, inner transaction should not be applied");
+
+            if (!isTesSuccess(result.ter))
+                emitResult = false;
+        }
+
+        if (emitResult)
+            emittedTxnsView.apply(ctx_.openView());
+        else
+        {
+            // reset context
+            result = tecWASM_REJECTED;
+            auto const resetResult = reset(fee);
+            if (!isTesSuccess(resetResult.first))
+                result = resetResult.first;
+            fee = resetResult.second;
+
+            // InvariantCheck
+            auto const invariantsResult = checkInvariants(result, fee);
+            result = invariantsResult.first;
+            fee = invariantsResult.second;
+
+            // apply
+            metadata = ctx_.apply(result);
+        }
+    }
+
+    ctx_.finalize();
 
     JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);

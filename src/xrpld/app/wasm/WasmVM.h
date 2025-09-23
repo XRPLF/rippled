@@ -108,4 +108,21 @@ preflightEscrowWasm(
     HostFunctions* hfs = nullptr,
     beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
 
+Expected<WasmRunResult, TER>
+runContractWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params = {},
+    HostFunctions* hfs = nullptr,
+    int64_t gasLimit = -1,
+    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+
+NotTEC
+preflightContractWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params = {},
+    HostFunctions* hfs = nullptr,
+    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+
 }  // namespace ripple

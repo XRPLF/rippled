@@ -65,6 +65,7 @@
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/STJson.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -576,6 +577,12 @@ public:
     subConsensus(InfoSub::ref ispListener) override;
     bool
     unsubConsensus(std::uint64_t uListener) override;
+    bool
+    subContractEvent(InfoSub::ref ispListener) override;
+    bool
+    unsubContractEvent(std::uint64_t uListener) override;
+    void
+    pubContractEvent(std::string const& name, STJson const& event) override;
 
     InfoSub::pointer
     findRpcSub(std::string const& strUrl) override;
@@ -784,6 +791,7 @@ private:
         sPeerStatus,      // Peer status changes.
         sConsensusPhase,  // Consensus phase
         sBookChanges,     // Per-ledger order book changes
+        sContractEvents,  // Contract events
         sLastEntry        // Any new entry must be ADDED ABOVE this one
     };
 
@@ -2387,6 +2395,34 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
         Json::Value jvObj(Json::objectValue);
         jvObj[jss::type] = "consensusPhase";
         jvObj[jss::consensus] = to_string(phase);
+
+        for (auto i = streamMap.begin(); i != streamMap.end();)
+        {
+            if (auto p = i->second.lock())
+            {
+                p->send(jvObj, true);
+                ++i;
+            }
+            else
+            {
+                i = streamMap.erase(i);
+            }
+        }
+    }
+}
+
+void
+NetworkOPsImp::pubContractEvent(std::string const& name, STJson const& event)
+{
+    std::lock_guard sl(mSubLock);
+
+    auto& streamMap = mStreamMaps[sContractEvents];
+    if (!streamMap.empty())
+    {
+        Json::Value jvObj(Json::objectValue);
+        jvObj[jss::type] = "contractEvent";
+        jvObj[jss::name] = name;
+        jvObj[jss::data] = event.getJson(JsonOptions::none);
 
         for (auto i = streamMap.begin(); i != streamMap.end();)
         {
@@ -4424,6 +4460,24 @@ NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 {
     std::lock_guard sl(mSubLock);
     return mStreamMaps[sConsensusPhase].erase(uSeq);
+}
+
+// <-- bool: true=added, false=already there
+bool
+NetworkOPsImp::subContractEvent(InfoSub::ref isrListener)
+{
+    std::lock_guard sl(mSubLock);
+    return mStreamMaps[sContractEvents]
+        .emplace(isrListener->getSeq(), isrListener)
+        .second;
+}
+
+// <-- bool: true=erased, false=was not there
+bool
+NetworkOPsImp::unsubContractEvent(std::uint64_t uSeq)
+{
+    std::lock_guard sl(mSubLock);
+    return mStreamMaps[sContractEvents].erase(uSeq);
 }
 
 InfoSub::pointer

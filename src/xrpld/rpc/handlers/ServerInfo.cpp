@@ -95,6 +95,7 @@ ServerDefinitions::translate(std::string const& inp)
         {"PATHSET", "PathSet"},
         {"VL", "Blob"},
         {"XCHAIN_BRIDGE", "XChainBridge"},
+        {"DATATYPE", "DataType"},
     };
 
     if (auto const& it = replacements.find(inp); it != replacements.end())

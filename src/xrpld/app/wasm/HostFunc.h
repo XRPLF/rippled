@@ -27,12 +27,15 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STJson.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 
 enum class HostFunctionError : int32_t {
+    SUCCESS = 0,
     INTERNAL = -1,
     FIELD_NOT_FOUND = -2,
     BUFFER_TOO_SMALL = -3,
@@ -53,6 +56,8 @@ enum class HostFunctionError : int32_t {
     INDEX_OUT_OF_BOUNDS = -18,
     FLOAT_INPUT_MALFORMED = -19,
     FLOAT_COMPUTATION_ERROR = -20,
+    SUBMIT_TXN_FAILURE = -21,
+    INVALID_STATE = -22,
 };
 
 inline int32_t
@@ -515,6 +520,131 @@ struct HostFunctions
 
     virtual Expected<Bytes, HostFunctionError>
     floatLog(Slice const& x, int32_t mode)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    instanceParam(std::uint32_t index, std::uint32_t stTypeId)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    functionParam(std::uint32_t index, std::uint32_t stTypeId)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    getDataObjectField(AccountID const& account, std::string_view const& key)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    getDataNestedObjectField(
+        AccountID const& account,
+        std::string_view const& key,
+        std::string_view const& nestedKey)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    getDataArrayElementField(
+        AccountID const& account,
+        size_t index,
+        std::string_view const& key)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<Bytes, HostFunctionError>
+    getDataNestedArrayElementField(
+        AccountID const& account,
+        std::string_view const& key,
+        size_t index,
+        std::string_view const& nestedKey)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    setDataObjectField(
+        AccountID const& account,
+        std::string_view const& keyName,
+        STJson::Value const& value)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    setDataNestedObjectField(
+        AccountID const& account,
+        std::string_view const& nestedKey,
+        std::string_view const& key,
+        STJson::Value const& value)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    setDataArrayElementField(
+        AccountID const& account,
+        size_t index,
+        std::string_view const& key,
+        STJson::Value const& value)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    setDataNestedArrayElementField(
+        AccountID const& account,
+        std::string_view const& key,
+        size_t index,
+        std::string_view const& nestedKey,
+        STJson::Value const& value)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    buildTxn(std::uint16_t const& txType)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    addTxnField(
+        std::uint32_t const& index,
+        SField const& field,
+        Slice const& data)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    emitBuiltTxn(std::uint32_t const& index)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    emitTxn(std::shared_ptr<STTx const> const& stxPtr)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    emitEvent(std::string_view const& eventName, STJson const& eventData)
+    {
+        return Unexpected(HostFunctionError::INTERNAL);
+    }
+
+    virtual Expected<int32_t, HostFunctionError>
+    exitWith(int32_t code, std::string_view const& msg)
     {
         return Unexpected(HostFunctionError::INTERNAL);
     }
