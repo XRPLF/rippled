@@ -6250,8 +6250,21 @@ Variables</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p>Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm. </p>
 <p>Callback for filtering <a class="el" href="classripple_1_1SHAMap.html" title="A SHAMap is both a radix tree with a fan-out of 16 and a Merkle tree.">SHAMap</a> during sync.</p>
+<p>TODO: Remove <a class="el" href="classripple_1_1basic__semaphore.html">ripple::basic_semaphore</a> (and this file) and use <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/counting_semaphore.html">std::counting_semaphore</a>.</p>
 <p>Use hardened_hash_* containers for keys that do need a secure hashing algorithm.</p>
-<p>The cryptographic security of containers where a hash function is used as a template parameter depends entirely on that hash function and not at all on what container it is. </p>
+<p>The cryptographic security of containers where a hash function is used as a template parameter depends entirely on that hash function and not at all on what container it is.</p>
+<p>Background:</p><ul>
+<li>PR: <a href="https://github.com/XRPLF/rippled/pull/5512/files">https://github.com/XRPLF/rippled/pull/5512/files</a></li>
+<li><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/counting_semaphore.html">std::counting_semaphore</a> had a bug fixed in both GCC and Clang:<ul>
+<li>GCC PR 104928: <a href="https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104928">https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104928</a></li>
+<li>LLVM PR 79265: <a href="https://github.com/llvm/llvm-project/pull/79265">https://github.com/llvm/llvm-project/pull/79265</a></li>
+</ul>
+</li>
+</ul>
+<p>GCC: According to GCC Bugzilla PR104928 (<a href="https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104928#c15">https://gcc.gnu.org/bugzilla/show_bug.cgi?id=104928#c15</a>), the fix is scheduled for inclusion in GCC 16.0 (see comment #15, Target Milestone: 16.0). It is not included in GCC 14.x or earlier, and there is no indication that it will be backported to GCC 13.x or 14.x branches.</p>
+<p>Clang: The fix for is included in Clang 19.1.0+</p>
+<p>Once the minimum compiler version is updated to &gt; GCC 16.0 or Clang 19.1.0, we can remove this file.</p>
+<p>WARNING: Avoid using <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/counting_semaphore.html">std::counting_semaphore</a> until the minimum compiler version is updated. </p>
 </div><h2 class="groupheader">Typedef Documentation</h2>
 <a id="a4d601befed9298ce94e7d95410fa9ce9" name="a4d601befed9298ce94e7d95410fa9ce9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4d601befed9298ce94e7d95410fa9ce9">&#9670;&#160;</a></span>uint128</h2>
@@ -8178,7 +8191,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="semaphore_8h_source.html#l00079">79</a> of file <a class="el" href="semaphore_8h_source.html">semaphore.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="semaphore_8h_source.html#l00107">107</a> of file <a class="el" href="semaphore_8h_source.html">semaphore.h</a>.</p>
 
 </div>
 </div>

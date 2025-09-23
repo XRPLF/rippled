@@ -100,80 +100,80 @@ $(document).ready(function() { init_codefold(0); });
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment">*/</span></div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">//==============================================================================</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#ifndef RIPPLE_CORE_SEMAPHORE_H_INCLUDED</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#define RIPPLE_CORE_SEMAPHORE_H_INCLUDED</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/condition_variable.html">condition_variable</a>&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Mutex, <span class="keyword">class</span> CondVar&gt;</div>
-<div class="foldopen" id="foldopen00029" data-start="{" data-end="};">
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html">   29</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1basic__semaphore.html">basic_semaphore</a></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>{</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">   32</a></span>    Mutex <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">m_mutex</a>;</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">   33</a></span>    CondVar <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">m_cond</a>;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">   34</a></span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a70b65a73bd62bd3b1e15f25297514494">   37</a></span>    <span class="keyword">using </span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">size_type</a> = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
-<div class="foldopen" id="foldopen00042" data-start="{" data-end="}">
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a881f36997b728fa7093cc0fed4150d8b">   42</a></span>    <span class="keyword">explicit</span> <a class="code hl_function" href="classripple_1_1basic__semaphore.html#a881f36997b728fa7093cc0fed4150d8b">basic_semaphore</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">size_type</a> count = 0) : <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>(count)</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    {</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    }</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="preprocessor">#ifndef RIPPLE_CORE_SEMAPHORE_H_INCLUDED</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="preprocessor">#define RIPPLE_CORE_SEMAPHORE_H_INCLUDED</span></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/condition_variable.html">condition_variable</a>&gt;</span></div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a>&gt;</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="keyword">template</span> &lt;<span class="keyword">class</span> Mutex, <span class="keyword">class</span> CondVar&gt;</div>
+<div class="foldopen" id="foldopen00057" data-start="{" data-end="};">
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html">   57</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1basic__semaphore.html">basic_semaphore</a></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>{</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">   60</a></span>    Mutex <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">m_mutex</a>;</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">   61</a></span>    CondVar <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">m_cond</a>;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">   62</a></span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>;</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a70b65a73bd62bd3b1e15f25297514494">   65</a></span>    <span class="keyword">using </span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">size_type</a> = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>;</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
+<div class="foldopen" id="foldopen00070" data-start="{" data-end="}">
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a881f36997b728fa7093cc0fed4150d8b">   70</a></span>    <span class="keyword">explicit</span> <a class="code hl_function" href="classripple_1_1basic__semaphore.html#a881f36997b728fa7093cc0fed4150d8b">basic_semaphore</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">size_type</a> count = 0) : <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>(count)</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    {</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    }</div>
 </div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="keywordtype">void</span></div>
-<div class="foldopen" id="foldopen00048" data-start="{" data-end="}">
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#afb527f24d3a10d885892f8f46d8ce49c">   48</a></span>    <a class="code hl_function" href="classripple_1_1basic__semaphore.html#afb527f24d3a10d885892f8f46d8ce49c">notify</a>()</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    {</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock{<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">m_mutex</a>};</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        ++<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>;</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">m_cond</a>.notify_one();</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    }</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <span class="keywordtype">void</span></div>
+<div class="foldopen" id="foldopen00076" data-start="{" data-end="}">
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#afb527f24d3a10d885892f8f46d8ce49c">   76</a></span>    <a class="code hl_function" href="classripple_1_1basic__semaphore.html#afb527f24d3a10d885892f8f46d8ce49c">notify</a>()</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    {</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock{<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">m_mutex</a>};</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        ++<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>;</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">m_cond</a>.notify_one();</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    }</div>
 </div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="keywordtype">void</span></div>
-<div class="foldopen" id="foldopen00057" data-start="{" data-end="}">
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a4f15dff9ed04010b49cef17aa46b683b">   57</a></span>    <a class="code hl_function" href="classripple_1_1basic__semaphore.html#a4f15dff9ed04010b49cef17aa46b683b">wait</a>()</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    {</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> lock{<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">m_mutex</a>};</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        <span class="keywordflow">while</span> (<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a> == 0)</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>            <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">m_cond</a>.wait(lock);</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        --<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>;</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    }</div>
-</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="keywordtype">bool</span></div>
-<div class="foldopen" id="foldopen00069" data-start="{" data-end="}">
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a8b281f8b0690027c7f5c8071e866a013">   69</a></span>    <a class="code hl_function" href="classripple_1_1basic__semaphore.html#a8b281f8b0690027c7f5c8071e866a013">try_wait</a>()</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    {</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock{<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">m_mutex</a>};</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a> == 0)</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        --<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>;</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    }</div>
-</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>};</div>
-</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno"><a class="line" href="namespaceripple.html#a3d1073988f9cea389d752de1ffb8803d">   79</a></span><span class="keyword">using </span><a class="code hl_class" href="classripple_1_1basic__semaphore.html">semaphore</a> = <a class="code hl_class" href="classripple_1_1basic__semaphore.html">basic_semaphore&lt;std::mutex, std::condition_variable&gt;</a>;</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span> </div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="preprocessor">#endif</span></div>
-<div class="ttc" id="aclassripple_1_1basic__semaphore_html"><div class="ttname"><a href="classripple_1_1basic__semaphore.html">ripple::basic_semaphore</a></div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00029">semaphore.h:30</a></div></div>
-<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a4cdfd0582d4673cb56de9d9de689aadc"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">ripple::basic_semaphore::m_mutex</a></div><div class="ttdeci">Mutex m_mutex</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00032">semaphore.h:32</a></div></div>
-<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a4e32a2af04d2aadf63f616543049f999"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">ripple::basic_semaphore::m_count</a></div><div class="ttdeci">std::size_t m_count</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00034">semaphore.h:34</a></div></div>
-<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a4f15dff9ed04010b49cef17aa46b683b"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a4f15dff9ed04010b49cef17aa46b683b">ripple::basic_semaphore::wait</a></div><div class="ttdeci">void wait()</div><div class="ttdoc">Block until notify is called.</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00057">semaphore.h:57</a></div></div>
-<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a881f36997b728fa7093cc0fed4150d8b"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a881f36997b728fa7093cc0fed4150d8b">ripple::basic_semaphore::basic_semaphore</a></div><div class="ttdeci">basic_semaphore(size_type count=0)</div><div class="ttdoc">Create the semaphore, with an optional initial count.</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00042">semaphore.h:42</a></div></div>
-<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a8b281f8b0690027c7f5c8071e866a013"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a8b281f8b0690027c7f5c8071e866a013">ripple::basic_semaphore::try_wait</a></div><div class="ttdeci">bool try_wait()</div><div class="ttdoc">Perform a non-blocking wait.</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00069">semaphore.h:69</a></div></div>
-<div class="ttc" id="aclassripple_1_1basic__semaphore_html_ae88049f63899f4ed72c788b4b1f989be"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">ripple::basic_semaphore::m_cond</a></div><div class="ttdeci">CondVar m_cond</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00033">semaphore.h:33</a></div></div>
-<div class="ttc" id="aclassripple_1_1basic__semaphore_html_afb527f24d3a10d885892f8f46d8ce49c"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#afb527f24d3a10d885892f8f46d8ce49c">ripple::basic_semaphore::notify</a></div><div class="ttdeci">void notify()</div><div class="ttdoc">Increment the count and unblock one waiting thread.</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00048">semaphore.h:48</a></div></div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="keywordtype">void</span></div>
+<div class="foldopen" id="foldopen00085" data-start="{" data-end="}">
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a4f15dff9ed04010b49cef17aa46b683b">   85</a></span>    <a class="code hl_function" href="classripple_1_1basic__semaphore.html#a4f15dff9ed04010b49cef17aa46b683b">wait</a>()</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    {</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> lock{<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">m_mutex</a>};</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>        <span class="keywordflow">while</span> (<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a> == 0)</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>            <a class="code hl_variable" href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">m_cond</a>.wait(lock);</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        --<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>;</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    }</div>
+</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordtype">bool</span></div>
+<div class="foldopen" id="foldopen00097" data-start="{" data-end="}">
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno"><a class="line" href="classripple_1_1basic__semaphore.html#a8b281f8b0690027c7f5c8071e866a013">   97</a></span>    <a class="code hl_function" href="classripple_1_1basic__semaphore.html#a8b281f8b0690027c7f5c8071e866a013">try_wait</a>()</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    {</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock{<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">m_mutex</a>};</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a> == 0)</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        --<a class="code hl_variable" href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">m_count</a>;</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>        <span class="keywordflow">return</span> <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    }</div>
+</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>};</div>
+</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span> </div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno"><a class="line" href="namespaceripple.html#a3d1073988f9cea389d752de1ffb8803d">  107</a></span><span class="keyword">using </span><a class="code hl_class" href="classripple_1_1basic__semaphore.html">semaphore</a> = <a class="code hl_class" href="classripple_1_1basic__semaphore.html">basic_semaphore&lt;std::mutex, std::condition_variable&gt;</a>;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span> </div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span> </div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span><span class="preprocessor">#endif</span></div>
+<div class="ttc" id="aclassripple_1_1basic__semaphore_html"><div class="ttname"><a href="classripple_1_1basic__semaphore.html">ripple::basic_semaphore</a></div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00057">semaphore.h:58</a></div></div>
+<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a4cdfd0582d4673cb56de9d9de689aadc"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a4cdfd0582d4673cb56de9d9de689aadc">ripple::basic_semaphore::m_mutex</a></div><div class="ttdeci">Mutex m_mutex</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00060">semaphore.h:60</a></div></div>
+<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a4e32a2af04d2aadf63f616543049f999"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a4e32a2af04d2aadf63f616543049f999">ripple::basic_semaphore::m_count</a></div><div class="ttdeci">std::size_t m_count</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00062">semaphore.h:62</a></div></div>
+<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a4f15dff9ed04010b49cef17aa46b683b"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a4f15dff9ed04010b49cef17aa46b683b">ripple::basic_semaphore::wait</a></div><div class="ttdeci">void wait()</div><div class="ttdoc">Block until notify is called.</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00085">semaphore.h:85</a></div></div>
+<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a881f36997b728fa7093cc0fed4150d8b"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a881f36997b728fa7093cc0fed4150d8b">ripple::basic_semaphore::basic_semaphore</a></div><div class="ttdeci">basic_semaphore(size_type count=0)</div><div class="ttdoc">Create the semaphore, with an optional initial count.</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00070">semaphore.h:70</a></div></div>
+<div class="ttc" id="aclassripple_1_1basic__semaphore_html_a8b281f8b0690027c7f5c8071e866a013"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#a8b281f8b0690027c7f5c8071e866a013">ripple::basic_semaphore::try_wait</a></div><div class="ttdeci">bool try_wait()</div><div class="ttdoc">Perform a non-blocking wait.</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00097">semaphore.h:97</a></div></div>
+<div class="ttc" id="aclassripple_1_1basic__semaphore_html_ae88049f63899f4ed72c788b4b1f989be"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#ae88049f63899f4ed72c788b4b1f989be">ripple::basic_semaphore::m_cond</a></div><div class="ttdeci">CondVar m_cond</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00061">semaphore.h:61</a></div></div>
+<div class="ttc" id="aclassripple_1_1basic__semaphore_html_afb527f24d3a10d885892f8f46d8ce49c"><div class="ttname"><a href="classripple_1_1basic__semaphore.html#afb527f24d3a10d885892f8f46d8ce49c">ripple::basic_semaphore::notify</a></div><div class="ttdeci">void notify()</div><div class="ttdoc">Increment the count and unblock one waiting thread.</div><div class="ttdef"><b>Definition</b> <a href="semaphore_8h_source.html#l00076">semaphore.h:76</a></div></div>
 <div class="ttc" id="acondition_variable_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/condition_variable.html">condition_variable</a></div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a></div></div>
