@@ -1167,11 +1167,15 @@ ValidatorList::applyList(
     }
 
     if (!publicKeyType(*pubKeyOpt))
-    {
-        JLOG(j_.warn())
-            << "UNL manifest is signed with an invalid public key type";
+    {  // LCOV_EXCL_START
+       // This is an impossible situation because we will never load an
+       // invalid public key type (see checks in `ValidatorList::load`) however
+       // we can only arrive here if the key used by the manifest matched one of
+       // the loaded keys
+        UNREACHABLE(
+            "ripple::ValidatorList::applyList : invalid public key type");
         return PublisherListStats{result};
-    }
+    }  // LCOV_EXCL_STOP
 
     PublicKey pubKey = *pubKeyOpt;
     if (result > ListDisposition::pending)
