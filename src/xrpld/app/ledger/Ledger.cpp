@@ -711,6 +711,9 @@ Ledger::defaultFees(Config const& config)
         fees_.base = config.FEES.reference_fee;
     if (fees_.reserve == 0)
         fees_.reserve = config.FEES.account_reserve;
+    if (fees_.increment == 0)
+        fees_.increment = config.FEES.owner_reserve;
+
     if (fees_.extensionComputeLimit == 0)
         fees_.extensionComputeLimit = config.FEES.extension_compute_limit;
     if (fees_.extensionSizeLimit == 0)

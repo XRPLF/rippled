@@ -2436,7 +2436,7 @@ struct Escrow_test : public beast::unit_test::suite
                 env.close();
                 env.close();
 
-                auto const allowance = 137'596;
+                auto const allowance = 137'896;
                 auto const finishFee = env.current()->fees().base +
                     (allowance * env.current()->fees().gasPrice) /
                         MICRO_DROPS_PER_DROP +
