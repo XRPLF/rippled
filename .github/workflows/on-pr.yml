@@ -50,12 +50,9 @@ jobs:
           files: |
             # These paths are unique to `on-pr.yml`.
             .github/scripts/levelization/**
-            .github/workflows/check-format.yml
             .github/workflows/check-levelization.yml
             .github/workflows/notify-clio.yml
             .github/workflows/on-pr.yml
-            .clang-format
-            .pre-commit-config.yaml
 
             # Keep the paths below in sync with those in `on-trigger.yml`.
             .github/actions/build-deps/**
@@ -93,19 +90,14 @@ jobs:
     outputs:
       go: ${{ steps.go.outputs.go == 'true' }}
 
-  check-format:
-    needs: should-run
-    if: needs.should-run.outputs.go == 'true'
-    uses: ./.github/workflows/check-format.yml
-
   check-levelization:
     needs: should-run
-    if: needs.should-run.outputs.go == 'true'
+    if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/check-levelization.yml
 
   build-test:
     needs: should-run
-    if: needs.should-run.outputs.go == 'true'
+    if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/build-test.yml
     strategy:
       matrix:
@@ -119,7 +111,7 @@ jobs:
     needs:
       - should-run
       - build-test
-    if: needs.should-run.outputs.go == 'true'
+    if: ${{ needs.should-run.outputs.go == 'true' && contains(fromJSON('["release", "master"]'), github.ref_name) }}
     uses: ./.github/workflows/notify-clio.yml
     secrets:
       clio_notify_token: ${{ secrets.CLIO_NOTIFY_TOKEN }}
@@ -130,7 +122,6 @@ jobs:
     if: failure() || cancelled()
     needs:
       - build-test
-      - check-format
       - check-levelization
     runs-on: ubuntu-latest
     steps:
