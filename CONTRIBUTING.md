@@ -8,13 +8,12 @@ We assume you are familiar with the general practice of [making
 contributions on GitHub][contrib]. This file includes only special
 instructions specific to this project.
 
-
 ## Before you start
 
 The following branches exist in the main project repository:
 
 - `develop`: The latest set of unreleased features, and the most common
-    starting point for contributions.
+  starting point for contributions.
 - `release`: The latest beta release or release candidate.
 - `master`: The latest stable release.
 - `gh-pages`: The documentation for this project, built by Doxygen.
@@ -27,17 +26,17 @@ In general, external contributions should be developed in your personal
 [fork][forking]. Contributions from developers with write permissions
 should be done in [the main repository][rippled] in a branch with
 a permitted prefix. Permitted prefixes are:
-* XLS-[a-zA-Z0-9]+/.+
-  * e.g. XLS-0033d/mpt-clarify-STEitherAmount
-* [GitHub username]/.+
-  * e.g. JoelKatz/fix-rpc-webhook-queue
-* [Organization name]/.+
-  * e.g. ripple/antithesis
 
-Regardless of where the branch is created, please open a *draft* pull
+- XLS-[a-zA-Z0-9]+/.+
+  - e.g. XLS-0033d/mpt-clarify-STEitherAmount
+- [GitHub username]/.+
+  - e.g. JoelKatz/fix-rpc-webhook-queue
+- [Organization name]/.+
+  - e.g. ripple/antithesis
+
+Regardless of where the branch is created, please open a _draft_ pull
 request as soon as possible after pushing the branch to Github, to
 increase visibility, and ease feedback during the development process.
-
 
 ## Major contributions
 
@@ -55,8 +54,8 @@ responsibility of the XLS author to update the draft to match the final
 implementation when its corresponding pull request is merged, unless the
 author delegates that responsibility to others.
 
-
 ## Before making a pull request
+
 (Or marking a draft pull request as ready.)
 
 Changes that alter transaction processing must be guarded by an
@@ -73,30 +72,32 @@ automatic test run by `rippled --unittest`.
 Otherwise, it must be a manual test.
 
 If you create new source files, they must be organized as follows:
-* If the files are in any of the `libxrpl` modules, the headers (`.h`) must go
+
+- If the files are in any of the `libxrpl` modules, the headers (`.h`) must go
   under `include/xrpl`, and source (`.cpp`) files must go under
   `src/libxrpl`.
-* All other non-test files must go under `src/xrpld`.
-* All test source files must go under `src/test`.
+- All other non-test files must go under `src/xrpld`.
+- All test source files must go under `src/test`.
 
 The source must be formatted according to the style guide below.
 
-Header includes must be [levelized](./Builds/levelization).
+Header includes must be [levelized](.github/scripts/levelization).
 
 Changes should be usually squashed down into a single commit.
 Some larger or more complicated change sets make more sense,
 and are easier to review if organized into multiple logical commits.
 Either way, all commits should fit the following criteria:
-* Changes should be presented in a single commit or a logical
+
+- Changes should be presented in a single commit or a logical
   sequence of commits.
   Specifically, chronological commits that simply
   reflect the history of how the author implemented
   the change, "warts and all", are not useful to
   reviewers.
-* Every commit should have a [good message](#good-commit-messages).
+- Every commit should have a [good message](#good-commit-messages).
   to explain a specific aspects of the change.
-* Every commit should be signed.
-* Every commit should be well-formed (builds successfully,
+- Every commit should be signed.
+- Every commit should be well-formed (builds successfully,
   unit tests passing), as this helps to resolve merge
   conflicts, and makes it easier to use `git bisect`
   to find bugs.
@@ -108,13 +109,14 @@ Refer to
 for general rules on writing a good commit message.
 
 tl;dr
+
 > 1. Separate subject from body with a blank line.
 > 2. Limit the subject line to 50 characters.
->    * [...]shoot for 50 characters, but consider 72 the hard limit.
+>    - [...]shoot for 50 characters, but consider 72 the hard limit.
 > 3. Capitalize the subject line.
 > 4. Do not end the subject line with a period.
 > 5. Use the imperative mood in the subject line.
->    * A properly formed Git commit subject line should always be able
+>    - A properly formed Git commit subject line should always be able
 >      to complete the following sentence: "If applied, this commit will
 >      _your subject line here_".
 > 6. Wrap the body at 72 characters.
@@ -122,16 +124,17 @@ tl;dr
 
 In addition to those guidelines, please add one of the following
 prefixes to the subject line if appropriate.
-* `fix:` - The primary purpose is to fix an existing bug.
-* `perf:` - The primary purpose is performance improvements.
-* `refactor:` - The changes refactor code without affecting
+
+- `fix:` - The primary purpose is to fix an existing bug.
+- `perf:` - The primary purpose is performance improvements.
+- `refactor:` - The changes refactor code without affecting
   functionality.
-* `test:` - The changes _only_ affect unit tests.
-* `docs:` - The changes _only_ affect documentation. This can
+- `test:` - The changes _only_ affect unit tests.
+- `docs:` - The changes _only_ affect documentation. This can
   include code comments in addition to `.md` files like this one.
-* `build:` - The changes _only_ affect the build process,
+- `build:` - The changes _only_ affect the build process,
   including CMake and/or Conan settings.
-* `chore:` - Other tasks that don't affect the binary, but don't fit
+- `chore:` - Other tasks that don't affect the binary, but don't fit
   any of the other cases. e.g. formatting, git settings, updating
   Github Actions jobs.
 
@@ -143,9 +146,10 @@ unit tests for Feature X (#1234)`.
 
 In general, pull requests use `develop` as the base branch.
 The exceptions are
-* Fixes and improvements to a release candidate use `release` as the
+
+- Fixes and improvements to a release candidate use `release` as the
   base.
-* Hotfixes use `master` as the base.
+- Hotfixes use `master` as the base.
 
 If your changes are not quite ready, but you want to make it easily available
 for preliminary examination or review, you can create a "Draft" pull request.
@@ -182,11 +186,11 @@ meets a few criteria:
 2. All CI checks must be complete and passed. (One-off failures may
    be acceptable if they are related to a known issue.)
 3. The PR must have a [good commit message](#good-commit-messages).
-   * If the PR started with a good commit message, and it doesn't
+   - If the PR started with a good commit message, and it doesn't
      need to be updated, the author can indicate that in a comment.
-   * Any contributor, preferably the author, can leave a comment
+   - Any contributor, preferably the author, can leave a comment
      suggesting a commit message.
-   * If the author squashes and rebases the code in preparation for
+   - If the author squashes and rebases the code in preparation for
      merge, they should also ensure the commit message(s) are updated
      as well.
 4. The PR branch must be up to date with the base branch (usually
@@ -207,7 +211,6 @@ at any time, so don't use it lightly.
 This is a non-exhaustive list of recommended style guidelines. These are
 not always strictly enforced and serve as a way to keep the codebase
 coherent rather than a set of _thou shalt not_ commandments.
-
 
 ## Formatting
 
@@ -237,6 +240,7 @@ To download the patch file:
 5. Commit and push.
 
 You can install a pre-commit hook to automatically run `clang-format` before every commit:
+
 ```
 pip3 install pre-commit
 pre-commit install
@@ -267,49 +271,51 @@ locations, where the reporting of contract violations on the Antithesis
 platform is either not possible or not useful.
 
 For this reason:
-* The locations where `assert` or `assert(false)` contracts should continue to be used:
-  * `constexpr` functions
-  * unit tests i.e. files under `src/test`
-  * unit tests-related modules (files under `beast/test` and `beast/unit_test`)
-* Outside of the listed locations, do not use `assert`; use `XRPL_ASSERT` instead,
+
+- The locations where `assert` or `assert(false)` contracts should continue to be used:
+  - `constexpr` functions
+  - unit tests i.e. files under `src/test`
+  - unit tests-related modules (files under `beast/test` and `beast/unit_test`)
+- Outside of the listed locations, do not use `assert`; use `XRPL_ASSERT` instead,
   giving it unique name, with the short description of the contract.
-* Outside of the listed locations, do not use `assert(false)`; use
+- Outside of the listed locations, do not use `assert(false)`; use
   `UNREACHABLE` instead, giving it unique name, with the description of the
   condition being violated
-* The contract name should start with a full name (including scope) of the
-  function, optionally a named lambda, followed by a colon ` : ` and a brief
+- The contract name should start with a full name (including scope) of the
+  function, optionally a named lambda, followed by a colon `:` and a brief
   (typically at most five words) description. `UNREACHABLE` contracts
   can use slightly longer descriptions. If there are multiple overloads of the
   function, use common sense to balance both brevity and unambiguity of the
   function name. NOTE: the purpose of name is to provide stable means of
   unique identification of every contract; for this reason try to avoid elements
   which can change in some obvious refactors or when reinforcing the condition.
-* Contract description typically (except for `UNREACHABLE`) should describe the
+- Contract description typically (except for `UNREACHABLE`) should describe the
   _expected_ condition, as in "I assert that _expected_ is true".
-* Contract description for `UNREACHABLE` should describe the _unexpected_
+- Contract description for `UNREACHABLE` should describe the _unexpected_
   situation which caused the line to have been reached.
-* Example good name for an
+- Example good name for an
   `UNREACHABLE` macro `"Json::operator==(Value, Value) : invalid type"`; example
   good name for an `XRPL_ASSERT` macro `"Json::Value::asCString : valid type"`.
-* Example **bad** name
+- Example **bad** name
   `"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"`
   (missing namespace, unnecessary full function signature, description too verbose).
   Good name: `"ripple::RFC1751::insert : minimum length"`.
-* In **few** well-justified cases a non-standard name can be used, in which case a
+- In **few** well-justified cases a non-standard name can be used, in which case a
   comment should be placed to explain the rationale (example in `contract.cpp`)
-* Do **not** rename a contract without a good reason (e.g. the name no longer
+- Do **not** rename a contract without a good reason (e.g. the name no longer
   reflects the location or the condition being checked)
-* Do not use `std::unreachable`
-* Do not put contracts where they can be violated by an external condition
+- Do not use `std::unreachable`
+- Do not put contracts where they can be violated by an external condition
   (e.g. timing, data payload before mandatory validation etc.) as this creates
   bogus bug reports (and causes crashes of Debug builds)
 
 ## Unit Tests
+
 To execute all unit tests:
 
-```rippled --unittest --unittest-jobs=<number of cores>```
+`rippled --unittest --unittest-jobs=<number of cores>`
 
-(Note: Using multiple cores on a Mac M1 can cause spurious test failures. The 
+(Note: Using multiple cores on a Mac M1 can cause spurious test failures. The
 cause is still under investigation. If you observe this problem, try specifying fewer jobs.)
 
 To run a specific set of test suites:
@@ -317,10 +323,11 @@ To run a specific set of test suites:
 ```
 rippled --unittest TestSuiteName
 ```
+
 Note: In this example, all tests with prefix `TestSuiteName` will be run, so if
-`TestSuiteName1` and `TestSuiteName2` both exist, then both tests will run. 
-Alternatively, if the unit test name finds an exact match, it will stop 
-doing partial matches, i.e. if a unit test with a title of `TestSuiteName` 
+`TestSuiteName1` and `TestSuiteName2` both exist, then both tests will run.
+Alternatively, if the unit test name finds an exact match, it will stop
+doing partial matches, i.e. if a unit test with a title of `TestSuiteName`
 exists, then no other unit test will be executed, apart from `TestSuiteName`.
 
 ## Avoid
@@ -336,7 +343,6 @@ exists, then no other unit test will be executed, apart from `TestSuiteName`.
    explanatory comments.
 8. Importing new libraries unless there is a very good reason to do so.
 
-
 ## Seek to
 
 9. Extend functionality of existing code rather than creating new code.
@@ -351,13 +357,11 @@ exists, then no other unit test will be executed, apart from `TestSuiteName`.
 14. Provide as many comments as you feel that a competent programmer
     would need to understand what your code does.
 
-
 # Maintainers
 
 Maintainers are ecosystem participants with elevated access to the repository.
 They are able to push new code, make decisions on when a release should be
 made, etc.
-
 
 ## Adding and removing
 
@@ -373,47 +377,41 @@ A minimum of 60% agreement and 50% participation are required.
 The XRP Ledger Foundation will have the ability, for cause, to remove an
 existing maintainer without a vote.
 
-
 ## Current Maintainers
 
 Maintainers are users with maintain or admin access to the repo.
 
-* [bthomee](https://github.com/bthomee) (Ripple)
-* [intelliot](https://github.com/intelliot) (Ripple)
-* [JoelKatz](https://github.com/JoelKatz) (Ripple)
-* [nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
-* [RichardAH](https://github.com/RichardAH) (XRP Ledger Foundation)
-* [Silkjaer](https://github.com/Silkjaer) (XRP Ledger Foundation)
-* [WietseWind](https://github.com/WietseWind) (XRPL Labs + XRP Ledger Foundation)
-* [ximinez](https://github.com/ximinez) (Ripple)
-
+- [bthomee](https://github.com/bthomee) (Ripple)
+- [intelliot](https://github.com/intelliot) (Ripple)
+- [JoelKatz](https://github.com/JoelKatz) (Ripple)
+- [legleux](https://github.com/legleux) (Ripple)
+- [mankins](https://github.com/mankins) (XRP Ledger Foundation)
+- [WietseWind](https://github.com/WietseWind) (XRPL Labs + XRP Ledger Foundation)
+- [ximinez](https://github.com/ximinez) (Ripple)
 
 ## Current Code Reviewers
 
 Code Reviewers are developers who have the ability to review, approve, and
 in some cases merge source code changes.
 
-* [HowardHinnant](https://github.com/HowardHinnant) (Ripple)
-* [scottschurr](https://github.com/scottschurr) (Ripple)
-* [seelabs](https://github.com/seelabs) (Ripple)
-* [Ed Hennis](https://github.com/ximinez) (Ripple)
-* [mvadari](https://github.com/mvadari) (Ripple)
-* [thejohnfreeman](https://github.com/thejohnfreeman) (Ripple)
-* [Bronek](https://github.com/Bronek) (Ripple)
-* [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
-* [godexsoft](https://github.com/godexsoft) (Ripple)
-* [mDuo13](https://github.com/mDuo13) (Ripple)
-* [ckniffen](https://github.com/ckniffen) (Ripple)
-* [arihantkothari](https://github.com/arihantkothari) (Ripple)
-* [pwang200](https://github.com/pwang200) (Ripple)
-* [sophiax851](https://github.com/sophiax851) (Ripple)
-* [shawnxie999](https://github.com/shawnxie999) (Ripple)
-* [gregtatcam](https://github.com/gregtatcam) (Ripple)
-* [mtrippled](https://github.com/mtrippled) (Ripple)
-* [ckeshava](https://github.com/ckeshava) (Ripple)
-* [nbougalis](https://github.com/nbougalis) None
-* [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
-* [dangell7](https://github.com/dangell7) (XRPL Labs)
+- [a1q123456](https://github.com/a1q123456) (Ripple)
+- [Bronek](https://github.com/Bronek) (Ripple)
+- [bthomee](https://github.com/bthomee) (Ripple)
+- [ckeshava](https://github.com/ckeshava) (Ripple)
+- [dangell7](https://github.com/dangell7) (XRPL Labs)
+- [godexsoft](https://github.com/godexsoft) (Ripple)
+- [gregtatcam](https://github.com/gregtatcam) (Ripple)
+- [kuznetsss](https://github.com/kuznetsss) (Ripple)
+- [lmaisons](https://github.com/lmaisons) (Ripple)
+- [mathbunnyru](https://github.com/mathbunnyru) (Ripple)
+- [mvadari](https://github.com/mvadari) (Ripple)
+- [oleks-rip](https://github.com/oleks-rip) (Ripple)
+- [PeterChen13579](https://github.com/PeterChen13579) (Ripple)
+- [pwang200](https://github.com/pwang200) (Ripple)
+- [q73zhao](https://github.com/q73zhao) (Ripple)
+- [shawnxie999](https://github.com/shawnxie999) (Ripple)
+- [Tapanito](https://github.com/Tapanito) (Ripple)
+- [ximinez](https://github.com/ximinez) (Ripple)
 
 Developers not on this list are able and encouraged to submit feedback
 on pending code changes (open pull requests).
@@ -423,6 +421,7 @@ on pending code changes (open pull requests).
 These instructions assume you have your git upstream remotes configured
 to avoid accidental pushes to the main repo, and a remote group
 specifying both of them. e.g.
+
 ```
 $ git remote -v | grep upstream
 upstream        https://github.com/XRPLF/rippled.git (fetch)
@@ -437,6 +436,7 @@ upstream upstream-push
 You can use the [setup-upstreams] script to set this up.
 
 It also assumes you have a default gpg signing key set up in git. e.g.
+
 ```
 $ git config user.signingkey
 968479A1AFF927E37D1A566BB5690EEEBB952194
@@ -461,8 +461,8 @@ the suggested commit message, or modify it as needed.
 #### Slightly more complicated pull requests
 
 Some pull requests need to be pushed to `develop` as more than one
-commit. A PR author may *request* to merge as separate commits. They
-must *justify* why separate commits are needed, and *specify* how they
+commit. A PR author may _request_ to merge as separate commits. They
+must _justify_ why separate commits are needed, and _specify_ how they
 would like the commits to be merged. If you disagree with the author,
 discuss it with them directly.
 
@@ -471,20 +471,22 @@ fast forward only merge (`--ff-only`) on the command line and push to
 `develop`.
 
 Some examples of when separate commits are worthwhile are:
+
 1. PRs where source files are reorganized in multiple steps.
-2. PRs where the commits are mostly independent and *could* be separate
+2. PRs where the commits are mostly independent and _could_ be separate
    PRs, but are pulled together into one PR under a commit theme or
    issue.
 3. PRs that are complicated enough that `git bisect` would not be much
    help if it determined this PR introduced a problem.
 
 Either way, check that:
-* The commits are based on the current tip of `develop`.
-* The commits are clean: No merge commits (except when reverse
+
+- The commits are based on the current tip of `develop`.
+- The commits are clean: No merge commits (except when reverse
   merging), no "[FOLD]" or "fixup!" messages.
-* All commits are signed. If the commits are not signed by the author, use
+- All commits are signed. If the commits are not signed by the author, use
   `git commit --amend -S` to sign them yourself.
-* At least one (but preferably all) of the commits has the PR number
+- At least one (but preferably all) of the commits has the PR number
   in the commit message.
 
 The "Create a merge commit" and "Rebase and merge" options should be
@@ -502,13 +504,13 @@ Rippled uses a linear workflow model that can be summarized as:
 1. In between releases, developers work against the `develop` branch.
 2. Periodically, a maintainer will build and tag a beta version from
    `develop`, which is pushed to `release`.
-   * Betas are usually released every two to three weeks, though that
+   - Betas are usually released every two to three weeks, though that
      schedule can vary depending on progress, availability, and other
      factors.
 3. When the changes in `develop` are considered stable and mature enough
    to be ready to release, a release candidate (RC) is built and tagged
    from `develop`, and merged to `release`.
-   * Further development for that release (primarily fixes) then
+   - Further development for that release (primarily fixes) then
      continues against `release`, while other development continues on
      `develop`. Effectively, `release` is forked from `develop`. Changes
      to `release` must be reverse merged to `develop`.
@@ -543,6 +545,7 @@ Rippled uses a linear workflow model that can be summarized as:
          the version number, etc.
 
       The workflow may look something like:
+
 ```
 git fetch --multiple upstreams user1 user2 user3 [...]
 git checkout -B release-next --no-track upstream/develop
@@ -581,8 +584,9 @@ This includes, betas, and the first release candidate (RC).
 
 1. If you didn't create one [preparing the `develop`
    branch](#preparing-the-develop-branch), Ensure there is no old
-   `release-next` branch hanging around.  Then make a `release-next`
+   `release-next` branch hanging around. Then make a `release-next`
    branch that only changes the version number. e.g.
+
 ```
 git fetch upstreams
 
@@ -603,25 +607,30 @@ git push upstream-push
 git fetch upstreams
 git branch --set-upstream-to=upstream/release-next
 ```
-   You can also use the [update-version] script.
-2. Create a Pull Request for `release-next` with **`develop`** as
-   the base branch.
-   1. Use the title "[TRIVIAL] Set version to X.X.X-bX".
-   2. Instead of the default description template, use the following:
+
+You can also use the [update-version] script. 2. Create a Pull Request for `release-next` with **`develop`** as
+the base branch.
+
+1.  Use the title "[TRIVIAL] Set version to X.X.X-bX".
+2.  Instead of the default description template, use the following:
+
 ```
 ## High Level Overview of Change
 
 This PR only changes the version number. It will be merged as
 soon as Github CI actions successfully complete.
 ```
+
 3. Wait for CI to successfully complete, and get someone to approve
    the PR. (It is safe to ignore known CI issues.)
 4. Push the updated `develop` branch using your `release-next`
    branch. **Do not use the Github UI. It's important to preserve
    commit IDs.**
+
 ```
 git push upstream-push release-next:develop
 ```
+
 5. In the unlikely event that the push fails because someone has merged
    something else in the meantime, rebase your branch onto the updated
    `develop` branch, push again, and go back to step 3.
@@ -630,22 +639,25 @@ git push upstream-push release-next:develop
 7. Once this is done, forward progress on `develop` can continue
    (other PRs may be merged).
 8. Now create a Pull Request for `release-next` with **`release`** as
-   the base branch.  Instead of the default template, reuse and update
+   the base branch. Instead of the default template, reuse and update
    the message from the previous release. Include the following verbiage
    somewhere in the description:
+
 ```
 The base branch is `release`. [All releases (including
 betas)](https://github.com/XRPLF/rippled/blob/develop/CONTRIBUTING.md#before-you-start)
 go in `release`. This PR branch will be pushed directly to `release` (not
 squashed or rebased, and not using the GitHub UI).
 ```
+
 7. Sign-offs for the three platforms (Linux, Mac, Windows) usually occur
    offline, but at least one approval will be needed on the PR.
-   * If issues are discovered during testing, simply abandon the
-     release.  It's easy to start a new release, it should be easy to
+   - If issues are discovered during testing, simply abandon the
+     release. It's easy to start a new release, it should be easy to
      abandon one. **DO NOT REUSE THE VERSION NUMBER.** e.g. If you
      abandon 2.4.0-b1, the next attempt will be 2.4.0-b2.
 8. Once everything is ready to go, push to `release`.
+
 ```
 git fetch upstreams
 
@@ -666,23 +678,28 @@ git log -1 --oneline
 # Other branches, including some from upstream-push, may also be
 # present.
 ```
+
 9. Tag the release, too.
+
 ```
 git tag <version number>
 git push upstream-push <version number>
 ```
+
 10. Delete the `release-next` branch on the repo. Use the Github UI or:
+
 ```
 git push --delete upstream-push release-next
 ```
+
 11. Finally [create a new release on
     Github](https://github.com/XRPLF/rippled/releases).
 
 #### Release candidates after the first
 
 Once the first release candidate is [merged into
-release](#making-the-release), then `release` and `develop` *are allowed
-to diverge*.
+release](#making-the-release), then `release` and `develop` _are allowed
+to diverge_.
 
 If a bug or issue is discovered in a version that has a release
 candidate being tested, any fix and new version will need to be applied
@@ -690,7 +707,7 @@ against `release`, then reverse-merged to `develop`. This helps keep git
 history as linear as possible.
 
 A `release-next` branch will be created from `release`, and any further
-work for that release must be based on `release-next`.  Specifically,
+work for that release must be based on `release-next`. Specifically,
 PRs must use `release-next` as the base, and those PRs will be merged
 directly to `release-next` when approved. Changes should be restricted
 to bug fixes, but other changes may be necessary from time to time.
@@ -713,17 +730,21 @@ Once the RC is merged and tagged, it needs to be reverse merged into
 1. Create a branch, based on `upstream/develop`.
    The branch name is not important, but could include "mergeNNNrcN".
    E.g. For release A.B.C-rcD, use `mergeABCrcD`.
+
 ```
 git fetch upstreams
 
 git checkout --no-track -b mergeABCrcD upstream/develop
 ```
+
 2. Merge `release` into your branch.
+
 ```
 # I like the "--edit --log --verbose" parameters, but they are
 # not required.
 git merge upstream/release
 ```
+
 3. `BuildInfo.cpp` will have a conflict with the version number.
    Resolve it with the version from `develop` - the higher version.
 4. Push your branch to your repo (or `upstream` if you have permission),
@@ -731,22 +752,27 @@ git merge upstream/release
    simply indicate that this is a merge of the RC. The "Context" should
    summarize the changes from the RC. Include the following text
    prominently:
+
 ```
 This PR must be merged manually using a push. Do not use the Github UI.
 ```
+
 5. Depending on the complexity of the changes, and/or merge conflicts,
    the PR may need a thorough review, or just a sign-off that the
    merge was done correctly.
 6. If `develop` is updated before this PR is merged, do not merge
    `develop` back into your branch. Instead rebase preserving merges,
    or do the merge again. (See also the `rerere` git config setting.)
+
 ```
 git rebase --rebase-merges upstream/develop
 # OR
 git reset --hard upstream/develop
 git merge upstream/release
 ```
+
 7. When the PR is ready, push it to `develop`.
+
 ```
 git fetch upstreams
 
@@ -757,8 +783,8 @@ git push upstream-push mergeABCrcD:develop
 
 git fetch upstreams
 ```
-Development on `develop` can proceed as normal.
 
+Development on `develop` can proceed as normal.
 
 #### Final releases
 
@@ -773,7 +799,7 @@ internally as if they were RCs (at minimum, ensuring unit tests pass,
 and the app starts, syncs, and stops cleanly across all three
 platforms.)
 
-*If in doubt, make an RC first.*
+_If in doubt, make an RC first._
 
 The process for building a final release is very similar to [the process
 for building a beta](#making-the-release), except the code will be
@@ -785,20 +811,23 @@ moving from `release` to `master` instead of from `develop` to
    number. As above, or using the
    [update-version] script.
 2. Create a Pull Request for `master-next` with **`master`** as
-   the base branch.  Instead of the default template, reuse and update
+   the base branch. Instead of the default template, reuse and update
    the message from the previous final release. Include the following verbiage
    somewhere in the description:
+
 ```
 The base branch is `master`. This PR branch will be pushed directly to
 `release` and `master` (not squashed or rebased, and not using the
 GitHub UI).
 ```
+
 7. Sign-offs for the three platforms (Linux, Mac, Windows) usually occur
    offline, but at least one approval will be needed on the PR.
-   * If issues are discovered during testing, close the PR, delete
+   - If issues are discovered during testing, close the PR, delete
      `master-next`, and move development back to `release`, [issuing
      more RCs as necessary](#release-candidates-after-the-first)
 8. Once everything is ready to go, push to `release` and `master`.
+
 ```
 git fetch upstreams
 
@@ -821,15 +850,20 @@ git log -1 --oneline
 # Other branches, including some from upstream-push, may also be
 # present.
 ```
+
 9. Tag the release, too.
+
 ```
 git tag <version number>
 git push upstream-push <version number>
 ```
+
 10. Delete the `master-next` branch on the repo. Use the Github UI or:
+
 ```
 git push --delete upstream-push master-next
 ```
+
 11. [Create a new release on
     Github](https://github.com/XRPLF/rippled/releases). Be sure that
     "Set as the latest release" is checked.
@@ -856,11 +890,13 @@ any branch. When it's ready to merge, jump to step 3 using your branch
 instead of `master-next`.
 
 1. Create a `master-next` branch from `master`.
+
 ```
 git checkout --no-track -b master-next upstream/master
 git push upstream-push
 git fetch upstreams
 ```
+
 2. Open any PRs for the pending hotfix using `master-next` as the base,
    so they can be merged directly in to it. Unlike `develop`, though,
    `master-next` can be thrown away and recreated if necessary.
@@ -868,19 +904,22 @@ git fetch upstreams
    steps as above, or use the
    [update-version] script.
 4. Create a Pull Request for `master-next` with **`master`** as
-   the base branch.  Instead of the default template, reuse and update
+   the base branch. Instead of the default template, reuse and update
    the message from the previous final release. Include the following verbiage
    somewhere in the description:
+
 ```
 The base branch is `master`. This PR branch will be pushed directly to
 `master` (not squashed or rebased, and not using the GitHub UI).
 ```
+
 7. Sign-offs for the three platforms (Linux, Mac, Windows) usually occur
    offline, but at least one approval will be needed on the PR.
-   * If issues are discovered during testing, update `master-next` as
+   - If issues are discovered during testing, update `master-next` as
      needed, but ensure that the changes are properly squashed, and the
      version setting commit remains last
 8. Once everything is ready to go, push to `master` **only**.
+
 ```
 git fetch upstreams
 
@@ -901,15 +940,20 @@ git log -1 --oneline
 # Other branches, including some from upstream-push, may also be
 # present.
 ```
+
 9. Tag the release, too.
+
 ```
 git tag <version number>
 git push upstream-push <version number>
 ```
+
 9. Delete the `master-next` branch on the repo.
+
 ```
 git push --delete upstream-push master-next
 ```
+
 10. [Create a new release on
     Github](https://github.com/XRPLF/rippled/releases). Be sure that
     "Set as the latest release" is checked.
@@ -921,17 +965,21 @@ Once the hotfix is released, it needs to be reverse merged into
 1. Create a branch in your own repo, based on `upstream/develop`.
    The branch name is not important, but could include "mergeNNN".
    E.g. For release 2.2.3, use `merge223`.
+
 ```
 git fetch upstreams
 
 git checkout --no-track -b merge223 upstream/develop
 ```
+
 2. Merge master into your branch.
+
 ```
 # I like the "--edit --log --verbose" parameters, but they are
 # not required.
 git merge upstream/master
 ```
+
 3. `BuildInfo.cpp` will have a conflict with the version number.
    Resolve it with the version from `develop` - the higher version.
 4. Push your branch to your repo, and open a normal PR against
@@ -939,22 +987,27 @@ git merge upstream/master
    is a merge of the hotfix version. The "Context" should summarize
    the changes from the hotfix. Include the following text
    prominently:
+
 ```
 This PR must be merged manually using a --ff-only merge. Do not use the Github UI.
 ```
+
 5. Depending on the complexity of the hotfix, and/or merge conflicts,
    the PR may need a thorough review, or just a sign-off that the
    merge was done correctly.
 6. If `develop` is updated before this PR is merged, do not merge
    `develop` back into your branch. Instead rebase preserving merges,
    or do the merge again. (See also the `rerere` git config setting.)
+
 ```
 git rebase --rebase-merges upstream/develop
 # OR
 git reset --hard upstream/develop
 git merge upstream/master
 ```
+
 7. When the PR is ready, push it to `develop`.
+
 ```
 git fetch upstreams
 
@@ -963,6 +1016,7 @@ git log --show-signature "upstream/develop..HEAD"
 
 git push upstream-push HEAD:develop
 ```
+
 Development on `develop` can proceed as normal. It is recommended to
 create a beta (or RC) immediately to ensure that everything worked as
 expected.
@@ -977,12 +1031,13 @@ a significant fraction of users, which would necessitate a hotfix / point
 release to that version as well as any later versions.
 
 This scenario would follow the same basic procedure as above,
-except that *none* of `develop`, `release`, or `master`
+except that _none_ of `develop`, `release`, or `master`
 would be touched during the release process.
 
 In this example, consider if version 2.1.1 needed to be patched.
 
 1. Create two branches in the main (`upstream`) repo.
+
 ```
 git fetch upstreams
 
@@ -996,6 +1051,7 @@ git push upstream-push
 
 git fetch upstreams
 ```
+
 2. Work continues as above, except using `master-2.1.2`as
    the base branch for any merging, packaging, etc.
 3. After the release is tagged and packages are built, you could

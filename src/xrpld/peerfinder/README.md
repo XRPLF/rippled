@@ -1,4 +1,3 @@
-
 # PeerFinder
 
 ## Introduction
@@ -31,23 +30,23 @@ slots_.
 
 PeerFinder has these responsibilities
 
-* Maintain a persistent set of endpoint addresses suitable for bootstrapping
+- Maintain a persistent set of endpoint addresses suitable for bootstrapping
   into the peer to peer overlay, ranked by relative locally observed utility.
 
-* Send and receive protocol messages for discovery of endpoint addresses.
+- Send and receive protocol messages for discovery of endpoint addresses.
 
-* Provide endpoint addresses to new peers that need them.
+- Provide endpoint addresses to new peers that need them.
 
-* Maintain connections to a configured set of fixed peers.
+- Maintain connections to a configured set of fixed peers.
 
-* Impose limits on the various slots consumed by peer connections.
+- Impose limits on the various slots consumed by peer connections.
 
-* Initiate outgoing connection attempts to endpoint addresses to maintain the
+- Initiate outgoing connection attempts to endpoint addresses to maintain the
   overlay connectivity and fixed peer policies.
 
-* Verify the connectivity of neighbors who advertise inbound connection slots.
+- Verify the connectivity of neighbors who advertise inbound connection slots.
 
-* Prevent duplicate connections and connections to self.
+- Prevent duplicate connections and connections to self.
 
 ---
 
@@ -79,28 +78,28 @@ The `Config` structure defines the operational parameters of the PeerFinder.
 Some values come from the configuration file while others are calculated via
 tuned heuristics. The fields are as follows:
 
-* `autoConnect`
- 
+- `autoConnect`
+
   A flag indicating whether or not the Autoconnect feature is enabled.
 
-* `wantIncoming`
+- `wantIncoming`
 
   A flag indicating whether or not the peer desires inbound connections. When
   this flag is turned off, a peer will not advertise itself in Endpoint
   messages.
 
-* `listeningPort`
+- `listeningPort`
 
   The port number to use when creating the listening socket for peer
   connections.
 
-* `maxPeers`
+- `maxPeers`
 
   The largest number of active peer connections to allow. This includes inbound
   and outbound connections, but excludes fixed and cluster peers. There is an
   implementation defined floor on this value.
 
-* `outPeers`
+- `outPeers`
 
   The number of automatic outbound connections that PeerFinder will maintain
   when the Autoconnect feature is enabled. The value is computed with fractional
@@ -161,8 +160,8 @@ Endpoint messages are received from the overlay over time.
 
 The `Bootcache` stores IP addresses useful for gaining initial connections.
 Each address is associated with the following metadata:
- 
-* **Valence**
+
+- **Valence**
 
   A signed integer which represents the number of successful
   consecutive connection attempts when positive, and the number of
@@ -202,30 +201,30 @@ a slot. Slots have properties and state associated with them:
 The slot state represents the current stage of the connection as it passes
 through the business logic for establishing peer connections.
 
-* `accept`
+- `accept`
 
   The accept state is an initial state resulting from accepting an incoming
   connection request on a listening socket. The remote IP address and port
   are known, and a handshake is expected next.
 
-* `connect`
+- `connect`
 
   The connect state is an initial state used when actively establishing outbound
   connection attempts. The desired remote IP address and port are known.
 
-* `connected`
+- `connected`
 
   When an outbound connection attempt succeeds, it moves to the connected state.
   The handshake is initiated but not completed.
 
-* `active`
+- `active`
 
   The state becomes Active when a connection in either the Accepted or Connected
   state completes the handshake process, and a slot is available based on the
   properties. If no slot is available when the handshake completes, the socket
   is gracefully closed.
 
-* `closing`
+- `closing`
 
   The Closing state represents a connected socket in the process of being
   gracefully closed.
@@ -234,13 +233,13 @@ through the business logic for establishing peer connections.
 
 Slot properties may be combined and are not mutually exclusive.
 
-* **Inbound**
+- **Inbound**
 
   An inbound slot is the condition of a socket which has accepted an incoming
   connection request. A connection which is not inbound is by definition
   outbound.
 
-* **Fixed**
+- **Fixed**
 
   A fixed slot is a desired connection to a known peer identified by IP address,
   usually entered manually in the configuration file. For the purpose of
@@ -248,14 +247,14 @@ Slot properties may be combined and are not mutually exclusive.
   although only the IP address is checked to determine if the fixed peer is
   already connected. Fixed slots do not count towards connection limits.
 
-* **Cluster**
+- **Cluster**
 
   A cluster slot is a connection which has completed the handshake stage, whose
   public key matches a known public key usually entered manually in the
   configuration file or learned through overlay messages from other trusted
   peers. Cluster slots do not count towards connection limits.
 
-* **Superpeer** (forthcoming)
+- **Superpeer** (forthcoming)
 
   A superpeer slot is a connection to a peer which can accept incoming
   connections, meets certain resource availaibility requirements (such as
@@ -279,7 +278,7 @@ Cluster slots are identified by the public key and set up during the
 initialization of the manager or discovered upon receipt of messages in the
 overlay from trusted connections.
 
---------------------------------------------------------------------------------
+---
 
 # Algorithms
 
@@ -295,8 +294,8 @@ This stage is invoked when the number of active fixed connections is below the
 number of fixed connections specified in the configuration, and one of the
 following is true:
 
-* There are eligible fixed addresses to try
-* Any outbound connection attempts are in progress
+- There are eligible fixed addresses to try
+- Any outbound connection attempts are in progress
 
 Each fixed address is associated with a retry timer. On a fixed connection
 failure, the timer is reset so that the address is not tried for some amount
@@ -317,8 +316,8 @@ The Livecache is invoked when Stage 1 is not active, autoconnect is enabled,
 and the number of active outbound connections is below the number desired. The
 stage remains active while:
 
-* The Livecache has addresses to try
-* Any outbound connection attempts are in progress
+- The Livecache has addresses to try
+- Any outbound connection attempts are in progress
 
 PeerFinder makes its best effort to exhaust addresses in the Livecache before
 moving on to the Bootcache, because Livecache addresses are highly likely
@@ -333,7 +332,7 @@ The Bootcache is invoked when Stage 1 and Stage 2 are not active, autoconnect
 is enabled, and the number of active outbound connections is below the number
 desired. The stage remains active while:
 
-* There are addresses in the cache that have not been tried recently.
+- There are addresses in the cache that have not been tried recently.
 
 Entries in the Bootcache are ranked, with highly connectible addresses preferred
 over others. Connection attempts to Bootcache addresses are very likely to
@@ -342,7 +341,7 @@ not have open slots. Before the remote peer closes the connection it will send
 a handful of addresses from its Livecache to help the new peer coming online
 obtain connections.
 
---------------------------------------------------------------------------------
+---
 
 # References
 
@@ -352,10 +351,11 @@ Much of the work in PeerFinder was inspired by earlier work in Gnutella:
 _By Christopher Rohrs and Vincent Falco_
 
 [Gnutella 0.6 Protocol:](http://rfc-gnutella.sourceforge.net/src/rfc-0_6-draft.html) Sections:
-* 2.2.2   Ping (0x00)
-* 2.2.3   Pong (0x01)
-* 2.2.4   Use of Ping and Pong messages
-* 2.2.4.1   A simple pong caching scheme
-* 2.2.4.2   Other pong caching schemes
+
+- 2.2.2 Ping (0x00)
+- 2.2.3 Pong (0x01)
+- 2.2.4 Use of Ping and Pong messages
+- 2.2.4.1 A simple pong caching scheme
+- 2.2.4.2 Other pong caching schemes
 
 [overlay_network]: http://en.wikipedia.org/wiki/Overlay_network

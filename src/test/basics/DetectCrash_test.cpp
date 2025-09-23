@@ -41,7 +41,7 @@ struct DetectCrash_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(DetectCrash, unit_test, beast);
+BEAST_DEFINE_TESTSUITE_MANUAL(DetectCrash, basics, beast);
 
 }  // namespace test
 }  // namespace ripple

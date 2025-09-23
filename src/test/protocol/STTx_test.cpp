@@ -1857,7 +1857,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STTx, ripple_app, ripple);
-BEAST_DEFINE_TESTSUITE(InnerObjectFormatsSerializer, ripple_app, ripple);
+BEAST_DEFINE_TESTSUITE(STTx, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(InnerObjectFormatsSerializer, protocol, ripple);
 
 }  // namespace ripple

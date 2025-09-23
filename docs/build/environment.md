@@ -5,7 +5,6 @@ platforms: Linux, macOS, or Windows.
 
 [BUILD.md]: ../../BUILD.md
 
-
 ## Linux
 
 Package ecosystems vary across Linux distributions,
@@ -53,11 +52,10 @@ clang --version
 
 ### Install Xcode Specific Version (Optional)
 
-If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang. 
+If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang.
 This will likely cause issues building rippled. You may want to install a specific version of Xcode:
 
 1. **Download Xcode**
-
    - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)
    - Sign in with your Apple Developer account
    - Search for an Xcode version that includes **Apple Clang (Expected Version)**

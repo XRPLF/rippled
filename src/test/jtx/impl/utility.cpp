@@ -19,7 +19,7 @@
 
 #include <test/jtx/utility.h>
 
-#include <xrpld/net/RPCCall.h>
+#include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/Object.h>

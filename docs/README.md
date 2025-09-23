@@ -7,7 +7,6 @@ Install these dependencies:
 - [Doxygen](http://www.doxygen.nl): All major platforms have [official binary
   distributions](http://www.doxygen.nl/download.html#srcbin), or you can
   build from [source](http://www.doxygen.nl/download.html#srcbin).
-
   - MacOS: We recommend installing via Homebrew: `brew install doxygen`.
     The executable will be installed in `/usr/local/bin` which is already
     in the default `PATH`.
@@ -21,17 +20,14 @@ Install these dependencies:
     $ ln -s /Applications/Doxygen.app/Contents/Resources/doxygen /usr/local/bin/doxygen
     ```
 
-- [PlantUML](http://plantuml.com): 
-
+- [PlantUML](http://plantuml.com):
   1. Install a functioning Java runtime, if you don't already have one.
   2. Download [`plantuml.jar`](http://sourceforge.net/projects/plantuml/files/plantuml.jar/download).
 
 - [Graphviz](https://www.graphviz.org):
-
   - Linux: Install from your package manager.
   - Windows: Use an [official installer](https://graphviz.gitlab.io/_pages/Download/Download_windows.html).
   - MacOS: Install via Homebrew: `brew install graphviz`.
-
 
 ## Docker
 
@@ -40,14 +36,16 @@ build environment Docker image, which has all of them installed already.
 
 1. Install [Docker](https://docs.docker.com/engine/installation/)
 2. Pull the image:
-  ```
-  sudo docker pull rippleci/rippled-ci-builder:2944b78d22db
-  ```
-3. Run the image from the project folder:
-  ```
-  sudo docker run -v $PWD:/opt/rippled --rm rippleci/rippled-ci-builder:2944b78d22db
-  ```
 
+```
+sudo docker pull rippleci/rippled-ci-builder:2944b78d22db
+```
+
+3. Run the image from the project folder:
+
+```
+sudo docker run -v $PWD:/opt/rippled --rm rippleci/rippled-ci-builder:2944b78d22db
+```
 
 ## Build
 
