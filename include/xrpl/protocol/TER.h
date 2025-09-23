@@ -141,6 +141,8 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+
+    temBAD_WASM,
 };
 
 //------------------------------------------------------------------------------
@@ -185,6 +187,8 @@ enum TEFcodes : TERUnderlyingType {
     tefNO_TICKET,
     tefNFTOKEN_IS_NOT_TRANSFERABLE,
     tefINVALID_LEDGER_FIX_TYPE,
+    tefNO_WASM,
+    tefWASM_FIELD_NOT_INCLUDED,
 };
 
 //------------------------------------------------------------------------------
@@ -362,6 +366,7 @@ enum TECcodes : TERUnderlyingType {
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
     tecNO_DELEGATE_PERMISSION = 198,
+    tecWASM_REJECTED = 199,
 };
 
 //------------------------------------------------------------------------------
