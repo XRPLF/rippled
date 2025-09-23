@@ -250,6 +250,9 @@ private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
 
+    std::pair<TER, XRPAmount>
+    checkInvariants(TER result, XRPAmount fee);
+
     TER
     consumeSeqProxy(SLE::pointer const& sleAccount);
     TER

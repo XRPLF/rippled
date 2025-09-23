@@ -107,6 +107,18 @@ setCommonHostFunctions(HostFunctions* hfs, std::vector<WasmImportFunc>& i)
     WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                       5'500);
     WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                       5'500);
     WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                        12'000);
+
+    WASM_IMPORT_FUNC2(i, instanceParam, "instance_param", hfs,                                                  70);
+    WASM_IMPORT_FUNC2(i, functionParam, "function_param", hfs,                                                  70);
+    WASM_IMPORT_FUNC2(i, getContractDataFromKey, "get_contract_data_from_key", hfs,                             70);
+    WASM_IMPORT_FUNC2(i, getNestedContractDataFromKey, "get_nested_contract_data_from_key", hfs,                70);
+    WASM_IMPORT_FUNC2(i, setNestedContractDataFromKey, "set_nested_contract_data_from_key", hfs,                70);
+    WASM_IMPORT_FUNC2(i, setContractDataFromKey, "set_contract_data_from_key", hfs,                             70);
+    WASM_IMPORT_FUNC2(i, buildTxn, "build_txn", hfs,                                                            70);
+    WASM_IMPORT_FUNC2(i, addTxnField, "add_txn_field", hfs,                                                     70);
+    WASM_IMPORT_FUNC2(i, emitBuiltTxn, "emit_built_txn", hfs,                                                2'000);
+    WASM_IMPORT_FUNC2(i, emitTxn, "emit_txn", hfs,                                                           2'000);
+    WASM_IMPORT_FUNC2(i, emitEvent, "emit_event", hfs,                                                          70);
     // clang-format on
 }
 
@@ -166,6 +178,68 @@ runEscrowWasm(
 
 NotTEC
 preflightEscrowWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params,
+    HostFunctions* hfs,
+    beast::Journal j)
+{
+    //  create VM and set cost limit
+    auto& vm = WasmEngine::instance();
+    vm.initMaxPages(MAX_PAGES);
+
+    auto const ret = vm.check(
+        wasmCode,
+        funcName,
+        params,
+        createWasmImport(hfs),
+        hfs ? hfs->getJournal() : j);
+
+    return ret;
+}
+
+Expected<WasmRunResult, TER>
+runContractWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params,
+    HostFunctions* hfs,
+    int64_t gasLimit,
+    beast::Journal j)
+{
+    //  create VM and set cost limit
+    auto& vm = WasmEngine::instance();
+    vm.initMaxPages(MAX_PAGES);
+
+    auto const ret = vm.run(
+        wasmCode,
+        funcName,
+        params,
+        createWasmImport(hfs),
+        hfs,
+        gasLimit,
+        hfs ? hfs->getJournal() : j);
+
+    // std::cout << "runContractWasm, mod size: " << wasmCode.size()
+    //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
+
+    if (!ret)
+    {
+#ifdef DEBUG_OUTPUT
+        std::cout << ", error: " << ret.error() << std::endl;
+#endif
+        return Unexpected<TER>(ret.error());
+    }
+
+#ifdef DEBUG_OUTPUT
+    std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
+              << std::endl;
+#endif
+    return WasmRunResult{ret->result, ret->cost};
+}
+
+NotTEC
+preflightContractWasm(
     Bytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmParam> const& params,

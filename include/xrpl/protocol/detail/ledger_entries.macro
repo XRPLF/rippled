@@ -168,6 +168,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfFirstNFTokenSequence, soeOPTIONAL},
     {sfAMMID,                soeOPTIONAL}, // pseudo-account designator
     {sfVaultID,              soeOPTIONAL}, // pseudo-account designator
+    {sfContractID,           soeOPTIONAL}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -514,6 +515,46 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfScale,                soeDEFAULT},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
+}))
+
+/** A ledger object representing a contract source.
+    \sa keylet::contractSource
+ */
+LEDGER_ENTRY(ltCONTRACT_SOURCE, 0x0085, ContractSource, contract_source, ({
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfContractHash,         soeREQUIRED},
+    {sfContractCode,         soeREQUIRED},
+    {sfFunctions,            soeREQUIRED},
+    {sfInstanceParameters,   soeOPTIONAL},
+    {sfReferenceCount,       soeREQUIRED},
+}))
+
+/** A ledger object representing a contract.
+    \sa keylet::contract
+ */
+LEDGER_ENTRY(ltCONTRACT, 0x0086, Contract, contract, ({
+    {sfPreviousTxnID,             soeREQUIRED},
+    {sfPreviousTxnLgrSeq,         soeREQUIRED},
+    {sfSequence,                  soeREQUIRED},
+    {sfOwnerNode,                 soeREQUIRED},
+    {sfOwner,                     soeREQUIRED},
+    {sfContractAccount,           soeREQUIRED},
+    {sfContractHash,              soeREQUIRED},
+    {sfInstanceParameterValues,   soeOPTIONAL},
+    {sfURI,                       soeOPTIONAL},
+}))
+
+/** A ledger object representing a contract data.
+    \sa keylet::contractData
+ */
+LEDGER_ENTRY(ltCONTRACT_DATA, 0x0087, ContractData, contract_data, ({
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfOwner,                soeREQUIRED},
+    {sfContractAccount,      soeREQUIRED},
+    {sfContractJson,         soeREQUIRED},
 }))
 
 #undef EXPAND
