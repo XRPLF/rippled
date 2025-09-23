@@ -38,7 +38,7 @@ public:
     void
     testAllBadHeldTransactions()
     {
-        // All trasactions are already marked as SF_BAD, and we should be able
+        // All transactions are already marked as SF_BAD, and we should be able
         // to handle the case properly without an assertion failure
         testcase("No valid transactions in batch");
 
@@ -57,14 +57,14 @@ public:
 
             auto const jtx = env.jt(ticket::create(alice, 1), seq(1), fee(10));
 
-            auto transacionId = jtx.stx->getTransactionID();
+            auto transactionId = jtx.stx->getTransactionID();
             env.app().getHashRouter().setFlags(
-                transacionId, HashRouterFlags::HELD);
+                transactionId, HashRouterFlags::HELD);
 
             env(jtx, json(jss::Sequence, 1), ter(terNO_ACCOUNT));
 
             env.app().getHashRouter().setFlags(
-                transacionId, HashRouterFlags::BAD);
+                transactionId, HashRouterFlags::BAD);
 
             env.close();
         }
