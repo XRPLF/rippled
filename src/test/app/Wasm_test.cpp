@@ -29,6 +29,9 @@
 namespace ripple {
 namespace test {
 
+bool
+testGetDataIncrement();
+
 using Add_proto = int32_t(int32_t, int32_t);
 static wasm_trap_t*
 Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
@@ -42,6 +45,13 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
 struct Wasm_test : public beast::unit_test::suite
 {
+    void
+    testGetDataHelperFunctions()
+    {
+        testcase("getData helper functions");
+        BEAST_EXPECT(testGetDataIncrement());
+    }
+
     void
     testWasmLib()
     {
@@ -294,6 +304,362 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testHFCost()
+    {
+        testcase("wasm test host functions cost");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        {
+            std::string const wasmHex = allHostFunctionsWasmHex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            auto& engine = WasmEngine::instance();
+
+            TestHostFunctions hfs(env, 0);
+            std::vector<WasmImportFunc> imp = createWasmImport(&hfs);
+            for (auto& i : imp)
+                i.gas = 0;
+
+            auto re = engine.run(
+                wasm,
+                ESCROW_FUNCTION_NAME,
+                {},
+                imp,
+                &hfs,
+                1'000'000,
+                env.journal);
+
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 847, std::to_string(re->cost));
+            }
+
+            env.close();
+        }
+
+        env.close();
+        env.close();
+        env.close();
+        env.close();
+        env.close();
+
+        {
+            std::string const wasmHex = allHostFunctionsWasmHex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            auto& engine = WasmEngine::instance();
+
+            TestHostFunctions hfs(env, 0);
+            std::vector<WasmImportFunc> const imp = createWasmImport(&hfs);
+
+            auto re = engine.run(
+                wasm,
+                ESCROW_FUNCTION_NAME,
+                {},
+                imp,
+                &hfs,
+                1'000'000,
+                env.journal);
+
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 40'107, std::to_string(re->cost));
+            }
+
+            env.close();
+        }
+    }
+
+    void
+    testEscrowWasmDN()
+    {
+        testcase("escrow wasm devnet test");
+
+        std::string const wasmStr =
+            boost::algorithm::unhex(allHostFunctionsWasmHex);
+        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+
+        using namespace test::jtx;
+        Env env{*this};
+        {
+            TestHostFunctions nfs(env, 0);
+            auto re =
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 40'107, std::to_string(re->cost));
+            }
+        }
+
+        {  // fail because trying to access nonexistent field
+            struct BadTestHostFunctions : public TestHostFunctions
+            {
+                explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
+                {
+                }
+                Expected<Bytes, HostFunctionError>
+                getTxField(SField const& fname) override
+                {
+                    return Unexpected(HostFunctionError::FIELD_NOT_FOUND);
+                }
+            };
+            BadTestHostFunctions nfs(env);
+            auto re =
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 4'806, std::to_string(re->cost));
+            }
+        }
+
+        {  // fail because trying to allocate more than MAX_PAGES memory
+            struct BadTestHostFunctions : public TestHostFunctions
+            {
+                explicit BadTestHostFunctions(Env& env) : TestHostFunctions(env)
+                {
+                }
+                Expected<Bytes, HostFunctionError>
+                getTxField(SField const& fname) override
+                {
+                    return Bytes((MAX_PAGES + 1) * 64 * 1024, 1);
+                }
+            };
+            BadTestHostFunctions nfs(env);
+            auto re =
+                runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs, 100'000);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result == -201, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 4'806, std::to_string(re->cost));
+            }
+        }
+
+        {  // fail because recursion too deep
+
+            auto const wasmStr = boost::algorithm::unhex(deepRecursionHex);
+            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+
+            TestHostFunctionsSink nfs(env);
+            std::string funcName("recursive");
+            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 1'000'000'000);
+            BEAST_EXPECT(!re && re.error());
+            // std::cout << "bad case (deep recursion) result " << re.error()
+            //             << std::endl;
+
+            auto const& sink = nfs.getSink();
+            auto countSubstr = [](std::string const& str,
+                                  std::string const& substr) {
+                std::size_t pos = 0;
+                int occurrences = 0;
+                while ((pos = str.find(substr, pos)) != std::string::npos)
+                {
+                    occurrences++;
+                    pos += substr.length();
+                }
+                return occurrences;
+            };
+
+            auto const s = sink.messages().str();
+            BEAST_EXPECT(
+                countSubstr(s, "WAMR Error: failure to call func") == 1);
+            BEAST_EXPECT(
+                countSubstr(s, "Exception: wasm operand stack overflow") > 0);
+        }
+
+        {
+            auto wasmStr = boost::algorithm::unhex(ledgerSqnWasmHex);
+            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            TestLedgerDataProvider ledgerDataProvider(&env);
+
+            std::vector<WasmImportFunc> imports;
+            WASM_IMPORT_FUNC2(
+                imports, getLedgerSqn, "get_ledger_sqn2", &ledgerDataProvider);
+
+            auto& engine = WasmEngine::instance();
+
+            auto re = engine.run(
+                wasm,
+                ESCROW_FUNCTION_NAME,
+                {},
+                imports,
+                nullptr,
+                1'000'000,
+                env.journal);
+
+            // expected import not provided
+            BEAST_EXPECT(!re);
+        }
+    }
+
+    void
+    testFloat()
+    {
+        testcase("float point");
+
+        std::string const funcName("finish");
+
+        using namespace test::jtx;
+
+        Env env(*this);
+        {
+            std::string const wasmHex = floatTestsWasmHex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            TestHostFunctions hf(env, 0);
+            auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 96'942, std::to_string(re->cost));
+            }
+            env.close();
+        }
+
+        {
+            std::string const wasmHex = float0Hex;
+            std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+            std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+            TestHostFunctions hf(env, 0);
+            auto re = runEscrowWasm(wasm, funcName, {}, &hf, 100'000);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECTS(re->result == 1, std::to_string(re->result));
+                BEAST_EXPECTS(re->cost == 2'053, std::to_string(re->cost));
+            }
+            env.close();
+        }
+    }
+
+    void
+    perfTest()
+    {
+        testcase("Perf test host functions");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        // std::string const funcName("test");
+        auto const& wasmHex = hfPerfTest;
+        std::string const wasmStr = boost::algorithm::unhex(wasmHex);
+        std::vector<uint8_t> const wasm(wasmStr.begin(), wasmStr.end());
+
+        // std::string const credType = "abcde";
+        // std::string const credType2 = "fghijk";
+        // std::string const credType3 = "0123456";
+        // char const uri[] = "uri";
+
+        Account const alan{"alan"};
+        Account const bob{"bob"};
+        Account const issuer{"issuer"};
+
+        {
+            Env env(*this);
+            // Env env(*this, envconfig(), {}, nullptr,
+            // beast::severities::kTrace);
+            env.fund(XRP(5000), alan, bob, issuer);
+            env.close();
+
+            // // create escrow
+            // auto const seq = env.seq(alan);
+            // auto const k = keylet::escrow(alan, seq);
+            // // auto const allowance = 3'600;
+            // auto escrowCreate = escrow::create(alan, bob, XRP(1000));
+            // XRPAmount txnFees = env.current()->fees().base + 1000;
+            // env(escrowCreate,
+            //     escrow::finish_function(wasmHex),
+            //     escrow::finish_time(env.now() + 11s),
+            //     escrow::cancel_time(env.now() + 100s),
+            //     escrow::data("1000000000"),  // 1000 XRP in drops
+            //     memodata("memo1234567"),
+            //     memodata("2memo1234567"),
+            //     fee(txnFees));
+
+            // // create depositPreauth
+            // auto const k = keylet::depositPreauth(
+            //     bob,
+            //     {{issuer.id(), makeSlice(credType)},
+            //      {issuer.id(), makeSlice(credType2)},
+            //      {issuer.id(), makeSlice(credType3)}});
+            // env(deposit::authCredentials(
+            //     bob,
+            //     {{issuer, credType},
+            //      {issuer, credType2},
+            //      {issuer, credType3}}));
+
+            // create nft
+            [[maybe_unused]] uint256 const nft0{
+                token::getNextID(env, alan, 0u)};
+            env(token::mint(alan, 0u));
+            auto const k = keylet::nftoffer(alan, 0);
+            [[maybe_unused]] uint256 const nft1{
+                token::getNextID(env, alan, 0u)};
+
+            env(token::mint(alan, 0u),
+                token::uri(
+                    "https://github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279?id=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&ut=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&sid=github.com/XRPLF/XRPL-Standards/discussions/"
+                    "279&aot=github.com/XRPLF/XRPL-Standards/disc"));
+            [[maybe_unused]] uint256 const nft2{
+                token::getNextID(env, alan, 0u)};
+            env(token::mint(alan, 0u));
+            env.close();
+
+            PerfHostFunctions nfs(env, k, env.tx());
+
+            auto re = runEscrowWasm(wasm, ESCROW_FUNCTION_NAME, {}, &nfs);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re->result);
+                std::cout << "Res: " << re->result << " cost: " << re->cost
+                          << std::endl;
+            }
+
+            // env(escrow::finish(alan, alan, seq),
+            //     escrow::comp_allowance(allowance),
+            //     fee(txnFees),
+            //     ter(tesSUCCESS));
+
+            env.close();
+        }
+    }
+
+    void
+    testCodecovWasm()
+    {
+        testcase("Codecov wasm test");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+
+        auto const wasmStr = boost::algorithm::unhex(codecovTestsWasmHex);
+        Bytes const wasm(wasmStr.begin(), wasmStr.end());
+        TestHostFunctions hfs(env, 0);
+
+        auto const allowance = 153'296;
+        auto re = runEscrowWasm(
+            wasm, ESCROW_FUNCTION_NAME, {}, &hfs, allowance, env.journal);
+
+        if (BEAST_EXPECT(re.has_value()))
+        {
+            BEAST_EXPECT(re->result);
+            BEAST_EXPECTS(re->cost == allowance, std::to_string(re->cost));
+        }
+    }
+
+    void
     testDisabledFloat()
     {
         testcase("disabled float");
@@ -304,7 +670,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const wasmStr = boost::algorithm::unhex(disabledFloatHex);
         Bytes wasm(wasmStr.begin(), wasmStr.end());
         std::string const funcName("finish");
-        TestHostFunctions hfs(env);
+        TestHostFunctions hfs(env, 0);
 
         {
             // f32 set constant, opcode disabled exception
@@ -327,11 +693,13 @@ struct Wasm_test : public beast::unit_test::suite
             }
         }
     }
+
     void
     run() override
     {
         using namespace test::jtx;
 
+        testGetDataHelperFunctions();
         testWasmLib();
         testBadWasm();
         testWasmLedgerSqn();
@@ -344,6 +712,12 @@ struct Wasm_test : public beast::unit_test::suite
         // testWasmSP1Verifier();
         testWasmBG16Verifier();
 
+        testHFCost();
+
+        testEscrowWasmDN();
+        testFloat();
+
+        testCodecovWasm();
         testDisabledFloat();
 
         // perfTest();
