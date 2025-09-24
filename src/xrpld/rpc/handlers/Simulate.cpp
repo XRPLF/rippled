@@ -25,11 +25,14 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
@@ -382,6 +385,17 @@ processResult(
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
+            RPC::insertDeliveredAmount(
+                jvResult[jss::meta],
+                view,
+                transaction->getSTransaction(),
+                *result.metadata);
+            RPC::insertNFTSyntheticInJson(
+                jvResult, transaction->getSTransaction(), *result.metadata);
+            RPC::insertMPTokenIssuanceID(
+                jvResult[jss::meta],
+                transaction->getSTransaction(),
+                *result.metadata);
         }
     }
 

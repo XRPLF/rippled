@@ -24,11 +24,11 @@
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
-#include <xrpld/ledger/View.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -190,7 +190,7 @@ getAccountObjects(
 
     auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
 
-    // this is a mutable version of limit, used to seemlessly switch
+    // this is a mutable version of limit, used to seamlessly switch
     // to iterating directory entries when nftokenpages are exhausted
     uint32_t mlimit = limit;
 
@@ -377,11 +377,11 @@ ledgerFromIndex(T& ledger, Json::Value indexValue, JsonContext& context)
     if (index == "closed")
         return getLedger(ledger, LedgerShortcut::CLOSED, context);
 
-    std::uint32_t iVal;
-    if (beast::lexicalCastChecked(iVal, index))
-        return getLedger(ledger, iVal, context);
+    std::uint32_t val;
+    if (!beast::lexicalCastChecked(val, index))
+        return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
 
-    return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+    return getLedger(ledger, val, context);
 }
 
 template <class T>
@@ -634,7 +634,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
     return Status::OK;
 }
 
-// Explicit instantiaion of above three functions
+// Explicit instantiation of above three functions
 template Status
 getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context&);
 
@@ -986,7 +986,7 @@ chooseLedgerEntryType(Json::Value const& params)
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
+#define LEDGER_ENTRY(tag, value, name, rpcName, ...) \
     {jss::name, jss::rpcName, tag},
 
 #include <xrpl/protocol/detail/ledger_entries.macro>

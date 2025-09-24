@@ -22,9 +22,9 @@
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <utility>

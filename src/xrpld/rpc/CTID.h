@@ -101,10 +101,13 @@ decodeCTID(T const ctid) noexcept
         {
             ctidValue = std::stoull(ctidString, nullptr, 16);
         }
+        // LCOV_EXCL_START
         catch (...)
         {
+            // should be impossible to hit given the length/regex check
             return std::nullopt;
         }
+        // LCOV_EXCL_STOP
     }
     else if constexpr (std::is_integral_v<T>)
     {
