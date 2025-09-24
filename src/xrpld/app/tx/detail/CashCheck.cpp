@@ -272,11 +272,6 @@ CashCheck::doApply()
         return tecFAILED_PROCESSING;
     }
 
-    auto const sponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
-    std::optional<std::shared_ptr<SLE>> sponsorSle = std::nullopt;
-    if (sponsorAcc)
-        sponsorSle = psb.peek(keylet::account(*sponsorAcc));
-
     // Preclaim already checked that source has at least the requested
     // funds.
     //
@@ -371,6 +366,11 @@ CashCheck::doApply()
                 //     b. issuing account (not sending account).
 
                 auto const sleDst = psb.peek(keylet::account(account_));
+
+                auto const sponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
+                std::optional<std::shared_ptr<SLE>> sponsorSle = std::nullopt;
+                if (sponsorAcc)
+                    sponsorSle = psb.peek(keylet::account(*sponsorAcc));
 
                 // Can the account cover the trust line's reserve?
                 if (auto const ret = checkInsufficientReserve(
@@ -515,6 +515,8 @@ CashCheck::doApply()
     }
 
     // If we succeeded, update the check owner's reserve.
+
+    auto const sponsorSle = getLedgerEntryReserveSponsor(psb, sleCheck);
     adjustOwnerCount(
         psb, psb.peek(keylet::account(srcId)), sponsorSle, -1, viewJ);
 

@@ -25,6 +25,34 @@
 namespace ripple {
 namespace test {
 
+static STAmount
+reserve(jtx::Env& env, std::uint32_t count)
+{
+    return env.current()->fees().accountReserve(count);
+}
+
+static void
+adjustAccountXRPBalance(
+    jtx::Env& env,
+    jtx::Account const& account,
+    STAmount const& balanceTo)
+{
+    using namespace test::jtx;
+    XRPL_ASSERT(
+        isXRP(balanceTo), "adjustAccountXRPBalance: balanceTo must be XRP");
+    auto const currentBalance = env.balance(account);
+    if (currentBalance == balanceTo)
+        return;
+
+    if (currentBalance > balanceTo)
+        env(pay(account, env.master, currentBalance - balanceTo + XRP(1)),
+            fee(XRP(1)));
+    else
+        env(pay(env.master, account, balanceTo - currentBalance), fee(XRP(1)));
+
+    env.close();
+}
+
 class Sponsor_test : public beast::unit_test::suite
 {
 public:
@@ -874,7 +902,6 @@ public:
     {
         testcase("Check");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const bob("bob");
         Account const gw("gw");
@@ -883,38 +910,10 @@ public:
 
         auto const USD = gw["USD"];
 
-        auto const reserve = env.current()->fees().reserve;
-        auto const increment = env.current()->fees().increment;
-
-        env.fund(XRP(10000), alice, bob, gw, sponsor2);
-        env.fund(drops(reserve) + drops(increment) - drops(1), sponsor);
-        env.close();
-
-        env.trust(USD(100), alice);
-        env.close();
-        env(pay(gw, alice, USD(100)));
-        env.close();
-
         {
-            BEAST_EXPECT(
-                env.balance(sponsor) < drops(reserve) + drops(increment));
-
-            // check sponsor balance
-            env(check::create(alice, bob, XRP(1)),
-                sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor),
-                ter(tecINSUFFICIENT_RESERVE));
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, bob, sponsor, sponsor2);
             env.close();
-        }
-
-        env(pay(env.master, sponsor, drops(1)));
-        env.close();
-
-        {
-            BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
 
             // CheckCreate -> CheckCancel
             auto const seq = env.seq(alice);
@@ -923,7 +922,7 @@ public:
                 sponsor::sig(sponsor));
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 2);  // RippleState + Check
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // Check
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
@@ -938,7 +937,7 @@ public:
                 sponsor::sig(sponsor2));
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 2);  // RippleState + Check
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // Check
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
@@ -952,13 +951,17 @@ public:
             env(check::cancel(alice, keylet.key));
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
 
         {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, bob, sponsor);
+            env.close();
+
             // CheckCreate -> CheckCash
             auto const seq2 = env.seq(alice);
             env(check::create(alice, bob, XRP(1)),
@@ -966,7 +969,7 @@ public:
                 sponsor::sig(sponsor));
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 2);  // RippleState + Check
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // Check
             BEAST_EXPECT(ownerCount(env, bob) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
@@ -979,18 +982,24 @@ public:
                 sponsor::sig(sponsor));
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 1);  // RippleState
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
         }
 
-        env(pay(env.master, sponsor, drops(env.current()->fees().increment)));
-        env.close();
-
         // RippleState sponsor (CheckCashMakesTrustLine)
         {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, bob, gw, sponsor, sponsor2);
+            env.close();
+
+            env.trust(USD(100), alice);
+            env.close();
+            env(pay(gw, alice, USD(100)));
+            env.close();
+
             // CheckCreate -> CheckCash
             auto const seq2 = env.seq(alice);
             env(check::create(alice, bob, USD(1)),
@@ -1019,6 +1028,60 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE
+
+            {
+                // CheckCreate
+                Env env{*this, testable_amendments()};
+                env.fund(XRP(10000), alice, bob, sponsor);
+                env.close();
+
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 1) - drops(1));
+
+                env(check::create(alice, bob, XRP(1)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 1));
+
+                env(check::create(alice, bob, XRP(1)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tesSUCCESS));
+                env.close();
+            }
+
+            {
+                //  CheckCash (CheckCashMakesTrustLine)
+                Env env{*this, testable_amendments()};
+                env.fund(XRP(10000), alice, bob, gw, sponsor);
+                env.close();
+
+                env.trust(USD(100), alice);
+                env.close();
+                env(pay(gw, alice, USD(100)));
+                env.close();
+
+                auto const seq = env.seq(alice);
+                env(check::create(alice, bob, USD(1)));
+                env.close();
+
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 1) - drops(1));
+
+                auto const keylet = keylet::check(alice, seq);
+                env(check::cash(bob, keylet.key, USD(1)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tecNO_LINE_INSUF_RESERVE));
+                env.close();
+            }
         }
     }
 
