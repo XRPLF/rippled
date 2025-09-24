@@ -47,10 +47,10 @@ adjustAccountXRPBalance(
         return;
 
     if (currentBalance > balanceTo)
-        env(pay(account, env.master, currentBalance - balanceTo + XRP(1)),
+        env(pay(account, env.master, currentBalance - (balanceTo + XRP(1))),
             fee(XRP(1)));
     else
-        env(pay(env.master, account, balanceTo - currentBalance), fee(XRP(1)));
+        env(pay(env.master, account, balanceTo - currentBalance));
 
     env.close();
 }
@@ -1968,10 +1968,13 @@ public:
                 env.close();
 
                 // for free mptoken checks
-                std::uint32_t bobTicketSeq{env.seq(bob) + 1};
-                env(ticket::create(bob, 2));
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
+                std::uint32_t ticketSeq{env.seq(sponsor) + 1};
+                env(ticket::create(sponsor, 2));
                 env.close();
 
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 3) - drops(1));
                 jv = {};
                 jv[sfTransactionType] = jss::MPTokenAuthorize;
                 jv[sfAccount] = bob.human();
@@ -1983,8 +1986,11 @@ public:
                     ter(tecINSUFFICIENT_RESERVE));
                 env.close();
 
-                env(noop(bob), ticket::use(bobTicketSeq));
+                env(noop(sponsor), ticket::use(ticketSeq));
                 env.close();
+
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 2) - drops(1));
 
                 // pass (free mptoken)
                 env(jv,
@@ -2822,71 +2828,112 @@ public:
     {
         testcase("TrustSet");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
-        env.close();
-
-        auto const& highAcc = alice > bob ? alice : bob;
-        auto const& lowAcc = alice > bob ? bob : alice;
-        for (bool isIssuerHigh : {false, true})
         {
-            auto const& issuer = isIssuerHigh ? highAcc : lowAcc;
-            auto const& user = isIssuerHigh ? lowAcc : highAcc;
-
-            auto const USD = issuer["USD"];
-
-            // create TrustLine
-            env(trust(user, USD(100)),
-                sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, user) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, user) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            auto const& highAcc = alice > bob ? alice : bob;
+            auto const& lowAcc = alice > bob ? bob : alice;
+            for (bool isIssuerHigh : {false, true})
+            {
+                auto const& issuer = isIssuerHigh ? highAcc : lowAcc;
+                auto const& user = isIssuerHigh ? lowAcc : highAcc;
 
-            auto const line = env.le(keylet::line(user, issuer, USD.currency));
-            BEAST_EXPECT(
-                line->getAccountID(
-                    isIssuerHigh ? sfLowSponsorAccount
-                                 : sfHighSponsorAccount) == sponsor.id());
-            BEAST_EXPECT(!line->isFieldPresent(
-                isIssuerHigh ? sfHighSponsorAccount : sfLowSponsorAccount));
+                auto const USD = issuer["USD"];
 
-            // transfer sponsor
-            env(sponsor::transfer(
-                    user, keylet::line(user, issuer, USD.currency).key),
-                sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
+                // create TrustLine
+                env(trust(user, USD(100)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, user) == 1);
+                BEAST_EXPECT(sponsoredOwnerCount(env, user) == 1);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+                auto const line =
+                    env.le(keylet::line(user, issuer, USD.currency));
+                BEAST_EXPECT(
+                    line->getAccountID(
+                        isIssuerHigh ? sfLowSponsorAccount
+                                     : sfHighSponsorAccount) == sponsor.id());
+                BEAST_EXPECT(!line->isFieldPresent(
+                    isIssuerHigh ? sfHighSponsorAccount : sfLowSponsorAccount));
+
+                // transfer sponsor
+                env(sponsor::transfer(
+                        user, keylet::line(user, issuer, USD.currency).key),
+                    sponsor::as(sponsor2, tfSponsorReserve),
+                    sponsor::sig(sponsor2));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, user) == 1);
+                BEAST_EXPECT(sponsoredOwnerCount(env, user) == 1);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+                auto const line2 =
+                    env.le(keylet::line(user, issuer, USD.currency));
+                BEAST_EXPECT(
+                    line2->getAccountID(
+                        isIssuerHigh ? sfLowSponsorAccount
+                                     : sfHighSponsorAccount) == sponsor2.id());
+                BEAST_EXPECT(!line2->isFieldPresent(
+                    isIssuerHigh ? sfHighSponsorAccount : sfLowSponsorAccount));
+
+                // delete TrustLine
+                env(trust(user, USD(0)));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, user) == 0);
+                BEAST_EXPECT(sponsoredOwnerCount(env, user) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+                BEAST_EXPECT(!env.le(keylet::line(user, issuer, USD.currency)));
+            }
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE for TrustSet
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, user) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, user) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            auto const& highAcc = alice > bob ? alice : bob;
+            auto const& lowAcc = alice > bob ? bob : alice;
+            for (bool isIssuerHigh : {false})
+            {
+                auto const& issuer = isIssuerHigh ? highAcc : lowAcc;
+                auto const& user = isIssuerHigh ? lowAcc : highAcc;
+                auto const USD = issuer["USD"];
 
-            auto const line2 = env.le(keylet::line(user, issuer, USD.currency));
-            BEAST_EXPECT(
-                line2->getAccountID(
-                    isIssuerHigh ? sfLowSponsorAccount
-                                 : sfHighSponsorAccount) == sponsor2.id());
-            BEAST_EXPECT(!line2->isFieldPresent(
-                isIssuerHigh ? sfHighSponsorAccount : sfLowSponsorAccount));
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 100));
 
-            // delete TrustLine
-            env(trust(user, USD(0)));
-            env.close();
+                // free trustline
+                std::uint32_t const ticketSeq{env.seq(sponsor) + 1};
+                env(ticket::create(sponsor, 2));
+                env.close();
 
-            BEAST_EXPECT(ownerCount(env, user) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, user) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 3) - drops(1));
 
-            BEAST_EXPECT(!env.le(keylet::line(user, issuer, USD.currency)));
+                // create TrustLine
+                env(trust(user, USD(100)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tecNO_LINE_INSUF_RESERVE));
+                env.close();
+
+                env(noop(sponsor), ticket::use(ticketSeq));
+                env(noop(sponsor), ticket::use(ticketSeq + 1));
+                env.close();
+            }
         }
     }
 

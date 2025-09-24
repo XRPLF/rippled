@@ -1029,6 +1029,18 @@ hashOfSeq(ReadView const& ledger, LedgerIndex seq, beast::Journal journal)
     return std::nullopt;
 }
 
+uint32_t
+ownerCount(std::shared_ptr<SLE const> const& sponsorSle)
+{
+    auto const ownerCount = sponsorSle->getFieldU32(sfOwnerCount);
+    auto const sponsoredOwnerCount =
+        sponsorSle->getFieldU32(sfSponsoredOwnerCount);
+    auto const sponsoringOwnerCount =
+        sponsorSle->getFieldU32(sfSponsoringOwnerCount);
+
+    return ownerCount + sponsoringOwnerCount - sponsoredOwnerCount;
+}
+
 TER
 checkInsufficientReserve(
     ReadView const& view,
@@ -1479,7 +1491,7 @@ authorizeMPToken(
         // an account owns, in the case of MPTokens we only
         // *enforce* a reserve if the user owns more than two
         // items. This is similar to the reserve requirements of trust lines.
-        if (sleAcct->getFieldU32(sfOwnerCount) >= 2)
+        if (ownerCount(sponsor.value_or(sleAcct)) >= 2)
         {
             if (auto const ret = checkInsufficientReserve(
                     view, sleAcct, priorBalance, sponsor, 1);

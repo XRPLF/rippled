@@ -382,8 +382,6 @@ SetTrust::doApply()
     if (!sle)
         return tefINTERNAL;
 
-    std::uint32_t const uOwnerCount = sle->getFieldU32(sfOwnerCount);
-
     // The reserve that is required to create the line. Note
     // that although the reserve increases with every item
     // an account owns, in the case of trust lines we only
@@ -401,7 +399,13 @@ SetTrust::doApply()
     // but the incremental reserve for the trust line as
     // well. A person with no intention of using the gateway
     // could use the extra XRP for their own purposes.
+    auto const txSponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
 
+    std::optional<std::shared_ptr<SLE>> txSponsorSle = std::nullopt;
+    if (txSponsorAcc)
+        txSponsorSle = view().peek(keylet::account(*txSponsorAcc));
+
+    std::uint32_t const uOwnerCount = ownerCount(txSponsorSle.value_or(sle));
     bool const freeTrustLine = uOwnerCount < 2;
 
     std::uint32_t uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
@@ -452,11 +456,6 @@ SetTrust::doApply()
 
     SLE::pointer sleRippleState =
         view().peek(keylet::line(account_, uDstAccountID, currency));
-
-    auto const txSponsorAcc = getTxReserveSponsorAccountID(ctx_.tx);
-    std::optional<std::shared_ptr<SLE>> txSponsorSle = std::nullopt;
-    if (txSponsorAcc)
-        txSponsorSle = view().peek(keylet::account(*txSponsorAcc));
 
     if (sleRippleState)
     {

@@ -451,6 +451,9 @@ areCompatible(
     beast::Journal::Stream& s,
     char const* reason);
 
+uint32_t
+ownerCount(std::shared_ptr<SLE const> const& sponsorSle);
+
 TER
 checkInsufficientReserve(
     ReadView const& view,
