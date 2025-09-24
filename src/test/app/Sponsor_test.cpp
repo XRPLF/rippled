@@ -2349,48 +2349,68 @@ public:
         testcase("PayChan");
         using namespace test::jtx;
         using namespace std::literals::chrono_literals;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
-        env.close();
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+            env.close();
 
-        // PayChanCreate
-        auto const pk = alice.pk();
-        auto const settleDelay = 10s;
-        auto const chan = paychan::channel(alice, bob, env.seq(alice));
-        env(paychan::create(alice, bob, XRP(100), settleDelay, pk),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+            // PayChanCreate
+            auto const pk = alice.pk();
+            auto const settleDelay = 10s;
+            auto const chan = paychan::channel(alice, bob, env.seq(alice));
+            env(paychan::create(alice, bob, XRP(100), settleDelay, pk),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-        // transfer sponsor
-        env(sponsor::transfer(alice, chan),
-            sponsor::as(sponsor2, tfSponsorReserve),
-            sponsor::sig(sponsor2));
-        env.close();
+            // transfer sponsor
+            env(sponsor::transfer(alice, chan),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-        env.close(env.now() + settleDelay);
-        // PayChanClaim (delete PayChan)
-        env(paychan::claim(bob, chan), txflags(tfClose));
-        env.close();
+            env.close(env.now() + settleDelay);
+            // PayChanClaim (delete PayChan)
+            env(paychan::claim(bob, chan), txflags(tfClose));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE for PayChan
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+
+            // PayChanCreate
+            auto const pk = alice.pk();
+            auto const settleDelay = 10s;
+            env(paychan::create(alice, bob, XRP(100), settleDelay, pk),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+        }
     }
 
     void
@@ -2398,48 +2418,65 @@ public:
     {
         testcase("PermissionedDomain");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor, sponsor2);
+            env.close();
 
-        env.fund(XRP(1000000), alice, sponsor, sponsor2);
-        env.close();
+            // PermissionedDomainSet
+            auto const seq = env.seq(alice);
+            pdomain::Credentials credentials{{alice, "first credential"}};
+            env(pdomain::setTx(alice, credentials),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        // PermissionedDomainSet
-        auto const seq = env.seq(alice);
-        pdomain::Credentials credentials{{alice, "first credential"}};
-        env(pdomain::setTx(alice, credentials),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            // transfer sponsor
+            env(sponsor::transfer(
+                    alice, keylet::permissionedDomain(alice, seq).key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
 
-        // transfer sponsor
-        env(sponsor::transfer(
-                alice, keylet::permissionedDomain(alice, seq).key),
-            sponsor::as(sponsor2, tfSponsorReserve),
-            sponsor::sig(sponsor2));
-        env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            // PermissionedDomainDelete
+            auto objects = pdomain::getObjects(alice, env);
+            auto const domain = objects.begin()->first;
+            env(pdomain::deleteTx(alice, domain));
+            env.close();
 
-        // PermissionedDomainDelete
-        auto objects = pdomain::getObjects(alice, env);
-        auto const domain = objects.begin()->first;
-        env(pdomain::deleteTx(alice, domain));
-        env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+        {
+            // check INSUFFICIENT_RESERVE for PermissionedDomain
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor);
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+
+            // PermissionedDomainSet
+            pdomain::Credentials credentials{{alice, "first credential"}};
+            env(pdomain::setTx(alice, credentials),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+        }
     }
 
     void
@@ -2451,16 +2488,12 @@ public:
         using DataSeries = std::vector<
             std::tuple<std::string, std::string, std::uint32_t, std::uint8_t>>;
 
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, sponsor, sponsor2);
-        env.close();
-
         auto const oracleSet =
-            [&env](Account const& account, uint8_t dataSeriesSize) {
+            [](Env& env, Account const& account, uint8_t dataSeriesSize) {
                 auto const now = env.timeKeeper().now();
                 env.close(now + oracle::testStartTime - epoch_offset);
                 Json::Value jv;
@@ -2517,182 +2550,209 @@ public:
         };
 
         {
-            // OracleSet (reserve 1)
-            env(oracleSet(alice, 5),
-                sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor, sponsor2);
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            {
+                // OracleSet (reserve 1)
+                env(oracleSet(env, alice, 5),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
 
-            // transfer sponsor
-            env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
-                sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
-            env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+                // transfer sponsor
+                env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
+                    sponsor::as(sponsor2, tfSponsorReserve),
+                    sponsor::sig(sponsor2));
+                env.close();
 
-            // OracleDelete
-            env(oracleDelete(alice));
-            env.close();
+                BEAST_EXPECT(ownerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+                // OracleDelete
+                env(oracleDelete(alice));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            }
+            {
+                // OracleSet (reserve 2)
+                env(oracleSet(env, alice, 6),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+
+                // transfer sponsor
+                env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
+                    sponsor::as(sponsor2, tfSponsorReserve),
+                    sponsor::sig(sponsor2));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 2);
+
+                // OracleDelete
+                env(oracleDelete(alice));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            }
+            {
+                // OracleSet (reserve 1->2, sponsor1 -> no-sponsor)
+                env(oracleSet(env, alice, 5),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+                // reserve 1->2
+                env(oracleSet(env, alice, 6));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+
+                // OracleDelete
+                env(oracleDelete(alice));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            }
+            {
+                // OracleSet (reserve 1->2, sponsor1 -> sponsor2)
+                env(oracleSet(env, alice, 5),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+                // reserve 1->2
+                env(oracleSet(env, alice, 6),
+                    sponsor::as(sponsor2, tfSponsorReserve),
+                    sponsor::sig(sponsor2));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 2);
+
+                // OracleDelete
+                env(oracleDelete(alice));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            }
+            {
+                // OracleSet (reserve 1->2, non-sponsor -> sponsor1)
+                env(oracleSet(env, alice, 5));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 1);
+
+                // reserve 1->2
+                env(oracleSet(env, alice, 6),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+
+                // OracleDelete
+                env(oracleDelete(alice));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            }
+            for (bool isTwoOwnerCount : {false, true})
+            {
+                // test sponsor transfer
+                auto const dataSeriesSize = isTwoOwnerCount ? 6 : 5;
+                auto const ocount = isTwoOwnerCount ? 2 : 1;
+                env(oracleSet(env, alice, dataSeriesSize),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == ocount);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == ocount);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == ocount);
+
+                // transfer sponsor
+                env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
+                    sponsor::as(sponsor2, tfSponsorReserve),
+                    sponsor::sig(sponsor2));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == ocount);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == ocount);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == ocount);
+
+                // disolve sponsor
+                env(sponsor::transfer(alice, keylet::oracle(alice, 1).key));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == ocount);
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            }
         }
+
         {
-            // OracleSet (reserve 2)
-            env(oracleSet(alice, 6),
+            // check INSUFFICIENT_RESERVE for OracleSet
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor);
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+            env(oracleSet(env, alice, 5),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
             env.close();
 
-            BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
-
-            // transfer sponsor
-            env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
-                sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 2);
-
-            // OracleDelete
-            env(oracleDelete(alice));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-        }
-        {
-            // OracleSet (reserve 1->2, sponsor1 -> no-sponsor)
-            env(oracleSet(alice, 5),
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 2) - drops(1));
+            env(oracleSet(env, alice, 6),
                 sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
             env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-
-            // reserve 1->2
-            env(oracleSet(alice, 6));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-
-            // OracleDelete
-            env(oracleDelete(alice));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        }
-        {
-            // OracleSet (reserve 1->2, sponsor1 -> sponsor2)
-            env(oracleSet(alice, 5),
-                sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
-
-            // reserve 1->2
-            env(oracleSet(alice, 6),
-                sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 2);
-
-            // OracleDelete
-            env(oracleDelete(alice));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
-        }
-        {
-            // OracleSet (reserve 1->2, non-sponsor -> sponsor1)
-            env(oracleSet(alice, 5));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 1);
-
-            // reserve 1->2
-            env(oracleSet(alice, 6),
-                sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
-
-            // OracleDelete
-            env(oracleDelete(alice));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        }
-        for (bool isTwoOwnerCount : {false, true})
-        {
-            // test sponsor transfer
-            auto const dataSeriesSize = isTwoOwnerCount ? 6 : 5;
-            auto const ocount = isTwoOwnerCount ? 2 : 1;
-            env(oracleSet(alice, dataSeriesSize),
-                sponsor::as(sponsor, tfSponsorReserve),
-                sponsor::sig(sponsor));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == ocount);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == ocount);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == ocount);
-
-            // transfer sponsor
-            env(sponsor::transfer(alice, keylet::oracle(alice, 1).key),
-                sponsor::as(sponsor2, tfSponsorReserve),
-                sponsor::sig(sponsor2));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == ocount);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == ocount);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == ocount);
-
-            // disolve sponsor
-            env(sponsor::transfer(alice, keylet::oracle(alice, 1).key));
-            env.close();
-
-            BEAST_EXPECT(ownerCount(env, alice) == ocount);
-            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
     }
 
