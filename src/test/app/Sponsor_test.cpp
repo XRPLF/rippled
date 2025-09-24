@@ -1607,45 +1607,62 @@ public:
     {
         testcase("DID");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, sponsor, sponsor2);
-        env.close();
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor, sponsor2);
+            env.close();
 
-        // DIDSet
-        env(did::set(alice),
-            did::uri("uri"),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+            // DIDSet
+            env(did::set(alice),
+                did::uri("uri"),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-        // transfer sponsor
-        auto const keylet = keylet::did(alice);
-        env(sponsor::transfer(alice, keylet.key),
-            sponsor::as(sponsor2, tfSponsorReserve),
-            sponsor::sig(sponsor2));
-        env.close();
+            // transfer sponsor
+            auto const keylet = keylet::did(alice);
+            env(sponsor::transfer(alice, keylet.key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-        // DIDDelete
-        env(did::del(alice));
-        env.close();
+            // DIDDelete
+            env(did::del(alice));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE for DIDSet
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor);
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+            env(did::set(alice),
+                did::uri("uri"),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+        }
     }
 
     void
@@ -1769,6 +1786,53 @@ public:
             BEAST_EXPECT(
                 env.le(keylet::line(bob, gw, USD.currency))
                     ->getAccountID(sfHighSponsorAccount) == sponsor2.id());
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE for EscrowCreate, EscrowFinish
+            Env env{*this, testable_amendments()};
+            auto const baseFee = env.current()->fees().base;
+            env.fund(XRP(1000000), alice, bob, gw, sponsor);
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+            env(escrow::create(alice, bob, XRP(100)),
+                escrow::condition(escrow::cb1),
+                escrow::cancel_time(env.now() + 10s),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+
+            env.trust(USD(1000000), alice);
+            env.close();
+            env(pay(gw, alice, USD(10000)));
+            env.close();
+
+            env(escrow::create(alice, bob, USD(100)),
+                escrow::condition(escrow::cb1),
+                escrow::cancel_time(env.now() + 10s),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+            auto const seq = env.seq(alice);
+            env(escrow::create(alice, bob, USD(100)),
+                escrow::condition(escrow::cb1),
+                escrow::cancel_time(env.now() + 10s));
+            env.close();
+
+            env(escrow::finish(bob, alice, seq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                fee(baseFee * 150),
+                ter(tecNO_LINE_INSUF_RESERVE));
+            env.close();
         }
     }
 
