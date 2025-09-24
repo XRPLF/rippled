@@ -17,14 +17,14 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -265,8 +265,33 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
     auto const& dstAmount = tx.getFieldAmount(sfAmount);
-    auto const& amountIssue = dstAmount.issue();
+    // post-amendment: disallow cross currency payments for PaymentMint and
+    // PaymentBurn
+    if (view.rules().enabled(fixDelegateV1_1))
+    {
+        auto const& amountAsset = dstAmount.asset();
+        if (tx.isFieldPresent(sfSendMax) &&
+            tx[sfSendMax].asset() != amountAsset)
+            return tecNO_DELEGATE_PERMISSION;
 
+        if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+            amountAsset.getIssuer() == tx[sfAccount])
+            return tesSUCCESS;
+
+        if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+            amountAsset.getIssuer() == tx[sfDestination])
+            return tesSUCCESS;
+
+        return tecNO_DELEGATE_PERMISSION;
+    }
+
+    // Calling dstAmount.issue() in the next line would throw if it holds MPT.
+    // That exception would be caught in preclaim and returned as tefEXCEPTION.
+    // This check is just a cleaner, more explicit way to get the same result.
+    if (dstAmount.holds<MPTIssue>())
+        return tefEXCEPTION;
+
+    auto const& amountIssue = dstAmount.issue();
     if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
         amountIssue.account == tx[sfAccount])
         return tesSUCCESS;

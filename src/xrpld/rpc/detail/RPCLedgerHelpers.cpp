@@ -67,10 +67,10 @@ ledgerFromIndex(T& ledger, Json::Value indexValue, Context& context)
         return getLedger(ledger, LedgerShortcut::CLOSED, context);
 
     std::uint32_t iVal;
-    if (beast::lexicalCastChecked(iVal, index))
-        return getLedger(ledger, iVal, context);
+    if (!beast::lexicalCastChecked(iVal, index))
+        return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
 
-    return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
+    return getLedger(ledger, iVal, context);
 }
 
 template <class T>

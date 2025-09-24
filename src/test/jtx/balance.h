@@ -38,9 +38,9 @@ namespace jtx {
 class balance
 {
 private:
-    bool none_;
-    Account account_;
-    STAmount value_;
+    bool const none_;
+    Account const account_;
+    STAmount const value_;
 
 public:
     balance(Account const& account, none_t)
@@ -49,7 +49,7 @@ public:
     }
 
     balance(Account const& account, None const& value)
-        : none_(true), account_(account), value_(value.issue)
+        : none_(true), account_(account), value_(value.asset)
     {
     }
 
