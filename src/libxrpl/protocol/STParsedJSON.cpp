@@ -648,14 +648,11 @@ parseLeaf(
                 else if (value.isInt())
                 {
                     // future-proofing - a static assert failure if the JSON
-                    // library ever supports larger languages
+                    // library ever supports larger ints
                     // In such case, we will need additional bounds checks here
                     static_assert(
-                        std::numeric_limits<decltype(value.asInt())>::min() ==
-                        std::numeric_limits<std::int32_t>::min());
-                    static_assert(
-                        std::numeric_limits<decltype(value.asInt())>::max() ==
-                        std::numeric_limits<std::int32_t>::max());
+                        std::
+                            is_same_v<decltype(value.asInt()), std::int32_t>());
                     ret = detail::make_stvar<STInt32>(field, value.asInt());
                 }
                 else if (value.isUInt())
