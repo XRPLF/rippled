@@ -100,7 +100,7 @@ class FeeVote_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(FeeVote, server, ripple);
+BEAST_DEFINE_TESTSUITE(FeeVote, app, ripple);
 
 }  // namespace test
 }  // namespace ripple

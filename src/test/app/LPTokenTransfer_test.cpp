@@ -287,11 +287,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // with fixFrozenLPTokenTransfer enabled, alice's offer can no
             // longer cross with carol's offer
             BEAST_EXPECT(
-                expectLine(env, alice, STAmount{token1, 10'000'000}) &&
-                expectLine(env, alice, STAmount{token2, 10'000'000}));
+                expectHolding(env, alice, STAmount{token1, 10'000'000}) &&
+                expectHolding(env, alice, STAmount{token2, 10'000'000}));
             BEAST_EXPECT(
-                expectLine(env, carol, STAmount{token2, 10'000'000}) &&
-                expectLine(env, carol, STAmount{token1, 10'000'000}));
+                expectHolding(env, carol, STAmount{token2, 10'000'000}) &&
+                expectHolding(env, carol, STAmount{token1, 10'000'000}));
             BEAST_EXPECT(
                 expectOffers(env, alice, 1) && expectOffers(env, carol, 0));
         }
@@ -300,11 +300,11 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // alice's offer still crosses with carol's offer despite carol's
             // token1 is frozen
             BEAST_EXPECT(
-                expectLine(env, alice, STAmount{token1, 10'000'100}) &&
-                expectLine(env, alice, STAmount{token2, 9'999'900}));
+                expectHolding(env, alice, STAmount{token1, 10'000'100}) &&
+                expectHolding(env, alice, STAmount{token2, 9'999'900}));
             BEAST_EXPECT(
-                expectLine(env, carol, STAmount{token2, 10'000'100}) &&
-                expectLine(env, carol, STAmount{token1, 9'999'900}));
+                expectHolding(env, carol, STAmount{token2, 10'000'100}) &&
+                expectHolding(env, carol, STAmount{token1, 9'999'900}));
             BEAST_EXPECT(
                 expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
         }
@@ -467,7 +467,7 @@ public:
     void
     run() override
     {
-        FeatureBitset const all{jtx::supported_amendments()};
+        FeatureBitset const all{jtx::testable_amendments()};
 
         for (auto const features : {all, all - fixFrozenLPTokenTransfer})
         {

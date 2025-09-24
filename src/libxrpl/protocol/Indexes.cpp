@@ -117,12 +117,19 @@ getBookBase(Book const& book)
     XRPL_ASSERT(
         isConsistent(book), "ripple::getBookBase : input is consistent");
 
-    auto const index = indexHash(
-        LedgerNameSpace::BOOK_DIR,
-        book.in.currency,
-        book.out.currency,
-        book.in.account,
-        book.out.account);
+    auto const index = book.domain ? indexHash(
+                                         LedgerNameSpace::BOOK_DIR,
+                                         book.in.currency,
+                                         book.out.currency,
+                                         book.in.account,
+                                         book.out.account,
+                                         *(book.domain))
+                                   : indexHash(
+                                         LedgerNameSpace::BOOK_DIR,
+                                         book.in.currency,
+                                         book.out.currency,
+                                         book.in.account,
+                                         book.out.account);
 
     // Return with quality 0.
     auto k = keylet::quality({ltDIR_NODE, index}, 0);

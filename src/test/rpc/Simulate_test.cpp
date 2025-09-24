@@ -131,6 +131,32 @@ class Simulate_test : public beast::unit_test::suite
             std::to_string(env.current()->txCount()));
     }
 
+    void
+    testTxJsonMetadataField(
+        jtx::Env& env,
+        Json::Value const& tx,
+        std::function<void(
+            Json::Value const&,
+            Json::Value const&,
+            Json::Value const&)> const& validate,
+        Json::Value const& expectedMetadataKey,
+        bool testSerialized = true)
+    {
+        env.close();
+
+        Json::Value params;
+        params[jss::tx_json] = tx;
+        validate(
+            env.rpc("json", "simulate", to_string(params)),
+            tx,
+            expectedMetadataKey);
+        validate(env.rpc("simulate", to_string(tx)), tx, expectedMetadataKey);
+
+        BEAST_EXPECTS(
+            env.current()->txCount() == 0,
+            std::to_string(env.current()->txCount()));
+    }
+
     Json::Value
     getJsonMetadata(Json::Value txResult) const
     {
@@ -720,7 +746,11 @@ class Simulate_test : public beast::unit_test::suite
                                       Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
-                    result, tx, env.seq(alice), env.current()->fees().base * 2);
+                    result,
+                    tx,
+                    env.seq(alice),
+                    tx.isMember(jss::Signers) ? env.current()->fees().base * 2
+                                              : env.current()->fees().base);
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
@@ -762,6 +792,10 @@ class Simulate_test : public beast::unit_test::suite
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
             tx[sfDomain] = newDomain;
+
+            // test with autofill
+            testTx(env, tx, validateOutput, false);
+
             tx[sfSigners] = Json::arrayValue;
             {
                 Json::Value signer;
@@ -771,7 +805,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[sfSigners].append(signerOuter);
             }
 
-            // test with autofill
+            // test with just signer accounts
             testTx(env, tx, validateOutput, false);
 
             tx[sfSigningPubKey] = "";
@@ -780,8 +814,7 @@ class Simulate_test : public beast::unit_test::suite
             // transaction requires a non-base fee
             tx[sfFee] =
                 (env.current()->fees().base * 2).jsonClipped().asString();
-            tx[sfSigners][0u][sfSigner][jss::SigningPubKey] =
-                strHex(becky.pk().slice());
+            tx[sfSigners][0u][sfSigner][jss::SigningPubKey] = "";
             tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
 
             // test without autofill
@@ -830,14 +863,88 @@ class Simulate_test : public beast::unit_test::suite
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
             tx[sfDomain] = newDomain;
+            // master key is disabled, so this is invalid
+            tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
 
             // test with autofill
             testTx(env, tx, testSimulation);
 
-            tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
             tx[sfSequence] = env.seq(env.master);
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+
+            // test without autofill
+            testTx(env, tx, testSimulation);
+        }
+    }
+
+    void
+    testInvalidSingleAndMultiSigningTransaction()
+    {
+        testcase(
+            "Transaction with both single-signing SigningPubKey and "
+            "multi-signing Signers");
+
+        using namespace jtx;
+        Env env(*this);
+        static auto const newDomain = "123ABC";
+        Account const alice("alice");
+        Account const becky("becky");
+        Account const carol("carol");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // set up valid multisign
+        env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
+        env.close();
+
+        {
+            std::function<void(Json::Value const&, Json::Value const&)> const&
+                testSimulation = [&](Json::Value const& resp,
+                                     Json::Value const& tx) {
+                    auto result = resp[jss::result];
+                    checkBasicReturnValidity(
+                        result,
+                        tx,
+                        env.seq(env.master),
+                        env.current()->fees().base * 2);
+
+                    BEAST_EXPECT(result[jss::engine_result] == "temINVALID");
+                    BEAST_EXPECT(result[jss::engine_result_code] == -277);
+                    BEAST_EXPECT(
+                        result[jss::engine_result_message] ==
+                        "The transaction is ill-formed.");
+
+                    BEAST_EXPECT(
+                        !result.isMember(jss::meta) &&
+                        !result.isMember(jss::meta_blob));
+                };
+
+            Json::Value tx;
+
+            tx[jss::Account] = env.master.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[sfDomain] = newDomain;
+            // master key is disabled, so this is invalid
+            tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
+            tx[sfSigners] = Json::arrayValue;
+            {
+                Json::Value signer;
+                signer[jss::Account] = becky.human();
+                Json::Value signerOuter;
+                signerOuter[sfSigner] = signer;
+                tx[sfSigners].append(signerOuter);
+            }
+
+            // test with autofill
+            testTx(env, tx, testSimulation, false);
+
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = env.seq(env.master);
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+            tx[sfSigners][0u][sfSigner][jss::SigningPubKey] =
+                strHex(becky.pk().slice());
+            tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
 
             // test without autofill
             testTx(env, tx, testSimulation);
@@ -1105,6 +1212,83 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testSuccessfulTransactionAdditionalMetadata()
+    {
+        testcase("Successful transaction with additional metadata");
+
+        using namespace jtx;
+        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+                    cfg->NETWORK_ID = 1025;
+                    return cfg;
+                })};
+
+        Account const alice("alice");
+
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        {
+            auto validateOutput = [&](Json::Value const& resp,
+                                      Json::Value const& tx,
+                                      Json::Value const& expectedMetadataKey) {
+                auto result = resp[jss::result];
+
+                BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+                BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+
+                if (BEAST_EXPECT(
+                        result.isMember(jss::meta) ||
+                        result.isMember(jss::meta_blob)))
+                {
+                    Json::Value const metadata = getJsonMetadata(result);
+
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                    BEAST_EXPECT(
+                        metadata.isMember(expectedMetadataKey.asString()));
+                }
+            };
+
+            {
+                Json::Value tx;
+                tx[jss::Account] = env.master.human();
+                tx[jss::TransactionType] = jss::Payment;
+                tx[sfDestination] = alice.human();
+                tx[sfAmount] = "100";
+
+                // test delivered amount
+                testTxJsonMetadataField(
+                    env, tx, validateOutput, jss::delivered_amount);
+            }
+
+            {
+                Json::Value tx;
+                tx[jss::Account] = env.master.human();
+                tx[jss::TransactionType] = jss::NFTokenMint;
+                tx[sfNFTokenTaxon] = 1;
+
+                // test nft synthetic
+                testTxJsonMetadataField(
+                    env, tx, validateOutput, jss::nftoken_id);
+            }
+
+            {
+                Json::Value tx;
+                tx[jss::Account] = env.master.human();
+                tx[jss::TransactionType] = jss::MPTokenIssuanceCreate;
+
+                // test mpt issuance id
+                testTxJsonMetadataField(
+                    env, tx, validateOutput, jss::mpt_issuance_id);
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -1117,9 +1301,11 @@ public:
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
         testTransactionSigningFailure();
+        testInvalidSingleAndMultiSigningTransaction();
         testMultisignedBadPubKey();
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
+        testSuccessfulTransactionAdditionalMetadata();
     }
 };
 

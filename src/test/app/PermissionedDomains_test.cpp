@@ -53,9 +53,9 @@ exceptionExpected(Env& env, Json::Value const& jv)
 class PermissionedDomains_test : public beast::unit_test::suite
 {
     FeatureBitset withoutFeature_{
-        supported_amendments() - featurePermissionedDomains};
+        testable_amendments() - featurePermissionedDomains};
     FeatureBitset withFeature_{
-        supported_amendments()  //
+        testable_amendments()  //
         | featurePermissionedDomains | featureCredentials};
 
     // Verify that each tx type can execute if the feature is enabled.
@@ -81,7 +81,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
     void
     testCredentialsDisabled()
     {
-        auto amendments = supported_amendments();
+        auto amendments = testable_amendments();
         amendments.set(featurePermissionedDomains);
         amendments.reset(featureCredentials);
         testcase("Credentials disabled");

@@ -68,9 +68,13 @@ JSS(Flags);                // in/out: TransactionSign; field.
 JSS(Holder);               // field.
 JSS(Invalid);              //
 JSS(Issuer);               // in: Credential transactions
+JSS(IssuingChainDoor);     // field.
+JSS(IssuingChainIssue);    // field.
 JSS(LastLedgerSequence);   // in: TransactionSign; field
 JSS(LastUpdateTime);       // field.
 JSS(LimitAmount);          // field.
+JSS(LockingChainDoor);     // field.
+JSS(LockingChainIssue);    // field.
 JSS(NetworkID);            // field.
 JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
@@ -391,6 +395,7 @@ JSS(load_fee);                // out: LoadFeeTrackImp, NetworkOPs
 JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
+JSS(locked);                  // out: GatewayBalances
 JSS(low);                     // out: BookChanges
 JSS(lowest_sequence);         // out: AccountInfo
 JSS(lowest_ticket);           // out: AccountInfo
@@ -705,7 +710,7 @@ JSS(write_load);              // out: GetCounts
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegatable, fields) JSS(name);
+#define TRANSACTION(tag, value, name, ...) JSS(name);
 
 #include <xrpl/protocol/detail/transactions.macro>
 
@@ -717,11 +722,11 @@ JSS(write_load);              // out: GetCounts
 #pragma push_macro("LEDGER_ENTRY_DUPLICATE")
 #undef LEDGER_ENTRY_DUPLICATE
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
-    JSS(name);                                          \
+#define LEDGER_ENTRY(tag, value, name, rpcName, ...) \
+    JSS(name);                                       \
     JSS(rpcName);
 
-#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, fields) JSS(rpcName);
+#define LEDGER_ENTRY_DUPLICATE(tag, value, name, rpcName, ...) JSS(rpcName);
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 

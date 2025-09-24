@@ -577,7 +577,7 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        auto const features = supported_amendments() | featureXChainBridge |
+        auto const features = testable_amendments() | featureXChainBridge |
             featurePermissionedDomains;
         Env env(*this, features);
 

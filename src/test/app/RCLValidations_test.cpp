@@ -229,7 +229,6 @@ class RCLValidations_test : public beast::unit_test::suite
         // support for a ledger hash which is already in the trie.
 
         using Seq = RCLValidatedLedger::Seq;
-        using ID = RCLValidatedLedger::ID;
 
         // Max known ancestors for each ledger
         Seq const maxAncestors = 256;

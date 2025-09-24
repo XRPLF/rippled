@@ -274,6 +274,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(IOUAmount, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(IOUAmount, basics, ripple);
 
 }  // namespace ripple

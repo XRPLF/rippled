@@ -20,7 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_MPT_H_INCLUDED
 #define RIPPLE_TEST_JTX_MPT_H_INCLUDED
 
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 
@@ -105,6 +106,8 @@ struct MPTCreate
     std::optional<std::uint32_t> holderCount = std::nullopt;
     bool fund = true;
     std::optional<std::uint32_t> flags = {0};
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -137,7 +140,11 @@ struct MPTSet
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
+    std::optional<std::uint16_t> transferFee = std::nullopt;
+    std::optional<std::string> metadata = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
+    std::optional<uint256> domainID = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -165,6 +172,9 @@ public:
     set(MPTSet const& set = {});
 
     [[nodiscard]] bool
+    checkDomainID(std::optional<uint256> expected) const;
+
+    [[nodiscard]] bool
     checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount)
         const;
 
@@ -175,6 +185,18 @@ public:
     checkFlags(
         uint32_t const expectedFlags,
         std::optional<Account> const& holder = std::nullopt) const;
+
+    [[nodiscard]] bool
+    checkMetadata(std::string const& metadata) const;
+
+    [[nodiscard]] bool
+    isMetadataPresent() const;
+
+    [[nodiscard]] bool
+    checkTransferFee(std::uint16_t transferFee) const;
+
+    [[nodiscard]] bool
+    isTransferFeePresent() const;
 
     Account const&
     issuer() const

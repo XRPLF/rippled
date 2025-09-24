@@ -25,8 +25,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 
-#include <utility>
-
 namespace ripple {
 
 /** Sign an STObject

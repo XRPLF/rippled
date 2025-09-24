@@ -27,14 +27,6 @@
 namespace ripple {
 namespace test {
 
-bool
-checkVL(Slice const& result, std::string expected)
-{
-    Serializer s;
-    s.addRaw(result);
-    return s.getString() == expected;
-}
-
 struct DID_test : public beast::unit_test::suite
 {
     void
@@ -390,7 +382,7 @@ struct DID_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         FeatureBitset const emptyDID{fixEmptyDID};
         testEnabled(all);
         testAccountReserve(all);

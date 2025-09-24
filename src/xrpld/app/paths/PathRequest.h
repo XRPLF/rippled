@@ -23,8 +23,9 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/net/InfoSub.h>
+#include <xrpld/rpc/InfoSub.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -155,6 +156,8 @@ private:
 
     std::set<Issue> sciSourceCurrencies;
     std::map<Issue, STPathSet> mContext;
+
+    std::optional<uint256> domain;
 
     bool convert_all_;
 

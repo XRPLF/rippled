@@ -27,23 +27,63 @@
 #include <xrpl/beast/container/aged_unordered_map.h>
 
 #include <optional>
+#include <set>
 
 namespace ripple {
 
-// TODO convert these macros to int constants or an enum
-#define SF_BAD 0x02  // Temporarily bad
-#define SF_SAVED 0x04
-#define SF_HELD 0x08  // Held by LedgerMaster after potential processing failure
-#define SF_TRUSTED 0x10  // comes from trusted source
+enum class HashRouterFlags : std::uint16_t {
+    // Public flags
+    UNDEFINED = 0x00,
+    BAD = 0x02,  // Temporarily bad
+    SAVED = 0x04,
+    HELD = 0x08,     // Held by LedgerMaster after potential processing failure
+    TRUSTED = 0x10,  // Comes from a trusted source
 
-// Private flags, used internally in apply.cpp.
-// Do not attempt to read, set, or reuse.
-#define SF_PRIVATE1 0x0100
-#define SF_PRIVATE2 0x0200
-#define SF_PRIVATE3 0x0400
-#define SF_PRIVATE4 0x0800
-#define SF_PRIVATE5 0x1000
-#define SF_PRIVATE6 0x2000
+    // Private flags (used internally in apply.cpp)
+    // Do not attempt to read, set, or reuse.
+    PRIVATE1 = 0x0100,
+    PRIVATE2 = 0x0200,
+    PRIVATE3 = 0x0400,
+    PRIVATE4 = 0x0800,
+    PRIVATE5 = 0x1000,
+    PRIVATE6 = 0x2000
+};
+
+constexpr HashRouterFlags
+operator|(HashRouterFlags lhs, HashRouterFlags rhs)
+{
+    return static_cast<HashRouterFlags>(
+        static_cast<std::underlying_type_t<HashRouterFlags>>(lhs) |
+        static_cast<std::underlying_type_t<HashRouterFlags>>(rhs));
+}
+
+constexpr HashRouterFlags&
+operator|=(HashRouterFlags& lhs, HashRouterFlags rhs)
+{
+    lhs = lhs | rhs;
+    return lhs;
+}
+
+constexpr HashRouterFlags
+operator&(HashRouterFlags lhs, HashRouterFlags rhs)
+{
+    return static_cast<HashRouterFlags>(
+        static_cast<std::underlying_type_t<HashRouterFlags>>(lhs) &
+        static_cast<std::underlying_type_t<HashRouterFlags>>(rhs));
+}
+
+constexpr HashRouterFlags&
+operator&=(HashRouterFlags& lhs, HashRouterFlags rhs)
+{
+    lhs = lhs & rhs;
+    return lhs;
+}
+
+constexpr bool
+any(HashRouterFlags flags)
+{
+    return static_cast<std::underlying_type_t<HashRouterFlags>>(flags) != 0;
+}
 
 class Config;
 
@@ -100,14 +140,14 @@ private:
                 peers_.insert(peer);
         }
 
-        int
+        HashRouterFlags
         getFlags(void) const
         {
             return flags_;
         }
 
         void
-        setFlags(int flagsToSet)
+        setFlags(HashRouterFlags flagsToSet)
         {
             flags_ |= flagsToSet;
         }
@@ -153,7 +193,7 @@ private:
         }
 
     private:
-        int flags_ = 0;
+        HashRouterFlags flags_ = HashRouterFlags::UNDEFINED;
         std::set<PeerShortID> peers_;
         // This could be generalized to a map, if more
         // than one flag needs to expire independently.
@@ -189,14 +229,17 @@ public:
     addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer);
 
     bool
-    addSuppressionPeer(uint256 const& key, PeerShortID peer, int& flags);
+    addSuppressionPeer(
+        uint256 const& key,
+        PeerShortID peer,
+        HashRouterFlags& flags);
 
     // Add a peer suppression and return whether the entry should be processed
     bool
     shouldProcess(
         uint256 const& key,
         PeerShortID peer,
-        int& flags,
+        HashRouterFlags& flags,
         std::chrono::seconds tx_interval);
 
     /** Set the flags on a hash.
@@ -204,9 +247,9 @@ public:
         @return `true` if the flags were changed. `false` if unchanged.
     */
     bool
-    setFlags(uint256 const& key, int flags);
+    setFlags(uint256 const& key, HashRouterFlags flags);
 
-    int
+    HashRouterFlags
     getFlags(uint256 const& key);
 
     /** Determines whether the hashed item should be relayed.

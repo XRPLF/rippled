@@ -17,22 +17,98 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/AMMHelpers.h>
+#include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/InvariantCheck.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
-#include <xrpld/ledger/ReadView.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/nftPageMask.h>
 
 namespace ripple {
+
+/*
+assert(enforce)
+
+There are several asserts (or XRPL_ASSERTs) in this file that check a variable
+named `enforce` when an invariant fails. At first glance, those asserts may look
+incorrect, but they are not.
+
+Those asserts take advantage of two facts:
+1. `asserts` are not (normally) executed in release builds.
+2. Invariants should *never* fail, except in tests that specifically modify
+   the open ledger to break them.
+
+This makes `assert(enforce)` sort of a second-layer of invariant enforcement
+aimed at _developers_. It's designed to fire if a developer writes code that
+violates an invariant, and runs it in unit tests or a develop build that _does
+not have the relevant amendments enabled_. It's intentionally a pain in the neck
+so that bad code gets caught and fixed as early as possible.
+*/
+
+enum Privilege {
+    noPriv =
+        0x0000,  // The transaction can not do any of the enumerated operations
+    createAcct =
+        0x0001,  // The transaction can create a new ACCOUNT_ROOT object.
+    createPseudoAcct = 0x0002,  // The transaction can create a pseudo account,
+                                // which implies createAcct
+    mustDeleteAcct =
+        0x0004,  // The transaction must delete an ACCOUNT_ROOT object
+    mayDeleteAcct = 0x0008,    // The transaction may delete an ACCOUNT_ROOT
+                               // object, but does not have to
+    overrideFreeze = 0x0010,   // The transaction can override some freeze rules
+    changeNFTCounts = 0x0020,  // The transaction can mint or burn an NFT
+    createMPTIssuance =
+        0x0040,  // The transaction can create a new MPT issuance
+    destroyMPTIssuance = 0x0080,  // The transaction can destroy an MPT issuance
+    mustAuthorizeMPT = 0x0100,  // The transaction MUST create or delete an MPT
+                                // object (except by issuer)
+    mayAuthorizeMPT = 0x0200,   // The transaction MAY create or delete an MPT
+                                // object (except by issuer)
+    mayDeleteMPT =
+        0x0400,  // The transaction MAY delete an MPT object. May not create.
+};
+constexpr Privilege
+operator|(Privilege lhs, Privilege rhs)
+{
+    return safe_cast<Privilege>(
+        safe_cast<std::underlying_type_t<Privilege>>(lhs) |
+        safe_cast<std::underlying_type_t<Privilege>>(rhs));
+}
+
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, delegatable, amendment, privileges, ...) \
+    case tag: {                                                                \
+        return (privileges) & priv;                                            \
+    }
+
+bool
+hasPrivilege(STTx const& tx, Privilege priv)
+{
+    switch (tx.getTxnType())
+    {
+#include <xrpl/protocol/detail/transactions.macro>
+        // Deprecated types
+        default:
+            return false;
+    }
+};
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
 
 void
 TransactionFeeCheck::visitEntry(
@@ -107,7 +183,8 @@ XRPNotCreated::visitEntry(
                     ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
                 break;
             case ltESCROW:
-                drops_ -= (*before)[sfAmount].xrp().drops();
+                if (isXRP((*before)[sfAmount]))
+                    drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
             default:
                 break;
@@ -128,7 +205,7 @@ XRPNotCreated::visitEntry(
                                   .drops();
                 break;
             case ltESCROW:
-                if (!isDelete)
+                if (!isDelete && isXRP((*after)[sfAmount]))
                     drops_ += (*after)[sfAmount].xrp().drops();
                 break;
             default:
@@ -268,15 +345,37 @@ NoZeroEscrow::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     auto isBad = [](STAmount const& amount) {
-        if (!amount.native())
-            return true;
+        // XRP case
+        if (amount.native())
+        {
+            if (amount.xrp() <= XRPAmount{0})
+                return true;
 
-        if (amount.xrp() <= XRPAmount{0})
-            return true;
+            if (amount.xrp() >= INITIAL_XRP)
+                return true;
+        }
+        else
+        {
+            // IOU case
+            if (amount.holds<Issue>())
+            {
+                if (amount <= beast::zero)
+                    return true;
 
-        if (amount.xrp() >= INITIAL_XRP)
-            return true;
+                if (badCurrency() == amount.getCurrency())
+                    return true;
+            }
 
+            // MPT case
+            if (amount.holds<MPTIssue>())
+            {
+                if (amount <= beast::zero)
+                    return true;
+
+                if (amount.mpt() > MPTAmount{maxMPTokenAmount})
+                    return true;  // LCOV_EXCL_LINE
+            }
+        }
         return false;
     };
 
@@ -285,14 +384,40 @@ NoZeroEscrow::visitEntry(
 
     if (after && after->getType() == ltESCROW)
         bad_ |= isBad((*after)[sfAmount]);
+
+    auto checkAmount = [this](std::int64_t amount) {
+        if (amount > maxMPTokenAmount || amount < 0)
+            bad_ = true;
+    };
+
+    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        auto const outstanding = (*after)[sfOutstandingAmount];
+        checkAmount(outstanding);
+        if (auto const locked = (*after)[~sfLockedAmount])
+        {
+            checkAmount(*locked);
+            bad_ = outstanding < *locked;
+        }
+    }
+
+    if (after && after->getType() == ltMPTOKEN)
+    {
+        auto const mptAmount = (*after)[sfMPTAmount];
+        checkAmount(mptAmount);
+        if (auto const locked = (*after)[~sfLockedAmount])
+        {
+            checkAmount(*locked);
+        }
+    }
 }
 
 bool
 NoZeroEscrow::finalize(
-    STTx const&,
+    STTx const& txn,
     TER const,
     XRPAmount const,
-    ReadView const&,
+    ReadView const& rv,
     beast::Journal const& j)
 {
     if (bad_)
@@ -328,10 +453,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if ((tx.getTxnType() == ttACCOUNT_DELETE ||
-         tx.getTxnType() == ttAMM_DELETE ||
-         tx.getTxnType() == ttVAULT_DELETE) &&
-        result == tesSUCCESS)
+    if (hasPrivilege(tx, mustDeleteAcct) && result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -348,9 +470,8 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if ((tx.getTxnType() == ttAMM_WITHDRAW ||
-         tx.getTxnType() == ttAMM_CLAWBACK) &&
-        result == tesSUCCESS && accountsDeleted_ == 1)
+    if (hasPrivilege(tx, mayDeleteAcct) && result == tesSUCCESS &&
+        accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -385,7 +506,8 @@ AccountRootsDeletedClean::finalize(
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
     [[maybe_unused]] bool const enforce =
-        view.rules().enabled(featureInvariantsV1_1);
+        view.rules().enabled(featureInvariantsV1_1) ||
+        view.rules().enabled(featureSingleAssetVault);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
         (void)enforce;
@@ -404,6 +526,8 @@ AccountRootsDeletedClean::finalize(
             JLOG(j.fatal())
                 << "Invariant failed: account deletion left behind a "
                 << typeName << " object";
+            // The comment above starting with "assert(enforce)" explains this
+            // assert.
             XRPL_ASSERT(
                 enforce,
                 "ripple::AccountRootsDeletedClean::finalize::objectExists : "
@@ -438,11 +562,16 @@ AccountRootsDeletedClean::finalize(
                 return false;
         }
 
-        // Keys directly stored in the AccountRoot object
-        if (auto const ammKey = accountSLE->at(~sfAMMID))
+        // If the account is a pseudo account, then the linked object must
+        // also be deleted. e.g. AMM, Vault, etc.
+        for (auto const& field : getPseudoAccountFields())
         {
-            if (objectExists(keylet::amm(*ammKey)) && enforce)
-                return false;
+            if (accountSLE->isFieldPresent(*field))
+            {
+                auto const key = accountSLE->getFieldH256(*field);
+                if (objectExists(keylet::unchecked(key)) && enforce)
+                    return false;
+            }
         }
     }
 
@@ -462,41 +591,23 @@ LedgerEntryTypesMatch::visitEntry(
 
     if (after)
     {
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+
+#define LEDGER_ENTRY(tag, ...) case tag:
+
         switch (after->getType())
         {
-            case ltACCOUNT_ROOT:
-            case ltDELEGATE:
-            case ltDIR_NODE:
-            case ltRIPPLE_STATE:
-            case ltTICKET:
-            case ltSIGNER_LIST:
-            case ltOFFER:
-            case ltLEDGER_HASHES:
-            case ltAMENDMENTS:
-            case ltFEE_SETTINGS:
-            case ltESCROW:
-            case ltPAYCHAN:
-            case ltCHECK:
-            case ltDEPOSIT_PREAUTH:
-            case ltNEGATIVE_UNL:
-            case ltNFTOKEN_PAGE:
-            case ltNFTOKEN_OFFER:
-            case ltAMM:
-            case ltBRIDGE:
-            case ltXCHAIN_OWNED_CLAIM_ID:
-            case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
-            case ltDID:
-            case ltORACLE:
-            case ltMPTOKEN_ISSUANCE:
-            case ltMPTOKEN:
-            case ltCREDENTIAL:
-            case ltPERMISSIONED_DOMAIN:
-            case ltVAULT:
-                break;
+#include <xrpl/protocol/detail/ledger_entries.macro>
+
+            break;
             default:
                 invalidTypeAdded_ = true;
                 break;
         }
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
     }
 }
 
@@ -662,6 +773,8 @@ TransfersNotFrozen::finalize(
         // just in case so rippled doesn't crash in release.
         if (!issuerSle)
         {
+            // The comment above starting with "assert(enforce)" explains this
+            // assert.
             XRPL_ASSERT(
                 enforce,
                 "ripple::TransfersNotFrozen::finalize : enforce "
@@ -850,7 +963,7 @@ TransfersNotFrozen::validateFrozenState(
     }
 
     // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && tx.getTxnType() == ttAMM_CLAWBACK)
+    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, overrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
@@ -861,6 +974,7 @@ TransfersNotFrozen::validateFrozenState(
 
     JLOG(j.fatal()) << "Invariant failed: Attempting to move frozen funds for "
                     << tx.getTransactionID();
+    // The comment above starting with "assert(enforce)" explains this assert.
     XRPL_ASSERT(
         enforce,
         "ripple::TransfersNotFrozen::validateFrozenState : enforce "
@@ -910,17 +1024,12 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
-         tx.getTxnType() == ttVAULT_CREATE ||
-         tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
-         tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
-        result == tesSUCCESS)
+    if (hasPrivilege(tx, createAcct | createPseudoAcct) && result == tesSUCCESS)
     {
         bool const pseudoAccount =
             (pseudoAccount_ && view.rules().enabled(featureSingleAssetVault));
 
-        if (pseudoAccount && tx.getTxnType() != ttAMM_CREATE &&
-            tx.getTxnType() != ttVAULT_CREATE)
+        if (pseudoAccount && !hasPrivilege(tx, createPseudoAcct))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";
@@ -959,7 +1068,7 @@ ValidNewAccountRoot::finalize(
 
     JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;
-}
+}  // namespace ripple
 
 //------------------------------------------------------------------------------
 
@@ -1154,8 +1263,7 @@ NFTokenCountTracking::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (TxType const txType = tx.getTxnType();
-        txType != ttNFTOKEN_MINT && txType != ttNFTOKEN_BURN)
+    if (!hasPrivilege(tx, changeNFTCounts))
     {
         if (beforeMintedTotal != afterMintedTotal)
         {
@@ -1340,13 +1448,12 @@ ValidMPTIssuance::finalize(
     STTx const& tx,
     TER const result,
     XRPAmount const _fee,
-    ReadView const& _view,
+    ReadView const& view,
     beast::Journal const& j)
 {
     if (result == tesSUCCESS)
     {
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE ||
-            tx.getTxnType() == ttVAULT_CREATE)
+        if (hasPrivilege(tx, createMPTIssuance))
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -1367,8 +1474,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY ||
-            tx.getTxnType() == ttVAULT_DELETE)
+        if (hasPrivilege(tx, destroyMPTIssuance))
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -1389,8 +1495,17 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE ||
-            tx.getTxnType() == ttVAULT_DEPOSIT)
+        // ttESCROW_FINISH may authorize an MPT, but it can't have the
+        // mayAuthorizeMPT privilege, because that may cause
+        // non-amendment-gated side effects.
+        bool const enforceEscrowFinish = (tx.getTxnType() == ttESCROW_FINISH) &&
+            (view.rules().enabled(featureSingleAssetVault)
+             /*
+               TODO: Uncomment when LendingProtocol is defined
+               || view.rules().enabled(featureLendingProtocol)*/
+            );
+        if (hasPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT) ||
+            enforceEscrowFinish)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -1416,7 +1531,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer && (tx.getTxnType() != ttVAULT_DEPOSIT) &&
+                !submittedByIssuer && hasPrivilege(tx, mustAuthorizeMPT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -1429,33 +1544,22 @@ ValidMPTIssuance::finalize(
 
             return true;
         }
-
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_SET)
+        if (tx.getTxnType() == ttESCROW_FINISH)
         {
-            if (mptIssuancesDeleted_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPT issuances";
-            }
-            else if (mptIssuancesCreated_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPT issuances";
-            }
-            else if (mptokensDeleted_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while removing MPTokens";
-            }
-            else if (mptokensCreated_ > 0)
-            {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance set "
-                                   "succeeded while creating MPTokens";
-            }
-
-            return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
-                mptokensCreated_ == 0 && mptokensDeleted_ == 0;
+            // ttESCROW_FINISH may authorize an MPT, but it can't have the
+            // mayAuthorizeMPT privilege, because that may cause
+            // non-amendment-gated side effects.
+            XRPL_ASSERT_PARTS(
+                !enforceEscrowFinish,
+                "ripple::ValidMPTIssuance::finalize",
+                "not escrow finish tx");
+            return true;
         }
+
+        if (hasPrivilege(tx, mayDeleteMPT) && mptokensDeleted_ == 1 &&
+            mptokensCreated_ == 0 && mptIssuancesCreated_ == 0 &&
+            mptIssuancesDeleted_ == 0)
+            return true;
     }
 
     if (mptIssuancesCreated_ != 0)
@@ -1578,6 +1682,492 @@ ValidPermissionedDomain::finalize(
 
     return (sleStatus_[0] ? check(*sleStatus_[0], j) : true) &&
         (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidPseudoAccounts::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete)
+        // Deletion is ignored
+        return;
+
+    if (after && after->getType() == ltACCOUNT_ROOT)
+    {
+        bool const isPseudo = [&]() {
+            // isPseudoAccount checks that any of the pseudo-account fields are
+            // set.
+            if (isPseudoAccount(after))
+                return true;
+            // Not all pseudo-accounts have a zero sequence, but all accounts
+            // with a zero sequence had better be pseudo-accounts.
+            if (after->at(sfSequence) == 0)
+                return true;
+
+            return false;
+        }();
+        if (isPseudo)
+        {
+            // Pseudo accounts must have the following properties:
+            // 1. Exactly one of the pseudo-account fields is set.
+            // 2. The sequence number is not changed.
+            // 3. The lsfDisableMaster, lsfDefaultRipple, and lsfDepositAuth
+            // flags are set.
+            // 4. The RegularKey is not set.
+            {
+                std::vector<SField const*> const& fields =
+                    getPseudoAccountFields();
+
+                auto const numFields = std::count_if(
+                    fields.begin(),
+                    fields.end(),
+                    [&after](SField const* sf) -> bool {
+                        return after->isFieldPresent(*sf);
+                    });
+                if (numFields != 1)
+                {
+                    std::stringstream error;
+                    error << "pseudo-account has " << numFields
+                          << " pseudo-account fields set";
+                    errors_.emplace_back(error.str());
+                }
+            }
+            if (before && before->at(sfSequence) != after->at(sfSequence))
+            {
+                errors_.emplace_back("pseudo-account sequence changed");
+            }
+            if (!after->isFlag(
+                    lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth))
+            {
+                errors_.emplace_back("pseudo-account flags are not set");
+            }
+            if (after->isFieldPresent(sfRegularKey))
+            {
+                errors_.emplace_back("pseudo-account has a regular key");
+            }
+        }
+    }
+}
+
+bool
+ValidPseudoAccounts::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    bool const enforce = view.rules().enabled(featureSingleAssetVault);
+
+    // The comment above starting with "assert(enforce)" explains this assert.
+    XRPL_ASSERT(
+        errors_.empty() || enforce,
+        "ripple::ValidPseudoAccounts::finalize : no bad "
+        "changes or enforce invariant");
+    if (!errors_.empty())
+    {
+        for (auto const& error : errors_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << error;
+        }
+        if (enforce)
+            return false;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidPermissionedDEX::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltDIR_NODE)
+    {
+        if (after->isFieldPresent(sfDomainID))
+            domains_.insert(after->getFieldH256(sfDomainID));
+    }
+
+    if (after && after->getType() == ltOFFER)
+    {
+        if (after->isFieldPresent(sfDomainID))
+            domains_.insert(after->getFieldH256(sfDomainID));
+        else
+            regularOffers_ = true;
+
+        // if a hybrid offer is missing domain or additional book, there's
+        // something wrong
+        if (after->isFlag(lsfHybrid) &&
+            (!after->isFieldPresent(sfDomainID) ||
+             !after->isFieldPresent(sfAdditionalBooks) ||
+             after->getFieldArray(sfAdditionalBooks).size() > 1))
+            badHybrids_ = true;
+    }
+}
+
+bool
+ValidPermissionedDEX::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    auto const txType = tx.getTxnType();
+    if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) ||
+        result != tesSUCCESS)
+        return true;
+
+    // For each offercreate transaction, check if
+    // permissioned offers are valid
+    if (txType == ttOFFER_CREATE && badHybrids_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
+        return false;
+    }
+
+    if (!tx.isFieldPresent(sfDomainID))
+        return true;
+
+    auto const domain = tx.getFieldH256(sfDomainID);
+
+    if (!view.exists(keylet::permissionedDomain(domain)))
+    {
+        JLOG(j.fatal()) << "Invariant failed: domain doesn't exist";
+        return false;
+    }
+
+    // for both payment and offercreate, there shouldn't be another domain
+    // that's different from the domain specified
+    for (auto const& d : domains_)
+    {
+        if (d != domain)
+        {
+            JLOG(j.fatal()) << "Invariant failed: transaction"
+                               " consumed wrong domains";
+            return false;
+        }
+    }
+
+    if (regularOffers_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: domain transaction"
+                           " affected regular offers";
+        return false;
+    }
+
+    return true;
+}
+
+void
+ValidAMM::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete)
+        return;
+
+    if (after)
+    {
+        auto const type = after->getType();
+        // AMM object changed
+        if (type == ltAMM)
+        {
+            ammAccount_ = after->getAccountID(sfAccount);
+            lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
+        }
+        // AMM pool changed
+        else if (
+            (type == ltRIPPLE_STATE && after->getFlags() & lsfAMMNode) ||
+            (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)))
+        {
+            ammPoolChanged_ = true;
+        }
+    }
+
+    if (before)
+    {
+        // AMM object changed
+        if (before->getType() == ltAMM)
+        {
+            lptAMMBalanceBefore_ = before->getFieldAmount(sfLPTokenBalance);
+        }
+    }
+}
+
+static bool
+validBalances(
+    STAmount const& amount,
+    STAmount const& amount2,
+    STAmount const& lptAMMBalance,
+    ValidAMM::ZeroAllowed zeroAllowed)
+{
+    bool const positive = amount > beast::zero && amount2 > beast::zero &&
+        lptAMMBalance > beast::zero;
+    if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
+        return positive ||
+            (amount == beast::zero && amount2 == beast::zero &&
+             lptAMMBalance == beast::zero);
+    return positive;
+}
+
+bool
+ValidAMM::finalizeVote(bool enforce, beast::Journal const& j) const
+{
+    if (lptAMMBalanceAfter_ != lptAMMBalanceBefore_ || ammPoolChanged_)
+    {
+        // LPTokens and the pool can not change on vote
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "AMMVote invariant failed: "
+                        << lptAMMBalanceBefore_.value_or(STAmount{}) << " "
+                        << lptAMMBalanceAfter_.value_or(STAmount{}) << " "
+                        << ammPoolChanged_;
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeBid(bool enforce, beast::Journal const& j) const
+{
+    if (ammPoolChanged_)
+    {
+        // The pool can not change on bid
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "AMMBid invariant failed: pool changed";
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+    // LPTokens are burnt, therefore there should be fewer LPTokens
+    else if (
+        lptAMMBalanceBefore_ && lptAMMBalanceAfter_ &&
+        (*lptAMMBalanceAfter_ > *lptAMMBalanceBefore_ ||
+         *lptAMMBalanceAfter_ <= beast::zero))
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "AMMBid invariant failed: " << *lptAMMBalanceBefore_
+                        << " " << *lptAMMBalanceAfter_;
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeCreate(
+    STTx const& tx,
+    ReadView const& view,
+    bool enforce,
+    beast::Journal const& j) const
+{
+    if (!ammAccount_)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error())
+            << "AMMCreate invariant failed: AMM object is not created";
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+    else
+    {
+        auto const [amount, amount2] = ammPoolHolds(
+            view,
+            *ammAccount_,
+            tx[sfAmount].get<Issue>(),
+            tx[sfAmount2].get<Issue>(),
+            fhIGNORE_FREEZE,
+            j);
+        // Create invariant:
+        // sqrt(amount * amount2) == LPTokens
+        // all balances are greater than zero
+        if (!validBalances(
+                amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
+            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->issue()) !=
+                *lptAMMBalanceAfter_)
+        {
+            JLOG(j.error()) << "AMMCreate invariant failed: " << amount << " "
+                            << amount2 << " " << *lptAMMBalanceAfter_;
+            if (enforce)
+                return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeDelete(bool enforce, TER res, beast::Journal const& j) const
+{
+    if (ammAccount_)
+    {
+        // LCOV_EXCL_START
+        std::string const msg = (res == tesSUCCESS)
+            ? "AMM object is not deleted on tesSUCCESS"
+            : "AMM object is changed on tecINCOMPLETE";
+        JLOG(j.error()) << "AMMDelete invariant failed: " << msg;
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeDEX(bool enforce, beast::Journal const& j) const
+{
+    if (ammAccount_)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "AMM swap invariant failed: AMM object changed";
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::generalInvariant(
+    ripple::STTx const& tx,
+    ripple::ReadView const& view,
+    ZeroAllowed zeroAllowed,
+    beast::Journal const& j) const
+{
+    auto const [amount, amount2] = ammPoolHolds(
+        view,
+        *ammAccount_,
+        tx[sfAsset].get<Issue>(),
+        tx[sfAsset2].get<Issue>(),
+        fhIGNORE_FREEZE,
+        j);
+    // Deposit and Withdrawal invariant:
+    // sqrt(amount * amount2) >= LPTokens
+    // all balances are greater than zero
+    // unless on last withdrawal
+    auto const poolProductMean = root2(amount * amount2);
+    bool const nonNegativeBalances =
+        validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
+    bool const strongInvariantCheck = poolProductMean >= *lptAMMBalanceAfter_;
+    // Allow for a small relative error if strongInvariantCheck fails
+    auto weakInvariantCheck = [&]() {
+        return *lptAMMBalanceAfter_ != beast::zero &&
+            withinRelativeDistance(
+                poolProductMean, Number{*lptAMMBalanceAfter_}, Number{1, -11});
+    };
+    if (!nonNegativeBalances ||
+        (!strongInvariantCheck && !weakInvariantCheck()))
+    {
+        JLOG(j.error()) << "AMM " << tx.getTxnType() << " invariant failed: "
+                        << tx.getHash(HashPrefix::transactionID) << " "
+                        << ammPoolChanged_ << " " << amount << " " << amount2
+                        << " " << poolProductMean << " "
+                        << lptAMMBalanceAfter_->getText() << " "
+                        << ((*lptAMMBalanceAfter_ == beast::zero)
+                                ? Number{1}
+                                : ((*lptAMMBalanceAfter_ - poolProductMean) /
+                                   poolProductMean));
+        return false;
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeDeposit(
+    ripple::STTx const& tx,
+    ripple::ReadView const& view,
+    bool enforce,
+    beast::Journal const& j) const
+{
+    if (!ammAccount_)
+    {
+        // LCOV_EXCL_START
+        JLOG(j.error()) << "AMMDeposit invariant failed: AMM object is deleted";
+        if (enforce)
+            return false;
+        // LCOV_EXCL_STOP
+    }
+    else if (!generalInvariant(tx, view, ZeroAllowed::No, j) && enforce)
+        return false;
+
+    return true;
+}
+
+bool
+ValidAMM::finalizeWithdraw(
+    ripple::STTx const& tx,
+    ripple::ReadView const& view,
+    bool enforce,
+    beast::Journal const& j) const
+{
+    if (!ammAccount_)
+    {
+        // Last Withdraw or Clawback deleted AMM
+    }
+    else if (!generalInvariant(tx, view, ZeroAllowed::Yes, j))
+    {
+        if (enforce)
+            return false;
+    }
+
+    return true;
+}
+
+bool
+ValidAMM::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Delete may return tecINCOMPLETE if there are too many
+    // trustlines to delete.
+    if (result != tesSUCCESS && result != tecINCOMPLETE)
+        return true;
+
+    bool const enforce = view.rules().enabled(fixAMMv1_3);
+
+    switch (tx.getTxnType())
+    {
+        case ttAMM_CREATE:
+            return finalizeCreate(tx, view, enforce, j);
+        case ttAMM_DEPOSIT:
+            return finalizeDeposit(tx, view, enforce, j);
+        case ttAMM_CLAWBACK:
+        case ttAMM_WITHDRAW:
+            return finalizeWithdraw(tx, view, enforce, j);
+        case ttAMM_BID:
+            return finalizeBid(enforce, j);
+        case ttAMM_VOTE:
+            return finalizeVote(enforce, j);
+        case ttAMM_DELETE:
+            return finalizeDelete(enforce, result, j);
+        case ttCHECK_CASH:
+        case ttOFFER_CREATE:
+        case ttPAYMENT:
+            return finalizeDEX(enforce, j);
+        default:
+            break;
+    }
+
+    return true;
 }
 
 }  // namespace ripple

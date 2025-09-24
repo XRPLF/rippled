@@ -127,6 +127,11 @@ addGrpcConfigWithSecureGateway(
     std::unique_ptr<Config>,
     std::string const& secureGateway);
 
+std::unique_ptr<Config>
+makeConfig(
+    std::map<std::string, std::string> extraTxQ = {},
+    std::map<std::string, std::string> extraVoting = {});
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

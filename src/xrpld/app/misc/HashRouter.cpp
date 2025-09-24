@@ -65,7 +65,10 @@ HashRouter::addSuppressionPeerWithStatus(uint256 const& key, PeerShortID peer)
 }
 
 bool
-HashRouter::addSuppressionPeer(uint256 const& key, PeerShortID peer, int& flags)
+HashRouter::addSuppressionPeer(
+    uint256 const& key,
+    PeerShortID peer,
+    HashRouterFlags& flags)
 {
     std::lock_guard lock(mutex_);
 
@@ -79,7 +82,7 @@ bool
 HashRouter::shouldProcess(
     uint256 const& key,
     PeerShortID peer,
-    int& flags,
+    HashRouterFlags& flags,
     std::chrono::seconds tx_interval)
 {
     std::lock_guard lock(mutex_);
@@ -91,7 +94,7 @@ HashRouter::shouldProcess(
     return s.shouldProcess(suppressionMap_.clock().now(), tx_interval);
 }
 
-int
+HashRouterFlags
 HashRouter::getFlags(uint256 const& key)
 {
     std::lock_guard lock(mutex_);
@@ -100,9 +103,10 @@ HashRouter::getFlags(uint256 const& key)
 }
 
 bool
-HashRouter::setFlags(uint256 const& key, int flags)
+HashRouter::setFlags(uint256 const& key, HashRouterFlags flags)
 {
-    XRPL_ASSERT(flags, "ripple::HashRouter::setFlags : valid input");
+    XRPL_ASSERT(
+        static_cast<bool>(flags), "ripple::HashRouter::setFlags : valid input");
 
     std::lock_guard lock(mutex_);
 

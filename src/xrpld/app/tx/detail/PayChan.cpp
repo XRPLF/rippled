@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/PayChan.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PayChan.h>
@@ -286,6 +286,10 @@ PayChanCreate::doApply()
     (*slep)[~sfCancelAfter] = ctx_.tx[~sfCancelAfter];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
+    if (ctx_.view().rules().enabled(fixIncludeKeyletFields))
+    {
+        (*slep)[sfSequence] = ctx_.tx.getSeqValue();
+    }
 
     ctx_.view().insert(slep);
 
@@ -473,7 +477,8 @@ PayChanClaim::preflight(PreflightContext const& ctx)
             return temBAD_SIGNATURE;
     }
 
-    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j);
+        !isTesSuccess(err))
         return err;
 
     return preflight2(ctx);
@@ -485,7 +490,8 @@ PayChanClaim::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
 
-    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+    if (auto const err =
+            credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
         !isTesSuccess(err))
         return err;
 
@@ -554,7 +560,8 @@ PayChanClaim::doApply()
 
         if (depositAuth)
         {
-            if (auto err = verifyDepositPreauth(ctx_, txAccount, dst, sled);
+            if (auto err = verifyDepositPreauth(
+                    ctx_.tx, ctx_.view(), txAccount, dst, sled, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }

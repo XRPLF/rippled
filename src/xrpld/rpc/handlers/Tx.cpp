@@ -270,7 +270,7 @@ populateJsonResponse(
                 response[jss::meta] = meta->getJson(JsonOptions::none);
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
-                insertNFTSyntheticInJson(response, sttx, *meta);
+                RPC::insertNFTSyntheticInJson(response, sttx, *meta);
                 RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
             }
         }

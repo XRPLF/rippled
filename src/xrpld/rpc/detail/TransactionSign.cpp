@@ -40,6 +40,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <optional>
 
 namespace ripple {
 namespace RPC {
@@ -222,6 +223,22 @@ checkPayment(
             rpcINVALID_PARAMS,
             "Cannot specify both 'tx_json.Paths' and 'build_path'");
 
+    std::optional<uint256> domain;
+    if (tx_json.isMember(sfDomainID.jsonName))
+    {
+        uint256 num;
+        if (!tx_json[sfDomainID.jsonName].isString() ||
+            !num.parseHex(tx_json[sfDomainID.jsonName].asString()))
+        {
+            return RPC::make_error(
+                rpcDOMAIN_MALFORMED, "Unable to parse 'DomainID'.");
+        }
+        else
+        {
+            domain = num;
+        }
+    }
+
     if (!tx_json.isMember(jss::Paths) && params.isMember(jss::build_path))
     {
         STAmount sendMax;
@@ -260,6 +277,7 @@ checkPayment(
                     sendMax.issue().account,
                     amount,
                     std::nullopt,
+                    domain,
                     app);
                 if (pf.findPaths(app.config().PATH_SEARCH_OLD))
                 {

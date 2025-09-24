@@ -446,6 +446,8 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
     auto it = peers_.find(id);
     if (it != peers_.end())
     {
+        std::vector<Peer::id_t> toUnsquelch;
+
         JLOG(journal_.trace())
             << "deletePeer: " << Slice(validator) << " " << id << " selected "
             << (it->second.state == PeerState::Selected) << " considered "
@@ -457,7 +459,7 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
             for (auto& [k, v] : peers_)
             {
                 if (v.state == PeerState::Squelched)
-                    handler_.unsquelch(validator, k);
+                    toUnsquelch.push_back(k);
                 v.state = PeerState::Counting;
                 v.count = 0;
                 v.expire = now;
@@ -479,6 +481,10 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
 
         if (erase)
             peers_.erase(it);
+
+        // Must be after peers_.erase(it)
+        for (auto const& k : toUnsquelch)
+            handler_.unsquelch(validator, k);
     }
 }
 

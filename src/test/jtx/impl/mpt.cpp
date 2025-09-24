@@ -17,8 +17,9 @@
 */
 //==============================================================================
 
-#include <test/jtx/mpt.h>
+#include <test/jtx.h>
 
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -99,6 +100,10 @@ MPTTester::create(MPTCreate const& arg)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.maxAmt)
         jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
+    if (arg.domainID)
+        jv[sfDomainID] = to_string(*arg.domainID);
+    if (arg.mutableFlags)
+        jv[sfMutableFlags] = *arg.mutableFlags;
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
@@ -235,19 +240,61 @@ MPTTester::set(MPTSet const& arg)
         jv[sfHolder] = arg.holder->human();
     if (arg.delegate)
         jv[sfDelegate] = arg.delegate->human();
-    if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
+    if (arg.domainID)
+        jv[sfDomainID] = to_string(*arg.domainID);
+    if (arg.mutableFlags)
+        jv[sfMutableFlags] = *arg.mutableFlags;
+    if (arg.transferFee)
+        jv[sfTransferFee] = *arg.transferFee;
+    if (arg.metadata)
+        jv[sfMPTokenMetadata] = strHex(*arg.metadata);
+    if (submit(arg, jv) == tesSUCCESS && (arg.flags || arg.mutableFlags))
     {
         auto require = [&](std::optional<Account> const& holder,
                            bool unchanged) {
             auto flags = getFlags(holder);
             if (!unchanged)
             {
-                if (*arg.flags & tfMPTLock)
-                    flags |= lsfMPTLocked;
-                else if (*arg.flags & tfMPTUnlock)
-                    flags &= ~lsfMPTLocked;
-                else
-                    Throw<std::runtime_error>("Invalid flags");
+                if (arg.flags)
+                {
+                    if (*arg.flags & tfMPTLock)
+                        flags |= lsfMPTLocked;
+                    else if (*arg.flags & tfMPTUnlock)
+                        flags &= ~lsfMPTLocked;
+                }
+
+                if (arg.mutableFlags)
+                {
+                    if (*arg.mutableFlags & tmfMPTSetCanLock)
+                        flags |= lsfMPTCanLock;
+                    else if (*arg.mutableFlags & tmfMPTClearCanLock)
+                        flags &= ~lsfMPTCanLock;
+
+                    if (*arg.mutableFlags & tmfMPTSetRequireAuth)
+                        flags |= lsfMPTRequireAuth;
+                    else if (*arg.mutableFlags & tmfMPTClearRequireAuth)
+                        flags &= ~lsfMPTRequireAuth;
+
+                    if (*arg.mutableFlags & tmfMPTSetCanEscrow)
+                        flags |= lsfMPTCanEscrow;
+                    else if (*arg.mutableFlags & tmfMPTClearCanEscrow)
+                        flags &= ~lsfMPTCanEscrow;
+
+                    if (*arg.mutableFlags & tmfMPTSetCanClawback)
+                        flags |= lsfMPTCanClawback;
+                    else if (*arg.mutableFlags & tmfMPTClearCanClawback)
+                        flags &= ~lsfMPTCanClawback;
+
+                    if (*arg.mutableFlags & tmfMPTSetCanTrade)
+                        flags |= lsfMPTCanTrade;
+                    else if (*arg.mutableFlags & tmfMPTClearCanTrade)
+                        flags &= ~lsfMPTCanTrade;
+
+                    if (*arg.mutableFlags & tmfMPTSetCanTransfer)
+                        flags |= lsfMPTCanTransfer;
+                    else if (*arg.mutableFlags & tmfMPTClearCanTransfer)
+                        flags &= ~lsfMPTCanTransfer;
+                }
             }
             env_.require(mptflags(*this, flags, holder));
         };
@@ -270,6 +317,16 @@ MPTTester::forObject(
     if (auto const sle = env_.le(key))
         return cb(sle);
     return false;
+}
+
+[[nodiscard]] bool
+MPTTester::checkDomainID(std::optional<uint256> expected) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        if (sle->isFieldPresent(sfDomainID))
+            return expected == sle->getFieldH256(sfDomainID);
+        return (!expected.has_value());
+    });
 }
 
 [[nodiscard]] bool
@@ -296,6 +353,43 @@ MPTTester::checkFlags(
     std::optional<Account> const& holder) const
 {
     return expectedFlags == getFlags(holder);
+}
+
+[[nodiscard]] bool
+MPTTester::checkMetadata(std::string const& metadata) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        if (sle->isFieldPresent(sfMPTokenMetadata))
+            return strHex(sle->getFieldVL(sfMPTokenMetadata)) ==
+                strHex(metadata);
+        return false;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::isMetadataPresent() const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return sle->isFieldPresent(sfMPTokenMetadata);
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::checkTransferFee(std::uint16_t transferFee) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        if (sle->isFieldPresent(sfTransferFee))
+            return sle->getFieldU16(sfTransferFee) == transferFee;
+        return false;
+    });
+}
+
+[[nodiscard]] bool
+MPTTester::isTransferFeePresent() const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        return sle->isFieldPresent(sfTransferFee);
+    });
 }
 
 void

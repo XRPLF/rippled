@@ -44,10 +44,10 @@ bridge(
     Issue const& issuingChainIssue)
 {
     Json::Value jv;
-    jv[sfLockingChainDoor.getJsonName()] = lockingChainDoor.human();
-    jv[sfLockingChainIssue.getJsonName()] = to_json(lockingChainIssue);
-    jv[sfIssuingChainDoor.getJsonName()] = issuingChainDoor.human();
-    jv[sfIssuingChainIssue.getJsonName()] = to_json(issuingChainIssue);
+    jv[jss::LockingChainDoor] = lockingChainDoor.human();
+    jv[jss::LockingChainIssue] = to_json(lockingChainIssue);
+    jv[jss::IssuingChainDoor] = issuingChainDoor.human();
+    jv[jss::IssuingChainIssue] = to_json(issuingChainIssue);
     return jv;
 }
 
@@ -60,10 +60,10 @@ bridge_rpc(
     Issue const& issuingChainIssue)
 {
     Json::Value jv;
-    jv[sfLockingChainDoor.getJsonName()] = lockingChainDoor.human();
-    jv[sfLockingChainIssue.getJsonName()] = to_json(lockingChainIssue);
-    jv[sfIssuingChainDoor.getJsonName()] = issuingChainDoor.human();
-    jv[sfIssuingChainIssue.getJsonName()] = to_json(issuingChainIssue);
+    jv[jss::LockingChainDoor] = lockingChainDoor.human();
+    jv[jss::LockingChainIssue] = to_json(lockingChainIssue);
+    jv[jss::IssuingChainDoor] = issuingChainDoor.human();
+    jv[jss::IssuingChainIssue] = to_json(issuingChainIssue);
     return jv;
 }
 
@@ -389,7 +389,7 @@ XChainBridgeObjects::XChainBridgeObjects()
           bridge_rpc(mcDoor, xrpIssue(), Account::master, xrpIssue()))
     , jvb(bridge(mcDoor, xrpIssue(), Account::master, xrpIssue()))
     , jvub(bridge(mcuDoor, xrpIssue(), Account::master, xrpIssue()))
-    , features(supported_amendments() | FeatureBitset{featureXChainBridge})
+    , features(testable_amendments() | FeatureBitset{featureXChainBridge})
     , signers([] {
         constexpr int numSigners = UT_XCHAIN_DEFAULT_NUM_SIGNERS;
         std::vector<signer> result;

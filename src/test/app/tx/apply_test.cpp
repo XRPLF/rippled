@@ -55,7 +55,7 @@ public:
         {
             test::jtx::Env no_fully_canonical(
                 *this,
-                test::jtx::supported_amendments() -
+                test::jtx::testable_amendments() -
                     featureRequireFullyCanonicalSig);
 
             Validity valid = checkValidity(
@@ -71,7 +71,7 @@ public:
 
         {
             test::jtx::Env fully_canonical(
-                *this, test::jtx::supported_amendments());
+                *this, test::jtx::testable_amendments());
 
             Validity valid = checkValidity(
                                  fully_canonical.app().getHashRouter(),
@@ -87,6 +87,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Apply, app, ripple);
+BEAST_DEFINE_TESTSUITE(Apply, tx, ripple);
 
 }  // namespace ripple

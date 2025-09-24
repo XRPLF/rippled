@@ -19,12 +19,12 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/BookChanges.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -172,6 +172,22 @@ doBookOffers(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::taker);
     }
 
+    std::optional<uint256> domain;
+    if (context.params.isMember(jss::domain))
+    {
+        uint256 num;
+        if (!context.params[jss::domain].isString() ||
+            !num.parseHex(context.params[jss::domain].asString()))
+        {
+            return RPC::make_error(
+                rpcDOMAIN_MALFORMED, "Unable to parse domain.");
+        }
+        else
+        {
+            domain = num;
+        }
+    }
+
     if (pay_currency == get_currency && pay_issuer == get_issuer)
     {
         JLOG(context.j.info()) << "taker_gets same as taker_pays.";
@@ -190,7 +206,7 @@ doBookOffers(RPC::JsonContext& context)
 
     context.netOps.getBookPage(
         lpLedger,
-        {{pay_currency, pay_issuer}, {get_currency, get_issuer}},
+        {{pay_currency, pay_issuer}, {get_currency, get_issuer}, domain},
         takerID ? *takerID : beast::zero,
         bProof,
         limit,

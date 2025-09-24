@@ -2041,6 +2041,28 @@ static constexpr TxnTestData txnTestArray[] = {
        "Cannot specify differing 'Amount' and 'DeliverMax'",
        "Cannot specify differing 'Amount' and 'DeliverMax'",
        "Cannot specify differing 'Amount' and 'DeliverMax'"}}},
+    {"Payment cannot specify bad DomainID.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "debug_signing": 0,
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Fee": 50,
+        "Sequence": 0,
+        "SigningPubKey": "",
+        "TransactionType": "Payment",
+        "DomainID": "invalid",
+    }
+})",
+     {{"Unable to parse 'DomainID'.",
+       "Unable to parse 'DomainID'.",
+       "Unable to parse 'DomainID'.",
+       "Unable to parse 'DomainID'."}}},
 
     {"Minimal delegated transaction.",
      __LINE__,
@@ -2914,7 +2936,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(JSONRPC, ripple_app, ripple);
+BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, ripple);
 
 }  // namespace RPC
 }  // namespace ripple

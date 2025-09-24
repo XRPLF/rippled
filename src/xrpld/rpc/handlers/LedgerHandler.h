@@ -23,7 +23,6 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
@@ -31,6 +30,7 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/json/Object.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/jss.h>
 
 namespace Json {
@@ -76,7 +76,6 @@ private:
     std::vector<TxQ::TxDetails> queueTxs_;
     Json::Value result_;
     int options_ = 0;
-    LedgerEntryType type_;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +90,7 @@ LedgerHandler::writeResult(Object& value)
     if (ledger_)
     {
         Json::copyFrom(value, result_);
-        addJson(value, {*ledger_, &context_, options_, queueTxs_, type_});
+        addJson(value, {*ledger_, &context_, options_, queueTxs_});
     }
     else
     {
@@ -105,6 +104,21 @@ LedgerHandler::writeResult(Object& value)
             addJson(open, {*master.getCurrentLedger(), &context_, 0});
         }
     }
+
+    Json::Value warnings{Json::arrayValue};
+    if (context_.params.isMember(jss::type))
+    {
+        Json::Value& w = warnings.append(Json::objectValue);
+        w[jss::id] = warnRPC_FIELDS_DEPRECATED;
+        w[jss::message] =
+            "Some fields from your request are deprecated. Please check the "
+            "documentation at "
+            "https://xrpl.org/docs/references/http-websocket-apis/ "
+            "and update your request. Field `type` is deprecated.";
+    }
+
+    if (warnings.size())
+        value[jss::warnings] = std::move(warnings);
 }
 
 }  // namespace RPC

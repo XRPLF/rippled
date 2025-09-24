@@ -2720,7 +2720,7 @@ public:
     run() override
     {
         using namespace test::jtx;
-        auto const sa = supported_amendments();
+        auto const sa = testable_amendments();
         testWithFeats(sa - featureCheckCashMakesTrustLine);
         testWithFeats(sa - disallowIncoming);
         testWithFeats(sa);
@@ -2729,6 +2729,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Check, tx, ripple);
+BEAST_DEFINE_TESTSUITE(Check, app, ripple);
 
 }  // namespace ripple

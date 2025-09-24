@@ -48,6 +48,7 @@ public:
         std::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
         std::optional<STAmount> const& srcAmount,
+        std::optional<uint256> const& domain,
         Application& app);
     Pathfinder(Pathfinder const&) = delete;
     Pathfinder&
@@ -165,7 +166,7 @@ private:
         int addFlags,
         std::function<bool(void)> const& continueCallback);
 
-    // Compute the liquidity for a path.  Return tesSUCCESS if it has has enough
+    // Compute the liquidity for a path.  Return tesSUCCESS if it has enough
     // liquidity to be worth keeping, otherwise an error.
     TER
     getPathLiquidity(
@@ -205,6 +206,7 @@ private:
         been removed. */
     STAmount mRemainingAmount;
     bool convert_all_;
+    std::optional<uint256> mDomain;
 
     std::shared_ptr<ReadView const> mLedger;
     std::unique_ptr<LoadEvent> m_loadEvent;

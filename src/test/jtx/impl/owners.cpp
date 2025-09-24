@@ -20,9 +20,6 @@
 #include <test/jtx/owners.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
-
 namespace detail {
 
 std::uint32_t
@@ -39,7 +36,7 @@ owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type)
 
 void
 owned_count_helper(
-    Env& env,
+    test::jtx::Env& env,
     AccountID const& id,
     LedgerEntryType type,
     std::uint32_t value)
@@ -48,6 +45,9 @@ owned_count_helper(
 }
 
 }  // namespace detail
+
+namespace test {
+namespace jtx {
 
 void
 owners::operator()(Env& env) const

@@ -22,14 +22,12 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
-#include <functional>
-#include <memory>
 #include <optional>
 #include <sstream>
 

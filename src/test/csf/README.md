@@ -26,7 +26,7 @@ collect when running the simulation. The specification includes:
 - A collection of [`Peer`s](./Peer.h) that represent the participants in the
   network, with each independently running the consensus algorithm.
 - The `Peer` trust relationships as a `TrustGraph`. This is a directed graph
-  whose edges define what other `Peer`s a given `Peer` trusts.  In other words,
+  whose edges define what other `Peer`s a given `Peer` trusts. In other words,
   the set of out edges for a `Peer` in the graph correspond to the UNL of that
   `Peer`.
 - The network communication layer as a `BasicNetwork`. This models the overlay
@@ -45,6 +45,7 @@ eventually fully validating the consensus history of accepted transactions. Each
 the registered `Collector`s.
 
 ## Example Simulation
+
 Below is a basic simulation we can walk through to get an understanding of the
 framework. This simulation is for a set of 5 validators that aren't directly
 connected but rely on a single hub node for communication.
@@ -98,12 +99,12 @@ center[0]->runAsValidator = false;
 The simulation code starts by creating a single instance of the [`Sim`
 class](./Sim.h). This class is used to manage the overall simulation and
 internally owns most other components, including the `Peer`s, `Scheduler`,
-`BasicNetwork` and `TrustGraph`.  The next two lines create two differ
+`BasicNetwork` and `TrustGraph`. The next two lines create two differ
 `PeerGroup`s of size 5 and 1 . A [`PeerGroup`](./PeerGroup.h) is a convenient
 way for configuring a set of related peers together and internally has a vector
 of pointers to the `Peer`s which are owned by the `Sim`. `PeerGroup`s can be
 combined using `+/-` operators to configure more complex relationships of nodes
-as shown by `PeerGroup network`.  Note that each call to `createGroup` adds that
+as shown by `PeerGroup network`. Note that each call to `createGroup` adds that
 many new `Peer`s to the simulation, but does not specify any trust or network
 relationships for the new `Peer`s.
 
@@ -125,14 +126,14 @@ validators.connect(center, delay);
 
 Although the `sim` object has accessible instances of
 [TrustGraph](./TrustGraph.h) and [BasicNetwork](./BasicNetwork.h), it is more
-convenient to manage the graphs via the `PeerGroup`s.   The first two lines
-create a trust topology in which all `Peer`s trust the 5 validating `Peer`s.  Or
+convenient to manage the graphs via the `PeerGroup`s. The first two lines
+create a trust topology in which all `Peer`s trust the 5 validating `Peer`s. Or
 in the UNL perspective, all `Peer`s are configured with the same UNL listing the
 5 validating `Peer`s. The two lines could've been rewritten as
 `network.trust(validators)`.
 
 The next lines create the network communication topology. Each of the validating
-`Peer`s connects to the central hub `Peer` with a fixed delay of 200ms.  Note
+`Peer`s connects to the central hub `Peer` with a fixed delay of 200ms. Note
 that the network connections are really undirected, but are represented
 internally in a directed graph using edge pairs of inbound and outbound connections.
 
@@ -143,11 +144,11 @@ SimDurationCollector simDur;
 sim.collectors.add(simDur);
 ```
 
-The next lines add a single collector to the simulation.  The
+The next lines add a single collector to the simulation. The
 `SimDurationCollector` is a simple example collector which tracks the total
-duration of the simulation.  More generally, a collector is any class that
+duration of the simulation. More generally, a collector is any class that
 implements `void on(NodeID, SimTime, Event)` for all [Events](./events.h)
-emitted by a Peer.  Events are arbitrary types used to indicate some action or
+emitted by a Peer. Events are arbitrary types used to indicate some action or
 change of state of a `Peer`. Other [existing collectors](./collectors.h) measure
 latencies of transaction submission to validation or the rate of ledger closing
 and monitor any jumps in ledger history.
@@ -176,9 +177,9 @@ to send transactions in at fixed or random intervals to fixed or random `Peer`s.
 
 ## Run
 
-The example has two calls to `sim.run(1)`.  This call runs the simulation until
-each `Peer` has closed one additional ledger.  After closing the additional
-ledger, the `Peer` stops participating in consensus.  The first call is used to
+The example has two calls to `sim.run(1)`. This call runs the simulation until
+each `Peer` has closed one additional ledger. After closing the additional
+ledger, the `Peer` stops participating in consensus. The first call is used to
 ensure a more useful prior state of all `Peer`s. After the transaction
 submission, the second call to `run` results in one additional ledger that
 accepts those transactions.

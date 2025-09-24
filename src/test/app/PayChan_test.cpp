@@ -19,10 +19,10 @@
 
 #include <test/jtx.h>
 
-#include <xrpld/ledger/Dir.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/PayChan.h>
@@ -1035,7 +1035,7 @@ struct PayChan_test : public beast::unit_test::suite
 
         {
             // Credentials amendment not enabled
-            Env env(*this, supported_amendments() - featureCredentials);
+            Env env(*this, testable_amendments() - featureCredentials);
             env.fund(XRP(5000), "alice", "bob");
             env.close();
 
@@ -1852,6 +1852,14 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerDirCount(*env.current(), alice) == 1);
             BEAST_EXPECT(!inOwnerDir(*env.current(), bob, chanSle));
             BEAST_EXPECT(ownerDirCount(*env.current(), bob) == 0);
+            if (features[fixIncludeKeyletFields])
+            {
+                BEAST_EXPECT((*chanSle)[sfSequence] == env.seq(alice) - 1);
+            }
+            else
+            {
+                BEAST_EXPECT(!chanSle->isFieldPresent(sfSequence));
+            }
             // close the channel
             env(claim(bob, chan), txflags(tfClose));
             BEAST_EXPECT(!channelExists(*env.current(), chan));
@@ -2344,10 +2352,11 @@ public:
     run() override
     {
         using namespace test::jtx;
-        FeatureBitset const all{supported_amendments()};
+        FeatureBitset const all{testable_amendments()};
         testWithFeats(all - disallowIncoming);
         testWithFeats(all);
         testDepositAuthCreds();
+        testMetaAndOwnership(all - fixIncludeKeyletFields);
     }
 };
 

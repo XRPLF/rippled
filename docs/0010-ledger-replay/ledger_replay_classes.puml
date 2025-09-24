@@ -4,7 +4,7 @@ class TimeoutCounter {
   #app_ : Application&
 }
 
-TimeoutCounter o-- "1" Application 
+TimeoutCounter o-- "1" Application
 ': app_
 
 Stoppable <.. Application
@@ -14,13 +14,13 @@ class Application {
   -m_inboundLedgers : uptr<InboundLedgers>
 }
 
-Application *-- "1" LedgerReplayer 
+Application *-- "1" LedgerReplayer
 ': m_ledgerReplayer
-Application *-- "1" InboundLedgers 
+Application *-- "1" InboundLedgers
 ': m_inboundLedgers
 
 Stoppable <.. InboundLedgers
-Application "1" --o InboundLedgers 
+Application "1" --o InboundLedgers
 ': app_
 
 class InboundLedgers {
@@ -28,9 +28,9 @@ class InboundLedgers {
 }
 
 Stoppable <.. LedgerReplayer
-InboundLedgers "1" --o LedgerReplayer 
+InboundLedgers "1" --o LedgerReplayer
 ': inboundLedgers_
-Application "1" --o LedgerReplayer 
+Application "1" --o LedgerReplayer
 ': app_
 
 class LedgerReplayer {
@@ -42,17 +42,17 @@ class LedgerReplayer {
   -skipLists_ : hash_map<u256, wptr<SkipListAcquire>>
 }
 
-LedgerReplayer *-- LedgerReplayTask 
+LedgerReplayer *-- LedgerReplayTask
 ': tasks_
-LedgerReplayer o-- LedgerDeltaAcquire 
+LedgerReplayer o-- LedgerDeltaAcquire
 ': deltas_
-LedgerReplayer o-- SkipListAcquire 
+LedgerReplayer o-- SkipListAcquire
 ': skipLists_
 
 TimeoutCounter <.. LedgerReplayTask
-InboundLedgers "1" --o LedgerReplayTask 
+InboundLedgers "1" --o LedgerReplayTask
 ': inboundLedgers_
-LedgerReplayer "1" --o LedgerReplayTask 
+LedgerReplayer "1" --o LedgerReplayTask
 ': replayer_
 
 class LedgerReplayTask {
@@ -63,15 +63,15 @@ class LedgerReplayTask {
   +addDelta(sptr<LedgerDeltaAcquire>)
 }
 
-LedgerReplayTask *-- "1" SkipListAcquire 
+LedgerReplayTask *-- "1" SkipListAcquire
 ': skipListAcquirer_
-LedgerReplayTask *-- LedgerDeltaAcquire 
+LedgerReplayTask *-- LedgerDeltaAcquire
 ': deltas_
 
 TimeoutCounter <.. SkipListAcquire
-InboundLedgers "1" --o SkipListAcquire 
+InboundLedgers "1" --o SkipListAcquire
 ': inboundLedgers_
-LedgerReplayer "1" --o SkipListAcquire 
+LedgerReplayer "1" --o SkipListAcquire
 ': replayer_
 LedgerReplayTask --o SkipListAcquire : implicit via callback
 
@@ -83,9 +83,9 @@ class SkipListAcquire {
 }
 
 TimeoutCounter <.. LedgerDeltaAcquire
-InboundLedgers "1" --o LedgerDeltaAcquire 
+InboundLedgers "1" --o LedgerDeltaAcquire
 ': inboundLedgers_
-LedgerReplayer "1" --o LedgerDeltaAcquire 
+LedgerReplayer "1" --o LedgerDeltaAcquire
 ': replayer_
 LedgerReplayTask --o LedgerDeltaAcquire : implicit via callback
 

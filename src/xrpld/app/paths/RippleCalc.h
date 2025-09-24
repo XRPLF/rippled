@@ -20,9 +20,8 @@
 #ifndef RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 #define RIPPLE_APP_PATHS_RIPPLECALC_H_INCLUDED
 
-#include <xrpld/ledger/PaymentSandbox.h>
-
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
@@ -111,6 +110,8 @@ public:
         // A set of paths that are included in the transaction that we'll
         // explore for liquidity.
         STPathSet const& spsPaths,
+
+        std::optional<uint256> const& domainID,
         Logs& l,
         Input const* const pInputs = nullptr);
 

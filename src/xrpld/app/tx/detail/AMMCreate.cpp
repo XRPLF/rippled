@@ -21,9 +21,9 @@
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMCreate.h>
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STIssue.h>
@@ -329,7 +329,7 @@ applyCreate(
                      << amount2;
     auto addOrderBook =
         [&](Issue const& issueIn, Issue const& issueOut, std::uint64_t uRate) {
-            Book const book{issueIn, issueOut};
+            Book const book{issueIn, issueOut, std::nullopt};
             auto const dir = keylet::quality(keylet::book(book), uRate);
             if (auto const bookExisted = static_cast<bool>(sb.read(dir));
                 !bookExisted)

@@ -56,7 +56,7 @@ enum LedgerEntryType : std::uint16_t
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) tag = value,
+#define LEDGER_ENTRY(tag, value, ...) tag = value,
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
@@ -145,13 +145,15 @@ enum LedgerSpecificFlags {
         0x10000000,               // True, reject new paychans
     lsfDisallowIncomingTrustline =
         0x20000000,               // True, reject new trustlines (only if no issued assets)
-    // 0x40000000 is available
+    lsfAllowTrustLineLocking =
+        0x40000000,               // True, enable trustline locking
     lsfAllowTrustLineClawback =
         0x80000000,               // True, enable clawback
 
     // ltOFFER
     lsfPassive = 0x00010000,
     lsfSell = 0x00020000,  // True, offer was placed as a sell.
+    lsfHybrid = 0x00040000,  // True, offer is hybrid.
 
     // ltRIPPLE_STATE
     lsfLowReserve = 0x00010000,  // True, if entry counts toward reserve.
@@ -185,6 +187,15 @@ enum LedgerSpecificFlags {
     lsfMPTCanTrade = 0x00000010,
     lsfMPTCanTransfer = 0x00000020,
     lsfMPTCanClawback = 0x00000040,
+
+    lmfMPTCanMutateCanLock = 0x00000002,
+    lmfMPTCanMutateRequireAuth = 0x00000004,
+    lmfMPTCanMutateCanEscrow = 0x00000008,
+    lmfMPTCanMutateCanTrade = 0x00000010,
+    lmfMPTCanMutateCanTransfer = 0x00000020,
+    lmfMPTCanMutateCanClawback = 0x00000040,
+    lmfMPTCanMutateMetadata = 0x00010000,
+    lmfMPTCanMutateTransferFee = 0x00020000,
 
     // ltMPTOKEN
     lsfMPTAuthorized = 0x00000002,

@@ -27,22 +27,6 @@
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
-
-// JSON generators
-
-/** Add and/or remove flag. */
-Json::Value
-fset(Account const& account, std::uint32_t on, std::uint32_t off = 0);
-
-/** Remove account flag. */
-inline Json::Value
-fclear(Account const& account, std::uint32_t off)
-{
-    return fset(account, 0, off);
-}
-
 namespace detail {
 
 class flags_helper
@@ -96,6 +80,9 @@ private:
             case asfDisallowIncomingTrustline:
                 mask_ |= lsfDisallowIncomingTrustline;
                 break;
+            case asfAllowTrustLineLocking:
+                mask_ |= lsfAllowTrustLineLocking;
+                break;
             default:
                 Throw<std::runtime_error>("unknown flag");
         }
@@ -119,6 +106,22 @@ protected:
 };
 
 }  // namespace detail
+
+namespace test {
+namespace jtx {
+
+// JSON generators
+
+/** Add and/or remove flag. */
+Json::Value
+fset(Account const& account, std::uint32_t on, std::uint32_t off = 0);
+
+/** Remove account flag. */
+inline Json::Value
+fclear(Account const& account, std::uint32_t off)
+{
+    return fset(account, 0, off);
+}
 
 /** Match set account flags */
 class flags : private detail::flags_helper

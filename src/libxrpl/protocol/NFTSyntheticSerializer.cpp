@@ -28,6 +28,7 @@
 #include <memory>
 
 namespace ripple {
+namespace RPC {
 
 void
 insertNFTSyntheticInJson(
@@ -39,4 +40,5 @@ insertNFTSyntheticInJson(
     insertNFTokenOfferID(response[jss::meta], transaction, transactionMeta);
 }
 
+}  // namespace RPC
 }  // namespace ripple

@@ -19,10 +19,9 @@
 
 #include <test/jtx/PathSet.h>
 
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpld/ledger/PaymentSandbox.h>
-#include <xrpld/ledger/View.h>
-
+#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -420,8 +419,8 @@ public:
             testBalanceHook(features);
         };
         using namespace jtx;
-        auto const sa = supported_amendments();
-        testAll(sa - featureFlowCross);
+        auto const sa = testable_amendments();
+        testAll(sa - featurePermissionedDEX);
         testAll(sa);
     }
 };

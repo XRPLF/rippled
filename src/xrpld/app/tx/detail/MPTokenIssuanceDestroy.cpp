@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
-#include <xrpld/ledger/View.h>
 
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -57,6 +57,9 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
     // ensure it has no outstanding balances
     if ((*sleMPT)[sfOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
+
+    if ((*sleMPT)[~sfLockedAmount].value_or(0) != 0)
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
 }

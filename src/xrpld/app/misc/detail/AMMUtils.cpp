@@ -17,10 +17,11 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
-#include <xrpld/ledger/Sandbox.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/STObject.h>
 
@@ -462,6 +463,34 @@ isOnlyLiquidityProvider(
         currentIndex = keylet::page(root, uNodeNext);
     }
     return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
+}
+
+Expected<bool, TER>
+verifyAndAdjustLPTokenBalance(
+    Sandbox& sb,
+    STAmount const& lpTokens,
+    std::shared_ptr<SLE>& ammSle,
+    AccountID const& account)
+{
+    if (auto const res = isOnlyLiquidityProvider(sb, lpTokens.issue(), account);
+        !res)
+        return Unexpected<TER>(res.error());
+    else if (res.value())
+    {
+        if (withinRelativeDistance(
+                lpTokens,
+                ammSle->getFieldAmount(sfLPTokenBalance),
+                Number{1, -3}))
+        {
+            ammSle->setFieldAmount(sfLPTokenBalance, lpTokens);
+            sb.update(ammSle);
+        }
+        else
+        {
+            return Unexpected<TER>(tecAMM_INVALID_TOKENS);
+        }
+    }
+    return true;
 }
 
 }  // namespace ripple

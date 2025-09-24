@@ -16,5 +16,5 @@
 ## Function
 
 - Minimize external dependencies
-  * Pass options in the ctor instead of using theConfig
-  * Use as few other classes as possible
+  - Pass options in the ctor instead of using theConfig
+  - Use as few other classes as possible

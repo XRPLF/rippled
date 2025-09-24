@@ -192,7 +192,7 @@ struct SEnv
 };
 
 // XEnv class used for XChain tests. The only difference with SEnv<T> is that it
-// funds some default accounts, and that it enables `supported_amendments() |
+// funds some default accounts, and that it enables `testable_amendments() |
 // FeatureBitset{featureXChainBridge}` by default.
 // -----------------------------------------------------------------------------
 template <class T>
@@ -526,7 +526,7 @@ struct XChain_test : public beast::unit_test::suite,
         // coverage test: BridgeCreate::preflight() - create bridge when feature
         // disabled.
         {
-            Env env(*this, supported_amendments() - featureXChainBridge);
+            Env env(*this, testable_amendments() - featureXChainBridge);
             env(create_bridge(Account::master, jvb), ter(temDISABLED));
         }
 

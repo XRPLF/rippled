@@ -71,10 +71,10 @@ noripple(Account const& account, Args const&... args)
 }
 
 inline FeatureBitset
-supported_amendments()
+testable_amendments()
 {
     static FeatureBitset const ids = [] {
-        auto const& sa = ripple::detail::supportedAmendments();
+        auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
         for (auto const& [s, vote] : sa)
@@ -84,7 +84,7 @@ supported_amendments()
                 feats.push_back(*f);
             else
                 Throw<std::runtime_error>(
-                    "Unknown feature: " + s + "  in supportedAmendments.");
+                    "Unknown feature: " + s + "  in allAmendments.");
         }
         return FeatureBitset(feats);
     }();
@@ -236,7 +236,7 @@ public:
         beast::severities::Severity thresh = beast::severities::kError)
         : Env(suite_,
               std::move(config),
-              supported_amendments(),
+              testable_amendments(),
               std::move(logs),
               thresh)
     {
@@ -470,7 +470,19 @@ public:
     */
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
+    balance(Account const& account, Asset const& asset) const;
+
+    PrettyAmount
     balance(Account const& account, Issue const& issue) const;
+
+    PrettyAmount
+    balance(Account const& account, MPTIssue const& mptIssue) const;
+
+    /** Returns the IOU limit on an account.
+        Returns 0 if the trust line does not exist.
+    */
+    PrettyAmount
+    limit(Account const& account, Issue const& issue) const;
 
     /** Return the number of objects owned by an account.
      * Returns 0 if the account does not exist.
@@ -621,6 +633,12 @@ public:
 
     void
     disableFeature(uint256 const feature);
+
+    bool
+    enabled(uint256 feature) const
+    {
+        return current()->rules().enabled(feature);
+    }
 
 private:
     void

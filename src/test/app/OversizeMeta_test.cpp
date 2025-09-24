@@ -61,7 +61,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, tx, ripple, 5);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(PlumpBook, app, ripple, 5);
 
 //------------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(ThinBook, tx, ripple);
+BEAST_DEFINE_TESTSUITE(ThinBook, app, ripple);
 
 //------------------------------------------------------------------------------
 
@@ -119,7 +119,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, tx, ripple, 3);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, app, ripple, 3);
 
 //------------------------------------------------------------------------------
 
@@ -185,7 +185,7 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, tx, ripple, 50);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, ripple, 50);
 
 }  // namespace test
 }  // namespace ripple

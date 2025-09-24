@@ -25,7 +25,6 @@
 
 #include <boost/endian/conversion.hpp>
 
-#include <algorithm>
 #include <array>
 
 namespace ripple {

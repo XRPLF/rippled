@@ -141,7 +141,7 @@ public:
     virtual void
     run() = 0;
     virtual void
-    signalStop(std::string msg = "") = 0;
+    signalStop(std::string msg) = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
@@ -162,8 +162,8 @@ public:
     virtual Config&
     config() = 0;
 
-    virtual boost::asio::io_service&
-    getIOService() = 0;
+    virtual boost::asio::io_context&
+    getIOContext() = 0;
 
     virtual CollectorManager&
     getCollectorManager() = 0;

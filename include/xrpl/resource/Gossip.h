@@ -22,6 +22,8 @@
 
 #include <xrpl/beast/net/IPEndpoint.h>
 
+#include <vector>
+
 namespace ripple {
 namespace Resource {
 

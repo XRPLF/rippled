@@ -27,7 +27,9 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
 
 #include <vector>
@@ -43,6 +45,252 @@ using std::source_location;
 namespace ripple {
 namespace test {
 namespace jtx {
+
+/** Generic helper class for helper clases that set a field on a JTx.
+
+ Not every helper will be able to use this because of conversions and other
+ issues, but for classes where it's straightforward, this can simplify things.
+*/
+template <
+    class SField,
+    class StoredValue = typename SField::type::value_type,
+    class OutputValue = StoredValue>
+struct JTxField
+{
+    using SF = SField;
+    using SV = StoredValue;
+    using OV = OutputValue;
+
+protected:
+    SF const& sfield_;
+    SV value_;
+
+public:
+    explicit JTxField(SF const& sfield, SV const& value)
+        : sfield_(sfield), value_(value)
+    {
+    }
+
+    virtual ~JTxField() = default;
+
+    virtual OV
+    value() const = 0;
+
+    virtual void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfield_.jsonName] = value();
+    }
+};
+
+template <class SField, class StoredValue>
+struct JTxField<SField, StoredValue, StoredValue>
+{
+    using SF = SField;
+    using SV = StoredValue;
+    using OV = SV;
+
+protected:
+    SF const& sfield_;
+    SV value_;
+
+public:
+    explicit JTxField(SF const& sfield, SV const& value)
+        : sfield_(sfield), value_(value)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfield_.jsonName] = value_;
+    }
+};
+
+struct timePointField
+    : public JTxField<SF_UINT32, NetClock::time_point, NetClock::rep>
+{
+    using SF = SF_UINT32;
+    using SV = NetClock::time_point;
+    using OV = NetClock::rep;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit timePointField(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
+    {
+    }
+
+    OV
+    value() const override
+    {
+        return value_.time_since_epoch().count();
+    }
+};
+
+struct uint256Field : public JTxField<SF_UINT256, uint256, std::string>
+{
+    using SF = SF_UINT256;
+    using SV = uint256;
+    using OV = std::string;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit uint256Field(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
+    {
+    }
+
+    OV
+    value() const override
+    {
+        return to_string(value_);
+    }
+};
+
+struct accountIDField : public JTxField<SF_ACCOUNT, AccountID, std::string>
+{
+    using SF = SF_ACCOUNT;
+    using SV = AccountID;
+    using OV = std::string;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit accountIDField(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
+    {
+    }
+
+    OV
+    value() const override
+    {
+        return toBase58(value_);
+    }
+};
+
+struct blobField : public JTxField<SF_VL, std::string>
+{
+    using SF = SF_VL;
+    using SV = std::string;
+    using base = JTxField<SF, SV, SV>;
+
+    using JTxField::JTxField;
+
+    explicit blobField(SF const& sfield, Slice const& cond)
+        : JTxField(sfield, strHex(cond))
+    {
+    }
+
+    template <size_t N>
+    explicit blobField(SF const& sfield, std::array<std::uint8_t, N> const& c)
+        : blobField(sfield, makeSlice(c))
+    {
+    }
+};
+
+template <class SField, class UnitTag, class ValueType>
+struct valueUnitField
+    : public JTxField<SField, unit::ValueUnit<UnitTag, ValueType>, ValueType>
+{
+    using SF = SField;
+    using SV = unit::ValueUnit<UnitTag, ValueType>;
+    using OV = ValueType;
+    using base = JTxField<SF, SV, OV>;
+
+    static_assert(std::is_same_v<OV, typename SField::type::value_type>);
+
+protected:
+    using base::value_;
+
+public:
+    using JTxField<SF, SV, OV>::JTxField;
+
+    OV
+    value() const override
+    {
+        return value_.value();
+    }
+};
+
+template <class JTxField>
+struct JTxFieldWrapper
+{
+    using JF = JTxField;
+    using SF = typename JF::SF;
+    using SV = typename JF::SV;
+
+protected:
+    SF const& sfield_;
+
+public:
+    explicit JTxFieldWrapper(SF const& sfield) : sfield_(sfield)
+    {
+    }
+
+    JF
+    operator()(SV const& value) const
+    {
+        return JTxField(sfield_, value);
+    }
+};
+
+template <>
+struct JTxFieldWrapper<blobField>
+{
+    using JF = blobField;
+    using SF = JF::SF;
+    using SV = JF::SV;
+
+protected:
+    SF const& sfield_;
+
+public:
+    explicit JTxFieldWrapper(SF const& sfield) : sfield_(sfield)
+    {
+    }
+
+    JF
+    operator()(SV const& cond) const
+    {
+        return JF(sfield_, makeSlice(cond));
+    }
+
+    JF
+    operator()(Slice const& cond) const
+    {
+        return JF(sfield_, cond);
+    }
+
+    template <size_t N>
+    JF
+    operator()(std::array<std::uint8_t, N> const& c) const
+    {
+        return operator()(makeSlice(c));
+    }
+};
+
+template <
+    class SField,
+    class UnitTag,
+    class ValueType = typename SField::type::value_type>
+using valueUnitWrapper =
+    JTxFieldWrapper<valueUnitField<SField, UnitTag, ValueType>>;
+
+template <class SField, class StoredValue = typename SField::type::value_type>
+using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
+
+/** General field definitions, or fields used in multiple transaction namespaces
+ */
+auto const data = JTxFieldWrapper<blobField>(sfData);
 
 // TODO We only need this long "requires" clause as polyfill, for C++20
 // implementations which are missing <ranges> header. Replace with
@@ -110,6 +358,25 @@ checkArraySize(Json::Value const& val, unsigned int size);
 // Helper function that returns the owner count on an account.
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
+
+[[nodiscard]]
+inline bool
+checkVL(Slice const& result, std::string const& expected)
+{
+    Serializer s;
+    s.addRaw(result);
+    return s.getString() == expected;
+}
+
+[[nodiscard]]
+inline bool
+checkVL(
+    std::shared_ptr<SLE const> const& sle,
+    SField const& field,
+    std::string const& expected)
+{
+    return strHex(expected) == strHex(sle->getFieldVL(field));
+}
 
 /* Path finding */
 /******************************************************************************/
@@ -186,7 +453,7 @@ PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount);
 
 bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     STAmount const& value,
@@ -194,18 +461,18 @@ expectLine(
 
 template <typename... Amts>
 bool
-expectLine(
+expectHolding(
     Env& env,
     AccountID const& account,
     STAmount const& value,
     Amts const&... amts)
 {
-    return expectLine(env, account, value, false) &&
-        expectLine(env, account, amts...);
+    return expectHolding(env, account, value, false) &&
+        expectHolding(env, account, amts...);
 }
 
 bool
-expectLine(Env& env, AccountID const& account, None const& value);
+expectHolding(Env& env, AccountID const& account, None const& value);
 
 bool
 expectOffers(
@@ -232,127 +499,6 @@ expectLedgerEntryRoot(
     Env& env,
     Account const& acct,
     STAmount const& expectedValue);
-
-/* Escrow */
-/******************************************************************************/
-
-Json::Value
-escrow(AccountID const& account, AccountID const& to, STAmount const& amount);
-
-inline Json::Value
-escrow(Account const& account, Account const& to, STAmount const& amount)
-{
-    return escrow(account.id(), to.id(), amount);
-}
-
-Json::Value
-finish(AccountID const& account, AccountID const& from, std::uint32_t seq);
-
-inline Json::Value
-finish(Account const& account, Account const& from, std::uint32_t seq)
-{
-    return finish(account.id(), from.id(), seq);
-}
-
-Json::Value
-cancel(AccountID const& account, Account const& from, std::uint32_t seq);
-
-inline Json::Value
-cancel(Account const& account, Account const& from, std::uint32_t seq)
-{
-    return cancel(account.id(), from, seq);
-}
-
-std::array<std::uint8_t, 39> constexpr cb1 = {
-    {0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC,
-     0x1C, 0x14, 0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24,
-     0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95,
-     0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55, 0x81, 0x01, 0x00}};
-
-// A PreimageSha256 fulfillments and its associated condition.
-std::array<std::uint8_t, 4> const fb1 = {{0xA0, 0x02, 0x80, 0x00}};
-
-/** Set the "FinishAfter" time tag on a JTx */
-struct finish_time
-{
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit finish_time(NetClock::time_point const& value) : value_(value)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
-    }
-};
-
-/** Set the "CancelAfter" time tag on a JTx */
-struct cancel_time
-{
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit cancel_time(NetClock::time_point const& value) : value_(value)
-    {
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jt) const
-    {
-        jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
-    }
-};
-
-struct condition
-{
-private:
-    std::string value_;
-
-public:
-    explicit condition(Slice const& cond) : value_(strHex(cond))
-    {
-    }
-
-    template <size_t N>
-    explicit condition(std::array<std::uint8_t, N> const& c)
-        : condition(makeSlice(c))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfCondition.jsonName] = value_;
-    }
-};
-
-struct fulfillment
-{
-private:
-    std::string value_;
-
-public:
-    explicit fulfillment(Slice condition) : value_(strHex(condition))
-    {
-    }
-
-    template <size_t N>
-    explicit fulfillment(std::array<std::uint8_t, N> f)
-        : fulfillment(makeSlice(f))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFulfillment.jsonName] = value_;
-    }
-};
 
 /* Payment Channel */
 /******************************************************************************/

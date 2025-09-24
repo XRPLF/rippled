@@ -5,7 +5,7 @@ then
   name=$( basename $0 )
   cat <<- USAGE
   Usage: $name <username>
-  
+
   Where <username> is the Github username of the upstream repo. e.g. XRPLF
 USAGE
   exit 0
@@ -83,4 +83,3 @@ fi
 _run git fetch --jobs=$(nproc) upstreams
 
 exit 0
-

@@ -480,8 +480,8 @@ public:
         };
 
         using namespace test::jtx;
-        auto const sa = supported_amendments();
-        testWithFeatures(sa - featureFlowCross);
+        auto const sa = testable_amendments();
+        testWithFeatures(sa - featurePermissionedDEX);
         testWithFeatures(sa);
     }
 };

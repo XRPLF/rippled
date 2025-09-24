@@ -98,6 +98,12 @@ public:
 
     static IOUAmount
     minPositiveAmount();
+
+    friend std::ostream&
+    operator<<(std::ostream& os, IOUAmount const& x)
+    {
+        return os << to_string(x);
+    }
 };
 
 inline IOUAmount::IOUAmount(beast::Zero)

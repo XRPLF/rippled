@@ -23,6 +23,8 @@
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <chrono>
+
 namespace beast {
 
 /** Manual clock implementation.

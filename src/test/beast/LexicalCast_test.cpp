@@ -289,6 +289,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LexicalCast, beast_core, beast);
+BEAST_DEFINE_TESTSUITE(LexicalCast, beast, beast);
 
 }  // namespace beast
