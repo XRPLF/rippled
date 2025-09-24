@@ -1273,52 +1273,76 @@ public:
     {
         testcase("Ticket");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const sponsor("master");
         Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, sponsor, sponsor2);
-        env.close();
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor, sponsor2);
+            env.close();
 
-        // TicketCreate
-        std::uint32_t const ticketSeq{env.seq(alice) + 1};
-        env(ticket::create(alice, 250),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+            // TicketCreate
+            std::uint32_t const ticketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 250),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 250);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 250);
-        BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 250);
+            BEAST_EXPECT(ownerCount(env, alice) == 250);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 250);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 250);
 
-        auto const keylet = keylet::ticket(alice, ticketSeq);
-        BEAST_EXPECT(
-            env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
+            auto const keylet = keylet::ticket(alice, ticketSeq);
+            BEAST_EXPECT(
+                env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
 
-        // transfer sponsor
-        env(sponsor::transfer(alice, keylet.key),
-            sponsor::as(sponsor2, tfSponsorReserve),
-            sponsor::sig(sponsor2));
-        env.close();
+            // transfer sponsor
+            env(sponsor::transfer(alice, keylet.key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 250);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 250);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 250);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 250);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-        BEAST_EXPECT(
-            env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(
+                env.le(keylet)->getAccountID(sfSponsorAccount) ==
+                sponsor2.id());
 
-        // use a Ticket
-        env(noop(alice), ticket::use(ticketSeq));
-        env.close();
+            // use a Ticket
+            env(noop(alice), ticket::use(ticketSeq));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 249);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 249);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 249);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 249);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 249);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE for TicketCreate
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor, sponsor2);
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+            env(ticket::create(alice, 1),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 249));
+            env(ticket::create(alice, 250),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+        }
     }
 
     void
