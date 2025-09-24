@@ -209,7 +209,9 @@ TYPED_SFIELD(sfAssetsTotal,              NUMBER,     4)
 TYPED_SFIELD(sfLossUnrealized,           NUMBER,     5)
 
 // int32
-// will be replaced with a real value
+// NOTE: Do not use `sfDummyInt32`. It's so far the only use of INT32
+// in this file and has been defined here for test only.
+// TODO: Replace `sfDummyInt32` with actually useful field.
 TYPED_SFIELD(sfDummyInt32,               INT32,      1) // for tests only
 
 // currency amount (common)
