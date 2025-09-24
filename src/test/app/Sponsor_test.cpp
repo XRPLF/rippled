@@ -2761,45 +2761,60 @@ public:
     {
         testcase("SignerList");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
+        Account const bob("bob");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, sponsor, sponsor2);
-        env.close();
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, sponsor, sponsor2);
+            env.close();
 
-        Account const bob("bob");
+            // SignerListSet
+            env(signers(alice, 1, {{bob, 1}}),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        // SignerListSet
-        env(signers(alice, 1, {{bob, 1}}),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            // transfer sponsor
+            env(sponsor::transfer(alice, keylet::signers(alice).key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
 
-        // transfer sponsor
-        env(sponsor::transfer(alice, keylet::signers(alice).key),
-            sponsor::as(sponsor2, tfSponsorReserve),
-            sponsor::sig(sponsor2));
-        env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            // Delete
+            env(signers(alice, none));
+            env.close();
 
-        // Delete
-        env(signers(alice, none));
-        env.close();
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
 
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        {
+            // check INSUFFICIENT_RESERVE for SignerListSet
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+            env(signers(alice, 1, {{bob, 1}}),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+        }
     }
 
     void
