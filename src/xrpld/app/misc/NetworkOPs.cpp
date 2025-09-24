@@ -43,7 +43,6 @@
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/consensus/Consensus.h>
 #include <xrpld/consensus/ConsensusParms.h>
-#include <xrpld/ledger/View.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
@@ -1452,6 +1451,11 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
         mTransactions.reserve(mTransactions.size() + transactions.size());
         for (auto& t : transactions)
             mTransactions.push_back(std::move(t));
+    }
+    if (mTransactions.empty())
+    {
+        JLOG(m_journal.debug()) << "No transaction to process!";
+        return;
     }
 
     doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {

@@ -20,7 +20,6 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CashCheck.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>

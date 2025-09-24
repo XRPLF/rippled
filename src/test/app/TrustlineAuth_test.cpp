@@ -25,12 +25,12 @@
 #include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/paths/AMMOffer.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpld/ledger/View.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
