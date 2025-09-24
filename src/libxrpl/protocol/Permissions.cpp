@@ -101,6 +101,22 @@ Permission::getInstance()
     return instance;
 }
 
+std::optional<std::string>
+Permission::getPermissionName(std::uint32_t const value) const
+{
+    auto const permissionValue = static_cast<GranularPermissionType>(value);
+    if (auto const granular = getGranularName(permissionValue))
+        return *granular;
+
+    // not a granular permission, check if it maps to a transaction type
+    auto const txType = permissionToTxType(value);
+    if (auto const* item = TxFormats::getInstance().findByType(txType);
+        item != nullptr)
+        return item->getName();
+
+    return std::nullopt;
+}
+
 std::optional<std::uint32_t>
 Permission::getGranularValue(std::string const& name) const
 {
