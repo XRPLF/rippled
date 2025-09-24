@@ -1350,20 +1350,20 @@ public:
     {
         testcase("Credentials");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const issuer("issuer");
         Account const subject("subject");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
-
-        env.fund(XRP(1000000), issuer, subject, sponsor, sponsor2);
-        env.close();
 
         auto const credType = std::string("credType");
         auto const credTypeSlice = Slice(credType.data(), credType.size());
 
         // CredentialsCreate
         {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), issuer, subject, sponsor, sponsor2);
+            env.close();
+
             env(credentials::create(subject, issuer, credType),
                 credentials::uri("uri"),
                 sponsor::as(sponsor, tfSponsorReserve),
@@ -1417,6 +1417,10 @@ public:
         }
 
         {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), issuer, subject, sponsor);
+            env.close();
+
             // Accept Sponsored Credentials without sponsoring
             env(credentials::create(subject, issuer, credType),
                 sponsor::as(sponsor, tfSponsorReserve),
@@ -1442,6 +1446,37 @@ public:
 
             env(credentials::deleteCred(subject, subject, issuer, credType));
             env.close();
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE for Credentials
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), issuer, subject, sponsor);
+            env.close();
+
+            // CredentialsCreate
+            {
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 1) - drops(1));
+                env(credentials::create(subject, issuer, credType),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+            }
+            // CredentialsAccept
+            {
+                env(credentials::create(subject, issuer, credType));
+                env.close();
+
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 1) - drops(1));
+                env(credentials::accept(subject, issuer, credType),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tecINSUFFICIENT_RESERVE));
+                env.close();
+            }
         }
     }
 
