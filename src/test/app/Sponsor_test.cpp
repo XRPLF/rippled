@@ -1485,44 +1485,60 @@ public:
     {
         testcase("Delegate");
         using namespace test::jtx;
-        Env env{*this, testable_amendments()};
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
-        env.close();
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
+            env.close();
 
-        // DelegateSet
-        env(delegate::set(alice, bob, {"Payment"}),
-            sponsor::as(sponsor, tfSponsorReserve),
-            sponsor::sig(sponsor));
-        env.close();
+            // DelegateSet
+            env(delegate::set(alice, bob, {"Payment"}),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-        // transfer sponsor
-        auto const keylet = keylet::delegate(alice, bob);
-        env(sponsor::transfer(alice, keylet.key),
-            sponsor::as(sponsor2, tfSponsorReserve),
-            sponsor::sig(sponsor2));
-        env.close();
+            // transfer sponsor
+            auto const keylet = keylet::delegate(alice, bob);
+            env(sponsor::transfer(alice, keylet.key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
-        // delete
-        env(delegate::set(alice, bob, {}));
-        env.close();
+            // delete
+            env(delegate::set(alice, bob, {}));
+            env.close();
 
-        BEAST_EXPECT(ownerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
-        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE for DelegateSet
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, sponsor);
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 1) - drops(1));
+            env(delegate::set(alice, bob, {"Payment"}),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+        }
     }
 
     void
