@@ -647,18 +647,15 @@ parseLeaf(
                 }
                 else if (value.isInt())
                 {
+                    // future-proofing - a static assert failure if the JSON
+                    // library ever supports larger languages
+                    // In such case, we will need additional bounds checks here
                     static_assert(
                         std::numeric_limits<decltype(value.asInt())>::min() ==
                         std::numeric_limits<std::int32_t>::min());
                     static_assert(
                         std::numeric_limits<decltype(value.asInt())>::max() ==
                         std::numeric_limits<std::int32_t>::max());
-                        value.asInt() >
-                            std::numeric_limits<std::int32_t>::max())
-                    {
-                        error = out_of_range(json_name, fieldName);
-                        return ret;
-                    }
                     ret = detail::make_stvar<STInt32>(field, value.asInt());
                 }
                 else if (value.isUInt())
