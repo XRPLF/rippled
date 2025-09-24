@@ -1144,6 +1144,49 @@ public:
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
         }
 
+        {
+            Env env{*this, testable_amendments()};
+
+            env.fund(XRP(10000), alice, gw, sponsor1, sponsor2);
+            env.close();
+
+            // OfferCreate
+            auto const seq = env.seq(alice);
+            env(offer(alice, USD(1), XRP(1)),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sponsor::sig(sponsor1));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 1);
+
+            // OfferCreate with Cancel (new sponsor)
+            auto const seq2 = env.seq(alice);
+            env(offer(alice, USD(1), XRP(1)),
+                json(jss::OfferSequence, seq),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            // OfferCreate with Cancel (no sponsor)
+            env(offer(alice, USD(1), XRP(1)), json(jss::OfferSequence, seq2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor1) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
         // test Offer Execution doesn't sponsor new trustline
         {
             Env env{*this, testable_amendments()};
@@ -1193,6 +1236,35 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, bob) == 0);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 0);
+        }
+
+        {
+            // check INSUFFICIENT_RESERVE for OfferCreate
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, bob, gw, sponsor1, sponsor2);
+            env.close();
+
+            env.trust(USD(100), alice);
+            env.close();
+            env(pay(gw, alice, USD(100)));
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor1, reserve(env, 1) - drops(1));
+
+            // fullly not crossed
+            env(offer(alice, USD(1), XRP(1)),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sponsor::sig(sponsor1),
+                ter(tecINSUF_RESERVE_OFFER));
+
+            // partially crossed
+            env(offer(gw, XRP(1), USD(1)));
+            env.close();
+
+            env(offer(alice, USD(5), XRP(5)),
+                sponsor::as(sponsor1, tfSponsorReserve),
+                sponsor::sig(sponsor1),
+                ter(tecINSUF_RESERVE_OFFER));
         }
     }
 
