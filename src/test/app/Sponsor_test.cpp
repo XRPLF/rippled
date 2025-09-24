@@ -2299,16 +2299,16 @@ public:
         BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
         BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
-        // // transfer sponsor
-        // env(sponsor::transfer(alice, keylet::signers(alice).key),
-        //     sponsor::as(sponsor2, tfSponsorReserve),
-        //     sponsor::sig(sponsor2));
-        // env.close();
+        // transfer sponsor
+        env(sponsor::transfer(alice, keylet::signers(alice).key),
+            sponsor::as(sponsor2, tfSponsorReserve),
+            sponsor::sig(sponsor2));
+        env.close();
 
-        // BEAST_EXPECT(ownerCount(env, alice) == 1);
-        // BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
-        // BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
-        // BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+        BEAST_EXPECT(ownerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
 
         // Delete
         env(signers(alice, none));
@@ -2329,8 +2329,9 @@ public:
         Account const alice("alice");
         Account const bob("bob");
         Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
 
-        env.fund(XRP(1000000), alice, bob, sponsor);
+        env.fund(XRP(1000000), alice, bob, sponsor, sponsor2);
         env.close();
 
         auto const& highAcc = alice > bob ? alice : bob;
@@ -2352,11 +2353,33 @@ public:
             BEAST_EXPECT(sponsoredOwnerCount(env, user) == 1);
             BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
 
+            auto const line = env.le(keylet::line(user, issuer, USD.currency));
             BEAST_EXPECT(
-                env.le(keylet::line(user, issuer, USD.currency))
-                    ->getAccountID(
-                        isIssuerHigh ? sfLowSponsorAccount
-                                     : sfHighSponsorAccount) == sponsor.id());
+                line->getAccountID(
+                    isIssuerHigh ? sfLowSponsorAccount
+                                 : sfHighSponsorAccount) == sponsor.id());
+            BEAST_EXPECT(!line->isFieldPresent(
+                isIssuerHigh ? sfHighSponsorAccount : sfLowSponsorAccount));
+
+            // transfer sponsor
+            env(sponsor::transfer(
+                    user, keylet::line(user, issuer, USD.currency).key),
+                sponsor::as(sponsor2, tfSponsorReserve),
+                sponsor::sig(sponsor2));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, user) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, user) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor2) == 1);
+
+            auto const line2 = env.le(keylet::line(user, issuer, USD.currency));
+            BEAST_EXPECT(
+                line2->getAccountID(
+                    isIssuerHigh ? sfLowSponsorAccount
+                                 : sfHighSponsorAccount) == sponsor2.id());
+            BEAST_EXPECT(!line2->isFieldPresent(
+                isIssuerHigh ? sfHighSponsorAccount : sfLowSponsorAccount));
 
             // delete TrustLine
             env(trust(user, USD(0)));
@@ -2368,7 +2391,6 @@ public:
 
             BEAST_EXPECT(!env.le(keylet::line(user, issuer, USD.currency)));
         }
-        // TODO: transfer sponsor
     }
 
     void
@@ -2598,6 +2620,7 @@ public:
     void
     testSponsorReserve()
     {
+        // TODO: add checks fo InsufficientReserve for Sponsoring ledger entry
         testRequireFlag();
         testCheck();
         testOffer();

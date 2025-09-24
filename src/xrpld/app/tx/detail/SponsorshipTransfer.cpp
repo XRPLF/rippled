@@ -95,7 +95,23 @@ getLedgerEntryOwner(
             uint256 const& key = sle->key();
             return AccountID::fromVoid(key.data());
         }
-            // case ltRIPPLE_STATE:
+        case ltRIPPLE_STATE: {
+            if (sle->isFlag(lsfHighReserve))
+            {
+                auto const highAccount =
+                    sle->getFieldAmount(sfHighLimit).getIssuer();
+                if (highAccount == account)
+                    return highAccount;
+            }
+            if (sle->isFlag(lsfLowReserve))
+            {
+                auto const lowAccount =
+                    sle->getFieldAmount(sfLowLimit).getIssuer();
+                if (lowAccount == account)
+                    return lowAccount;
+            }
+            return std::nullopt;
+        }
         case ltACCOUNT_ROOT: {
             // AccountRoot is not supported for object sponsorship
             return std::nullopt;
@@ -126,6 +142,37 @@ getLedgerEntryOwnerCount(T const& sle)
     }
 };
 
+template <typename T>
+inline SF_ACCOUNT const&
+getLedgerEntrySponsorField(T const& sle, AccountID const& owner)
+{
+    switch (sle->getType())
+    {
+        case ltRIPPLE_STATE: {
+            if (sle->isFlag(lsfHighReserve))
+            {
+                auto const highAccount =
+                    sle->getFieldAmount(sfHighLimit).getIssuer();
+                if (highAccount == owner)
+                    return sfHighSponsorAccount;
+            }
+            if (sle->isFlag(lsfLowReserve))
+            {
+                auto const lowAccount =
+                    sle->getFieldAmount(sfLowLimit).getIssuer();
+                if (lowAccount == owner)
+                    return sfLowSponsorAccount;
+            }
+            XRPL_ASSERT(
+                false,
+                "Should not happen. Owner should be checked before calling "
+                "this function.");
+        }
+        default:
+            return sfSponsorAccount;
+    }
+};
+
 TER
 SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 {
@@ -151,11 +198,14 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         if (!owner || owner != ctx.tx[sfAccount])
             return tecNO_PERMISSION;
 
+        auto const& sponsorField = getLedgerEntrySponsorField(sle, *owner);
+
         if (newSponsor)
         {
-            if (sle->isFieldPresent(sfSponsorAccount))
+            if (sle->isFieldPresent(sponsorField))
             {
                 // transfer sponsor
+                // check if the object owner isn't the same as the new sponsor
                 if ((*newSponsor)->getAccountID(sfAccount) == owner)
                     return tecNO_PERMISSION;
             }
@@ -164,7 +214,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
         {
             // dissolve sponsor
             // check object is sponsored
-            if (!sle->isFieldPresent(sfSponsorAccount))
+            if (!sle->isFieldPresent(sponsorField))
                 return tecNO_PERMISSION;
         }
 
@@ -242,10 +292,12 @@ SponsorshipTransfer::doApply()
 
         auto const ownerCountDelta = getLedgerEntryOwnerCount(objSle);
 
+        auto const& sponsorField = getLedgerEntrySponsorField(objSle, *owner);
+
         if (tx.isFieldPresent(sfSponsor))
         {
             auto const sponsorObj = tx.getFieldObject(sfSponsor);
-            auto const oldSponsor = objSle->getAccountID(sfSponsorAccount);
+            auto const oldSponsor = objSle->getAccountID(sponsorField);
             auto const newSponsor = sponsorObj[sfAccount];
             // decrement old sponsoring count if exists
             if (auto const oldSponsorSle =
@@ -279,7 +331,7 @@ SponsorshipTransfer::doApply()
                     ownerCountDelta);
             view().update(newSponsorSle);
 
-            objSle->setAccountID(sfSponsorAccount, newSponsor);
+            objSle->setAccountID(sponsorField, newSponsor);
             view().update(objSle);
         }
         else
