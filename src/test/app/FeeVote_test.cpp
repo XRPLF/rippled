@@ -36,13 +36,13 @@ namespace test {
 
 struct FeeSettingsFields
 {
-    std::optional<std::uint64_t> baseFee = std::nullopt;
-    std::optional<std::uint32_t> reserveBase = std::nullopt;
-    std::optional<std::uint32_t> reserveIncrement = std::nullopt;
-    std::optional<std::uint32_t> referenceFeeUnits = std::nullopt;
-    std::optional<XRPAmount> baseFeeDrops = std::nullopt;
-    std::optional<XRPAmount> reserveBaseDrops = std::nullopt;
-    std::optional<XRPAmount> reserveIncrementDrops = std::nullopt;
+    std::optional<std::uint64_t> baseFee;
+    std::optional<std::uint32_t> reserveBase;
+    std::optional<std::uint32_t> reserveIncrement;
+    std::optional<std::uint32_t> referenceFeeUnits;
+    std::optional<XRPAmount> baseFeeDrops;
+    std::optional<XRPAmount> reserveBaseDrops;
+    std::optional<XRPAmount> reserveIncrementDrops;
 };
 
 STTx
