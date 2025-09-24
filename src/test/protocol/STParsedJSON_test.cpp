@@ -742,34 +742,36 @@ class STParsedJSON_test : public beast::unit_test::suite
         testcase("Int32");
         {
             Json::Value j;
-            int value = -2147483648;
-            j[sfDummyInt32] = value;
+            int const minInt32 = -2147483648;
+            j[sfDummyInt32] = minInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == value);
+                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == minInt32);
         }
 
         // max value
         {
             Json::Value j;
-            j[sfDummyInt32] = 2147483647;
+            int const maxInt32 = 2147483647;
+            j[sfDummyInt32] = maxInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
-                BEAST_EXPECT(
-                    obj.object->getFieldI32(sfDummyInt32) == 2147483647);
+                BEAST_EXPECT(obj.object->getFieldI32(sfDummyInt32) == maxInt32);
         }
 
         // max uint value
         {
             Json::Value j;
-            j[sfDummyInt32] = 2147483647u;
+            unsigned int const maxUInt32 = 2147483647u;
+            j[sfDummyInt32] = maxUInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfDummyInt32)))
                 BEAST_EXPECT(
-                    obj.object->getFieldI32(sfDummyInt32) == 2147483647u);
+                    obj.object->getFieldI32(sfDummyInt32) ==
+                    static_cast<int32_t>(maxUInt32));
         }
 
         // Test with string value

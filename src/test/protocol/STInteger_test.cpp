@@ -129,7 +129,7 @@ struct STInteger_test : public beast::unit_test::suite
     {
         testcase("Int32");
         {
-            int minInt32 = -2147483648;
+            int const minInt32 = -2147483648;
             STInt32 i32(minInt32);
             BEAST_EXPECT(i32.value() == minInt32);
             BEAST_EXPECT(i32.getText() == "-2147483648");
@@ -138,11 +138,12 @@ struct STInteger_test : public beast::unit_test::suite
         }
 
         {
-            STInt32 i32(2147483647);
-            BEAST_EXPECT(i32.value() == 2147483647);
+            int const maxInt32 = 2147483647;
+            STInt32 i32(maxInt32);
+            BEAST_EXPECT(i32.value() == maxInt32);
             BEAST_EXPECT(i32.getText() == "2147483647");
             BEAST_EXPECT(i32.getSType() == STI_INT32);
-            BEAST_EXPECT(i32.getJson(JsonOptions::none) == 2147483647);
+            BEAST_EXPECT(i32.getJson(JsonOptions::none) == maxInt32);
         }
     }
 
