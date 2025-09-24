@@ -39,6 +39,32 @@
 
 namespace ripple {
 
+using FunctionType = std::function<Expected<uint256, Json::Value>(
+    Json::Value const&,
+    Json::StaticString const,
+    unsigned apiVersion)>;
+
+static Expected<uint256, Json::Value>
+parseFixed(
+    Keylet const& keylet,
+    Json::Value const& params,
+    Json::StaticString const& fieldName,
+    unsigned apiVersion);
+
+// Helper function to return FunctionType for objects that have a fixed
+// location. That is, they don't take parameters to compute the index.
+// e.g. amendments, fees, negative UNL, etc.
+static FunctionType
+fixed(Keylet const& keylet)
+{
+    return [&keylet](
+               Json::Value const& params,
+               Json::StaticString const fieldName,
+               unsigned apiVersion) -> Expected<uint256, Json::Value> {
+        return parseFixed(keylet, params, fieldName, apiVersion);
+    };
+}
+
 static Expected<uint256, Json::Value>
 parseObjectID(
     Json::Value const& params,
@@ -91,7 +117,7 @@ parseAccountRoot(
         "malformedAddress", fieldName, "AccountID");
 }
 
-// parseAmendments is a lambda, defined below
+auto const parseAmendments = fixed(keylet::amendments());
 
 static Expected<uint256, Json::Value>
 parseAMM(
@@ -429,7 +455,7 @@ parseEscrow(
     return keylet::escrow(*id, *seq).key;
 }
 
-// parseFeeSettings is a lambda, defined below
+auto const parseFeeSettings = fixed(keylet::fees());
 
 static Expected<uint256, Json::Value>
 parseFixed(
@@ -527,7 +553,7 @@ parseNFTokenPage(
     return parseObjectID(params, fieldName, "hex string");
 }
 
-// parseNegativeUNL is a lambda, defined below
+auto const parseNegativeUNL = fixed(keylet::negativeUNL());
 
 static Expected<uint256, Json::Value>
 parseOffer(
@@ -780,34 +806,12 @@ parseXChainOwnedCreateAccountClaimID(
     return keylet.key;
 }
 
-using FunctionType = std::function<Expected<uint256, Json::Value>(
-    Json::Value const&,
-    Json::StaticString const,
-    unsigned apiVersion)>;
-
 struct LedgerEntry
 {
     Json::StaticString fieldName;
     FunctionType parseFunction;
     LedgerEntryType expectedType;
 };
-
-// Helper function to return FunctionType for objects that have a fixed
-// location. That is, they don't take parameters to compute the index.
-// e.g. amendments, fees, negative UNL, etc.
-static FunctionType
-fixed(Keylet const& keylet)
-{
-    return [&keylet](
-               Json::Value const& params,
-               Json::StaticString const fieldName,
-               unsigned apiVersion) -> Expected<uint256, Json::Value> {
-        return parseFixed(keylet, params, fieldName, apiVersion);
-    };
-}
-auto const parseAmendments = fixed(keylet::amendments());
-auto const parseFeeSettings = fixed(keylet::fees());
-auto const parseNegativeUNL = fixed(keylet::negativeUNL());
 
 // {
 //   ledger_hash : <ledger>
