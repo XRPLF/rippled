@@ -563,30 +563,6 @@ parseLeaf(
             break;
         }
 
-        case STI_UINT192: {
-            if (!value.isString())
-            {
-                error = bad_type(json_name, fieldName);
-                return ret;
-            }
-
-            uint192 num;
-
-            if (auto const s = value.asString(); !num.parseHex(s))
-            {
-                if (!s.empty())
-                {
-                    error = invalid_data(json_name, fieldName);
-                    return ret;
-                }
-
-                num.zero();
-            }
-
-            ret = detail::make_stvar<STUInt192>(field, num);
-            break;
-        }
-
         case STI_UINT160: {
             if (!value.isString())
             {
@@ -608,6 +584,30 @@ parseLeaf(
             }
 
             ret = detail::make_stvar<STUInt160>(field, num);
+            break;
+        }
+
+        case STI_UINT192: {
+            if (!value.isString())
+            {
+                error = bad_type(json_name, fieldName);
+                return ret;
+            }
+
+            uint192 num;
+
+            if (auto const s = value.asString(); !num.parseHex(s))
+            {
+                if (!s.empty())
+                {
+                    error = invalid_data(json_name, fieldName);
+                    return ret;
+                }
+
+                num.zero();
+            }
+
+            ret = detail::make_stvar<STUInt192>(field, num);
             break;
         }
 
@@ -634,6 +634,46 @@ parseLeaf(
             ret = detail::make_stvar<STUInt256>(field, num);
             break;
         }
+
+        case STI_INT32:
+            try
+            {
+                if (value.isString())
+                {
+                    ret = detail::make_stvar<STInt32>(
+                        field,
+                        beast::lexicalCastThrow<std::int32_t>(
+                            value.asString()));
+                }
+                else if (value.isInt())
+                {
+                    ret = detail::make_stvar<STInt32>(field, value.asInt());
+                }
+                else if (value.isUInt())
+                {
+                    if (value.asUInt() >
+                        static_cast<std::uint32_t>(
+                            std::numeric_limits<std::int32_t>::max()))
+                    {
+                        error = out_of_range(json_name, fieldName);
+                        return ret;
+                    }
+                    ret = detail::make_stvar<STInt32>(
+                        field, safe_cast<std::int32_t>(value.asInt()));
+                }
+                else
+                {
+                    error = bad_type(json_name, fieldName);
+                    return ret;
+                }
+            }
+            catch (std::exception const&)
+            {
+                error = invalid_data(json_name, fieldName);
+                return ret;
+            }
+
+            break;
 
         case STI_VL:
             if (!value.isString())
@@ -1120,8 +1160,7 @@ parseArray(
             Json::Value const objectFields(json[i][objectName]);
 
             std::stringstream ss;
-            ss << json_name << "."
-               << "[" << i << "]." << objectName;
+            ss << json_name << "." << "[" << i << "]." << objectName;
 
             auto ret = parseObject(
                 ss.str(), objectFields, nameField, depth + 1, error);
