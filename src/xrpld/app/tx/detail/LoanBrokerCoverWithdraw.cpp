@@ -25,9 +25,9 @@
 namespace ripple {
 
 bool
-LoanBrokerCoverWithdraw::isEnabled(PreflightContext const& ctx)
+LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return checkLendingProtocolDependencies(ctx);
 }
 
 NotTEC

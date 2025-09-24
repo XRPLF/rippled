@@ -29,7 +29,7 @@ struct PreflightContext;
 
 // Lending protocol has dependencies, so capture them here.
 bool
-lendingProtocolEnabled(PreflightContext const& ctx);
+checkLendingProtocolDependencies(PreflightContext const& ctx);
 
 namespace detail {
 // These functions should rarely be used directly. More often, the ultimate

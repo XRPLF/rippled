@@ -24,9 +24,9 @@
 namespace ripple {
 
 bool
-LoanPay::isEnabled(PreflightContext const& ctx)
+LoanPay::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return checkLendingProtocolDependencies(ctx);
 }
 
 NotTEC

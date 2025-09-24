@@ -24,10 +24,10 @@
 namespace ripple {
 
 bool
-lendingProtocolEnabled(PreflightContext const& ctx)
+checkLendingProtocolDependencies(PreflightContext const& ctx)
 {
-    return ctx.rules.enabled(featureLendingProtocol) &&
-        VaultCreate::isEnabled(ctx);
+    return ctx.rules.enabled(featureSingleAssetVault) &&
+        VaultCreate::checkExtraFeatures(ctx);
 }
 
 namespace detail {

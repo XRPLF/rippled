@@ -25,9 +25,9 @@
 namespace ripple {
 
 bool
-LoanDraw::isEnabled(PreflightContext const& ctx)
+LoanDraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return checkLendingProtocolDependencies(ctx);
 }
 
 NotTEC

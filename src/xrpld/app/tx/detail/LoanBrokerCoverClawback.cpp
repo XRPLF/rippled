@@ -24,9 +24,9 @@
 namespace ripple {
 
 bool
-LoanBrokerCoverClawback::isEnabled(PreflightContext const& ctx)
+LoanBrokerCoverClawback::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return checkLendingProtocolDependencies(ctx);
 }
 
 NotTEC

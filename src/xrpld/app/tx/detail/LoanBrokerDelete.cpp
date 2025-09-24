@@ -24,9 +24,9 @@
 namespace ripple {
 
 bool
-LoanBrokerDelete::isEnabled(PreflightContext const& ctx)
+LoanBrokerDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return checkLendingProtocolDependencies(ctx);
 }
 
 NotTEC

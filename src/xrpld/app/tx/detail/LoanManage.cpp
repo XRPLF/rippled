@@ -26,9 +26,9 @@
 namespace ripple {
 
 bool
-LoanManage::isEnabled(PreflightContext const& ctx)
+LoanManage::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return checkLendingProtocolDependencies(ctx);
 }
 
 std::uint32_t
