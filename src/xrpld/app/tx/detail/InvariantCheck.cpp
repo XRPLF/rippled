@@ -2306,8 +2306,7 @@ ValidVault::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (!view.rules().enabled(featureSingleAssetVault))
-        return true;
+    bool const enforce = view.rules().enabled(featureSingleAssetVault);
 
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
@@ -2321,7 +2320,10 @@ ValidVault::finalize(
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault deletion succeeded without deleting a "
                 "vault";
-            return false;  // That's all we can do here
+            XRPL_ASSERT(
+                enforce,
+                "ripple::ValidVault::finalize : vault deletion invariant");
+            return !enforce;  // That's all we can do here
         }
 
         // At this moment we only know a vault is being deleted and there
@@ -2340,7 +2342,10 @@ ValidVault::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must also "
                                "delete shares";
-            return false;  // That's all we can do here
+            XRPL_ASSERT(
+                enforce,
+                "ripple::ValidVault::finalize : shares deletion invariant");
+            return !enforce;  // That's all we can do here
         }
 
         bool result = true;
@@ -2378,7 +2383,7 @@ ValidVault::finalize(
         for (auto const& e : afterMPTs_)
         {
             if (e.share.getMptID() == afterVault_->shareMPTID)
-                return std::move(e);
+                return e;
         }
 
         auto const sleShares =
@@ -2397,7 +2402,10 @@ ValidVault::finalize(
         {
             JLOG(j.fatal())
                 << "Invariant failed: updated vault must have shares";
-            return false;  // That's all we can do here
+            XRPL_ASSERT(
+                enforce,
+                "ripple::ValidVault::finalize : vault has shares invariant");
+            return !enforce;  // That's all we can do here
         }
 
         if (updatedShares->sharesTotal == 0)
@@ -2465,7 +2473,9 @@ ValidVault::finalize(
             JLOG(j.fatal()) <<  //
                 "Invariant failed: vault operation succeeded without updating "
                 "or creating a vault";
-            return false;  // That's all we can do here
+            XRPL_ASSERT(
+                enforce, "ripple::ValidVault::finalize : vault noop invariant");
+            return !enforce;  // That's all we can do here
         }
 
         // Transactor makes this condition impossible, but since we need to
@@ -2509,7 +2519,10 @@ ValidVault::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: vault operation succeeded "
                                "without updating shares";
-            return false;  // That's all we can do here
+            XRPL_ASSERT(
+                enforce,
+                "ripple::ValidVault::finalize : shares noop invariant");
+            return !enforce;  // That's all we can do here
         }
 
         auto const& vaultAsset = afterVault_->asset;
@@ -3035,7 +3048,15 @@ ValidVault::finalize(
         }();
     }
 
-    return result;
+    if (!result)
+    {
+        // The comment at the top of this file starting with "assert(enforce)"
+        // explains this assert.
+        XRPL_ASSERT(enforce, "ripple::ValidVault::finalize : vault invariants");
+        return !enforce;
+    }
+
+    return true;
 }
 
 }  // namespace ripple
