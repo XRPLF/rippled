@@ -46,6 +46,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  DOCKER_CI_SHA: sha-5dd7158
+
 jobs:
   # Generate the strategy matrix to be used by the following job.
   generate-matrix:
@@ -63,7 +66,7 @@ jobs:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
       max-parallel: 10
     runs-on: ${{ matrix.architecture.runner }}
-    container: ${{ inputs.os == 'linux' && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
+    container: ${{ inputs.os == 'linux' && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-{4}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version, env.DOCKER_CI_SHA) || null }}
     steps:
       - name: Check strategy matrix
         run: |

@@ -37,6 +37,7 @@ on:
 env:
   CONAN_REMOTE_NAME: xrplf
   CONAN_REMOTE_URL: https://conan.ripplex.io
+  DOCKER_CI_SHA: sha-5dd7158
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -56,7 +57,7 @@ jobs:
       matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
       max-parallel: 10
     runs-on: ${{ matrix.architecture.runner }}
-    container: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || null }}
+    container: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-{4}', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version, env.DOCKER_CI_SHA) || null }}
 
     steps:
       - name: Cleanup workspace
