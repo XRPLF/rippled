@@ -812,6 +812,7 @@ accountSend(
     AccountID const& to,
     STAmount const& saAmount,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAcc = std::nullopt,
     WaiveTransferFee waiveFee = WaiveTransferFee::No);
 
 [[nodiscard]] TER

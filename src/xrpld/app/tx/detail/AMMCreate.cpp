@@ -141,8 +141,10 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return terNO_RIPPLE;
     }
 
+    auto const sponsor = getTxReserveSponsorAccountID(ctx.tx);
     // Check the reserve for LPToken trustline
-    STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
+    STAmount const xrpBalance =
+        xrpLiquid(ctx.view, sponsor.value_or(accountID), 1, ctx.j);
     // Insufficient reserve
     if (xrpBalance <= beast::zero)
     {
@@ -275,7 +277,9 @@ applyCreate(
     sb.insert(ammSle);
 
     // Send LPT to LP.
-    auto res = accountSend(sb, accountId, account_, lpTokens, ctx_.journal);
+    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+    auto res =
+        accountSend(sb, accountId, account_, lpTokens, ctx_.journal, sponsor);
     if (res != tesSUCCESS)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to send LPT " << lpTokens;
@@ -289,6 +293,7 @@ applyCreate(
                 accountId,
                 amount,
                 ctx_.journal,
+                std::nullopt,  // don't sponsor for AMM Trustline
                 WaiveTransferFee::Yes))
             return res;
         // Set AMM flag on AMM trustline

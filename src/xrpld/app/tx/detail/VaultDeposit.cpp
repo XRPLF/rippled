@@ -302,6 +302,8 @@ VaultDeposit::doApply()
     if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
+    auto const sponsor = getTxReserveSponsorAccountID(ctx_.tx);
+
     // Transfer assets from depositor to vault.
     if (auto const ter = accountSend(
             view(),
@@ -309,6 +311,7 @@ VaultDeposit::doApply()
             vaultAccount,
             assetsDeposited,
             j_,
+            sponsor,
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;
@@ -335,6 +338,7 @@ VaultDeposit::doApply()
             account_,
             sharesCreated,
             j_,
+            sponsor,
             WaiveTransferFee::Yes);
         !isTesSuccess(ter))
         return ter;

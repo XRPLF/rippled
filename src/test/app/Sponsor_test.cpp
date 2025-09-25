@@ -900,6 +900,338 @@ public:
     }
 
     void
+    testAMM()
+    {
+        testcase("AMM");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const gw("gw");
+        Account const sponsor("sponsor");
+
+        auto const USD = gw["USD"];
+        auto const EUR = gw["EUR"];
+
+        auto const ammCreate = [&](Env& env,
+                                   Account const& account,
+                                   STAmount const& amount1,
+                                   STAmount const& amount2) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::AMMCreate;
+            jv[jss::Account] = account.human();
+            jv[jss::Amount] = amount1.getJson(JsonOptions::none);
+            jv[jss::Amount2] = amount2.getJson(JsonOptions::none);
+            jv[jss::TradingFee] = 0;
+            jv[jss::Fee] =
+                std::to_string(env.current()->fees().increment.drops());
+            return jv;
+        };
+
+        auto const ammDeposit = [&](Env& env,
+                                    Account const& account,
+                                    STAmount const& amount1,
+                                    STAmount const& amount2) {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::AMMDeposit;
+            jv[jss::Account] = account.human();
+            jv[jss::Asset] =
+                STIssue(sfAsset, amount1.issue()).getJson(JsonOptions::none);
+            jv[jss::Asset2] =
+                STIssue(sfAsset, amount2.issue()).getJson(JsonOptions::none);
+            jv[jss::Amount] = amount1.value().getJson(JsonOptions::none);
+            jv[jss::Amount2] = amount2.value().getJson(JsonOptions::none);
+            jv[jss::Flags] = tfTwoAsset;
+            return jv;
+        };
+
+        {
+            // AMMCreate
+            // - sponsor LPToken
+            // - doesn't sponsor AMM object
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, gw, sponsor);
+            env.close();
+
+            env(trust(alice, USD(10000)));
+            env(trust(alice, EUR(10000)));
+            env.close();
+
+            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, alice, EUR(1000)));
+            env.close();
+
+            {
+                // AMMCreate doesn't check INSUFFICIENT_RESERVE now
+                // see: https://github.com/XRPLF/rippled/issues/5812
+                // check INSUFFICIENT_RESERVE
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 1) - drops(1));
+
+                env(ammCreate(env, alice, USD(100), EUR(100)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tecINSUF_RESERVE_LINE));
+                env.close();
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
+            }
+
+            env(ammCreate(env, alice, USD(100), EUR(100)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            auto const amm =
+                env.current()->read(keylet::amm(USD.issue(), EUR.issue()));
+            auto const ammAccount =
+                Account("amm", amm->getAccountID(sfAccount));
+
+            BEAST_EXPECT(
+                ownerCount(env, alice) == 3);  // RippleState (USD,EUR/LP Token)
+            BEAST_EXPECT(ownerCount(env, ammAccount) == 2);      //  USD, EUR
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);  // LPToken
+            BEAST_EXPECT(sponsoredOwnerCount(env, ammAccount) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);  // LPToken
+            BEAST_EXPECT(!env.le(keylet::amm(USD.issue(), EUR.issue()))
+                              ->isFieldPresent(sfSponsorAccount));
+        }
+        {
+            // AMMDeposit
+            // - sponsor new LPToken
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, bob, gw, sponsor);
+            env.close();
+
+            env(trust(alice, USD(10000)));
+            env(trust(alice, EUR(10000)));
+            env(trust(bob, USD(10000)));
+            env(trust(bob, EUR(10000)));
+            env.close();
+
+            env(pay(gw, alice, USD(1000)));
+            env(pay(gw, alice, EUR(1000)));
+            env(pay(gw, bob, USD(1000)));
+            env(pay(gw, bob, EUR(1000)));
+            env.close();
+
+            env(ammCreate(env, alice, USD(100), EUR(100)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, bob) == 2);  // RippleState (USD,EUR)
+
+            {
+                // check INSUFFICIENT_RESERVE
+                adjustAccountXRPBalance(
+                    env, sponsor, reserve(env, 1) - drops(1));
+
+                env(ammDeposit(env, bob, USD(100), EUR(100)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor),
+                    ter(tecINSUF_RESERVE_LINE));
+                env.close();
+                adjustAccountXRPBalance(env, sponsor, reserve(env, 2));
+            }
+
+            env(ammDeposit(env, bob, USD(100), EUR(100)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(
+                ownerCount(env, bob) == 3);  // RippleState (USD,EUR/LP Token)
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);       // LPToken
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);  // LPToken
+        }
+        {
+            // AMMWithdraw
+            {
+                // Single Asset Withdraw
+                // - sponsor new RippleState
+                Env env{*this, testable_amendments()};
+                env.fund(XRP(10000), alice, bob, gw, sponsor);
+                env.close();
+
+                env(trust(alice, USD(10000)));
+                env(trust(alice, EUR(10000)));
+                env.close();
+
+                env(pay(gw, alice, USD(1000)));
+                env(pay(gw, alice, EUR(1000)));
+                env.close();
+
+                env(ammCreate(env, alice, USD(1000), EUR(1000)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                env(trust(alice, USD(0)));
+                env(trust(alice, EUR(0)));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 1);           // LPToken
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);  // LPToken
+                BEAST_EXPECT(
+                    sponsoringOwnerCount(env, sponsor) == 1);  // LPToken
+
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMWithdraw;
+                jv[jss::Account] = alice.human();
+                jv[jss::Asset] =
+                    STIssue(sfAsset, USD.issue()).getJson(JsonOptions::none);
+                jv[jss::Asset2] =
+                    STIssue(sfAsset, EUR.issue()).getJson(JsonOptions::none);
+                jv[jss::Amount] = USD(100).value().getJson(JsonOptions::none);
+                jv[jss::Flags] = tfSingleAsset;
+
+                {
+                    env(ticket::create(
+                        sponsor, 1));  // adjust for free trustline
+                    env.close();
+                    BEAST_EXPECT(ownerCount(env, sponsor) == 1);
+                    BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+                    // check INSUFFICIENT_RESERVE
+                    adjustAccountXRPBalance(
+                        env, sponsor, reserve(env, 2) - drops(1));
+                    env(jv,
+                        sponsor::as(sponsor, tfSponsorReserve),
+                        sponsor::sig(sponsor),
+                        ter(tecINSUFFICIENT_RESERVE));
+                    env.close();
+                    adjustAccountXRPBalance(env, sponsor, reserve(env, 3));
+                }
+
+                env(jv,
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 2);  // USD, LPToken
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+            }
+            {
+                // Double Asset Withdraw
+                // - sponsor new RippleState * 2
+                // - remove sponsored LPToken
+                Env env{*this, testable_amendments()};
+                env.fund(XRP(10000), alice, bob, gw, sponsor);
+                env.close();
+
+                env(trust(alice, USD(10000)));
+                env(trust(alice, EUR(10000)));
+                env.close();
+
+                env(pay(gw, alice, USD(1000)));
+                env(pay(gw, alice, EUR(1000)));
+                env.close();
+
+                env(ammCreate(env, alice, USD(1000), EUR(1000)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                env(trust(alice, USD(0)));
+                env(trust(alice, EUR(0)));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 1);  // LPToken
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMWithdraw;
+                jv[jss::Account] = alice.human();
+                jv[jss::Asset] =
+                    STIssue(sfAsset, USD.issue()).getJson(JsonOptions::none);
+                jv[jss::Asset2] =
+                    STIssue(sfAsset, EUR.issue()).getJson(JsonOptions::none);
+                jv[jss::Flags] = tfWithdrawAll;
+
+                {
+                    env(ticket::create(
+                        sponsor, 1));  // adjust for free trustline
+                    env.close();
+                    BEAST_EXPECT(ownerCount(env, sponsor) == 1);
+                    BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+                    // check INSUFFICIENT_RESERVE for RippleStates * 2
+                    adjustAccountXRPBalance(
+                        env, sponsor, reserve(env, 3) - drops(1));
+                    env(jv,
+                        sponsor::as(sponsor, tfSponsorReserve),
+                        sponsor::sig(sponsor),
+                        ter(tecINSUFFICIENT_RESERVE));
+                    env.close();
+                    adjustAccountXRPBalance(env, sponsor, reserve(env, 4));
+                }
+
+                env(jv,
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 2);  // USD, EUR
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+            }
+        }
+        {
+            // AMMClawback
+            // - doesn't sponsor holder's new RippleState
+            // - remove sponsored LPToken
+            Account const gw2("gw2");
+            auto const EUR2 = gw2["EUR"];
+
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, gw, gw2, sponsor);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+
+            env(trust(alice, USD(10000)));
+            env(trust(alice, EUR2(10000)));
+            env.close();
+
+            env(pay(gw, alice, USD(100)));
+            env(pay(gw2, alice, EUR2(100)));
+            env.close();
+
+            env(ammCreate(env, alice, USD(100), EUR2(100)),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            env(trust(alice, USD(0)));
+            env(trust(alice, EUR2(0)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // LPToken
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            {
+                // doesn't sponsor holder's new RippleState
+                env(amm::ammClawback(gw, alice, USD, EUR2, USD(10)),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 2);  // LPToken, EUR2
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+            }
+            {
+                env(amm::ammClawback(gw, alice, USD, EUR2, std::nullopt),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, alice) == 1);  // EUR2
+                BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+                BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+            }
+        }
+    }
+
+    void
     testCheck()
     {
         testcase("Check");
@@ -3166,6 +3498,7 @@ public:
     {
         // TODO: add checks fo InsufficientReserve for Sponsoring ledger entry
         testRequireFlag();
+        testAMM();
         testCheck();
         testOffer();
         testTicket();

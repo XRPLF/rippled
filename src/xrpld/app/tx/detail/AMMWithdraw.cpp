@@ -586,6 +586,12 @@ AMMWithdraw::withdraw(
         return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
     }
 
+    // this is also called from AMMClawback, but only AMMWithdraw does sponsor
+    // the new trustline
+    auto const sponsor = tx[sfAccount] == account
+        ? getTxReserveSponsorAccountID(tx)
+        : std::nullopt;
+
     // Check the reserve in case a trustline has to be created
     bool const enabledFixAMMv1_2 = view.rules().enabled(fixAMMv1_2);
     auto sufficientReserve = [&](Issue const& issue) -> TER {
@@ -593,20 +599,20 @@ AMMWithdraw::withdraw(
             return tesSUCCESS;
         if (!view.exists(keylet::line(account, issue)))
         {
-            auto const sleAccount = view.read(keylet::account(account));
+            auto const sleAccount =
+                view.read(keylet::account(sponsor.value_or(account)));
             if (!sleAccount)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
             auto const balance = (*sleAccount)[sfBalance].xrp();
-            std::uint32_t const ownerCount = sleAccount->at(sfOwnerCount);
-
-            if (ownerCount >= 2)
+            std::uint32_t const count = ownerCount(sleAccount);
+            if (count >= 2)
             {
-                auto const sponsor = getTxReserveSponsor(view, tx);
                 if (auto const ret = checkInsufficientReserve(
                         view,
                         sleAccount,
                         std::max(priorBalance, balance),
-                        sponsor,
+                        sponsor ? view.read(keylet::account(*sponsor))
+                                : std::optional<std::shared_ptr<SLE const>>{},
                         1);
                     !isTesSuccess(ret))
                     return ret;
@@ -625,6 +631,7 @@ AMMWithdraw::withdraw(
         account,
         amountWithdrawActual,
         journal,
+        sponsor,
         WaiveTransferFee::Yes);
     if (res != tesSUCCESS)
     {
@@ -648,6 +655,7 @@ AMMWithdraw::withdraw(
             account,
             *amount2WithdrawActual,
             journal,
+            sponsor,
             WaiveTransferFee::Yes);
         if (res != tesSUCCESS)
         {

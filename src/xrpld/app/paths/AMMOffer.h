@@ -122,7 +122,8 @@ public:
     static TER
     send(Args&&... args)
     {
-        return accountSend(std::forward<Args>(args)..., WaiveTransferFee::Yes);
+        return accountSend(
+            std::forward<Args>(args)..., std::nullopt, WaiveTransferFee::Yes);
     }
 
     bool

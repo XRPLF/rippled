@@ -1801,6 +1801,9 @@ trustDelete(
         return tefBAD_LEDGER;
     }
 
+    removeSponsorFromLedgerEntry(sleRippleState, sfHighSponsorAccount);
+    removeSponsorFromLedgerEntry(sleRippleState, sfLowSponsorAccount);
+
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: state";
     view.erase(sleRippleState);
 
@@ -1876,6 +1879,7 @@ rippleCreditIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     bool bCheckIssuer,
+    std::optional<AccountID> const& sponsorAccount,
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
@@ -2029,7 +2033,7 @@ rippleCreditIOU(
         saReceiverLimit,
         0,
         0,
-        std::nullopt,
+        sponsorAccount,
         j);
 }
 
@@ -2044,6 +2048,7 @@ rippleSendIOU(
     STAmount const& saAmount,
     STAmount& saActual,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccount,
     WaiveTransferFee waiveFee)
 {
     auto const issuer = saAmount.getIssuer();
@@ -2058,8 +2063,8 @@ rippleSendIOU(
     if (uSenderID == issuer || uReceiverID == issuer || issuer == noAccount())
     {
         // Direct send: redeeming IOUs and/or sending own IOUs.
-        auto const ter =
-            rippleCreditIOU(view, uSenderID, uReceiverID, saAmount, false, j);
+        auto const ter = rippleCreditIOU(
+            view, uSenderID, uReceiverID, saAmount, false, sponsorAccount, j);
         if (view.rules().enabled(featureDeletableAccounts) && ter != tesSUCCESS)
             return ter;
         saActual = saAmount;
@@ -2079,11 +2084,12 @@ rippleSendIOU(
                     << " : deliver=" << saAmount.getFullText()
                     << " cost=" << saActual.getFullText();
 
-    TER terResult =
-        rippleCreditIOU(view, issuer, uReceiverID, saAmount, true, j);
+    TER terResult = rippleCreditIOU(
+        view, issuer, uReceiverID, saAmount, true, sponsorAccount, j);
 
     if (tesSUCCESS == terResult)
-        terResult = rippleCreditIOU(view, uSenderID, issuer, saActual, true, j);
+        terResult = rippleCreditIOU(
+            view, uSenderID, issuer, saActual, true, sponsorAccount, j);
 
     return terResult;
 }
@@ -2095,6 +2101,7 @@ accountSendIOU(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAccount,
     WaiveTransferFee waiveFee)
 {
     if (view.rules().enabled(fixAMMv1_1))
@@ -2126,7 +2133,14 @@ accountSendIOU(
                         << saAmount.getFullText();
 
         return rippleSendIOU(
-            view, uSenderID, uReceiverID, saAmount, saActual, j, waiveFee);
+            view,
+            uSenderID,
+            uReceiverID,
+            saAmount,
+            saActual,
+            j,
+            sponsorAccount,
+            waiveFee);
     }
 
     /* XRP send which does not check reserve and can do pure adjustment.
@@ -2368,13 +2382,20 @@ accountSend(
     AccountID const& uReceiverID,
     STAmount const& saAmount,
     beast::Journal j,
+    std::optional<AccountID> const& sponsorAcc,
     WaiveTransferFee waiveFee)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
                 return accountSendIOU(
-                    view, uSenderID, uReceiverID, saAmount, j, waiveFee);
+                    view,
+                    uSenderID,
+                    uReceiverID,
+                    saAmount,
+                    j,
+                    sponsorAcc,
+                    waiveFee);
             else
                 return accountSendMPT(
                     view, uSenderID, uReceiverID, saAmount, j, waiveFee);
@@ -2423,7 +2444,7 @@ updateTrustLine(
         // Clear the reserve of the sender, possibly delete the line!
         auto const currentSponsor = getLedgerEntryReserveSponsor(
             view,
-            sle,
+            state,
             !bSenderHigh ? sfLowSponsorAccount : sfHighSponsorAccount);
         adjustOwnerCount(view, sle, currentSponsor, -1, j);
 
@@ -3021,7 +3042,11 @@ deleteAMMTrustLine(
     if (!(sleState->getFlags() & uFlags))
         return tecINTERNAL;
 
-    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, std::nullopt, -1, j);
+    auto const sponsorSle = getLedgerEntryReserveSponsor(
+        view, sleState, !ammLow ? sfLowSponsorAccount : sfHighSponsorAccount);
+    adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, sponsorSle, -1, j);
+    removeSponsorFromLedgerEntry(
+        sleState, !ammLow ? sfLowSponsorAccount : sfHighSponsorAccount);
 
     return tesSUCCESS;
 }
@@ -3040,7 +3065,13 @@ rippleCredit(
             if constexpr (std::is_same_v<TIss, Issue>)
             {
                 return rippleCreditIOU(
-                    view, uSenderID, uReceiverID, saAmount, bCheckIssuer, j);
+                    view,
+                    uSenderID,
+                    uReceiverID,
+                    saAmount,
+                    bCheckIssuer,
+                    std::nullopt,
+                    j);
             }
             else
             {
