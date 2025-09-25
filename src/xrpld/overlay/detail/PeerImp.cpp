@@ -82,9 +82,9 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey))
-    , sink_(app_.journal("Peer"), makePrefix(id, fingerprint_))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id, fingerprint_))
+    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey, to_string(id)))
+    , sink_(app_.journal("Peer"), makePrefix(fingerprint_))
+    , p_sink_(app_.journal("Protocol"), makePrefix(fingerprint_))
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
@@ -728,10 +728,10 @@ PeerImp::setTimer(std::chrono::seconds interval)
 //------------------------------------------------------------------------------
 
 std::string
-PeerImp::makePrefix(id_t id, std::string const& fingerprint)
+PeerImp::makePrefix(std::string const& fingerprint)
 {
     std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << ", " << fingerprint
+    ss << "[" << std::setfill('0') << std::setw(3) << fingerprint
        << "] ";
     return ss.str();
 }
@@ -814,14 +814,6 @@ PeerImp::cancelTimer() noexcept
     {
         JLOG(journal_.error()) << "cancelTimer: " << ex.what();
     }
-}
-
-std::string
-PeerImp::makePrefix(id_t id)
-{
-    std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << id << "] ";
-    return ss.str();
 }
 
 //------------------------------------------------------------------------------

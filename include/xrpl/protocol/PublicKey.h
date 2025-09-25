@@ -268,13 +268,18 @@ calcAccountID(PublicKey const& pk);
 inline std::string
 getFingerprint(
     beast::IP::Endpoint const& address,
-    std::optional<PublicKey> const& publicKey)
+    std::optional<PublicKey> const& publicKey = std::nullopt,
+    std::optional<std::string> const& id = std::nullopt)
 {
     std::stringstream ss;
     ss << "IP Address: " << address;
     if (publicKey.has_value())
     {
         ss << ", Public Key: " << toBase58(TokenType::NodePublic, *publicKey);
+    }
+    if (id.has_value())
+    {
+        ss << ", Id: " << id.value();
     }
     return ss.str();
 }

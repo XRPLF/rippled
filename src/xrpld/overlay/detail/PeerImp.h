@@ -636,7 +636,7 @@ private:
     cancelTimer() noexcept;
 
     static std::string
-    makePrefix(id_t id, std::string const& fingerprint);
+    makePrefix(std::string const& fingerprint);
 
     void
     doAccept();
@@ -839,9 +839,9 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey))
-    , sink_(app_.journal("Peer"), makePrefix(id, fingerprint_))
-    , p_sink_(app_.journal("Protocol"), makePrefix(id, fingerprint_))
+    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
+    , sink_(app_.journal("Peer"), makePrefix(fingerprint_))
+    , p_sink_(app_.journal("Protocol"), makePrefix(fingerprint_))
     , journal_(sink_)
     , p_journal_(p_sink_)
     , stream_ptr_(std::move(stream_ptr))
