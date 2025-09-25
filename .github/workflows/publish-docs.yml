@@ -23,12 +23,11 @@ defaults:
 
 env:
   BUILD_DIR: .build
-  DOCKER_CI_SHA: sha-5dd7158
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/ci/tools-rippled-documentation-${{ env.DOCKER_CI_SHA }}
+    container: ghcr.io/xrplf/ci/tools-rippled-documentation-sha-5dd7158
     permissions:
       contents: write
     steps:

@@ -6,13 +6,10 @@ on:
     branches: [develop, release, master]
   workflow_dispatch:
 
-env:
-  DOCKER_CI_SHA: sha-5dd7158
-
 jobs:
   # Call the workflow in the XRPLF/actions repo that runs the pre-commit hooks.
   run-hooks:
     uses: XRPLF/actions/.github/workflows/pre-commit.yml@af1b0f0d764cda2e5435f5ac97b240d4bd4d95d3
     with:
       runs_on: ubuntu-latest
-      container: '{ "image": "ghcr.io/xrplf/ci/tools-rippled-pre-commit-${{ env.DOCKER_CI_SHA }}" }'
+      container: '{ "image": "ghcr.io/xrplf/ci/tools-rippled-pre-commit-sha-5dd7158" }'
