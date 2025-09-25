@@ -2399,6 +2399,18 @@ ValidVault::finalize(
     // Universal transaction checks
     if (afterVault_)
     {
+        if (beforeVault_)
+        {
+            if (afterVault_->asset != beforeVault_->asset ||
+                afterVault_->pseudoId != beforeVault_->pseudoId ||
+                afterVault_->shareMPTID != beforeVault_->shareMPTID)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: violation of vault immutable data";
+                result = false;
+            }
+        }
+
         if (!updatedShares)
         {
             JLOG(j.fatal())

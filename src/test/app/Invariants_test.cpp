@@ -2141,6 +2141,55 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         doInvariantCheck(
+            {"violation of vault immutable data"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setFieldIssue(
+                    sfAsset, STIssue{sfAsset, MPTIssue(MPTID(42))});
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        doInvariantCheck(
+            {"violation of vault immutable data"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                sleVault->setAccountID(sfAccount, A2.id());
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        doInvariantCheck(
+            {"violation of vault immutable data"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                (*sleVault)[sfShareMPTID] = MPTID(42);
+                ac.view().update(sleVault);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp);
+
+        doInvariantCheck(
             {"vault transaction must not change loss unrealized",
              "set must not change assets outstanding"},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
