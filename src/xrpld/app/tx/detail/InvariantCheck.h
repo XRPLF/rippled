@@ -775,6 +775,7 @@ class ValidVault
     {
         MPTIssue share = {};
         std::uint64_t sharesTotal = 0;
+        std::uint64_t sharesMaximum = 0;
 
         Shares static make(SLE const&);
     };

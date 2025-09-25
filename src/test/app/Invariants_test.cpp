@@ -2289,6 +2289,53 @@ class Invariants_test : public beast::unit_test::suite
             precloseXrp,
             TxAccount::A2);
 
+        doInvariantCheck(
+            {"updated shares must not exceed maximum"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                (*sleShares)[sfMaximumAmount] = 10;
+                ac.view().update(sleShares);
+
+                return adjust(
+                    ac.view(), keylet, args(A2.id(), 10, [](Adjustements&) {}));
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
+        doInvariantCheck(
+            {"updated shares must not exceed maximum"},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const keylet = keylet::vault(A1.id(), ac.view().seq());
+                adjust(
+                    ac.view(), keylet, args(A2.id(), 10, [](Adjustements&) {}));
+
+                auto sleVault = ac.view().peek(keylet);
+                if (!sleVault)
+                    return false;
+                auto sleShares = ac.view().peek(
+                    keylet::mptIssuance((*sleVault)[sfShareMPTID]));
+                if (!sleShares)
+                    return false;
+                (*sleShares)[sfOutstandingAmount] = maxMPTokenAmount + 1;
+                ac.view().update(sleShares);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttVAULT_DEPOSIT, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            precloseXrp,
+            TxAccount::A2);
+
         testcase << "Vault create";
         doInvariantCheck(
             {

@@ -2211,6 +2211,7 @@ ValidVault::Shares::make(SLE const& from)
     self.share = MPTIssue(
         makeMptID(from.getFieldU32(sfSequence), from.getAccountID(sfIssuer)));
     self.sharesTotal = from.at(sfOutstandingAmount);
+    self.sharesMaximum = from[~sfMaximumAmount].value_or(maxMPTokenAmount);
     return self;
 }
 
@@ -2435,6 +2436,13 @@ ValidVault::finalize(
                                    "vault must have no assets available";
                 result = false;
             }
+        }
+        else if (updatedShares->sharesTotal > updatedShares->sharesMaximum)
+        {
+            JLOG(j.fatal())  //
+                << "Invariant failed: updated shares must not exceed maximum "
+                << updatedShares->sharesMaximum;
+            result = false;
         }
 
         if (afterVault_->assetsAvailable < zero)
