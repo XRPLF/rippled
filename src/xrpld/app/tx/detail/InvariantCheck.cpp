@@ -2725,14 +2725,16 @@ ValidVault::finalize(
                     {
                         auto const accountDeltaAssets =
                             [&]() -> std::optional<Number> {
-                            auto ret = deltaAssets(tx[sfAccount]);
-                            // Compensate for transaction fee deduced from
-                            // sfAccount
-                            if (ret && vaultAsset.native())
-                                *ret += fee.drops();
-                            if (ret && *ret == zero)
-                                return std::nullopt;
-                            return ret;
+                            if (auto ret = deltaAssets(tx[sfAccount]); ret)
+                            {
+                                // Compensate for transaction fee deduced from
+                                // sfAccount
+                                if (vaultAsset.native())
+                                    *ret += fee.drops();
+                                if (*ret != zero)
+                                    return ret;
+                            }
+                            return std::nullopt;
                         }();
 
                         if (!accountDeltaAssets)
@@ -2855,14 +2857,16 @@ ValidVault::finalize(
                     {
                         auto const accountDeltaAssets =
                             [&]() -> std::optional<Number> {
-                            auto ret = deltaAssets(tx[sfAccount]);
-                            // Compensate for transaction fee deduced from
-                            // sfAccount
-                            if (ret && vaultAsset.native())
-                                *ret += fee.drops();
-                            if (ret && *ret == zero)
-                                return std::nullopt;
-                            return ret;
+                            if (auto ret = deltaAssets(tx[sfAccount]); ret)
+                            {
+                                // Compensate for transaction fee deduced from
+                                // sfAccount
+                                if (vaultAsset.native())
+                                    *ret += fee.drops();
+                                if (*ret != zero)
+                                    return ret;
+                            }
+                            return std::nullopt;
                         }();
 
                         auto const otherAccountDelta =
