@@ -774,7 +774,6 @@ class ValidVault
     struct Shares final
     {
         MPTIssue share = {};
-        AccountID issuer = {};
         std::uint64_t sharesTotal = 0;
 
         Shares static make(SLE const&);

@@ -41,6 +41,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/nftPageMask.h>
 
+#include <cstdint>
 #include <optional>
 
 namespace ripple {
@@ -2209,7 +2210,6 @@ ValidVault::Shares::make(SLE const& from)
     ValidVault::Shares self;
     self.share = MPTIssue(
         makeMptID(from.getFieldU32(sfSequence), from.getAccountID(sfIssuer)));
-    self.issuer = from.getAccountID(sfIssuer);
     self.sharesTotal = from.at(sfOutstandingAmount);
     return self;
 }
@@ -2223,12 +2223,18 @@ ValidVault::visitEntry(
     // If `before` is empty, this means an object is being created
     // If `after` is empty, this means an object is being deleted
     // Otherwise it's a modification of an object.
-    //
+    XRPL_ASSERT(
+        before != nullptr || after != nullptr,
+        "ripple::ValidVault::visitEntry : some object is available");
+
     // `Number balance` will capture the difference (delta) between "before"
     // state (zero if created) and "after" state (zero if destroyed), so the
-    // invariants can validate that the change in account balances matches
-    // the change in vault balances.
+    // invariants can validate that the change in account balances matches the
+    // change in vault balances, stored to deltas_ at the end of this function.
     Number balance{};
+
+    // By default do not add anything to deltas
+    std::int8_t sign = 0;
     if (before)
     {
         switch (before->getType())
@@ -2242,31 +2248,17 @@ ValidVault::visitEntry(
                 beforeMPTs_.push_back(Shares::make(*before));
                 balance = static_cast<std::int64_t>(
                     before->getFieldU64(sfOutstandingAmount));
+                sign = 1;
                 break;
             case ltMPTOKEN:
                 balance =
                     static_cast<std::int64_t>(before->getFieldU64(sfMPTAmount));
+                sign = -1;
                 break;
             case ltACCOUNT_ROOT:
             case ltRIPPLE_STATE:
                 balance = before->getFieldAmount(sfBalance);
-                break;
-            default:;
-        }
-    }
-
-    // Special case - deleted implies balance went to zero
-    if (isDelete && before && balance != zero)
-    {
-        switch (after->getType())
-        {
-            case ltMPTOKEN_ISSUANCE:
-                deltas_[before->key()] = balance;
-                break;
-            case ltMPTOKEN:
-            case ltACCOUNT_ROOT:
-            case ltRIPPLE_STATE:
-                deltas_[after->key()] = balance * -1;
+                sign = -1;
                 break;
             default:;
         }
@@ -2285,29 +2277,25 @@ ValidVault::visitEntry(
                 afterMPTs_.push_back(Shares::make(*after));
                 balance -= Number(static_cast<std::int64_t>(
                     after->getFieldU64(sfOutstandingAmount)));
-
-                // Increase of the outstanding amount means increased
-                // liabilities, so we keep the sign here.
-                if (balance != zero)
-                    deltas_[after->key()] = balance;
+                sign = 1;
                 break;
             case ltMPTOKEN:
+                balance -= Number(
+                    static_cast<std::int64_t>(after->getFieldU64(sfMPTAmount)));
+                sign = -1;
+                break;
             case ltACCOUNT_ROOT:
             case ltRIPPLE_STATE:
-                if (after->getType() == ltMPTOKEN)
-                    balance -= Number(static_cast<std::int64_t>(
-                        after->getFieldU64(sfMPTAmount)));
-                else
-                    balance -= Number(after->getFieldAmount(sfBalance));
-
-                // Increase of the balance will give negative value so we
-                // need to reverse the sign here.
-                if (balance != zero)
-                    deltas_[after->key()] = balance * -1;
+                balance -= Number(after->getFieldAmount(sfBalance));
+                sign = -1;
                 break;
             default:;
         }
     }
+
+    uint256 const key = (before ? before->key() : after->key());
+    if (sign && balance != zero)
+        deltas_[key] = balance * sign;
 }
 
 bool
@@ -2481,7 +2469,7 @@ ValidVault::finalize(
         }
 
         // Transactor makes this condition impossible, but since we need to
-        // access deletedVault then we also need a defensive check.
+        // access beforeVault_ then we also need a defensive check.
         if (!beforeVault_ &&
             (tx.getTxnType() == ttVAULT_SET ||       //
              tx.getTxnType() == ttVAULT_DEPOSIT ||   //
@@ -2590,7 +2578,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    if (afterVault_->pseudoId != updatedShares->issuer)
+                    if (afterVault_->pseudoId !=
+                        updatedShares->share.getIssuer())
                     {
                         JLOG(j.fatal())  //
                             << "Invariant failed: shares issuer and vault "
@@ -2598,8 +2587,8 @@ ValidVault::finalize(
                         result = false;
                     }
 
-                    auto const sleSharesIssuer =
-                        view.read(keylet::account(updatedShares->issuer));
+                    auto const sleSharesIssuer = view.read(
+                        keylet::account(updatedShares->share.getIssuer()));
                     if (!sleSharesIssuer)
                     {
                         JLOG(j.fatal())  //
