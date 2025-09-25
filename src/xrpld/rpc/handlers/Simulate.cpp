@@ -385,17 +385,18 @@ processResult(
         else
         {
             jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
-            RPC::insertDeliveredAmount(
-                jvResult[jss::meta],
-                view,
-                transaction->getSTransaction(),
-                *result.metadata);
-            RPC::insertNFTSyntheticInJson(
-                jvResult, transaction->getSTransaction(), *result.metadata);
-            RPC::insertMPTokenIssuanceID(
-                jvResult[jss::meta],
-                transaction->getSTransaction(),
-                *result.metadata);
+            // TODO: fix
+            // RPC::insertDeliveredAmount(
+            //     jvResult[jss::meta],
+            //     view,
+            //     transaction->getSTransaction(),
+            //     *result.metadata);
+            // RPC::insertNFTSyntheticInJson(
+            //     jvResult, transaction->getSTransaction(), *result.metadata);
+            // RPC::insertMPTokenIssuanceID(
+            //     jvResult[jss::meta],
+            //     transaction->getSTransaction(),
+            //     *result.metadata);
         }
     }
 
