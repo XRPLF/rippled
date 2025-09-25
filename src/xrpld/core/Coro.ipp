@@ -96,6 +96,16 @@ JobQueue::Coro::yield()
 inline bool
 JobQueue::Coro::post()
 {
+    if (state_ == CoroState::Finished)
+    {
+        // The coroutine will run until it finishes if the JobQueue has stopped.
+        // In the case where make_shared<Coro>() succeeds and then the JobQueue
+        // stops before coro_ gets executed, post() will still be called and
+        // state_ will be Finished. We should return false and avoid XRPL_ASSERT
+        // as it's a valid edge case.
+        return false;
+    }
+
     XRPL_ASSERT(
         state_ == CoroState::Suspended,
         "JobQueue::Coro::post: coroutine should be suspended!");
