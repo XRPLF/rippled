@@ -263,18 +263,22 @@ computePeriodicPaymentParts(
         Number const interest = roundToAsset(
             asset,
             periodicPaymentAmount - principalOutstanding,
-            originalPrincipal);
+            originalPrincipal,
+            Number::upward);
         return {interest, principalOutstanding};
     }
     Number const interest = roundToAsset(
-        asset, principalOutstanding * periodicRate, originalPrincipal);
+        asset,
+        principalOutstanding * periodicRate,
+        originalPrincipal,
+        Number::upward);
     XRPL_ASSERT(
         interest >= 0,
         "ripple::detail::computePeriodicPayment : valid interest");
 
     auto const roundedPayment = [&]() {
-        auto roundedPayment =
-            roundToAsset(asset, periodicPaymentAmount, originalPrincipal);
+        auto roundedPayment = roundToAsset(
+            asset, periodicPaymentAmount, originalPrincipal, Number::upward);
         if (roundedPayment > interest)
             return roundedPayment;
         auto newPayment = roundedPayment;

@@ -1733,9 +1733,13 @@ class Loan_test : public beast::unit_test::suite
                     Number const rawPeriodicPayment =
                         state.principalOutstanding * periodicRate * rateFactor /
                         (rateFactor - 1);
-                    STAmount const periodicPayment = roundToReference(
-                        STAmount{broker.asset, rawPeriodicPayment},
-                        principalRequestedAmount);
+                    STAmount const periodicPayment{
+                        broker.asset,
+                        roundToAsset(
+                            broker.asset,
+                            rawPeriodicPayment,
+                            principalRequestedAmount,
+                            Number::upward)};
                     // Only check the first payment since the rounding
                     // may drift as payments are made
                     BEAST_EXPECT(
@@ -1745,15 +1749,19 @@ class Loan_test : public beast::unit_test::suite
                     // Include the service fee
                     STAmount const totalDue = roundToReference(
                         periodicPayment + broker.asset(2),
-                        principalRequestedAmount);
+                        principalRequestedAmount,
+                        Number::upward);
                     // Only check the first payment since the rounding
                     // may drift as payments are made
                     BEAST_EXPECT(
                         state.paymentRemaining < 12 ||
                         totalDue ==
                             roundToReference(
-                                broker.asset(Number(8533457001162141, -14)),
-                                principalRequestedAmount));
+                                broker.asset(
+                                    Number(8533457001162141, -14),
+                                    Number::upward),
+                                principalRequestedAmount,
+                                Number::upward));
 
                     // Try to pay a little extra to show that it's _not_
                     // taken
@@ -1765,8 +1773,11 @@ class Loan_test : public beast::unit_test::suite
                         state.paymentRemaining < 12 ||
                         transactionAmount ==
                             roundToReference(
-                                broker.asset(Number(9533457001162141, -14)),
-                                principalRequestedAmount));
+                                broker.asset(
+                                    Number(9533457001162141, -14),
+                                    Number::upward),
+                                principalRequestedAmount,
+                                Number::upward));
 
                     auto const totalDueAmount =
                         STAmount{broker.asset, totalDue};
@@ -1775,34 +1786,48 @@ class Loan_test : public beast::unit_test::suite
                     Number const rawInterest = state.paymentRemaining == 1
                         ? rawPeriodicPayment - state.principalOutstanding
                         : state.principalOutstanding * periodicRate;
-                    STAmount const interest = roundToReference(
-                        STAmount{broker.asset, rawInterest},
-                        principalRequestedAmount);
+                    STAmount const interest{
+                        broker.asset,
+                        roundToAsset(
+                            broker.asset,
+                            rawInterest,
+                            principalRequestedAmount,
+                            Number::upward)};
                     BEAST_EXPECT(
                         state.paymentRemaining < 12 ||
-                        roundToReference(
-                            STAmount{broker.asset, rawInterest},
-                            principalRequestedAmount) ==
+                        interest ==
                             roundToReference(
-                                broker.asset(Number(2283105022831050, -18)),
-                                principalRequestedAmount));
+                                broker.asset(
+                                    Number(2283105022831050, -18),
+                                    Number::upward),
+                                principalRequestedAmount,
+                                Number::upward));
                     BEAST_EXPECT(interest >= Number(0));
 
                     auto const rawPrincipal = rawPeriodicPayment - rawInterest;
                     BEAST_EXPECT(
                         state.paymentRemaining < 12 ||
-                        roundToReference(
-                            STAmount{broker.asset, rawPrincipal},
-                            principalRequestedAmount) ==
+                        roundToAsset(
+                            broker.asset,
+                            rawPrincipal,
+                            principalRequestedAmount,
+                            Number::upward) ==
                             roundToReference(
-                                broker.asset(Number(8333228690659858, -14)),
-                                principalRequestedAmount));
+                                broker.asset(
+                                    Number(8333228690659858, -14),
+                                    Number::upward),
+                                principalRequestedAmount,
+                                Number::upward));
                     BEAST_EXPECT(
                         state.paymentRemaining > 1 ||
                         rawPrincipal == state.principalOutstanding);
-                    auto const principal = roundToReference(
-                        STAmount{broker.asset, periodicPayment - interest},
-                        principalRequestedAmount);
+                    STAmount const principal{
+                        broker.asset,
+                        roundToAsset(
+                            broker.asset,
+                            periodicPayment - interest,
+                            principalRequestedAmount,
+                            Number::downward)};
                     BEAST_EXPECT(
                         principal > Number(0) &&
                         principal <= state.principalOutstanding);
