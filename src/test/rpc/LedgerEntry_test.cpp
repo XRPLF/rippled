@@ -2045,6 +2045,16 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         env.close();
 
+        /** Verifies that the RPC result has the expected data
+         *
+         * @param good: Indicates that the request should have succeeded
+         *   and returned a ledger object of `expectedType` type.
+         * @param jv: The RPC result Json value
+         * @param expectedType: The type that the ledger object should
+         *   have if "good".
+         * @param expectedError: Optional. The expected error if not
+         *   good. Defaults to "entryNotFound".
+         */
         auto checkResult =
             [&](bool good,
                 Json::Value const& jv,
@@ -2074,6 +2084,16 @@ class LedgerEntry_test : public beast::unit_test::suite
                 }
             };
 
+        /** Runs a series of tests for a given fixed-position ledger
+         * entry.
+         *
+         * @param field: The Json request field to use.
+         * @param expectedType: The type that the ledger object should
+         *   have if "good".
+         * @param expectedKey: The keylet of the fixed object.
+         * @param good: Indicates whether the object is expected to
+         *   exist.
+         */
         auto test = [&](Json::StaticString const& field,
                         Json::StaticString const& expectedType,
                         Keylet const& expectedKey,
@@ -2191,6 +2211,16 @@ class LedgerEntry_test : public beast::unit_test::suite
 
         env.close();
 
+        /** Verifies that the RPC result has the expected data
+         *
+         * @param good: Indicates that the request should have succeeded
+         *   and returned a ledger object of `expectedType` type.
+         * @param jv: The RPC result Json value
+         * @param expectedCount: The number of Hashes expected in the
+         *   object if "good".
+         * @param expectedError: Optional. The expected error if not
+         *   good. Defaults to "entryNotFound".
+         */
         auto checkResult =
             [&](bool good,
                 Json::Value const& jv,
@@ -2226,6 +2256,16 @@ class LedgerEntry_test : public beast::unit_test::suite
                 }
             };
 
+        /** Runs a series of tests for a given ledger index.
+         *
+         * @param ledger: The ledger index value of the "hashes" request
+         *   parameter. May not necessarily be a number.
+         * @param expectedKey: The expected keylet of the object.
+         * @param good: Indicates whether the object is expected to
+         *   exist.
+         * @param expectedCount: The number of Hashes expected in the
+         *   object if "good".
+         */
         auto test = [&](Json::Value ledger,
                         Keylet const& expectedKey,
                         bool good,
