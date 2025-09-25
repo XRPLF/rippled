@@ -768,6 +768,24 @@ private:
         expectUntrusted(lists.at(7));
         expectTrusted(lists.at(2));
 
+        // try empty or mangled manifest
+        checkResult(
+            trustedKeys->applyLists(
+                "", version, {{blob7, sig7, {}}, {blob6, sig6, {}}}, siteUri),
+            publisherPublic,
+            ListDisposition::invalid,
+            ListDisposition::invalid);
+
+        checkResult(
+            trustedKeys->applyLists(
+                base64_encode("not a manifest"),
+                version,
+                {{blob7, sig7, {}}, {blob6, sig6, {}}},
+                siteUri),
+            publisherPublic,
+            ListDisposition::invalid,
+            ListDisposition::invalid);
+
         // do not use list from untrusted publisher
         auto const untrustedManifest = base64_encode(makeManifestString(
             randomMasterKey(),
