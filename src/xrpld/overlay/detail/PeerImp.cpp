@@ -581,10 +581,10 @@ PeerImp::fail(std::string const& name, error_code ec)
         strand_.running_in_this_thread(),
         "ripple::PeerImp::fail : strand in this thread");
 
-    if (socket_.is_open())
-    {
-        JLOG(journal_.warn()) << name << ": " << ec.message();
-    }
+    if (!socket_.is_open())
+        return;
+
+    JLOG(journal_.warn()) << name << ": " << ec.message();
 
     shutdown();
 }
@@ -845,7 +845,7 @@ PeerImp::doAccept()
     if (!sharedValue)
         return fail("makeSharedValue: Unexpected failure");
 
-    JLOG(journal_.info()) << "Protocol: " << to_string(protocol_);
+    JLOG(journal_.debug()) << "Protocol: " << to_string(protocol_);
 
     if (auto member = app_.cluster().member(publicKey_))
     {
@@ -2400,7 +2400,7 @@ PeerImp::onMessage(
     }
     catch (std::exception const& e)
     {
-        JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception";
+        JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception, " << e.what();
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
