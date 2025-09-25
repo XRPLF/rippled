@@ -2311,9 +2311,10 @@ ValidVault::finalize(
     if (!isTesSuccess(ret))
         return true;  // Do not perform checks
 
+    auto const txnType = tx.getTxnType();
     // First special handling for ttVAULT_DELETE, which is the only
     // vault-modifying transaction without an "after" state of the vault
-    if (tx.getTxnType() == ttVAULT_DELETE)
+    if (txnType == ttVAULT_DELETE)
     {
         if (!beforeVault_)
         {
@@ -2462,11 +2463,11 @@ ValidVault::finalize(
         }
     }
 
-    if (tx.getTxnType() == ttVAULT_CREATE ||    //
-        tx.getTxnType() == ttVAULT_SET ||       //
-        tx.getTxnType() == ttVAULT_DEPOSIT ||   //
-        tx.getTxnType() == ttVAULT_WITHDRAW ||  //
-        tx.getTxnType() == ttVAULT_CLAWBACK)
+    if (txnType == ttVAULT_CREATE ||    //
+        txnType == ttVAULT_SET ||       //
+        txnType == ttVAULT_DEPOSIT ||   //
+        txnType == ttVAULT_WITHDRAW ||  //
+        txnType == ttVAULT_CLAWBACK)
     {
         if (!afterVault_)
         {
@@ -2480,11 +2481,7 @@ ValidVault::finalize(
 
         // Transactor makes this condition impossible, but since we need to
         // access beforeVault_ then we also need a defensive check.
-        if (!beforeVault_ &&
-            (tx.getTxnType() == ttVAULT_SET ||       //
-             tx.getTxnType() == ttVAULT_DEPOSIT ||   //
-             tx.getTxnType() == ttVAULT_WITHDRAW ||  //
-             tx.getTxnType() == ttVAULT_CLAWBACK))
+        if (!beforeVault_ && txnType != ttVAULT_CREATE)
         {
             // LCOV_EXCL_START
             UNREACHABLE(
@@ -2526,31 +2523,37 @@ ValidVault::finalize(
         }
 
         auto const& vaultAsset = afterVault_->asset;
-        auto const deltaAssets = [&](AccountID id) -> std::optional<Number> {
-            auto const it = [&]() {
-                if (vaultAsset.native())
-                    return deltas_.find(keylet::account(id).key);
-                else if (vaultAsset.holds<Issue>())
-                    return deltas_.find(
-                        keylet::line(id, vaultAsset.get<Issue>()).key);
-                else
-                    return deltas_.find(
-                        keylet::mptoken(
-                            vaultAsset.get<MPTIssue>().getMptID(), id)
-                            .key);
-            }();
-            if (it == deltas_.end())
-                return std::nullopt;
-            else if (vaultAsset.native() || vaultAsset.holds<MPTIssue>())
-                return it->second;
+        auto const deltaAssets =
+            [&](AccountID const& id) -> std::optional<Number> {
+            auto const get =  //
+                [&](auto const& it,
+                    std::int8_t sign = 1) -> std::optional<Number> {
+                if (it == deltas_.end())
+                    return std::nullopt;
 
-            // We have IOU, may need to reverse the sign of line balance
-            if (id > vaultAsset.get<Issue>().getIssuer())
-                return -1 * (it->second);
-            return it->second;
+                return it->second * sign;
+            };
+
+            return std::visit(
+                [&]<typename TIss>(TIss const& issue) {
+                    if constexpr (std::is_same_v<TIss, Issue>)
+                    {
+                        if (isXRP(issue))
+                            return get(deltas_.find(keylet::account(id).key));
+                        return get(
+                            deltas_.find(keylet::line(id, issue).key),
+                            id > issue.getIssuer() ? -1 : 1);
+                    }
+                    else if constexpr (std::is_same_v<TIss, MPTIssue>)
+                    {
+                        return get(deltas_.find(
+                            keylet::mptoken(issue.getMptID(), id).key));
+                    }
+                },
+                vaultAsset.value());
         };
-
-        auto const deltaShares = [&](AccountID id) -> std::optional<Number> {
+        auto const deltaShares =
+            [&](AccountID const& id) -> std::optional<Number> {
             auto const it = [&]() {
                 if (id == afterVault_->pseudoId)
                     return deltas_.find(
@@ -2568,7 +2571,7 @@ ValidVault::finalize(
         // alternatives are several layers of nested if/else or more complex
         // (i.e. brittle) if statements.
         result &= [&]() {
-            switch (tx.getTxnType())
+            switch (txnType)
             {
                 case ttVAULT_CREATE: {
                     bool result = true;
