@@ -359,7 +359,6 @@ using SF_UINT384 = TypedField<STBitString<384>>;
 using SF_UINT512 = TypedField<STBitString<512>>;
 
 using SF_INT32 = TypedField<STInteger<std::int32_t>>;
-using SF_INT64 = TypedField<STInteger<std::int64_t>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
