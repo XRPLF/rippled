@@ -604,12 +604,13 @@ class Vault_test : public beast::unit_test::suite
             test(env, issuer, owner, asset, vault);
         };
 
-        testCase(
-            [&](Env& env,
-                Account const& issuer,
-                Account const& owner,
-                Asset const& asset,
-                Vault& vault) {
+        auto testDisabled = [&](TER resultAfterCreate = temDISABLED) {
+            return [&, resultAfterCreate](
+                       Env& env,
+                       Account const& issuer,
+                       Account const& owner,
+                       Asset const& asset,
+                       Vault& vault) {
                 testcase("disabled single asset vault");
 
                 auto [tx, keylet] =
@@ -618,7 +619,7 @@ class Vault_test : public beast::unit_test::suite
 
                 {
                     auto tx = vault.set({.owner = owner, .id = keylet.key});
-                    env(tx, ter{temDISABLED});
+                    env(tx, data("test"), ter{resultAfterCreate});
                 }
 
                 {
@@ -626,7 +627,7 @@ class Vault_test : public beast::unit_test::suite
                         {.depositor = owner,
                          .id = keylet.key,
                          .amount = asset(10)});
-                    env(tx, ter{temDISABLED});
+                    env(tx, ter{resultAfterCreate});
                 }
 
                 {
@@ -634,7 +635,7 @@ class Vault_test : public beast::unit_test::suite
                         {.depositor = owner,
                          .id = keylet.key,
                          .amount = asset(10)});
-                    env(tx, ter{temDISABLED});
+                    env(tx, ter{resultAfterCreate});
                 }
 
                 {
@@ -643,15 +644,49 @@ class Vault_test : public beast::unit_test::suite
                          .id = keylet.key,
                          .holder = owner,
                          .amount = asset(10)});
-                    env(tx, ter{temDISABLED});
+                    env(tx, ter{resultAfterCreate});
                 }
 
                 {
                     auto tx = vault.del({.owner = owner, .id = keylet.key});
+                    env(tx, ter{resultAfterCreate});
+                }
+            };
+        };
+
+        testCase(
+            testDisabled(),
+            {.features = testable_amendments() - featureSingleAssetVault});
+
+        testCase(
+            testDisabled(tecNO_ENTRY),
+            {.features = testable_amendments() - featureMPTokensV1});
+
+        testCase(
+            [&](Env& env,
+                Account const& issuer,
+                Account const& owner,
+                Asset const& asset,
+                Vault& vault) {
+                testcase("disabled permissioned domains");
+
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx);
+
+                tx[sfFlags] = tx[sfFlags].asUInt() | tfVaultPrivate;
+                tx[sfDomainID] = to_string(base_uint<256>(42ul));
+                env(tx, ter{temDISABLED});
+
+                {
+                    auto tx = vault.set({.owner = owner, .id = keylet.key});
+                    env(tx, data("Test"));
+
+                    tx[sfDomainID] = to_string(base_uint<256>(13ul));
                     env(tx, ter{temDISABLED});
                 }
             },
-            {.features = testable_amendments() - featureSingleAssetVault});
+            {.features = testable_amendments() - featurePermissionedDomains});
 
         testCase([&](Env& env,
                      Account const& issuer,
