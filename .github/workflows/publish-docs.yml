@@ -27,7 +27,7 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-5dd7158
+    container: ghcr.io/xrplf/ci/tools-rippled-documentation:sha-d1496b8
     permissions:
       contents: write
     steps:
