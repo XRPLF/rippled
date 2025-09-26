@@ -494,95 +494,15 @@ class FeeVote_test : public beast::unit_test::suite
             OpenView accum(ledger.get());
             BEAST_EXPECT(!applyFeeAndTestResult(env, accum, feeTx));
         }
+    }
 
-        void testTransactionValidation()
+    void
+    testTransactionValidation()
+    {
+        testcase("Fee Transaction Validation");
+
         {
-            testcase("Fee Transaction Validation");
-
-            {
-                jtx::Env env(
-                    *this, jtx::testable_amendments() - featureXRPFees);
-                auto ledger = std::make_shared<Ledger>(
-                    create_genesis,
-                    env.app().config(),
-                    std::vector<uint256>{},
-                    env.app().getNodeFamily());
-
-                // Create the next ledger to apply transaction to
-                ledger = std::make_shared<Ledger>(
-                    *ledger, env.app().timeKeeper().closeTime());
-
-                // Test transaction with missing required legacy fields
-                auto invalidTx = createInvalidFeeTx(
-                    ledger->rules(), ledger->seq(), true, false, 1);
-                OpenView accum(ledger.get());
-                BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
-
-                // Test transaction with new format fields when XRPFees is
-                // disabled
-                auto disallowedTx = createInvalidFeeTx(
-                    ledger->rules(), ledger->seq(), false, true, 2);
-                BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
-            }
-
-            {
-                jtx::Env env(
-                    *this, jtx::testable_amendments() | featureXRPFees);
-                auto ledger = std::make_shared<Ledger>(
-                    create_genesis,
-                    env.app().config(),
-                    std::vector<uint256>{},
-                    env.app().getNodeFamily());
-
-                // Create the next ledger to apply transaction to
-                ledger = std::make_shared<Ledger>(
-                    *ledger, env.app().timeKeeper().closeTime());
-
-                // Test transaction with missing required new fields
-                auto invalidTx = createInvalidFeeTx(
-                    ledger->rules(), ledger->seq(), true, false, 3);
-                OpenView accum(ledger.get());
-                BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
-
-                // Test transaction with legacy fields when XRPFees is enabled
-                auto disallowedTx = createInvalidFeeTx(
-                    ledger->rules(), ledger->seq(), false, true, 4);
-                BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
-            }
-
-            {
-                jtx::Env env(
-                    *this,
-                    jtx::testable_amendments() | featureXRPFees |
-                        featureSmartEscrow);
-                auto ledger = std::make_shared<Ledger>(
-                    create_genesis,
-                    env.app().config(),
-                    std::vector<uint256>{},
-                    env.app().getNodeFamily());
-
-                // Create the next ledger to apply transaction to
-                ledger = std::make_shared<Ledger>(
-                    *ledger, env.app().timeKeeper().closeTime());
-
-                // Test transaction with missing required new fields
-                auto invalidTx = createInvalidFeeTx(
-                    ledger->rules(), ledger->seq(), true, false, 5);
-                OpenView accum(ledger.get());
-                BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
-
-                // Test transaction with legacy fields when XRPFees is enabled
-                auto disallowedTx = createInvalidFeeTx(
-                    ledger->rules(), ledger->seq(), false, true, 6);
-                BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
-            }
-        }
-
-        void testPseudoTransactionProperties()
-        {
-            testcase("Pseudo Transaction Properties");
-
-            jtx::Env env(*this, jtx::testable_amendments());
+            jtx::Env env(*this, jtx::testable_amendments() - featureXRPFees);
             auto ledger = std::make_shared<Ledger>(
                 create_genesis,
                 env.app().config(),
@@ -593,518 +513,592 @@ class FeeVote_test : public beast::unit_test::suite
             ledger = std::make_shared<Ledger>(
                 *ledger, env.app().timeKeeper().closeTime());
 
-            auto feeTx = createFeeTx(
-                ledger->rules(),
-                ledger->seq(),
-                {.baseFeeDrops = XRPAmount{10},
-                 .reserveBaseDrops = XRPAmount{200000},
-                 .reserveIncrementDrops = XRPAmount{50000}});
-
-            // Verify pseudo-transaction properties
-            BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
-            BEAST_EXPECT(feeTx.getFieldAmount(sfFee) == XRPAmount{0});
-            BEAST_EXPECT(feeTx.getSigningPubKey().empty());
-            BEAST_EXPECT(feeTx.getSignature().empty());
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfSigners));
-            BEAST_EXPECT(feeTx.getFieldU32(sfSequence) == 0);
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfPreviousTxnID));
-
-            // But can be applied to a closed ledger
-            {
-                OpenView closedAccum(ledger.get());
-                BEAST_EXPECT(applyFeeAndTestResult(env, closedAccum, feeTx));
-            }
-        }
-
-        void testMultipleFeeUpdates()
-        {
-            testcase("Multiple Fee Updates");
-
-            jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
-            auto ledger = std::make_shared<Ledger>(
-                create_genesis,
-                env.app().config(),
-                std::vector<uint256>{},
-                env.app().getNodeFamily());
-
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            FeeSettingsFields fields1{
-                .baseFeeDrops = XRPAmount{10},
-                .reserveBaseDrops = XRPAmount{200000},
-                .reserveIncrementDrops = XRPAmount{50000}};
-            auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
-
-            {
-                OpenView accum(ledger.get());
-                BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1));
-                accum.apply(*ledger);
-            }
-
-            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
-
-            // Apply second fee transaction with different values
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            FeeSettingsFields fields2{
-                .baseFeeDrops = XRPAmount{20},
-                .reserveBaseDrops = XRPAmount{300000},
-                .reserveIncrementDrops = XRPAmount{75000}};
-            auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
-
-            {
-                OpenView accum(ledger.get());
-                BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx2));
-                accum.apply(*ledger);
-            }
-
-            // Verify second update overwrote the first
-            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields2));
-        }
-
-        void testWrongLedgerSequence()
-        {
-            testcase("Wrong Ledger Sequence");
-
-            jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
-            auto ledger = std::make_shared<Ledger>(
-                create_genesis,
-                env.app().config(),
-                std::vector<uint256>{},
-                env.app().getNodeFamily());
-
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            // Test transaction with wrong ledger sequence
-            auto feeTx = createFeeTx(
-                ledger->rules(),
-                ledger->seq() + 5,  // Wrong sequence (should be ledger->seq())
-                {.baseFeeDrops = XRPAmount{10},
-                 .reserveBaseDrops = XRPAmount{200000},
-                 .reserveIncrementDrops = XRPAmount{50000}});
-
-            OpenView accum(ledger.get());
-
-            // The transaction should still succeed as long as other fields are
-            // valid
-            // The ledger sequence field is only used for informational purposes
-            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
-        }
-
-        void testPartialFieldUpdates()
-        {
-            testcase("Partial Field Updates");
-
-            jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
-            auto ledger = std::make_shared<Ledger>(
-                create_genesis,
-                env.app().config(),
-                std::vector<uint256>{},
-                env.app().getNodeFamily());
-
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            FeeSettingsFields fields1{
-                .baseFeeDrops = XRPAmount{10},
-                .reserveBaseDrops = XRPAmount{200000},
-                .reserveIncrementDrops = XRPAmount{50000}};
-            auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
-
-            {
-                OpenView accum(ledger.get());
-                BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1));
-                accum.apply(*ledger);
-            }
-
-            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
-
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            // Apply partial update (only some fields)
-            FeeSettingsFields fields2{
-                .baseFeeDrops = XRPAmount{20},
-                .reserveBaseDrops = XRPAmount{200000}};
-            auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
-
-            {
-                OpenView accum(ledger.get());
-                BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx2));
-                accum.apply(*ledger);
-            }
-
-            // Verify the partial update worked
-            BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields2));
-        }
-
-        void testSingleInvalidTransaction()
-        {
-            testcase("Single Invalid Transaction");
-
-            jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
-            auto ledger = std::make_shared<Ledger>(
-                create_genesis,
-                env.app().config(),
-                std::vector<uint256>{},
-                env.app().getNodeFamily());
-
-            ledger = std::make_shared<Ledger>(
-                *ledger, env.app().timeKeeper().closeTime());
-
-            // Test invalid transaction with non-zero account - this should fail
-            // validation
-            auto invalidTx = STTx(ttFEE, [&](auto& obj) {
-                obj.setAccountID(
-                    sfAccount,
-                    AccountID(1));  // Should be zero (this makes it invalid)
-                obj.setFieldU32(sfLedgerSequence, ledger->seq());
-                obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10});
-                obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
-                obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
-            });
-
+            // Test transaction with missing required legacy fields
+            auto invalidTx = createInvalidFeeTx(
+                ledger->rules(), ledger->seq(), true, false, 1);
             OpenView accum(ledger.get());
             BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
+
+            // Test transaction with new format fields when XRPFees is
+            // disabled
+            auto disallowedTx = createInvalidFeeTx(
+                ledger->rules(), ledger->seq(), false, true, 2);
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
         }
 
-        void testDoValidation()
         {
-            testcase("doValidation");
-
-            using namespace jtx;
-
-            FeeSetup setup;
-            setup.reference_fee = 42;
-            setup.account_reserve = 1234567;
-            setup.owner_reserve = 7654321;
-
-            // Test with XRPFees enabled
-            {
-                Env env(*this, testable_amendments() | featureXRPFees);
-                auto feeVote =
-                    make_FeeVote(setup, env.app().journal("FeeVote"));
-
-                auto ledger = std::make_shared<Ledger>(
-                    create_genesis,
-                    env.app().config(),
-                    std::vector<uint256>{},
-                    env.app().getNodeFamily());
-
-                auto sec = randomSecretKey();
-                auto pub = derivePublicKey(KeyType::secp256k1, sec);
-
-                auto val = std::make_shared<STValidation>(
-                    env.app().timeKeeper().now(),
-                    pub,
-                    sec,
-                    calcNodeID(pub),
-                    [](STValidation& v) {
-                        v.setFieldU32(sfLedgerSequence, 12345);
-                    });
-
-                // Use the current ledger's fees as the "current" fees for
-                // doValidation
-                auto const& currentFees = ledger->fees();
-
-                feeVote->doValidation(currentFees, ledger->rules(), *val);
-
-                BEAST_EXPECT(val->isFieldPresent(sfBaseFeeDrops));
-                BEAST_EXPECT(
-                    val->getFieldAmount(sfBaseFeeDrops) ==
-                    XRPAmount(setup.reference_fee));
-            }
-
-            // Test with XRPFees disabled (legacy format)
-            {
-                Env env(*this, testable_amendments() - featureXRPFees);
-                auto feeVote =
-                    make_FeeVote(setup, env.app().journal("FeeVote"));
-
-                auto ledger = std::make_shared<Ledger>(
-                    create_genesis,
-                    env.app().config(),
-                    std::vector<uint256>{},
-                    env.app().getNodeFamily());
-
-                auto sec = randomSecretKey();
-                auto pub = derivePublicKey(KeyType::secp256k1, sec);
-
-                auto val = std::make_shared<STValidation>(
-                    env.app().timeKeeper().now(),
-                    pub,
-                    sec,
-                    calcNodeID(pub),
-                    [](STValidation& v) {
-                        v.setFieldU32(sfLedgerSequence, 12345);
-                    });
-
-                auto const& currentFees = ledger->fees();
-
-                feeVote->doValidation(currentFees, ledger->rules(), *val);
-
-                // In legacy mode, should vote using legacy fields
-                BEAST_EXPECT(val->isFieldPresent(sfBaseFee));
-                BEAST_EXPECT(
-                    val->getFieldU64(sfBaseFee) == setup.reference_fee);
-            }
-        }
-
-        void testDoVoting()
-        {
-            testcase("doVoting");
-
-            using namespace jtx;
-
-            FeeSetup setup;
-            setup.reference_fee = 42;
-            setup.account_reserve = 1234567;
-            setup.owner_reserve = 7654321;
-
-            Env env(*this, testable_amendments() | featureXRPFees);
-
-            // establish what the current fees are
-            BEAST_EXPECT(
-                env.current()->fees().base ==
-                XRPAmount{UNIT_TEST_REFERENCE_FEE});
-            BEAST_EXPECT(
-                env.current()->fees().reserve == XRPAmount{200'000'000});
-            BEAST_EXPECT(
-                env.current()->fees().increment == XRPAmount{50'000'000});
-
-            auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+            jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
             auto ledger = std::make_shared<Ledger>(
                 create_genesis,
                 env.app().config(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
-            // doVoting requires a flag ledger (every 256th ledger)
-            // We need to create a ledger at sequence 256 to make it a flag
-            // ledger
-            for (int i = 0; i < 256 - 1; ++i)
-            {
-                ledger = std::make_shared<Ledger>(
-                    *ledger, env.app().timeKeeper().closeTime());
-            }
-            BEAST_EXPECT(ledger->isFlagLedger());
+            // Create the next ledger to apply transaction to
+            ledger = std::make_shared<Ledger>(
+                *ledger, env.app().timeKeeper().closeTime());
 
-            // Create some mock validations with fee votes
-            std::vector<std::shared_ptr<STValidation>> validations;
+            // Test transaction with missing required new fields
+            auto invalidTx = createInvalidFeeTx(
+                ledger->rules(), ledger->seq(), true, false, 3);
+            OpenView accum(ledger.get());
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
 
-            for (int i = 0; i < 5; i++)
-            {
-                auto sec = randomSecretKey();
-                auto pub = derivePublicKey(KeyType::secp256k1, sec);
-
-                auto val = std::make_shared<STValidation>(
-                    env.app().timeKeeper().now(),
-                    pub,
-                    sec,
-                    calcNodeID(pub),
-                    [&](STValidation& v) {
-                        v.setFieldU32(sfLedgerSequence, ledger->seq());
-                        // Vote for different fees than current
-                        v.setFieldAmount(
-                            sfBaseFeeDrops, XRPAmount{setup.reference_fee});
-                        v.setFieldAmount(
-                            sfReserveBaseDrops,
-                            XRPAmount{setup.account_reserve});
-                        v.setFieldAmount(
-                            sfReserveIncrementDrops,
-                            XRPAmount{setup.owner_reserve});
-                    });
-                if (i % 2)
-                    val->setTrusted();
-                validations.push_back(val);
-            }
-
-            auto txSet = std::make_shared<SHAMap>(
-                SHAMapType::TRANSACTION, env.app().getNodeFamily());
-
-            // This should not throw since we have a flag ledger
-            feeVote->doVoting(ledger, validations, txSet);
-
-            auto const txs = getTxs(txSet);
-            BEAST_EXPECT(txs.size() == 1);
-            auto const& feeTx = txs[0];
-
-            BEAST_EXPECT(feeTx.getTxnType() == ttFEE);
-
-            BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
-            BEAST_EXPECT(
-                feeTx.getFieldU32(sfLedgerSequence) == ledger->seq() + 1);
-
-            BEAST_EXPECT(feeTx.isFieldPresent(sfBaseFeeDrops));
-            BEAST_EXPECT(feeTx.isFieldPresent(sfReserveBaseDrops));
-            BEAST_EXPECT(feeTx.isFieldPresent(sfReserveIncrementDrops));
-
-            // The legacy fields should NOT be present
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfBaseFee));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveBase));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveIncrement));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
-
-            // Check the values
-            BEAST_EXPECT(
-                feeTx.getFieldAmount(sfBaseFeeDrops) ==
-                XRPAmount{setup.reference_fee});
-            BEAST_EXPECT(
-                feeTx.getFieldAmount(sfReserveBaseDrops) ==
-                XRPAmount{setup.account_reserve});
-            BEAST_EXPECT(
-                feeTx.getFieldAmount(sfReserveIncrementDrops) ==
-                XRPAmount{setup.owner_reserve});
+            // Test transaction with legacy fields when XRPFees is enabled
+            auto disallowedTx = createInvalidFeeTx(
+                ledger->rules(), ledger->seq(), false, true, 4);
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
         }
 
-        void testDoVotingSmartEscrow()
         {
-            testcase("doVoting");
-
-            using namespace jtx;
-
-            FeeSetup setup;
-            setup.reference_fee = 42;
-            setup.account_reserve = 1234567;
-            setup.owner_reserve = 7654321;
-            setup.extension_compute_limit = 100;
-            setup.extension_size_limit = 200;
-            setup.gas_price = 300;
-
-            Env env(
+            jtx::Env env(
                 *this,
-                testable_amendments() | featureXRPFees | featureSmartEscrow);
-
-            // establish what the current fees are
-            BEAST_EXPECT(
-                env.current()->fees().base ==
-                XRPAmount{UNIT_TEST_REFERENCE_FEE});
-            BEAST_EXPECT(
-                env.current()->fees().reserve == XRPAmount{200'000'000});
-            BEAST_EXPECT(
-                env.current()->fees().increment == XRPAmount{50'000'000});
-            BEAST_EXPECT(env.current()->fees().extensionComputeLimit == 0);
-            BEAST_EXPECT(env.current()->fees().extensionSizeLimit == 0);
-            BEAST_EXPECT(env.current()->fees().gasPrice == 0);
-
-            auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+                jtx::testable_amendments() | featureXRPFees |
+                    featureSmartEscrow);
             auto ledger = std::make_shared<Ledger>(
                 create_genesis,
                 env.app().config(),
                 std::vector<uint256>{},
                 env.app().getNodeFamily());
 
-            // doVoting requires a flag ledger (every 256th ledger)
-            // We need to create a ledger at sequence 256 to make it a flag
-            // ledger
-            for (int i = 0; i < 256 - 1; ++i)
-            {
-                ledger = std::make_shared<Ledger>(
-                    *ledger, env.app().timeKeeper().closeTime());
-            }
-            BEAST_EXPECT(ledger->isFlagLedger());
+            // Create the next ledger to apply transaction to
+            ledger = std::make_shared<Ledger>(
+                *ledger, env.app().timeKeeper().closeTime());
 
-            // Create some mock validations with fee votes
-            std::vector<std::shared_ptr<STValidation>> validations;
+            // Test transaction with missing required new fields
+            auto invalidTx = createInvalidFeeTx(
+                ledger->rules(), ledger->seq(), true, false, 5);
+            OpenView accum(ledger.get());
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
 
-            for (int i = 0; i < 5; i++)
-            {
-                auto sec = randomSecretKey();
-                auto pub = derivePublicKey(KeyType::secp256k1, sec);
-
-                auto val = std::make_shared<STValidation>(
-                    env.app().timeKeeper().now(),
-                    pub,
-                    sec,
-                    calcNodeID(pub),
-                    [&](STValidation& v) {
-                        v.setFieldU32(sfLedgerSequence, ledger->seq());
-                        // Vote for different fees than current
-                        v.setFieldAmount(
-                            sfBaseFeeDrops, XRPAmount{setup.reference_fee});
-                        v.setFieldAmount(
-                            sfReserveBaseDrops,
-                            XRPAmount{setup.account_reserve});
-                        v.setFieldAmount(
-                            sfReserveIncrementDrops,
-                            XRPAmount{setup.owner_reserve});
-                        v.setFieldU32(
-                            sfExtensionComputeLimit,
-                            setup.extension_compute_limit);
-                        v.setFieldU32(
-                            sfExtensionSizeLimit, setup.extension_size_limit);
-                        v.setFieldU32(sfGasPrice, setup.gas_price);
-                    });
-                if (i % 2)
-                    val->setTrusted();
-                validations.push_back(val);
-            }
-
-            auto txSet = std::make_shared<SHAMap>(
-                SHAMapType::TRANSACTION, env.app().getNodeFamily());
-
-            // This should not throw since we have a flag ledger
-            feeVote->doVoting(ledger, validations, txSet);
-
-            auto const txs = getTxs(txSet);
-            BEAST_EXPECT(txs.size() == 1);
-            auto const& feeTx = txs[0];
-
-            BEAST_EXPECT(feeTx.getTxnType() == ttFEE);
-
-            BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
-            BEAST_EXPECT(
-                feeTx.getFieldU32(sfLedgerSequence) == ledger->seq() + 1);
-
-            BEAST_EXPECT(feeTx.isFieldPresent(sfBaseFeeDrops));
-            BEAST_EXPECT(feeTx.isFieldPresent(sfReserveBaseDrops));
-            BEAST_EXPECT(feeTx.isFieldPresent(sfReserveIncrementDrops));
-
-            // The legacy fields should NOT be present
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfBaseFee));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveBase));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveIncrement));
-            BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
-
-            // Check the values
-            BEAST_EXPECT(
-                feeTx.getFieldAmount(sfBaseFeeDrops) ==
-                XRPAmount{setup.reference_fee});
-            BEAST_EXPECT(
-                feeTx.getFieldAmount(sfReserveBaseDrops) ==
-                XRPAmount{setup.account_reserve});
-            BEAST_EXPECT(
-                feeTx.getFieldAmount(sfReserveIncrementDrops) ==
-                XRPAmount{setup.owner_reserve});
-            BEAST_EXPECT(
-                feeTx.getFieldU32(sfExtensionComputeLimit) ==
-                setup.extension_compute_limit);
-            BEAST_EXPECT(
-                feeTx.getFieldU32(sfExtensionSizeLimit) ==
-                setup.extension_size_limit);
-            BEAST_EXPECT(feeTx.getFieldU32(sfGasPrice) == setup.gas_price);
+            // Test transaction with legacy fields when XRPFees is enabled
+            auto disallowedTx = createInvalidFeeTx(
+                ledger->rules(), ledger->seq(), false, true, 6);
+            BEAST_EXPECT(!applyFeeAndTestResult(env, accum, disallowedTx));
         }
+    }
 
-        void run() override
+    void
+    testPseudoTransactionProperties()
+    {
+        testcase("Pseudo Transaction Properties");
+
+        jtx::Env env(*this, jtx::testable_amendments());
+        auto ledger = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        // Create the next ledger to apply transaction to
+        ledger = std::make_shared<Ledger>(
+            *ledger, env.app().timeKeeper().closeTime());
+
+        auto feeTx = createFeeTx(
+            ledger->rules(),
+            ledger->seq(),
+            {.baseFeeDrops = XRPAmount{10},
+             .reserveBaseDrops = XRPAmount{200000},
+             .reserveIncrementDrops = XRPAmount{50000}});
+
+        // Verify pseudo-transaction properties
+        BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
+        BEAST_EXPECT(feeTx.getFieldAmount(sfFee) == XRPAmount{0});
+        BEAST_EXPECT(feeTx.getSigningPubKey().empty());
+        BEAST_EXPECT(feeTx.getSignature().empty());
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfSigners));
+        BEAST_EXPECT(feeTx.getFieldU32(sfSequence) == 0);
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfPreviousTxnID));
+
+        // But can be applied to a closed ledger
         {
-            testSetup();
-            testBasic();
-            testTransactionValidation();
-            testPseudoTransactionProperties();
-            testMultipleFeeUpdates();
-            testWrongLedgerSequence();
-            testPartialFieldUpdates();
-            testSingleInvalidTransaction();
-            testDoValidation();
-            testDoVoting();
-            testDoVotingSmartEscrow();
+            OpenView closedAccum(ledger.get());
+            BEAST_EXPECT(applyFeeAndTestResult(env, closedAccum, feeTx));
         }
-    };
+    }
 
-    BEAST_DEFINE_TESTSUITE(FeeVote, app, ripple);
+    void
+    testMultipleFeeUpdates()
+    {
+        testcase("Multiple Fee Updates");
+
+        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+        auto ledger = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        ledger = std::make_shared<Ledger>(
+            *ledger, env.app().timeKeeper().closeTime());
+
+        FeeSettingsFields fields1{
+            .baseFeeDrops = XRPAmount{10},
+            .reserveBaseDrops = XRPAmount{200000},
+            .reserveIncrementDrops = XRPAmount{50000}};
+        auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
+
+        {
+            OpenView accum(ledger.get());
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1));
+            accum.apply(*ledger);
+        }
+
+        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
+
+        // Apply second fee transaction with different values
+        ledger = std::make_shared<Ledger>(
+            *ledger, env.app().timeKeeper().closeTime());
+
+        FeeSettingsFields fields2{
+            .baseFeeDrops = XRPAmount{20},
+            .reserveBaseDrops = XRPAmount{300000},
+            .reserveIncrementDrops = XRPAmount{75000}};
+        auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
+
+        {
+            OpenView accum(ledger.get());
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx2));
+            accum.apply(*ledger);
+        }
+
+        // Verify second update overwrote the first
+        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields2));
+    }
+
+    void
+    testWrongLedgerSequence()
+    {
+        testcase("Wrong Ledger Sequence");
+
+        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+        auto ledger = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        ledger = std::make_shared<Ledger>(
+            *ledger, env.app().timeKeeper().closeTime());
+
+        // Test transaction with wrong ledger sequence
+        auto feeTx = createFeeTx(
+            ledger->rules(),
+            ledger->seq() + 5,  // Wrong sequence (should be ledger->seq())
+            {.baseFeeDrops = XRPAmount{10},
+             .reserveBaseDrops = XRPAmount{200000},
+             .reserveIncrementDrops = XRPAmount{50000}});
+
+        OpenView accum(ledger.get());
+
+        // The transaction should still succeed as long as other fields are
+        // valid
+        // The ledger sequence field is only used for informational purposes
+        BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx));
+    }
+
+    void
+    testPartialFieldUpdates()
+    {
+        testcase("Partial Field Updates");
+
+        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+        auto ledger = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        ledger = std::make_shared<Ledger>(
+            *ledger, env.app().timeKeeper().closeTime());
+
+        FeeSettingsFields fields1{
+            .baseFeeDrops = XRPAmount{10},
+            .reserveBaseDrops = XRPAmount{200000},
+            .reserveIncrementDrops = XRPAmount{50000}};
+        auto feeTx1 = createFeeTx(ledger->rules(), ledger->seq(), fields1);
+
+        {
+            OpenView accum(ledger.get());
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx1));
+            accum.apply(*ledger);
+        }
+
+        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields1));
+
+        ledger = std::make_shared<Ledger>(
+            *ledger, env.app().timeKeeper().closeTime());
+
+        // Apply partial update (only some fields)
+        FeeSettingsFields fields2{
+            .baseFeeDrops = XRPAmount{20},
+            .reserveBaseDrops = XRPAmount{200000}};
+        auto feeTx2 = createFeeTx(ledger->rules(), ledger->seq(), fields2);
+
+        {
+            OpenView accum(ledger.get());
+            BEAST_EXPECT(applyFeeAndTestResult(env, accum, feeTx2));
+            accum.apply(*ledger);
+        }
+
+        // Verify the partial update worked
+        BEAST_EXPECT(verifyFeeObject(ledger, ledger->rules(), fields2));
+    }
+
+    void
+    testSingleInvalidTransaction()
+    {
+        testcase("Single Invalid Transaction");
+
+        jtx::Env env(*this, jtx::testable_amendments() | featureXRPFees);
+        auto ledger = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        ledger = std::make_shared<Ledger>(
+            *ledger, env.app().timeKeeper().closeTime());
+
+        // Test invalid transaction with non-zero account - this should fail
+        // validation
+        auto invalidTx = STTx(ttFEE, [&](auto& obj) {
+            obj.setAccountID(
+                sfAccount,
+                AccountID(1));  // Should be zero (this makes it invalid)
+            obj.setFieldU32(sfLedgerSequence, ledger->seq());
+            obj.setFieldAmount(sfBaseFeeDrops, XRPAmount{10});
+            obj.setFieldAmount(sfReserveBaseDrops, XRPAmount{200000});
+            obj.setFieldAmount(sfReserveIncrementDrops, XRPAmount{50000});
+        });
+
+        OpenView accum(ledger.get());
+        BEAST_EXPECT(!applyFeeAndTestResult(env, accum, invalidTx));
+    }
+
+    void
+    testDoValidation()
+    {
+        testcase("doValidation");
+
+        using namespace jtx;
+
+        FeeSetup setup;
+        setup.reference_fee = 42;
+        setup.account_reserve = 1234567;
+        setup.owner_reserve = 7654321;
+
+        // Test with XRPFees enabled
+        {
+            Env env(*this, testable_amendments() | featureXRPFees);
+            auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+
+            auto ledger = std::make_shared<Ledger>(
+                create_genesis,
+                env.app().config(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+
+            auto val = std::make_shared<STValidation>(
+                env.app().timeKeeper().now(),
+                pub,
+                sec,
+                calcNodeID(pub),
+                [](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, 12345);
+                });
+
+            // Use the current ledger's fees as the "current" fees for
+            // doValidation
+            auto const& currentFees = ledger->fees();
+
+            feeVote->doValidation(currentFees, ledger->rules(), *val);
+
+            BEAST_EXPECT(val->isFieldPresent(sfBaseFeeDrops));
+            BEAST_EXPECT(
+                val->getFieldAmount(sfBaseFeeDrops) ==
+                XRPAmount(setup.reference_fee));
+        }
+
+        // Test with XRPFees disabled (legacy format)
+        {
+            Env env(*this, testable_amendments() - featureXRPFees);
+            auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+
+            auto ledger = std::make_shared<Ledger>(
+                create_genesis,
+                env.app().config(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+
+            auto val = std::make_shared<STValidation>(
+                env.app().timeKeeper().now(),
+                pub,
+                sec,
+                calcNodeID(pub),
+                [](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, 12345);
+                });
+
+            auto const& currentFees = ledger->fees();
+
+            feeVote->doValidation(currentFees, ledger->rules(), *val);
+
+            // In legacy mode, should vote using legacy fields
+            BEAST_EXPECT(val->isFieldPresent(sfBaseFee));
+            BEAST_EXPECT(val->getFieldU64(sfBaseFee) == setup.reference_fee);
+        }
+    }
+
+    void
+    testDoVoting()
+    {
+        testcase("doVoting");
+
+        using namespace jtx;
+
+        FeeSetup setup;
+        setup.reference_fee = 42;
+        setup.account_reserve = 1234567;
+        setup.owner_reserve = 7654321;
+
+        Env env(*this, testable_amendments() | featureXRPFees);
+
+        // establish what the current fees are
+        BEAST_EXPECT(
+            env.current()->fees().base == XRPAmount{UNIT_TEST_REFERENCE_FEE});
+        BEAST_EXPECT(env.current()->fees().reserve == XRPAmount{200'000'000});
+        BEAST_EXPECT(env.current()->fees().increment == XRPAmount{50'000'000});
+
+        auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+        auto ledger = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        // doVoting requires a flag ledger (every 256th ledger)
+        // We need to create a ledger at sequence 256 to make it a flag
+        // ledger
+        for (int i = 0; i < 256 - 1; ++i)
+        {
+            ledger = std::make_shared<Ledger>(
+                *ledger, env.app().timeKeeper().closeTime());
+        }
+        BEAST_EXPECT(ledger->isFlagLedger());
+
+        // Create some mock validations with fee votes
+        std::vector<std::shared_ptr<STValidation>> validations;
+
+        for (int i = 0; i < 5; i++)
+        {
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+
+            auto val = std::make_shared<STValidation>(
+                env.app().timeKeeper().now(),
+                pub,
+                sec,
+                calcNodeID(pub),
+                [&](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, ledger->seq());
+                    // Vote for different fees than current
+                    v.setFieldAmount(
+                        sfBaseFeeDrops, XRPAmount{setup.reference_fee});
+                    v.setFieldAmount(
+                        sfReserveBaseDrops, XRPAmount{setup.account_reserve});
+                    v.setFieldAmount(
+                        sfReserveIncrementDrops,
+                        XRPAmount{setup.owner_reserve});
+                });
+            if (i % 2)
+                val->setTrusted();
+            validations.push_back(val);
+        }
+
+        auto txSet = std::make_shared<SHAMap>(
+            SHAMapType::TRANSACTION, env.app().getNodeFamily());
+
+        // This should not throw since we have a flag ledger
+        feeVote->doVoting(ledger, validations, txSet);
+
+        auto const txs = getTxs(txSet);
+        BEAST_EXPECT(txs.size() == 1);
+        auto const& feeTx = txs[0];
+
+        BEAST_EXPECT(feeTx.getTxnType() == ttFEE);
+
+        BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
+        BEAST_EXPECT(feeTx.getFieldU32(sfLedgerSequence) == ledger->seq() + 1);
+
+        BEAST_EXPECT(feeTx.isFieldPresent(sfBaseFeeDrops));
+        BEAST_EXPECT(feeTx.isFieldPresent(sfReserveBaseDrops));
+        BEAST_EXPECT(feeTx.isFieldPresent(sfReserveIncrementDrops));
+
+        // The legacy fields should NOT be present
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfBaseFee));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveBase));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveIncrement));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
+
+        // Check the values
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfBaseFeeDrops) ==
+            XRPAmount{setup.reference_fee});
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfReserveBaseDrops) ==
+            XRPAmount{setup.account_reserve});
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfReserveIncrementDrops) ==
+            XRPAmount{setup.owner_reserve});
+    }
+
+    void
+    testDoVotingSmartEscrow()
+    {
+        testcase("doVoting");
+
+        using namespace jtx;
+
+        FeeSetup setup;
+        setup.reference_fee = 42;
+        setup.account_reserve = 1234567;
+        setup.owner_reserve = 7654321;
+        setup.extension_compute_limit = 100;
+        setup.extension_size_limit = 200;
+        setup.gas_price = 300;
+
+        Env env(
+            *this, testable_amendments() | featureXRPFees | featureSmartEscrow);
+
+        // establish what the current fees are
+        BEAST_EXPECT(
+            env.current()->fees().base == XRPAmount{UNIT_TEST_REFERENCE_FEE});
+        BEAST_EXPECT(env.current()->fees().reserve == XRPAmount{200'000'000});
+        BEAST_EXPECT(env.current()->fees().increment == XRPAmount{50'000'000});
+        BEAST_EXPECT(env.current()->fees().extensionComputeLimit == 0);
+        BEAST_EXPECT(env.current()->fees().extensionSizeLimit == 0);
+        BEAST_EXPECT(env.current()->fees().gasPrice == 0);
+
+        auto feeVote = make_FeeVote(setup, env.app().journal("FeeVote"));
+        auto ledger = std::make_shared<Ledger>(
+            create_genesis,
+            env.app().config(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+
+        // doVoting requires a flag ledger (every 256th ledger)
+        // We need to create a ledger at sequence 256 to make it a flag
+        // ledger
+        for (int i = 0; i < 256 - 1; ++i)
+        {
+            ledger = std::make_shared<Ledger>(
+                *ledger, env.app().timeKeeper().closeTime());
+        }
+        BEAST_EXPECT(ledger->isFlagLedger());
+
+        // Create some mock validations with fee votes
+        std::vector<std::shared_ptr<STValidation>> validations;
+
+        for (int i = 0; i < 5; i++)
+        {
+            auto sec = randomSecretKey();
+            auto pub = derivePublicKey(KeyType::secp256k1, sec);
+
+            auto val = std::make_shared<STValidation>(
+                env.app().timeKeeper().now(),
+                pub,
+                sec,
+                calcNodeID(pub),
+                [&](STValidation& v) {
+                    v.setFieldU32(sfLedgerSequence, ledger->seq());
+                    // Vote for different fees than current
+                    v.setFieldAmount(
+                        sfBaseFeeDrops, XRPAmount{setup.reference_fee});
+                    v.setFieldAmount(
+                        sfReserveBaseDrops, XRPAmount{setup.account_reserve});
+                    v.setFieldAmount(
+                        sfReserveIncrementDrops,
+                        XRPAmount{setup.owner_reserve});
+                    v.setFieldU32(
+                        sfExtensionComputeLimit, setup.extension_compute_limit);
+                    v.setFieldU32(
+                        sfExtensionSizeLimit, setup.extension_size_limit);
+                    v.setFieldU32(sfGasPrice, setup.gas_price);
+                });
+            if (i % 2)
+                val->setTrusted();
+            validations.push_back(val);
+        }
+
+        auto txSet = std::make_shared<SHAMap>(
+            SHAMapType::TRANSACTION, env.app().getNodeFamily());
+
+        // This should not throw since we have a flag ledger
+        feeVote->doVoting(ledger, validations, txSet);
+
+        auto const txs = getTxs(txSet);
+        BEAST_EXPECT(txs.size() == 1);
+        auto const& feeTx = txs[0];
+
+        BEAST_EXPECT(feeTx.getTxnType() == ttFEE);
+
+        BEAST_EXPECT(feeTx.getAccountID(sfAccount) == AccountID());
+        BEAST_EXPECT(feeTx.getFieldU32(sfLedgerSequence) == ledger->seq() + 1);
+
+        BEAST_EXPECT(feeTx.isFieldPresent(sfBaseFeeDrops));
+        BEAST_EXPECT(feeTx.isFieldPresent(sfReserveBaseDrops));
+        BEAST_EXPECT(feeTx.isFieldPresent(sfReserveIncrementDrops));
+
+        // The legacy fields should NOT be present
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfBaseFee));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveBase));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReserveIncrement));
+        BEAST_EXPECT(!feeTx.isFieldPresent(sfReferenceFeeUnits));
+
+        // Check the values
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfBaseFeeDrops) ==
+            XRPAmount{setup.reference_fee});
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfReserveBaseDrops) ==
+            XRPAmount{setup.account_reserve});
+        BEAST_EXPECT(
+            feeTx.getFieldAmount(sfReserveIncrementDrops) ==
+            XRPAmount{setup.owner_reserve});
+        BEAST_EXPECT(
+            feeTx.getFieldU32(sfExtensionComputeLimit) ==
+            setup.extension_compute_limit);
+        BEAST_EXPECT(
+            feeTx.getFieldU32(sfExtensionSizeLimit) ==
+            setup.extension_size_limit);
+        BEAST_EXPECT(feeTx.getFieldU32(sfGasPrice) == setup.gas_price);
+    }
+
+    void
+    run() override
+    {
+        testSetup();
+        testBasic();
+        testTransactionValidation();
+        testPseudoTransactionProperties();
+        testMultipleFeeUpdates();
+        testWrongLedgerSequence();
+        testPartialFieldUpdates();
+        testSingleInvalidTransaction();
+        testDoValidation();
+        testDoVoting();
+        testDoVotingSmartEscrow();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE(FeeVote, app, ripple);
 
 }  // namespace test
 }  // namespace ripple
