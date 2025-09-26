@@ -55,7 +55,7 @@ private:
         void
         write(
             beast::severities::Severity level,
-            beast::Journal::StringBuffer text) override
+            std::string const& text) override
         {
             logs_.write(level, partition_, text, false);
         }
@@ -63,7 +63,7 @@ private:
         void
         writeAlways(
             beast::severities::Severity level,
-            beast::Journal::StringBuffer text) override
+            std::string const& text) override
         {
             logs_.write(level, partition_, text, false);
         }
@@ -89,19 +89,17 @@ public:
     write(
         beast::severities::Severity level,
         std::string const& partition,
-        beast::Journal::StringBuffer text,
+        std::string const& text,
         bool console)
     {
         std::string s;
-        std::string_view result = text.str();
+        std::string_view result = text;
         if (!beast::Journal::isStructuredJournalEnabled())
         {
-            format(s, text.str(), level, partition);
-            text.str() = s;
-            result = text.str();
+            format(s, text, level, partition);
+            result = s;
         }
         logStream_.append(result);
-        beast::Journal::returnStringBuffer(std::move(text));
     }
 };
 
@@ -363,18 +361,18 @@ public:
     }
 
     void
-    write(beast::severities::Severity level, beast::Journal::StringBuffer text)
+    write(beast::severities::Severity level, std::string const& text)
         override
     {
-        strm_ << text.str();
+        strm_ << text;
     }
 
     void
     writeAlways(
         beast::severities::Severity level,
-        beast::Journal::StringBuffer text) override
+        std::string const& text) override
     {
-        strm_ << text.str();
+        strm_ << text;
     }
 };
 
