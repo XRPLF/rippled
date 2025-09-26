@@ -39,7 +39,7 @@ namespace RPC {
 
 struct JsonContext;
 
-enum LedgerShortcut { CURRENT, CLOSED, VALIDATED };
+enum class LedgerShortcut { Current, Closed, Validated };
 
 /**
  * @brief Retrieves a ledger by its hash.

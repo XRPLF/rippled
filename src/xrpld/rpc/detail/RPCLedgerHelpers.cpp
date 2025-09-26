@@ -58,13 +58,13 @@ ledgerFromIndex(T& ledger, Json::Value indexValue, Context const& context)
     auto const index = indexValue.asString();
 
     if (index == "current" || index.empty())
-        return getLedger(ledger, LedgerShortcut::CURRENT, context);
+        return getLedger(ledger, LedgerShortcut::Current, context);
 
     if (index == "validated")
-        return getLedger(ledger, LedgerShortcut::VALIDATED, context);
+        return getLedger(ledger, LedgerShortcut::Validated, context);
 
     if (index == "closed")
-        return getLedger(ledger, LedgerShortcut::CLOSED, context);
+        return getLedger(ledger, LedgerShortcut::Closed, context);
 
     std::uint32_t iVal;
     if (!beast::lexicalCastChecked(iVal, index))
@@ -118,7 +118,9 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
     {
         auto const& ledgerHash = params[jss::ledger_hash];
         if (!ledgerHash.isString())
-            return {rpcINVALID_PARAMS, invalid_field_message(jss::ledger_hash)};
+            return {
+                rpcINVALID_PARAMS,
+                expected_field_message(jss::ledger_hash, "string")};
         return ledgerFromHash(ledger, ledgerHash, context);
     }
 
@@ -129,7 +131,8 @@ ledgerFromRequest(T& ledger, JsonContext const& context)
             !ledgerIndex.isInt())
         {
             return {
-                rpcINVALID_PARAMS, invalid_field_message(jss::ledger_index)};
+                rpcINVALID_PARAMS,
+                expected_field_message(jss::ledger_index, "string or number")};
         }
         return ledgerFromIndex(ledger, ledgerIndex, context);
     }
@@ -195,7 +198,7 @@ ledgerFromSpecifier(
             if (shortcut ==
                 org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_VALIDATED)
             {
-                return getLedger(ledger, LedgerShortcut::VALIDATED, context);
+                return getLedger(ledger, LedgerShortcut::Validated, context);
             }
             else
             {
@@ -205,13 +208,13 @@ ledgerFromSpecifier(
                         org::xrpl::rpc::v1::LedgerSpecifier::
                             SHORTCUT_UNSPECIFIED)
                 {
-                    return getLedger(ledger, LedgerShortcut::CURRENT, context);
+                    return getLedger(ledger, LedgerShortcut::Current, context);
                 }
                 else if (
                     shortcut ==
                     org::xrpl::rpc::v1::LedgerSpecifier::SHORTCUT_CLOSED)
                 {
-                    return getLedger(ledger, LedgerShortcut::CLOSED, context);
+                    return getLedger(ledger, LedgerShortcut::Closed, context);
                 }
             }
         }
@@ -270,7 +273,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
         return {rpcNOT_SYNCED, "notSynced"};
     }
 
-    if (shortcut == LedgerShortcut::VALIDATED)
+    if (shortcut == LedgerShortcut::Validated)
     {
         ledger = context.ledgerMaster.getValidatedLedger();
         if (ledger == nullptr)
@@ -285,13 +288,13 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
     }
     else
     {
-        if (shortcut == LedgerShortcut::CURRENT)
+        if (shortcut == LedgerShortcut::Current)
         {
             ledger = context.ledgerMaster.getCurrentLedger();
             XRPL_ASSERT(
                 ledger->open(), "ripple::RPC::getLedger : current is open");
         }
-        else if (shortcut == LedgerShortcut::CLOSED)
+        else if (shortcut == LedgerShortcut::Closed)
         {
             ledger = context.ledgerMaster.getClosedLedger();
             XRPL_ASSERT(

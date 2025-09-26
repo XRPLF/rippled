@@ -348,7 +348,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
             BEAST_EXPECT(
-                jrr[jss::error_message] == "Invalid field 'ledger_hash'.");
+                jrr[jss::error_message] ==
+                "Invalid field 'ledger_hash', not string.");
 
             // malformed (non hex) hash
             jvParams[jss::ledger_hash] =

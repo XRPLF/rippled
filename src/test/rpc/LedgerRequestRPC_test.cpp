@@ -134,7 +134,7 @@ public:
             BEAST_EXPECT(
                 RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
-                    "Invalid field 'ledger_hash'.");
+                    "Invalid field 'ledger_hash', not string.");
         }
 
         {
