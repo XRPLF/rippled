@@ -647,11 +647,17 @@ parseLeaf(
                 }
                 else if (value.isInt())
                 {
+                    // future-proofing - a static assert failure if the JSON
+                    // library ever supports larger ints
+                    // In such case, we will need additional bounds checks here
+                    static_assert(
+                        std::is_same_v<decltype(value.asInt()), std::int32_t>);
                     ret = detail::make_stvar<STInt32>(field, value.asInt());
                 }
                 else if (value.isUInt())
                 {
-                    if (value.asUInt() >
+                    auto const uintValue = value.asUInt();
+                    if (uintValue >
                         static_cast<std::uint32_t>(
                             std::numeric_limits<std::int32_t>::max()))
                     {
@@ -659,7 +665,7 @@ parseLeaf(
                         return ret;
                     }
                     ret = detail::make_stvar<STInt32>(
-                        field, safe_cast<std::int32_t>(value.asInt()));
+                        field, static_cast<std::int32_t>(uintValue));
                 }
                 else
                 {
