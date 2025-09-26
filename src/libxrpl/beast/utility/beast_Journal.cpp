@@ -196,7 +196,7 @@ Journal::JsonLogContext::start(
     writer().writeString(severityStr);
 
     auto nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-                     std::chrono::system_clock::now().time_since_epoch());
+        std::chrono::system_clock::now().time_since_epoch());
     writer().writeKey("Tm");
     writer().writeString(date::format("%Y-%b-%d %T %Z", nowMs));
 

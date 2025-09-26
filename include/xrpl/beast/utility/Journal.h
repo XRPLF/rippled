@@ -22,10 +22,10 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <deque>
 #include <atomic>
 #include <charconv>
 #include <cstring>
+#include <deque>
 #include <mutex>
 #include <shared_mutex>
 #include <source_location>
@@ -96,10 +96,14 @@ public:
     SimpleJsonWriter() = default;
 
     SimpleJsonWriter(SimpleJsonWriter const& other) = default;
-    SimpleJsonWriter& operator=(SimpleJsonWriter const& other) = default;
+    SimpleJsonWriter&
+    operator=(SimpleJsonWriter const& other) = default;
 
     std::string&
-    buffer() { return *buffer_; }
+    buffer()
+    {
+        return *buffer_;
+    }
 
     void
     startObject() const
@@ -334,16 +338,18 @@ public:
         detail::SimpleJsonWriter jsonWriter_;
         bool hasMessageParams_ = false;
         std::size_t messageOffset_ = 0;
-    public:
 
-        JsonLogContext()
-            : jsonWriter_(&messageBuffer_)
+    public:
+        JsonLogContext() : jsonWriter_(&messageBuffer_)
         {
             messageBuffer_.reserve(4 * 1024);
         }
 
         std::string&
-        messageBuffer() { return messageBuffer_; }
+        messageBuffer()
+        {
+            return messageBuffer_;
+        }
 
         void
         startMessageParams()
@@ -610,20 +616,20 @@ public:
         /** Output stream support. */
         /** @{ */
         ScopedStream
-        operator<<(std::ostream& manip(std::ostream&)) const &&
+        operator<<(std::ostream& manip(std::ostream&)) const&&
         {
             return {*this, manip};
         }
 
         template <typename T>
         ScopedStream
-        operator<<(T const& t) const &&
+        operator<<(T const& t) const&&
         {
             return {*this, t};
         }
 
         ScopedStream
-        operator<<(std::ostream& manip(std::ostream&)) const &
+        operator<<(std::ostream& manip(std::ostream&)) const&
         {
             currentJsonLogContext_.reuseJson();
             return {*this, manip};
@@ -631,7 +637,7 @@ public:
 
         template <typename T>
         ScopedStream
-        operator<<(T const& t) const &
+        operator<<(T const& t) const&
         {
             currentJsonLogContext_.reuseJson();
             return {*this, t};
@@ -956,7 +962,8 @@ setTextValue(
     {
         std::ostringstream oss;
         oss << value;
-        writer.buffer() += value;;
+        writer.buffer() += value;
+        ;
     }
     writer.buffer() += " ";
 }
@@ -1136,7 +1143,8 @@ attributes(Pair&&... pairs)
     return [&](beast::detail::SimpleJsonWriter& writer) {
         if (beast::Journal::isStructuredJournalEnabled())
         {
-            (detail::setJsonValue(writer, pairs.first, pairs.second, nullptr), ...);
+            (detail::setJsonValue(writer, pairs.first, pairs.second, nullptr),
+             ...);
         }
         else
         {

@@ -30,8 +30,8 @@
 #include <map>
 #include <memory>
 #include <mutex>
-#include <utility>
 #include <string_view>
+#include <utility>
 
 namespace ripple {
 
@@ -251,15 +251,15 @@ private:
 // Wraps a Journal::Stream to skip evaluation of
 // expensive argument lists if the stream is not active.
 #ifndef JLOG
-#define JLOG_JOIN_(a,b) a##b
-#define JLOG_JOIN(a,b)  JLOG_JOIN_(a,b)
-#define JLOG_UNIQUE(base) JLOG_JOIN(base, __LINE__)   // line-based unique name
+#define JLOG_JOIN_(a, b) a##b
+#define JLOG_JOIN(a, b) JLOG_JOIN_(a, b)
+#define JLOG_UNIQUE(base) JLOG_JOIN(base, __LINE__)  // line-based unique name
 
-#define JLOG(x) \
+#define JLOG(x)                                               \
     if (auto JLOG_UNIQUE(stream) = (x); !JLOG_UNIQUE(stream)) \
-    { \
-    } \
-    else \
+    {                                                         \
+    }                                                         \
+    else                                                      \
         std::move(JLOG_UNIQUE(stream))
 #endif
 
