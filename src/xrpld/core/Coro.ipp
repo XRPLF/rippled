@@ -66,11 +66,9 @@ inline JobQueue::Coro::~Coro()
         resume();
     }
 
-#ifndef NDEBUG
     XRPL_ASSERT(
         state_ == CoroState::Finished,
         "ripple::JobQueue::Coro::~Coro : is finished");
-#endif
 }
 
 inline void
