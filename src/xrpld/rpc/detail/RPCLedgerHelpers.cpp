@@ -43,7 +43,7 @@ isValidatedOld(LedgerMaster& ledgerMaster, bool standalone)
 
 template <class T>
 Status
-ledgerFromHash(T& ledger, Json::Value hash, Context& context)
+ledgerFromHash(T& ledger, Json::Value hash, Context const& context)
 {
     uint256 ledgerHash;
     if (!ledgerHash.parseHex(hash.asString()))
@@ -53,7 +53,7 @@ ledgerFromHash(T& ledger, Json::Value hash, Context& context)
 
 template <class T>
 Status
-ledgerFromIndex(T& ledger, Json::Value indexValue, Context& context)
+ledgerFromIndex(T& ledger, Json::Value indexValue, Context const& context)
 {
     auto const index = indexValue.asString();
 
@@ -75,7 +75,7 @@ ledgerFromIndex(T& ledger, Json::Value indexValue, Context& context)
 
 template <class T>
 Status
-ledgerFromRequest(T& ledger, JsonContext& context)
+ledgerFromRequest(T& ledger, JsonContext const& context)
 {
     ledger.reset();
 
@@ -142,9 +142,9 @@ ledgerFromRequest(T& ledger, JsonContext& context)
 
 template <class T, class R>
 Status
-ledgerFromRequest(T& ledger, GRPCContext<R>& context)
+ledgerFromRequest(T& ledger, GRPCContext<R> const& context)
 {
-    R& request = context.params;
+    R const& request = context.params;
     return ledgerFromSpecifier(ledger, request.ledger(), context);
 }
 
@@ -152,26 +152,26 @@ ledgerFromRequest(T& ledger, GRPCContext<R>& context)
 template Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>&);
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest> const&);
 
 // explicit instantiation of above function
 template Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>&);
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest> const&);
 
 // explicit instantiation of above function
 template Status
 ledgerFromRequest<>(
     std::shared_ptr<ReadView const>&,
-    GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>&);
+    GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest> const&);
 
 template <class T>
 Status
 ledgerFromSpecifier(
     T& ledger,
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
-    Context& context)
+    Context const& context)
 {
     ledger.reset();
 
@@ -222,7 +222,7 @@ ledgerFromSpecifier(
 
 template <class T>
 Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context& context)
+getLedger(T& ledger, uint256 const& ledgerHash, Context const& context)
 {
     ledger = context.ledgerMaster.getLedgerByHash(ledgerHash);
     if (ledger == nullptr)
@@ -232,7 +232,7 @@ getLedger(T& ledger, uint256 const& ledgerHash, Context& context)
 
 template <class T>
 Status
-getLedger(T& ledger, uint32_t ledgerIndex, Context& context)
+getLedger(T& ledger, uint32_t ledgerIndex, Context const& context)
 {
     ledger = context.ledgerMaster.getLedgerBySeq(ledgerIndex);
     if (ledger == nullptr)
@@ -261,7 +261,7 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context& context)
 
 template <class T>
 Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
+getLedger(T& ledger, LedgerShortcut shortcut, Context const& context)
 {
     if (isValidatedOld(context.ledgerMaster, context.app.config().standalone()))
     {
@@ -325,16 +325,16 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
 
 // Explicit instantiaion of above three functions
 template Status
-getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context&);
+getLedger<>(std::shared_ptr<ReadView const>&, uint32_t, Context const&);
 
 template Status
 getLedger<>(
     std::shared_ptr<ReadView const>&,
     LedgerShortcut shortcut,
-    Context&);
+    Context const&);
 
 template Status
-getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context&);
+getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context const&);
 
 // The previous version of the lookupLedger command would accept the
 // "ledger_index" argument as a string and silently treat it as a request to
@@ -358,7 +358,7 @@ getLedger<>(std::shared_ptr<ReadView const>&, uint256 const&, Context&);
 Status
 lookupLedger(
     std::shared_ptr<ReadView const>& ledger,
-    JsonContext& context,
+    JsonContext const& context,
     Json::Value& result)
 {
     if (auto status = ledgerFromRequest(ledger, context))
@@ -381,7 +381,9 @@ lookupLedger(
 }
 
 Json::Value
-lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext& context)
+lookupLedger(
+    std::shared_ptr<ReadView const>& ledger,
+    JsonContext const& context)
 {
     Json::Value result;
     if (auto status = lookupLedger(ledger, context, result))
@@ -391,7 +393,7 @@ lookupLedger(std::shared_ptr<ReadView const>& ledger, JsonContext& context)
 }
 
 Expected<std::shared_ptr<Ledger const>, Json::Value>
-getOrAcquireLedger(RPC::JsonContext& context)
+getOrAcquireLedger(RPC::JsonContext const& context)
 {
     auto const hasHash = context.params.isMember(jss::ledger_hash);
     auto const hasIndex = context.params.isMember(jss::ledger_index);

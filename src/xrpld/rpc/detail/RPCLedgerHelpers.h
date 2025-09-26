@@ -56,7 +56,7 @@ enum LedgerShortcut { CURRENT, CLOSED, VALIDATED };
  */
 template <class T>
 Status
-getLedger(T& ledger, uint256 const& ledgerHash, Context& context);
+getLedger(T& ledger, uint256 const& ledgerHash, Context const& context);
 
 /**
  * @brief Retrieves a ledger by its sequence index.
@@ -74,7 +74,7 @@ getLedger(T& ledger, uint256 const& ledgerHash, Context& context);
  */
 template <class T>
 Status
-getLedger(T& ledger, uint32_t ledgerIndex, Context& context);
+getLedger(T& ledger, uint32_t ledgerIndex, Context const& context);
 
 /**
  * @brief Retrieves a ledger specified by a `LedgerShortcut`.
@@ -92,7 +92,7 @@ getLedger(T& ledger, uint32_t ledgerIndex, Context& context);
  */
 template <class T>
 Status
-getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
+getLedger(T& ledger, LedgerShortcut shortcut, Context const& context);
 
 /**
  * @brief Looks up a ledger from a request and returns a Json::Value with either
@@ -110,7 +110,7 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context);
  * description.
  */
 Json::Value
-lookupLedger(std::shared_ptr<ReadView const>&, JsonContext&);
+lookupLedger(std::shared_ptr<ReadView const>&, JsonContext const&);
 
 /**
  * @brief Looks up a ledger from a request and fills a Json::Value with ledger
@@ -130,7 +130,7 @@ lookupLedger(std::shared_ptr<ReadView const>&, JsonContext&);
 Status
 lookupLedger(
     std::shared_ptr<ReadView const>&,
-    JsonContext&,
+    JsonContext const&,
     Json::Value& result);
 
 /**
@@ -149,7 +149,7 @@ lookupLedger(
  */
 template <class T, class R>
 Status
-ledgerFromRequest(T& ledger, GRPCContext<R>& context);
+ledgerFromRequest(T& ledger, GRPCContext<R> const& context);
 
 /**
  * @brief Retrieves a ledger based on a LedgerSpecifier.
@@ -168,7 +168,7 @@ Status
 ledgerFromSpecifier(
     T& ledger,
     org::xrpl::rpc::v1::LedgerSpecifier const& specifier,
-    Context& context);
+    Context const& context);
 
 /**
  * @brief Retrieves or acquires a ledger based on the parameters provided in the
@@ -191,7 +191,7 @@ ledgerFromSpecifier(
  *         On failure, contains a Json::Value describing the error.
  */
 Expected<std::shared_ptr<Ledger const>, Json::Value>
-getOrAcquireLedger(RPC::JsonContext& context);
+getOrAcquireLedger(RPC::JsonContext const& context);
 
 }  // namespace RPC
 

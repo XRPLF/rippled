@@ -36,9 +36,9 @@ getAccount(Json::Value const& v, Json::Value& result)
 {
     std::string strIdent(v.asString());
 
-    if (auto accountID = parseBase58<AccountID>(strIdent))
+    if (auto opt = parseBase58<AccountID>(strIdent); opt.has_value())
     {
-        return *accountID;
+        return *opt;
     }
     return std::nullopt;
 }

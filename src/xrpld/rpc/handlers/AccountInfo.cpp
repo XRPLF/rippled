@@ -34,14 +34,18 @@
 
 namespace ripple {
 
-/** Inject JSON describing ledger entry
-
-    Effects:
-        Adds the JSON description of `sle` to `jv`.
-
-        If `sle` holds an account root, also adds the
-        urlgravatar field JSON if sfEmailHash is present.
-*/
+/**
+ * @brief Injects JSON describing a ledger entry.
+ *
+ * @param jv The JSON value to populate.
+ * @param sle The ledger entry to describe.
+ *
+ * @details
+ * Populates the provided JSON value with the description of the specified
+ * ledger entry. If the entry is an account root and contains an email hash,
+ * adds a 'urlgravatar' field with the corresponding Gravatar URL.
+ * If the entry is not an account root, sets the 'Invalid' field to true.
+ */
 void
 injectSLE(Json::Value& jv, SLE const& sle)
 {
