@@ -1468,6 +1468,7 @@ class Invariants_test : public beast::unit_test::suite
             "pseudo-account sequence changed"
             "pseudo-account flags are not set"
             "pseudo-account has a regular key"
+            "pseudo-account has a sponsorship field"
         */
         struct Mod
         {
@@ -1494,6 +1495,20 @@ class Invariants_test : public beast::unit_test::suite
                 "pseudo-account has a regular key",
                 [](SLE::pointer& sle) {
                     sle->at(sfRegularKey) = Account("regular").id();
+                },
+            },
+            {
+                "pseudo-account has a sponsorship field",
+                [](SLE::pointer& sle) { sle->at(sfSponsoredOwnerCount) = 1; },
+            },
+            {
+                "pseudo-account has a sponsorship field",
+                [](SLE::pointer& sle) { sle->at(sfSponsoringOwnerCount) = 1; },
+            },
+            {
+                "pseudo-account has a sponsorship field",
+                [](SLE::pointer& sle) {
+                    sle->at(sfSponsorAccount) = Account("sponsor").id();
                 },
             },
         });

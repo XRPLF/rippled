@@ -1726,6 +1726,8 @@ ValidPseudoAccounts::visitEntry(
             // 3. The lsfDisableMaster, lsfDefaultRipple, and lsfDepositAuth
             // flags are set.
             // 4. The RegularKey is not set.
+            // 5. The SponsoredOwnerCount, SponsoringOwnerCount, and
+            // SponsorAccount fields are not set.
             {
                 std::vector<SField const*> const& fields =
                     getPseudoAccountFields();
@@ -1756,6 +1758,12 @@ ValidPseudoAccounts::visitEntry(
             if (after->isFieldPresent(sfRegularKey))
             {
                 errors_.emplace_back("pseudo-account has a regular key");
+            }
+            if (after->isFieldPresent(sfSponsoredOwnerCount) ||
+                after->isFieldPresent(sfSponsoringOwnerCount) ||
+                after->isFieldPresent(sfSponsorAccount))
+            {
+                errors_.emplace_back("pseudo-account has a sponsorship field");
             }
         }
     }
