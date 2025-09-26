@@ -383,7 +383,7 @@ public:
         static boost::regex reStatus{
             "\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
         static boost::regex reSize{
-            "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'"};
+            "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'", boost::regex::icase};
         static boost::regex reBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
 
         boost::smatch smMatch;
