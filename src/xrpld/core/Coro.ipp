@@ -47,10 +47,8 @@ JobQueue::Coro::Coro(
                   self = shared_from_this();
                   fn(self);
               }
-              {
-                  state_ = CoroState::Finished;
-                  cv_.notify_all();
-              }
+              state_ = CoroState::Finished;
+              cv_.notify_all();
           },
           boost::coroutines::attributes(megabytes(1)))
 {
