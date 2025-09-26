@@ -119,6 +119,8 @@ enum LedgerEntryType : std::uint16_t
 
 /**
     @ingroup protocol
+    Note: If there are additions to the LedgerSpecificFlags enum, please update
+    the std::unordered_map LSFlags inside ServerInfo.cpp file.
 */
 enum LedgerSpecificFlags {
     // ltACCOUNT_ROOT
