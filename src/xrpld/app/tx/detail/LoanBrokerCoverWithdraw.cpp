@@ -91,6 +91,8 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
     auto const vault = ctx.view.read(keylet::vault(sleBroker->at(sfVaultID)));
+    if (!vault)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vault->at(sfAsset);
 
     if (amount.asset() != vaultAsset)

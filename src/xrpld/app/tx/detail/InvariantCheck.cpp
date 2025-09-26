@@ -1522,15 +1522,14 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
+        bool const lendingProtocolEnabled =
+            view.rules().enabled(featureLendingProtocol);
         // ttESCROW_FINISH may authorize an MPT, but it can't have the
         // mayAuthorizeMPT privilege, because that may cause
         // non-amendment-gated side effects.
         bool const enforceEscrowFinish = (tx.getTxnType() == ttESCROW_FINISH) &&
-            (view.rules().enabled(featureSingleAssetVault)
-             /*
-               TODO: Uncomment when LendingProtocol is defined
-               || view.rules().enabled(featureLendingProtocol)*/
-            );
+            (view.rules().enabled(featureSingleAssetVault) ||
+             lendingProtocolEnabled);
         if (hasPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT) ||
             enforceEscrowFinish)
         {
@@ -1548,7 +1547,9 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
-            else if (mptokensCreated_ + mptokensDeleted_ > 1)
+            else if (
+                lendingProtocolEnabled &&
+                mptokensCreated_ + mptokensDeleted_ > 1)
             {
                 JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
                                    "but created/deleted bad number mptokens";

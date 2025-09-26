@@ -35,7 +35,11 @@ LoanBrokerCoverDeposit::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfLoanBrokerID] == beast::zero)
         return temINVALID;
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    auto const dstAmount = ctx.tx[sfAmount];
+    if (dstAmount <= beast::zero)
+        return temBAD_AMOUNT;
+
+    if (!isLegalNet(dstAmount))
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
