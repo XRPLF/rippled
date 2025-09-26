@@ -1,0 +1,16 @@
+diff --git a/crates/c-api/CMakeLists.txt b/crates/c-api/CMakeLists.txt
+index bd41ca22b..27d0e69bb 100644
+--- a/crates/c-api/CMakeLists.txt
++++ b/crates/c-api/CMakeLists.txt
+@@ -51,6 +51,11 @@ endif()
+ list(TRANSFORM WASMTIME_SHARED_FILES PREPEND ${WASMTIME_TARGET_DIR}/)
+ list(TRANSFORM WASMTIME_STATIC_FILES PREPEND ${WASMTIME_TARGET_DIR}/)
+ 
++if(NOT BUILD_SHARED_LIBS)
++  set(WASMTIME_SHARED_FILES )
++  message("ONLY STATIC LIBS")
++endif()
++
+ list(APPEND WASMTIME_BUILD_ENV "${CARGO_PROFILE_PANIC}=abort")
+ if (APPLE AND CMAKE_OSX_DEPLOYMENT_TARGET)
+     # On macOS, we need to set the deployment target for the build
