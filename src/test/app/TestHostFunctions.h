@@ -413,7 +413,7 @@ public:
 #endif
         if (!asHex)
         {
-            j << "WAMR TRACE: " << msg << " "
+            j << "HF TRACE: " << msg << " "
               << std::string_view(
                      reinterpret_cast<char const*>(data.data()), data.size());
         }
@@ -423,7 +423,7 @@ public:
             hex.reserve(data.size() * 2);
             boost::algorithm::hex(
                 data.begin(), data.end(), std::back_inserter(hex));
-            j << "WAMR DEV TRACE: " << msg << " " << hex;
+            j << "HF DEV TRACE: " << msg << " " << hex;
         }
 
 #ifdef DEBUG_OUTPUT
@@ -441,7 +441,7 @@ public:
 #else
         auto j = getJournal().trace();
 #endif
-        j << "WAMR TRACE NUM: " << msg << " " << data;
+        j << "HF TRACE NUM: " << msg << " " << data;
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -462,7 +462,7 @@ public:
 
         auto const accountStr = toBase58(account);
 
-        j << "WAMR TRACE ACCOUNT: " << msg << " " << accountStr;
+        j << "HF TRACE ACCOUNT: " << msg << " " << accountStr;
         return msg.size() + accountStr.size();
     }
 
@@ -475,7 +475,7 @@ public:
         auto j = getJournal().trace();
 #endif
         auto const s = floatToString(data);
-        j << "WAMR TRACE FLOAT: " << msg << " " << s;
+        j << "HF TRACE FLOAT: " << msg << " " << s;
 
 #ifdef DEBUG_OUTPUT
         j << std::endl;
@@ -492,7 +492,7 @@ public:
         auto j = getJournal().trace();
 #endif
         auto const amountStr = amount.getFullText();
-        j << "WAMR TRACE AMOUNT: " << msg << " " << amountStr;
+        j << "HF TRACE AMOUNT: " << msg << " " << amountStr;
         return msg.size() + amountStr.size();
     }
 
@@ -1302,14 +1302,14 @@ struct PerfHostFunctions : public TestHostFunctions
     {
         if (!account || !nftId)
         {
-            getJournal().trace() << "WAMR getNFT: Invalid account or NFT ID";
+            getJournal().trace() << "HF getNFT: Invalid account or NFT ID";
             return Unexpected(HostFunctionError::INVALID_PARAMS);
         }
 
         auto obj = nft::findToken(*env_.current(), account, nftId);
         if (!obj)
         {
-            getJournal().trace() << "WAMR getNFT: NFT not found";
+            getJournal().trace() << "HF getNFT: NFT not found";
             return Unexpected(HostFunctionError::LEDGER_OBJ_NOT_FOUND);
         }
 
