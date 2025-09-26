@@ -205,6 +205,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1Expected__test.html">Expected_test</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1FeeSettingsFields.html">FeeSettingsFields</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1FeeVote__test.html">FeeVote_test</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1FindOversizeCross__test.html">FindOversizeCross_test</a></td></tr>
@@ -608,6 +610,16 @@ Functions</h2></td></tr>
 <tr class="separator:a1c03bb04dc976e0b9d742f90b0aa1b01"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35376306c9282c69064082b65236815a" id="r_a35376306c9282c69064082b65236815a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a35376306c9282c69064082b65236815a">BEAST_DEFINE_TESTSUITE</a> (EscrowToken, app, ripple)</td></tr>
 <tr class="separator:a35376306c9282c69064082b65236815a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2770128875ce18078b83d650e855330e" id="r_a2770128875ce18078b83d650e855330e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STTx.html">STTx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a2770128875ce18078b83d650e855330e">createFeeTx</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>, <a class="el" href="structripple_1_1test_1_1FeeSettingsFields.html">FeeSettingsFields</a> const &amp;fields)</td></tr>
+<tr class="separator:a2770128875ce18078b83d650e855330e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d97bb560139f832e323339e914615ac" id="r_a6d97bb560139f832e323339e914615ac"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STTx.html">STTx</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a6d97bb560139f832e323339e914615ac">createInvalidFeeTx</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>, bool missingRequiredFields=true, bool wrongFeatureFields=false, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uniqueValue=42)</td></tr>
+<tr class="separator:a6d97bb560139f832e323339e914615ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a134b1101d115421c4336d9e9badd2268" id="r_a134b1101d115421c4336d9e9badd2268"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a134b1101d115421c4336d9e9badd2268">applyFeeAndTestResult</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="el" href="classripple_1_1OpenView.html">OpenView</a> &amp;view, <a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;tx)</td></tr>
+<tr class="separator:a134b1101d115421c4336d9e9badd2268"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb3d474075fe5da4a1547b08162cfc29" id="r_afb3d474075fe5da4a1547b08162cfc29"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#afb3d474075fe5da4a1547b08162cfc29">verifyFeeObject</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;ledger, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="el" href="structripple_1_1test_1_1FeeSettingsFields.html">FeeSettingsFields</a> const &amp;expected)</td></tr>
+<tr class="separator:afb3d474075fe5da4a1547b08162cfc29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a538a05b7ac078bdedcf3757e634f4bda" id="r_a538a05b7ac078bdedcf3757e634f4bda"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a538a05b7ac078bdedcf3757e634f4bda">getTxs</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;txSet)</td></tr>
+<tr class="separator:a538a05b7ac078bdedcf3757e634f4bda"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac0c71f3a97228d7dba77cb704de37184" id="r_ac0c71f3a97228d7dba77cb704de37184"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#ac0c71f3a97228d7dba77cb704de37184">BEAST_DEFINE_TESTSUITE</a> (<a class="el" href="classripple_1_1FeeVote.html">FeeVote</a>, app, ripple)</td></tr>
 <tr class="separator:ac0c71f3a97228d7dba77cb704de37184"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2642f78e24d03f926e0721b0185ee50" id="r_ac2642f78e24d03f926e0721b0185ee50"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#ac2642f78e24d03f926e0721b0185ee50">getNoRippleFlag</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> const &amp;env, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;src, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;dst, <a class="el" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> const &amp;cur)</td></tr>
@@ -2002,6 +2014,182 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2770128875ce18078b83d650e855330e" name="a2770128875ce18078b83d650e855330e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2770128875ce18078b83d650e855330e">&#9670;&#160;</a></span>createFeeTx()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STTx.html">STTx</a> ripple::test::createFeeTx </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rules</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>seq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1FeeSettingsFields.html">FeeSettingsFields</a> const &amp;&#160;</td>
+          <td class="paramname"><em>fields</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="FeeVote__test_8cpp_source.html#l00049">49</a> of file <a class="el" href="FeeVote__test_8cpp_source.html">FeeVote_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a6d97bb560139f832e323339e914615ac" name="a6d97bb560139f832e323339e914615ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d97bb560139f832e323339e914615ac">&#9670;&#160;</a></span>createInvalidFeeTx()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1STTx.html">STTx</a> ripple::test::createInvalidFeeTx </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rules</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>seq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>missingRequiredFields</em> = <code>true</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>wrongFeatureFields</em> = <code>false</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
+          <td class="paramname"><em>uniqueValue</em> = <code>42</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="FeeVote__test_8cpp_source.html#l00091">91</a> of file <a class="el" href="FeeVote__test_8cpp_source.html">FeeVote_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a134b1101d115421c4336d9e9badd2268" name="a134b1101d115421c4336d9e9badd2268"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a134b1101d115421c4336d9e9badd2268">&#9670;&#160;</a></span>applyFeeAndTestResult()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::test::applyFeeAndTestResult </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;&#160;</td>
+          <td class="paramname"><em>env</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1OpenView.html">OpenView</a> &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1STTx.html">STTx</a> const &amp;&#160;</td>
+          <td class="paramname"><em>tx</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="FeeVote__test_8cpp_source.html#l00142">142</a> of file <a class="el" href="FeeVote__test_8cpp_source.html">FeeVote_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="afb3d474075fe5da4a1547b08162cfc29" name="afb3d474075fe5da4a1547b08162cfc29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb3d474075fe5da4a1547b08162cfc29">&#9670;&#160;</a></span>verifyFeeObject()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::test::verifyFeeObject </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>ledger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;&#160;</td>
+          <td class="paramname"><em>rules</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1test_1_1FeeSettingsFields.html">FeeSettingsFields</a> const &amp;&#160;</td>
+          <td class="paramname"><em>expected</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="FeeVote__test_8cpp_source.html#l00150">150</a> of file <a class="el" href="FeeVote__test_8cpp_source.html">FeeVote_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a538a05b7ac078bdedcf3757e634f4bda" name="a538a05b7ac078bdedcf3757e634f4bda"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a538a05b7ac078bdedcf3757e634f4bda">&#9670;&#160;</a></span>getTxs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> &gt; ripple::test::getTxs </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>txSet</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="FeeVote__test_8cpp_source.html#l00207">207</a> of file <a class="el" href="FeeVote__test_8cpp_source.html">FeeVote_test.cpp</a>.</p>
 
 </div>
 </div>
