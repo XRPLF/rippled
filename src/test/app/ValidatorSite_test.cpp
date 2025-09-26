@@ -37,7 +37,6 @@
 #include <chrono>
 
 namespace ripple {
-namespace test {
 namespace detail {
 constexpr char const*
 realValidatorContents()
@@ -56,6 +55,7 @@ auto constexpr default_expires = std::chrono::seconds{3600};
 auto constexpr default_effective_overlap = std::chrono::seconds{30};
 }  // namespace detail
 
+namespace test {
 class ValidatorSite_test : public beast::unit_test::suite
 {
 private:
@@ -205,7 +205,7 @@ private:
             NetClock::time_point const expires2 =
                 effective2 + cfg.expiresFromNow;
             item.server = make_TrustedPublisherServer(
-                env.app().getIOService(),
+                env.app().getIOContext(),
                 item.list,
                 expires,
                 {{effective2, expires2}},

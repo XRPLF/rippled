@@ -20,6 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_PERMISSION_H_INCLUDED
 #define RIPPLE_PROTOCOL_PERMISSION_H_INCLUDED
 
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 
 #include <optional>
@@ -53,6 +55,8 @@ class Permission
 private:
     Permission();
 
+    std::unordered_map<std::uint16_t, uint256> txFeatureMap_;
+
     std::unordered_map<std::uint16_t, Delegation> delegatableTx_;
 
     std::unordered_map<std::string, GranularPermissionType>
@@ -70,6 +74,9 @@ public:
     Permission&
     operator=(Permission const&) = delete;
 
+    std::optional<std::string>
+    getPermissionName(std::uint32_t const value) const;
+
     std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
 
@@ -80,7 +87,8 @@ public:
     getGranularTxType(GranularPermissionType const& gpType) const;
 
     bool
-    isDelegatable(std::uint32_t const& permissionValue) const;
+    isDelegatable(std::uint32_t const& permissionValue, Rules const& rules)
+        const;
 
     // for tx level permission, permission value is equal to tx type plus one
     uint32_t

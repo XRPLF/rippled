@@ -30,9 +30,6 @@
 #include <unordered_map>
 
 namespace ripple {
-namespace test {
-namespace csf {
-
 namespace detail {
 // Dummy class when no edge data needed for graph
 struct NoEdgeData
@@ -40,6 +37,9 @@ struct NoEdgeData
 };
 
 }  // namespace detail
+
+namespace test {
+namespace csf {
 
 /** Directed graph
 

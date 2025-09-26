@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
@@ -26,11 +25,12 @@
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/core/Config.h>
-#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/CredentialHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -206,7 +206,10 @@ preflight2(PreflightContext const& ctx)
 //------------------------------------------------------------------------------
 
 Transactor::Transactor(ApplyContext& ctx)
-    : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
+    : ctx_(ctx)
+    , sink_(ctx.journal, to_short_string(ctx.tx.getTransactionID()) + " ")
+    , j_(sink_)
+    , account_(ctx.tx.getAccountID(sfAccount))
 {
 }
 

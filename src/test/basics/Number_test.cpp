@@ -721,6 +721,30 @@ public:
     }
 
     void
+    test_truncate()
+    {
+        BEAST_EXPECT(Number(25, +1).truncate() == Number(250, 0));
+        BEAST_EXPECT(Number(25, 0).truncate() == Number(25, 0));
+        BEAST_EXPECT(Number(25, -1).truncate() == Number(2, 0));
+        BEAST_EXPECT(Number(25, -2).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(99, -2).truncate() == Number(0, 0));
+
+        BEAST_EXPECT(Number(-25, +1).truncate() == Number(-250, 0));
+        BEAST_EXPECT(Number(-25, 0).truncate() == Number(-25, 0));
+        BEAST_EXPECT(Number(-25, -1).truncate() == Number(-2, 0));
+        BEAST_EXPECT(Number(-25, -2).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-99, -2).truncate() == Number(0, 0));
+
+        BEAST_EXPECT(Number(0, 0).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(0, 30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(0, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-100, -30000).truncate() == Number(0, 0));
+        BEAST_EXPECT(Number(-100, -30000).truncate() == Number(0, 0));
+    }
+
+    void
     run() override
     {
         testZero();
@@ -740,6 +764,7 @@ public:
         test_stream();
         test_inc_dec();
         test_toSTAmount();
+        test_truncate();
     }
 };
 

@@ -22,17 +22,7 @@
 
 #include <xrpl/basics/contract.h>
 
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated"
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-#endif
-
 #include <boost/outcome.hpp>
-
-#if defined(__clang__)
-#pragma clang diagnostic pop
-#endif
 
 #include <stdexcept>
 

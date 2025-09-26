@@ -81,7 +81,7 @@ If you create new source files, they must be organized as follows:
 
 The source must be formatted according to the style guide below.
 
-Header includes must be [levelized](./Builds/levelization).
+Header includes must be [levelized](.github/scripts/levelization).
 
 Changes should be usually squashed down into a single commit.
 Some larger or more complicated change sets make more sense,
@@ -384,9 +384,8 @@ Maintainers are users with maintain or admin access to the repo.
 - [bthomee](https://github.com/bthomee) (Ripple)
 - [intelliot](https://github.com/intelliot) (Ripple)
 - [JoelKatz](https://github.com/JoelKatz) (Ripple)
-- [nixer89](https://github.com/nixer89) (XRP Ledger Foundation)
-- [RichardAH](https://github.com/RichardAH) (XRP Ledger Foundation)
-- [Silkjaer](https://github.com/Silkjaer) (XRP Ledger Foundation)
+- [legleux](https://github.com/legleux) (Ripple)
+- [mankins](https://github.com/mankins) (XRP Ledger Foundation)
 - [WietseWind](https://github.com/WietseWind) (XRPL Labs + XRP Ledger Foundation)
 - [ximinez](https://github.com/ximinez) (Ripple)
 
@@ -395,27 +394,24 @@ Maintainers are users with maintain or admin access to the repo.
 Code Reviewers are developers who have the ability to review, approve, and
 in some cases merge source code changes.
 
-- [HowardHinnant](https://github.com/HowardHinnant) (Ripple)
-- [scottschurr](https://github.com/scottschurr) (Ripple)
-- [seelabs](https://github.com/seelabs) (Ripple)
-- [Ed Hennis](https://github.com/ximinez) (Ripple)
-- [mvadari](https://github.com/mvadari) (Ripple)
-- [thejohnfreeman](https://github.com/thejohnfreeman) (Ripple)
+- [a1q123456](https://github.com/a1q123456) (Ripple)
 - [Bronek](https://github.com/Bronek) (Ripple)
-- [manojsdoshi](https://github.com/manojsdoshi) (Ripple)
-- [godexsoft](https://github.com/godexsoft) (Ripple)
-- [mDuo13](https://github.com/mDuo13) (Ripple)
-- [ckniffen](https://github.com/ckniffen) (Ripple)
-- [arihantkothari](https://github.com/arihantkothari) (Ripple)
-- [pwang200](https://github.com/pwang200) (Ripple)
-- [sophiax851](https://github.com/sophiax851) (Ripple)
-- [shawnxie999](https://github.com/shawnxie999) (Ripple)
-- [gregtatcam](https://github.com/gregtatcam) (Ripple)
-- [mtrippled](https://github.com/mtrippled) (Ripple)
+- [bthomee](https://github.com/bthomee) (Ripple)
 - [ckeshava](https://github.com/ckeshava) (Ripple)
-- [nbougalis](https://github.com/nbougalis) None
-- [RichardAH](https://github.com/RichardAH) (XRPL Labs + XRP Ledger Foundation)
 - [dangell7](https://github.com/dangell7) (XRPL Labs)
+- [godexsoft](https://github.com/godexsoft) (Ripple)
+- [gregtatcam](https://github.com/gregtatcam) (Ripple)
+- [kuznetsss](https://github.com/kuznetsss) (Ripple)
+- [lmaisons](https://github.com/lmaisons) (Ripple)
+- [mathbunnyru](https://github.com/mathbunnyru) (Ripple)
+- [mvadari](https://github.com/mvadari) (Ripple)
+- [oleks-rip](https://github.com/oleks-rip) (Ripple)
+- [PeterChen13579](https://github.com/PeterChen13579) (Ripple)
+- [pwang200](https://github.com/pwang200) (Ripple)
+- [q73zhao](https://github.com/q73zhao) (Ripple)
+- [shawnxie999](https://github.com/shawnxie999) (Ripple)
+- [Tapanito](https://github.com/Tapanito) (Ripple)
+- [ximinez](https://github.com/ximinez) (Ripple)
 
 Developers not on this list are able and encouraged to submit feedback
 on pending code changes (open pull requests).

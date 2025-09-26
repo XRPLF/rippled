@@ -1,0 +1,85 @@
+# This workflow runs all workflows to build the dependencies required for the
+# project on various Linux flavors, as well as on MacOS and Windows, on a
+# scheduled basis, on merge into the 'develop', 'release', or 'master' branches,
+# or manually. The missing commits check is only run when the code is merged
+# into the 'develop' or 'release' branches, and the documentation is built when
+# the code is merged into the 'develop' branch.
+name: Trigger
+
+on:
+  push:
+    branches:
+      - develop
+      - release
+      - master
+    paths:
+      # These paths are unique to `on-trigger.yml`.
+      - ".github/workflows/check-missing-commits.yml"
+      - ".github/workflows/on-trigger.yml"
+      - ".github/workflows/publish-docs.yml"
+
+      # Keep the paths below in sync with those in `on-pr.yml`.
+      - ".github/actions/build-deps/**"
+      - ".github/actions/build-test/**"
+      - ".github/actions/setup-conan/**"
+      - ".github/scripts/strategy-matrix/**"
+      - ".github/workflows/build-test.yml"
+      - ".github/workflows/reusable-strategy-matrix.yml"
+      - ".codecov.yml"
+      - "cmake/**"
+      - "conan/**"
+      - "external/**"
+      - "include/**"
+      - "src/**"
+      - "tests/**"
+      - "CMakeLists.txt"
+      - "conanfile.py"
+      - "conan.lock"
+
+  # Run at 06:32 UTC on every day of the week from Monday through Friday. This
+  # will force all dependencies to be rebuilt, which is useful to verify that
+  # all dependencies can be built successfully. Only the dependencies that
+  # are actually missing from the remote will be uploaded.
+  schedule:
+    - cron: "32 6 * * 1-5"
+
+  # Run when manually triggered via the GitHub UI or API. If `force_upload` is
+  # true, then the dependencies that were missing (`force_rebuild` is false) or
+  # rebuilt (`force_rebuild` is true) will be uploaded, overwriting existing
+  # dependencies if needed.
+  workflow_dispatch:
+    inputs:
+      dependencies_force_build:
+        description: "Force building of all dependencies."
+        required: false
+        type: boolean
+        default: false
+      dependencies_force_upload:
+        description: "Force uploading of all dependencies."
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-missing-commits:
+    if: ${{ github.event_name == 'push' && github.ref_type == 'branch' && contains(fromJSON('["develop", "release"]'), github.ref_name) }}
+    uses: ./.github/workflows/check-missing-commits.yml
+
+  build-test:
+    uses: ./.github/workflows/build-test.yml
+    strategy:
+      matrix:
+        os: [linux, macos, windows]
+    with:
+      os: ${{ matrix.os }}
+      strategy_matrix: ${{ github.event_name == 'schedule' && 'all' || 'minimal' }}
+    secrets:
+      codecov_token: ${{ secrets.CODECOV_TOKEN }}

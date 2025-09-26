@@ -1,0 +1,33 @@
+name: Build Conan dependencies
+description: "Install Conan dependencies, optionally forcing a rebuild of all dependencies."
+
+# Note that actions do not support 'type' and all inputs are strings, see
+# https://docs.github.com/en/actions/reference/workflows-and-actions/metadata-syntax#inputs.
+inputs:
+  build_dir:
+    description: "The directory where to build."
+    required: true
+  build_type:
+    description: 'The build type to use ("Debug", "Release").'
+    required: true
+  force_build:
+    description: 'Force building of all dependencies ("true", "false").'
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Install Conan dependencies
+      shell: bash
+      run: |
+        echo 'Installing dependencies.'
+        mkdir -p ${{ inputs.build_dir }}
+        cd ${{ inputs.build_dir }}
+        conan install \
+          --output-folder . \
+          --build ${{ inputs.force_build == 'true' && '"*"' || 'missing' }} \
+          --options:host '&:tests=True' \
+          --options:host '&:xrpld=True' \
+          --settings:all build_type=${{ inputs.build_type }} \
+          ..

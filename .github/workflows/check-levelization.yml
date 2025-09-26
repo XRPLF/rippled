@@ -1,0 +1,46 @@
+# This workflow checks if the dependencies between the modules are correctly
+# indexed.
+name: Check levelization
+
+# This workflow can only be triggered by other workflows.
+on: workflow_call
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-levelization
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  levelization:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4.3.0
+      - name: Check levelization
+        run: .github/scripts/levelization/generate.sh
+      - name: Check for differences
+        env:
+          MESSAGE: |
+
+            The dependency relationships between the modules in rippled have
+            changed, which may be an improvement or a regression.
+
+            A rule of thumb is that if your changes caused something to be
+            removed from loops.txt, it's probably an improvement, while if
+            something was added, it's probably a regression.
+
+            Run '.github/scripts/levelization/generate.sh' in your repo, commit
+            and push the changes. See .github/scripts/levelization/README.md for
+            more info.
+        run: |
+          DIFF=$(git status --porcelain)
+          if [ -n "${DIFF}" ]; then
+            # Print the differences to give the contributor a hint about what to
+            # expect when running levelization on their own machine.
+            git diff
+            echo "${MESSAGE}"
+            exit 1
+          fi

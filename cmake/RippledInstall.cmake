@@ -18,7 +18,9 @@ install (
     xrpl.libxrpl.json
     xrpl.libxrpl.protocol
     xrpl.libxrpl.resource
+    xrpl.libxrpl.ledger
     xrpl.libxrpl.server
+    xrpl.libxrpl.net
     xrpl.libxrpl
     antithesis-sdk-cpp
   EXPORT RippleExports
