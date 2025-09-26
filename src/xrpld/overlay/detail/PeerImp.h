@@ -839,7 +839,8 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
+    , fingerprint_(
+          getFingerprint(slot->remote_endpoint(), publicKey, to_string(id_)))
     , sink_(app_.journal("Peer"), makePrefix(fingerprint_))
     , p_sink_(app_.journal("Protocol"), makePrefix(fingerprint_))
     , journal_(sink_)

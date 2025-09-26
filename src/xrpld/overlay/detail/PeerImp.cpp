@@ -82,7 +82,8 @@ PeerImp::PeerImp(
     : Child(overlay)
     , app_(app)
     , id_(id)
-    , fingerprint_(getFingerprint(slot->remote_endpoint(), publicKey, to_string(id)))
+    , fingerprint_(
+          getFingerprint(slot->remote_endpoint(), publicKey, to_string(id)))
     , sink_(app_.journal("Peer"), makePrefix(fingerprint_))
     , p_sink_(app_.journal("Protocol"), makePrefix(fingerprint_))
     , journal_(sink_)
@@ -731,8 +732,7 @@ std::string
 PeerImp::makePrefix(std::string const& fingerprint)
 {
     std::stringstream ss;
-    ss << "[" << std::setfill('0') << std::setw(3) << fingerprint
-       << "] ";
+    ss << "[" << std::setfill('0') << std::setw(3) << fingerprint << "] ";
     return ss.str();
 }
 
@@ -2392,7 +2392,8 @@ PeerImp::onMessage(
     }
     catch (std::exception const& e)
     {
-        JLOG(p_journal_.warn()) << "ValidatorListCollection: Exception, " << e.what();
+        JLOG(p_journal_.warn())
+            << "ValidatorListCollection: Exception, " << e.what();
         using namespace std::string_literals;
         fee_.update(Resource::feeInvalidData, e.what());
     }
