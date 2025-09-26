@@ -24,7 +24,7 @@
 #include <test/app/TestHostFunctions.h>
 
 #include <xrpld/app/wasm/HostFuncWrapper.h>
-#include <xrpld/app/wasm/WamrVM.h>
+// #include <xrpld/app/wasm/WamrVM.h>
 
 namespace ripple {
 namespace test {
@@ -469,7 +469,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             auto const s = sink.messages().str();
             BEAST_EXPECT(
-                countSubstr(s, "WAMR Error: failure to call func") == 1);
+                countSubstr(s, "Wasm Error: failure to call func") == 1);
             BEAST_EXPECT(
                 countSubstr(s, "Exception: wasm operand stack overflow") > 0);
         }
