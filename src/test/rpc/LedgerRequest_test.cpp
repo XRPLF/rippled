@@ -31,7 +31,7 @@ namespace ripple {
 
 namespace RPC {
 
-class LedgerRequestRPC_test : public beast::unit_test::suite
+class LedgerRequest_test : public beast::unit_test::suite
 {
     static constexpr char const* hash1 =
         "3020EB9E7BE24EF7D7A060CB051583EC117384636D1781AFB5B87F3E348DA489";
@@ -134,7 +134,7 @@ public:
             BEAST_EXPECT(
                 RPC::contains_error(result[jss::result]) &&
                 result[jss::result][jss::error_message] ==
-                    "Invalid field 'ledger_hash', not string.");
+                    "Invalid field 'ledger_hash'.");
         }
 
         {
@@ -369,13 +369,13 @@ public:
         testLedgerRequest();
         testEvolution();
         forAllApiVersions(
-            std::bind_front(&LedgerRequestRPC_test::testBadInput, this));
+            std::bind_front(&LedgerRequest_test::testBadInput, this));
         testMoreThan256Closed();
         testNonAdmin();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerRequestRPC, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(LedgerRequest, rpc, ripple);
 
 }  // namespace RPC
 }  // namespace ripple
