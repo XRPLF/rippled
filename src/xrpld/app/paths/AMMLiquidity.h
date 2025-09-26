@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
-#define RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
+#ifndef XRPL_APP_TX_AMMLIQUIDITY_H_INCLUDED
+#define XRPL_APP_TX_AMMLIQUIDITY_H_INCLUDED
 
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
@@ -152,4 +152,4 @@ private:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_TX_AMMLIQUIDITY_H_INCLUDED
+#endif  // XRPL_APP_TX_AMMLIQUIDITY_H_INCLUDED

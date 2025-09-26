@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_HANDLER_H_INCLUDED
-#define RIPPLE_RPC_HANDLER_H_INCLUDED
+#ifndef XRPL_RPC_HANDLER_H_INCLUDED
+#define XRPL_RPC_HANDLER_H_INCLUDED
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>

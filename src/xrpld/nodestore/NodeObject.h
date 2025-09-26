@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_NODEOBJECT_H_INCLUDED
-#define RIPPLE_NODESTORE_NODEOBJECT_H_INCLUDED
+#ifndef XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
+#define XRPL_NODESTORE_NODEOBJECT_H_INCLUDED
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>

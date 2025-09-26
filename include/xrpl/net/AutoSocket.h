@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
-#define RIPPLE_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
+#ifndef XRPL_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
+#define XRPL_WEBSOCKET_AUTOSOCKET_AUTOSOCKET_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/net/IPAddressConversion.h>

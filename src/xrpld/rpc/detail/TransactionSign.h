@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
-#define RIPPLE_RPC_TRANSACTIONSIGN_H_INCLUDED
+#ifndef XRPL_RPC_TRANSACTIONSIGN_H_INCLUDED
+#define XRPL_RPC_TRANSACTIONSIGN_H_INCLUDED
 
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/NetworkOPs.h>

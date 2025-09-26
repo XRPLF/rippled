@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
-#define RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
+#ifndef XRPL_PROTOCOL_STOBJECT_H_INCLUDED
+#define XRPL_PROTOCOL_STOBJECT_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Slice.h>

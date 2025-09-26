@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
-#define RIPPLE_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
+#ifndef XRPL_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
+#define XRPL_TEST_JTX_LEDGER_STATE_FIX_H_INCLUDED
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>

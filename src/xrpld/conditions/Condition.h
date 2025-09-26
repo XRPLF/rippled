@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONDITIONS_CONDITION_H
-#define RIPPLE_CONDITIONS_CONDITION_H
+#ifndef XRPL_CONDITIONS_CONDITION_H
+#define XRPL_CONDITIONS_CONDITION_H
 
 #include <xrpld/conditions/detail/utils.h>
 

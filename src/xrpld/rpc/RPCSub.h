@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_RPCSUB_H_INCLUDED
-#define RIPPLE_NET_RPCSUB_H_INCLUDED
+#ifndef XRPL_NET_RPCSUB_H_INCLUDED
+#define XRPL_NET_RPCSUB_H_INCLUDED
 
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/InfoSub.h>

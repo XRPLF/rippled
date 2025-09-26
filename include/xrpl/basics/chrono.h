@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_CHRONO_H_INCLUDED
-#define RIPPLE_BASICS_CHRONO_H_INCLUDED
+#ifndef XRPL_BASICS_CHRONO_H_INCLUDED
+#define XRPL_BASICS_CHRONO_H_INCLUDED
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>

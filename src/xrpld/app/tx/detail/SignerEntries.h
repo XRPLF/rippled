@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
-#define RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
+#ifndef XRPL_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
+#define XRPL_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>  // NotTEC
 
@@ -90,4 +90,4 @@ public:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
+#endif  // XRPL_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED

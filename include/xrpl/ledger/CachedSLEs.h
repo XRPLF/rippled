@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_CACHEDSLES_H_INCLUDED
-#define RIPPLE_LEDGER_CACHEDSLES_H_INCLUDED
+#ifndef XRPL_LEDGER_CACHEDSLES_H_INCLUDED
+#define XRPL_LEDGER_CACHEDSLES_H_INCLUDED
 
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/base_uint.h>
@@ -28,4 +28,4 @@ namespace ripple {
 using CachedSLEs = TaggedCache<uint256, SLE const>;
 }
 
-#endif  // RIPPLE_LEDGER_CACHEDSLES_H_INCLUDED
+#endif  // XRPL_LEDGER_CACHEDSLES_H_INCLUDED

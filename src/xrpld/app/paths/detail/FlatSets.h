@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATHS_IMPL_FLAT_SETS_H_INCLUDED
-#define RIPPLE_APP_PATHS_IMPL_FLAT_SETS_H_INCLUDED
+#ifndef XRPL_APP_PATHS_IMPL_FLAT_SETS_H_INCLUDED
+#define XRPL_APP_PATHS_IMPL_FLAT_SETS_H_INCLUDED
 
 #include <boost/container/flat_set.hpp>
 

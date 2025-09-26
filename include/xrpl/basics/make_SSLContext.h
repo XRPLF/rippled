@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
-#define RIPPLE_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
+#ifndef XRPL_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
+#define XRPL_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
 
 #include <boost/asio/ssl/context.hpp>
 

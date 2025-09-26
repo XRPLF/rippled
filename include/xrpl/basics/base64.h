@@ -54,8 +54,8 @@
 
 */
 
-#ifndef RIPPLE_BASICS_BASE64_H_INCLUDED
-#define RIPPLE_BASICS_BASE64_H_INCLUDED
+#ifndef XRPL_BASICS_BASE64_H_INCLUDED
+#define XRPL_BASICS_BASE64_H_INCLUDED
 
 #include <cstdint>
 #include <string>

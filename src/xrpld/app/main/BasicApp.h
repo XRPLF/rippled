@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_BASICAPP_H_INCLUDED
-#define RIPPLE_APP_BASICAPP_H_INCLUDED
+#ifndef XRPL_APP_BASICAPP_H_INCLUDED
+#define XRPL_APP_BASICAPP_H_INCLUDED
 
 #include <boost/asio/io_context.hpp>
 

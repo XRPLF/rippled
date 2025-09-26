@@ -18,8 +18,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_LOWESTLAYER_H_INCLUDED
-#define RIPPLE_SERVER_LOWESTLAYER_H_INCLUDED
+#ifndef XRPL_SERVER_LOWESTLAYER_H_INCLUDED
+#define XRPL_SERVER_LOWESTLAYER_H_INCLUDED
 
 #if BOOST_VERSION >= 107000
 #include <boost/beast/core/stream_traits.hpp>

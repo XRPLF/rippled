@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED
-#define RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED
+#ifndef XRPL_APP_PATHS_AMMCONTEXT_H_INCLUDED
+#define XRPL_APP_PATHS_AMMCONTEXT_H_INCLUDED
 
 #include <xrpl/protocol/AccountID.h>
 
@@ -116,4 +116,4 @@ public:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED
+#endif  // XRPL_APP_PATHS_AMMCONTEXT_H_INCLUDED

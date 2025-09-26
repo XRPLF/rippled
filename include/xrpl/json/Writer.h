@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JSON_WRITER_H_INCLUDED
-#define RIPPLE_JSON_WRITER_H_INCLUDED
+#ifndef XRPL_JSON_WRITER_H_INCLUDED
+#define XRPL_JSON_WRITER_H_INCLUDED
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/basics/contract.h>

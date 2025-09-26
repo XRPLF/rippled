@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CRYPTO_RANDOM_H_INCLUDED
-#define RIPPLE_CRYPTO_RANDOM_H_INCLUDED
+#ifndef XRPL_CRYPTO_RANDOM_H_INCLUDED
+#define XRPL_CRYPTO_RANDOM_H_INCLUDED
 
 #include <mutex>
 

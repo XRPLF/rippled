@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
-#define RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
+#ifndef XRPL_RPC_TESTOUTPUTSUITE_H_INCLUDED
+#define XRPL_RPC_TESTOUTPUTSUITE_H_INCLUDED
 
 #include <test/jtx/TestSuite.h>
 

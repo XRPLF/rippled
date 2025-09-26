@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
-#define RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
+#ifndef XRPL_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
+#define XRPL_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
 
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>

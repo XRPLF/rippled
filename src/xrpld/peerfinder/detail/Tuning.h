@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_TUNING_H_INCLUDED
-#define RIPPLE_PEERFINDER_TUNING_H_INCLUDED
+#ifndef XRPL_PEERFINDER_TUNING_H_INCLUDED
+#define XRPL_PEERFINDER_TUNING_H_INCLUDED
 
 #include <array>
 

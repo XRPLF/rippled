@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED
-#define RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED
+#ifndef XRPL_APP_BOOK_BOOKTIP_H_INCLUDED
+#define XRPL_APP_BOOK_BOOKTIP_H_INCLUDED
 
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Indexes.h>

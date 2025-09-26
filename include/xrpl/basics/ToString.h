@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_TOSTRING_H_INCLUDED
-#define RIPPLE_BASICS_TOSTRING_H_INCLUDED
+#ifndef XRPL_BASICS_TOSTRING_H_INCLUDED
+#define XRPL_BASICS_TOSTRING_H_INCLUDED
 
 #include <string>
 #include <type_traits>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_NODEFAMILY_H_INCLUDED
-#define RIPPLE_SHAMAP_NODEFAMILY_H_INCLUDED
+#ifndef XRPL_SHAMAP_NODEFAMILY_H_INCLUDED
+#define XRPL_SHAMAP_NODEFAMILY_H_INCLUDED
 
 #include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/shamap/Family.h>

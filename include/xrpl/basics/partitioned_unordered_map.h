@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
-#define RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
+#ifndef XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H
+#define XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H
 
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -422,4 +422,4 @@ private:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_PARTITIONED_UNORDERED_MAP_H
+#endif  // XRPL_BASICS_PARTITIONED_UNORDERED_MAP_H

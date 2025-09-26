@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATHS_FLOW_H_INCLUDED
-#define RIPPLE_APP_PATHS_FLOW_H_INCLUDED
+#ifndef XRPL_APP_PATHS_FLOW_H_INCLUDED
+#define XRPL_APP_PATHS_FLOW_H_INCLUDED
 
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/detail/Steps.h>

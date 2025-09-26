@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_SESSION_H_INCLUDED
-#define RIPPLE_SERVER_SESSION_H_INCLUDED
+#ifndef XRPL_SERVER_SESSION_H_INCLUDED
+#define XRPL_SERVER_SESSION_H_INCLUDED
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_MPTISSUE_H_INCLUDED
-#define RIPPLE_PROTOCOL_MPTISSUE_H_INCLUDED
+#ifndef XRPL_PROTOCOL_MPTISSUE_H_INCLUDED
+#define XRPL_PROTOCOL_MPTISSUE_H_INCLUDED
 
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -98,4 +98,4 @@ mptIssueFromJson(Json::Value const& jv);
 
 }  // namespace ripple
 
-#endif  // RIPPLE_PROTOCOL_MPTISSUE_H_INCLUDED
+#endif  // XRPL_PROTOCOL_MPTISSUE_H_INCLUDED

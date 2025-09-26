@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
-#define RIPPLE_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
+#ifndef XRPL_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
+#define XRPL_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpld/shamap/detail/TaggedPointer.h>

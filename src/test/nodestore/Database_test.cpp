@@ -745,7 +745,7 @@ public:
         {
             testNodeStore("nudb", true, seedValue);
 
-#if RIPPLE_ROCKSDB_AVAILABLE
+#if XRPL_ROCKSDB_AVAILABLE
             testNodeStore("rocksdb", true, seedValue);
 #endif
         }
@@ -754,11 +754,11 @@ public:
         {
             testImport("nudb", "nudb", seedValue);
 
-#if RIPPLE_ROCKSDB_AVAILABLE
+#if XRPL_ROCKSDB_AVAILABLE
             testImport("rocksdb", "rocksdb", seedValue);
 #endif
 
-#if RIPPLE_ENABLE_SQLITE_BACKEND_TESTS
+#if XRPL_ENABLE_SQLITE_BACKEND_TESTS
             testImport("sqlite", "sqlite", seedValue);
 #endif
         }

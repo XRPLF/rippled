@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_AMMUTILS_H_INCLUDED
-#define RIPPLE_APP_MISC_AMMUTILS_H_INCLUDED
+#ifndef XRPL_APP_MISC_AMMUTILS_H_INCLUDED
+#define XRPL_APP_MISC_AMMUTILS_H_INCLUDED
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -137,4 +137,4 @@ verifyAndAdjustLPTokenBalance(
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_MISC_AMMUTILS_H_INCLUDED
+#endif  // XRPL_APP_MISC_AMMUTILS_H_INCLUDED

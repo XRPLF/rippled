@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_CTID_H_INCLUDED
-#define RIPPLE_RPC_CTID_H_INCLUDED
+#ifndef XRPL_RPC_CTID_H_INCLUDED
+#define XRPL_RPC_CTID_H_INCLUDED
 
 #include <boost/regex.hpp>
 

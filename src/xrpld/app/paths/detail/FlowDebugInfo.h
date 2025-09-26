@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
-#define RIPPLE_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
+#ifndef XRPL_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
+#define XRPL_PATH_IMPL_FLOWDEBUGINFO_H_INCLUDED
 
 #include <xrpld/app/paths/detail/AmountSpec.h>
 

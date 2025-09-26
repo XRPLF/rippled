@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RESOURCE_ENTRY_H_INCLUDED
-#define RIPPLE_RESOURCE_ENTRY_H_INCLUDED
+#ifndef XRPL_RESOURCE_ENTRY_H_INCLUDED
+#define XRPL_RESOURCE_ENTRY_H_INCLUDED
 
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/beast/clock/abstract_clock.h>

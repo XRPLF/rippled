@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RESOURCE_CONSUMER_H_INCLUDED
-#define RIPPLE_RESOURCE_CONSUMER_H_INCLUDED
+#ifndef XRPL_RESOURCE_CONSUMER_H_INCLUDED
+#define XRPL_RESOURCE_CONSUMER_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/resource/Charge.h>

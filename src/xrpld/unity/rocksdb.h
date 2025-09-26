@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_UNITY_ROCKSDB_H_INCLUDED
-#define RIPPLE_UNITY_ROCKSDB_H_INCLUDED
+#ifndef XRPL_UNITY_ROCKSDB_H_INCLUDED
+#define XRPL_UNITY_ROCKSDB_H_INCLUDED
 
-#if RIPPLE_ROCKSDB_AVAILABLE
+#if XRPL_ROCKSDB_AVAILABLE
 // #include <rocksdb2/port/port_posix.h>
 #include <rocksdb/cache.h>
 #include <rocksdb/compaction_filter.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_JSON_OBJECT_H_INCLUDED
-#define RIPPLE_JSON_OBJECT_H_INCLUDED
+#ifndef XRPL_JSON_OBJECT_H_INCLUDED
+#define XRPL_JSON_OBJECT_H_INCLUDED
 
 #include <xrpl/json/Writer.h>
 

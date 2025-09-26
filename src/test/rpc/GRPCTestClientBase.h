@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_GRPCTESTCLIENTBASE_H
-#define RIPPLED_GRPCTESTCLIENTBASE_H
+#ifndef XRPL_GRPCTESTCLIENTBASE_H
+#define XRPL_GRPCTESTCLIENTBASE_H
 
 #include <test/jtx/envconfig.h>
 
@@ -49,4 +49,4 @@ struct GRPCTestClientBase
 
 }  // namespace test
 }  // namespace ripple
-#endif  // RIPPLED_GRPCTESTCLIENTBASE_H
+#endif  // XRPL_GRPCTESTCLIENTBASE_H

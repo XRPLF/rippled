@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_STRHEX_H_INCLUDED
-#define RIPPLE_BASICS_STRHEX_H_INCLUDED
+#ifndef XRPL_BASICS_STRHEX_H_INCLUDED
+#define XRPL_BASICS_STRHEX_H_INCLUDED
 
 #include <boost/algorithm/hex.hpp>
 #include <boost/endian/conversion.hpp>

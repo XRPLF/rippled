@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
-#define RIPPLED_RIPPLE_RPC_HANDLERS_VERSION_H
+#ifndef XRPL_XRPL_RPC_HANDLERS_VERSION_H
+#define XRPL_XRPL_RPC_HANDLERS_VERSION_H
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
 

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_SIGN_H_INCLUDED
-#define RIPPLE_PROTOCOL_SIGN_H_INCLUDED
+#ifndef XRPL_PROTOCOL_SIGN_H_INCLUDED
+#define XRPL_PROTOCOL_SIGN_H_INCLUDED
 
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>

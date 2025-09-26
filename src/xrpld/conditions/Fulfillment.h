@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONDITIONS_FULFILLMENT_H
-#define RIPPLE_CONDITIONS_FULFILLMENT_H
+#ifndef XRPL_CONDITIONS_FULFILLMENT_H
+#define XRPL_CONDITIONS_FULFILLMENT_H
 
 #include <xrpld/conditions/Condition.h>
 

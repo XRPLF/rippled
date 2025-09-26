@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONDITIONS_PREIMAGE_SHA256_H
-#define RIPPLE_CONDITIONS_PREIMAGE_SHA256_H
+#ifndef XRPL_CONDITIONS_PREIMAGE_SHA256_H
+#define XRPL_CONDITIONS_PREIMAGE_SHA256_H
 
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>

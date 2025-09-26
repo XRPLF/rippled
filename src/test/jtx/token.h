@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_NFT_H_INCLUDED
-#define RIPPLE_TEST_JTX_NFT_H_INCLUDED
+#ifndef XRPL_TEST_JTX_NFT_H_INCLUDED
+#define XRPL_TEST_JTX_NFT_H_INCLUDED
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -248,4 +248,4 @@ modify(jtx::Account const& account, uint256 const& nftokenID);
 }  // namespace test
 }  // namespace ripple
 
-#endif  // RIPPLE_TEST_JTX_NFT_H_INCLUDED
+#endif  // XRPL_TEST_JTX_NFT_H_INCLUDED

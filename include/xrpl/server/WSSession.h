@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_WSSESSION_H_INCLUDED
-#define RIPPLE_SERVER_WSSESSION_H_INCLUDED
+#ifndef XRPL_SERVER_WSSESSION_H_INCLUDED
+#define XRPL_SERVER_WSSESSION_H_INCLUDED
 
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>

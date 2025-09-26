@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
-#define RIPPLE_SHAMAP_SHAMAPNODEID_H_INCLUDED
+#ifndef XRPL_SHAMAP_SHAMAPNODEID_H_INCLUDED
+#define XRPL_SHAMAP_SHAMAPNODEID_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>

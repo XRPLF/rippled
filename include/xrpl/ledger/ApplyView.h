@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_APPLYVIEW_H_INCLUDED
-#define RIPPLE_LEDGER_APPLYVIEW_H_INCLUDED
+#ifndef XRPL_LEDGER_APPLYVIEW_H_INCLUDED
+#define XRPL_LEDGER_APPLYVIEW_H_INCLUDED
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_PERFLOGIMP_H
-#define RIPPLE_BASICS_PERFLOGIMP_H
+#ifndef XRPL_BASICS_PERFLOGIMP_H
+#define XRPL_BASICS_PERFLOGIMP_H
 
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/Handler.h>
@@ -206,4 +206,4 @@ public:
 }  // namespace perf
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_PERFLOGIMP_H
+#endif  // XRPL_BASICS_PERFLOGIMP_H

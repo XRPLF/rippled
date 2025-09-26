@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONDITIONS_ERROR_H
-#define RIPPLE_CONDITIONS_ERROR_H
+#ifndef XRPL_CONDITIONS_ERROR_H
+#define XRPL_CONDITIONS_ERROR_H
 
 #include <system_error>
 

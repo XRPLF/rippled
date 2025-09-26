@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_IO_LIST_H_INCLUDED
-#define RIPPLE_SERVER_IO_LIST_H_INCLUDED
+#ifndef XRPL_SERVER_IO_LIST_H_INCLUDED
+#define XRPL_SERVER_IO_LIST_H_INCLUDED
 
 #include <boost/container/flat_map.hpp>
 

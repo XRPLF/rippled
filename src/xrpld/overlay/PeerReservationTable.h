@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
-#define RIPPLE_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
+#ifndef XRPL_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
+#define XRPL_OVERLAY_PEER_RESERVATION_TABLE_H_INCLUDED
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>

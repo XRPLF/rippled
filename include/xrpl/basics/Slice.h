@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_SLICE_H_INCLUDED
-#define RIPPLE_BASICS_SLICE_H_INCLUDED
+#ifndef XRPL_BASICS_SLICE_H_INCLUDED
+#define XRPL_BASICS_SLICE_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>

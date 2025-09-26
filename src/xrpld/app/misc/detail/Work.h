@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_DETAIL_WORK_H_INCLUDED
-#define RIPPLE_APP_MISC_DETAIL_WORK_H_INCLUDED
+#ifndef XRPL_APP_MISC_DETAIL_WORK_H_INCLUDED
+#define XRPL_APP_MISC_DETAIL_WORK_H_INCLUDED
 
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>

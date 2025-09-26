@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
-#define RIPPLE_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
+#ifndef XRPL_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
+#define XRPL_APP_CONSENSUSS_VALIDATIONS_H_INCLUDED
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/consensus/Validations.h>

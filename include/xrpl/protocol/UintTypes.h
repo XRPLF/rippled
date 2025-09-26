@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_UINTTYPES_H_INCLUDED
-#define RIPPLE_PROTOCOL_UINTTYPES_H_INCLUDED
+#ifndef XRPL_PROTOCOL_UINTTYPES_H_INCLUDED
+#define XRPL_PROTOCOL_UINTTYPES_H_INCLUDED
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>

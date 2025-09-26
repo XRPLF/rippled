@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_CLOSURE_COUNTER_H_INCLUDED
-#define RIPPLE_CORE_CLOSURE_COUNTER_H_INCLUDED
+#ifndef XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED
+#define XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 
@@ -223,4 +223,4 @@ public:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_CORE_CLOSURE_COUNTER_H_INCLUDED
+#endif  // XRPL_CORE_CLOSURE_COUNTER_H_INCLUDED

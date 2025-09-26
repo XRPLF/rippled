@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
-#define RIPPLE_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
+#ifndef XRPL_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
+#define XRPL_CONSENSUS_CONSENSUSPROPOSAL_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>

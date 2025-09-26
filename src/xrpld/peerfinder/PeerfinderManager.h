@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
-#define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
+#ifndef XRPL_PEERFINDER_MANAGER_H_INCLUDED
+#define XRPL_PEERFINDER_MANAGER_H_INCLUDED
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
-#define RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
+#ifndef XRPL_PROTOCOL_KNOWNFORMATS_H_INCLUDED
+#define XRPL_PROTOCOL_KNOWNFORMATS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/type_name.h>

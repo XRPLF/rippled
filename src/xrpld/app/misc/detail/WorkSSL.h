@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
-#define RIPPLE_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
+#ifndef XRPL_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
+#define XRPL_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/core/Config.h>

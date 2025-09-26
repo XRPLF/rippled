@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
-#define RIPPLE_CORE_TIMEKEEPER_H_INCLUDED
+#ifndef XRPL_CORE_TIMEKEEPER_H_INCLUDED
+#define XRPL_CORE_TIMEKEEPER_H_INCLUDED
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/clock/abstract_clock.h>

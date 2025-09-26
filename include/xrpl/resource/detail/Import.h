@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RESOURCE_IMPORT_H_INCLUDED
-#define RIPPLE_RESOURCE_IMPORT_H_INCLUDED
+#ifndef XRPL_RESOURCE_IMPORT_H_INCLUDED
+#define XRPL_RESOURCE_IMPORT_H_INCLUDED
 
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>

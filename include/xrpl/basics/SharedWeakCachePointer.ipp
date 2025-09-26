@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
-#define RIPPLE_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
+#ifndef XRPL_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
+#define XRPL_BASICS_SHAREDWEAKCACHEPOINTER_IPP_INCLUDED
 
 #include <xrpl/basics/SharedWeakCachePointer.h>
 

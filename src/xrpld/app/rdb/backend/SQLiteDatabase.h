@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_RDB_BACKEND_SQLITEDATABASE_H_INCLUDED
-#define RIPPLE_APP_RDB_BACKEND_SQLITEDATABASE_H_INCLUDED
+#ifndef XRPL_APP_RDB_BACKEND_SQLITEDATABASE_H_INCLUDED
+#define XRPL_APP_RDB_BACKEND_SQLITEDATABASE_H_INCLUDED
 
 #include <xrpld/app/rdb/RelationalDatabase.h>
 

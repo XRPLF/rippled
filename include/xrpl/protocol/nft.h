@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_NFT_H_INCLUDED
-#define RIPPLE_PROTOCOL_NFT_H_INCLUDED
+#ifndef XRPL_PROTOCOL_NFT_H_INCLUDED
+#define XRPL_PROTOCOL_NFT_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/tagged_integer.h>

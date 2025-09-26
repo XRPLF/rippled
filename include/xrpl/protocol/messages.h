@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_MESSAGES_H_INCLUDED
-#define RIPPLE_PROTOCOL_MESSAGES_H_INCLUDED
+#ifndef XRPL_PROTOCOL_MESSAGES_H_INCLUDED
+#define XRPL_PROTOCOL_MESSAGES_H_INCLUDED
 
 // Some versions of protobuf generate code that will produce errors during
 // compilation. See https://github.com/google/protobuf/issues/549 for more

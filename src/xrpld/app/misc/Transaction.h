@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
-#define RIPPLE_APP_MISC_TRANSACTION_H_INCLUDED
+#ifndef XRPL_APP_MISC_TRANSACTION_H_INCLUDED
+#define XRPL_APP_MISC_TRANSACTION_H_INCLUDED
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/beast/utility/Journal.h>

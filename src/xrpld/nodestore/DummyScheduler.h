@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
-#define RIPPLE_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
+#ifndef XRPL_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
+#define XRPL_NODESTORE_DUMMYSCHEDULER_H_INCLUDED
 
 #include <xrpld/nodestore/Scheduler.h>
 

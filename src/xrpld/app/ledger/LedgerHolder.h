@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
+#ifndef XRPL_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
+#define XRPL_APP_LEDGER_LEDGERHOLDER_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/contract.h>

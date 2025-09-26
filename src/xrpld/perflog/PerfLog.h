@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_PERFLOG_H
-#define RIPPLE_BASICS_PERFLOG_H
+#ifndef XRPL_BASICS_PERFLOG_H
+#define XRPL_BASICS_PERFLOG_H
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobTypes.h>
@@ -209,4 +209,4 @@ measureDurationAndLog(
 }  // namespace perf
 }  // namespace ripple
 
-#endif  // RIPPLE_BASICS_PERFLOG_H
+#endif  // XRPL_BASICS_PERFLOG_H

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_ACCOUNTID_H_INCLUDED
-#define RIPPLE_PROTOCOL_ACCOUNTID_H_INCLUDED
+#ifndef XRPL_PROTOCOL_ACCOUNTID_H_INCLUDED
+#define XRPL_PROTOCOL_ACCOUNTID_H_INCLUDED
 
 #include <xrpl/protocol/tokens.h>
 // VFALCO Uncomment when the header issues are resolved

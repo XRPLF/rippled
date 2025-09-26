@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
-#define RIPPLE_APP_PEERS_PEERSET_H_INCLUDED
+#ifndef XRPL_APP_PEERS_PEERSET_H_INCLUDED
+#define XRPL_APP_PEERS_PEERSET_H_INCLUDED
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>

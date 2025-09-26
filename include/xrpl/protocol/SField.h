@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_SFIELD_H_INCLUDED
-#define RIPPLE_PROTOCOL_SFIELD_H_INCLUDED
+#ifndef XRPL_PROTOCOL_SFIELD_H_INCLUDED
+#define XRPL_PROTOCOL_SFIELD_H_INCLUDED
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>

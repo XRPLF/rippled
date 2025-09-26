@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_REGISTER_SSL_CERTS_H_INCLUDED
-#define RIPPLE_NET_REGISTER_SSL_CERTS_H_INCLUDED
+#ifndef XRPL_NET_REGISTER_SSL_CERTS_H_INCLUDED
+#define XRPL_NET_REGISTER_SSL_CERTS_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 

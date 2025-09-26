@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_LEDGER_DIR_H_INCLUDED
-#define RIPPLE_LEDGER_DIR_H_INCLUDED
+#ifndef XRPL_LEDGER_DIR_H_INCLUDED
+#define XRPL_LEDGER_DIR_H_INCLUDED
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Indexes.h>

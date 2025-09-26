@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_SECP256K1_H_INCLUDED
-#define RIPPLE_PROTOCOL_SECP256K1_H_INCLUDED
+#ifndef XRPL_PROTOCOL_SECP256K1_H_INCLUDED
+#define XRPL_PROTOCOL_SECP256K1_H_INCLUDED
 
 #include <secp256k1.h>
 

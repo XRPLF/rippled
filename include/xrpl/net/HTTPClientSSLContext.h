@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
-#define RIPPLE_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
+#ifndef XRPL_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
+#define XRPL_NET_HTTPCLIENTSSLCONTEXT_H_INCLUDED
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>

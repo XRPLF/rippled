@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_BASEPEER_H_INCLUDED
-#define RIPPLE_SERVER_BASEPEER_H_INCLUDED
+#ifndef XRPL_SERVER_BASEPEER_H_INCLUDED
+#define XRPL_SERVER_BASEPEER_H_INCLUDED
 
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/beast/utility/instrumentation.h>

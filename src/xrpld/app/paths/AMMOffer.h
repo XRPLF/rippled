@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_AMMOFFER_H_INCLUDED
-#define RIPPLE_APP_AMMOFFER_H_INCLUDED
+#ifndef XRPL_APP_AMMOFFER_H_INCLUDED
+#define XRPL_APP_AMMOFFER_H_INCLUDED
 
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
@@ -148,4 +148,4 @@ public:
 
 }  // namespace ripple
 
-#endif  // RIPPLE_APP_AMMOFFER_H_INCLUDED
+#endif  // XRPL_APP_AMMOFFER_H_INCLUDED

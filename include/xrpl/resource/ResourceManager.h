@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RESOURCE_MANAGER_H_INCLUDED
-#define RIPPLE_RESOURCE_MANAGER_H_INCLUDED
+#ifndef XRPL_RESOURCE_MANAGER_H_INCLUDED
+#define XRPL_RESOURCE_MANAGER_H_INCLUDED
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/net/IPEndpoint.h>

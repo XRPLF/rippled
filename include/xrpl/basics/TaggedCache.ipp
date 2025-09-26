@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_TAGGEDCACHE_IPP_INCLUDED
-#define RIPPLE_BASICS_TAGGEDCACHE_IPP_INCLUDED
+#ifndef XRPL_BASICS_TAGGEDCACHE_IPP_INCLUDED
+#define XRPL_BASICS_TAGGEDCACHE_IPP_INCLUDED
 
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/TaggedCache.h>

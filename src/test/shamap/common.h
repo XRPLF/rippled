@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
-#define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
+#ifndef XRPL_SHAMAP_TESTS_COMMON_H_INCLUDED
+#define XRPL_SHAMAP_TESTS_COMMON_H_INCLUDED
 
 #include <xrpld/nodestore/DummyScheduler.h>
 #include <xrpld/nodestore/Manager.h>

@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
-#define RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
+#ifndef XRPL_PROTOCOL_STBLOB_H_INCLUDED
+#define XRPL_PROTOCOL_STBLOB_H_INCLUDED
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/CountedObject.h>

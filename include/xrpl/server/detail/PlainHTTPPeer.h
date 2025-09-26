@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
-#define RIPPLE_SERVER_PLAINHTTPPEER_H_INCLUDED
+#ifndef XRPL_SERVER_PLAINHTTPPEER_H_INCLUDED
+#define XRPL_SERVER_PLAINHTTPPEER_H_INCLUDED
 
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
