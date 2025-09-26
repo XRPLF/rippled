@@ -1,10 +1,6 @@
 from conan import ConanFile, tools
 from conan.tools.cmake import CMake, CMakeToolchain, CMakeDeps, cmake_layout
-from conan.tools.files import (
-    apply_conandata_patches,
-    export_conandata_patches,
-    # get,
-)
+#from conan.tools.files import (apply_conandata_patches, export_conandata_patches,)
 from conan.tools.scm import Git
 
 # import os
@@ -16,7 +12,7 @@ class WamrConan(ConanFile):
     name = "wamr"
     version = "2.4.1"
     license = "Apache License v2.0"
-    url = "https://github.com/bytecodealliance/wasm-micro-runtime.git"
+    url = "https://github.com/ripple/wasm-micro-runtime.git"
     description = "Webassembly micro runtime"
     package_type = "library"
     settings = "os", "compiler", "build_type", "arch"
@@ -25,7 +21,7 @@ class WamrConan(ConanFile):
     # requires = [("llvm/20.1.1@")]
 
     def export_sources(self):
-        export_conandata_patches(self)
+        #export_conandata_patches(self)
         pass
 
     # def build_requirements(self):
@@ -41,8 +37,8 @@ class WamrConan(ConanFile):
     def source(self):
         git = Git(self)
         git.fetch_commit(
-            url="https://github.com/bytecodealliance/wasm-micro-runtime.git",
-            commit="b124f70345d712bead5c0c2393acb2dc583511de",
+            url="https://github.com/ripple/wasm-micro-runtime.git",
+            commit="a87e56fe8042bbe3ed99a514333ddef42e6c2a41",
         )
         # get(self, **self.conan_data["sources"][self.version], strip_root=True)
 
@@ -71,7 +67,7 @@ class WamrConan(ConanFile):
         deps.generate()
 
     def build(self):
-        apply_conandata_patches(self)
+        #apply_conandata_patches(self)
         cmake = CMake(self)
         cmake.verbose = True
         cmake.configure()
