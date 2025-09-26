@@ -877,7 +877,7 @@ private:
     verify(
         lock_guard const&,
         Json::Value& list,
-        std::string const& manifest,
+        Manifest manifest,
         std::string const& blob,
         std::string const& signature);
 
