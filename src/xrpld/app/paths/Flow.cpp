@@ -114,8 +114,8 @@ flow(
     if (auto stream = j.trace())
     {
         std::stringstream ss;
-        ss << "\nsrc: " << src << "\ndst: " << dst
-                  << "\nsrcIssue: " << srcIssue << "\ndstIssue: " << dstIssue;
+        ss << "\nsrc: " << src << "\ndst: " << dst << "\nsrcIssue: " << srcIssue
+           << "\ndstIssue: " << dstIssue;
         ss << "\nNumStrands: " << strands.size();
         for (auto const& curStrand : strands)
         {
