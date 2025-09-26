@@ -160,7 +160,6 @@ var searchData=
   ['type_5findex_157',['type_index',['http://en.cppreference.com/w/cpp/types/type_index.html',1,'std']]],
   ['type_5finfo_158',['type_info',['http://en.cppreference.com/w/cpp/types/type_info.html',1,'std']]],
   ['typedfield_159',['TypedField',['../structripple_1_1TypedField.html',1,'ripple']]],
-  ['types_5ftest_160',['types_test',['../structripple_1_1types__test.html',1,'ripple']]],
-  ['tzdb_161',['tzdb',['http://en.cppreference.com/w/cpp/chrono/tzdb.html',1,'std::chrono']]],
-  ['tzdb_5flist_162',['tzdb_list',['http://en.cppreference.com/w/cpp/chrono/tzdb_list.html',1,'std::chrono']]]
+  ['tzdb_160',['tzdb',['http://en.cppreference.com/w/cpp/chrono/tzdb.html',1,'std::chrono']]],
+  ['tzdb_5flist_161',['tzdb_list',['http://en.cppreference.com/w/cpp/chrono/tzdb_list.html',1,'std::chrono']]]
 ];
