@@ -1395,7 +1395,9 @@ addEmptyHolding(
     // If the line already exists, don't create it again.
     if (view.read(index))
         return tecDUPLICATE;
-    auto const& sponsorAccountID = getTxReserveSponsorAccountID(tx);
+    auto const& sponsorAccountID = !isPseudoAccount(sleDst)
+        ? getTxReserveSponsorAccountID(tx)
+        : std::nullopt;
     return trustCreate(
         view,
         high,

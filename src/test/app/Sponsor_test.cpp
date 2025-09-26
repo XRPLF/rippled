@@ -22,6 +22,7 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 
+#include "test/jtx/Env.h"
 #include "test/jtx/ticket.h"
 
 namespace ripple {
@@ -3272,6 +3273,211 @@ public:
     void
     testVault()
     {
+        testcase("Vault");
+        using namespace test::jtx;
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const gw("gw");
+        Account const sponsor("sponsor");
+        Account const sponsor2("sponsor2");
+
+        Asset asset = gw["IOU"].asset();
+
+        // VaultCreate
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, gw, sponsor);
+            env.close();
+
+            Vault vault{env};
+            auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx,
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);  // Vault, MPToken(share)
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+            BEAST_EXPECT(
+                env.le(keylet)->getAccountID(sfSponsorAccount) == sponsor.id());
+        }
+        // VaultDeposit
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, gw, sponsor);
+            env.close();
+
+            Vault vault{env};
+            auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(trust(bob, asset(1000)));
+            env.close();
+            env(pay(gw, bob, asset(1000)));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, bob) == 1);  // RippleState
+
+            env(vault.deposit(
+                    {.depositor = bob, .id = keylet.key, .amount = asset(100)}),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(
+                ownerCount(env, bob) == 2);  // RippleState, MPToken(share)
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);  // MPToken(share)
+            BEAST_EXPECT(
+                sponsoringOwnerCount(env, sponsor) == 1);  // MPToken(share)
+        }
+        // VaultWithdraw
+        {
+            // RippleState Vault
+            {
+                Env env{*this, testable_amendments()};
+                env.fund(XRP(1000000), alice, bob, gw, sponsor);
+                env.close();
+
+                Vault vault{env};
+                auto [tx, keylet] =
+                    vault.create({.owner = alice, .asset = asset});
+                env(tx);
+                env.close();
+
+                env(trust(bob, asset(100)));
+                env.close();
+                env(pay(gw, bob, asset(100)));
+                env.close();
+
+                env(vault.deposit(
+                        {.depositor = bob,
+                         .id = keylet.key,
+                         .amount = asset(100)}),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                env(trust(bob, asset(0)));  // remove trustline
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, bob) == 1);  // MPToken(share)
+                BEAST_EXPECT(
+                    sponsoredOwnerCount(env, bob) == 1);  // MPToken(share)
+                BEAST_EXPECT(
+                    sponsoringOwnerCount(env, sponsor) == 1);  // MPToken(share)
+
+                // create Trustline
+                env(vault.withdraw(
+                        {.depositor = bob,
+                         .id = keylet.key,
+                         .amount = asset(50)}),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(
+                    ownerCount(env, bob) == 2);  // RippleState, MPToken(share)
+                BEAST_EXPECT(
+                    sponsoredOwnerCount(env, bob) ==
+                    2);  // RippleState, MPToken(share)
+                BEAST_EXPECT(
+                    sponsoringOwnerCount(env, sponsor) ==
+                    2);  // RippleState, MPToken(share)
+
+                // remove sponsored MPToken(share)
+                env(vault.withdraw(
+                        {.depositor = bob,
+                         .id = keylet.key,
+                         .amount = asset(50)}),
+                    sponsor::as(sponsor, tfSponsorReserve),
+                    sponsor::sig(sponsor));
+                env.close();
+
+                BEAST_EXPECT(ownerCount(env, bob) == 1);  // RippleState
+                BEAST_EXPECT(
+                    sponsoredOwnerCount(env, bob) == 1);  // RippleState
+                BEAST_EXPECT(
+                    sponsoringOwnerCount(env, sponsor) == 1);  // RippleState
+            }
+            // MPToken Vault
+            {
+                // VaultWithdraw doesn't create MPToken for depositor
+            }
+        }
+        // VaultClawback
+        {
+            // remove sponsored shares MPToken
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, gw, sponsor);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+
+            Vault vault{env};
+            auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(trust(bob, asset(100)));
+            env.close();
+            env(pay(gw, bob, asset(100)));
+            env.close();
+
+            env(vault.deposit(
+                    {.depositor = bob, .id = keylet.key, .amount = asset(100)}),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(
+                ownerCount(env, bob) == 2);  // RippleState, MPToken(share)
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 1);  // MPToken(share)
+            BEAST_EXPECT(
+                sponsoringOwnerCount(env, sponsor) == 1);  // MPToken(share)
+
+            env(vault.clawback(
+                    {.issuer = gw,
+                     .id = keylet.key,
+                     .holder = bob,
+                     .amount = asset(0)}),
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, bob) == 1);  // RippleState
+            BEAST_EXPECT(sponsoredOwnerCount(env, bob) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
+        // VaultDelete
+        {
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000000), alice, bob, gw, sponsor);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+
+            Vault vault{env};
+            auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx,
+                sponsor::as(sponsor, tfSponsorReserve),
+                sponsor::sig(sponsor));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 2);  // Vault, MPToken(share)
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 2);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 2);
+
+            env(vault.del({.owner = alice, .id = keylet.key}));
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 0);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 0);
+        }
     }
 
     void
@@ -3515,7 +3721,7 @@ public:
         testOracle();
         testSignerList();
         testTrustSet();
-        // testVault();
+        testVault();
         // testXChain();
     }
 

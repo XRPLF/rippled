@@ -166,8 +166,7 @@ VaultDelete::doApply()
         return tefBAD_LEDGER;
         // LCOV_EXCL_STOP
     }
-    auto const mptSponsor = getLedgerEntryReserveSponsor(view(), mpt);
-    adjustOwnerCount(view(), pseudoAcct, mptSponsor, -1, j_);
+    adjustOwnerCount(view(), pseudoAcct, std::nullopt, -1, j_);
 
     view().erase(mpt);
 
